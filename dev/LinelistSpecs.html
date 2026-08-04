@@ -14,12 +14,16 @@
 <p>Facade over the designer workbook. Before Prepare it answers the designer's
 own specifications. After Prepare it is also the handle on the domain managers
 that live on the generated linelist. Callers build one through
-LinelistSpecs.Create(workbook).</p>
+LinelistSpecs.Create(workbook). Value reads one specification cell,
+Categories answers the choice categories of a variable, Prepare creates the
+output workbook and points the managers at it, LLWorkbook answers that
+workbook and ReleaseLLWorkbook lets it go. ResetCaches drops the loaded
+managers, and entries filed along the way leave through HasCheckings and
+CheckingValues.</p>
 <details open class="doc-section" id="which-workbook-each-collaborator-points-at">
 <summary>WHICH WORKBOOK EACH COLLABORATOR POINTS AT</summary>
 <div class="section-body">
-<p>The type says nothing about this, and it is where most of this class's defects
-came from. The table is the contract.</p>
+<p>The type of a member says nothing about this, so the table is the contract.</p>
 <p>dictionary, choices, exports, ana    Linelist. Prepare sets them from
 InitTransfer. Reading one earlier
 raises and names Prepare.
@@ -30,10 +34,8 @@ Value, HasTemplate, DesWorkbook      Designer.
 TemporarySheetName                   A constant table, backed by no sheet.</p>
 <p>The four names on the first row had designer-side loaders until 2026-07-30.
 RequiredSheetNames() stopped asking for those four worksheets when the
-transfer began importing them straight from the setup file, so a loader either
-built a manager over a leftover designer sheet at the wrong anchor row, or
-raised a message naming the designer when the caller's real mistake was
-calling before Prepare. They are guards now.</p>
+transfer began importing them straight from the setup file. They are guards
+now.</p>
 <p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLExport.html">LLExport</a>, <a href="Analysis.html">Analysis</a>, <a href="Passwords.html">Passwords</a>, <a href="LLFormat.html">LLFormat</a>, <a href="FormulaData.html">FormulaData</a>, <a href="LLVariables.html">LLVariables</a>, <a href="Formulas.html">Formulas</a>, InitTransfer, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="ApplicationState.html">ApplicationState</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a></p>
 <p><strong>Version:</strong> 1.2 (2026-07-30)</p>
 </div>

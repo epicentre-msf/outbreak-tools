@@ -11,19 +11,23 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>DropdownLists</h1>
-<p>Manages worksheet-based dropdown lists backed by one-column ListObjects.
-Each dropdown is registered with an internal name-to-ListObject mapping
-and a workbook-level named reference. Supports adding, removing,
-updating, sorting, translating, and validating dropdown entries, plus
-hyperlink navigation between the dropdown sheet and consuming cells.</p>
-<p>The name-to-ListObject mapping lives in two worksheet columns. Every
-public method reads those two columns once into memory and then works
-from that copy, so a single call touches Excel once instead of once per
-registered dropdown. The copy is never kept between calls: another
-DropdownLists object can hold the same worksheet and change the mapping
-in between.</p>
+<p>Manages the dropdown lists of one worksheet. Each list is a one-column
+ListObject and carries a workbook-level name. Add creates a list, Remove
+deletes it, ClearList empties it, Update rewrites its values, and Sort and
+Translate reorder and relabel the entries. SetValidation puts a list behind a
+range of cells, and AddHyperLink and AddReturnLink link the dropdown worksheet
+with the cells that use it.</p>
+<details open class="doc-section" id="the-registry">
+<summary>THE REGISTRY</summary>
+<div class="section-body">
+<p>Column C of the worksheet holds the dropdown name and column D the name of its
+ListObject, both under a header on row 2. Every public member reads those two
+columns once as a block and answers from that copy for the rest of the call.
+The copy is dropped when the call ends, so each call reads the columns again.</p>
 <p><strong>Depends on:</strong> <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, increment by default the counter on the number of dropdowns by 1. Everytime a, dropdown is added to the current worksheet. The counter is saved somewhere the, first cell fo the worksheet. It starts at 1., dropdowns in the current dropdown worksheet., Where all the dropdowns should start, sometimes there could be a need, for header for the dropdown (like in custom dropdowns, so we shift one line), The registry that maps a dropdown name to its ListObject name. The dropdown, name is in column C, the ListObject name in column D. Both columns carry a, header on DROPDOWNSTARTROW., Field positions inside one row of the registry block held in memory, Row 1 of the registry block is the column header, so data starts on row 2, Counter start values: the workbook counter starts at 1, the worksheet one at 0, checking objects</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+</div>
+</details>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">

@@ -12,34 +12,35 @@
   <main>
 <h1>ShowHideLayout</h1>
 <p>Everything show/hide does to a worksheet. One instance covers one sheet of one
-layer. The entry list (ShowHide) says which variables are hidden; this class
-knows where they sit and writes the change.</p>
+layer. The entry list, ShowHide, says which variables are hidden; this class
+knows where each of them sits and writes the change. IsHidden and SetHidden
+read and write the hidden state, Size, SetSize and SizeWhenShown the width or
+height, IsVertical and SetOrientation the orientation of a printed entry, and
+FailureCount counts the writes that Excel refused.</p>
 <details open class="doc-section" id="the-axis-is-decided-here-and-nowhere-else">
 <summary>THE AXIS IS DECIDED HERE AND NOWHERE ELSE</summary>
 <div class="section-body">
 <p>HList, Printed   a column
 VList, CRF       a row</p>
 <p>A CRF holds one variable per row and reads its position from <code>crf index</code>, its
-own dictionary column. Two code paths used to disagree about this, so hiding
-the third entry of a CRF made column 3 go away, and column 3 is shared by every
-variable on the sheet.</p>
+own dictionary column.</p>
 </div>
 </details>
 <details open class="doc-section" id="protection-is-bracketed-inside-the-class">
 <summary>PROTECTION IS BRACKETED INSIDE THE CLASS</summary>
 <div class="section-body">
 <p>Every method that writes to the sheet unprotects it first and protects it
-again after, so no caller can forget. Reads never unprotect. A loop that writes
-many positions calls BeginBatch first and EndBatch at the end, which holds one
-bracket open over the whole run instead of one per position.</p>
+again after. Reads leave the protection alone. A loop that writes many
+positions calls BeginBatch first and EndBatch at the end, which holds one
+bracket open over the whole run.</p>
 </div>
 </details>
 <details open class="doc-section" id="a-size-of-zero-is-never-written">
 <summary>A SIZE OF ZERO IS NEVER WRITTEN</summary>
 <div class="section-body">
 <p>Excel reports a hidden column as width 0 and hides a column that is set to
-width 0. SetSize refuses anything at or below zero, because hiding is
-SetHidden's job and a blank size cell must leave the sheet alone.</p>
+width 0. SetSize refuses anything at or below zero. Hiding is SetHidden's
+work, and a blank size cell leaves the sheet alone.</p>
 <p><strong>Depends on:</strong> <a href="Passwords.html">Passwords</a>, <a href="Checking.html">Checking</a>, The named cell a printed sheet puts at the head of its table, How far above the anchor the printed header row sits. PRINTSTART is on the, first line of the table, so the header the user reads is the line above it., The row height a turned header needs to stay readable</p>
 <p><strong>Version:</strong> 1.0 (2026-08-01)</p>
 </div>

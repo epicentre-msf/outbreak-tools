@@ -11,26 +11,24 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>ImportReport</h1>
-<p>The store the import report is kept in. It owns four ListObjects on the
-import_rep__ worksheet and knows nothing about forms.</p>
+<p>The store an import report is kept in. It owns four ListObjects on the
+import_rep__ worksheet. ProvisionTables builds the tables, SaveSheets and
+SaveVariables write the entries, Clear empties them, HasEntries says whether
+anything was recorded, and SheetNames and VariableEntries read the entries
+back. The class knows nothing about forms.</p>
 <details open class="doc-section" id="the-store-makes-its-own-tables">
 <summary>THE STORE MAKES ITS OWN TABLES</summary>
 <div class="section-body">
 <p>Create builds any of the four that is absent. A linelist built by the current
-generation already carries all four, and one built by an older one may carry
-none, so the class provisions rather than assuming. This is the lesson the
-show/hide store was written from: a class that assumes something else
-provisioned its table saves nothing and reads nothing, in silence.</p>
+generation carries all four, and one built by an older generation may carry
+none.</p>
 </div>
 </details>
-<details open class="doc-section" id="why-it-is-a-worksheet-and-not-four-arrays">
-<summary>WHY IT IS A WORKSHEET AND NOT FOUR ARRAYS</summary>
+<details open class="doc-section" id="the-report-lives-on-a-worksheet">
+<summary>THE REPORT LIVES ON A WORKSHEET</summary>
 <div class="section-body">
 <p>The report survives the workbook closing, so a user can open the last one from
-the advanced form days later. The four arrays that carried it before died with
-the import object at the end of the import, and the message box asking whether
-the user wanted to see a report was shown with an OK button, so there was
-nothing to answer and nothing behind it.</p>
+the advanced form days later.</p>
 </div>
 </details>
 <details open class="doc-section" id="the-four-tables">
@@ -40,9 +38,9 @@ nothing to answer and nothing behind it.</p>
 reptab_sheetsNotTouch  a worksheet of this linelist the file has none of
 reptab_varsNotImp      a variable of the file this linelist has none of
 reptab_varsNotTouch    a variable of this linelist the file has none of</p>
-<p>The two variable tables carry the sheet the variable belongs to in a second
-column. Nothing stored here is translated: the form translates its labels and
-the values are names of worksheets and variables.</p>
+<p>The two variable tables carry the sheet a variable belongs to in a second
+column. The values stored here are names of worksheets and variables, and they
+are stored untranslated. The form translates its own labels.</p>
 <p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="LLImporter.html">LLImporter</a></p>
 <p><strong>Version:</strong> 1.0 (2026-08-01)</p>
 </div>

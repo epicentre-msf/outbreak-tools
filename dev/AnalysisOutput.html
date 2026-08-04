@@ -11,24 +11,27 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>AnalysisOutput</h1>
-<p>Orchestrates the complete analysis output pipeline for the linelist builder.
-Given a setup worksheet holding the analysis definition ListObjects and an
-output linelist facade, this class walks each analysis scope (normal, time
-series, spatial, spatio-temporal), builds cross-tables from table
-specifications, writes formulas, registers chart metadata in AnaTabIds, and
-renders the charts.</p>
+<p>Writes every analysis sheet of a generated linelist. Create takes the setup
+worksheet that holds the analysis definition ListObjects and the linelist
+facade the sheets are written into. WriteAnalysis walks each analysis scope --
+normal, time series, spatial and spatio-temporal -- builds the cross-tables
+from their table specifications, writes the formulas, records the chart
+metadata in AnaTabIds and draws the charts. TransObject answers the
+translation provider, and entries filed along the way leave through
+HasCheckings and CheckingValues.</p>
 <details open class="doc-section" id="the-caller-owns-the-application-state">
 <summary>THE CALLER OWNS THE APPLICATION STATE</summary>
 <div class="section-body">
 <p>BusyApp turns screen updating, alerts, automatic calculation and animations
-off, and nothing here turns them back on. WriteAnalysis has to run inside an
+off, and nothing here turns them back on. WriteAnalysis runs inside an
 ApplicationState the caller opens and restores, which is what clickGenerate
-does. BusyApp leaves Application.EnableEvents alone, so a caller that skips
-that scope builds the sheets with the linelist change handlers live.</p>
+does. BusyApp leaves Application.EnableEvents where it finds it, so a caller
+that skips that scope builds the sheets with the linelist change handlers
+live.</p>
 </div>
 </details>
-<details open class="doc-section" id="a-section-is-told-not-inferred">
-<summary>A SECTION IS TOLD, NOT INFERRED</summary>
+<details open class="doc-section" id="a-section-is-told-to-the-loop">
+<summary>A SECTION IS TOLD TO THE LOOP</summary>
 <div class="section-body">
 <p>The date bounds and the navigation dropdown of a temporal section are held by
 a TemporalSection. The loop closes the section it holds when it meets a table
@@ -830,14 +833,13 @@ providing a consistent stack trace across all methods in this class.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (19 file(s))</summary>
+<summary>Used in (18 file(s))</summary>
 <ul>
 <li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="AnaTabIds.html">AnaTabIds.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
 <li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
 <li><a href="SpatialTables.html">SpatialTables.cls</a></li>
-<li><a href="TemporalSection.html">TemporalSection.cls</a></li>
 <li><a href="Graphs.html">Graphs.cls</a></li>
 <li><a href="GraphSeries.html">GraphSeries.cls</a></li>
 <li><a href="TimeSeriesGraphs.html">TimeSeriesGraphs.cls</a></li>

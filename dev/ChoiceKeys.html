@@ -12,28 +12,18 @@
   <main>
 <h1>ChoiceKeys</h1>
 <p>The one place the export side and the import side build the name a custom
-dropdown is written under on a Choices sheet. Both ends call the same function,
-so the round trip can only agree.</p>
+dropdown is written under on a Choices sheet. CustomChoiceName builds the key
+from a dropdown name, IsCustomChoice says whether a key belongs to a custom
+dropdown, and ListNameFromChoice reads the dropdown name back out of a key.
+Both ends call these, so the two ends of a round trip agree.</p>
 <details open class="doc-section" id="the-name-the-key-is-built-from">
 <summary>THE NAME THE KEY IS BUILT FROM</summary>
 <div class="section-body">
 <p>The dropdown name held in the DropdownLists registry, exactly as the user
-typed it. Nothing is trimmed, nothing is sanitised and no counter is added.
-<code>DropdownLists.AllDropdowns</code> answers that list and <code>DropdownLists.Update</code> takes
-that same name, so a key built this way survives the trip in both directions.</p>
-</div>
-</details>
-<details open class="doc-section" id="why-the-class-exists">
-<summary>WHY THE CLASS EXISTS</summary>
-<div class="section-body">
-<p>The two ends used to build the key from two different places. The export read
-the header cell of the ListObject, which holds the name with every space turned
-into an underscore; the import read the ListObject name and cut five characters
-off the front, which left the workbook counter on the end. So a dropdown called
-<code>contact type</code> was written as <code>__choice_custom_contact_type</code> and looked for as
-<code>__choice_custom_contact type7</code>. The lookup missed every time and importing a
-custom dropdown did nothing at all, in every case, for as long as the feature
-existed.</p>
+typed it. Nothing is trimmed, nothing is cleaned and no counter is added.
+<code>DropdownLists.AllDropdowns</code> answers that list and <code>DropdownLists.Update</code>
+takes the same name, so a key built this way survives the trip in both
+directions.</p>
 <p><strong>Version:</strong> 1.0 (2026-08-01)</p>
 </div>
 </details>

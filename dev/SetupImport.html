@@ -11,26 +11,39 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>SetupImport</h1>
-<p>Orchestrates setup workbook synchronisation: validating, importing, exporting,
-and cleaning setup worksheets (Dictionary, Choices, Exports, Analysis,
-Translations). Supports both table-level import via CustomTable and
-domain-class-driven import via dedicated managers (LLdictionary, LLChoices,
-LLExport, Analysis, SetupTranslationsTable). Guards Excel state through
-ApplicationState and protects/unprotects worksheets via Passwords.</p>
-<p>Three rules hold across the whole class.</p>
+<p>Moves the content of a setup workbook in and out. Check validates the setup
+sheets, Import reads the Dictionary, Choices, Exports, Analysis and
+Translations sheets from a file, ImportFromWorkbook reads them from an open
+workbook, Export writes them out, and Clean empties them. Path and
+SetExportFolder say where files are read from and written to, LastExportFile
+names the file the last export produced, ProgressObject takes the label the
+form shows progress on, and DisplayPrompts decides whether the class puts a
+message in front of the user.</p>
+<details open class="doc-section" id="how-a-sheet-is-moved">
+<summary>HOW A SHEET IS MOVED</summary>
+<div class="section-body">
+<p>A sheet travels either as a whole table through CustomTable, or through the
+domain manager that owns it: LLdictionary, LLChoices, LLExport, Analysis and
+SetupTranslationsTable. Excel state is held by an ApplicationState for the
+length of the run, and the worksheets are unprotected and protected again
+through Passwords.</p>
+</div>
+</details>
+<details open class="doc-section" id="three-rules-hold-across-the-class">
+<summary>THREE RULES HOLD ACROSS THE CLASS</summary>
+<div class="section-body">
 <ol>
-<li>A cleanup block that is reached by falling off the end of the work runs with
-its own handler, never with the failure handler still armed. A raise inside
-such a block used to jump into the failure handler and repeat work that had
-already run - which is how an import could rename the Choices columns twice.</li>
-<li>Every failure handler copies Err.Number, Err.Source and Err.Description into
-locals as its first three statements. Cleanup calls run On Error Resume Next
-and clear Err, so an error read after them belongs to the cleanup or to
-nothing at all.</li>
-<li>Sheet names are compared without case. Excel worksheet names are already
-case insensitive, and a caller that passes &quot;choices&quot; must reach the same
-code as one that passes &quot;Choices&quot;.</li>
+<li>A cleanup block reached by falling off the end of the work runs under its
+own handler, with the failure handler disarmed first.</li>
+<li>Every failure handler copies Err.Number, Err.Source and Err.Description
+into locals as its first three statements. Cleanup calls run On Error
+Resume Next and clear Err, so an error read after them belongs to the
+cleanup.</li>
+<li>Sheet names are compared without regard to case. Excel matches worksheet
+names that way itself, so &quot;choices&quot; reaches the same code as &quot;Choices&quot;.</li>
 </ol>
+</div>
+</details>
 <details open class="doc-section" id="factory-helpers">
 <summary>Factory helpers</summary>
 <div class="section-body">

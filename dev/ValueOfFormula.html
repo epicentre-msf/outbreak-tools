@@ -11,12 +11,14 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>ValueOfFormula</h1>
-<p>Converts VALUE_OF custom formulas written with dictionary variable names
-into workbook-ready expressions that supply sheet names and column indices.
-The class validates that all three arguments (key variable, lookup variable,
-value variable) exist in the dictionary and share the same worksheet, then
-resolves column indices for downstream consumption. Consumers interact
-through its public accessors.</p>
+<p>Turns a VALUE_OF custom formula written with dictionary variable names into an
+expression a workbook can hold, by filling in the sheet name and the column
+indices the lookup needs. The three arguments are the key variable, the lookup
+variable and the value variable. Create binds a dictionary, ValueOfExpression
+takes the formula in, Valid says whether the three variables exist and sit on
+one worksheet, FailureReason names what stopped it, and ConvertedFormula gives
+the Excel text. LookupSheetName, LookupColumnIndex and ValueColumnIndex answer
+the three parts on their own.</p>
 <p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLSheets.html">LLSheets</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="factory">

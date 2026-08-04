@@ -11,29 +11,37 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>EventSetup</h1>
-<p>Encapsulates workbook-level setup events and lazily-cached domain managers.
-This class is the single entry point for all workbook event handling in the
-setup workbook. It reacts to worksheet activation, change, and open events,
-manages setup rows (add, insert, delete, sort) through cached helpers
-(LLdictionary, LLChoices, LLExport, Analysis), applies a translation across the
-four content sheets, and provides analysis table value lookups. All domain
-managers are created lazily on first use and cached for the lifetime of the
-instance.</p>
-<details open class="doc-section" id="sheet-names-are-declared-twice-on-purpose">
-<summary>SHEET NAMES ARE DECLARED TWICE ON PURPOSE</summary>
+<p>Handles the workbook events of the setup file and holds the domain managers
+those events need. OnWorkbookOpen, OnSheetActivate and OnSheetChange are the
+three entry points. ManageRows, InsertRows, DeleteRows and SortTables work on
+the rows of a setup sheet, ApplySetupTranslation translates the four content
+sheets, and UpdateAnalysisDropdowns, RecalculateAnalysis,
+BuildTimeSeriesHeader, AnalysisGraphValue, AnalysisTimeSeriesValue and
+SpatioTemporalSpecValue serve the analysis sheet. UnprotectSetupSheet and
+ProtectSetupSheet bracket a write, ResetCaches drops the held managers, and
+ResetTranslationCounter puts the translation sequence back to its start.</p>
+<details open class="doc-section" id="the-managers-are-built-on-first-use">
+<summary>THE MANAGERS ARE BUILT ON FIRST USE</summary>
+<div class="section-body">
+<p>LLdictionary, LLChoices, LLExport, Analysis and the rest are created the first
+time they are asked for and held for the life of the instance. ResetCaches
+drops them.</p>
+</div>
+</details>
+<details open class="doc-section" id="sheet-names-are-declared-twice">
+<summary>SHEET NAMES ARE DECLARED TWICE</summary>
 <div class="section-body">
 <p>SetupHelpers.bas declares the same sheet names for the import and clean flow.
-Each file keeps the constants it needs, so neither depends on the other for a
-string. Change one and change the other.</p>
+Each file keeps the constants it needs. Change one and change the other.</p>
 </div>
 </details>
 <details open class="doc-section" id="protection-is-applied-in-one-place">
 <summary>PROTECTION IS APPLIED IN ONE PLACE</summary>
 <div class="section-body">
-<p>ProtectSetupSheet is the only routine that decides the protection flags of a
-setup sheet, and BeginSheetUpdate / EndSheetUpdate go through it. The ribbon
-calls it too, so a sheet unlocked on one path and re-locked on the other comes
-back with the flags it started with.</p>
+<p>ProtectSetupSheet is the one routine that decides the protection flags of a
+setup sheet, and BeginSheetUpdate and EndSheetUpdate go through it. The ribbon
+calls it too, so a sheet unlocked on one path and locked again on the other
+comes back with the flags it started with.</p>
 <p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Passwords.html">Passwords</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="UpdatedValues.html">UpdatedValues</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLExport.html">LLExport</a>, <a href="Analysis.html">Analysis</a>, <a href="CustomTable.html">CustomTable</a>, <a href="ChoiceFormula.html">ChoiceFormula</a>, RibbonDev, ProjectError</p>
 </div>
 </details>

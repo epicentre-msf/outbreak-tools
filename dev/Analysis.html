@@ -11,32 +11,36 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>Analysis</h1>
-<p>Manages the Analysis configuration worksheet of a setup workbook, and the
-pass-through copy of that same worksheet the designer places inside a
-generated linelist. Provides row manipulation (add, insert, delete, remove),
-data exchange (import, export, sort, clean), translation of analysis labels,
-and validation of the nine required ListObjects. Each instance is bound to a
-single worksheet and delegates table operations to CustomTable. Trace
-diagnostics are recorded via Checking and can be retrieved through
-HasCheckings and CheckingValues.</p>
+<p>Manages the Analysis configuration worksheet of a setup workbook, and the copy
+of that worksheet the designer places inside a generated linelist. AddRows,
+InsertRows, DeleteRows, RemoveRows and ManageRows work on the rows, Sort
+orders the tables, Import and Export move the sheet between workbooks, and
+Translate rewrites the analysis labels. Each instance is bound to one
+worksheet and hands its table work to CustomTable. Entries filed along the way
+leave through HasCheckings and CheckingValues.</p>
 <details open class="doc-section" id="where-the-analysis-output-lives">
 <summary>WHERE THE ANALYSIS OUTPUT LIVES</summary>
 <div class="section-body">
-<p>The tables a field user reads at runtime are built by AnalysisOutput,
-CrossTable and TableSpecs. This class only ever handles the configuration
-sheet. A linelist instance of this class receives one call, Translate, from
+<p>The tables a field user reads at run time are built by AnalysisOutput,
+CrossTable and TableSpecs. This class handles the configuration sheet. A
+linelist instance of this class receives one call, Translate, from
 LinelistSpecs.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-nine-required-tables">
+<summary>THE NINE REQUIRED TABLES</summary>
+<div class="section-body">
+<p>Create checks that the worksheet carries the nine ListObjects an analysis
+definition is written in, and every member reads its rows from one of them.</p>
 </div>
 </details>
 <details open class="doc-section" id="table-names-are-matched-without-regard-to-case">
 <summary>TABLE NAMES ARE MATCHED WITHOUT REGARD TO CASE</summary>
 <div class="section-body">
-<p>Excel matches sheet and table names without regard to case, so this class
-does the same everywhere. The required-table cache is walked with
-vbTextCompare and the table settings are dispatched on a lower-cased name.
-A binary compare here once dropped the whole global summary section on
-import, because the cache said &quot;Tab_global_summary&quot; and the shipped workbook
-says &quot;Tab_Global_Summary&quot;.</p>
+<p>Excel matches sheet and table names without regard to case, so this class does
+the same everywhere. The required-table list is walked with vbTextCompare and
+the table settings are dispatched on a lower-cased name. The shipped workbook
+writes &quot;Tab_Global_Summary&quot; where the list says &quot;Tab_global_summary&quot;.</p>
 </div>
 </details>
 <details open class="doc-section" id="the-ten-instruction-strings-are-held-twice">
@@ -44,8 +48,8 @@ says &quot;Tab_Global_Summary&quot;.</p>
 <div class="section-body">
 <p>ManageRows matches the ten instruction strings the user picks from the
 dropdown in cell RNG_SelectTable. SetupPreparation holds the same ten strings,
-because it is the class that fills that dropdown. Changing one list means
-changing the other.</p>
+because it is the class that fills that dropdown. Change one list and change
+the other.</p>
 <p><strong>Depends on:</strong> <a href="CustomTable.html">CustomTable</a>, <a href="Checking.html">Checking</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="BetterArray.html">BetterArray</a>, ListObject names used in analysis worksheets, Named range holding the row-management instruction on the setup Analysis sheet</p>
 <p><strong>Version:</strong> 2026-07-29</p>
 </div>

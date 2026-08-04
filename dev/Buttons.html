@@ -11,11 +11,28 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>Buttons</h1>
-<p>Light wrapper around worksheet shapes for creating, positioning,
-and formatting linelist buttons. Supports large, small, and geo
-button scopes with automatic placement offset calculations.</p>
+<p>Draws one command button of a linelist as a worksheet shape. Create binds an
+anchor cell, a shape name and a button scope. Add draws the rounded rectangle
+at the position that scope gives, names it, puts a label on it and points its
+OnAction at a macro. Format hands the shape to LLFormat under the format that
+matches the scope.</p>
+<details open class="doc-section" id="the-three-scopes">
+<summary>THE THREE SCOPES</summary>
+<div class="section-body">
+<p>ButtonScopeLarge, ButtonScopeSmall and ButtonScopeGeo. The scope decides the
+width and the height of the shape, the offset from the anchor cell, and the
+format Format asks for.</p>
+</div>
+</details>
+<details open class="doc-section" id="what-is-reported">
+<summary>WHAT IS REPORTED</summary>
+<div class="section-body">
+<p>Add on a name the sheet already carries files a warning and draws nothing.
+Entries leave through HasCheckings and CheckingValues.</p>
 <p><strong>Depends on:</strong> <a href="Checking.html">Checking</a>, <a href="LLFormat.html">LLFormat</a>, ProjectError</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+</div>
+</details>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">

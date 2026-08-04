@@ -11,21 +11,22 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>CodeTransfer</h1>
-<p>Moves VBA code components (classes, standard modules, forms and workbook code)
-from a source workbook into a target workbook. A component is exported to a
-file in the temporary repository, imported into the target, and the file is
-deleted. Consumers build an instance through Create and call one transfer
-member per component. Linelist.TransferAllCode is the one consumer, and it
+<p>Moves VBA code components -- classes, standard modules, forms and workbook
+code -- from a source workbook into a target workbook. A component is exported
+to a file in the temporary repository, imported into the target, and the file
+is deleted. TransferClass, TransferModule, TransferForm, TransferWorkbookCode
+and TransferWorksheetCode each move one component, and CopyModuleText copies
+the text of one module. Linelist.TransferAllCode is the one consumer, and it
 moves 39 components in a single generation.</p>
 <details open class="doc-section" id="a-component-the-target-already-holds">
 <summary>A COMPONENT THE TARGET ALREADY HOLDS</summary>
 <div class="section-body">
 <p>VBComponents.Import stays quiet when the target already carries a component of
-that name: VBA imports the arriving one under a second name, keeps both copies,
-and the project stops compiling. Every transfer therefore removes the component
-that is already there before it imports, and files a warning through Checking
-naming it. The source copy is the one that survives. A template author who
-wants their own code kept has to give it another name. Owner decision,
+that name: VBA imports the arriving one under a second name and keeps both
+copies, and the project stops compiling. Every transfer therefore removes the
+component that is already there before it imports, and files a warning through
+Checking naming it. The source copy is the one that survives, and a template
+author who wants their own code kept gives it another name. Owner decision,
 2026-07-31.</p>
 </div>
 </details>
@@ -35,9 +36,8 @@ wants their own code kept has to give it another name. Owner decision,
 <p>Every member of this class reads a workbook's VBProject. Excel refuses that
 read with error 1004 while &quot;Trust access to the VBA project object model&quot; is
 off, and that is how a fresh install ships. SourceProject and TargetProject
-raise ErrorUnexpectedState naming the setting, so the message tells the user
-what to turn on. Component lookups happen after that read, where a Nothing
-means the component is missing.</p>
+raise ErrorUnexpectedState naming the setting. Component lookups happen after
+that read, where a Nothing means the component is missing.</p>
 </div>
 </details>
 <details open class="doc-section" id="a-code-module-is-restored-when-a-write-fails">
@@ -52,8 +52,8 @@ leaves the target holding what it held before.</p>
 <summary>CHECKINGS NEED A HARVEST LINE</summary>
 <div class="section-body">
 <p>Entries filed here leave through HasCheckings and CheckingValues. Linelist
-keeps the instance after Prepare and clickGenerate flushes the entries into the
-generation report.</p>
+keeps the instance after Prepare, and clickGenerate flushes the entries into
+the generation report.</p>
 <p><strong>Depends on:</strong> <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="Checking.html">Checking</a></p>
 <p><strong>Version:</strong> 1.1 (2026-07-31)</p>
 </div>

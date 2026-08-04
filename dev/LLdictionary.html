@@ -11,6 +11,40 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>LLdictionary</h1>
+<p>Manages the &quot;Dictionary&quot; worksheet, the sheet that describes every variable of
+a linelist. Create binds the worksheet through a DataSheet. ColumnExists,
+VariableExists, UniqueValues and DataRange read it. AddColumn, InsertColumn,
+RemoveColumn and RenameColumn work on its columns, and ManageRows, InsertRows
+and DeleteRows on its rows. Sort orders the sheet, Clean empties it, Translate
+rewrites its labels, and Import and Export move it between workbooks.
+SpecialVars, ChoicesVars, GeoVars and TimeVars answer the variables of one
+kind.</p>
+<details open class="doc-section" id="preparation">
+<summary>PREPARATION</summary>
+<div class="section-body">
+<p>Prepare adds the helper columns a build reads: table names, column indices,
+CRF metadata, visibility and the geo rows. It runs once per sheet and Prepared
+says whether it has run. TotalNumberOfExports carries the number of export
+columns the sheet holds. The geo object Prepare is handed is typed Object and
+reached at run time, so LLGeo stays outside the compile dependencies of this
+class.</p>
+</div>
+</details>
+<details open class="doc-section" id="how-the-sheet-is-read">
+<summary>HOW THE SHEET IS READ</summary>
+<div class="section-body">
+<p>A row loop reads its block into a Variant once, works in memory, and writes
+the block back once.</p>
+</div>
+</details>
+<details open class="doc-section" id="what-is-reported">
+<summary>WHAT IS REPORTED</summary>
+<div class="section-body">
+<p>Entries filed while a member runs leave through HasCheckings and
+CheckingValues.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="CustomTable.html">CustomTable</a>, <a href="DataSheet.html">DataSheet</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="TranslationObject.html">TranslationObject</a></p>
+</div>
+</details>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
 <div class="section-body">

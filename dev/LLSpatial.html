@@ -13,15 +13,17 @@
 <h1>LLSpatial</h1>
 <p>Fills the spatial analysis tables of a generated linelist, orders them, and
 reads ranked values back out for the TopAdmin, TopPop and TopHF worksheet
-functions.</p>
+functions. Exists says whether the registry table is there, Update fills the
+tables from the data sheets, Sort orders them, and TopGeoValue and TopHFValue
+answer one ranked value.</p>
 <details open class="doc-section" id="the-contract-with-spatialtables">
 <summary>THE CONTRACT WITH SPATIALTABLES</summary>
 <div class="section-body">
 <p>SpatialTables builds these tables at build time and this class fills them at
-runtime. The two never reference each other: the contract is a set of names
+run time. The two never reference each other: the contract is a set of names
 agreed by string convention across a workbook boundary, and both files hold
 their own copy of the four constants and the two name builders. That is the
-house rule — a class keeps every constant it needs inside itself. Change a name
+house rule, a class keeps every constant it needs inside itself. Change a name
 here and change it in SpatialTables in the same commit.</p>
 <p>listofgeovars              one row per spatial variable, &quot;<var><em><tabId>&quot;
 spatial</em><level><em><var>      one ListObject per level
@@ -29,7 +31,7 @@ column 1  tabl</em><level><em><var>    the lookup key this class writes
 column 2  formula</em><level>       the value this class sorts on
 column 3  population_<level>    administrative levels only
 column 4  attack_rate_<level>   administrative levels only</p>
-<p>The width of a table and the meaning of each column are SpatialTables' to
+<p>The width of a table and the meaning of each column are SpatialTables to
 decide. Every column is resolved by name here, so a table that grows a column
 keeps working.</p>
 </div>
@@ -41,25 +43,25 @@ keeps working.</p>
 by hf names a variable, and the filtered companion sheet of that HList carries
 the concatenated geo values of that variable, one column per administrative
 level. The distinct values of that column are the rows of the spatial table.
-The reading and the de-duplication happen in memory, so nothing is pasted
-through the RNG_PastingCol scratch column that SpatialTables still creates.</p>
+The reading and the de-duplication happen in memory, and nothing is pasted
+through the RNG_PastingCol scratch column that SpatialTables creates.</p>
 </div>
 </details>
 <details open class="doc-section" id="what-a-missing-registry-means">
 <summary>WHAT A MISSING REGISTRY MEANS</summary>
 <div class="section-body">
-<p>Linelist creates the spatial worksheet on every linelist and SpatialTables
-creates the listofgeovars table only when a spatial cross-table is defined. So
-a linelist with geo variables and no spatial analysis has the sheet with no
-table in it, and Update on such a sheet is a legitimate no-op: Exists, the
-variable lookup and Sort all answer empty when the table is absent.</p>
+<p>Linelist creates the spatial worksheet on every linelist, and SpatialTables
+creates the listofgeovars table when a spatial cross-table is defined. So a
+linelist with geo variables and no spatial analysis has the sheet with no
+table in it, and Update on such a sheet does nothing: Exists, the variable
+lookup and Sort all answer empty when the table is absent.</p>
 </div>
 </details>
 <details open class="doc-section" id="rng-testingformula-belongs-to-spatialtables">
 <summary>RNG_TESTINGFORMULA BELONGS TO SPATIALTABLES</summary>
 <div class="section-body">
-<p>SpatialTables.Prepare creates it and SpatialTables.FailedFormula reads it. This
-class never touches it.</p>
+<p>SpatialTables.Prepare creates it and SpatialTables.FailedFormula reads it.
+This class leaves it alone.</p>
 <p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Checking.html">Checking</a></p>
 <p><strong>Version:</strong> 2026-07-31</p>
 </div>

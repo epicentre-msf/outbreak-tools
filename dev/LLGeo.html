@@ -11,13 +11,16 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>LLGeo</h1>
-<p>Manages the geobase worksheet that stores the four-level administrative
-hierarchy (admin1 through admin4), health facility data, translation
-names, and historic entries used across the linelist. Provides factory
-creation with worksheet validation, cached translation names, hierarchical
-geo-level lookups using AutoFilter cascades, import/export in both
-flat-data and full-structure modes, and synchronisation of translated
-labels across linelist sheets, dictionary, and show/hide tables.</p>
+<p>Manages the geobase worksheet: the four-level administrative hierarchy, admin1
+through admin4, the health facility table, the level-name translations and the
+historic entries. GeoNames and GeoBaseName answer the names, GeoLevel walks
+the hierarchy through AutoFilter cascades, AdminCode answers the code of one
+entry, and HasNoData says whether the geobase carries anything. Translate
+rewrites the level labels, Clear and ClearHistoric empty the tables, Import
+reads a geobase in, and ExportToFile and ExportToWkb write it out as flat data
+or as the full structure. Update, UpdateDict, UpdateShowHide and UpdateHistoric
+carry the translated labels across the linelist sheets, the dictionary and the
+show/hide tables, and SkippedSheets names the sheets an update left alone.</p>
 <details open class="doc-section" id="where-the-state-of-the-geobase-lives">
 <summary>WHERE THE STATE OF THE GEOBASE LIVES</summary>
 <div class="section-body">
@@ -32,21 +35,20 @@ string; the first read moves it to the two names and writes them back.</p>
 <summary>WHERE THE FIVE LEVEL NAMES LIVE</summary>
 <div class="section-body">
 <p>RNG_ADM1NAME through RNG_ADM4NAME and RNG_HFNAME are workbook-scoped hidden
-names. The scope is what CrossTable needs: it writes &quot;= RNG_ADM1NAME&quot; as a
-worksheet formula on the spatial analysis sheet, and a worksheet-scoped name
-would resolve to #NAME? there. A geo sheet built before this change still
-carries them as cells; the factory reads each cell once, writes the hidden
-name and moves on. RNG_PastingGeoCol stays a real cell because
-DesignerPreparation uses it as a paste anchor.</p>
+names. CrossTable writes &quot;= RNG_ADM1NAME&quot; as a worksheet formula on the
+spatial analysis sheet, and a workbook-scoped name resolves there. A geo sheet
+built before this change still carries them as cells; the factory reads each
+cell once, writes the hidden name and moves on. RNG_PastingGeoCol stays a real
+cell, because DesignerPreparation uses it as a paste anchor.</p>
 </div>
 </details>
 <details open class="doc-section" id="who-owns-rng-metalang">
 <summary>WHO OWNS RNG_MetaLang</summary>
 <div class="section-body">
-<p>This class reads RNG_MetaLang in ExportToWkb and never writes it. The writers
-are InitTransfer, which stamps the meta language picked on the designer's Main
-sheet onto the designer geo sheet just before the export, and the geobase
-import round trip.</p>
+<p>This class reads RNG_MetaLang in ExportToWkb and writes it nowhere. The
+writers are InitTransfer, which stamps the meta language picked on the
+designer's Main sheet onto the designer geo sheet just before the export, and
+the geobase import round trip.</p>
 <p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="CustomTable.html">CustomTable</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="Passwords.html">Passwords</a></p>
 </div>
 </details>

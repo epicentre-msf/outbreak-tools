@@ -11,49 +11,42 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>CrossTableFormula</h1>
-<p>Translates cross-table specifications into concrete Excel formulas and writes
-them into the cells of analysis worksheets. Each instance is bound to one
-CrossTable and its companion FormulaData, and the central AddFormulas method
-dispatches to type-specific branches (GlobalSummary, Univariate, Bivariate,
-TimeSeries, SpatioTemporal, Spatial) to produce COUNTIFS / SUMPRODUCT-style
-array formulas, percentage columns, number formatting, time-period scaffolding,
-spatial lookups, and data-validation dropdowns. Consumers obtain an instance
-through the predeclared Create factory.</p>
+<p>Writes the Excel formulas of one cross-table into the cells of an analysis
+worksheet. Each instance is bound to one CrossTable and its FormulaData.
+AddFormulas dispatches on the table scope -- global summary, univariate,
+bivariate, time series, spatio-temporal and spatial -- and each branch writes
+the COUNTIFS and SUMPRODUCT array formulas, the percentage columns, the number
+formats, the time period scaffolding, the spatial lookups and the data
+validation dropdowns that scope needs. Valid says whether the table can be
+written, and entries filed along the way leave through HasCheckings and
+CheckingValues.</p>
 <details open class="doc-section" id="excel-is-the-judge-of-a-formula">
 <summary>EXCEL IS THE JUDGE OF A FORMULA</summary>
 <div class="section-body">
-<p>Every formula reaches its cell through WriteFormula, which assigns it and traps
-what Excel raises. The class used to test each formula with
-Application.Evaluate first, and that test had two faults: its string argument
-stops at 255 characters, so every long formula was declared broken and a text
-marker was written into the table in its place, and it resolves names against
-the active sheet, and the formula belongs to another sheet. One build ran more
-than a thousand of those round trips.</p>
-<p>A formula Excel refuses leaves the cell empty and files a check, so the
-generation report names the table and the cell. Read AddFormulas for what is
-written and Checkings for what is reported.</p>
+<p>Every formula reaches its cell through WriteFormula, which assigns it and
+traps what Excel raises. A formula Excel refuses leaves the cell empty and
+files a check, so the generation report names the table and the cell. Read
+AddFormulas for what is written and Checkings for what is reported.</p>
 </div>
 </details>
 <details open class="doc-section" id="one-builder-shared-with-spatialtables">
 <summary>ONE BUILDER, SHARED WITH SPATIALTABLES</summary>
 <div class="section-body">
 <p>The criteria of a formula, the text the parser gives back, the write into the
-cell and the 255 character limit of an array formula all live in FormulaBuilder,
-and SpatialTables writes through one of those too. The two classes each carried
-a copy of that machinery and the copies had drifted: one judged a formula with
-Application.Evaluate and one by writing a probe into A1 of the live output
-sheet.</p>
+cell and the 255 character limit of an array formula all live in
+FormulaBuilder, and SpatialTables writes through one of those too.</p>
 </div>
 </details>
 <details open class="doc-section" id="which-columns-the-value-loop-owns">
 <summary>WHICH COLUMNS THE VALUE LOOP OWNS</summary>
 <div class="section-body">
-<p>The three column loops walk the data columns, one iteration per column of
+<p>The three column loops walk the data columns, one turn per column of
 CrossTable.NumberOfColumns, and advance by two when the table carries
 percentages. The Missing column, the Total column and the four cells where
-they cross are written by their own blocks below each loop. CrossTable.EndColumn
-counts the missing and total columns, so walking to it made the loop write
-value formulas into them with the criteria of a data column.</p>
+they cross are written by their own blocks below each loop.
+CrossTable.EndColumn counts the missing and the total columns, so a loop that
+walked to it would write value formulas into them with the criteria of a data
+column.</p>
 <p><strong>Depends on:</strong> <a href="CrossTable.html">CrossTable</a>, <a href="TableSpecs.html">TableSpecs</a>, <a href="FormulaData.html">FormulaData</a>, <a href="Formulas.html">Formulas</a>, <a href="FormulaBuilder.html">FormulaBuilder</a>, <a href="SpatialTables.html">SpatialTables</a>, <a href="AnalysisRanges.html">AnalysisRanges</a>, <a href="Checking.html">Checking</a>, The formula context the parser is asked for. Formulas.Valid and, Formulas.ParsedAnalysisFormula both key off this string., The two count summary functions, which take a different formula shape from, every other summary function.</p>
 <p><strong>Version:</strong> 1.1 (2026-07-30)</p>
 </div>

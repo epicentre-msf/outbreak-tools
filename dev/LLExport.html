@@ -11,6 +11,42 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>LLExport</h1>
+<p>Manages the export specification sheet, the table where each row defines one
+export of a linelist. Create binds the worksheet through a DataSheet.
+NumberOfExports counts the rows, IsActive says whether an export is switched
+on, ActiveExportNumbers lists the ones that are, and ColumnValue reads any
+column of one row. ManageRows, InsertRows, DeleteRows, AddRows and RemoveRows
+work on the rows, Sort orders the table, Translate rewrites the two translated
+columns, and ImportSpecs and ExportSpecs move the sheet between workbooks.
+SyncDictionaryExports keeps the export columns of the dictionary in step with
+this table.</p>
+<details open class="doc-section" id="the-file-name-of-an-export">
+<summary>THE FILE NAME OF AN EXPORT</summary>
+<div class="section-body">
+<p>ExportFileName builds the name one export is saved under. The template comes
+from the &quot;file name&quot; column, and its chunks are replaced from the dictionary.
+A version suffix read from Passwords and a timestamp are added at the end, and
+the whole name is cleaned of the characters a file name cannot carry. An
+export asked for with exportAll is named from the workbook instead. An empty
+template falls back to a default one.</p>
+</div>
+</details>
+<details open class="doc-section" id="what-the-instance-holds">
+<summary>WHAT THE INSTANCE HOLDS</summary>
+<div class="section-body">
+<p>The specification block and its header row are read once and answered from
+memory. The class drops that copy whenever it writes to the table, and
+ResetCaches drops it for a caller that wrote to the sheet itself.</p>
+</div>
+</details>
+<details open class="doc-section" id="what-is-reported">
+<summary>WHAT IS REPORTED</summary>
+<div class="section-body">
+<p>Entries filed while a member runs leave through HasCheckings and
+CheckingValues.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="CustomTable.html">CustomTable</a>, <a href="DataSheet.html">DataSheet</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="Passwords.html">Passwords</a>, <a href="TranslationObject.html">TranslationObject</a></p>
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>

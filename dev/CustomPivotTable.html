@@ -11,27 +11,26 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>CustomPivotTable</h1>
-<p>Manages pivot table creation on a dedicated worksheet during linelist
-building. Each call to Add creates a new PivotTable block (title + pivot)
-stacked vertically, and decides whether the sheet has earned its place in
-front of the user.</p>
+<p>Stacks one titled PivotTable block per data entry sheet on the custom pivot
+worksheet of a linelist. Add creates the next block, its title and its pivot
+together, Title answers the title of one table, Format runs the cosmetic pass
+once, and InitialiseMetadata sets the published state up. The class also
+decides whether the sheet has earned its place in front of the user. Entries
+filed along the way leave through HasCheckings and CheckingValues.</p>
 <details open class="doc-section" id="published-state">
 <summary>PUBLISHED STATE</summary>
 <div class="section-body">
 <p>Every fact this class records lives in a worksheet-level HiddenName on the
-pivot sheet. Nothing is written into the sheet's cells except the pivot
-tables themselves and their titles. Three of the five names are read from
-outside this class, so renaming one is a breaking change:</p>
+pivot sheet. The cells of the sheet carry the pivot tables and their titles
+and nothing else. Three of the five names are read from outside this class, so
+renaming one changes what those readers find:</p>
 <p>pivot_output_row    Long     private   the next block's base row
 pivot_counter       Long     private   the number printed in the next title
-pivot_has_content   Boolean  private   set once a pivot has actually landed
+pivot_has_content   Boolean  private   set once a pivot has landed
 pivot_formatted     Boolean  private   guards the once-only cosmetic pass
 pivot_title_<table> String   PUBLIC    read by EventsLinelistButtons
 (ClickOpenVarLab), which lists every
 variable under its pivot's title</p>
-<p>An earlier version of this class kept the first two in cell A1 and named the
-title cell as a range. Both were read from outside and both broke when the
-state moved. The table above is the contract; keep it accurate.</p>
 <p><strong>Depends on:</strong> <a href="LLFormat.html">LLFormat</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Checking.html">Checking</a>, ProjectError</p>
 </div>
 </details>

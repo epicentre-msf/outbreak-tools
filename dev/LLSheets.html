@@ -11,6 +11,32 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>LLSheets</h1>
+<p>Answers questions about ONE sheet of a linelist: the dictionary row that
+describes it, its type, its table name, how many variables it holds, and where
+a variable sits on it. Contains says whether the dictionary knows the sheet,
+RowIndex gives its dictionary row, SheetInfo answers its type or its table
+name, NumberOfVars counts its variables, DataBounds answers the first and the
+last row and column of its data, ContainsControl says whether a control
+appears on it, and VariableAddress gives the address of one variable. Every
+read checks the state it needs and raises a ProjectError whose message names
+the sheet.</p>
+<details open class="doc-section" id="what-the-instance-holds">
+<summary>WHAT THE INSTANCE HOLDS</summary>
+<div class="section-body">
+<p>The dictionary row is held per sheet name. Before a held row is handed out,
+the cell it points at is read once and compared with the name it should carry,
+so a dictionary whose rows moved gives a fresh row.</p>
+<p>The variable count is held per sheet name until InvalidateCaches.
+LLdictionary.Prepare inserts geo rows, so an object built before preparation
+answers over the dictionary as it stood then.</p>
+<p>The sheet-type and table-name column indexes are held too.</p>
+<p>The preparation flag is asked of the dictionary on every call that needs it.
+LLdictionary.Prepared holds a True answer itself and drops it in every routine
+that can turn True back into False. This class has no way to see a Clean or
+an AddColumn run on the dictionary, so it keeps no copy of that flag.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="DataSheet.html">DataSheet</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a></p>
+</div>
+</details>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">

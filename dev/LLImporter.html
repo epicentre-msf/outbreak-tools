@@ -11,12 +11,26 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>LLImporter</h1>
-<p>Imports linelist data from external workbooks into the source linelist.
-Supports importing HList/VList data, custom dropdowns, show/hide state,
-editable labels, single metadata values, and geobase data. Tracks which
-sheets and variables were imported, and builds a report of items not
-imported or not touched.</p>
+<p>Imports the data of an external workbook into the linelist that holds this
+object. CheckImportFile reads the file and says whether it can be imported,
+HasSameLanguage compares the two interface languages, and CurrentLanguage
+answers the language of this linelist. ImportData brings the HList and VList
+data in, ImportCustomDropdown the custom dropdowns, ImportShowHide the
+show/hide choices, ImportEditableLabels the labels a user may edit,
+ImportSingleValues the single metadata values and ImportGeobase the geobase.
+ClearData empties the linelist first when the caller asks for it, and HasData
+says whether the linelist already carries rows.</p>
+<details open class="doc-section" id="the-report">
+<summary>THE REPORT</summary>
+<div class="section-body">
+<p>CompareWithImportFile records which sheets and which variables the two files
+have in common and which they have on their own. NeedReport says whether
+anything was recorded, FinalizeReport writes the entries into ImportReport,
+ReportSheets and ReportVariables read them back, and ClearReport empties them.
+Entries filed along the way leave through HasCheckings and CheckingValues.</p>
 <p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="Passwords.html">Passwords</a>, <a href="CustomTable.html">CustomTable</a>, <a href="DataSheet.html">DataSheet</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLVariables.html">LLVariables</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="ShowHide.html">ShowHide</a>, <a href="ShowHideLayout.html">ShowHideLayout</a>, <a href="ShowHideStore.html">ShowHideStore</a>, <a href="ChoiceKeys.html">ChoiceKeys</a>, <a href="ImportMetadata.html">ImportMetadata</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, <a href="ImportReport.html">ImportReport</a></p>
+</div>
+</details>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">

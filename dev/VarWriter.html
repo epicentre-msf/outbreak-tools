@@ -11,20 +11,22 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>VarWriter</h1>
-<p>Writes a single dictionary variable to one or more linelist worksheets.
-For HList layers the writer targets the main sheet, a printed companion,
-and a CRF companion; for VList layers only the main sheet is written.
-Each invocation of WriteVariable applies label text, number formatting,
-formulas, dropdown choices, data validation, and conditional formatting
-to the resolved cell range.</p>
+<p>Writes a single dictionary variable onto one or more linelist worksheets. On
+an HList layer the writer targets the main sheet, a printed companion and a
+CRF companion; on a VList layer it writes the main sheet alone. Each call to
+WriteVariable applies the label text, the number format, the formula, the
+dropdown choices, the data validation and the conditional formatting to the
+cell range it resolves. ValueOf reads one dictionary column of the variable in
+hand, and entries filed along the way leave through HasCheckings and
+CheckingValues.</p>
 <details open class="doc-section" id="one-writer-per-sheet">
 <summary>ONE WRITER PER SHEET</summary>
 <div class="section-body">
 <p>The writer is built once per data entry sheet and used for every variable of
-that sheet. <code>SectionBuilder.Build</code> owns it. Everything the class caches -- the
-dictionary block, the column map, the hidden name store, the design format,
-the translated messages -- is worth caching only over a whole sheet, and the
-table anchor is set on the first variable the writer is handed.</p>
+that sheet. <code>SectionBuilder.Build</code> owns it. What the class holds -- the
+dictionary block, the column map, the hidden name store, the design format and
+the translated messages -- covers a whole sheet, and the table anchor is set
+on the first variable the writer is handed.</p>
 </div>
 </details>
 <details open class="doc-section" id="how-a-dictionary-value-is-read">
@@ -34,7 +36,7 @@ table anchor is set on the first variable the writer is handed.</p>
 crossings, and every <code>ValueOf</code> after that answers from memory. A column added
 to the dictionary after the map was built is picked up on the first miss, the
 same way <code>LLVariables.ResolveColumnIndex</code> re-reads its header snapshot.
-A variable name is matched without regard to case here; <code>LLdictionary.Prepare</code>
+A variable name is matched without regard to case here. <code>LLdictionary.Prepare</code>
 makes the names unique, so a name that differs only by case is a fault in the
 sheet.</p>
 <p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLSheets.html">LLSheets</a>, <a href="LLFormat.html">LLFormat</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="FormulaData.html">FormulaData</a>, <a href="Formulas.html">Formulas</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLGeo.html">LLGeo</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, Column index the first variable of a sheet carries when the dictionary is, numbered as <code>LLdictionary.Prepare</code> leaves it. It is the fallback for the table, anchor; the first variable the writer is handed is the primary rule., Checking support</p>

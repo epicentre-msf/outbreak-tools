@@ -11,19 +11,22 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>LLFormat</h1>
-<p>Reads design information from the LL format table and exposes helpers
-to apply those styles while caching lookups for performance. Supports
-import/export of format definitions across workbooks. Each FormatScope
-constant maps to a specific visual pattern applied to Worksheets,
-Ranges, Shapes, ListObjects, or Characters.</p>
-<p>The design values a format object reads stay the same while the object is
-alive, so DesignValue keeps the answer itself. ApplyFormat is the hot path of
-a whole linelist build (127 call sites, 72 DesignValue calls in its own body),
-and each of those calls used to cross into Excel. A caller that edits the
-format sheet by hand and wants the new values asks for a new object, or goes
-through Import, which clears every cache.</p>
+<p>Reads the design values of a linelist from the format table and applies them.
+DesignValue answers one value by name. ApplyFormat takes a FormatScope and
+writes the look that scope stands for onto a Worksheet, a Range, a Shape, a
+ListObject or a run of Characters. Import and Export move the format table
+between workbooks, and DesignName says which design the object reads.</p>
+<details open class="doc-section" id="the-design-values-are-read-once">
+<summary>THE DESIGN VALUES ARE READ ONCE</summary>
+<div class="section-body">
+<p>DesignValue reads a value from the table the first time it is asked and holds
+the answer for the life of the object. A caller that edits the format sheet by
+hand builds a new object to reach the new values, or calls Import, which drops
+every held answer.</p>
 <p><strong>Depends on:</strong> <a href="CustomTable.html">CustomTable</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+</div>
+</details>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">

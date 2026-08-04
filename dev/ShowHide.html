@@ -13,8 +13,12 @@
 <h1>ShowHide</h1>
 <p>Holds the list of variables one worksheet layer offers the user, and the
 visible or hidden choice for each of them. The list is built from the
-dictionary. The class reads the dictionary and nothing else: the worksheet is
-ShowHideLayout's job and the saved choices are ShowHideStore's.</p>
+dictionary. EntryCount, FieldKey, HeaderText, IsHidden, PositionIndex,
+ControlType and AuthoredVertical read one entry, IndexOf and HasField find
+one, SetHidden and SetAllOptionalHidden change the choices, Apply writes them
+through a layout and Adopt reads them back from a saved set. The class reads
+the dictionary alone: the worksheet is ShowHideLayout's work and the saved
+choices are ShowHideStore's.</p>
 <details open class="doc-section" id="four-kinds-of-entry">
 <summary>FOUR KINDS OF ENTRY</summary>
 <div class="section-body">
@@ -35,15 +39,15 @@ free       listed, starts where the dictionary says, follows the user.</p>
 Printed        register book
 CRF            crf status</p>
 <p>The position of a variable comes from <code>column index</code>, and from <code>crf index</code> on
-the CRF layer. A variable with no position is listed and the layout leaves it
-alone.</p>
+the CRF layer. A variable with no position is listed, and the layout leaves it
+where it is.</p>
 </div>
 </details>
 <details open class="doc-section" id="the-state-is-a-boolean">
 <summary>THE STATE IS A BOOLEAN</summary>
 <div class="section-body">
 <p>Hidden is True or False. The display words the form shows (&quot;Shown&quot;, &quot;Hidden&quot;,
-&quot;Mandatory&quot;) are translated at the form and never stored. A user who changes
+&quot;Mandatory&quot;) are translated at the form and stored nowhere. A user who changes
 the interface language between two sessions keeps every choice.</p>
 <p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="ShowHideLayout.html">ShowHideLayout</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, Dictionary column names, The one <code>register book</code> value that asks for a turned header</p>
 <p><strong>Version:</strong> 1.0 (2026-08-01)</p>

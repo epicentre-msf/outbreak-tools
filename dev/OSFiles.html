@@ -11,15 +11,31 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>OSFiles</h1>
-<p>Cross-platform file and folder selection helper. Wraps Windows
-FileDialog and macOS AppleScript pickers behind a unified API.
-Supports single and multi-selection for both files and folders,
-persists the last-used folder across sessions, and provides
-iterator-style enumeration over multi-selections.
+<p>Picks files and folders through the dialog the host offers. On Windows the
+class opens an Excel FileDialog. On macOS it runs an AppleScript picker.
+LoadFile, LoadFiles, LoadFolder and LoadFolders each show one dialog and keep
+what the user chose; File, Files, Folder and Folders answer it back. The four
+HasValid members say whether the selection points at something that exists on
+disk.</p>
+<details open class="doc-section" id="reading-a-multi-selection">
+<summary>READING A MULTI SELECTION</summary>
+<div class="section-body">
+<p>HasNextFile and NextFile walk the selected files one at a time, and
+ResetFilesIterator puts the cursor back to the first one. The folder members
+work the same way.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-last-folder">
+<summary>THE LAST FOLDER</summary>
+<div class="section-body">
+<p>Each selection stores its folder in the workbook-level name
+OSFiles_LastFolder, and the next dialog opens on that folder.
 State bag for OS detection, selections, and cursor positions.
 Exposed methods
 Workbook-level Name used to persist the last used folder path.</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+</div>
+</details>
 <details open class="doc-section" id="initialization">
 <summary>Initialization</summary>
 <div class="section-body">

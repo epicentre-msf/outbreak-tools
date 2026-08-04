@@ -11,13 +11,23 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>LLExporter</h1>
-<p>Exports linelist data into standalone workbooks for distribution. Supports
-four export modes: custom filtered exports (ExportCustom), full migration
-exports (ExportMigration), analysis-only exports (ExportAnalysis), and
-geobase exports (ExportGeo). Each mode builds a temporary output workbook,
-populates it with the relevant data, metadata, and formatting, then saves
-and closes it.</p>
+<p>Exports the data of a linelist into standalone workbooks. Four modes are
+offered: ExportCustom writes one of the exports defined on the export sheet,
+ExportMigration writes the whole linelist for a move to another workbook,
+ExportAnalysis writes the analysis sheets, and ExportGeo writes the geobase.
+Each mode builds a temporary output workbook, fills it with the data, the
+metadata and the formatting the mode calls for, then saves it and closes it.
+CloseAll closes whatever is still open.</p>
+<details open class="doc-section" id="what-an-export-carries">
+<summary>WHAT AN EXPORT CARRIES</summary>
+<div class="section-body">
+<p>ExportOptionsFor and MigrationOptions build the options line the metadata
+sheet records, ExcludedVariablesFor answers the variables a mode leaves out,
+EpiWeekStart answers the first day of the epidemiological week, and
+LastExportPassword answers the password the last export was saved under.</p>
 <p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLExport.html">LLExport</a>, <a href="Passwords.html">Passwords</a>, <a href="CustomTable.html">CustomTable</a>, <a href="DataSheet.html">DataSheet</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLChoices.html">LLChoices</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="ShowHide.html">ShowHide</a>, <a href="ShowHideLayout.html">ShowHideLayout</a>, <a href="ShowHideStore.html">ShowHideStore</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="ChoiceKeys.html">ChoiceKeys</a></p>
+</div>
+</details>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">

@@ -11,18 +11,18 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>SeriesBuffer</h1>
-<p>One chart's worth of series definitions. Entry N describes one complete series:
-the data range name, the chart type, the axis side, the category range name,
-the legend range name, and the display prefix. Both graph builders fill one of
-these and every consumer walks it by index.</p>
-<details open class="doc-section" id="one-add-so-the-six-values-cannot-come-apart">
-<summary>ONE ADD, SO THE SIX VALUES CANNOT COME APART</summary>
+<p>One chart's worth of series definitions. Entry N describes one complete
+series: the data range name, the chart type, the axis side, the category range
+name, the legend range name and the display prefix. Add appends one entry,
+Count answers how many are held, and RangeName, ChartType, AxisSide,
+CategoryRange, LegendRange and LabelPrefix read one field of one entry by
+index. Both graph builders fill one of these and every consumer walks it by
+index.</p>
+<details open class="doc-section" id="one-add-per-series">
+<summary>ONE ADD PER SERIES</summary>
 <div class="section-body">
-<p>The builder that came before this held six parallel BetterArrays and pushed
-into them through two routines, PushSeries and PushLabels. Nothing made the two
-calls happen together; a doc comment asked the caller to remember. Six values
-that describe one series arrive in one Add here, and an entry is one array of
-six, so a half-written series cannot exist.</p>
+<p>The six values that describe one series arrive in a single Add, and an entry
+is one array of six.</p>
 <p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a></p>
 <p><strong>Version:</strong> 1.0 (2026-07-31)</p>
 </div>

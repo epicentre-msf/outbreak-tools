@@ -11,30 +11,34 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>ImportMetadata</h1>
-<p>Reads the variable/value block of the Metadata sheet of a workbook being
-imported, once, and answers every question the import has about the file.</p>
+<p>Reads the variable and value block of the Metadata sheet of a workbook being
+imported, once, and answers every question the import has about that file.
+LoadFrom reads the sheet, Exists says whether the block is there, Tag answers
+one tag by name, and Language, ExportType, IsMigrationExport, EpiWeekStart and
+UpdatesOnImport answer the named facts. ExportOption reads one option of the
+options line, CarriesVariableNames says whether the file holds variable names,
+and HeaderRow says which row the header sits on.</p>
 <details open class="doc-section" id="one-read-and-no-range-find">
 <summary>ONE READ, AND NO Range.Find</summary>
 <div class="section-body">
-<p>Four places used to build a DataSheet over this sheet and run a Range.Find with
+<p>The block is read into two arrays and every tag is looked up in memory. Four
+places used to build a DataSheet over this sheet and run a Range.Find with
 LookIn, SearchOrder and SearchDirection left unset. Excel fills those in from
-the last Find of the session, including one a user ran by hand, so the same
-sheet could answer differently from one run to the next. The block is read into
-two arrays here and every tag is looked up in memory.</p>
+the last Find of the session, including one a user ran by hand.</p>
 </div>
 </details>
 <details open class="doc-section" id="the-options-line">
 <summary>THE OPTIONS LINE</summary>
 <div class="section-body">
-<p><code>export_options</code> holds the options the export was written with, as <code>name: value</code>
-pairs joined with a pipe. <code>ExportOption</code> splits it back apart. The two pairs
-that decide whether the file can be read at all are <code>variable names</code> and
-<code>header row</code>: a file whose header row carries labels alone holds no variable
-names anywhere, and a file carrying both has its variable names on row 2.</p>
+<p><code>export_options</code> holds the options the export was written with, as
+<code>name: value</code> pairs joined with a pipe. <code>ExportOption</code> splits it back apart.
+The two pairs that decide whether the file can be read at all are <code>variable names</code> and <code>header row</code>: a file whose header row carries labels alone holds no
+variable names anywhere, and a file carrying both has its variable names on
+row 2.</p>
 <p>A file written before the options line existed carries none of it. Every
-answer then falls back to the shape every export used to have - variable names
-on row 1 - which is right for a migration export and for the default custom
-export, and it is the shape that has always worked.</p>
+answer then falls back to the shape every export used to have, variable names
+on row 1, which is the shape of a migration export and of the default custom
+export.</p>
 <p><strong>Depends on:</strong> <a href="DataSheet.html">DataSheet</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a></p>
 <p><strong>Version:</strong> 1.0 (2026-08-01)</p>
 </div>

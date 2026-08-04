@@ -11,9 +11,11 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>SpatialTables</h1>
-<p>Creates the spatial analysis ListObjects on the &quot;spatial_tables__&quot; worksheet at
-build time. For each cross-table row variable it builds either four
-administrative tables (adm1 to adm4) or one health facility table.</p>
+<p>Creates the spatial analysis ListObjects on the &quot;spatial_tables__&quot; worksheet
+at build time. Add takes one cross-table and builds, for each of its row
+variables, either four administrative tables (adm1 to adm4) or one health
+facility table. Entries filed along the way leave through HasCheckings and
+CheckingValues.</p>
 <details open class="doc-section" id="the-contract-with-llspatial">
 <summary>THE CONTRACT WITH LLSPATIAL</summary>
 <div class="section-body">
@@ -28,22 +30,20 @@ column 1  tabl</em><level><em><var>    the lookup key
 column 2  formula</em><level>       the value LLSpatial sorts on
 column 3  population_<level>    administrative levels only
 column 4  attack_rate_<level>   administrative levels only</p>
-<p>Every row of listofgeovars has to resolve to a real ListObject, because
-LLSpatial walks that list and asks for the table by name. So the variable is
-registered after its tables are built.</p>
+<p>Every row of listofgeovars resolves to a real ListObject, because LLSpatial
+walks that list and asks for the table by name. So a variable is registered
+after its tables are built.</p>
 </div>
 </details>
 <details open class="doc-section" id="what-a-facility-table-holds">
 <summary>WHAT A FACILITY TABLE HOLDS</summary>
 <div class="section-body">
-<p>A facility table is two columns: the lookup key and the value. A health facility
-has no population, so the population and the attack rate belong to an
-administrative table alone -- the geobase gives a population per administrative
-level (adm1_pop to adm4_pop) and none for a facility. The facility table used to
-carry all four columns with the last two always blank.</p>
-<p>LLSpatial.Update resizes a spatial table as it refreshes it and reads the width
-off the table itself. It used to resize every one of them to four columns, which
-is what kept the two blank columns here.</p>
+<p>A facility table is two columns: the lookup key and the value. The population
+and the attack rate belong to an administrative table alone. The geobase gives
+a population per administrative level, adm1_pop to adm4_pop, and gives none
+for a facility.</p>
+<p>LLSpatial.Update resizes a spatial table as it refreshes it, and reads the
+width off the table itself.</p>
 <p><strong>Depends on:</strong> <a href="CrossTable.html">CrossTable</a>, <a href="TableSpecs.html">TableSpecs</a>, <a href="Formulas.html">Formulas</a>, <a href="FormulaBuilder.html">FormulaBuilder</a>, <a href="Checking.html">Checking</a></p>
 <p><strong>Version:</strong> 2026-07-30</p>
 </div>

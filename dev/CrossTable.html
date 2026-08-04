@@ -11,48 +11,47 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>CrossTable</h1>
-<p>The CrossTable class builds and formats structured analysis output tables
-on an Excel worksheet. It supports six table scopes: univariate, bivariate,
-time series, spatial, spatio-temporal, and global summary. Each cross-table
-occupies a rectangular region with row categories, column categories, named
-ranges, and visual formatting. Consumers interact through the CrossTable
-interface, and AnalysisOutput orchestrates the build sequence by calling
-Build followed by Format for each table specification.</p>
+<p>Builds and formats one analysis output table on a worksheet. Six table scopes
+are handled: univariate, bivariate, time series, spatial, spatio-temporal and
+global summary. Build lays the table out and Format gives it its look.
+StartRow, EndRow, EndColumn, NumberOfColumns, HeaderRange, RowRange,
+ColumnRange, RowsCategoriesRange and TimeSeriesHeader answer where the table
+sits and what it holds. AnalysisOutput calls Build and then Format for each
+table specification.</p>
 <details open class="doc-section" id="the-linelist-data-parameter-is-typed-object">
 <summary>THE LINELIST DATA PARAMETER IS TYPED Object</summary>
 <div class="section-body">
 <p>Create takes lData as an Object. The class asks it for TransObject and hands
-it on to TableSpecs.RowCategories / ColumnCategories, which type the same
-parameter as Object and dispatch on TypeName. A LinelistSpecs is what
-AnalysisOutput passes, and the Object type keeps the 1,536-line LinelistSpecs
-closure out of this class's compile dependencies, so the suite can drive it.</p>
+it on to TableSpecs.RowCategories and ColumnCategories, which type the same
+parameter as Object and dispatch on TypeName. AnalysisOutput passes a
+LinelistSpecs, and the Object type keeps the LinelistSpecs closure outside the
+compile dependencies of this class.</p>
 </div>
 </details>
-<details open class="doc-section" id="the-four-build-phases-run-in-one-order-and-the-order-is-load-bearing">
-<summary>THE FOUR BUILD PHASES RUN IN ONE ORDER AND THE ORDER IS LOAD-BEARING</summary>
+<details open class="doc-section" id="the-four-build-phases-run-in-one-order">
+<summary>THE FOUR BUILD PHASES RUN IN ONE ORDER</summary>
 <div class="section-body">
 <p>AddHeader inserts rows and shifts the sheet, AddRows sets EndRow, AddColumns
 sets EndColumn and NumberOfColumns, and NameRanges reads all three. Build runs
-them in that order and records how far it has gone; NameRanges and Format
-refuse a table whose earlier phases have not run. Between AddHeader and AddRows
-the layout is fixed: the start row is cached and the start column is written
-onto the sheet.</p>
+them in that order and records how far it has gone. NameRanges and Format
+refuse a table whose earlier phases have not run. Between AddHeader and
+AddRows the layout is fixed: the start row is held and the start column is
+written onto the sheet.</p>
 </div>
 </details>
 <details open class="doc-section" id="each-of-the-three-large-phases-is-a-dispatcher">
 <summary>EACH OF THE THREE LARGE PHASES IS A DISPATCHER</summary>
 <div class="section-body">
 <p>AddHeader, NameRanges and Format each carry one Select Case over the table
-scope and hand the work to a small private aspect, the way VarWriter does.</p>
+scope and hand the work to a small private routine, the way VarWriter does.</p>
 </div>
 </details>
 <details open class="doc-section" id="what-is-resolved-once-per-table">
 <summary>WHAT IS RESOLVED ONCE PER TABLE</summary>
 <div class="section-body">
 <p>The table identifier, the table scope, the range-name builder, the spatial
-type, the translation provider and the variable reader are read once and held.
-Every phase used to re-derive its own copy, which is where two methods reading
-one fact in two ways came from.</p>
+type, the translation provider and the variable reader are read once and held
+for the life of the instance.</p>
 <p><strong>Depends on:</strong> <a href="AnalysisRanges.html">AnalysisRanges</a>, <a href="TableSpecs.html">TableSpecs</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLFormat.html">LLFormat</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, The four build phases, in the order Build runs them. AddHeader inserts rows, AddRows sets EndRow, AddColumns sets EndColumn and NumberOfColumns, and, NameRanges needs all three, so the order is load-bearing. RequirePhase is what, says so to the compiler-less reader and to the caller that gets it wrong., The prefix lists Format walks. Each one was a BetterArray cleared and refilled, per table, and each list is the same for every table of a scope, so they are, written once here and split on use., Supplies the unique key every Checking.Add needs. It counts within one, instance, which is all uniqueness requires: each instance owns its own, <a href="Checking.html">Checking</a>, and AnalysisOutput harvests them per table.</p>
 <p><strong>Version:</strong> 1.2 (2026-07-31)</p>
 </div>
