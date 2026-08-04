@@ -18,11 +18,12 @@ Option Explicit
 
 '@class CaseWhen
 '@description
-'Parses CASE_WHEN custom formulas written in setup expressions and rewrites
-'them as nested Excel IF statements. The class splits the formula body into
-'alternating condition/result pairs while respecting quoted segments and
-'nested parentheses, then builds the equivalent nested IF expression. It
-'also extracts the plain result labels for downstream analysis consumers.
+'Turns a CASE_WHEN custom formula into nested Excel IF calls. The body of the
+'formula is split into condition and result pairs, with quoted text and nested
+'parentheses kept whole, and the pairs are folded into one nested IF
+'expression. CaseWhenFormula takes the formula in, Valid says whether it can be
+'read, FailureReason names what stopped it, ParsedFormula answers the Excel
+'text, and Categories lists the plain result labels.
 '@depends BetterArray
 '@version 1.0 (2026-02-09)
 
