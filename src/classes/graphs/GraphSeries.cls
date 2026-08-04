@@ -19,23 +19,23 @@ Option Explicit
 '@class GraphSeries
 '@description
 'The chart series of one built cross-table: univariate, bivariate, spatial or
-'spatio-temporal. It reads the table scope and the graph settings off TableSpecs
-'and answers one SeriesBuffer. AnalysisOutput walks that buffer and hands each
-'entry to Graphs.
+'spatio-temporal. It reads the table scope and the graph settings off
+'TableSpecs and answers one SeriesBuffer. AnalysisOutput walks that buffer and
+'hands each entry to Graphs.
 '
 'THE SERIES ARE BUILT ON THE FIRST READ
 '-------------------------------------------------------------------------------
-'Series() builds once and keeps the answer, so a caller has one call to make and
-'no order to remember. Read HasCheckings after Series(), because the reasons a
-'series was left out are filed while the buffer is being built.
+'Series() builds the buffer the first time it is asked and holds the answer.
+'The reasons a series was left out are filed while the buffer is being built,
+'so HasCheckings is read after Series().
 '
 'EVERY SKIP IS REPORTED
 '-------------------------------------------------------------------------------
-'This half decides to build fewer series than the setup asked for in four
-'places: a scope it has no builder for, a graph setting it does not recognise, a
-'percentage chart on a table with no percentage column, and a table that ends
-'with no series at all. Each one files an entry through LogInfo, and
-'AnalysisOutput reads them into the generation report.
+'This class builds fewer series than the setup asked for in four cases: a scope
+'it has no builder for, a graph setting it does not recognise, a percentage
+'chart on a table with no percentage column, and a table that ends with no
+'series at all. Each one files an entry through LogInfo, and AnalysisOutput
+'reads them into the generation report.
 '@depends CrossTable, TableSpecs, SeriesBuffer, Checking
 '@version 1.0 (2026-07-31)
 
