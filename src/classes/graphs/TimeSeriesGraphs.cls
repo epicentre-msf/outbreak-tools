@@ -20,33 +20,32 @@ Option Explicit
 '@description
 'The chart definitions of every time series graph, read from the three graph
 'setup tables. One entry per graph identifier, each holding its series and its
-'display title. AnalysisOutput walks the entries, draws one chart each, and puts
-'the title in the cell above it.
+'display title. Count answers how many graphs there are, Series gives the
+'SeriesBuffer of one graph and Title its title. AnalysisOutput walks the
+'entries, draws one chart each and puts the title in the cell above it.
 '
 'THE THREE SETUP TABLES ARE IDENTIFIED BY NAME
 '-------------------------------------------------------------------------------
-'The order check used to read a caption two rows above each header row. The gap
-'between the caption and the header was measured in six workbooks on 2026-07-31:
-'it is four rows in .mock/setup_mock.xlsb, src/bin/setup/setup.xlsb and
-'setup_dev.xlsb, and two rows in every file under releases/. A row offset is a
-'contract with a file nobody versions, which is the lesson TableSpecs paid for
-'when it moved the analysis scope onto the ListObject name. The three names are
-'byte-identical in all six files, so this class compares names.
+'The three names are byte-identical in the six workbooks measured on
+'2026-07-31, so this class compares names. An earlier version read a caption a
+'fixed number of rows above each header row. That gap is four rows in
+'.mock/setup_mock.xlsb, src/bin/setup/setup.xlsb and setup_dev.xlsb, and two
+'rows in every file under releases/.
 '
 'THE GRAPHS ARE BUILT ON THE FIRST READ
 '-------------------------------------------------------------------------------
-'Count builds once and keeps the answer, and so do Series and Title. A Count of
-'0 says nothing could be drawn, and the reasons are in the report. Read
-'HasCheckings after Count.
+'Count builds the entries the first time it is asked and holds the answer, and
+'so do Series and Title. A Count of 0 says nothing could be drawn, and the
+'reasons are in the report. HasCheckings is read after Count.
 '
 'EVERY SKIP IS REPORTED
 '-------------------------------------------------------------------------------
-'This half decides to build fewer series than the setup asked for in eight
-'places: a setup table with a column missing, a graph with no series row, a
-'series row naming no series, a series identifier absent from the time series
-'table, a series matching the header row, a choice value with no column on the
-'output sheet, a column carrying no named range, and a graph identifier with no
-'title row. A graph that ends with no series is left out and named.
+'This class builds fewer series than the setup asked for in eight cases: a
+'setup table with a column missing, a graph with no series row, a series row
+'naming no series, a series identifier absent from the time series table, a
+'series matching the header row, a choice value with no column on the output
+'sheet, a column carrying no named range, and a graph identifier with no title
+'row. A graph that ends with no series is left out and named.
 '@depends SeriesBuffer, TableSpecs, LinelistSpecs, Checking, BetterArray
 '@version 1.0 (2026-07-31)
 
