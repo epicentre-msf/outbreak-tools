@@ -95,18 +95,18 @@ End Enum
 
 '@class LLFormat
 '@description
-'Reads design information from the LL format table and exposes helpers
-'to apply those styles while caching lookups for performance. Supports
-'import/export of format definitions across workbooks. Each FormatScope
-'constant maps to a specific visual pattern applied to Worksheets,
-'Ranges, Shapes, ListObjects, or Characters.
-'@details
-'The design values a format object reads stay the same while the object is
-'alive, so DesignValue keeps the answer itself. ApplyFormat is the hot path of
-'a whole linelist build (127 call sites, 72 DesignValue calls in its own body),
-'and each of those calls used to cross into Excel. A caller that edits the
-'format sheet by hand and wants the new values asks for a new object, or goes
-'through Import, which clears every cache.
+'Reads the design values of a linelist from the format table and applies them.
+'DesignValue answers one value by name. ApplyFormat takes a FormatScope and
+'writes the look that scope stands for onto a Worksheet, a Range, a Shape, a
+'ListObject or a run of Characters. Import and Export move the format table
+'between workbooks, and DesignName says which design the object reads.
+'
+'THE DESIGN VALUES ARE READ ONCE
+'-------------------------------------------------------------------------------
+'DesignValue reads a value from the table the first time it is asked and holds
+'the answer for the life of the object. A caller that edits the format sheet by
+'hand builds a new object to reach the new values, or calls Import, which drops
+'every held answer.
 '@depends CustomTable, Checking, BetterArray
 '@version 1.0 (2026-02-09)
 
