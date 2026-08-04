@@ -19,22 +19,28 @@ Option Explicit
 
 '@class LLChoices
 '@description
-'Manages worksheet-based choice lists used for dropdowns and cascading
-'selectors. Each choice is identified by a list name and carries long
-'labels, short labels, and an ordering column. Built on top of a
-'DataSheet for column-oriented data access.
-'@details
-'Every member that needs the four choice columns reads the header row ONCE
-'as a block and matches the names in memory. Asking DataSheet for the same
-'column name over and over used to cost a worksheet search each time: one
-'ColumnExists is about 9 worksheet calls and one named DataRange about 17,
-'so a single Sort paid about 85 of them before it sorted anything.
-'Nothing is held on the instance. The header row and the end row both move
-'under this object -- AddChoice appends, RemoveChoice deletes whole rows,
-'Import clears the sheet -- so every call reads them again.
-'This class never touches Application.ScreenUpdating, Calculation or
-'EnableEvents, and never builds an ApplicationState. Excel state belongs to
-'the caller.
+'Manages the choice lists a workbook offers to dropdowns and cascading
+'selectors. A choice is named by its list name and carries a long label, a
+'short label and an order number, and the four columns sit on one worksheet
+'reached through a DataSheet. AddChoice appends a list, RemoveChoice deletes
+'one, ChoiceExists answers whether a list is there, Sort orders the sheet and
+'Translate rewrites the labels. AllChoices, Categories and
+'ConcatenateCategories give the lists back. ManageRows, AddRows, InsertRows,
+'DeleteRows and RemoveRows work on the rows of the sheet, and Import and Export
+'move the sheet between workbooks.
+'
+'WHAT THE INSTANCE HOLDS
+'-------------------------------------------------------------------------------
+'A member that needs the four choice columns reads the header row once as a
+'block and matches the names in memory for the rest of that call. Nothing is
+'held between calls: AddChoice appends rows, RemoveChoice deletes whole rows
+'and Import clears the sheet, so the header row and the end row are read again
+'on every call.
+'
+'EXCEL STATE BELONGS TO THE CALLER
+'-------------------------------------------------------------------------------
+'This class leaves Application.ScreenUpdating, Calculation and EnableEvents
+'where it finds them, and builds no ApplicationState.
 '@depends DataSheet, CustomTable, Checking, BetterArray, TranslationObject
 '@version 1.0 (2026-02-09)
 
