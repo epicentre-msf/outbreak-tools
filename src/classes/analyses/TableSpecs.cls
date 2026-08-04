@@ -35,41 +35,40 @@ End Enum
 
 '@class TableSpecs
 '@description
-'Represents a single row from an analysis setup ListObject and exposes
-'properties that describe the analysis table it defines. Each row in the
-'setup table specifies one output table (frequency, cross-tab, time series,
-'spatial, or spatio-temporal). The class wraps that row together with the
-'header range and a dictionary, providing typed access to the table scope,
-'identifiers, navigation to neighboring rows, validation flags (total,
-'missing, percentage, graph), and dictionary-based category lookups.
+'Holds one row of an analysis setup ListObject and answers what the table that
+'row defines looks like. TableScope says which kind of table it is, TableId and
+'TableSectionId name it, ValidTable says whether the row can be built and
+'IsNewSection whether it opens a section. HasTotal, TotalRequested, HasMissing,
+'HasPercentage and HasGraph answer the flags, GraphMode and FlipCoordinates the
+'graph settings, and Value reads any column of the row. Previous and NextSpecs
+'walk to the neighbouring rows. GeoCount, SpatialTableScopes, SpatialPrefix,
+'SpatialVariableName, SpatialConcatVariableName and SpatialLabelColumn describe
+'a spatial table.
 '
 'WHERE THE SCOPE COMES FROM
 '-------------------------------------------------------------------------------
-'The scope is the name of the ListObject the specification row sits in.
-'The seven analysis tables carry seven fixed names and each name maps to one
-'scope. An earlier version read a type label from a fixed row offset above
-'the header. That offset is four rows in the workbook shipped from
-'src/bin/setup and two rows in every published release, so on a released file
-'the read landed on a blank cell and Create raised for every analysis row.
-'The ListObject name holds the same fact and it survives a row being
-'inserted.
+'The scope is the name of the ListObject the row sits in. The seven analysis
+'tables carry seven fixed names and each name maps to one scope. An earlier
+'version read a type label from a fixed row offset above the header. That
+'offset is four rows in the workbook shipped from src/bin/setup and two rows in
+'every published release. A ListObject name holds the same fact and it stays
+'put when a row is inserted.
 '
-'WHAT IS CACHED AND WHY IT IS SAFE
+'WHAT IS HELD
 '-------------------------------------------------------------------------------
-'Column names, cell values and the table scope are read once at construction
-'time. ValidTable, IsNewSection, TableId, TableSectionId and
-'SpatialTableScopes are computed on first access and held. Seal runs at the
-'end of Create and stops the ranges changing after that, so a held answer
-'cannot go stale within one instance's life.
+'Column names, cell values and the table scope are read once at construction.
+'ValidTable, IsNewSection, TableId, TableSectionId and SpatialTableScopes are
+'worked out on the first ask and held. Seal runs at the end of Create and stops
+'the ranges changing after that, so an answer held on an instance stays true
+'for its whole life.
 '
 'CATEGORY LOOKUPS
 '-------------------------------------------------------------------------------
-'RowCategories and ColumnCategories accept an Object parameter. When a
-'LinelistSpecs instance is passed, categories are resolved from its
-'dictionary and choices; any other object gives an empty BetterArray. That
-'keeps TableSpecs usable in the setup error-checking context, where geo and
-'translation dependencies are absent. LinelistSpecs is reached through a
-'TypeName string, so it is never a compile dependency of this class.
+'RowCategories and ColumnCategories take an Object. A LinelistSpecs resolves
+'the categories from its dictionary and its choices, and any other object gives
+'an empty BetterArray. That is what the setup error checks pass, where the geo
+'and translation managers are absent. LinelistSpecs is reached through a
+'TypeName string, so it stays outside the compile dependencies of this class.
 '@depends LLdictionary, LLVariables, BetterArray, Checking
 '@version 3.0 (2026-07-29)
 
