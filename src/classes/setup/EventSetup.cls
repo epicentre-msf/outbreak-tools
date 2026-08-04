@@ -18,27 +18,33 @@ Option Explicit
 
 '@class EventSetup
 '@description
-'Encapsulates workbook-level setup events and lazily-cached domain managers.
-'This class is the single entry point for all workbook event handling in the
-'setup workbook. It reacts to worksheet activation, change, and open events,
-'manages setup rows (add, insert, delete, sort) through cached helpers
-'(LLdictionary, LLChoices, LLExport, Analysis), applies a translation across the
-'four content sheets, and provides analysis table value lookups. All domain
-'managers are created lazily on first use and cached for the lifetime of the
-'instance.
+'Handles the workbook events of the setup file and holds the domain managers
+'those events need. OnWorkbookOpen, OnSheetActivate and OnSheetChange are the
+'three entry points. ManageRows, InsertRows, DeleteRows and SortTables work on
+'the rows of a setup sheet, ApplySetupTranslation translates the four content
+'sheets, and UpdateAnalysisDropdowns, RecalculateAnalysis,
+'BuildTimeSeriesHeader, AnalysisGraphValue, AnalysisTimeSeriesValue and
+'SpatioTemporalSpecValue serve the analysis sheet. UnprotectSetupSheet and
+'ProtectSetupSheet bracket a write, ResetCaches drops the held managers, and
+'ResetTranslationCounter puts the translation sequence back to its start.
 '
-'SHEET NAMES ARE DECLARED TWICE ON PURPOSE
+'THE MANAGERS ARE BUILT ON FIRST USE
+'-------------------------------------------------------------------------------
+'LLdictionary, LLChoices, LLExport, Analysis and the rest are created the first
+'time they are asked for and held for the life of the instance. ResetCaches
+'drops them.
+'
+'SHEET NAMES ARE DECLARED TWICE
 '-------------------------------------------------------------------------------
 'SetupHelpers.bas declares the same sheet names for the import and clean flow.
-'Each file keeps the constants it needs, so neither depends on the other for a
-'string. Change one and change the other.
+'Each file keeps the constants it needs. Change one and change the other.
 '
 'PROTECTION IS APPLIED IN ONE PLACE
 '-------------------------------------------------------------------------------
-'ProtectSetupSheet is the only routine that decides the protection flags of a
-'setup sheet, and BeginSheetUpdate / EndSheetUpdate go through it. The ribbon
-'calls it too, so a sheet unlocked on one path and re-locked on the other comes
-'back with the flags it started with.
+'ProtectSetupSheet is the one routine that decides the protection flags of a
+'setup sheet, and BeginSheetUpdate and EndSheetUpdate go through it. The ribbon
+'calls it too, so a sheet unlocked on one path and locked again on the other
+'comes back with the flags it started with.
 '@depends BetterArray, HiddenNames, Passwords, TranslationObject, UpdatedValues, DropdownLists, LLdictionary, LLVariables, LLChoices, LLExport, Analysis, CustomTable, ChoiceFormula, RibbonDev, ProjectError
 
 
