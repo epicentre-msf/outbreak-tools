@@ -19,10 +19,24 @@ Option Explicit
 
 '@class ApplicationState
 '@description
-'Cell-based guard that snapshots Excel Application settings before
-'entering a locked-down busy mode and restores them afterwards.
-'Handles ScreenUpdating, DisplayAlerts, Calculation, EnableAnimations,
-'EnableEvents, AutomationSecurity, cursor, and CalculateBeforeSave.
+'Holds a copy of the Excel Application settings a long operation changes, and
+'puts them back when it ends. Create binds an Application and takes the copy
+'straight away. ApplyBusyState turns screen updating, alerts and automatic
+'calculation off, and on request also silences events, forces the automation
+'security level and sets the cursor. Restore writes every saved value back.
+'IsBusy and HasSnapshot answer where the object stands.
+'
+'THE COPY IS TAKEN ONCE
+'-------------------------------------------------------------------------------
+'ApplyBusyState restores from the copy the object already holds, and takes no
+'new one. RefreshSnapshot takes a fresh copy, which is what a caller that
+'changed a setting between two busy blocks calls first.
+'
+'THE SETTINGS THIS CLASS COVERS
+'-------------------------------------------------------------------------------
+'ScreenUpdating, DisplayAlerts, Calculation, EnableAnimations, EnableEvents,
+'AutomationSecurity, the mouse cursor and CalculateBeforeSave. EnableAnimations
+'is missing on some hosts, and the object records whether it is there.
 '@depends ProjectError
 '@version 1.0 (2026-02-09)
 
