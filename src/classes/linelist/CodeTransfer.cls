@@ -18,21 +18,22 @@ Option Explicit
 
 '@class CodeTransfer
 '@description
-'Moves VBA code components (classes, standard modules, forms and workbook code)
-'from a source workbook into a target workbook. A component is exported to a
-'file in the temporary repository, imported into the target, and the file is
-'deleted. Consumers build an instance through Create and call one transfer
-'member per component. Linelist.TransferAllCode is the one consumer, and it
+'Moves VBA code components -- classes, standard modules, forms and workbook
+'code -- from a source workbook into a target workbook. A component is exported
+'to a file in the temporary repository, imported into the target, and the file
+'is deleted. TransferClass, TransferModule, TransferForm, TransferWorkbookCode
+'and TransferWorksheetCode each move one component, and CopyModuleText copies
+'the text of one module. Linelist.TransferAllCode is the one consumer, and it
 'moves 39 components in a single generation.
 '
 'A COMPONENT THE TARGET ALREADY HOLDS
 '-------------------------------------------------------------------------------
 'VBComponents.Import stays quiet when the target already carries a component of
-'that name: VBA imports the arriving one under a second name, keeps both copies,
-'and the project stops compiling. Every transfer therefore removes the component
-'that is already there before it imports, and files a warning through Checking
-'naming it. The source copy is the one that survives. A template author who
-'wants their own code kept has to give it another name. Owner decision,
+'that name: VBA imports the arriving one under a second name and keeps both
+'copies, and the project stops compiling. Every transfer therefore removes the
+'component that is already there before it imports, and files a warning through
+'Checking naming it. The source copy is the one that survives, and a template
+'author who wants their own code kept gives it another name. Owner decision,
 '2026-07-31.
 '
 'THE VBA PROJECT HAS TO BE READABLE
@@ -40,9 +41,8 @@ Option Explicit
 'Every member of this class reads a workbook's VBProject. Excel refuses that
 'read with error 1004 while "Trust access to the VBA project object model" is
 'off, and that is how a fresh install ships. SourceProject and TargetProject
-'raise ErrorUnexpectedState naming the setting, so the message tells the user
-'what to turn on. Component lookups happen after that read, where a Nothing
-'means the component is missing.
+'raise ErrorUnexpectedState naming the setting. Component lookups happen after
+'that read, where a Nothing means the component is missing.
 '
 'A CODE MODULE IS RESTORED WHEN A WRITE FAILS
 '-------------------------------------------------------------------------------
@@ -53,8 +53,8 @@ Option Explicit
 'CHECKINGS NEED A HARVEST LINE
 '-------------------------------------------------------------------------------
 'Entries filed here leave through HasCheckings and CheckingValues. Linelist
-'keeps the instance after Prepare and clickGenerate flushes the entries into the
-'generation report.
+'keeps the instance after Prepare, and clickGenerate flushes the entries into
+'the generation report.
 '@depends TemporaryRepos, Checking
 '@version 1.1 (2026-07-31)
 
