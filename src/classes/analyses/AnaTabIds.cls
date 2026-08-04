@@ -18,25 +18,28 @@ Option Explicit
 
 '@class AnaTabIds
 '@description
-'Records the charts of the analysis sheets so the export can draw them again on
+'Records the charts of the analysis sheets so an export can draw them again on
 'the sheets it creates, and copies the named ranges those charts read.
+'PrepareSheet builds the tracking worksheet, AddGraphInfo records one chart
+'series and AddGraphFormat the look of one chart, TransferNames copies the
+'named ranges onto an output worksheet, and WriteGraphs draws the charts there.
 '
 'ONE REGISTRY TABLE
 '-------------------------------------------------------------------------------
 'The tracking worksheet holds a single ListObject. Every row carries the scope
-'it belongs to and a kind: a series row describes one chart series, a format row
-'describes the look of one chart. The rows of one chart stay together because
-'they are appended in call order, and the reader starts a new chart when the
-'graph identifier changes.
+'it belongs to and a kind: a series row describes one chart series, a format
+'row describes the look of one chart. The rows of one chart stay together
+'because they are appended in call order, and the reader starts a new chart
+'when the graph identifier changes.
 '
 'THE TABLE NAMES COME FROM THE WORKBOOK
 '-------------------------------------------------------------------------------
 'Every named range of an analysis table was created by CrossTable through
-'Range.Name, so the workbook already holds it. TransferNames reads the
-'workbook name collection, keeps the names that resolve to a range on the
-'analysis sheet, and creates each one at the same address on the output sheet.
-'The collection is walked once per export and bucketed by owning worksheet,
-'because the export asks for four sheets in turn.
+'Range.Name, so the workbook already holds it. TransferNames reads the workbook
+'name collection, keeps the names that resolve to a range on the analysis
+'sheet, and creates each one at the same address on the output sheet. The
+'collection is walked once per export and sorted by owning worksheet, because
+'the export asks for four sheets in turn.
 '@depends Graphs
 '@version 2026-07-30
 
