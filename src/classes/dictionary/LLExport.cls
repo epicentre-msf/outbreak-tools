@@ -16,7 +16,39 @@ Attribute VB_Description = "Manage linelist and setup exports"
 '@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, ProcedureNotUsed, SuperfluousAnnotationArgument
 
 
+'@class LLExport
+'@description
+'Manages the export specification sheet, the table where each row defines one
+'export of a linelist. Create binds the worksheet through a DataSheet.
+'NumberOfExports counts the rows, IsActive says whether an export is switched
+'on, ActiveExportNumbers lists the ones that are, and ColumnValue reads any
+'column of one row. ManageRows, InsertRows, DeleteRows, AddRows and RemoveRows
+'work on the rows, Sort orders the table, Translate rewrites the two translated
+'columns, and ImportSpecs and ExportSpecs move the sheet between workbooks.
+'SyncDictionaryExports keeps the export columns of the dictionary in step with
+'this table.
+'
+'THE FILE NAME OF AN EXPORT
+'-------------------------------------------------------------------------------
+'ExportFileName builds the name one export is saved under. The template comes
+'from the "file name" column, and its chunks are replaced from the dictionary.
+'A version suffix read from Passwords and a timestamp are added at the end, and
+'the whole name is cleaned of the characters a file name cannot carry. An
+'export asked for with exportAll is named from the workbook instead. An empty
+'template falls back to a default one.
+'
+'WHAT THE INSTANCE HOLDS
+'-------------------------------------------------------------------------------
+'The specification block and its header row are read once and answered from
+'memory. The class drops that copy whenever it writes to the table, and
+'ResetCaches drops it for a caller that wrote to the sheet itself.
+'
+'WHAT IS REPORTED
+'-------------------------------------------------------------------------------
+'Entries filed while a member runs leave through HasCheckings and
+'CheckingValues.
 '@depends BetterArray, Checking, CustomTable, DataSheet, LLdictionary, LLVariables, Passwords, TranslationObject
+
 Option Explicit
 
 
