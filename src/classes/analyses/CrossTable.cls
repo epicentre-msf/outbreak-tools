@@ -18,42 +18,41 @@ Option Explicit
 
 '@class CrossTable
 '@description
-'The CrossTable class builds and formats structured analysis output tables
-'on an Excel worksheet. It supports six table scopes: univariate, bivariate,
-'time series, spatial, spatio-temporal, and global summary. Each cross-table
-'occupies a rectangular region with row categories, column categories, named
-'ranges, and visual formatting. Consumers interact through the CrossTable
-'interface, and AnalysisOutput orchestrates the build sequence by calling
-'Build followed by Format for each table specification.
+'Builds and formats one analysis output table on a worksheet. Six table scopes
+'are handled: univariate, bivariate, time series, spatial, spatio-temporal and
+'global summary. Build lays the table out and Format gives it its look.
+'StartRow, EndRow, EndColumn, NumberOfColumns, HeaderRange, RowRange,
+'ColumnRange, RowsCategoriesRange and TimeSeriesHeader answer where the table
+'sits and what it holds. AnalysisOutput calls Build and then Format for each
+'table specification.
 '
 'THE LINELIST DATA PARAMETER IS TYPED Object
 '-------------------------------------------------------------------------------
 'Create takes lData as an Object. The class asks it for TransObject and hands
-'it on to TableSpecs.RowCategories / ColumnCategories, which type the same
-'parameter as Object and dispatch on TypeName. A LinelistSpecs is what
-'AnalysisOutput passes, and the Object type keeps the 1,536-line LinelistSpecs
-'closure out of this class's compile dependencies, so the suite can drive it.
+'it on to TableSpecs.RowCategories and ColumnCategories, which type the same
+'parameter as Object and dispatch on TypeName. AnalysisOutput passes a
+'LinelistSpecs, and the Object type keeps the LinelistSpecs closure outside the
+'compile dependencies of this class.
 '
-'THE FOUR BUILD PHASES RUN IN ONE ORDER AND THE ORDER IS LOAD-BEARING
+'THE FOUR BUILD PHASES RUN IN ONE ORDER
 '-------------------------------------------------------------------------------
 'AddHeader inserts rows and shifts the sheet, AddRows sets EndRow, AddColumns
 'sets EndColumn and NumberOfColumns, and NameRanges reads all three. Build runs
-'them in that order and records how far it has gone; NameRanges and Format
-'refuse a table whose earlier phases have not run. Between AddHeader and AddRows
-'the layout is fixed: the start row is cached and the start column is written
-'onto the sheet.
+'them in that order and records how far it has gone. NameRanges and Format
+'refuse a table whose earlier phases have not run. Between AddHeader and
+'AddRows the layout is fixed: the start row is held and the start column is
+'written onto the sheet.
 '
 'EACH OF THE THREE LARGE PHASES IS A DISPATCHER
 '-------------------------------------------------------------------------------
 'AddHeader, NameRanges and Format each carry one Select Case over the table
-'scope and hand the work to a small private aspect, the way VarWriter does.
+'scope and hand the work to a small private routine, the way VarWriter does.
 '
 'WHAT IS RESOLVED ONCE PER TABLE
 '-------------------------------------------------------------------------------
 'The table identifier, the table scope, the range-name builder, the spatial
-'type, the translation provider and the variable reader are read once and held.
-'Every phase used to re-derive its own copy, which is where two methods reading
-'one fact in two ways came from.
+'type, the translation provider and the variable reader are read once and held
+'for the life of the instance.
 '@depends AnalysisRanges, TableSpecs, TranslationObject, LLVariables, LLFormat, HiddenNames, BetterArray, Checking
 '@version 1.2 (2026-07-31)
 
