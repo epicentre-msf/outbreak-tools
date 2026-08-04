@@ -19,15 +19,34 @@ Option Explicit
 
 '@class CustomTable
 '@description
-'Wraps an Excel ListObject with convenience methods for column lookup,
-'row insertion and deletion, sorting, validation, import/export, and
-'diagnostic logging. Column lookups read the header row once as a block
-'and match in memory, so nothing about the table shape is kept on the
-'instance: most callers throw the wrapper away after one call, and the
-'three that keep one alive see the sheet change behind their back. The
-'class also supports snapshot-based rollback during import and tracks
-'hidden-column state across import and export. An optional ID column
-'provides dictionary-style keyed access to individual rows.
+'Wraps one Excel ListObject. ColumnExists, CellRange, ValueRange and Value read
+'the table and SetValue writes into it. InsertRowsAt, DeleteRowsAt, AddRows and
+'RemoveRows change its shape, RenameColumn rewrites a header, Sort orders the
+'rows, SetValidation puts a dropdown behind a column, and Clean empties the
+'data. Import and Export move values between this table and another table or a
+'DataSheet.
+'
+'WHAT THE INSTANCE HOLDS
+'-------------------------------------------------------------------------------
+'A column lookup reads the header row once as a block and matches the name in
+'memory for the rest of that call. Nothing about the table shape is held
+'between calls, so an instance that stays alive answers from the worksheet as
+'it stands at each call.
+'
+'THE IDENTIFIER COLUMN
+'-------------------------------------------------------------------------------
+'AddIds fills an identifier column, and IdValue and PrefixValue say which
+'column carries it and what its values start with. A row is then reached by its
+'identifier.
+'
+'MOVING VALUES IN AND OUT
+'-------------------------------------------------------------------------------
+'Import records the table before it writes, and RestoreTableSnapshot puts that
+'state back. Source headers with no match here leave through
+'ImportColumnsNotFound, headers an export was handed and could not write leave
+'through ExportColumnsNotFound, and HasColumnsNotImported answers over the last
+'import. Both routines unhide every column before they write and hide the same
+'columns again after.
 '@depends BetterArray, Checking, HiddenNames, DropdownLists
 '@version 1.1 (2026-07-28)
 
