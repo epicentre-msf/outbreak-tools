@@ -18,34 +18,31 @@ Option Explicit
 
 '@class Graphs
 '@description
-'Simplifies the creation and formatting of Excel ChartObject instances on
-'analysis worksheets. The class wraps a single chart, allowing callers to
-'attach data series from named ranges, assign category and legend labels,
-'and apply scope-dependent formatting (time series, spatial, or standard).
-'Charts are positioned at a caller-supplied Range and sized according to
-'the GraphScope enum.
+'Wraps one Excel ChartObject on an analysis worksheet. Add draws the chart at a
+'caller-supplied Range, AddSeries attaches one data series from a named range,
+'AddLabels gives that series its category and legend labels, and Format applies
+'the look the GraphScope calls for. Entries filed along the way leave through
+'HasCheckings and CheckingValues.
 '
 'THE PHASE ORDER
 '-------------------------------------------------------------------------------
 'Add, then AddSeries and AddLabels once per series, then Format. All four
 'callers drive it that way: AnalysisOutput builds a chart per table and a chart
-'per time series graph, and AnaTabIds replays both from its tracking tables when
-'a linelist is exported.
+'per time series graph, and AnaTabIds replays both from its tracking tables
+'when a linelist is exported.
 '
 'A SERIES THAT FAILS TAKES ITS LABELS WITH IT
 '-------------------------------------------------------------------------------
 'AddSeries answers a missing named range by filing a warning and adding no
-'series. The labels that follow it belong to that series, so AddLabels reads the
-'flag AddSeries leaves and skips them. Without that flag the labels landed on
-'the series before them and rewrote its legend entry and its category axis, so
-'the chart looked complete and carried the wrong labels on its last series.
+'series. The labels that follow belong to that series, so AddLabels reads the
+'flag AddSeries leaves and skips them.
 '
 'EVERY SIZE THIS CLASS APPLIES COMES FROM ONE FUNCTION
 '-------------------------------------------------------------------------------
 'SizeForScope holds the whole policy: the width coefficient that stretches a
 'time series chart, the height coefficient that grows a spatial one, the plot
-'area box and the legend position. It is plain arithmetic over two numbers, so
-'a test reaches it through Format without automating a chart by hand.
+'area box and the legend position. It is arithmetic over two numbers, so a test
+'reaches it through Format with no chart to automate.
 '@depends Checking
 '@version 1.1 (2026-07-31)
 
