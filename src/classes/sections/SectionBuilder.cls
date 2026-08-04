@@ -29,29 +29,23 @@ End Enum
 
 '@class SectionBuilder
 '@description
-'Builds all sections, subsections, and variables for a single linelist
-'worksheet. Given a sheet name and dictionary start row, the builder
-'scans the dictionary for matching rows, groups them by section and
-'subsection, delegates variable writing to VarWriter, and applies
-'merged-cell section and subsection header formatting. Supports both
-'HList (horizontal) and VList (vertical) layouts via the layer byte.
+'Builds all the sections, subsections and variables of one linelist worksheet.
+'Given a sheet name and a dictionary start row, Build scans the dictionary for
+'the rows of that sheet, groups them by section and subsection, hands each
+'variable to a VarWriter, and writes the merged section and subsection headers
+'with their formatting. The layer byte picks the HList layout or the VList one.
+'Entries filed along the way leave through HasCheckings and CheckingValues.
 '
 'ONE PASS OVER THE DICTIONARY
 '-------------------------------------------------------------------------------
 '`Build` reads the five dictionary columns it groups on into arrays, in five
-'crossings, and every boundary scan after that runs in memory. The four ranges
-'used to be re-derived per section and per subsection -- about 74 times for a
-'sheet with 8 sections and 20 subsections -- and the scans read the dictionary
-'one cell at a time.
+'crossings, and every boundary scan after that runs in memory.
 '
 'ONE WRITER FOR THE SHEET
 '-------------------------------------------------------------------------------
 '`Build` creates the `VarWriter` and hands it to every subsection. The writer
 'holds a hidden name store, the dictionary block, the design format and the
-'translated messages, and all four are worth holding over a whole sheet. A
-'writer per subsection threw every one of them away twenty times a sheet, and
-'the per-instance hidden name store never accumulated, so each record was
-'pushed as new.
+'translated messages, and all four cover a whole sheet.
 '@depends LinelistSpecs, LLdictionary, LLFormat, DropdownLists, VarWriter,
 'Checking
 '@version 1.1 (2026-07-31)
