@@ -38,22 +38,25 @@ End Enum
 
 '@class AnalysisOutput
 '@description
-'Orchestrates the complete analysis output pipeline for the linelist builder.
-'Given a setup worksheet holding the analysis definition ListObjects and an
-'output linelist facade, this class walks each analysis scope (normal, time
-'series, spatial, spatio-temporal), builds cross-tables from table
-'specifications, writes formulas, registers chart metadata in AnaTabIds, and
-'renders the charts.
+'Writes every analysis sheet of a generated linelist. Create takes the setup
+'worksheet that holds the analysis definition ListObjects and the linelist
+'facade the sheets are written into. WriteAnalysis walks each analysis scope --
+'normal, time series, spatial and spatio-temporal -- builds the cross-tables
+'from their table specifications, writes the formulas, records the chart
+'metadata in AnaTabIds and draws the charts. TransObject answers the
+'translation provider, and entries filed along the way leave through
+'HasCheckings and CheckingValues.
 '
 'THE CALLER OWNS THE APPLICATION STATE
 '-------------------------------------------------------------------------------
 'BusyApp turns screen updating, alerts, automatic calculation and animations
-'off, and nothing here turns them back on. WriteAnalysis has to run inside an
+'off, and nothing here turns them back on. WriteAnalysis runs inside an
 'ApplicationState the caller opens and restores, which is what clickGenerate
-'does. BusyApp leaves Application.EnableEvents alone, so a caller that skips
-'that scope builds the sheets with the linelist change handlers live.
+'does. BusyApp leaves Application.EnableEvents where it finds it, so a caller
+'that skips that scope builds the sheets with the linelist change handlers
+'live.
 '
-'A SECTION IS TOLD, NOT INFERRED
+'A SECTION IS TOLD TO THE LOOP
 '-------------------------------------------------------------------------------
 'The date bounds and the navigation dropdown of a temporal section are held by
 'a TemporalSection. The loop closes the section it holds when it meets a table
