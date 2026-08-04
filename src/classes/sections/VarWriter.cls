@@ -29,20 +29,22 @@ End Enum
 
 '@class VarWriter
 '@description
-'Writes a single dictionary variable to one or more linelist worksheets.
-'For HList layers the writer targets the main sheet, a printed companion,
-'and a CRF companion; for VList layers only the main sheet is written.
-'Each invocation of WriteVariable applies label text, number formatting,
-'formulas, dropdown choices, data validation, and conditional formatting
-'to the resolved cell range.
+'Writes a single dictionary variable onto one or more linelist worksheets. On
+'an HList layer the writer targets the main sheet, a printed companion and a
+'CRF companion; on a VList layer it writes the main sheet alone. Each call to
+'WriteVariable applies the label text, the number format, the formula, the
+'dropdown choices, the data validation and the conditional formatting to the
+'cell range it resolves. ValueOf reads one dictionary column of the variable in
+'hand, and entries filed along the way leave through HasCheckings and
+'CheckingValues.
 '
 'ONE WRITER PER SHEET
 '-------------------------------------------------------------------------------
 'The writer is built once per data entry sheet and used for every variable of
-'that sheet. `SectionBuilder.Build` owns it. Everything the class caches -- the
-'dictionary block, the column map, the hidden name store, the design format,
-'the translated messages -- is worth caching only over a whole sheet, and the
-'table anchor is set on the first variable the writer is handed.
+'that sheet. `SectionBuilder.Build` owns it. What the class holds -- the
+'dictionary block, the column map, the hidden name store, the design format and
+'the translated messages -- covers a whole sheet, and the table anchor is set
+'on the first variable the writer is handed.
 '
 'HOW A DICTIONARY VALUE IS READ
 '-------------------------------------------------------------------------------
@@ -50,7 +52,7 @@ End Enum
 'crossings, and every `ValueOf` after that answers from memory. A column added
 'to the dictionary after the map was built is picked up on the first miss, the
 'same way `LLVariables.ResolveColumnIndex` re-reads its header snapshot.
-'A variable name is matched without regard to case here; `LLdictionary.Prepare`
+'A variable name is matched without regard to case here. `LLdictionary.Prepare`
 'makes the names unique, so a name that differs only by case is a fault in the
 'sheet.
 '@depends LinelistSpecs, LLdictionary, LLVariables, LLSheets, LLFormat,
