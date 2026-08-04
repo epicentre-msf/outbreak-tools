@@ -18,37 +18,39 @@ Option Explicit
 
 '@class Analysis
 '@description
-'Manages the Analysis configuration worksheet of a setup workbook, and the
-'pass-through copy of that same worksheet the designer places inside a
-'generated linelist. Provides row manipulation (add, insert, delete, remove),
-'data exchange (import, export, sort, clean), translation of analysis labels,
-'and validation of the nine required ListObjects. Each instance is bound to a
-'single worksheet and delegates table operations to CustomTable. Trace
-'diagnostics are recorded via Checking and can be retrieved through
-'HasCheckings and CheckingValues.
+'Manages the Analysis configuration worksheet of a setup workbook, and the copy
+'of that worksheet the designer places inside a generated linelist. AddRows,
+'InsertRows, DeleteRows, RemoveRows and ManageRows work on the rows, Sort
+'orders the tables, Import and Export move the sheet between workbooks, and
+'Translate rewrites the analysis labels. Each instance is bound to one
+'worksheet and hands its table work to CustomTable. Entries filed along the way
+'leave through HasCheckings and CheckingValues.
 '
 'WHERE THE ANALYSIS OUTPUT LIVES
 '-------------------------------------------------------------------------------
-'The tables a field user reads at runtime are built by AnalysisOutput,
-'CrossTable and TableSpecs. This class only ever handles the configuration
-'sheet. A linelist instance of this class receives one call, Translate, from
+'The tables a field user reads at run time are built by AnalysisOutput,
+'CrossTable and TableSpecs. This class handles the configuration sheet. A
+'linelist instance of this class receives one call, Translate, from
 'LinelistSpecs.
+'
+'THE NINE REQUIRED TABLES
+'-------------------------------------------------------------------------------
+'Create checks that the worksheet carries the nine ListObjects an analysis
+'definition is written in, and every member reads its rows from one of them.
 '
 'TABLE NAMES ARE MATCHED WITHOUT REGARD TO CASE
 '-------------------------------------------------------------------------------
-'Excel matches sheet and table names without regard to case, so this class
-'does the same everywhere. The required-table cache is walked with
-'vbTextCompare and the table settings are dispatched on a lower-cased name.
-'A binary compare here once dropped the whole global summary section on
-'import, because the cache said "Tab_global_summary" and the shipped workbook
-'says "Tab_Global_Summary".
+'Excel matches sheet and table names without regard to case, so this class does
+'the same everywhere. The required-table list is walked with vbTextCompare and
+'the table settings are dispatched on a lower-cased name. The shipped workbook
+'writes "Tab_Global_Summary" where the list says "Tab_global_summary".
 '
 'THE TEN INSTRUCTION STRINGS ARE HELD TWICE
 '-------------------------------------------------------------------------------
 'ManageRows matches the ten instruction strings the user picks from the
 'dropdown in cell RNG_SelectTable. SetupPreparation holds the same ten strings,
-'because it is the class that fills that dropdown. Changing one list means
-'changing the other.
+'because it is the class that fills that dropdown. Change one list and change
+'the other.
 '@depends CustomTable, Checking, TranslationObject, BetterArray
 '@version 2026-07-29
 
