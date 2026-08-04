@@ -20,15 +20,17 @@ Option Explicit
 '@description
 'Fills the spatial analysis tables of a generated linelist, orders them, and
 'reads ranked values back out for the TopAdmin, TopPop and TopHF worksheet
-'functions.
+'functions. Exists says whether the registry table is there, Update fills the
+'tables from the data sheets, Sort orders them, and TopGeoValue and TopHFValue
+'answer one ranked value.
 '
 'THE CONTRACT WITH SPATIALTABLES
 '-------------------------------------------------------------------------------
 'SpatialTables builds these tables at build time and this class fills them at
-'runtime. The two never reference each other: the contract is a set of names
+'run time. The two never reference each other: the contract is a set of names
 'agreed by string convention across a workbook boundary, and both files hold
 'their own copy of the four constants and the two name builders. That is the
-'house rule — a class keeps every constant it needs inside itself. Change a name
+'house rule, a class keeps every constant it needs inside itself. Change a name
 'here and change it in SpatialTables in the same commit.
 '
 '    listofgeovars              one row per spatial variable, "<var>_<tabId>"
@@ -38,7 +40,7 @@ Option Explicit
 '      column 3  population_<level>    administrative levels only
 '      column 4  attack_rate_<level>   administrative levels only
 '
-'The width of a table and the meaning of each column are SpatialTables' to
+'The width of a table and the meaning of each column are SpatialTables to
 'decide. Every column is resolved by name here, so a table that grows a column
 'keeps working.
 '
@@ -48,21 +50,21 @@ Option Explicit
 'by hf names a variable, and the filtered companion sheet of that HList carries
 'the concatenated geo values of that variable, one column per administrative
 'level. The distinct values of that column are the rows of the spatial table.
-'The reading and the de-duplication happen in memory, so nothing is pasted
-'through the RNG_PastingCol scratch column that SpatialTables still creates.
+'The reading and the de-duplication happen in memory, and nothing is pasted
+'through the RNG_PastingCol scratch column that SpatialTables creates.
 '
 'WHAT A MISSING REGISTRY MEANS
 '-------------------------------------------------------------------------------
-'Linelist creates the spatial worksheet on every linelist and SpatialTables
-'creates the listofgeovars table only when a spatial cross-table is defined. So
-'a linelist with geo variables and no spatial analysis has the sheet with no
-'table in it, and Update on such a sheet is a legitimate no-op: Exists, the
-'variable lookup and Sort all answer empty when the table is absent.
+'Linelist creates the spatial worksheet on every linelist, and SpatialTables
+'creates the listofgeovars table when a spatial cross-table is defined. So a
+'linelist with geo variables and no spatial analysis has the sheet with no
+'table in it, and Update on such a sheet does nothing: Exists, the variable
+'lookup and Sort all answer empty when the table is absent.
 '
 'RNG_TESTINGFORMULA BELONGS TO SPATIALTABLES
 '-------------------------------------------------------------------------------
-'SpatialTables.Prepare creates it and SpatialTables.FailedFormula reads it. This
-'class never touches it.
+'SpatialTables.Prepare creates it and SpatialTables.FailedFormula reads it.
+'This class leaves it alone.
 '@depends BetterArray, HiddenNames, Checking
 '@version 2026-07-31
 
