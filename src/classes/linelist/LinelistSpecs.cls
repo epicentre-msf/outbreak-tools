@@ -33,12 +33,16 @@ End Enum
 'Facade over the designer workbook. Before Prepare it answers the designer's
 'own specifications. After Prepare it is also the handle on the domain managers
 'that live on the generated linelist. Callers build one through
-'LinelistSpecs.Create(workbook).
+'LinelistSpecs.Create(workbook). Value reads one specification cell,
+'Categories answers the choice categories of a variable, Prepare creates the
+'output workbook and points the managers at it, LLWorkbook answers that
+'workbook and ReleaseLLWorkbook lets it go. ResetCaches drops the loaded
+'managers, and entries filed along the way leave through HasCheckings and
+'CheckingValues.
 '
 'WHICH WORKBOOK EACH COLLABORATOR POINTS AT
 '-------------------------------------------------------------------------------
-'The type says nothing about this, and it is where most of this class's defects
-'came from. The table is the contract.
+'The type of a member says nothing about this, so the table is the contract.
 '
 '  dictionary, choices, exports, ana    Linelist. Prepare sets them from
 '                                       InitTransfer. Reading one earlier
@@ -51,10 +55,8 @@ End Enum
 '
 'The four names on the first row had designer-side loaders until 2026-07-30.
 'RequiredSheetNames() stopped asking for those four worksheets when the
-'transfer began importing them straight from the setup file, so a loader either
-'built a manager over a leftover designer sheet at the wrong anchor row, or
-'raised a message naming the designer when the caller's real mistake was
-'calling before Prepare. They are guards now.
+'transfer began importing them straight from the setup file. They are guards
+'now.
 '@depends LLdictionary, LLChoices, LLTranslation, LLGeo, LLExport, Analysis
 '@depends Passwords, LLFormat, FormulaData, LLVariables, Formulas
 '@depends InitTransfer, TemporaryRepos, ApplicationState
