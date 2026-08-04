@@ -19,9 +19,13 @@ Option Explicit
 
 '@class TemporaryRepos
 '@description
-'Manages a temporary folder on disk for linelist preparation artefacts.
-'Creates, sanitises, and cleans up files within a dedicated repository
-'directory. Automatically deletes all content on termination.
+'Owns one folder on disk that a linelist build writes its working files into.
+'Create takes the base directory, or falls back to the default one. RootPath
+'answers the folder, EnsureReady creates it, and CreateFilePath builds a path
+'inside it from a file name it cleans first. DeleteFile removes one file,
+'DeleteAll empties the folder and creates it again, and Reset empties it and
+'marks the object as needing another EnsureReady. Terminating an instance
+'empties the folder.
 '@depends ProjectError
 '@version 1.0 (2026-02-09)
 
