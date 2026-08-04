@@ -15,21 +15,36 @@ Option Explicit
 '@PredeclaredId
 '@Folder("Dictionary")
 '@ModuleDescription("Linelist dictionary utilities")
+'@class LLdictionary
+'@description
+'Manages the "Dictionary" worksheet, the sheet that describes every variable of
+'a linelist. Create binds the worksheet through a DataSheet. ColumnExists,
+'VariableExists, UniqueValues and DataRange read it. AddColumn, InsertColumn,
+'RemoveColumn and RenameColumn work on its columns, and ManageRows, InsertRows
+'and DeleteRows on its rows. Sort orders the sheet, Clean empties it, Translate
+'rewrites its labels, and Import and Export move it between workbooks.
+'SpecialVars, ChoicesVars, GeoVars and TimeVars answer the variables of one
+'kind.
+'
+'PREPARATION
+'-------------------------------------------------------------------------------
+'Prepare adds the helper columns a build reads: table names, column indices,
+'CRF metadata, visibility and the geo rows. It runs once per sheet and Prepared
+'says whether it has run. TotalNumberOfExports carries the number of export
+'columns the sheet holds. The geo object Prepare is handed is typed Object and
+'reached at run time, so LLGeo stays outside the compile dependencies of this
+'class.
+'
+'HOW THE SHEET IS READ
+'-------------------------------------------------------------------------------
+'A row loop reads its block into a Variant once, works in memory, and writes
+'the block back once.
+'
+'WHAT IS REPORTED
+'-------------------------------------------------------------------------------
+'Entries filed while a member runs leave through HasCheckings and
+'CheckingValues.
 '@depends BetterArray, Checking, CustomTable, DataSheet, HiddenNames, TranslationObject
-
-
-'The linelist dictionary class centralises all logic that manipulates the Excel
-'"Dictionary" worksheet used across setup and designer workflows. It merges
-'behaviour from the legacy implementations so consumers interact with a single
-'surface area and tests target a unified object model.
-'
-'The geo object handed to `Prepare` is taken `As Object` and reached late, so
-'`LLGeo` is not a compile dependency of this class.
-'
-'Speed rule for this file: read a block once into a Variant, work in memory,
-'write it back once. Every `Cells(row, column).Value` inside a row loop is one
-'crossing into Excel, and the preparation pipeline runs over the whole
-'dictionary.
 
 Private Type TDictionary
     dictDataSheet As DataSheet
