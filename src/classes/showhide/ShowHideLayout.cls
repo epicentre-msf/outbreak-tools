@@ -29,8 +29,11 @@ End Enum
 '@class ShowHideLayout
 '@description
 'Everything show/hide does to a worksheet. One instance covers one sheet of one
-'layer. The entry list (ShowHide) says which variables are hidden; this class
-'knows where they sit and writes the change.
+'layer. The entry list, ShowHide, says which variables are hidden; this class
+'knows where each of them sits and writes the change. IsHidden and SetHidden
+'read and write the hidden state, Size, SetSize and SizeWhenShown the width or
+'height, IsVertical and SetOrientation the orientation of a printed entry, and
+'FailureCount counts the writes that Excel refused.
 '
 'THE AXIS IS DECIDED HERE AND NOWHERE ELSE
 '-------------------------------------------------------------------------------
@@ -38,22 +41,20 @@ End Enum
 '  VList, CRF       a row
 '
 'A CRF holds one variable per row and reads its position from `crf index`, its
-'own dictionary column. Two code paths used to disagree about this, so hiding
-'the third entry of a CRF made column 3 go away, and column 3 is shared by every
-'variable on the sheet.
+'own dictionary column.
 '
 'PROTECTION IS BRACKETED INSIDE THE CLASS
 '-------------------------------------------------------------------------------
 'Every method that writes to the sheet unprotects it first and protects it
-'again after, so no caller can forget. Reads never unprotect. A loop that writes
-'many positions calls BeginBatch first and EndBatch at the end, which holds one
-'bracket open over the whole run instead of one per position.
+'again after. Reads leave the protection alone. A loop that writes many
+'positions calls BeginBatch first and EndBatch at the end, which holds one
+'bracket open over the whole run.
 '
 'A SIZE OF ZERO IS NEVER WRITTEN
 '-------------------------------------------------------------------------------
 'Excel reports a hidden column as width 0 and hides a column that is set to
-'width 0. SetSize refuses anything at or below zero, because hiding is
-'SetHidden's job and a blank size cell must leave the sheet alone.
+'width 0. SetSize refuses anything at or below zero. Hiding is SetHidden's
+'work, and a blank size cell leaves the sheet alone.
 '@depends Passwords, Checking
 '@version 1.0 (2026-08-01)
 
