@@ -18,9 +18,11 @@ Option Explicit
 
 '@class SpatialTables
 '@description
-'Creates the spatial analysis ListObjects on the "spatial_tables__" worksheet at
-'build time. For each cross-table row variable it builds either four
-'administrative tables (adm1 to adm4) or one health facility table.
+'Creates the spatial analysis ListObjects on the "spatial_tables__" worksheet
+'at build time. Add takes one cross-table and builds, for each of its row
+'variables, either four administrative tables (adm1 to adm4) or one health
+'facility table. Entries filed along the way leave through HasCheckings and
+'CheckingValues.
 '
 'THE CONTRACT WITH LLSPATIAL
 '-------------------------------------------------------------------------------
@@ -37,21 +39,19 @@ Option Explicit
 '      column 3  population_<level>    administrative levels only
 '      column 4  attack_rate_<level>   administrative levels only
 '
-'Every row of listofgeovars has to resolve to a real ListObject, because
-'LLSpatial walks that list and asks for the table by name. So the variable is
-'registered after its tables are built.
+'Every row of listofgeovars resolves to a real ListObject, because LLSpatial
+'walks that list and asks for the table by name. So a variable is registered
+'after its tables are built.
 '
 'WHAT A FACILITY TABLE HOLDS
 '-------------------------------------------------------------------------------
-'A facility table is two columns: the lookup key and the value. A health facility
-'has no population, so the population and the attack rate belong to an
-'administrative table alone -- the geobase gives a population per administrative
-'level (adm1_pop to adm4_pop) and none for a facility. The facility table used to
-'carry all four columns with the last two always blank.
+'A facility table is two columns: the lookup key and the value. The population
+'and the attack rate belong to an administrative table alone. The geobase gives
+'a population per administrative level, adm1_pop to adm4_pop, and gives none
+'for a facility.
 '
-'LLSpatial.Update resizes a spatial table as it refreshes it and reads the width
-'off the table itself. It used to resize every one of them to four columns, which
-'is what kept the two blank columns here.
+'LLSpatial.Update resizes a spatial table as it refreshes it, and reads the
+'width off the table itself.
 '@depends CrossTable, TableSpecs, Formulas, FormulaBuilder, Checking
 '@version 2026-07-30
 
