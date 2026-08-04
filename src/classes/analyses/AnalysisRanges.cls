@@ -20,48 +20,41 @@ Option Explicit
 '@class AnalysisRanges
 '@description
 'One instance holds one range identifier and answers the named-range strings
-'built from it. The analysis output sheet carries about sixty named ranges per
-'table, and the classes that write them and the classes that read them back
-'each built the same strings by concatenation.
+'built from it. An analysis output sheet carries about sixty named ranges per
+'table, and this class is where each of those names is spelled.
 '
-'WHY THIS CLASS EXISTS
+'Create takes the identifier, BindId changes it and Id answers it. Each member
+'gives one name: the value and label columns, the percentage columns, the row
+'and column category ranges, the total and missing rows and columns and the
+'cells where they cross, the section and table bounds, the time period names,
+'and the spatial input cells.
+'
+'WHICH NAMES LIVE HERE
 '-------------------------------------------------------------------------------
-'Two copies of a concatenation drift. The spatial input cells were named with a
-'tag chosen from a setup column in one class and from a dictionary probe in
-'another; the two answers disagreed and the formulas referenced names that were
-'never created. A name that is built in exactly one place cannot drift.
+'The members are the name families built by MORE THAN ONE file, counted across
+'the whole source tree. The second builder is often the graph writer, the
+'linelist runtime or a standard module. A name with a single builder stays
+'where it is.
 '
-'WHAT IS IN HERE AND WHAT IS NOT
-'-------------------------------------------------------------------------------
-'The members below are the name families built by MORE THAN ONE file, counted
-'across the whole source tree rather than across the analyses folder alone. The
-'second builder is often somewhere unexpected: the graph writer, the linelist
-'runtime, a standard module. Names with a single builder are deliberately left
-'where they are, because there is no second copy to disagree with and moving
-'them buys nothing but a hop.
-'
-'Not every family here has both its builders switched over yet. A member whose
-'other builder sits in a class the test harness cannot compile is defined here
-'first and adopted when that class is registered, so the switch is one line
-'rather than a fresh decision about what the name should be.
+'A member whose other builder sits in a class the test harness cannot compile
+'is defined here first and adopted when that class is registered.
 '
 'ONE IDENTIFIER PER INSTANCE
 '-------------------------------------------------------------------------------
-'The analysis writers work with two identifiers: a table id, and the id of the
-'first table of the section. Several names are built from the table id in one
-'class and the section id in another, and the choice was a silent "& tabId" in
-'one place against a silent "& secId" in another. Binding one id per instance
-'puts the choice in the constructor call, so tabNames and secNames read
-'differently at the point of use.
+'The analysis writers work with two identifiers: the id of a table, and the id
+'of the first table of its section. Several names are built from the table id
+'in one class and from the section id in another. Binding one identifier per
+'instance puts that choice in the constructor call, so tabNames and secNames
+'read differently at the point of use.
 '
-'THE SPATIAL TAG IS A PARAMETER, NOT A DECISION
+'THE SPATIAL TAG IS A PARAMETER
 '-------------------------------------------------------------------------------
-'SpatialInput takes the spatial type rather than working it out. Deciding
-'geo-against-health-facility needs the dictionary, and this class holds no
-'dictionary, no worksheet and no specification. It formats; TableSpecs decides.
-'That keeps this a leaf, which is what lets the linelist builder transfer it
-'with a one-word change and lets the runtime and the builder share one
-'definition of every string.
+'SpatialInput takes the spatial type from its caller. Telling a geo variable
+'from a health facility one needs the dictionary, and this class holds no
+'dictionary, no worksheet and no specification. It spells the string and
+'TableSpecs decides the type. The class names no collaborator, so the builder
+'and the generated linelist both carry it and read one definition of every
+'string.
 '@depends Checking
 '@version 1.0 (2026-07-30)
 
