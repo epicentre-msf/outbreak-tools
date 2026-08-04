@@ -20,9 +20,22 @@ Option Explicit
 
 '@class Buttons
 '@description
-'Light wrapper around worksheet shapes for creating, positioning,
-'and formatting linelist buttons. Supports large, small, and geo
-'button scopes with automatic placement offset calculations.
+'Draws one command button of a linelist as a worksheet shape. Create binds an
+'anchor cell, a shape name and a button scope. Add draws the rounded rectangle
+'at the position that scope gives, names it, puts a label on it and points its
+'OnAction at a macro. Format hands the shape to LLFormat under the format that
+'matches the scope.
+'
+'THE THREE SCOPES
+'-------------------------------------------------------------------------------
+'ButtonScopeLarge, ButtonScopeSmall and ButtonScopeGeo. The scope decides the
+'width and the height of the shape, the offset from the anchor cell, and the
+'format Format asks for.
+'
+'WHAT IS REPORTED
+'-------------------------------------------------------------------------------
+'Add on a name the sheet already carries files a warning and draws nothing.
+'Entries leave through HasCheckings and CheckingValues.
 '@depends Checking, LLFormat, ProjectError
 '@version 1.0 (2026-02-09)
 
