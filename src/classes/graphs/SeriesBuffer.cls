@@ -18,18 +18,18 @@ Option Explicit
 
 '@class SeriesBuffer
 '@description
-'One chart's worth of series definitions. Entry N describes one complete series:
-'the data range name, the chart type, the axis side, the category range name,
-'the legend range name, and the display prefix. Both graph builders fill one of
-'these and every consumer walks it by index.
+'One chart's worth of series definitions. Entry N describes one complete
+'series: the data range name, the chart type, the axis side, the category range
+'name, the legend range name and the display prefix. Add appends one entry,
+'Count answers how many are held, and RangeName, ChartType, AxisSide,
+'CategoryRange, LegendRange and LabelPrefix read one field of one entry by
+'index. Both graph builders fill one of these and every consumer walks it by
+'index.
 '
-'ONE ADD, SO THE SIX VALUES CANNOT COME APART
+'ONE ADD PER SERIES
 '-------------------------------------------------------------------------------
-'The builder that came before this held six parallel BetterArrays and pushed
-'into them through two routines, PushSeries and PushLabels. Nothing made the two
-'calls happen together; a doc comment asked the caller to remember. Six values
-'that describe one series arrive in one Add here, and an entry is one array of
-'six, so a half-written series cannot exist.
+'The six values that describe one series arrive in a single Add, and an entry
+'is one array of six.
 '@depends BetterArray, Checking
 '@version 1.0 (2026-07-31)
 
