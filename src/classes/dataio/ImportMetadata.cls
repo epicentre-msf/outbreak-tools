@@ -18,29 +18,34 @@ Option Explicit
 
 '@class ImportMetadata
 '@description
-'Reads the variable/value block of the Metadata sheet of a workbook being
-'imported, once, and answers every question the import has about the file.
+'Reads the variable and value block of the Metadata sheet of a workbook being
+'imported, once, and answers every question the import has about that file.
+'LoadFrom reads the sheet, Exists says whether the block is there, Tag answers
+'one tag by name, and Language, ExportType, IsMigrationExport, EpiWeekStart and
+'UpdatesOnImport answer the named facts. ExportOption reads one option of the
+'options line, CarriesVariableNames says whether the file holds variable names,
+'and HeaderRow says which row the header sits on.
 '
 'ONE READ, AND NO Range.Find
 '-------------------------------------------------------------------------------
-'Four places used to build a DataSheet over this sheet and run a Range.Find with
+'The block is read into two arrays and every tag is looked up in memory. Four
+'places used to build a DataSheet over this sheet and run a Range.Find with
 'LookIn, SearchOrder and SearchDirection left unset. Excel fills those in from
-'the last Find of the session, including one a user ran by hand, so the same
-'sheet could answer differently from one run to the next. The block is read into
-'two arrays here and every tag is looked up in memory.
+'the last Find of the session, including one a user ran by hand.
 '
 'THE OPTIONS LINE
 '-------------------------------------------------------------------------------
-'`export_options` holds the options the export was written with, as `name: value`
-'pairs joined with a pipe. `ExportOption` splits it back apart. The two pairs
-'that decide whether the file can be read at all are `variable names` and
-'`header row`: a file whose header row carries labels alone holds no variable
-'names anywhere, and a file carrying both has its variable names on row 2.
+'`export_options` holds the options the export was written with, as
+'`name: value` pairs joined with a pipe. `ExportOption` splits it back apart.
+'The two pairs that decide whether the file can be read at all are `variable
+'names` and `header row`: a file whose header row carries labels alone holds no
+'variable names anywhere, and a file carrying both has its variable names on
+'row 2.
 '
 'A file written before the options line existed carries none of it. Every
-'answer then falls back to the shape every export used to have - variable names
-'on row 1 - which is right for a migration export and for the default custom
-'export, and it is the shape that has always worked.
+'answer then falls back to the shape every export used to have, variable names
+'on row 1, which is the shape of a migration export and of the default custom
+'export.
 '@depends DataSheet, BetterArray, Checking
 '@version 1.0 (2026-08-01)
 
