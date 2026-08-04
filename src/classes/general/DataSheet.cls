@@ -18,19 +18,20 @@ Option Explicit
 
 '@class DataSheet
 '@description
-'Provides low-level data manipulation on a worksheet with a table-like
-'structure identified by a starting row and column. Unlike CustomTable,
-'DataSheet does not require a ListObject — it works directly with cell
-'ranges. Supports column lookup, filtering (single and multi-column),
-'import/export to other DataSheets or CustomTables, and formatting
-'transfer for designated columns.
-'@details
-'The start row and start column are sealed at creation. Everything else on
-'the sheet moves: callers insert and delete rows and columns behind this
-'object's back while it stays alive, and the class moves the end row and
-'end column itself inside Clean, Import and the two filter routines. So no
-'geometry is ever held on the instance. The header row is read as one block
-'inside a single call, and read again on the next call.
+'Works with a block of data on a worksheet, marked out by a start row and a
+'start column. The block is plain cells and needs no ListObject. ColumnExists
+'and ColumnIndex look a column up by its header, HeaderRange and DataRange
+'answer the ranges, RenameColumn rewrites a header, FilterData and FiltersData
+'filter on one column or on several, and Import, Export and ImportFormat move
+'values and formats between this block and another DataSheet or a CustomTable.
+'
+'WHAT THE INSTANCE HOLDS
+'-------------------------------------------------------------------------------
+'The start row and the start column are sealed at creation. The rest of the
+'geometry is worked out on each call: DataEndRow, DataEndColumn and the header
+'row are read again every time they are asked for, so a caller can insert and
+'delete rows and columns while this object stays alive. Within one call the
+'header row is read as a single block.
 '@depends Checking, BetterArray, HiddenNames
 '@version 1.0 (2026-02-09)
 
