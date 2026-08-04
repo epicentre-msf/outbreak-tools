@@ -18,46 +18,38 @@ Option Explicit
 
 '@class CrossTableFormula
 '@description
-'Translates cross-table specifications into concrete Excel formulas and writes
-'them into the cells of analysis worksheets. Each instance is bound to one
-'CrossTable and its companion FormulaData, and the central AddFormulas method
-'dispatches to type-specific branches (GlobalSummary, Univariate, Bivariate,
-'TimeSeries, SpatioTemporal, Spatial) to produce COUNTIFS / SUMPRODUCT-style
-'array formulas, percentage columns, number formatting, time-period scaffolding,
-'spatial lookups, and data-validation dropdowns. Consumers obtain an instance
-'through the predeclared Create factory.
+'Writes the Excel formulas of one cross-table into the cells of an analysis
+'worksheet. Each instance is bound to one CrossTable and its FormulaData.
+'AddFormulas dispatches on the table scope -- global summary, univariate,
+'bivariate, time series, spatio-temporal and spatial -- and each branch writes
+'the COUNTIFS and SUMPRODUCT array formulas, the percentage columns, the number
+'formats, the time period scaffolding, the spatial lookups and the data
+'validation dropdowns that scope needs. Valid says whether the table can be
+'written, and entries filed along the way leave through HasCheckings and
+'CheckingValues.
 '
 'EXCEL IS THE JUDGE OF A FORMULA
 '-------------------------------------------------------------------------------
-'Every formula reaches its cell through WriteFormula, which assigns it and traps
-'what Excel raises. The class used to test each formula with
-'Application.Evaluate first, and that test had two faults: its string argument
-'stops at 255 characters, so every long formula was declared broken and a text
-'marker was written into the table in its place, and it resolves names against
-'the active sheet, and the formula belongs to another sheet. One build ran more
-'than a thousand of those round trips.
-'
-'A formula Excel refuses leaves the cell empty and files a check, so the
-'generation report names the table and the cell. Read AddFormulas for what is
-'written and Checkings for what is reported.
+'Every formula reaches its cell through WriteFormula, which assigns it and
+'traps what Excel raises. A formula Excel refuses leaves the cell empty and
+'files a check, so the generation report names the table and the cell. Read
+'AddFormulas for what is written and Checkings for what is reported.
 '
 'ONE BUILDER, SHARED WITH SPATIALTABLES
 '-------------------------------------------------------------------------------
 'The criteria of a formula, the text the parser gives back, the write into the
-'cell and the 255 character limit of an array formula all live in FormulaBuilder,
-'and SpatialTables writes through one of those too. The two classes each carried
-'a copy of that machinery and the copies had drifted: one judged a formula with
-'Application.Evaluate and one by writing a probe into A1 of the live output
-'sheet.
+'cell and the 255 character limit of an array formula all live in
+'FormulaBuilder, and SpatialTables writes through one of those too.
 '
 'WHICH COLUMNS THE VALUE LOOP OWNS
 '-------------------------------------------------------------------------------
-'The three column loops walk the data columns, one iteration per column of
+'The three column loops walk the data columns, one turn per column of
 'CrossTable.NumberOfColumns, and advance by two when the table carries
 'percentages. The Missing column, the Total column and the four cells where
-'they cross are written by their own blocks below each loop. CrossTable.EndColumn
-'counts the missing and total columns, so walking to it made the loop write
-'value formulas into them with the criteria of a data column.
+'they cross are written by their own blocks below each loop.
+'CrossTable.EndColumn counts the missing and the total columns, so a loop that
+'walked to it would write value formulas into them with the criteria of a data
+'column.
 '@depends CrossTable, TableSpecs, FormulaData, Formulas, FormulaBuilder, SpatialTables, AnalysisRanges, Checking
 '@version 1.1 (2026-07-30)
 
