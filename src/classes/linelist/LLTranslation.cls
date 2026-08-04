@@ -38,8 +38,10 @@ End Enum
 '@class LLTranslation
 '@description
 'Manages the translation ListObjects that sit on one worksheet and hands out a
-'TranslationObject per scope. It also imports and exports whole translation
-'tables, exchanges the dictionary table on its own, and writes the translated
+'TranslationObject per scope. TransObject answers the object of one scope,
+'Refresh drops what is held, Import and Export move whole translation tables
+'between workbooks, ImportDictionary and ExportDictionary move the setup
+'translation table on its own, and InitialiseHiddenNames writes the translated
 'configuration values into a workbook as hidden names.
 '
 'WHAT THE FIVE TABLES HOLD
@@ -49,28 +51,23 @@ End Enum
 'T_TradLLRibbon the ribbon labels.
 '
 'Tab_Translations is the SETUP's translation table, which is a different thing
-'from the linelist dictionary. The setup file carries it, InitTransfer copies it
-'onto the linelist's copy of this worksheet while the linelist is being built,
-'and it is what translates the dictionary, the choices and the analyses.
+'from the linelist dictionary. The setup file carries it, InitTransfer copies
+'it onto the linelist's copy of this worksheet while the linelist is being
+'built, and it is what translates the dictionary, the choices and the analyses.
 'ImportDictionary is the copy in and ExportDictionary the copy out: a data
 'export from a linelist carries this table on its own.
 '
 'THE FIVE TABLES ARE ALL REQUIRED
 '-------------------------------------------------------------------------------
-'Create asks for all five. The ribbon table used to be optional at creation and
-'required on read, so a sheet without it passed Create and then killed the
-'ribbon callback, which has no error handler above it. The designer template
-'ships the table, so a sheet without it is a broken sheet and the failure
-'belongs at creation.
+'Create asks for all five. The designer template ships every one of them, so a
+'sheet missing one is a broken sheet and the failure is raised at creation.
 '
 'WHERE THE LANGUAGES LIVE
 '-------------------------------------------------------------------------------
 'The two language codes live in workbook-level hidden names,
 'RNG_LLLanguageCode and RNG_DictionaryLanguage, on the workbook that holds the
 'translation worksheet. TransObject reads them there and raises when the code
-'it needs is empty. An empty code used to give back a TranslationObject that
-'answered every tag with the tag itself, so a linelist could ship with buttons
-'reading SHP_Advanced and worksheets named LLSHEET_Analysis.
+'it needs is empty.
 '
 'WHAT IS HELD IN MEMORY
 '-------------------------------------------------------------------------------
@@ -79,7 +76,7 @@ End Enum
 'TranslationObject holds its own copy of its table, so a caller that keeps this
 'instance keeps both. Refresh drops all of them. The two import routines drop
 'the scoped objects themselves, and a caller that writes into a translation
-'table by any other route should call Refresh.
+'table by any other route calls Refresh.
 '@depends TranslationObject, CustomTable, HiddenNames, Checking
 '@version 1.2 (2026-07-30)
 
