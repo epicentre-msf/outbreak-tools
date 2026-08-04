@@ -18,23 +18,27 @@ Option Explicit
 
 '@class Linelist
 '@description
-'Facade for the output linelist workbook. The class adds every worksheet the
+'Facade for the output linelist workbook. Prepare adds every worksheet the
 'linelist needs, prepares the temporary sheets with their hidden names and
-'ListObjects, formats the admin sheet, transfers the VBA code, and saves the
-'.xlsb the user receives. LinelistSpecs.Prepare has to have run first: it is
-'what creates the output workbook and points the domain managers at it.
+'ListObjects, formats the admin sheet and transfers the VBA code, and SaveLL
+'writes the .xlsb the user receives. AddOutputSheet adds one sheet,
+'SheetExists and SheetNames answer what is there, Wksh, PrintWksh and CRFWksh
+'reach a data entry sheet and its two companions, and Dropdown and Pivots
+'answer the two managers the class builds on first use.
+'LinelistSpecs.Prepare has to have run first: it is what creates the output
+'workbook and points the domain managers at it.
 '
 'The class uses VB_Creatable = True, so callers build one with
 '`Set ll = Linelist.Create(specs)` over a `New Linelist`.
 '
 'SHEET NAMES AND THEIR SCOPE
 '-------------------------------------------------------------------------------
-'A data-entry sheet can carry two companions, and each companion is the same
+'A data entry sheet can carry two companions, and each companion is the same
 'name under a prefix: `print_` for the printable copy, `crf_` for the case
 'report form. ScopedName is the one place that puts a prefix on a name and cuts
 'the result to what Excel accepts, and AddOutputSheet, ResolveWksh and the
-'SheetExists calls all go through it. That symmetry is the contract: a sheet
-'created under a shortened name is found again under the same shortened name.
+'SheetExists calls all go through it. A sheet created under a shortened name is
+'found again under the same shortened name.
 '
 'A name the cut actually shortens is filed as a report entry, once per name, so
 'the user learns which sheet came out under a different name.
