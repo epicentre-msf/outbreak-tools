@@ -19,26 +19,33 @@ Option Explicit
 
 '@class SetupImport
 '@description
-'Orchestrates setup workbook synchronisation: validating, importing, exporting,
-'and cleaning setup worksheets (Dictionary, Choices, Exports, Analysis,
-'Translations). Supports both table-level import via CustomTable and
-'domain-class-driven import via dedicated managers (LLdictionary, LLChoices,
-'LLExport, Analysis, SetupTranslationsTable). Guards Excel state through
-'ApplicationState and protects/unprotects worksheets via Passwords.
-'@details
-'Three rules hold across the whole class.
+'Moves the content of a setup workbook in and out. Check validates the setup
+'sheets, Import reads the Dictionary, Choices, Exports, Analysis and
+'Translations sheets from a file, ImportFromWorkbook reads them from an open
+'workbook, Export writes them out, and Clean empties them. Path and
+'SetExportFolder say where files are read from and written to, LastExportFile
+'names the file the last export produced, ProgressObject takes the label the
+'form shows progress on, and DisplayPrompts decides whether the class puts a
+'message in front of the user.
 '
-'1. A cleanup block that is reached by falling off the end of the work runs with
-'   its own handler, never with the failure handler still armed. A raise inside
-'   such a block used to jump into the failure handler and repeat work that had
-'   already run - which is how an import could rename the Choices columns twice.
-'2. Every failure handler copies Err.Number, Err.Source and Err.Description into
-'   locals as its first three statements. Cleanup calls run On Error Resume Next
-'   and clear Err, so an error read after them belongs to the cleanup or to
-'   nothing at all.
-'3. Sheet names are compared without case. Excel worksheet names are already
-'   case insensitive, and a caller that passes "choices" must reach the same
-'   code as one that passes "Choices".
+'HOW A SHEET IS MOVED
+'-------------------------------------------------------------------------------
+'A sheet travels either as a whole table through CustomTable, or through the
+'domain manager that owns it: LLdictionary, LLChoices, LLExport, Analysis and
+'SetupTranslationsTable. Excel state is held by an ApplicationState for the
+'length of the run, and the worksheets are unprotected and protected again
+'through Passwords.
+'
+'THREE RULES HOLD ACROSS THE CLASS
+'-------------------------------------------------------------------------------
+'1. A cleanup block reached by falling off the end of the work runs under its
+'   own handler, with the failure handler disarmed first.
+'2. Every failure handler copies Err.Number, Err.Source and Err.Description
+'   into locals as its first three statements. Cleanup calls run On Error
+'   Resume Next and clear Err, so an error read after them belongs to the
+'   cleanup.
+'3. Sheet names are compared without regard to case. Excel matches worksheet
+'   names that way itself, so "choices" reaches the same code as "Choices".
 
 
 '@section State and constants
