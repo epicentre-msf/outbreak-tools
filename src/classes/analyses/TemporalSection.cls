@@ -18,33 +18,26 @@ Option Explicit
 
 '@class TemporalSection
 '@description
-'One section of a time series or spatio-temporal analysis sheet. A section is a
-'run of tables that share a date period, and it carries three things: the two
-'formulas that give the period its bounds, the list of table headers its
-'navigation dropdown offers, and the identifiers of its first and last table.
+'One section of a time series or a spatio-temporal analysis sheet. A section is
+'a run of tables that share a date period, and the class carries three things:
+'the two formulas that give the period its bounds, the list of table headers
+'its navigation dropdown offers, and the identifiers of its first and last
+'table. StartSection opens a section, AddTable adds one table to it and
+'EndSection closes it. IsOpen, SectionId, LastTableId and TableCount say where
+'the section stands, and MinFormula, MaxFormula and Headers answer what the
+'caller writes onto the sheet.
 '
-'THE SECTION IS STATED, NOT GUESSED
+'THE SECTION IS STATED BY THE CALLER
 '-------------------------------------------------------------------------------
-'AnalysisOutput used to work out where a section ended by building the
-'specification of the row after the one it was on and asking whether that row
-'started a new section. Five defects came out of that one look-ahead: the flush
-'branch tested a condition that was always False, the header list was never
-'cleared so every dropdown listed every header of the sheet, the last table of
-'the last section was left out of the date bounds, a section holding one table
-'pushed its header twice, and the previous section identifier was carried
-'between iterations and never reset.
-'
-'The loop says what it knows instead. It sees a new section directly, so it
-'closes the one it holds and starts the next. Every table it draws is added
-'exactly once. Nothing looks ahead and nothing walks backwards, which is also
-'what removes the two quadratic specification walks the loop paid for.
+'The loop that draws the tables tells this class when a section starts and when
+'it ends. Nothing here reads the row below to work out where a section stops,
+'and nothing walks backwards. Every table is added exactly once.
 '
 'NO WORKSHEET REACHES THIS CLASS
 '-------------------------------------------------------------------------------
-'This holds strings and a list. The caller reads MinFormula, MaxFormula and
-'Headers when it closes a section, and writes them where they belong. That is
-'what lets the whole state machine be tested with no workbook, no linelist and
-'no dictionary.
+'The state is strings and a list. The caller reads MinFormula, MaxFormula and
+'Headers when it closes a section, and writes them where they belong. The whole
+'class runs with no workbook, no linelist and no dictionary.
 '@depends BetterArray
 '@version 2026-07-30
 
