@@ -18,11 +18,23 @@ Option Explicit
 
 '@class LLImporter
 '@description
-'Imports linelist data from external workbooks into the source linelist.
-'Supports importing HList/VList data, custom dropdowns, show/hide state,
-'editable labels, single metadata values, and geobase data. Tracks which
-'sheets and variables were imported, and builds a report of items not
-'imported or not touched.
+'Imports the data of an external workbook into the linelist that holds this
+'object. CheckImportFile reads the file and says whether it can be imported,
+'HasSameLanguage compares the two interface languages, and CurrentLanguage
+'answers the language of this linelist. ImportData brings the HList and VList
+'data in, ImportCustomDropdown the custom dropdowns, ImportShowHide the
+'show/hide choices, ImportEditableLabels the labels a user may edit,
+'ImportSingleValues the single metadata values and ImportGeobase the geobase.
+'ClearData empties the linelist first when the caller asks for it, and HasData
+'says whether the linelist already carries rows.
+'
+'THE REPORT
+'-------------------------------------------------------------------------------
+'CompareWithImportFile records which sheets and which variables the two files
+'have in common and which they have on their own. NeedReport says whether
+'anything was recorded, FinalizeReport writes the entries into ImportReport,
+'ReportSheets and ReportVariables read them back, and ClearReport empties them.
+'Entries filed along the way leave through HasCheckings and CheckingValues.
 '@depends LLdictionary, Passwords, CustomTable, DataSheet
 '@depends LLGeo, LLChoices, LLVariables, DropdownLists, HiddenNames
 '@depends ShowHide, ShowHideLayout, ShowHideStore, ChoiceKeys, ImportMetadata
