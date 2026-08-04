@@ -31,7 +31,8 @@ End Enum
 '@description
 'Builds one data entry worksheet of a generated linelist from the dictionary.
 'Consumers call Create with a layer mode, a sheet name and the linelist facade,
-'then invoke Build.
+'then call Build. Entries filed along the way leave through HasCheckings and
+'CheckingValues.
 '
 'WHAT EACH LAYER GETS
 '-------------------------------------------------------------------------------
@@ -39,22 +40,21 @@ End Enum
 'sections, the GoTo dropdown, the sheet metadata, a ListObject, a printed
 'companion sheet, a filtered companion sheet, a pivot table and protection.
 '
-'A VList sheet gets the design format, a freeze on row 1, its sections, the GoTo
-'dropdown, the sheet metadata, a PLAGEVALUES named range and protection. The
-'ListObject, the two companion sheets, the pivot table and the action buttons
-'belong to the HList layer alone.
+'A VList sheet gets the design format, a freeze on row 1, its sections, the
+'GoTo dropdown, the sheet metadata, a PLAGEVALUES named range and protection.
+'The ListObject, the two companion sheets, the pivot table and the action
+'buttons belong to the HList layer alone.
 '
 'WHAT A FAILURE LEAVES BEHIND
 '-------------------------------------------------------------------------------
 'Both builders protect their worksheet whichever way they leave, file the
-'failure for the generation report and re-raise it. The caller offers the user
-'the incomplete workbook to inspect, so a sheet that failed part way through is
-'reachable and it is protected when the user gets there.
+'failure for the generation report and raise it again. The caller offers the
+'user the incomplete workbook to inspect, so a sheet that failed part way
+'through is reachable and it is protected when the user gets there.
 '
 'Screen updating belongs to the caller. EventsDesignerAdvanced.clickGenerate
 'turns it off through ApplicationState for the whole generation and restores it
-'on both its exits. This class used to turn it off once per sheet as well and
-'put it back nowhere.
+'on both its exits.
 '
 'PUBLISHED STATE
 '-------------------------------------------------------------------------------
