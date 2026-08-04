@@ -18,12 +18,25 @@ Option Explicit
 
 '@class Formulas
 '@description
-'Parses setup expressions, validates token sequences, and exposes
-'Excel-compatible formulas for linelist and analysis contexts. The class
-'tokenises incoming pseudo-formulas, resolves variable references through
-'an LLdictionary, and delegates to CaseWhen, ChoiceFormula, and
-'ValueOfFormula for custom function conversion. Grouped formulas are
-'detected and rewritten as aggregated Excel expressions.
+'Reads a setup expression and answers the Excel formula it stands for. The
+'expression is split into tokens, the variable names are resolved through an
+'LLdictionary, and the custom functions are handed to CaseWhen, ChoiceFormula
+'and ValueOfFormula. SetupFormula takes the expression in, Valid says whether
+'it can be read, Reason names what stopped it, Varlists lists the variables it
+'names and HasSetupVariables says whether it names any. ParsedLinelistFormula
+'answers the formula for a data entry sheet, and ParsedAnalysisFormula the one
+'for an analysis sheet.
+'
+'GROUPED FORMULAS
+'-------------------------------------------------------------------------------
+'IsGrouped says whether the expression uses one of the grouped custom
+'functions. Such an expression is written out as the Excel aggregation
+'FormulaData maps the token to.
+'
+'WHAT IS REPORTED
+'-------------------------------------------------------------------------------
+'Entries filed while an expression is read leave through HasChecking and
+'CheckingValues.
 '@depends BetterArray, Checking, LLdictionary, LLVariables, LLSheets, CaseWhen, ChoiceFormula, ValueOfFormula
 '@version 1.0 (2026-02-09)
 
