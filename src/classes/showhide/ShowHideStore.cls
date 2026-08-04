@@ -18,19 +18,19 @@ Option Explicit
 
 '@class ShowHideStore
 '@description
-'The table that carries a user's show/hide choices from one session to the next,
-'and from one workbook to another during a migration. One table holds all four
-'layers, told apart by the `layer` column.
+'The table that carries a user's show/hide choices from one session to the
+'next, and from one workbook to another during a migration. One table holds all
+'four layers, told apart by the `layer` column. Save writes the choices of one
+'layer, Load reads them back, Clear empties the table, HasLayer says whether a
+'layer has rows, and HasTable, Table and RowCount answer where the store
+'stands.
 '
 'THE STORE MAKES ITS OWN TABLE
 '-------------------------------------------------------------------------------
-'Create and CreateOnSheet build the ListObject when it is absent. This is the
-'whole point of the class. The old store assumed something else had provisioned
-'the table; nothing had, so every save and every load returned without writing,
-'and a user's choices were thrown away each time the workbook closed.
+'Create and CreateOnSheet build the ListObject when it is absent.
 '
-'CreateForRead is the other half: it binds to whatever table a workbook already
-'carries and provisions nothing, which is what reading a migration file needs.
+'CreateForRead binds to whatever table a workbook already carries and builds
+'nothing, which is what reading a migration file needs.
 '
 'SIX COLUMNS
 '-------------------------------------------------------------------------------
@@ -38,16 +38,14 @@ Option Explicit
 '  field_key     the variable name, and the key rows are matched on
 '  header_text   for a person reading the sheet
 '  hidden_flag   true / false
-'  entry_size    the width or height the entry has when shown, blank when
+'  entry_size    the width or the height the entry has when shown, blank when
 '                unknown
 '  orientation   vertical / horizontal, blank off the printed layer
 '
-'The size and the hidden flag are two columns on purpose. They used to be one:
-'a width of 0 meant hidden, and a blank width cell read as 0, so importing a
-'file whose width cells were empty made every entry vanish from the sheet.
-'A size at or below zero now means "leave the sheet alone".
+'The size and the hidden flag are two separate columns. A size at or below zero
+'means "leave the sheet alone".
 '
-'A file written by an older build carries `column_width` instead of
+'A file written by an older build carries `column_width` where this one writes
 '`entry_size`. Load reads either name.
 '@depends ShowHide, ShowHideLayout, Checking
 '@version 1.0 (2026-08-01)
