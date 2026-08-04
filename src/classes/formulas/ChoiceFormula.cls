@@ -18,11 +18,12 @@ Option Explicit
 
 '@class ChoiceFormula
 '@description
-'Converts CHOICE_FORMULA custom functions into CASE_WHEN representations
-'and exposes helper metadata for downstream validation. The first argument
-'of CHOICE_FORMULA is the choice list name; the remaining arguments form
-'condition/result pairs that are delegated to a CaseWhen instance for
-'nested IF conversion and category extraction.
+'Turns a CHOICE_FORMULA custom function into a CASE_WHEN one and reads the
+'result through a CaseWhen. The first argument is the name of a choice list,
+'and the arguments after it are condition and result pairs. ChoiceSpecifications
+'takes the formula in, ChoiceName answers the list name, Valid says whether the
+'formula can be read, FailureReason names what stopped it, ParsedFormula gives
+'the nested Excel IF text, and Categories lists the result labels.
 '@depends CaseWhen, BetterArray
 '@version 1.0 (2026-02-09)
 
