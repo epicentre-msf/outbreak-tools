@@ -12,36 +12,34 @@ Attribute VB_Description = "Variables of the dictionary"
 '@PredeclaredId
 '@Folder("Dictionary")
 '@ModuleDescription("Variables of the dictionary")
-'@depends BetterArray, Checking, DataSheet, LLdictionary
 '@IgnoreModule PropertyNotUsed, ReadOnlyPropertyAssignment, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
-'This class answers questions about ONE variable of the dictionary: the row it
-'sits on, the value of any column on that row, and the small set of named
-'fields the rest of the tree reads most (sheet name, control type, table name).
+'@class LLVariables
+'@description
+'Answers questions about ONE variable of a dictionary: the row it sits on, the
+'value of any column on that row, and the named fields the rest of the tree
+'reads most. Contains says whether a variable name is in the dictionary, Index
+'gives its row, Value reads any column of that row and SetValue writes one,
+'CellRange answers the cell, and SheetName, ControlType and TableName answer
+'the three named fields. VariableNames lists every name the dictionary holds.
 '
-'Speed rule for this file: no worksheet search. Thirty production sites build
-'an LLVariables, and `Formulas.ParsedLinelistFormula` asks `Contains` then
-'`Value` for every token of every formula in the workbook. Each of those used
-'to be a `Range.Find` plus a column lookup. The variable-name column and the
-'header row are each read ONCE as a block, and every lookup after that is a
-'string compare in memory.
+'WHAT THE INSTANCE HOLDS
+'-------------------------------------------------------------------------------
+'The variable-name column and the header row are each read once as a block, and
+'every lookup after that is a string compare in memory.
 '
-'What the two snapshots promise:
+'The names are held until InvalidateCaches. LLdictionary.Prepare inserts geo
+'rows, so an object built before preparation answers over the dictionary as it
+'stood then. EventSetup is the one production caller that drops the held names.
 '
-'- The variable names are held until `InvalidateCaches`. That is the same
-'  contract the captured search range already had: `LLdictionary.Prepare`
-'  inserts geo rows, so an object built before preparation cannot see them.
-'  `EventSetup` is the one production caller that drops them.
-'- The header row is held, and a column that the snapshot cannot answer makes
-'  the header row be read again before the answer is "missing". A column added
-'  after this object was built therefore resolves. `LinelistSpecs.AddListAuto`
-'  needs exactly that: it adds "list auto" to the dictionary and then writes to
-'  it through a variables object it built earlier.
-'- A column the snapshot CAN answer is checked with one cell read before the
-'  index is handed out, so a header renamed on the worksheet can never make
-'  this class read the wrong column.
+'The header row is held too. A column the held row cannot answer makes the
+'header row be read again before the answer is "missing", so a column added
+'after this object was built resolves. A column the held row CAN answer is
+'checked with one cell read before its index is handed out, so a header renamed
+'on the worksheet is seen.
+'@depends BetterArray, Checking, DataSheet, LLdictionary
 
 Private Type TVariable
     dict As LLdictionary
