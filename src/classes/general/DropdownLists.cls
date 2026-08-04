@@ -18,18 +18,19 @@ Option Explicit
 
 '@class DropdownLists
 '@description
-'Manages worksheet-based dropdown lists backed by one-column ListObjects.
-'Each dropdown is registered with an internal name-to-ListObject mapping
-'and a workbook-level named reference. Supports adding, removing,
-'updating, sorting, translating, and validating dropdown entries, plus
-'hyperlink navigation between the dropdown sheet and consuming cells.
-'@details
-'The name-to-ListObject mapping lives in two worksheet columns. Every
-'public method reads those two columns once into memory and then works
-'from that copy, so a single call touches Excel once instead of once per
-'registered dropdown. The copy is never kept between calls: another
-'DropdownLists object can hold the same worksheet and change the mapping
-'in between.
+'Manages the dropdown lists of one worksheet. Each list is a one-column
+'ListObject and carries a workbook-level name. Add creates a list, Remove
+'deletes it, ClearList empties it, Update rewrites its values, and Sort and
+'Translate reorder and relabel the entries. SetValidation puts a list behind a
+'range of cells, and AddHyperLink and AddReturnLink link the dropdown worksheet
+'with the cells that use it.
+'
+'THE REGISTRY
+'-------------------------------------------------------------------------------
+'Column C of the worksheet holds the dropdown name and column D the name of its
+'ListObject, both under a header on row 2. Every public member reads those two
+'columns once as a block and answers from that copy for the rest of the call.
+'The copy is dropped when the call ends, so each call reads the columns again.
 '@depends HiddenNames, BetterArray, Checking
 '@version 1.0 (2026-02-09)
 
