@@ -19,11 +19,23 @@ Option Explicit
 
 '@class OSFiles
 '@description
-'Cross-platform file and folder selection helper. Wraps Windows
-'FileDialog and macOS AppleScript pickers behind a unified API.
-'Supports single and multi-selection for both files and folders,
-'persists the last-used folder across sessions, and provides
-'iterator-style enumeration over multi-selections.
+'Picks files and folders through the dialog the host offers. On Windows the
+'class opens an Excel FileDialog. On macOS it runs an AppleScript picker.
+'LoadFile, LoadFiles, LoadFolder and LoadFolders each show one dialog and keep
+'what the user chose; File, Files, Folder and Folders answer it back. The four
+'HasValid members say whether the selection points at something that exists on
+'disk.
+'
+'READING A MULTI SELECTION
+'-------------------------------------------------------------------------------
+'HasNextFile and NextFile walk the selected files one at a time, and
+'ResetFilesIterator puts the cursor back to the first one. The folder members
+'work the same way.
+'
+'THE LAST FOLDER
+'-------------------------------------------------------------------------------
+'Each selection stores its folder in the workbook-level name
+'OSFiles_LastFolder, and the next dialog opens on that folder.
 '@version 1.0 (2026-02-09)
 
 
