@@ -19,26 +19,18 @@ Option Explicit
 '@class ChoiceKeys
 '@description
 'The one place the export side and the import side build the name a custom
-'dropdown is written under on a Choices sheet. Both ends call the same function,
-'so the round trip can only agree.
+'dropdown is written under on a Choices sheet. CustomChoiceName builds the key
+'from a dropdown name, IsCustomChoice says whether a key belongs to a custom
+'dropdown, and ListNameFromChoice reads the dropdown name back out of a key.
+'Both ends call these, so the two ends of a round trip agree.
 '
 'THE NAME THE KEY IS BUILT FROM
 '-------------------------------------------------------------------------------
 'The dropdown name held in the DropdownLists registry, exactly as the user
-'typed it. Nothing is trimmed, nothing is sanitised and no counter is added.
-'`DropdownLists.AllDropdowns` answers that list and `DropdownLists.Update` takes
-'that same name, so a key built this way survives the trip in both directions.
-'
-'WHY THE CLASS EXISTS
-'-------------------------------------------------------------------------------
-'The two ends used to build the key from two different places. The export read
-'the header cell of the ListObject, which holds the name with every space turned
-'into an underscore; the import read the ListObject name and cut five characters
-'off the front, which left the workbook counter on the end. So a dropdown called
-'`contact type` was written as `__choice_custom_contact_type` and looked for as
-'`__choice_custom_contact type7`. The lookup missed every time and importing a
-'custom dropdown did nothing at all, in every case, for as long as the feature
-'existed.
+'typed it. Nothing is trimmed, nothing is cleaned and no counter is added.
+'`DropdownLists.AllDropdowns` answers that list and `DropdownLists.Update`
+'takes the same name, so a key built this way survives the trip in both
+'directions.
 '@version 1.0 (2026-08-01)
 
 
