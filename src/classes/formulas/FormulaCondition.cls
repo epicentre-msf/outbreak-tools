@@ -18,11 +18,14 @@ Option Explicit
 
 '@class FormulaCondition
 '@description
-'Couples variable names with their condition fragments, validates alignment
-'against the dictionary, and produces structured Excel predicates for
-'analysis formulas. The class pairs two BetterArray lists (variables and
-'conditions), validates that all variables belong to the same table, and
-'exposes methods to render IF-wrapped condition strings and joined predicates.
+'Pairs the variables of an analysis formula with their condition fragments and
+'builds the Excel predicates from them. LstVars takes the variable list and
+'LstConditions the matching condition list. Valid says whether the two lists
+'line up and whether every variable sits in one table, VariablesTable names
+'that table, ConditionString renders one condition wrapped in an IF, and
+'ConditionPredicate joins the conditions into a single predicate. Variables and
+'Conditions give the two lists back, and entries filed on the way leave through
+'HasCheckings and CheckingValues.
 '@depends BetterArray, Checking, LLVariables, LLdictionary
 '@version 1.0 (2026-02-09)
 
