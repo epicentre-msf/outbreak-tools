@@ -18,12 +18,14 @@ Option Explicit
 
 '@class ValueOfFormula
 '@description
-'Converts VALUE_OF custom formulas written with dictionary variable names
-'into workbook-ready expressions that supply sheet names and column indices.
-'The class validates that all three arguments (key variable, lookup variable,
-'value variable) exist in the dictionary and share the same worksheet, then
-'resolves column indices for downstream consumption. Consumers interact
-'through its public accessors.
+'Turns a VALUE_OF custom formula written with dictionary variable names into an
+'expression a workbook can hold, by filling in the sheet name and the column
+'indices the lookup needs. The three arguments are the key variable, the lookup
+'variable and the value variable. Create binds a dictionary, ValueOfExpression
+'takes the formula in, Valid says whether the three variables exist and sit on
+'one worksheet, FailureReason names what stopped it, and ConvertedFormula gives
+'the Excel text. LookupSheetName, LookupColumnIndex and ValueColumnIndex answer
+'the three parts on their own.
 '@depends BetterArray, LLdictionary, LLVariables, LLSheets
 '@version 1.0 (2026-02-09)
 
