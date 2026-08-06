@@ -840,11 +840,19 @@ suites:
     classes:
       - name: VarWriter
       - name: SectionBuilder
+      # SectionMap records where each section of a sheet begins and ends.
+      # SectionBuilder writes it as it builds, and the ribbon's section toggle
+      # reads it. It names HiddenNames, BetterArray and Checking, all three of
+      # which are baked into the driver workbook, so this row closes its own
+      # compile.
+      - name: SectionMap
     tests:
       - module: TestVarWriter
         covers: [VarWriter]
       - module: TestSectionBuilder
         covers: [SectionBuilder]
+      - module: TestSectionMap
+        covers: [SectionMap]
 
   # --- showhide (ShowHide, ShowHideLayout, ShowHideStore) --------------------
   # The show/hide feature is three classes: ShowHide says which variables a
