@@ -272,6 +272,150 @@ Public Sub ClickShowHide()
     Set activeShowHideForm = Nothing
 End Sub
 
+'@Description("Callback for click on show/hide section in a linelist worksheet")
+'@EntryPoint
+Public Sub ClickShowHideSection()
+    Attribute ClickShowHideSection.VB_Description = "Callback for click on show/hide section in a linelist worksheet"
+
+    Dim sh As Worksheet
+    Dim shType As String
+    Dim layer As Byte
+    Dim secMap As SectionMap
+    Dim touched As BetterArray
+    Dim firstPos As Long
+    Dim lastPos As Long
+    Dim hideThem As Boolean
+
+    Set sh = ActiveSheet
+    shType = SheetTag(sh)
+
+    'Sections are laid out on the data entry sheets alone. The printed
+    'companion carries the same columns and the CRF its own rows, and
+    'SectionBuilder writes a map for neither.
+    If (shType <> "HList") And (shType <> "VList") Then
+        WarningOnSheet "MSG_DataSheet"
+        Exit Sub
+    End If
+
+    InitializeTrads
+
+    If Not SelectionSpan(shType, firstPos, lastPos) Then
+        WarningOnSheet "MSG_WrongCells"
+        Exit Sub
+    End If
+
+    Set secMap = SectionMap.Create(sh)
+    Set touched = secMap.IndicesInRange(firstPos, lastPos)
+
+    If touched.Length = 0 Then
+        WarningOnSheet "MSG_WrongCells"
+        Exit Sub
+    End If
+
+    layer = ResolveShowHideLayer(shType)
+    If layer = 0 Then Exit Sub
+
+    Set showHideEntries = EntriesFor(sh, layer, DictionaryObject())
+    Set showHideLayout = LayoutFor(sh, layer)
+
+    'The same reconciliation ClickShowHide does. With nothing saved yet the
+    'sheet is the record, so a column the user hid by hand is read as hidden
+    'and the toggle below agrees with what the user can see.
+    If LoadShowHideState(showHideEntries, showHideLayout) > 0 Then
+        showHideEntries.Apply showHideLayout
+    Else
+        showHideEntries.Adopt showHideLayout
+    End If
+
+    'One press hides, the next shows. Every section the selection touches has
+    'to be hidden already before the press is read as "show them again", so a
+    'selection spanning a hidden section and a visible one hides both rather
+    'than half.
+    hideThem = Not AllSectionsHidden(secMap, touched)
+
+    BusyApp
+    ApplyToSections secMap, touched, hideThem
+    showHideEntries.Apply showHideLayout
+    SaveShowHideState showHideEntries, showHideLayout
+    NotBusyApp
+
+    Set showHideEntries = Nothing
+    Set showHideLayout = Nothing
+End Sub
+
+'The span of positions the user has selected, in the axis the sheet hides on:
+'columns on an HList sheet, rows on a VList one. Answers True for a cell
+'selection. A chart or a shape holds the selection as an object of its own, and
+'those answer False.
+Private Function SelectionSpan(ByVal shType As String, _
+                              ByRef firstPos As Long, _
+                              ByRef lastPos As Long) As Boolean
+    Dim rng As Range
+
+    firstPos = 0
+    lastPos = 0
+
+    If TypeName(Application.Selection) <> "Range" Then Exit Function
+    Set rng = Application.Selection
+
+    If shType = "VList" Then
+        firstPos = rng.Row
+        lastPos = firstPos + rng.Rows.Count - 1
+    Else
+        firstPos = rng.Column
+        lastPos = firstPos + rng.Columns.Count - 1
+    End If
+
+    SelectionSpan = (firstPos > 0)
+End Function
+
+'Whether every section of the list is already hidden. A section holding nothing
+'the user owns is passed over: it can never be hidden, so counting it would
+'leave a selection that touches one stuck on "hide" for good.
+Private Function AllSectionsHidden(ByVal secMap As SectionMap, _
+                                  ByVal touched As BetterArray) As Boolean
+    Dim counter As Long
+    Dim blockIdx As Long
+    Dim state As Byte
+    Dim answered As Long
+
+    If showHideEntries Is Nothing Then Exit Function
+
+    For counter = touched.LowerBound To touched.UpperBound
+        blockIdx = CLng(touched.Item(counter))
+        state = showHideEntries.RangeState(secMap.StartAt(blockIdx), _
+                                           secMap.EndAt(blockIdx))
+
+        Select Case state
+        Case ShowHideRangeEmpty, ShowHideRangeFixed
+            'nothing to say either way
+        Case ShowHideRangeHidden
+            answered = answered + 1
+        Case Else
+            Exit Function
+        End Select
+    Next counter
+
+    AllSectionsHidden = (answered > 0)
+End Function
+
+'Hide or show every section of the list.
+Private Sub ApplyToSections(ByVal secMap As SectionMap, _
+                           ByVal touched As BetterArray, _
+                           ByVal hidden As Boolean)
+    Dim counter As Long
+    Dim blockIdx As Long
+
+    If showHideEntries Is Nothing Then Exit Sub
+
+    For counter = touched.LowerBound To touched.UpperBound
+        blockIdx = CLng(touched.Item(counter))
+        showHideEntries.SetHiddenInRange secMap.StartAt(blockIdx), _
+                                         secMap.EndAt(blockIdx), _
+                                         hidden
+    Next counter
+End Sub
+
 '@Description("Callback for click on the list of showhide")
 '@EntryPoint
 Public Sub ClickListShowHide(ByVal Index As Long)

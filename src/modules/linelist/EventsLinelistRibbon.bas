@@ -64,6 +64,8 @@ End Sub
 '@EntryPoint
 Public Sub clickRibbonShowHideSec(ByRef Control As IRibbonControl)
     Attribute clickRibbonShowHideSec.VB_Description = "Callback for btnShowHideSec onAction"
+    'Toggle the sections the current selection touches
+    ClickShowHideSection
 End Sub
 
 '@Description("Callback for btnAddRows onAction")
