@@ -46,9 +46,20 @@ End Enum
 '`Build` creates the `VarWriter` and hands it to every subsection. The writer
 'holds a hidden name store, the dictionary block, the design format and the
 'translated messages, and all four cover a whole sheet.
+'
+'THE BOUNDARIES ARE LEFT BEHIND ON THE SHEET
+'-------------------------------------------------------------------------------
+'Every section `Build` lays out is also recorded in a `SectionMap`, so that a
+'later session can act on a whole section without walking the dictionary again.
+'The map is cleared at the head of the build and one block is added per section,
+'holding the first and last position and the section title.
+'
+'The map is written on the main sheet alone. The printed companion carries the
+'same columns and the CRF carries its own, and neither is offered a section
+'action today.
 '@depends LinelistSpecs, LLdictionary, LLFormat, DropdownLists, VarWriter,
-'Checking
-'@version 1.1 (2026-07-31)
+'SectionMap, Checking
+'@version 1.2 (2026-08-06)
 
 
 Private Type TSectionBuilder
@@ -61,6 +72,7 @@ Private Type TSectionBuilder
     customDropdown As DropdownLists
     cachedDict As LLdictionary
     cachedFormat As LLFormat
+    sectionMap As SectionMap
     sectionNames As Variant
     subSectionNames As Variant
     sheetNames As Variant
@@ -259,6 +271,11 @@ End Property
 'their "main section" value, delegates to BuildSubSections for subsection
 'grouping and variable writing, and applies merged-cell section header
 'formatting. Stops when the sheet name changes or the dictionary ends.
+'
+'Each section is also recorded in the sheet's SectionMap as it is laid out.
+'The map is opened before the writer runs, because opening it reads every
+'hidden name the sheet holds and the writer adds three to five of them per
+'variable.
 '@param sheetName String. The sheet name as it appears in the dictionary "sheet name" column.
 '@param startRow Long. The first data row index in the dictionary for this sheet (1-based).
 '@export
@@ -270,6 +287,7 @@ Public Sub Build(ByVal sheetName As String, ByVal startRow As Long)
     Dim writer As VarWriter
 
     LoadDictionaryColumns
+    OpenSectionMap
 
     Set writer = VarWriter.Create( _
         layer:=this.layer, _
@@ -299,6 +317,9 @@ Public Sub Build(ByVal sheetName As String, ByVal startRow As Long)
 
         ' Format the section header
         FormatSection currentSection, sectionStartRow, sectionEndRow
+
+        ' Leave the boundaries of the section behind on the sheet
+        RecordSection currentSection, sectionStartRow, sectionEndRow
 
         ' Move to next section
         currentRow = sectionEndRow + 1
@@ -442,6 +463,53 @@ Private Function FindSectionEnd(ByVal startRow As Long, _
 
     FindSectionEnd = rowNumber
 End Function
+
+
+'@section Section Map
+'===============================================================================
+'@description
+'The boundaries of every section, left on the sheet for a later session. A
+'section is a run of consecutive dictionary rows, and the map holds the first
+'and last position of each run with the title alongside them. The reader of the
+'map starts from a selected cell, so the position range is what it looks a
+'section up by.
+
+'@label:open-section-map
+'@sub-title Open the sheet's section map and empty it
+'@details
+'Called at the head of the build, before the writer adds its own names, and the
+'clear is what stops a sheet rebuilt with fewer sections than last time from
+'keeping the tail of the old map.
+'@depends SectionMap
+Private Sub OpenSectionMap()
+    Set this.sectionMap = SectionMap.Create(this.wksh)
+    this.sectionMap.Clear
+End Sub
+
+'@label:record-section
+'@sub-title Record the boundaries of one section in the map
+'@details
+'The positions are the same `column index` values the headers were laid out on:
+'a column number on an HList sheet, a row number on a VList one. A section
+'whose first or last row carries no position is skipped, for the same reason
+'FormatSection leaves it alone.
+'@param sectionName String. The section title.
+'@param startRow Long. The first dictionary row of the section.
+'@param endRow Long. The last dictionary row of the section.
+Private Sub RecordSection(ByVal sectionName As String, _
+                           ByVal startRow As Long, _
+                           ByVal endRow As Long)
+    Dim startPos As Long
+    Dim endPos As Long
+
+    If this.sectionMap Is Nothing Then Exit Sub
+
+    startPos = NumberAt(this.columnIndexes, startRow)
+    endPos = NumberAt(this.columnIndexes, endRow)
+    If (startPos <= 0) Or (endPos < startPos) Then Exit Sub
+
+    this.sectionMap.Add sectionName, startPos, endPos
+End Sub
 
 
 '@section Subsection Processing

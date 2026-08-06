@@ -352,6 +352,132 @@ TestFail:
 End Sub
 
 
+'@section What the build left in the section map
+'===============================================================================
+'@description
+'Build records the boundaries of every section it lays out, so that a later
+'session can act on a whole section without walking the dictionary again. These
+'tests read the map back off the two sheets the fixture built.
+
+'@TestMethod("SectionBuilder")
+Public Sub TestTheVListBuildRecordedEverySectionRun()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheVListBuildRecordedEverySectionRun"
+    If Not FixtureReady("TestTheVListBuildRecordedEverySectionRun") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim map As SectionMap
+    Dim expectedNames As BetterArray
+    Dim expectedStarts As BetterArray
+    Dim expectedEnds As BetterArray
+    Dim idx As Long
+
+    'The expected runs are read back out of the dictionary here rather than
+    'written down. `column index` is DERIVED by LLdictionary.Prepare and appears
+    'in no fixture row, so a position written into this test would be a guess.
+    LoadExpectedRuns VLIST_SHEET, expectedNames, expectedStarts, expectedEnds
+
+    Set map = SectionMap.Create(TargetSheet)
+
+    Assert.IsTrue expectedNames.Length > 0, _
+                  "The fixture sheet holds sections to record"
+    Assert.AreEqual CLng(expectedNames.Length), map.Count, _
+                    "The build recorded one block per run of the dictionary"
+
+    For idx = 1 To map.Count
+        Assert.AreEqual CStr(expectedNames.Item(idx)), map.SectionNameAt(idx), _
+                        "Block " & CStr(idx) & " carries the title of run " & CStr(idx)
+        Assert.AreEqual CLng(expectedStarts.Item(idx)), map.StartAt(idx), _
+                        "Block " & CStr(idx) & " starts where its first variable sits"
+        Assert.AreEqual CLng(expectedEnds.Item(idx)), map.EndAt(idx), _
+                        "Block " & CStr(idx) & " ends where its last variable sits"
+    Next idx
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheVListBuildRecordedEverySectionRun", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SectionBuilder")
+Public Sub TestThePreparedDictionaryGivesOneBlockPerTitle()
+    CustomTestSetTitles Assert, TESTMODULE, "TestThePreparedDictionaryGivesOneBlockPerTitle"
+    If Not FixtureReady("TestThePreparedDictionaryGivesOneBlockPerTitle") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim map As SectionMap
+    Dim outer As Long
+    Dim inner As Long
+    Dim repeated As String
+
+    'The fixture dictionary lists "Controls" in two places, once before the
+    'Status variables and once after them. Those two runs still come out as one
+    'block, because LLdictionary.Prepare sorts the sheet by main section before
+    'it derives `column index`, and the sort brings the two runs together.
+    '
+    'So a title names one block on a prepared dictionary. SectionMap keys on the
+    'position range all the same: the toggle starts from a selected cell, so a
+    'position is what it has to look a section up by. TestSectionMap covers what
+    'the map does when two blocks do share a title.
+    Set map = SectionMap.Create(TargetSheet)
+
+    Assert.IsTrue map.Count > 1, "The sheet carries several sections"
+
+    For outer = 1 To map.Count
+        For inner = outer + 1 To map.Count
+            If LenB(map.SectionNameAt(outer)) > 0 Then
+                If map.SectionNameAt(outer) = map.SectionNameAt(inner) Then
+                    repeated = map.SectionNameAt(outer)
+                End If
+            End If
+        Next inner
+    Next outer
+
+    Assert.AreEqual vbNullString, repeated, _
+                    "The sort leaves each section title on one block only"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestThePreparedDictionaryGivesOneBlockPerTitle", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SectionBuilder")
+Public Sub TestTheHListBuildRecordedItsSections()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheHListBuildRecordedItsSections"
+    If Not FixtureReady("TestTheHListBuildRecordedItsSections") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim map As SectionMap
+
+    Set map = SectionMap.Create(HListSheet)
+
+    Assert.IsTrue map.Count > 0, _
+                  "The HList build should have recorded its sections too"
+    Assert.IsTrue BlocksAscendWithoutOverlapping(map), _
+                  "The blocks run up the sheet in order and never overlap, " & _
+                  "so every position belongs to at most one section"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheHListBuildRecordedItsSections", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SectionBuilder")
+Public Sub TestThePrintCompanionCarriesNoMap()
+    CustomTestSetTitles Assert, TESTMODULE, "TestThePrintCompanionCarriesNoMap"
+    If Not FixtureReady("TestThePrintCompanionCarriesNoMap") Then Exit Sub
+    On Error GoTo TestFail
+
+    'The map is written on the main sheet alone. The printed companion carries
+    'the same columns and no section action is offered on it, so recording a
+    'second copy there would be a second thing to keep in step for nothing.
+    Assert.AreEqual CLng(0), SectionMap.Create(PrintSheet).Count, _
+                    "The printed companion carries no section map"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestThePrintCompanionCarriesNoMap", Err.Number, Err.Description
+End Sub
+
+
 '@section Fixture
 '===============================================================================
 
@@ -443,6 +569,109 @@ End Function
 
 '@section Helpers
 '===============================================================================
+
+'@description
+'Read the section runs the dictionary describes for one sheet, in the order
+'Build walks them: consecutive rows sharing a `main section` value are one run,
+'and a run takes the `column index` of its first and last row.
+'
+'The expectations are read from the dictionary because `column index` is
+'derived by LLdictionary.Prepare and appears in no fixture row. A position
+'written into a test would be a number the test had guessed.
+'@param sheetName String. The sheet to walk.
+'@param names BetterArray. Set to the title of each run, in order.
+'@param starts BetterArray. Set to the first position of each run.
+'@param ends BetterArray. Set to the last position of each run.
+Private Sub LoadExpectedRuns(ByVal sheetName As String, _
+                             ByRef names As BetterArray, _
+                             ByRef starts As BetterArray, _
+                             ByRef ends As BetterArray)
+    Dim sectionRng As Range
+    Dim sheetRng As Range
+    Dim indexRng As Range
+    Dim lastRow As Long
+    Dim rowIdx As Long
+    Dim runEnd As Long
+    Dim runName As String
+    Dim startPos As Long
+    Dim endPos As Long
+
+    Set names = New BetterArray
+    Set starts = New BetterArray
+    Set ends = New BetterArray
+    names.LowerBound = 1
+    starts.LowerBound = 1
+    ends.LowerBound = 1
+
+    Set sectionRng = Dict.DataRange("main section")
+    Set sheetRng = Dict.DataRange("sheet name")
+    Set indexRng = Dict.DataRange("column index")
+    lastRow = Dict.Data.DataEndRow()
+
+    rowIdx = FindSheetStartRow(sheetName)
+    If rowIdx = 0 Then Exit Sub
+
+    Do While rowIdx <= lastRow
+        If CStr(sheetRng.Cells(rowIdx, 1).Value) <> sheetName Then Exit Do
+
+        runName = CStr(sectionRng.Cells(rowIdx, 1).Value)
+        runEnd = rowIdx
+
+        Do While runEnd < lastRow
+            If CStr(sectionRng.Cells(runEnd + 1, 1).Value) <> runName Then Exit Do
+            If CStr(sheetRng.Cells(runEnd + 1, 1).Value) <> sheetName Then Exit Do
+            runEnd = runEnd + 1
+        Loop
+
+        startPos = PositionAt(indexRng, rowIdx)
+        endPos = PositionAt(indexRng, runEnd)
+
+        'RecordSection skips a run whose bounds it cannot read, for the same
+        'reason FormatSection leaves it alone.
+        If startPos > 0 And endPos >= startPos Then
+            names.Push runName
+            starts.Push startPos
+            ends.Push endPos
+        End If
+
+        rowIdx = runEnd + 1
+    Loop
+End Sub
+
+'@description Read one `column index` cell as a whole number, answering 0 for
+'anything unusable. The same rule SectionBuilder.NumberAt applies.
+'@param indexRng Range. The `column index` column.
+'@param rowIdx Long. The dictionary data row.
+'@return Long. The stored position, or 0.
+Private Function PositionAt(ByVal indexRng As Range, ByVal rowIdx As Long) As Long
+    Dim cellValue As Variant
+
+    cellValue = indexRng.Cells(rowIdx, 1).Value
+    If IsError(cellValue) Then Exit Function
+    If IsEmpty(cellValue) Then Exit Function
+    If Not IsNumeric(cellValue) Then Exit Function
+
+    PositionAt = CLng(cellValue)
+End Function
+
+'@description
+'Test whether every block of a map starts after the one before it ends. A map
+'whose blocks overlap would hand two sections the same position, and a rebuild
+'that failed to clear the old map is one way that happens.
+'@param map SectionMap. The map to walk.
+'@return Boolean. True when the blocks ascend and never overlap.
+Private Function BlocksAscendWithoutOverlapping(ByVal map As SectionMap) As Boolean
+    Dim idx As Long
+
+    For idx = 1 To map.Count
+        If map.EndAt(idx) < map.StartAt(idx) Then Exit Function
+        If idx > 1 Then
+            If map.StartAt(idx) <= map.EndAt(idx - 1) Then Exit Function
+        End If
+    Next idx
+
+    BlocksAscendWithoutOverlapping = True
+End Function
 
 '@description Test whether a section name reached the VList section column.
 Private Function SectionIsWritten(ByVal sectionName As String) As Boolean
