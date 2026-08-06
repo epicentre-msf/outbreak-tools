@@ -848,8 +848,313 @@ TestFail:
 End Sub
 
 
+'@section Hiding a whole section
+'===============================================================================
+'@description
+'A section is a span of positions, which is what SectionMap records for it.
+'These tests use the three VList entries the dictionary fixture files next to
+'each other in its Status section:
+'
+'  opt_hid_v1   free, starts hidden
+'  opt_vis_v1   free, starts visible
+'  mand_v1      mandatory, always visible
+'
+'Every position is read off the entry list through PositionOf. `column index`
+'is DERIVED by LLdictionary.Prepare and appears nowhere in the fixture rows, so
+'a test that wrote the three numbers down would be asserting a number it had
+'guessed. The test below pins the one thing the spans need - that the three run
+'consecutively in that order - and the rest build their spans from the values.
+
+'@TestMethod("ShowHide")
+Public Sub TestTheSpanTheSectionTestsUse()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheSpanTheSectionTestsUse"
+    If Not FixtureReady("TestTheSpanTheSectionTestsUse") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sut As ShowHide
+    Dim firstPos As Long
+
+    Set sut = ShowHide.Create(Dict, ShowHideLayerVList, VLIST_SHEET)
+    firstPos = PositionOf(sut, "opt_hid_v1")
+
+    Assert.IsTrue firstPos > 0, "opt_hid_v1 has a position on the sheet"
+    Assert.AreEqual firstPos + 1, PositionOf(sut, "opt_vis_v1"), _
+                    "opt_vis_v1 sits at the next position"
+    Assert.AreEqual firstPos + 2, PositionOf(sut, "mand_v1"), _
+                    "and mand_v1 at the one after that"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheSpanTheSectionTestsUse", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestSetHiddenInRangeHidesEveryFreeEntry()
+    CustomTestSetTitles Assert, TESTMODULE, "TestSetHiddenInRangeHidesEveryFreeEntry"
+    If Not FixtureReady("TestSetHiddenInRangeHidesEveryFreeEntry") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sut As ShowHide
+    Dim hidPos As Long
+    Dim visPos As Long
+    Dim mandPos As Long
+
+    Set sut = ShowHide.Create(Dict, ShowHideLayerVList, VLIST_SHEET)
+    hidPos = PositionOf(sut, "opt_hid_v1")
+    visPos = PositionOf(sut, "opt_vis_v1")
+    mandPos = PositionOf(sut, "mand_v1")
+
+    sut.SetHiddenInRange hidPos, visPos, True
+
+    Assert.IsTrue sut.IsHidden(sut.IndexOf("opt_hid_v1")), _
+                  "An entry of the span that was already hidden stays hidden"
+    Assert.IsTrue sut.IsHidden(sut.IndexOf("opt_vis_v1")), _
+                  "And one that was visible hides with it"
+
+    sut.SetHiddenInRange hidPos, visPos, False
+
+    Assert.IsFalse sut.IsHidden(sut.IndexOf("opt_vis_v1")), _
+                   "And the whole span shows again"
+    Assert.IsFalse sut.IsHidden(sut.IndexOf("opt_hid_v1")), _
+                   "Including the entry the dictionary started hidden"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSetHiddenInRangeHidesEveryFreeEntry", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestSetHiddenInRangeLeavesEntriesOutsideItAlone()
+    CustomTestSetTitles Assert, TESTMODULE, "TestSetHiddenInRangeLeavesEntriesOutsideItAlone"
+    If Not FixtureReady("TestSetHiddenInRangeLeavesEntriesOutsideItAlone") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sut As ShowHide
+    Dim hidPos As Long
+    Dim visPos As Long
+    Dim mandPos As Long
+
+    Set sut = ShowHide.Create(Dict, ShowHideLayerVList, VLIST_SHEET)
+    hidPos = PositionOf(sut, "opt_hid_v1")
+    visPos = PositionOf(sut, "opt_vis_v1")
+    mandPos = PositionOf(sut, "mand_v1")
+
+    'Hiding one section must not reach the section beside it.
+    sut.SetHiddenInRange hidPos, hidPos, True
+
+    Assert.IsFalse sut.IsHidden(sut.IndexOf("opt_vis_v1")), _
+                   "The entry one position past the span is untouched"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSetHiddenInRangeLeavesEntriesOutsideItAlone", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestAMandatoryEntryHoldsItsSectionOpen()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAMandatoryEntryHoldsItsSectionOpen"
+    If Not FixtureReady("TestAMandatoryEntryHoldsItsSectionOpen") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sut As ShowHide
+    Dim hidPos As Long
+    Dim visPos As Long
+    Dim mandPos As Long
+
+    Set sut = ShowHide.Create(Dict, ShowHideLayerVList, VLIST_SHEET)
+    hidPos = PositionOf(sut, "opt_hid_v1")
+    visPos = PositionOf(sut, "opt_vis_v1")
+    mandPos = PositionOf(sut, "mand_v1")
+
+    sut.SetHiddenInRange hidPos, mandPos, True
+
+    Assert.IsTrue sut.IsHidden(sut.IndexOf("opt_vis_v1")), _
+                  "The free entries of the span hide"
+    Assert.IsFalse sut.IsHidden(sut.IndexOf("mand_v1")), _
+                   "A mandatory entry stays visible when its section hides"
+    Assert.AreEqual CByte(ShowHideRangeHidden), sut.RangeState(hidPos, mandPos), _
+                    "And the span still reads as hidden, because the state " & _
+                    "is read from the entries the user owns"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAMandatoryEntryHoldsItsSectionOpen", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestSetHiddenInRangeCountsWhatItChanged()
+    CustomTestSetTitles Assert, TESTMODULE, "TestSetHiddenInRangeCountsWhatItChanged"
+    If Not FixtureReady("TestSetHiddenInRangeCountsWhatItChanged") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sut As ShowHide
+    Dim hidPos As Long
+    Dim visPos As Long
+    Dim mandPos As Long
+
+    Set sut = ShowHide.Create(Dict, ShowHideLayerVList, VLIST_SHEET)
+    hidPos = PositionOf(sut, "opt_hid_v1")
+    visPos = PositionOf(sut, "opt_vis_v1")
+    mandPos = PositionOf(sut, "mand_v1")
+
+    'opt_hid_v1 starts hidden and opt_vis_v1 starts visible, so hiding the span
+    'moves one entry. mand_v1 is in the span too and moves nothing.
+    Assert.AreEqual CLng(1), sut.SetHiddenInRange(hidPos, mandPos, True), _
+                    "The count is the entries that actually moved"
+    Assert.AreEqual CLng(0), sut.SetHiddenInRange(hidPos, mandPos, True), _
+                    "And hiding an already hidden span moves nothing"
+    Assert.AreEqual CLng(2), sut.SetHiddenInRange(hidPos, mandPos, False), _
+                    "Showing it again moves both free entries"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSetHiddenInRangeCountsWhatItChanged", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestRangeStateReadsTheFreeEntries()
+    CustomTestSetTitles Assert, TESTMODULE, "TestRangeStateReadsTheFreeEntries"
+    If Not FixtureReady("TestRangeStateReadsTheFreeEntries") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sut As ShowHide
+    Dim hidPos As Long
+    Dim visPos As Long
+    Dim mandPos As Long
+
+    Set sut = ShowHide.Create(Dict, ShowHideLayerVList, VLIST_SHEET)
+    hidPos = PositionOf(sut, "opt_hid_v1")
+    visPos = PositionOf(sut, "opt_vis_v1")
+    mandPos = PositionOf(sut, "mand_v1")
+
+    Assert.AreEqual CByte(ShowHideRangeShown), sut.RangeState(visPos, visPos), _
+                    "A span holding one visible free entry reads as shown"
+    Assert.AreEqual CByte(ShowHideRangeMixed), sut.RangeState(hidPos, visPos), _
+                    "One hidden and one visible reads as mixed"
+
+    sut.SetHiddenInRange hidPos, visPos, True
+    Assert.AreEqual CByte(ShowHideRangeHidden), sut.RangeState(hidPos, visPos), _
+                    "And hiding the lot reads as hidden"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestRangeStateReadsTheFreeEntries", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestASpanTheUserOwnsNothingInIsFixed()
+    CustomTestSetTitles Assert, TESTMODULE, "TestASpanTheUserOwnsNothingInIsFixed"
+    If Not FixtureReady("TestASpanTheUserOwnsNothingInIsFixed") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sut As ShowHide
+    Dim hidPos As Long
+    Dim visPos As Long
+    Dim mandPos As Long
+
+    Set sut = ShowHide.Create(Dict, ShowHideLayerVList, VLIST_SHEET)
+    hidPos = PositionOf(sut, "opt_hid_v1")
+    visPos = PositionOf(sut, "opt_vis_v1")
+    mandPos = PositionOf(sut, "mand_v1")
+
+    'A span with nothing free in it answers Fixed, so a caller can tell "there is
+    'nothing here to toggle" from "this is showing and you may hide it".
+    Assert.AreEqual CByte(ShowHideRangeFixed), sut.RangeState(mandPos, mandPos), _
+                    "A span holding only a mandatory entry is fixed"
+    Assert.AreEqual CByte(ShowHideRangeEmpty), sut.RangeState(500, 510), _
+                    "And a span holding no entry at all is empty"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestASpanTheUserOwnsNothingInIsFixed", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestRangeStateReadsItsBoundsEitherWay()
+    CustomTestSetTitles Assert, TESTMODULE, "TestRangeStateReadsItsBoundsEitherWay"
+    If Not FixtureReady("TestRangeStateReadsItsBoundsEitherWay") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sut As ShowHide
+    Dim hidPos As Long
+    Dim visPos As Long
+    Dim mandPos As Long
+
+    Set sut = ShowHide.Create(Dict, ShowHideLayerVList, VLIST_SHEET)
+    hidPos = PositionOf(sut, "opt_hid_v1")
+    visPos = PositionOf(sut, "opt_vis_v1")
+    mandPos = PositionOf(sut, "mand_v1")
+
+    sut.SetHiddenInRange visPos, hidPos, True
+
+    Assert.IsTrue sut.IsHidden(sut.IndexOf("opt_vis_v1")), _
+                  "A span handed over backwards still hides what it covers"
+    Assert.AreEqual sut.RangeState(hidPos, visPos), sut.RangeState(visPos, hidPos), _
+                    "And reads the same state either way round"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestRangeStateReadsItsBoundsEitherWay", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestACollapsedSectionTravelsThroughTheStore()
+    CustomTestSetTitles Assert, TESTMODULE, "TestACollapsedSectionTravelsThroughTheStore"
+    If Not FixtureReady("TestACollapsedSectionTravelsThroughTheStore") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim store As ShowHideStore
+    Dim collapsed As ShowHide
+    Dim reloaded As ShowHide
+    Dim hidPos As Long
+    Dim mandPos As Long
+
+    'This is the whole of what "the layout is exported and imported" comes to.
+    'Hiding a section writes nothing of its own: the choice lands on each member
+    'entry, so the six columns the store already carries take a collapsed
+    'section from one workbook to the next with no column and no code of their
+    'own. LLExporter.AddShowHide and LLImporter.ImportShowHide drive exactly
+    'this pair of calls.
+    Set store = ShowHideStore.CreateOnSheet(ScratchSheet())
+    Set collapsed = ShowHide.Create(Dict, ShowHideLayerVList, VLIST_SHEET)
+    hidPos = PositionOf(collapsed, "opt_hid_v1")
+    mandPos = PositionOf(collapsed, "mand_v1")
+
+    collapsed.SetHiddenInRange hidPos, mandPos, True
+    store.Save collapsed
+
+    Set reloaded = ShowHide.Create(Dict, ShowHideLayerVList, VLIST_SHEET)
+    Assert.IsFalse reloaded.IsHidden(reloaded.IndexOf("opt_vis_v1")), _
+                   "A fresh list starts where the dictionary says"
+
+    Assert.IsTrue store.Load(reloaded) > 0, "Load reports the rows it matched"
+
+    Assert.AreEqual CByte(ShowHideRangeHidden), reloaded.RangeState(hidPos, mandPos), _
+                    "The collapsed section comes back collapsed"
+    Assert.IsFalse reloaded.IsHidden(reloaded.IndexOf("mand_v1")), _
+                   "And its mandatory entry comes back visible"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestACollapsedSectionTravelsThroughTheStore", Err.Number, Err.Description
+End Sub
+
+
 '@section Fixture helpers
 '===============================================================================
+
+'@fun-title Where one variable of an entry list sits.
+'@param entries ShowHide. The list to read.
+'@param fieldKey String. The variable to look for.
+'@return Long. The position, or 0 when the list does not carry the variable.
+Private Function PositionOf(ByVal entries As ShowHide, ByVal fieldKey As String) As Long
+    Dim idx As Long
+
+    idx = entries.IndexOf(fieldKey)
+    If idx = 0 Then Exit Function
+
+    PositionOf = entries.PositionIndex(idx)
+End Function
 
 '@fun-title Report a fixture that could not be built, once per test.
 '@param testName String. The test asking.

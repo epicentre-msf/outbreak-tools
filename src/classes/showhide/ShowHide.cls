@@ -28,6 +28,19 @@ Public Enum ShowHideWorksheetLayer
     ShowHideLayerCRF = 4
 End Enum
 
+'@description
+'What a span of positions - a section, say - looks like once every entry inside
+'it has been read. Fixed and Shown are told apart on purpose: a span holding
+'nothing the user owns cannot be toggled at all, and a caller that read it as
+'Shown would offer an action that does nothing.
+Public Enum ShowHideRangeState
+    ShowHideRangeEmpty = 0
+    ShowHideRangeShown = 1
+    ShowHideRangeHidden = 2
+    ShowHideRangeMixed = 3
+    ShowHideRangeFixed = 4
+End Enum
+
 
 '@class ShowHide
 '@description
@@ -35,10 +48,19 @@ End Enum
 'visible or hidden choice for each of them. The list is built from the
 'dictionary. EntryCount, FieldKey, HeaderText, IsHidden, PositionIndex,
 'ControlType and AuthoredVertical read one entry, IndexOf and HasField find
-'one, SetHidden and SetAllOptionalHidden change the choices, Apply writes them
+'one, SetHidden and SetAllOptionalHidden change the choices, SetHiddenInRange
+'and RangeState do the same for a whole span of positions, Apply writes them
 'through a layout and Adopt reads them back from a saved set. The class reads
 'the dictionary alone: the worksheet is ShowHideLayout's work and the saved
 'choices are ShowHideStore's.
+'
+'A SECTION IS A SPAN OF POSITIONS
+'-------------------------------------------------------------------------------
+'Hiding a whole section is SetHiddenInRange over the positions SectionMap
+'recorded for it. Nothing about a section is stored here or anywhere else: the
+'choice lands on the member entries, so it travels through the store and
+'through a migration file with no column of its own, and there is no second
+'record that could disagree with the first.
 '
 'FOUR KINDS OF ENTRY
 '-------------------------------------------------------------------------------
@@ -70,7 +92,7 @@ End Enum
 '"Mandatory") are translated at the form and stored nowhere. A user who changes
 'the interface language between two sessions keeps every choice.
 '@depends LLdictionary, LLVariables, ShowHideLayout, BetterArray, Checking
-'@version 1.0 (2026-08-01)
+'@version 1.1 (2026-08-06)
 
 
 Private Const CLASS_NAME As String = "ShowHide"
@@ -362,6 +384,86 @@ Public Sub SetAllOptionalHidden(ByVal hidden As Boolean)
     Next idx
 End Sub
 
+'@label:set-hidden-in-range
+'@sub-title Hide or show every entry sitting in a span of positions
+'@details
+'What hiding a whole section comes down to. The span is a range of column
+'numbers on an HList sheet and of row numbers on a VList one, which is what
+'SectionMap records for each section.
+'
+'Hiding a section stores nothing of its own: the choice lands on each member
+'entry, so the store, the show/hide form and a migration file all carry a
+'collapsed section without knowing the word "section". Nothing can drift out of
+'step with anything else, because there is only one record of the choice.
+'
+'A mandatory or locked entry inside the span keeps its state, as it does
+'everywhere else. So a section holding a mandatory variable never disappears
+'whole, and the count says how many entries actually moved.
+'@param firstPos Long. One end of the span.
+'@param lastPos Long. The other end of the span.
+'@param hidden Boolean. True to hide the span.
+'@return Long. How many entries the call changed.
+'@export
+Public Function SetHiddenInRange(ByVal firstPos As Long, _
+                                 ByVal lastPos As Long, _
+                                 ByVal hidden As Boolean) As Long
+    Dim idx As Long
+    Dim changed As Long
+
+    For idx = 1 To this.entryCount
+        If PositionInRange(this.positions(idx), firstPos, lastPos) Then
+            If Not (this.mandatory(idx) Or this.locked(idx)) Then
+                If this.hidden(idx) <> hidden Then
+                    this.hidden(idx) = hidden
+                    changed = changed + 1
+                End If
+            End If
+        End If
+    Next idx
+
+    SetHiddenInRange = changed
+End Function
+
+'@label:range-state
+'@sub-title Where a span of positions stands
+'@details
+'Read from the entries the user owns, so a section whose only visible column is
+'a mandatory one still answers Hidden and a caller toggling it offers Show.
+'@param firstPos Long. One end of the span.
+'@param lastPos Long. The other end of the span.
+'@return Byte. A ShowHideRangeState value. Empty when no entry sits in the span,
+'  Fixed when none of those that do is free, and otherwise Shown, Hidden or
+'  Mixed by what the free entries say.
+'@export
+Public Function RangeState(ByVal firstPos As Long, ByVal lastPos As Long) As Byte
+    Dim idx As Long
+    Dim inRange As Long
+    Dim freeCount As Long
+    Dim hiddenCount As Long
+
+    For idx = 1 To this.entryCount
+        If PositionInRange(this.positions(idx), firstPos, lastPos) Then
+            inRange = inRange + 1
+            If Not (this.mandatory(idx) Or this.locked(idx)) Then
+                freeCount = freeCount + 1
+                If this.hidden(idx) Then hiddenCount = hiddenCount + 1
+            End If
+        End If
+    Next idx
+
+    If inRange = 0 Then
+        RangeState = ShowHideRangeEmpty
+    ElseIf freeCount = 0 Then
+        RangeState = ShowHideRangeFixed
+    ElseIf hiddenCount = 0 Then
+        RangeState = ShowHideRangeShown
+    ElseIf hiddenCount = freeCount Then
+        RangeState = ShowHideRangeHidden
+    Else
+        RangeState = ShowHideRangeMixed
+    End If
+End Function
+
 
 '@section Worksheet
 '===============================================================================
@@ -592,6 +694,28 @@ Private Function EffectiveHidden(ByVal index As Long) As Boolean
         EffectiveHidden = True
     Else
         EffectiveHidden = this.hidden(index)
+    End If
+End Function
+
+'@label:position-in-range
+'@sub-title Whether one entry sits inside a span of positions
+'@details
+'The two bounds are read in either order, so a caller that hands them over the
+'other way round gets the same answer. An entry with no position, which is what
+'a variable the dictionary gives no `column index` looks like, is in no span.
+'@param position Long. The entry position.
+'@param firstPos Long. One end of the span.
+'@param lastPos Long. The other end of the span.
+'@return Boolean. True when the position falls inside the span.
+Private Function PositionInRange(ByVal position As Long, _
+                                 ByVal firstPos As Long, _
+                                 ByVal lastPos As Long) As Boolean
+    If position < 1 Then Exit Function
+
+    If firstPos <= lastPos Then
+        PositionInRange = (position >= firstPos) And (position <= lastPos)
+    Else
+        PositionInRange = (position >= lastPos) And (position <= firstPos)
     End If
 End Function
 
