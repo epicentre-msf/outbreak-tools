@@ -1721,8 +1721,228 @@ Fail:
 End Sub
 
 
+'@section Duplicate group colouring
+'===============================================================================
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestDuplicateGroupColorsAreDistinct()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestDuplicateGroupColorsAreDistinct"
+    On Error GoTo Fail
+
+    Dim paletteSize As Long
+    Dim idx As Long
+    Dim jdx As Long
+    Dim collisions As Long
+    Dim redHits As Long
+    Dim holdsSeveral As Boolean
+
+    paletteSize = Subject.DuplicateColorCount
+    holdsSeveral = (paletteSize > 1)
+
+    Assert.IsTrue holdsSeveral, "The palette must hold more than one colour"
+
+    For idx = 0 To paletteSize - 1
+        If Subject.DuplicateGroupColor(idx) = CLng(vbRed) Then redHits = redHits + 1
+        For jdx = idx + 1 To paletteSize - 1
+            If Subject.DuplicateGroupColor(idx) = Subject.DuplicateGroupColor(jdx) Then
+                collisions = collisions + 1
+            End If
+        Next jdx
+    Next idx
+
+    Assert.AreEqual CLng(0), collisions, "Every group inside the palette must take a colour of its own"
+    Assert.AreEqual CLng(0), redHits, "No group colour may be the red the catch-all rule uses"
+    Assert.AreEqual Subject.DuplicateGroupColor(0), Subject.DuplicateGroupColor(paletteSize), _
+                    "The palette wraps once it is walked through"
+    Assert.AreEqual Subject.DuplicateGroupColor(0), Subject.DuplicateGroupColor(-3), _
+                    "A negative index answers the first colour rather than raising"
+
+    Assert.LogSuccesses "TestDuplicateGroupColorsAreDistinct: palette holds " & CStr(paletteSize) & " colours"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDuplicateGroupColorsAreDistinct", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestEachDuplicateGroupTakesItsOwnColor()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestEachDuplicateGroupTakesItsOwnColor"
+    On Error GoTo Fail
+
+    Dim colors As BetterArray
+    Dim firstFill As Long
+    Dim secondFill As Long
+    Dim fillsDiffer As Boolean
+
+    Subject.UpdateFromRegistry RegistrySheet, "French"
+
+    'Two groups: "Bonjour" three times and "Salut" twice. The rest stand alone.
+    FillLanguageColumn "French", Array("Bonjour", "Salut", "Bonjour", "Salut", "Bonjour", "Adieu")
+    RunUpdateThatAddsARow
+
+    Set colors = GroupRuleColors("French")
+
+    Assert.AreEqual CLng(2), colors.Length, "Two duplicate groups must produce two group rules"
+    If colors.Length < 2 Then Exit Sub
+
+    firstFill = CLng(colors.Item(colors.LowerBound))
+    secondFill = CLng(colors.Item(colors.LowerBound + 1))
+    fillsDiffer = (firstFill <> secondFill)
+
+    Assert.IsTrue fillsDiffer, "The two groups must not share a fill"
+    Assert.IsTrue IsPaletteColor(firstFill), "The first group fill comes from the palette"
+    Assert.IsTrue IsPaletteColor(secondFill), "The second group fill comes from the palette"
+
+    Assert.AreEqual CLng(vbRed), CLng(LastRuleColor("French")), _
+                    "The red catch-all stays on, added last so it holds the lowest priority"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestEachDuplicateGroupTakesItsOwnColor", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestCaseVariantsDoNotShareAGroupColor()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestCaseVariantsDoNotShareAGroupColor"
+    On Error GoTo Fail
+
+    Dim colors As BetterArray
+
+    Subject.UpdateFromRegistry RegistrySheet, "French"
+
+    'Every spelling appears once, so no group exists even though Excel's own
+    'duplicate rule reads the first two as a pair.
+    FillLanguageColumn "French", Array("Bonjour", "bonjour", "BONJOUR", "Salut", "Adieu", "Ciao")
+    RunUpdateThatAddsARow
+
+    Set colors = GroupRuleColors("French")
+
+    Assert.AreEqual CLng(0), colors.Length, "Two spellings of one word are two labels and neither is a group"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestCaseVariantsDoNotShareAGroupColor", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestDuplicateGroupsMatchTheSummary()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestDuplicateGroupsMatchTheSummary"
+    On Error GoTo Fail
+
+    Dim colors As BetterArray
+    Dim summary As String
+
+    Subject.UpdateFromRegistry RegistrySheet, "French"
+
+    FillLanguageColumn "French", Array("Bonjour", "Salut", "Bonjour", "Salut", "Ciao", "Ciao")
+    RunUpdateThatAddsARow
+
+    Set colors = GroupRuleColors("French")
+    Assert.IsTrue Subject.DuplicateLabels(summary, "French"), "The three repeated values must be reported"
+
+    Assert.AreEqual CLng(3), colors.Length, "One rule per group the summary names"
+    Assert.AreEqual CLng(3), CountOccurrences(summary, " duplicates"), _
+                    "The summary names the same three groups the sheet colours"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDuplicateGroupsMatchTheSummary", Err.Number, Err.Description
+End Sub
+
+
 '@section Helpers
 '===============================================================================
+'@sub-title Write one value per row into a language column, top down.
+Private Sub FillLanguageColumn(ByVal columnName As String, ByVal values As Variant)
+    Dim dataRange As Range
+    Dim idx As Long
+    Dim rowIndex As Long
+
+    Set dataRange = TranslationsTable.ListColumns(columnName).DataBodyRange
+    If dataRange Is Nothing Then Exit Sub
+
+    rowIndex = 0
+    For idx = LBound(values) To UBound(values)
+        rowIndex = rowIndex + 1
+        If rowIndex > dataRange.Rows.Count Then Exit For
+        dataRange.Cells(rowIndex, 1).Value = values(idx)
+    Next idx
+End Sub
+
+'@sub-title Run an update that brings one new label in, so ApplyFormatting fires.
+'@details ApplyFormatting runs only when a row was added or removed. Everything
+'         these tests set up is a value edit, which leaves the table clean.
+Private Sub RunUpdateThatAddsARow()
+    SourceSheet.Range("A3").Value = "Fresh label " & CStr(TranslationsTable.ListRows.Count)
+    DropName "RNG_Greetings"
+    FixtureWorkbook.Names.Add Name:="RNG_Greetings", RefersTo:=SourceSheet.Range("A1:A3")
+
+    SetRegistryStatus "yes", "yes", "yes"
+    Subject.UpdateFromRegistry RegistrySheet
+End Sub
+
+'@sub-title Collect the fill of every group rule on a language column.
+Private Function GroupRuleColors(ByVal columnName As String) As BetterArray
+    Dim dataRange As Range
+    Dim idx As Long
+    Dim colors As BetterArray
+
+    Set colors = New BetterArray
+    colors.LowerBound = 0
+    Set GroupRuleColors = colors
+
+    Set dataRange = TranslationsTable.ListColumns(columnName).DataBodyRange
+    If dataRange Is Nothing Then Exit Function
+
+    For idx = 1 To dataRange.FormatConditions.Count
+        If dataRange.FormatConditions(idx).Type = xlExpression Then
+            colors.Push CLng(dataRange.FormatConditions(idx).Interior.Color)
+        End If
+    Next idx
+End Function
+
+'@sub-title Read the fill of the lowest priority rule on a language column.
+Private Function LastRuleColor(ByVal columnName As String) As Long
+    Dim dataRange As Range
+    Dim ruleCount As Long
+
+    Set dataRange = TranslationsTable.ListColumns(columnName).DataBodyRange
+    If dataRange Is Nothing Then Exit Function
+
+    ruleCount = dataRange.FormatConditions.Count
+    If ruleCount = 0 Then Exit Function
+
+    LastRuleColor = CLng(dataRange.FormatConditions(ruleCount).Interior.Color)
+End Function
+
+'@sub-title Test whether a colour is one the palette hands out.
+Private Function IsPaletteColor(ByVal candidate As Long) As Boolean
+    Dim idx As Long
+
+    For idx = 0 To Subject.DuplicateColorCount - 1
+        If Subject.DuplicateGroupColor(idx) = candidate Then
+            IsPaletteColor = True
+            Exit Function
+        End If
+    Next idx
+End Function
+
+'@sub-title Count how many times a marker appears inside a piece of text.
+Private Function CountOccurrences(ByVal haystack As String, ByVal needle As String) As Long
+    Dim position As Long
+    Dim found As Long
+
+    If LenB(needle) = 0 Then Exit Function
+
+    position = InStr(1, haystack, needle, vbBinaryCompare)
+    Do While position > 0
+        found = found + 1
+        position = InStr(position + Len(needle), haystack, needle, vbBinaryCompare)
+    Loop
+
+    CountOccurrences = found
+End Function
+
+
 Private Function LastTableRow() As Long
     LastTableRow = TranslationsTable.Range.Row + TranslationsTable.Range.Rows.Count - 1
 End Function

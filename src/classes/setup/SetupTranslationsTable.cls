@@ -42,6 +42,25 @@ Option Explicit
 'are matched without regard to case. Excel matches defined names that way
 'itself.
 '
+'DUPLICATES ARE COLOURED BY GROUP
+'-------------------------------------------------------------------------------
+'ApplyFormatting gives every duplicate group in a column a fill of its own,
+'walked off the hue wheel by DuplicateGroupColor. A column painted in one colour
+'says which cells are duplicated and nothing about which of them go together,
+'and a translator staring at forty red cells has to read every one to find the
+'pairs. One rule per group answers both questions at a glance.
+'
+'CollectDuplicateGroups finds the groups, and the summary message reads its
+'groups from the same function, so the sheet and the message never disagree. The
+'rules are EXACT tests, which is what carries the capitalisation through to the
+'sheet: "Hello" and "hello" are two labels here and neither takes the colour of
+'the other.
+'
+'The red rule that used to paint every duplicate is still there, added last so
+'it holds the lowest priority. It now marks a duplicate this class could not
+'group: one past the end of the palette, one whose label is too long for a rule
+'formula, or one whose formula Excel refused.
+'
 'THE HELPER TAG COLUMN
 '-------------------------------------------------------------------------------
 'The translations ListObject sits with one spare worksheet column to its left
@@ -135,6 +154,25 @@ Private Const MANUAL_TAG_NAME As String = "__manual__"
 Private Const BUFFER_GROWTH_MARGIN As Long = 16
 Private Const MAX_LANGUAGE_SCAN As Long = 64
 Private Const MAX_DELETE_BATCH As Long = 500
+
+'The duplicate palette. One hue per group, walked with a stride that is prime to
+'the hue count so the whole wheel is still used and two groups that follow each
+'other in the column land half a wheel apart. A lap of the wheel is one shade
+'band, and each further lap drops the lightness, so the palette holds
+'DUPLICATE_HUE_COUNT * DUPLICATE_SHADE_COUNT colours before it repeats.
+Private Const DUPLICATE_HUE_COUNT As Long = 12
+Private Const DUPLICATE_HUE_STRIDE As Long = 5
+Private Const DUPLICATE_SHADE_COUNT As Long = 2
+Private Const DUPLICATE_HUE_START As Double = 20
+Private Const DUPLICATE_SATURATION As Double = 0.72
+Private Const DUPLICATE_LIGHTNESS_TOP As Double = 0.86
+Private Const DUPLICATE_LIGHTNESS_STEP As Double = 0.22
+'DUPLICATE_HUE_COUNT hues times DUPLICATE_SHADE_COUNT shade bands.
+Private Const MAX_DUPLICATE_GROUPS As Long = 24
+
+'Excel refuses a format condition formula past 255 characters. A label that long
+'gets no group rule and is left to the red catch-all.
+Private Const MAX_RULE_FORMULA_LENGTH As Long = 255
 
 
 '@section Factory helpers
@@ -1649,21 +1687,14 @@ End Function
 Private Function ComputeDuplicateSummary(ByVal languageName As String) As TDuplicateSummary
     Dim labelRange As Range
     Dim targetRange As Range
-    Dim rowIndex As Long
-    Dim currentLabel As String
     Dim summary As TDuplicateSummary
     Dim columnTitle As String
     Dim messageLines As BetterArray
-    Dim duplicatesFound As Boolean
     Dim trimmedLanguage As String
-    Dim values As Variant
-    Dim rowCount As Long
-    Dim seenSlots As Collection
-    Dim seenLabel() As String
-    Dim seenCount() As Long
-    Dim uniqueCount As Long
-    Dim slot As Long
-    Dim bucketIndex As Long
+    Dim groupLabels() As String
+    Dim groupCounts() As Long
+    Dim groupCount As Long
+    Dim groupIndex As Long
 
     ValidateInitialised
     Set labelRange = LabelColumnData()
@@ -1679,18 +1710,63 @@ Private Function ComputeDuplicateSummary(ByVal languageName As String) As TDupli
         columnTitle = trimmedLanguage
     End If
 
+    groupCount = CollectDuplicateGroups(targetRange, groupLabels, groupCounts)
+    If groupCount = 0 Then GoTo Done
+
+    Set messageLines = CreateBuffer()
+    messageLines.Push "Duplicate labels detected in column " & columnTitle & "!"
+
+    For groupIndex = 1 To groupCount
+        messageLines.Push BuildDuplicateLine(groupLabels(groupIndex), groupCounts(groupIndex))
+    Next groupIndex
+
+    summary.HasDuplicates = True
+    summary.Message = messageLines.ToString(Separator:=vbLf, OpeningDelimiter:=vbNullString, ClosingDelimiter:=vbNullString)
+
+Done:
+    ComputeDuplicateSummary = summary
+End Function
+
+'@label:collect-duplicate-groups
+'@sub-title Find every value a column holds more than once, in first-appearance order.
+'@details One keyed Collection carries the whole count, so the cost is linear in
+'         the row count. The key comes from LabelKey and spells the
+'         capitalisation out, so "Hello" and "hello" are counted apart and
+'         neither is a duplicate of the other. Both the summary message and the
+'         sheet colouring read their groups from here, which is what keeps the
+'         two of them saying the same thing.
+'@param targetRange Range. The one column to count.
+'@param groupLabels ByRef String(). Receives the duplicated values, 1 based.
+'@param groupCounts ByRef Long(). Receives how many times each one appears, 1 based.
+'@return Long. Number of duplicate groups found.
+Private Function CollectDuplicateGroups(ByVal targetRange As Range, _
+                                        ByRef groupLabels() As String, _
+                                        ByRef groupCounts() As Long) As Long
+    Dim values As Variant
+    Dim rowCount As Long
+    Dim rowIndex As Long
+    Dim currentLabel As String
+    Dim seenSlots As Collection
+    Dim seenLabel() As String
+    Dim seenCount() As Long
+    Dim uniqueCount As Long
+    Dim slot As Long
+    Dim bucketIndex As Long
+    Dim groupCount As Long
+
+    If targetRange Is Nothing Then Exit Function
+
     values = targetRange.Value2
     If IsArray(values) Then
         rowCount = UBound(values, 1) - LBound(values, 1) + 1
     Else
         rowCount = 1
     End If
-    If rowCount = 0 Then GoTo Done
+    If rowCount = 0 Then Exit Function
 
     Set seenSlots = New Collection
     ReDim seenLabel(1 To rowCount)
     ReDim seenCount(1 To rowCount)
-    Set messageLines = CreateBuffer()
 
     For rowIndex = 1 To rowCount
         currentLabel = BlockText(values, rowIndex)
@@ -1712,26 +1788,18 @@ Private Function ComputeDuplicateSummary(ByVal languageName As String) As TDupli
         End If
     Next rowIndex
 
+    ReDim groupLabels(1 To rowCount)
+    ReDim groupCounts(1 To rowCount)
+
     For bucketIndex = 1 To uniqueCount
         If seenCount(bucketIndex) > 1 Then
-            If Not duplicatesFound Then
-                messageLines.Push "Duplicate labels detected in column " & columnTitle & "!"
-                duplicatesFound = True
-            End If
-            messageLines.Push BuildDuplicateLine(seenLabel(bucketIndex), seenCount(bucketIndex))
+            groupCount = groupCount + 1
+            groupLabels(groupCount) = seenLabel(bucketIndex)
+            groupCounts(groupCount) = seenCount(bucketIndex)
         End If
     Next bucketIndex
 
-    If duplicatesFound Then
-        summary.HasDuplicates = True
-        summary.Message = messageLines.ToString(Separator:=vbLf, OpeningDelimiter:=vbNullString, ClosingDelimiter:=vbNullString)
-    Else
-        summary.HasDuplicates = False
-        summary.Message = vbNullString
-    End If
-
-Done:
-    ComputeDuplicateSummary = summary
+    CollectDuplicateGroups = groupCount
 End Function
 
 '@label:label-column-data
@@ -1844,6 +1912,9 @@ End Sub
 
 '@label:apply-lang-column-formatting
 '@sub-title Apply font, sizing, and duplicate highlighting to a language column.
+'@details The group rules go on first and the red catch-all goes on last.
+'         FormatConditions.Add appends, so the rule added last holds the lowest
+'         priority and shows through only where no group rule claimed the cell.
 Private Sub ApplyLangColumnFormatting(ByVal langRng As Range)
 
     If langRng Is Nothing Then Exit Sub
@@ -1860,6 +1931,8 @@ Private Sub ApplyLangColumnFormatting(ByVal langRng As Range)
 
     End With
 
+    HighlightDuplicateGroups langRng
+
     'Formatting conditions
     langRng.FormatConditions.AddUniqueValues
 
@@ -1869,6 +1942,202 @@ Private Sub ApplyLangColumnFormatting(ByVal langRng As Range)
     End With
 
 End Sub
+
+'@label:highlight-duplicate-groups
+'@sub-title Give every duplicate group in a column a fill of its own.
+'@details A column painted in one colour says which cells are duplicated and
+'         nothing about which of them belong together. One rule per group says
+'         both, and the eye pairs them without reading a word.
+'
+'         Three things send a group back to the red catch-all: a palette that
+'         has run out (MAX_DUPLICATE_GROUPS), a label whose rule formula would
+'         pass MAX_RULE_FORMULA_LENGTH, and a formula Excel refuses. So red no
+'         longer reads as "duplicate". It reads as "duplicate this could not
+'         group", and a sheet with red on it is still telling the truth.
+Private Sub HighlightDuplicateGroups(ByVal langRng As Range)
+    Dim groupLabels() As String
+    Dim groupCounts() As Long
+    Dim groupCount As Long
+    Dim groupIndex As Long
+    Dim anchor As String
+    Dim painted As Long
+
+    groupCount = CollectDuplicateGroups(langRng, groupLabels, groupCounts)
+    If groupCount = 0 Then Exit Sub
+
+    'A format condition formula is read from the top left cell of the range it
+    'is given and applied down from there, so the anchor is that cell with its
+    'row left relative.
+    anchor = langRng.Cells(1, 1).Address(RowAbsolute:=False, ColumnAbsolute:=False)
+
+    For groupIndex = 1 To groupCount
+        If painted >= MAX_DUPLICATE_GROUPS Then Exit For
+        If AddGroupCondition(langRng, anchor, groupLabels(groupIndex), DuplicateGroupColor(painted)) Then
+            painted = painted + 1
+        End If
+    Next groupIndex
+End Sub
+
+'@label:add-group-condition
+'@sub-title Give one duplicate group its own format condition.
+'@details EXACT is what carries the case, so the sheet groups labels the way
+'         CollectDuplicateGroups counts them and "Hello" never shares a colour
+'         with "hello".
+'
+'         Range.Formula reads US syntax whatever the host locale is and Formula1
+'         follows it, so the formula is written in US form with a comma and no
+'         localised form is attempted. FormatConditions.Add appends without
+'         complaint, so the count is what says whether it was accepted.
+'@return Boolean. True when the group came away with a rule.
+Private Function AddGroupCondition(ByVal langRng As Range, _
+                                   ByVal anchor As String, _
+                                   ByVal label As String, _
+                                   ByVal fillColor As Long) As Boolean
+    Dim conditionsBefore As Long
+    Dim ruleFormula As String
+
+    ruleFormula = GroupConditionFormula(anchor, label)
+    If LenB(ruleFormula) = 0 Then Exit Function
+
+    conditionsBefore = langRng.FormatConditions.Count
+
+    On Error Resume Next
+        langRng.FormatConditions.Add Type:=xlExpression, Formula1:=ruleFormula
+    On Error GoTo 0
+
+    If langRng.FormatConditions.Count = conditionsBefore Then Exit Function
+
+    With langRng.FormatConditions(langRng.FormatConditions.Count)
+        .Interior.Color = fillColor
+        .StopIfTrue = True
+    End With
+
+    AddGroupCondition = True
+End Function
+
+'@label:group-condition-formula
+'@sub-title Build the EXACT test for one duplicate group.
+'@details A label carrying a double quote has to have it doubled or the formula
+'         closes early and Excel refuses the whole rule.
+'@return String. The formula, or empty when it would pass the length cap.
+Private Function GroupConditionFormula(ByVal anchor As String, _
+                                       ByVal label As String) As String
+    Dim quoted As String
+    Dim candidate As String
+
+    quoted = Replace(label, Chr$(34), Chr$(34) & Chr$(34))
+    candidate = "=EXACT(" & anchor & "," & Chr$(34) & quoted & Chr$(34) & ")"
+
+    If Len(candidate) > MAX_RULE_FORMULA_LENGTH Then Exit Function
+
+    GroupConditionFormula = candidate
+End Function
+
+'@label:duplicate-color-count
+'@prop-title How many duplicate groups the palette colours before it repeats.
+Public Property Get DuplicateColorCount() As Long
+    DuplicateColorCount = MAX_DUPLICATE_GROUPS
+End Property
+
+'@label:duplicate-group-color
+'@sub-title Colour for the nth duplicate group.
+'@details The hue walks the wheel in strides of DUPLICATE_HUE_STRIDE. The stride
+'         and the hue count share no factor, so every hue is still reached, and
+'         two groups that follow each other land most of a wheel apart rather
+'         than one step apart. Each further lap of the wheel drops the lightness
+'         by one band. Past the palette the index wraps, so two groups do share
+'         a colour there; HighlightDuplicateGroups stops before that happens and
+'         leaves the rest to the red catch-all.
+'@param groupIndex Long. Zero based position of the group.
+'@return Long. An RGB value ready for Interior.Color.
+'@export
+Public Function DuplicateGroupColor(ByVal groupIndex As Long) As Long
+    Dim wrapped As Long
+    Dim hueStep As Long
+    Dim lap As Long
+    Dim hue As Double
+    Dim lightness As Double
+
+    If groupIndex < 0 Then groupIndex = 0
+
+    wrapped = groupIndex Mod MAX_DUPLICATE_GROUPS
+    hueStep = (wrapped * DUPLICATE_HUE_STRIDE) Mod DUPLICATE_HUE_COUNT
+    lap = wrapped \ DUPLICATE_HUE_COUNT
+
+    hue = DUPLICATE_HUE_START + hueStep * (360# / DUPLICATE_HUE_COUNT)
+    Do While hue >= 360#
+        hue = hue - 360#
+    Loop
+
+    lightness = DUPLICATE_LIGHTNESS_TOP - lap * DUPLICATE_LIGHTNESS_STEP
+
+    DuplicateGroupColor = HslToRgb(hue, DUPLICATE_SATURATION, lightness)
+End Function
+
+'@label:hsl-to-rgb
+'@sub-title Convert one HSL triplet into the Long an Interior.Color takes.
+'@details Hue picks the sector of the wheel, chroma is how far the colour sits
+'         from grey at that lightness, and the match value lifts all three
+'         channels so the result reads back at the lightness asked for. Stepping
+'         hue alone then keeps every group equally pale, which is what makes the
+'         black Consolas text on top stay readable whatever colour a group drew.
+'@param hue Double. Degrees, 0 to 360.
+'@param saturation Double. 0 to 1.
+'@param lightness Double. 0 to 1.
+'@return Long. RGB colour.
+Private Function HslToRgb(ByVal hue As Double, _
+                          ByVal saturation As Double, _
+                          ByVal lightness As Double) As Long
+    Dim chroma As Double
+    Dim sextant As Double
+    Dim midPoint As Double
+    Dim match As Double
+    Dim sector As Long
+    Dim redPart As Double
+    Dim greenPart As Double
+    Dim bluePart As Double
+
+    chroma = (1# - Abs(2# * lightness - 1#)) * saturation
+    sextant = hue / 60#
+    sector = Int(sextant) Mod 6
+    midPoint = chroma * (1# - Abs((sextant - 2# * Int(sextant / 2#)) - 1#))
+    match = lightness - chroma / 2#
+
+    Select Case sector
+        Case 0
+            redPart = chroma
+            greenPart = midPoint
+        Case 1
+            redPart = midPoint
+            greenPart = chroma
+        Case 2
+            greenPart = chroma
+            bluePart = midPoint
+        Case 3
+            greenPart = midPoint
+            bluePart = chroma
+        Case 4
+            redPart = midPoint
+            bluePart = chroma
+        Case Else
+            redPart = chroma
+            bluePart = midPoint
+    End Select
+
+    HslToRgb = RGB(ColorByte(redPart + match), ColorByte(greenPart + match), ColorByte(bluePart + match))
+End Function
+
+'@label:color-byte
+'@sub-title Turn a 0 to 1 channel into the 0 to 255 byte RGB expects.
+Private Function ColorByte(ByVal channel As Double) As Long
+    Dim scaled As Long
+
+    scaled = CLng(channel * 255#)
+    If scaled < 0 Then scaled = 0
+    If scaled > 255 Then scaled = 255
+
+    ColorByte = scaled
+End Function
 
 '@label:configure-tag-column
 '@sub-title Locate and validate the helper column. No cell is written here.
