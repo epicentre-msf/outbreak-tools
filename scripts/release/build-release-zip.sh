@@ -48,6 +48,26 @@ for f in "$DESIGNER" "$SETUP" "$RIBBON"; do
   [ -f "$f" ] || { echo "ERROR: missing $f — run scripts/release/pull-assets.sh first." >&2; exit 1; }
 done
 
+# Ribbon envelope gate. WPS Office rewrites a workbook's custom UI into the Office
+# 2007 envelope while copying the XML body verbatim; a 2009/07 namespace then sits
+# inside a 2006-typed part and Excel drops the ribbon without a word. Shipping in the
+# 2007 envelope makes that rewrite a no-op, so a release must never carry customUI14.
+# Run scripts/devtools/ribbon-envelope.sh on any workbook this rejects.
+for f in "$DESIGNER" "$SETUP" "$RIBBON"; do
+  parts=$(unzip -Z1 "$f" 2>/dev/null || true)
+  if printf '%s\n' "$parts" | grep -qx 'customUI/customUI14.xml'; then
+    echo "ERROR: $f ships the Office 2010 ribbon envelope (customUI14.xml)." >&2
+    echo "       Run: scripts/devtools/ribbon-envelope.sh $f" >&2
+    exit 1
+  fi
+  ns=$(unzip -p "$f" customUI/customUI.xml 2>/dev/null | grep -oE 'office/[0-9/]+/customui' | head -1)
+  if [ "$ns" != "office/2006/01/customui" ]; then
+    echo "ERROR: $f has customUI.xml carrying namespace '${ns:-none}'." >&2
+    echo "       A 2006-typed part must declare office/2006/01/customui, or Excel discards it." >&2
+    exit 1
+  fi
+done
+
 command -v zip >/dev/null 2>&1 || { echo "ERROR: 'zip' not found." >&2; exit 1; }
 
 TMPD="$(mktemp -d)"; trap 'rm -rf "$TMPD"' EXIT
