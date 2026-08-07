@@ -153,7 +153,7 @@ End Function
 'cache notice that the table underneath it moved. Without this the first read
 'of a lookup table would answer every call for the rest of the session, and
 'Ctrl+Alt+F9 would not clear it either, because the slots outlive a full
-'recalculation. LinelistEventsManager.SheetChanged calls this with the name of
+'recalculation. LinelistEventsManager.LLSheetChanged calls this with the name of
 'the sheet that changed. Code that writes to a lookup sheet from inside another
 'event handler, or with Application.EnableEvents off, gets no such event and
 'has to call this itself.

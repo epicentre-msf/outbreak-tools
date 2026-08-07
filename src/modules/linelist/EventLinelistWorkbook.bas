@@ -13,7 +13,7 @@ Private Sub Workbook_Open()
     mBooting = True
 
     On Error GoTo Clean
-    LinelistEventsManager.WorkbookOpened
+    LinelistEventsManager.LLWorkbookOpened
 
 Clean:
     mBooting = False
@@ -26,7 +26,7 @@ Private Sub Workbook_SheetActivate(ByVal sh As Object)
     mBooting = True
 
     On Error GoTo Clean
-    LinelistEventsManager.SheetActivated sh
+    LinelistEventsManager.LLSheetActivated sh
 
 Clean:
     mBooting = False
@@ -52,20 +52,26 @@ Private Sub Workbook_SheetChange(ByVal sh As Object, ByVal target As Range)
     mBooting = True
 
     On Error GoTo Clean
-    LinelistEventsManager.SheetChanged sh, target
+    LinelistEventsManager.LLSheetChanged sh, target
 
 Clean:
     mBooting = False
 End Sub
 
+' A double-click on a spatial analysis sheet opens one of the two geo pickers.
+' The picker is a UserForm, GeoModule is what shows it, and the call belongs
+' here. EventLinelist answers which of the two the click asked for.
 Private Sub Workbook_SheetBeforeDoubleClick(ByVal sh As Object, ByVal target As Range, Cancel As Boolean)
+    Dim geoScopeWanted As Long
+
     If mBooting Then Exit Sub
     If TypeName(sh) <> "Worksheet" Then Exit Sub
 
     mBooting = True
 
     On Error GoTo Clean
-    LinelistEventsManager.DoubleClicked sh, target
+    geoScopeWanted = LinelistEventsManager.DoubleClicked(sh, target)
+    If geoScopeWanted >= 0 Then GeoModule.LoadGeo CByte(geoScopeWanted)
 
 Clean:
     mBooting = False

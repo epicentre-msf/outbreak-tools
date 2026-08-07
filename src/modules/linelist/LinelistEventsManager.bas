@@ -5,6 +5,21 @@ Option Explicit
 '@ModuleDescription("Centralised workbook-level event and BusyState manager delegating to EventLinelist")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
+'@description
+'Holds the single EventLinelist instance and the busy-state counter, and every
+'workbook-level event of a generated linelist comes through here.
+'
+'WHY SIX NAMES CARRY AN LL PREFIX
+'-------------------------------------------------------------------------------
+'LLEnterBusyState, LLExitBusyState, LLIsBusyState, LLWorkbookOpened,
+'LLSheetActivated and LLSheetChanged answer to the same six jobs that
+'EventsManager answers to on the setup side. Both modules live in one VBA
+'project while the test harness runs. Two Public procedures sharing a name make
+'every unqualified call to that name "Ambiguous name detected", which stops the
+'whole project compiling, so the linelist side of each pair carries the prefix.
+'The three handlers below it -- SheetDeactivated, SelectionChanged and
+'DoubleClicked -- have no twin on the setup side and keep their plain names.
+
 Private linelistService As EventLinelist
 Private appScope As ApplicationState
 Private busyDepth As Long
@@ -26,7 +41,7 @@ Private Const SNAPSHOT_KEY As String = "APPSTATE_SNAPSHOT"
 '@param calculateOnSave Optional Boolean. Value for CalculateBeforeSave. Defaults to True.
 '@param busyCursor Optional Long. Cursor shown while busy. When 0 (default), leaves cursor unchanged.
 '@param persist Optional Boolean. When True (default), persists snapshot to HiddenNames for crash recovery.
-Public Sub EnterBusyState(Optional ByVal calculateOnSave As Boolean = True, _
+Public Sub LLEnterBusyState(Optional ByVal calculateOnSave As Boolean = True, _
                           Optional ByVal busyCursor As Long = 0, _
                           Optional ByVal persist As Boolean = True)
 
@@ -49,7 +64,7 @@ End Sub
 'Decrements the nesting counter. On the outermost exit: restores the
 'ApplicationState snapshot, clears the persisted HiddenName (only when
 'persistence was used), resets the cursor, and releases the scope reference.
-Public Sub ExitBusyState()
+Public Sub LLExitBusyState()
     If busyDepth <= 0 Then
         busyDepth = 0
         Exit Sub
@@ -69,8 +84,8 @@ Public Sub ExitBusyState()
 End Sub
 
 '@sub-title Whether the manager is currently in busy state
-Public Property Get IsBusyState() As Boolean
-    IsBusyState = (busyDepth > 0)
+Public Property Get LLIsBusyState() As Boolean
+    LLIsBusyState = (busyDepth > 0)
 End Property
 
 
@@ -173,15 +188,15 @@ End Function
 '@section Workbook Entry Points
 '===============================================================================
 
-Public Sub WorkbookOpened()
+Public Sub LLWorkbookOpened()
     On Error GoTo Cleanup
-    EnterBusyState
+    LLEnterBusyState
     Service.OnWorkbookOpen
 Cleanup:
-    ExitBusyState
+    LLExitBusyState
 End Sub
 
-Public Sub SheetActivated(ByVal sh As Worksheet)
+Public Sub LLSheetActivated(ByVal sh As Worksheet)
     'No specific activate handling needed for linelist (yet)
     'Placeholder for future use (ribbon invalidation, etc.)
     If sh Is Nothing Then Exit Sub
@@ -190,48 +205,56 @@ End Sub
 Public Sub SheetDeactivated(ByVal sh As Worksheet)
     If sh Is Nothing Then Exit Sub
     On Error GoTo Cleanup
-    EnterBusyState busyCursor:=xlNorthwestArrow, persist:=False
+    LLEnterBusyState busyCursor:=xlNorthwestArrow, persist:=False
     Application.ScreenUpdating = False
     Service.OnSheetDeactivate sh.Name
 Cleanup:
-    ExitBusyState
+    LLExitBusyState
 End Sub
 
-Public Sub SheetChanged(ByVal sh As Worksheet, ByVal target As Range)
+Public Sub LLSheetChanged(ByVal sh As Worksheet, ByVal target As Range)
     If (sh Is Nothing) Or (target Is Nothing) Then Exit Sub
 
     On Error GoTo Cleanup
     ' The edited sheet may be a VALUE_OF lookup table, and that cache outlives
     ' a recalculation. Drop its slot before anything recalculates.
     CustomLinelistFunctions.ResetValueOfCache sh.Name
-    EnterBusyState busyCursor:=xlNorthwestArrow, persist:=False
+    LLEnterBusyState busyCursor:=xlNorthwestArrow, persist:=False
     Application.ScreenUpdating = False
     Service.OnSheetChange sh, target
 Cleanup:
-    ExitBusyState
+    LLExitBusyState
 End Sub
 
 Public Sub SelectionChanged(ByVal sh As Worksheet, ByVal target As Range)
     If (sh Is Nothing) Or (target Is Nothing) Then Exit Sub
 
     On Error GoTo Cleanup
-    EnterBusyState busyCursor:=xlNorthwestArrow, persist:=False
+    LLEnterBusyState busyCursor:=xlNorthwestArrow, persist:=False
     Application.ScreenUpdating = False
     Service.OnSelectionChange sh, target
 Cleanup:
-    ExitBusyState
+    LLExitBusyState
 End Sub
 
-Public Sub DoubleClicked(ByVal sh As Worksheet, ByVal target As Range)
-    If (sh Is Nothing) Or (target Is Nothing) Then Exit Sub
+'@sub-title Route a double-click and answer the geo picker it asked for.
+'@details
+'The picker is a UserForm and lives in the workbook, so the answer travels up
+'to EventLinelistWorkbook and that module opens it.
+'@param sh Worksheet. The worksheet where the double-click happened.
+'@param target Range. The double-clicked cell.
+'@return Long. A GeoScope value, or a negative number when no picker is wanted.
+Public Function DoubleClicked(ByVal sh As Worksheet, ByVal target As Range) As Long
+    DoubleClicked = -1
+    If (sh Is Nothing) Or (target Is Nothing) Then Exit Function
 
     On Error GoTo Cleanup
-    EnterBusyState busyCursor:=xlNorthwestArrow, persist:=False
+    LLEnterBusyState busyCursor:=xlNorthwestArrow, persist:=False
     Application.ScreenUpdating = False
-    Service.OnDoubleClick sh, target
+    DoubleClicked = Service.OnDoubleClick(sh, target)
 Cleanup:
-    ExitBusyState
-End Sub
+    LLExitBusyState
+End Function
 
 
 '@section Public Entry Points for External Callers
@@ -242,19 +265,19 @@ End Sub
 '@EntryPoint
 Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
     On Error GoTo Cleanup
-    EnterBusyState busyCursor:=xlNorthwestArrow, persist:=False
+    LLEnterBusyState busyCursor:=xlNorthwestArrow, persist:=False
     Application.ScreenUpdating = False
     Service.UpdateFilterTables calculate
 Cleanup:
-    ExitBusyState
+    LLExitBusyState
 End Sub
 
 '@EntryPoint
 Public Sub UpdateAllListAuto()
     On Error GoTo Cleanup
-    EnterBusyState busyCursor:=xlNorthwestArrow, persist:=False
+    LLEnterBusyState busyCursor:=xlNorthwestArrow, persist:=False
     Application.ScreenUpdating = False
     Service.UpdateAllListAuto
 Cleanup:
-    ExitBusyState
+    LLExitBusyState
 End Sub
