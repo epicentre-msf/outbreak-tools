@@ -58,6 +58,9 @@ Private Type TEventLinelist
     triedDictionary  As Boolean
     triedVariables   As Boolean
     triedPasswords   As Boolean
+    lastEditKey      As String  'Sheet and address of the last single-cell selection or edit
+    lastEditValue    As String  'What that cell held at that moment
+    lastEditKnown    As Boolean 'The two fields above hold a real reading
 End Type
 
 Private this As TEventLinelist
@@ -152,6 +155,10 @@ Public Sub OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
         Case "Uni-Bi-Analysis", "TS-Analysis", "SPT-Analysis", "SP-Analysis"
             HandleAnalysisChange sh, target, shType
     End Select
+
+    'What the cell holds once its handlers have run is the previous value of
+    'the next edit to the same cell. The multiple choice toggle reads it back.
+    RememberCellValue target
 End Sub
 
 
@@ -194,6 +201,10 @@ End Sub
 '@export
 Public Sub OnSelectionChange(ByVal sh As Worksheet, ByVal target As Range)
     If (sh Is Nothing) Or (target Is Nothing) Then Exit Sub
+
+    'The value under the selection is the previous value of the edit that may
+    'follow. The multiple choice toggle reads it back.
+    RememberCellValue target
 
     Dim shHn As HiddenNames
     Set shHn = SheetStore(sh)
@@ -489,10 +500,20 @@ End Function
 
 '@sub-title Handle value changes on HList sheets.
 '@details
-'Dispatches based on the target cell's position relative to the table:
-'geo cascades (geo1-geo4 controls), editable labels (label row),
-'list_auto flagging, go-to-section navigation, header protection
-'(header row), and multiple choice updates.
+'Dispatches on the position of the edited cell, cheapest and most specific test
+'first, and every branch exits. An edit inside the table recalculates its own
+'row and goes to the geo cascade, the list-auto flag or the multiple choice
+'toggle; an edit on the label row updates the editable label; an edit on the
+'go-to cell navigates to the chosen section; an edit on the header row is
+'refused and the cell restored.
+'
+'THE GO-TO TEST READS THE FIRST CELL AND THE SHEET STORE
+'-------------------------------------------------------------------------------
+'The builder puts the go-to dropdown in the first cell of the sheet and stores
+'its caption in the sheet store under <table>_go_to_section. Resolving that id
+'as a range name raised 1004 on every sheet the builder makes, because the id
+'names a stored string; the raise landed on the error label, so the header
+'protection and the multiple choice toggle below the old block never ran.
 '@param sh Worksheet. The HList worksheet.
 '@param target Range. The edited cell(s).
 '@param shHn HiddenNames. The worksheet-level hidden names (shared from caller).
@@ -502,7 +523,6 @@ Private Sub HandleHListChange(ByRef sh As Worksheet, ByRef target As Range, _
     Dim adminNames As BetterArray
     Dim hRng As Range
     Dim calcRng As Range
-    Dim rng As Range
     Dim cellRng As Range
     Dim varControl As String
     Dim varLabel As String
@@ -510,6 +530,7 @@ Private Sub HandleHListChange(ByRef sh As Worksheet, ByRef target As Range, _
     Dim varSubLabel As String
     Dim tableName As String
     Dim varEditable As String
+    Dim goToCaption As String
     Dim sectionName As String
     Dim targetColumn As Long
     Dim startLine As Long
@@ -519,24 +540,20 @@ Private Sub HandleHListChange(ByRef sh As Worksheet, ByRef target As Range, _
     On Error GoTo ErrHand
 
     Set hRng = sh.ListObjects(1).HeaderRowRange
-    Set adminNames = New BetterArray
-    adminNames.LowerBound = 1
-    Set adminTable = New BetterArray
-
-    EnsureTranslation
-    EnsureWorkbookNames
-
-    tableName = shHn.ValueAsString("table_name")
-    targetColumn = target.Column
     startLine = hRng.Row + 1
-    varName = sh.Cells(hRng.Row, targetColumn).Value
-    varControl = shHn.ValueAsString(varName & " -- control")
+    targetColumn = target.Column
 
+    'The edit sits in the table: one row is recalculated, and the control
+    'string decides the branch. The tests below this block all sit above the
+    'table, so the block exits whatever the control says.
     If (target.Row >= startLine) Then
 
         nbOffset = target.Row - hRng.Row
         Set calcRng = hRng.Offset(nbOffset)
         calcRng.Calculate
+
+        varName = sh.Cells(hRng.Row, targetColumn).Value
+        varControl = shHn.ValueAsString(varName & " -- control")
 
         'Geo variables
         If (varControl = "geo1") Or _
@@ -551,6 +568,10 @@ Private Sub HandleHListChange(ByRef sh As Worksheet, ByRef target As Range, _
 
             If this.drop Is Nothing Then Exit Sub
             If this.geo Is Nothing Then Exit Sub
+
+            'The two arrays serve this branch alone
+            Set adminNames = New BetterArray
+            adminNames.LowerBound = 1
 
             Select Case varControl
 
@@ -593,11 +614,36 @@ Private Sub HandleHListChange(ByRef sh As Worksheet, ByRef target As Range, _
 
             Exit Sub
         End If
+
+        'Update the list auto flag
+        If shHn.ValueAsString(varName & " -- listauto") <> vbNullString Then
+            EnsureWorkbookNames
+            If Not this.wkbNames Is Nothing Then
+                this.wkbNames.SetValue "RNG_UpdateListAuto", "yes"
+            End If
+            Exit Sub
+        End If
+
+        'Update multiple choices dropdown
+        If InStr(1, varControl, "choice_multiple") = 1 Then
+            On Error Resume Next
+            choiSep = Split(varControl, "(" & Chr(34))(1)
+            choiSep = Replace(choiSep, Chr(34) & ")", vbNullString)
+            On Error GoTo 0
+
+            If (choiSep = vbNullString) Or _
+               (InStr(1, choiSep, "choice_multiple") = 1) Then _
+                choiSep = ", "
+
+            UpdateMultipleChoice target, choiSep
+        End If
+
+        Exit Sub
     End If
 
     'Update variables with editable column (label row = header - 1)
     If (target.Row = hRng.Row - 1) Then
-
+        varName = sh.Cells(hRng.Row, targetColumn).Value
         varEditable = shHn.ValueAsString(varName & " -- editable")
         If (varEditable <> "yes") Then Exit Sub
 
@@ -613,35 +659,26 @@ Private Sub HandleHListChange(ByRef sh As Worksheet, ByRef target As Range, _
         Exit Sub
     End If
 
-    'Update the list auto flag
-    If (target.Row >= startLine) And _
-       (shHn.ValueAsString(varName & " -- listauto") <> vbNullString) Then
+    'GoTo section: the dropdown is the first cell of the sheet, and the caption
+    'held in the sheet store is the prefix of every entry it offers
+    If Not (Intersect(target, sh.Cells(1, 1)) Is Nothing) Then
+        tableName = shHn.ValueAsString("table_name")
+        goToCaption = shHn.ValueAsString(tableName & "_" & GOTOSECCODE)
 
-        If Not this.wkbNames Is Nothing Then
-            this.wkbNames.SetValue "RNG_UpdateListAuto", "yes"
+        If LenB(goToCaption) > 0 Then
+            sectionName = Replace(target.Value, goToCaption & ": ", vbNullString)
+
+            Set hRng = hRng.Offset(-3)
+            Set cellRng = hRng.Find(What:=sectionName, LookAt:=xlWhole, MatchCase:=True)
+            If Not cellRng Is Nothing Then cellRng.Activate
+            Exit Sub
         End If
-        Exit Sub
-    End If
-
-    'GoTo section
-    Set rng = sh.Range(tableName & "_" & GOTOSECCODE)
-
-    If Not (Intersect(target, rng) Is Nothing) Then
-        If Not this.wkbNames Is Nothing Then
-            sectionName = Replace(target.Value, _
-                             this.wkbNames.ValueAsString("RNG_GoToSection") & ": ", _
-                             vbNullString)
-        End If
-
-        Set hRng = hRng.Offset(-3)
-        Set cellRng = hRng.Find(What:=sectionName, LookAt:=xlWhole, MatchCase:=True)
-        If Not cellRng Is Nothing Then cellRng.Activate
-        Exit Sub
     End If
 
     'Avoid modifying headers of the table (with variable names)
     If (target.Row = hRng.Row) Then
         target.Value = target.Offset(-1).Name.Name
+        EnsureTranslation
         If Not this.tradmess Is Nothing Then
             MsgBox this.tradmess.TranslatedValue("MSG_NotModify"), _
                    vbOKOnly + vbCritical, _
@@ -650,21 +687,7 @@ Private Sub HandleHListChange(ByRef sh As Worksheet, ByRef target As Range, _
         Exit Sub
     End If
 
-    'Update multiple choices dropdown
-    If InStr(1, varControl, "choice_multiple") = 1 Then
-        On Error Resume Next
-        choiSep = Split(varControl, "(" & Chr(34))(1)
-        choiSep = Replace(choiSep, Chr(34) & ")", vbNullString)
-        On Error GoTo 0
-
-        If (choiSep = vbNullString) Or _
-           (InStr(1, choiSep, "choice_multiple") = 1) Then _
-            choiSep = ", "
-
-        UpdateMultipleChoice target, choiSep
-        Exit Sub
-    End If
-
+    Exit Sub
 ErrHand:
 End Sub
 
@@ -674,8 +697,15 @@ End Sub
 
 '@sub-title Handle value changes on VList sheets.
 '@details
-'Handles editable label updates, multiple choice updates, and go-to-section
-'navigation on vertical list sheets.
+'Dispatches on the column of the edited cell and every branch exits. An edit in
+'the label column updates the editable label; an edit in the value column
+'recalculates the value block once and runs the multiple choice toggle when the
+'control asks for it; an edit on the go-to cell navigates to the chosen label.
+'The value block used to be recalculated on every edit of the sheet, above the
+'dispatch, so a label edit and a navigation both paid for it.
+'
+'The go-to test reads the first cell of the sheet and the caption the sheet
+'store carries, the same way the HList handler does.
 '@param sh Worksheet. The VList worksheet.
 '@param target Range. The edited cell(s).
 '@param shHn HiddenNames. The worksheet-level hidden names (shared from caller).
@@ -690,19 +720,11 @@ Private Sub HandleVListChange(ByRef sh As Worksheet, ByRef target As Range, _
     Dim varName As String
     Dim varControl As String
     Dim choiSep As String
+    Dim goToCaption As String
 
     On Error GoTo ErrHandler
 
-    EnsureTranslation
-    EnsureWorkbookNames
-
     tableName = shHn.ValueAsString("table_name")
-
-    'Calculate the range where the values are entered
-    Set rng = sh.Range(tableName & "_" & "PLAGEVALUES")
-    rng.Calculate
-
-    'Test if editable Labels have been modified
     Set rng = sh.Range(tableName & "_START")
 
     'Update variables with editable column
@@ -722,8 +744,11 @@ Private Sub HandleVListChange(ByRef sh As Worksheet, ByRef target As Range, _
         Exit Sub
     End If
 
-    'Update the choice multiple
+    'An edit in the value column: the value block is recalculated once, and the
+    'multiple choice toggle runs when the control asks for it
     If target.Column = rng.Column Then
+        sh.Range(tableName & "_" & "PLAGEVALUES").Calculate
+
         varControl = target.Offset(, 1).Value
         If InStr(1, varControl, "choice_multiple") = 1 Then
             On Error Resume Next
@@ -736,20 +761,19 @@ Private Sub HandleVListChange(ByRef sh As Worksheet, ByRef target As Range, _
                 choiSep = ", "
 
             UpdateMultipleChoice target, choiSep
-            Exit Sub
         End If
+        Exit Sub
     End If
 
     'Jump to GoTo section
-    Set rng = sh.Range(tableName & "_" & GOTOSECCODE)
-    If Not Intersect(target, rng) Is Nothing Then
-        If Not this.wkbNames Is Nothing Then
-            varLabel = Replace(target.Value, _
-                               this.wkbNames.ValueAsString("RNG_GoToSection") & ": ", _
-                               vbNullString)
+    If Not (Intersect(target, sh.Cells(1, 1)) Is Nothing) Then
+        goToCaption = shHn.ValueAsString(tableName & "_" & GOTOSECCODE)
+
+        If LenB(goToCaption) > 0 Then
+            varLabel = Replace(target.Value, goToCaption & ": ", vbNullString)
+            Set rngLook = sh.Cells.Find(What:=varLabel, LookAt:=xlWhole, MatchCase:=True)
+            If Not rngLook Is Nothing Then rngLook.Activate
         End If
-        Set rngLook = sh.Cells.Find(What:=varLabel, LookAt:=xlWhole, MatchCase:=True)
-        If Not rngLook Is Nothing Then rngLook.Activate
     End If
 
     Exit Sub
@@ -780,9 +804,6 @@ Private Sub HandleAnalysisChange(ByRef sh As Worksheet, _
     Dim goToGraph As String
     Dim rngName As String
 
-    EnsureTranslation
-    EnsureWorkbookNames
-
     'Range name if it exists
     On Error Resume Next
     rngName = target.Name.Name
@@ -796,9 +817,10 @@ Private Sub HandleAnalysisChange(ByRef sh As Worksheet, _
         Set rng = sh.Range("ua_go_to_section")
 
     Case "TS-Analysis", "SPT-Analysis"
+        'One recalculation covers the sheet. These sheets carry array formulas
+        'over the whole linelist, and two further passes here were what a user
+        'felt as the workbook freezing while typing in a filter.
         sh.Calculate
-        sh.UsedRange.Calculate
-        sh.Columns("A:E").Calculate
         If InStr(1, rngName, "ts_go_to_section") > 0 Then Set rng = target
         If InStr(1, rngName, "spt_go_to_section") > 0 Then Set rng = target
 
@@ -814,6 +836,7 @@ Private Sub HandleAnalysisChange(ByRef sh As Worksheet, _
     If rng Is Nothing Then Exit Sub
     If Intersect(target, rng) Is Nothing Then Exit Sub
 
+    EnsureWorkbookNames
     If Not this.wkbNames Is Nothing Then
         goToSection = this.wkbNames.ValueAsString("RNG_GoToSection")
         goToHeader = this.wkbNames.ValueAsString("RNG_GoToHeader")
@@ -824,8 +847,10 @@ Private Sub HandleAnalysisChange(ByRef sh As Worksheet, _
     sLabel = Replace(sLabel, goToHeader & ": ", vbNullString)
     sLabel = Replace(sLabel, goToGraph & ": ", vbNullString)
 
-    Set rngLook = ActiveSheet.Cells.Find(What:=sLabel, LookIn:=xlValues, LookAt:=xlWhole, _
-                                         MatchCase:=True, SearchFormat:=False)
+    'The search runs on the sheet that raised the change. ActiveSheet is the
+    'same sheet on a user edit and a different one on a programmatic edit.
+    Set rngLook = sh.Cells.Find(What:=sLabel, LookIn:=xlValues, LookAt:=xlWhole, _
+                                MatchCase:=True, SearchFormat:=False)
 
     If Not rngLook Is Nothing Then rngLook.Activate
 
@@ -1170,6 +1195,12 @@ End Sub
 '===============================================================================
 
 '@sub-title Handle multiple choice dropdown value toggling.
+'@details
+'The toggle needs the value the cell held before the edit. That comes from the
+'held copy RememberCellValue keeps, filled when the user lands on the cell and
+'refreshed after every edit. The undo stack is the fallback for a cell the
+'session has no reading for -- it costs a round trip per call, which on a
+'multiple choice column is a round trip per keystroke.
 '@param target Range. The edited cell.
 '@param choiSep String. Separator between choices (e.g. ", ").
 Private Sub UpdateMultipleChoice(ByRef target As Range, ByRef choiSep As String)
@@ -1178,20 +1209,28 @@ Private Sub UpdateMultipleChoice(ByRef target As Range, ByRef choiSep As String)
     Dim prevTab As BetterArray
     Dim actTab As BetterArray
 
-    Set prevTab = New BetterArray
-    Set actTab = New BetterArray
-
     If IsEmpty(target) Then Exit Sub
 
     actualValue = target.Value
 
-    On Error Resume Next
-    Application.Undo
-    On Error GoTo ErrHandler
+    If this.lastEditKnown And (this.lastEditKey = CellKey(target)) Then
+        'The cell still holds what the user just entered on this path, so
+        'keeping the entry needs no write.
+        On Error GoTo ErrHandler
+        prevValue = this.lastEditValue
+        If prevValue = vbNullString Then Exit Sub
+    Else
+        On Error Resume Next
+        Application.Undo
+        On Error GoTo ErrHandler
 
-    If IsEmpty(target) Then GoTo KeepValue
+        If IsEmpty(target) Then GoTo KeepValue
+        prevValue = target.Value
+    End If
 
-    prevValue = target.Value
+    Set prevTab = New BetterArray
+    Set actTab = New BetterArray
+
     prevTab.Items = Split(prevValue, choiSep)
     actTab.Items = Split(actualValue, choiSep)
 
@@ -1215,15 +1254,47 @@ ErrHandler:
 End Sub
 
 
+'@section Private -- Previous value capture
+'===============================================================================
+
+'@sub-title Hold the value of one cell for the next edit to it.
+'@details
+'OnSelectionChange stores the value found under the selection, and OnSheetChange
+'stores what the cell holds once its handlers have run. A selection of several
+'cells drops the held reading, because one value can stand for one cell only.
+'@param target Range. The selected or edited cells.
+Private Sub RememberCellValue(ByRef target As Range)
+    this.lastEditKnown = False
+
+    If target Is Nothing Then Exit Sub
+    If target.Cells.Count > 1 Then Exit Sub
+
+    On Error Resume Next
+    this.lastEditKey = CellKey(target)
+    this.lastEditValue = CStr(target.Value)
+    this.lastEditKnown = (Err.Number = 0)
+    On Error GoTo 0
+End Sub
+
+'@sub-title The identity of one cell, as sheet name and address.
+'@param target Range. The cell.
+'@return String. Sheet name and address joined with an exclamation mark.
+Private Function CellKey(ByRef target As Range) As String
+    CellKey = target.Worksheet.Name & "!" & target.Address
+End Function
+
+
 '@section Private -- Unique values helper
 '===============================================================================
 
 '@sub-title Return unique values from a BetterArray.
+'@details
+'The array built here goes to the caller as it stands. Each call used to answer
+'a Clone, which copied every unique value once per list-auto column per sheet
+'deactivate.
 '@param inputTable BetterArray. Source array.
-'@param Sort Optional Boolean. Whether to sort the result.
 '@return BetterArray. Array of unique values.
-Private Function GetUniqueBA(ByRef inputTable As BetterArray, _
-                             Optional ByVal Sort As Boolean = False) As BetterArray
+Private Function GetUniqueBA(ByRef inputTable As BetterArray) As BetterArray
     Dim tableValue As String
     Dim counter As Long
     Dim outTable As BetterArray
@@ -1244,8 +1315,7 @@ Private Function GetUniqueBA(ByRef inputTable As BetterArray, _
         Next
     End If
 
-    If Sort Then outTable.Sort
-    Set GetUniqueBA = outTable.Clone()
+    Set GetUniqueBA = outTable
 End Function
 
 
@@ -1501,6 +1571,10 @@ Private Sub ResetInternalCaches()
     this.triedDictionary = False
     this.triedVariables = False
     this.triedPasswords = False
+
+    this.lastEditKey = vbNullString
+    this.lastEditValue = vbNullString
+    this.lastEditKnown = False
 End Sub
 
 
