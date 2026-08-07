@@ -31,17 +31,33 @@ Option Explicit
 
 '@section State
 '===============================================================================
+'Each manager below has a "tried" flag beside it. A manager is built once per
+'session, and a build that fails leaves its field Nothing. Without the flag the
+'guard "the field is Nothing" reads as "never tried", so every keystroke rebuilt
+'and re-failed the same manager -- for the translation helper that meant a walk
+'of the workbook Names collection per event. The flag says the attempt was made.
+'ResetInternalCaches clears the fields and the flags together, so a caller that
+'fixed the workbook gets a fresh attempt.
 Private Type TEventLinelist
     hostBook        As Workbook           'Linelist workbook
     tradmess        As TranslationObject 'Cached message translations
     lltrads         As LLTranslation     'Cached translation helper
     wkbNames        As HiddenNames       'Cached workbook-level hidden names
+    sheetStores     As Collection        'Worksheet hidden names, keyed on sheet name
     drop            As DropdownLists     'Cached dropdown manager
     geo             As LLGeo             'Cached geo helper
     sp              As LLSpatial          'Cached spatial helper
     dict            As LLdictionary      'Cached dictionary helper
     vars            As LLVariables       'Cached variable lookup helper
     pass            As Passwords         'Cached password manager
+    triedTranslation As Boolean
+    triedWkbNames    As Boolean
+    triedDropdown    As Boolean
+    triedGeo         As Boolean
+    triedSpatial     As Boolean
+    triedDictionary  As Boolean
+    triedVariables   As Boolean
+    triedPasswords   As Boolean
 End Type
 
 Private this As TEventLinelist
@@ -117,8 +133,13 @@ End Sub
 Public Sub OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
     If (sh Is Nothing) Or (target Is Nothing) Then Exit Sub
 
+    'An edit can add or rename a worksheet name, so the held store of the sheet
+    'that raised the change is dropped and read again here.
+    DropSheetStore sh.Name
+
     Dim shHn As HiddenNames
-    Set shHn = HiddenNames.Create(sh)
+    Set shHn = SheetStore(sh)
+    If shHn Is Nothing Then Exit Sub
 
     Dim shType As String
     shType = shHn.ValueAsString("sheet_type")
@@ -135,21 +156,23 @@ End Sub
 
 
 '@sub-title Handle worksheet deactivation events.
-'@param prevSheetName String. Name of the sheet that was deactivated.
+'@details
+'The handler is written into the code module of each HList sheet, so the sheet
+'that was left arrives as an object and one flag is all this reads. It wants the
+'workbook hidden names alone: the labels of the translation stack have no part
+'in it.
+'@param prevsh Worksheet. The sheet that was deactivated.
 '@export
-Public Sub OnSheetDeactivate(ByVal prevSheetName As String)
-    Dim prevsh As Worksheet
-
+Public Sub OnSheetDeactivate(ByVal prevsh As Worksheet)
     On Error GoTo ErrHand
 
-    EnsureTranslation
+    If prevsh Is Nothing Then Exit Sub
+
+    EnsureWorkbookNames
 
     'Update the listAuto only if the flag was set during editing
     If this.wkbNames Is Nothing Then Exit Sub
     If this.wkbNames.ValueAsString("RNG_UpdateListAuto") <> "yes" Then Exit Sub
-
-    Set prevsh = SheetOrNothing(prevSheetName)
-    If prevsh Is Nothing Then Exit Sub
 
     UpdateListAutoSheet prevsh
     this.wkbNames.SetValue "RNG_UpdateListAuto", "no"
@@ -160,6 +183,12 @@ End Sub
 
 
 '@sub-title Handle selection change events on HList sheets.
+'@details
+'The sheet is an HList sheet by construction. Worksheet_SelectionChange is
+'written into the code module of the HList sheets alone, so a "sheet_type" read
+'here can only ever answer HList, and it cost a walk of the sheet Names
+'collection on every arrow key. The handler below wants the store, and reads the
+'held one.
 '@param sh Worksheet. The worksheet where the selection changed.
 '@param target Range. The newly selected cell(s).
 '@export
@@ -167,11 +196,8 @@ Public Sub OnSelectionChange(ByVal sh As Worksheet, ByVal target As Range)
     If (sh Is Nothing) Or (target Is Nothing) Then Exit Sub
 
     Dim shHn As HiddenNames
-    Set shHn = HiddenNames.Create(sh)
-
-    Dim shType As String
-    shType = shHn.ValueAsString("sheet_type")
-    If shType <> "HList" Then Exit Sub
+    Set shHn = SheetStore(sh)
+    If shHn Is Nothing Then Exit Sub
 
     HandleSelectionHList sh, target, shHn
 End Sub
@@ -237,7 +263,7 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
             If Not lo.DataBodyRange Is Nothing Then
                 Set loRng = lo.DataBodyRange
 
-                Set shHn = HiddenNames.Create(sh)
+                Set shHn = SheetStore(sh)
                 Set filtsh = this.hostBook.Worksheets(shHn.ValueAsString("filtered_sheet"))
 
                 rowCounter = loRng.Rows.Count
@@ -299,6 +325,22 @@ Public Sub UpdateAllListAuto()
         If SheetTag(sh) = "HList" Then UpdateListAutoSheet sh
     Next
 End Sub
+
+
+'@sub-title The one translation helper of the workbook.
+'@details
+'The button, ribbon and geo modules each used to build their own. LLTranslation
+'validates all five tables on Create and caches every scope it is asked for
+'until Refresh, so one instance answers all four callers for the price of the
+'first build, and Refresh then has one place to be called from. A module reaches
+'this through LinelistEventsManager.EventLinelistService.
+'@return LLTranslation. The held helper, or Nothing when the workbook carries no
+'usable translation sheet.
+'@export
+Public Function Translation() As LLTranslation
+    EnsureTranslation
+    Set Translation = this.lltrads
+End Function
 
 
 '@sub-title Clear cached resources.
@@ -482,6 +524,7 @@ Private Sub HandleHListChange(ByRef sh As Worksheet, ByRef target As Range, _
     Set adminTable = New BetterArray
 
     EnsureTranslation
+    EnsureWorkbookNames
 
     tableName = shHn.ValueAsString("table_name")
     targetColumn = target.Column
@@ -558,7 +601,6 @@ Private Sub HandleHListChange(ByRef sh As Worksheet, ByRef target As Range, _
         varEditable = shHn.ValueAsString(varName & " -- editable")
         If (varEditable <> "yes") Then Exit Sub
 
-        EnsureDictionary
         EnsureVariables
         If this.vars Is Nothing Then Exit Sub
 
@@ -652,6 +694,7 @@ Private Sub HandleVListChange(ByRef sh As Worksheet, ByRef target As Range, _
     On Error GoTo ErrHandler
 
     EnsureTranslation
+    EnsureWorkbookNames
 
     tableName = shHn.ValueAsString("table_name")
 
@@ -668,7 +711,6 @@ Private Sub HandleVListChange(ByRef sh As Worksheet, ByRef target As Range, _
         varEditable = shHn.ValueAsString(varName & " -- editable")
         If (varEditable <> "yes") Then Exit Sub
 
-        EnsureDictionary
         EnsureVariables
         If this.vars Is Nothing Then Exit Sub
 
@@ -739,6 +781,7 @@ Private Sub HandleAnalysisChange(ByRef sh As Worksheet, _
     Dim rngName As String
 
     EnsureTranslation
+    EnsureWorkbookNames
 
     'Range name if it exists
     On Error Resume Next
@@ -963,7 +1006,7 @@ Private Sub FormatDevidePop(ByVal rngName As String)
     Dim tabId As String
 
     EnsurePasswords
-    EnsureTranslation
+    EnsureWorkbookNames
 
     If this.pass Is Nothing Then Exit Sub
     If this.wkbNames Is Nothing Then Exit Sub
@@ -1091,7 +1134,8 @@ Private Sub UpdateListAutoSheet(ByRef sh As Worksheet)
     Dim shHn As HiddenNames
     Dim colIdx As Long
 
-    Set shHn = HiddenNames.Create(sh)
+    Set shHn = SheetStore(sh)
+    If shHn Is Nothing Then Exit Sub
 
     'Early exit if this sheet has no listauto variables
     If shHn.ValueAsString("has_listauto") <> "yes" Then Exit Sub
@@ -1224,19 +1268,39 @@ End Function
 '@section Private -- Lazy initialisation
 '===============================================================================
 
-'@sub-title Lazily initialise translation, message translator, and hidden names.
+'@sub-title Lazily initialise the workbook-level hidden names.
+'@details
+'This used to sit at the foot of EnsureTranslation, below two early exits. A
+'workbook with no LinelistTranslation sheet took the exit at that sheet lookup
+'and never reached the line, so this.wkbNames stayed Nothing for the whole
+'session: RNG_GoToSection was never read and go-to-section did nothing on every
+'sheet, with no message. The store has nothing to do with the translation
+'tables, so it is built on its own.
+Private Sub EnsureWorkbookNames()
+    If Not (this.wkbNames Is Nothing) Then Exit Sub
+    If this.triedWkbNames Then Exit Sub
+    If this.hostBook Is Nothing Then Exit Sub
+
+    this.triedWkbNames = True
+
+    On Error Resume Next
+    Set this.wkbNames = HiddenNames.Create(this.hostBook)
+    On Error GoTo 0
+End Sub
+
+'@sub-title Lazily initialise the translation helper and the message translator.
 '@details
 'A translation sheet missing a table, or a workbook whose language code is
-'empty, leaves the two translation fields Nothing and every event that needs
-'them does nothing. The suppression is kept for that reason: an event handler
-'has nothing above it to catch a raise.
-'
-'It covers the two translation reads alone. The hidden name store is built
-'outside it, so a translation sheet in that state costs the events their
+'empty, leaves the two fields Nothing and every event that needs them does
+'nothing. The suppression is kept for that reason: an event handler has nothing
+'above it to catch a raise. A workbook in that state costs the events their
 'labels and leaves everything else working.
 Private Sub EnsureTranslation()
     If Not (this.lltrads Is Nothing) Then Exit Sub
+    If this.triedTranslation Then Exit Sub
     If this.hostBook Is Nothing Then Exit Sub
+
+    this.triedTranslation = True
 
     Dim sh As Worksheet
     Set sh = SheetOrNothing(LLSHEET)
@@ -1248,14 +1312,15 @@ Private Sub EnsureTranslation()
         Set this.tradmess = this.lltrads.TransObject()
     End If
     On Error GoTo 0
-
-    Set this.wkbNames = HiddenNames.Create(this.hostBook)
 End Sub
 
 '@sub-title Lazily initialise the dropdown manager.
 Private Sub EnsureDropdown()
     If Not (this.drop Is Nothing) Then Exit Sub
+    If this.triedDropdown Then Exit Sub
     If this.hostBook Is Nothing Then Exit Sub
+
+    this.triedDropdown = True
 
     Dim sh As Worksheet
     Set sh = SheetOrNothing(DROPDOWNSHEET)
@@ -1269,7 +1334,10 @@ End Sub
 '@sub-title Lazily initialise the geo helper.
 Private Sub EnsureGeo()
     If Not (this.geo Is Nothing) Then Exit Sub
+    If this.triedGeo Then Exit Sub
     If this.hostBook Is Nothing Then Exit Sub
+
+    this.triedGeo = True
 
     Dim sh As Worksheet
     Set sh = SheetOrNothing(GEOSHEET)
@@ -1283,7 +1351,10 @@ End Sub
 '@sub-title Lazily initialise the spatial helper.
 Private Sub EnsureSpatial()
     If Not (this.sp Is Nothing) Then Exit Sub
+    If this.triedSpatial Then Exit Sub
     If this.hostBook Is Nothing Then Exit Sub
+
+    this.triedSpatial = True
 
     Dim sh As Worksheet
     Set sh = SheetOrNothing(SPATIALSHEET)
@@ -1297,7 +1368,10 @@ End Sub
 '@sub-title Lazily initialise the password manager.
 Private Sub EnsurePasswords()
     If Not (this.pass Is Nothing) Then Exit Sub
+    If this.triedPasswords Then Exit Sub
     If this.hostBook Is Nothing Then Exit Sub
+
+    this.triedPasswords = True
 
     Dim sh As Worksheet
     Set sh = SheetOrNothing(PASSSHEET)
@@ -1311,7 +1385,10 @@ End Sub
 '@sub-title Lazily initialise the dictionary and variables helpers.
 Private Sub EnsureDictionary()
     If Not (this.dict Is Nothing) Then Exit Sub
+    If this.triedDictionary Then Exit Sub
     If this.hostBook Is Nothing Then Exit Sub
+
+    this.triedDictionary = True
 
     Dim sh As Worksheet
     Set sh = SheetOrNothing(DICTSHEET)
@@ -1325,12 +1402,59 @@ End Sub
 '@sub-title Lazily initialise the variables helper from the cached dictionary.
 Private Sub EnsureVariables()
     If Not (this.vars Is Nothing) Then Exit Sub
+    If this.triedVariables Then Exit Sub
 
     EnsureDictionary
     If this.dict Is Nothing Then Exit Sub
 
+    this.triedVariables = True
+
     On Error Resume Next
     Set this.vars = LLVariables.Create(this.dict)
+    On Error GoTo 0
+End Sub
+
+'@sub-title The hidden names of one worksheet, built once and held.
+'@details
+'Keyed on the sheet name in a Collection. Scripting.Dictionary is missing on Mac
+'Excel and LLFormat holds its three caches the same shape. The store of a sheet
+'costs a walk of that sheet's Names collection, and the selection handler asks
+'for one on every arrow key.
+'@param sh Worksheet. The worksheet whose names are wanted.
+'@return HiddenNames. The held store, or Nothing when the build failed.
+Private Function SheetStore(ByRef sh As Worksheet) As HiddenNames
+    Dim store As HiddenNames
+
+    If sh Is Nothing Then Exit Function
+    If this.sheetStores Is Nothing Then Set this.sheetStores = New Collection
+
+    'A Collection has no "does this key exist" test, so the miss is read off Err.
+    'Err is cleared first, because On Error Resume Next and On Error GoTo 0 both
+    'leave it alone and a stale number from earlier code would read as a hit.
+    On Error Resume Next
+        Err.Clear
+        Set store = this.sheetStores.Item(sh.Name)
+        Err.Clear
+    On Error GoTo 0
+
+    If store Is Nothing Then
+        On Error Resume Next
+        Set store = HiddenNames.Create(sh)
+        On Error GoTo 0
+        If store Is Nothing Then Exit Function
+        this.sheetStores.Add store, sh.Name
+    End If
+
+    Set SheetStore = store
+End Function
+
+'@sub-title Forget the held store of one worksheet.
+'@param sheetName String. Name of the worksheet whose store is dropped.
+Private Sub DropSheetStore(ByRef sheetName As String)
+    If this.sheetStores Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    this.sheetStores.Remove sheetName
     On Error GoTo 0
 End Sub
 
@@ -1354,16 +1478,29 @@ End Function
 '===============================================================================
 
 '@sub-title Clear all lazily-cached domain managers.
+'@details
+'The tried flags go with the fields. A flag left standing turns this into a
+'permanent refusal to build the manager again.
 Private Sub ResetInternalCaches()
     Set this.tradmess = Nothing
     Set this.lltrads = Nothing
     Set this.wkbNames = Nothing
+    Set this.sheetStores = Nothing
     Set this.drop = Nothing
     Set this.geo = Nothing
     Set this.sp = Nothing
     Set this.dict = Nothing
     Set this.vars = Nothing
     Set this.pass = Nothing
+
+    this.triedTranslation = False
+    this.triedWkbNames = False
+    this.triedDropdown = False
+    this.triedGeo = False
+    this.triedSpatial = False
+    this.triedDictionary = False
+    this.triedVariables = False
+    this.triedPasswords = False
 End Sub
 
 

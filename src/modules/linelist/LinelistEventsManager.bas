@@ -30,8 +30,15 @@ Private busyDepth As Long
 
 '@sub-title Enter busy state, with reference-counted nesting
 '@details
-'On the first (outermost) call, creates an ApplicationState snapshot and applies
-'the locked-down busy mode. Nested calls only increment busyDepth.
+'On the first (outermost) call, takes a fresh snapshot of the application
+'settings and applies the locked-down busy mode. Nested calls only increment
+'busyDepth.
+'
+'One ApplicationState serves the whole session. Building a new one per event
+'reads eight Application properties, and one of them, EnableAnimations, is read
+'through a raise-and-catch on Mac Excel, so a keystroke paid for that twice.
+'RefreshSnapshot re-reads the same eight into the instance already held, which
+'is what makes the Restore below put back what the user had.
 '@param calculateOnSave Optional Boolean. Value for CalculateBeforeSave. Defaults to True.
 '@param busyCursor Optional Long. Cursor shown while busy. When 0 (default), leaves cursor unchanged.
 Public Sub LLEnterBusyState(Optional ByVal calculateOnSave As Boolean = True, _
@@ -40,7 +47,16 @@ Public Sub LLEnterBusyState(Optional ByVal calculateOnSave As Boolean = True, _
     busyDepth = busyDepth + 1
     If busyDepth > 1 Then Exit Sub
 
-    Set appScope = ApplicationState.Create(Application)
+    If appScope Is Nothing Then
+        'Create takes the first snapshot itself.
+        Set appScope = ApplicationState.Create(Application)
+    ElseIf Not appScope.IsBusy Then
+        'RefreshSnapshot raises while the scope is busy, which is the state an
+        'exit that never ran leaves behind. The snapshot it still holds is the
+        'one to restore from, so skipping the refresh is the safe answer.
+        appScope.RefreshSnapshot
+    End If
+
     appScope.ApplyBusyState suppressEvents:=True, _
                             calculateOnSave:=calculateOnSave, _
                             busyCursor:=busyCursor
@@ -49,7 +65,8 @@ End Sub
 '@sub-title Exit busy state, restoring Application properties on the outermost call
 '@details
 'Decrements the nesting counter. On the outermost exit: restores the
-'ApplicationState snapshot, resets the cursor, and releases the scope reference.
+'ApplicationState snapshot and resets the cursor. The scope itself is kept for
+'the next event, and the next LLEnterBusyState refreshes its snapshot.
 Public Sub LLExitBusyState()
     If busyDepth <= 0 Then
         busyDepth = 0
@@ -63,8 +80,6 @@ Public Sub LLExitBusyState()
     If Not appScope Is Nothing Then appScope.Restore
     Application.Cursor = xlDefault
     On Error GoTo 0
-
-    Set appScope = Nothing
 End Sub
 
 
@@ -80,6 +95,7 @@ End Function
 
 Public Sub DisposeEventLinelist()
     Set linelistService = Nothing
+    Set appScope = Nothing
 End Sub
 
 Public Function EventLinelistService() As EventLinelist
@@ -98,12 +114,21 @@ Cleanup:
     LLExitBusyState
 End Sub
 
+'@sub-title Route the deactivation of one HList sheet.
+'@details
+'Worksheet_Deactivate is written into the code module of the HList sheets alone,
+'so this runs when the user leaves a data entry sheet and nowhere else. It used
+'to answer Workbook_SheetDeactivate, which fires for every analysis, geo,
+'dropdown and temporary sheet of the workbook, and each of those paid a busy
+'state and a read of the workbook hidden names to check one flag that only an
+'HList edit ever sets.
+'@param sh Worksheet. The sheet that was left.
 Public Sub SheetDeactivated(ByVal sh As Worksheet)
     If sh Is Nothing Then Exit Sub
     On Error GoTo Cleanup
     LLEnterBusyState busyCursor:=xlNorthwestArrow
     Application.ScreenUpdating = False
-    Service.OnSheetDeactivate sh.Name
+    Service.OnSheetDeactivate sh
 Cleanup:
     LLExitBusyState
 End Sub
