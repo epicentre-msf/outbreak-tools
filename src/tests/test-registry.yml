@@ -818,6 +818,21 @@ suites:
       # and its helper calls are unqualified so they resolve to TestHelpersLite.
       - module: TestLLDataEntry
         covers: [LLDataEntry]
+      # TestEventLinelist drives the class every event of a generated linelist
+      # comes through. It aims at the held managers and the flags that guard
+      # them: the translation helper is the one manager with a public reader, so
+      # the "built once, and a failed build is not retried" rule is measured
+      # through it, with ResetCaches as the other half. The deactivate tests
+      # cover a shipped bug -- the workbook hidden name store used to be
+      # assigned below the exit taken when the LinelistTranslation worksheet is
+      # missing, so the list-auto flag was never cleared on such a workbook.
+      # The fixture is a bare workbook per test, seeded with the five
+      # translation tables by the tests that want them, and seeded part way
+      # through by the test that measures the flag. It reaches no fixture
+      # module; its helper calls are unqualified, so they resolve to
+      # TestHelpersLite.
+      - module: TestEventLinelist
+        covers: [EventLinelist]
 
   # --- dev (Development) ----------------------------------------------------
   # THIS BLOCK CARRIES A TEST MODULE AND NO CLASS, AND IT MUST STAY THAT WAY.
