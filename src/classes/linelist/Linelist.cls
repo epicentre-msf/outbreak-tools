@@ -71,7 +71,7 @@ Private Const CRF_PREFIX As String = "crf_"
 Private Const SHEET_NAME_MAX_LENGTH As Long = 31
 
 Private Const WORKBOOK_MODULE_NAME As String = "EventLinelistWorkbook"
-Private Const SELECTION_MODULE_NAME As String = "EventLinelistSelection"
+Private Const SHEET_MODULE_NAME As String = "EventLinelistSheet"
 Private Const SHEET_GEO As String = "Geo"
 
 Private Type TLinelist
@@ -982,7 +982,7 @@ End Sub
 '3. The ribbon module. A template workbook already carries EventsLinelistRibbon,
 '   so its code text is overwritten; otherwise the module is imported.
 '4. 9 user forms.
-'5. The workbook code module, then EventLinelistSelection into the code module of
+'5. The workbook code module, then EventLinelistSheet into the code module of
 '   every hlist2D data-entry worksheet.
 '
 'scripts/devtools/transferred-code-scan.R checks that every procedure the
@@ -1065,17 +1065,17 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
     'Transfer workbook code
     codeTransfer.TransferWorkbookCode WORKBOOK_MODULE_NAME
 
-    'Inject Worksheet_SelectionChange into each HList worksheet's code module.
-    'The dictionary identifies HList sheets by type "hlist2D". The source
-    'template module (EventLinelistSelection) is read from the designer workbook
-    'and its code is written into each HList worksheet's CodeModule in the
-    'output workbook.
+    'Inject the worksheet event handlers into each HList worksheet's code
+    'module. The dictionary identifies HList sheets by type "hlist2D". The
+    'source template module (EventLinelistSheet) is read from the designer
+    'workbook and its code is written into each HList worksheet's CodeModule in
+    'the output workbook.
     Set llshs = LLSheets.Create(this.specs.Dictionary)
 
     For counter = sheetNames.LowerBound To sheetNames.UpperBound
         codeName = CStr(sheetNames.Item(counter))
         If llshs.SheetInfo(codeName) = "hlist2D" Then
-            codeTransfer.TransferWorksheetCode SELECTION_MODULE_NAME, codeName
+            codeTransfer.TransferWorksheetCode SHEET_MODULE_NAME, codeName
         End If
     Next
 End Sub

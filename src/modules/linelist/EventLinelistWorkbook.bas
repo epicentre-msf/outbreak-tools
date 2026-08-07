@@ -19,18 +19,9 @@ Clean:
     mBooting = False
 End Sub
 
-Private Sub Workbook_SheetDeactivate(ByVal sh As Object)
-    If mBooting Then Exit Sub
-    If TypeName(sh) <> "Worksheet" Then Exit Sub
-
-    mBooting = True
-
-    On Error GoTo Clean
-    LinelistEventsManager.SheetDeactivated sh
-
-Clean:
-    mBooting = False
-End Sub
+' A sheet deactivation is answered by Worksheet_Deactivate in the code module of
+' each HList sheet, which is the only kind of sheet that has anything to do
+' there. EventLinelistSheet carries that handler.
 
 Private Sub Workbook_SheetChange(ByVal sh As Object, ByVal target As Range)
     If mBooting Then Exit Sub
