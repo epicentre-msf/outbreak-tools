@@ -2,7 +2,8 @@
 #
 # push-assets.sh — Bundle the working binaries and upload them to the pinned
 # 'working-binaries' GitHub Release (the off-git asset store). Creates the release on
-# first run. Run after editing binaries in Excel to publish them off-git.
+# first run. Run after editing binaries in Excel to publish them off-git, and
+# after editing the translation workbooks in trads/.
 #
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
@@ -10,8 +11,10 @@ cd "$(git rev-parse --show-toplevel)"
 REPO="${OBT_REPO:-epicentre-msf/outbreak-tools}"
 TAG="working-binaries"
 BUNDLE_NAME="working-binaries.tar.gz"
-# Binary paths to store (whole dirs + the two ribbon templates).
-PATHS=( src/bin .mock ribbons/_ribbontemplate_main.xlsb ribbons/_ribbontemplate_dev.xlsb )
+# Binary paths to store (whole dirs, the two ribbon templates, the translation
+# workbooks). A glob that matches nothing stays literal and is skipped below.
+PATHS=( src/bin .mock ribbons/_ribbontemplate_main.xlsb ribbons/_ribbontemplate_dev.xlsb
+        trads/designer_translations*.xlsx )
 
 command -v gh >/dev/null 2>&1 || { echo "ERROR: gh CLI not found (brew install gh)." >&2; exit 1; }
 
@@ -31,7 +34,7 @@ if ! gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
   echo "==> creating asset-store release '$TAG'"
   gh release create "$TAG" -R "$REPO" --prerelease \
     --title "Working binaries (mutable)" \
-    --notes "Off-git store of the current working binaries (src/bin + .mock + ribbon templates). Mutable; do not link directly. Synced via scripts/release/{push,pull}-assets."
+    --notes "Off-git store of the current working binaries (src/bin + .mock + ribbon templates + trads translation workbooks). Mutable; do not link directly. Synced via scripts/release/{push,pull}-assets."
 fi
 
 echo "==> uploading $BUNDLE_NAME"

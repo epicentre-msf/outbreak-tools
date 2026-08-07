@@ -1,6 +1,7 @@
 #!/usr/bin/env pwsh
 # pull-assets.ps1 — Windows twin of pull-assets.sh. Downloads + restores the working
-# binaries from the 'working-binaries' GitHub Release into src/bin, .mock, ribbon templates.
+# binaries from the 'working-binaries' GitHub Release into src/bin, .mock, the ribbon
+# templates and trads/.
 $ErrorActionPreference = "Stop"
 Set-Location (& git rev-parse --show-toplevel)
 
@@ -14,7 +15,7 @@ New-Item -ItemType Directory -Path $TmpDir | Out-Null
 try {
   Write-Host "==> downloading $BundleName from release '$Tag'"
   gh release download $Tag -R $Repo -p $BundleName -D $TmpDir --clobber
-  Write-Host "==> extracting (overwrites src/bin, .mock, ribbon templates)"
+  Write-Host "==> extracting (overwrites src/bin, .mock, ribbon templates, trads workbooks)"
   tar -xzf (Join-Path $TmpDir $BundleName)
   Write-Host "Done."
 } finally {

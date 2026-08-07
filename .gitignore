@@ -17,6 +17,9 @@ releases/
 #   Still in git HISTORY for now; folded into a later history-rewrite pass.
 ribbons/_ribbontemplate_main.xlsb
 ribbons/_ribbontemplate_dev.xlsb
+#   The translation workbooks too. They are edited in Excel and carry the label
+#   tables the designer copies into a generated file.
+trads/designer_translations*.xlsx
 
 # --- VS Code: commit project tasks/snippets, ignore personal settings --------
 #   tasks.json + snippets are shared; settings.json is per-developer.
