@@ -35,6 +35,14 @@ Option Explicit
 'like, and a seeded one carrying the five translation tables and the two
 'language codes. Several tests seed the bare workbook part way through, because
 'the flag under test is what decides whether the class notices.
+'
+'THE DISPATCH TESTS COVER A SHIPPED BUG TOO
+'-------------------------------------------------------------------------------
+'The HList change handler used to resolve <table>_go_to_section as a range name
+'above the header and multiple choice branches. The builder stores that id as a
+'string, so the lookup raised on every sheet it makes and both branches were
+'dead. The dispatch fixture carries no go-to caption on purpose: the toggle and
+'the header restore working there is what proves the reorder.
 '@depends EventLinelist, CustomTest, HiddenNames, LLTranslation, TranslationObject
 
 Private Assert As CustomTest
@@ -210,6 +218,41 @@ Private Function SeedGeoRow(ByVal values As Variant) As Range
     Next idx
 
     Set SeedGeoRow = sh.Cells(1, 1)
+End Function
+
+
+'@sub-title Build an HList data entry sheet the change handler can dispatch on.
+'@details
+'A ListObject with its header on row 8, one variable column, the label cell
+'above the header named after the variable the way VarWriter names it, and the
+'three hidden names the dispatch reads: sheet_type, table_name and the
+'variable's control string.
+'@param varName String. The variable heading the single column.
+'@param varControl String. The control string stored for that variable.
+'@return Worksheet. The seeded sheet.
+Private Function SeedHListSheet(ByVal varName As String, _
+                                ByVal varControl As String) As Worksheet
+    Dim sh As Worksheet
+    Dim store As HiddenNames
+
+    Set sh = FixtureWkb.Worksheets(1)
+
+    sh.Cells(7, 2).Value = "Label of " & varName
+    sh.Cells(8, 2).Value = varName
+    sh.ListObjects.Add(SourceType:=xlSrcRange, _
+                       Source:=sh.Range(sh.Cells(8, 2), sh.Cells(12, 2)), _
+                       XlListObjectHasHeaders:=xlYes).Name = "table1"
+
+    'The header refusal writes this name back into a scribbled header cell.
+    FixtureWkb.Names.Add Name:=varName, _
+                         RefersTo:="='" & sh.Name & "'!" & sh.Cells(7, 2).Address
+
+    Set store = HiddenNames.Create(sh)
+    store.EnsureName "sheet_type", "HList", HiddenNameTypeString
+    store.EnsureName "table_name", "table1", HiddenNameTypeString
+    store.EnsureName varName & " -- control", varControl, HiddenNameTypeString
+
+    Set SeedHListSheet = sh
 End Function
 
 
@@ -535,6 +578,100 @@ Public Sub TestDoubleClickAnswersNoneForNothing()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestDoubleClickAnswersNoneForNothing", _
+                         Err.Number, Err.Description
+End Sub
+
+
+'@section HList change dispatch
+'===============================================================================
+
+'@sub-title A choice edit appends to the value the cell held.
+'@details
+'The previous value comes from the copy taken when the cell was selected, so
+'the toggle costs no Application.Undo round trip. The sheet carries no go-to
+'caption, which is the state that used to send every in-table edit into the
+'error label before the toggle ran.
+'@TestMethod("EventLinelist")
+Public Sub TestAChoiceEditAppendsToTheHeldValue()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAChoiceEditAppendsToTheHeldValue"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim sh As Worksheet
+    Dim cellRng As Range
+
+    Set sh = SeedHListSheet("mchoice_var", "choice_multiple")
+    Set sut = EventLinelist.Create(FixtureWkb)
+    Set cellRng = sh.Cells(9, 2)
+
+    cellRng.Value = "a"
+    sut.OnSelectionChange sh, cellRng
+    cellRng.Value = "b"
+    sut.OnSheetChange sh, cellRng
+
+    Assert.AreEqual "a, b", CStr(cellRng.Value), _
+                    "The new pick lands after the value the cell held"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAChoiceEditAppendsToTheHeldValue", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Picking a choice the cell already holds restores the cell.
+'@TestMethod("EventLinelist")
+Public Sub TestAChoiceAlreadyPickedIsKeptOnce()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAChoiceAlreadyPickedIsKeptOnce"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim sh As Worksheet
+    Dim cellRng As Range
+
+    Set sh = SeedHListSheet("mchoice_var", "choice_multiple")
+    Set sut = EventLinelist.Create(FixtureWkb)
+    Set cellRng = sh.Cells(9, 2)
+
+    cellRng.Value = "a, b"
+    sut.OnSelectionChange sh, cellRng
+    cellRng.Value = "a"
+    sut.OnSheetChange sh, cellRng
+
+    Assert.AreEqual "a, b", CStr(cellRng.Value), _
+                    "A choice picked a second time keeps the cell as it stood"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAChoiceAlreadyPickedIsKeptOnce", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A scribbled header cell is restored from the label cell's name.
+'@details
+'Red against the old branch order: the go-to lookup above this branch raised
+'on a sheet with no go-to range and the restore never ran.
+'@TestMethod("EventLinelist")
+Public Sub TestAHeaderEditIsRestored()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAHeaderEditIsRestored"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim sh As Worksheet
+    Dim cellRng As Range
+
+    Set sh = SeedHListSheet("mchoice_var", "choice_multiple")
+    Set sut = EventLinelist.Create(FixtureWkb)
+    Set cellRng = sh.Cells(8, 2)
+
+    cellRng.Value = "scribble"
+    sut.OnSheetChange sh, cellRng
+
+    Assert.AreEqual "mchoice_var", CStr(cellRng.Value), _
+                    "The header cell gets the variable name back"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAHeaderEditIsRestored", _
                          Err.Number, Err.Description
 End Sub
 
