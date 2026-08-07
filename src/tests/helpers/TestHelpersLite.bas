@@ -205,6 +205,59 @@ Public Sub DeleteWorksheets(ParamArray sheetNames() As Variant)
     Next idx
 End Sub
 
+'@label NamedRangeExists
+'@sub-title Say whether a name is defined in a workbook or on one of its sheets.
+'@details Copied across from TestHelpers so the modules that call it can drop
+'the qualifier. The workbook scope is asked first. A qualified name carries its
+'sheet, so the sheet scope is asked next when the first answer is no.
+'@param nameText String. The name to look for, qualified or plain.
+'@param targetBook Optional Workbook. Defaults to ThisWorkbook.
+'@return Boolean. True when the name is defined in either scope.
+Public Function NamedRangeExists(ByVal nameText As String, _
+                                 Optional ByVal targetBook As workbook) As Boolean
+
+    Dim wb As workbook
+    Dim nm As Name
+
+    If targetBook Is Nothing Then
+        Set wb = ThisWorkbook
+    Else
+        Set wb = targetBook
+    End If
+
+    On Error Resume Next
+        Set nm = wb.Names(nameText)
+    On Error GoTo 0
+
+    If Not (nm Is Nothing) Then
+        NamedRangeExists = True
+        Exit Function
+    End If
+
+    Dim sheetName As String
+    sheetName = ParseSheetName(nameText)
+
+    If sheetName <> vbNullString And WorksheetExists(sheetName, wb) Then
+        On Error Resume Next
+            Set nm = wb.Worksheets(sheetName).Names(nameText)
+        On Error GoTo 0
+        NamedRangeExists = Not (nm Is Nothing)
+    End If
+End Function
+
+'@label ParseSheetName
+'@sub-title Read the sheet part out of a qualified name.
+'@param qualifiedName String. A name of the form 'Sheet'!nameText.
+'@return String. The sheet name, empty when the name carries none.
+Private Function ParseSheetName(ByVal qualifiedName As String) As String
+    Dim bangPos As Long
+
+    bangPos = InStr(qualifiedName, "!")
+    If bangPos > 0 Then
+        ParseSheetName = Replace(Left$(qualifiedName, bangPos - 1), "'", vbNullString)
+    End If
+End Function
+
 '@section Range Writers
 '===============================================================================
 

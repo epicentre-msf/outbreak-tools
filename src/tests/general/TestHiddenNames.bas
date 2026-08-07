@@ -88,16 +88,16 @@ End Sub
 
 '@sub-title Ensure both fixture worksheets exist and are cleared of content and names
 Private Sub ResetSheets()
-    Set testSh = TestHelpers.EnsureWorksheet(TEST_SHEET_NAME)
-    Set otherSh = TestHelpers.EnsureWorksheet(OTHER_SHEET_NAME)
-    TestHelpers.ClearWorksheet testSh
-    TestHelpers.ClearWorksheet otherSh
+    Set testSh = EnsureWorksheet(TEST_SHEET_NAME)
+    Set otherSh = EnsureWorksheet(OTHER_SHEET_NAME)
+    ClearWorksheet testSh
+    ClearWorksheet otherSh
 End Sub
 
 '@sub-title Delete the two fixture worksheets from the host workbook
 Private Sub RestoreSheets()
-    TestHelpers.DeleteWorksheet TEST_SHEET_NAME
-    TestHelpers.DeleteWorksheet OTHER_SHEET_NAME
+    DeleteWorksheet TEST_SHEET_NAME
+    DeleteWorksheet OTHER_SHEET_NAME
 End Sub
 
 '@sub-title Release the cached HiddenNames manager instance
@@ -107,13 +107,13 @@ End Sub
 
 '@sub-title Create a new empty workbook for cross-workbook export/import tests
 Private Function NewTemporaryWorkbook() As Workbook
-    Set NewTemporaryWorkbook = TestHelpers.NewWorkbook
+    Set NewTemporaryWorkbook = NewWorkbook
 End Function
 
 '@sub-title Close and delete a temporary workbook, swallowing errors on cleanup
 Private Sub CloseTemporaryWorkbook(ByRef wb As Workbook)
     On Error Resume Next
-        TestHelpers.DeleteWorkbook wb
+        DeleteWorkbook wb
     On Error GoTo 0
     Set wb = Nothing
 End Sub

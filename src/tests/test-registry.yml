@@ -185,6 +185,15 @@ suites:
         covers: [LLFormat]
       - module: TestLLChoices
         covers: [LLChoices]
+      # HiddenNames itself gets NO class row: it is one of the classes baked
+      # into the driver workbook by hand, and importing it again would leave
+      # Excel holding two copies under a second name. Only the test module is
+      # registered, the same shape TranslationObject and Passwords have above.
+      # A change to HiddenNames.cls reaches this suite through a hand re-import
+      # in the VBE, so a green run here measures whichever copy the workbook
+      # currently holds.
+      - module: TestHiddenNames
+        covers: [HiddenNames]
       # TestTemporaryRepos writes real files. Every test hands the factory a
       # base folder under ThisWorkbook.Path, because the default base is
       # Application.DefaultFilePath, which sits outside the granted folder.
