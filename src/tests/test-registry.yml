@@ -337,8 +337,8 @@ suites:
       # snapshot round trip, so the module has to be in the workbook.
       # It names EventSetup (above), ApplicationState (`general`) and
       # HiddenNames (baked in). Its public names clash with nothing already in
-      # the workbook -- LinelistEventsManager declares the same ones and is not
-      # registered.
+      # the workbook: LinelistEventsManager under `linelist` covers the same six
+      # jobs and carries an LL prefix on every one of them.
       - EventsManager
     tests:
       - module: TestSetupTranslationsTable
@@ -721,23 +721,56 @@ suites:
       # the driver workbook. AnalysisOutput waited on this row.
       - name: Linelist
       - name: LLDataEntry
-      # DO NOT ADD CustomLinelistFunctions, LinelistEventsManager OR
-      # EventLinelist HERE. Session 51 tried it, and the closure is what stops
-      # it: CustomLinelistFunctions reaches EventLinelist through
-      # LinelistEventsManager, and LinelistEventsManager declares the same six
-      # Public names as EventsManager under `setup` -- EnterBusyState,
-      # ExitBusyState, IsBusyState, SheetActivated, SheetChanged and
-      # WorkbookOpened. Two live copies of a Public name make every UNQUALIFIED
-      # call "Ambiguous name detected", and TestEventsManager makes exactly such
-      # a call, so the whole project stops compiling. The run wedges on the
-      # dialog: healthy import log, a zero-byte test-results.csv and Excel
-      # ignoring the graceful quit.
+      # EventLinelist routes every event of a generated linelist. Session 51
+      # tried this row and had to back it out: LinelistEventsManager declared
+      # the same six Public names as EventsManager under `setup`, and two live
+      # copies of a Public name make every UNQUALIFIED call to it "Ambiguous
+      # name detected". TestEventsManager makes exactly such a call, so the
+      # whole project stopped compiling and the run wedged on the dialog --
+      # healthy import log, a zero-byte test-results.csv, Excel ignoring the
+      # graceful quit. The linelist side of each pair now carries an LL prefix
+      # (LLEnterBusyState, LLExitBusyState, LLIsBusyState, LLWorkbookOpened,
+      # LLSheetActivated, LLSheetChanged), so the two managers share no name and
+      # all three rows below can live here.
       #
-      # src/tests/linelist/TestCustomLinelistFunctions.bas is on disk and
-      # unregistered for that reason. It closes issue 340 the moment the two
-      # managers stop sharing names -- one rename, or one merge, and it is its
-      # own piece of work.
+      # THIS IS THE FIRST TIME ANY OF THE THREE HAS BEEN COMPILED. The closure
+      # opens nothing new. EventLinelist names DropdownLists (`general`), LLGeo
+      # and LLSpatial (`geo`), LLdictionary and LLVariables (`dictionary`) and
+      # LLTranslation above; BetterArray, Checking, HiddenNames, Passwords and
+      # TranslationObject are baked into the driver workbook.
+      #
+      # ONE THING HAD TO MOVE BEFORE THIS ROW COULD LAND. OnDoubleClick used to
+      # call GeoModule.LoadGeo, and GeoModule can never be registered: it drives
+      # the F_Geo UserForm, no .frm lives under src/, and this schema has no
+      # forms key. So OnDoubleClick now ANSWERS the geo scope the click asked
+      # for and EventLinelistWorkbook makes the call. That module carries the
+      # worksheet event handlers, is never registered, and travels into the
+      # generated linelist beside GeoModule and F_Geo, so the call still binds
+      # at run time. Modules call modules, which is what the house rule wants.
+      - name: EventLinelist
+    modules:
+      # LinelistEventsManager holds the single EventLinelist instance and the
+      # busy-state counter, which is why it is a module: module-level state is
+      # what worksheet event handlers and worksheet functions both reach. It
+      # names EventLinelist above, ApplicationState (`general`),
+      # CustomLinelistFunctions below, and HiddenNames, which is baked in.
+      - LinelistEventsManager
+      # CustomLinelistFunctions carries the worksheet functions a generated
+      # linelist puts in cell formulas -- EPIWEEK, VALUE_OF, GEOCONCAT,
+      # DATE_RANGE and the rest. It reaches EventLinelist through
+      # LinelistEventsManager above and names nothing else. Its eighteen public
+      # names clash with nothing already in the workbook.
+      - CustomLinelistFunctions
     tests:
+      # TestCustomLinelistFunctions closes issue 340, which reported EPIWEEK
+      # answering week 53 for 29 to 31 December 2025. The implementation that
+      # behaved that way was replaced in February 2026 and nothing proved the
+      # replacement, because src/modules/linelist/ had no registry row at all.
+      # The module is self-contained: it declares its own DropWorkbookName and
+      # SetWorkbookName, and its other helper calls are unqualified so they
+      # resolve to TestHelpersLite.
+      - module: TestCustomLinelistFunctions
+        covers: [CustomLinelistFunctions]
       # TestLinelistSpecs moved here from the src/tests/ root, where it had no
       # folder to be registered under. Its four tests had never run.
       - module: TestLinelistSpecs
