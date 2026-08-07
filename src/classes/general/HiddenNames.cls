@@ -40,6 +40,16 @@ End Enum
 '(String/Boolean/Long/Variant) and a last-updated timestamp stored in
 'the Name.Comment field. Supports cross-scope import/export between
 'worksheets and workbooks.
+'
+'WHAT CREATE COSTS
+'-------------------------------------------------------------------------------
+'Create walks the whole Names collection of the host and reads several COM
+'properties off every name it tracks. A data entry sheet holds hundreds of
+'names, so the walk is the largest cost this class has. An instance pays it
+'once and answers every later read out of memory, keyed by name.
+'
+'A caller that wants ONE value off a host it will not touch again calls
+'QuickValue instead, which skips the walk entirely.
 '@depends Checking, BetterArray
 '@version 1.0 (2026-02-09)
 
@@ -48,6 +58,7 @@ Private Type THiddenNames
     hostSh As Worksheet
     hostWb As Workbook
     metadata As BetterArray
+    nameIndex As Collection
 End Type
 
 Private this As THiddenNames
@@ -83,15 +94,39 @@ Private Enum MetadataFieldIndex
     MetaFieldDefinition = 3
 End Enum
 
-'@label:metadata-store
-'@sub-title Lazy-initialised BetterArray holding all metadata records
-'@return BetterArray. The metadata cache.
-Private Function MetadataStore() As BetterArray
+'@label:ensure-stores
+'@sub-title Build the record store and the name index
+'@details
+'The two are built together and thrown away together, so this is the one place
+'either of them comes into being. A host holding no hidden name still ends up
+'with an empty store, which is the state every reader here expects.
+Private Sub EnsureStores()
     If this.metadata Is Nothing Then
         Set this.metadata = New BetterArray
         this.metadata.LowerBound = 0
     End If
+
+    If this.nameIndex Is Nothing Then Set this.nameIndex = New Collection
+End Sub
+
+'@label:metadata-store
+'@sub-title Lazy-initialised BetterArray holding all metadata records
+'@return BetterArray. The metadata cache.
+Private Function MetadataStore() As BetterArray
+    EnsureStores
     Set MetadataStore = this.metadata
+End Function
+
+'@label:name-index
+'@sub-title Lazy-initialised keyed Collection holding each record's position
+'@details
+'The key is MetadataKey(nameId) and the item is the position of that record in
+'the store. Lookups are kept in a keyed Collection because Scripting.Dictionary
+'is missing on Mac Excel. LLFormat holds its three caches the same shape.
+'@return Collection. The name index.
+Private Function NameIndex() As Collection
+    EnsureStores
+    Set NameIndex = this.nameIndex
 End Function
 
 '@label:build-metadata-record
@@ -156,26 +191,55 @@ End Sub
 
 '@label:metadata-index
 '@sub-title Find the index of a metadata record by name
+'@details
+'The position is read straight out of the keyed index, so the cost of a lookup
+'no longer grows with the number of names the host holds. This used to walk
+'every record comparing strings, and a data entry sheet holds hundreds.
+'
+'A Collection has no "does this key exist" test, so the miss is read off Err.
+'Err is cleared first, because On Error Resume Next and On Error GoTo 0 both
+'leave it alone and a stale number from earlier code would read as a miss.
+'@param nameId String. The identifier to find.
 '@return Long. The index, or -1 when not found.
 Private Function MetadataIndex(ByVal nameId As String) As Long
-    Dim store As BetterArray
-    Dim idx As Long
-    Dim record As Variant
+    Dim position As Variant
 
     MetadataIndex = -1
     If this.metadata Is Nothing Then Exit Function
+    If this.nameIndex Is Nothing Then Exit Function
 
-    Set store = this.metadata
-    If store.Length = 0 Then Exit Function
-
-    For idx = store.LowerBound To store.UpperBound
-        record = store.Item(idx)
-        If StrComp(MetadataName(record), nameId, vbTextCompare) = 0 Then
-            MetadataIndex = idx
-            Exit Function
-        End If
-    Next idx
+    On Error Resume Next
+        Err.Clear
+        position = this.nameIndex.Item(MetadataKey(nameId))
+        If Err.Number = 0 Then MetadataIndex = CLng(position)
+        Err.Clear
+    On Error GoTo 0
 End Function
+
+'@label:push-metadata-record
+'@sub-title Append a record to the store and key its position in the index
+'@details
+'The first record to claim a key keeps it. Two tracked names can share an
+'identifier: on a worksheet host, ShouldTrack accepts a sheet-scoped name and
+'also a workbook-scoped name whose RefersTo points at that sheet. The walk this
+'index replaced answered the first of the two, and this keeps that answer.
+'Both records stay in the store, so ListNames and the two export routines still
+'see them.
+'@param nameId String. The identifier the record is keyed under.
+'@param record Variant. The metadata record to append.
+Private Sub PushMetadataRecord(ByVal nameId As String, ByRef record As Variant)
+    Dim store As BetterArray
+    Dim positions As Collection
+
+    Set store = MetadataStore()
+    store.Push record
+
+    Set positions = NameIndex()
+    'Add raises 457 for a key already taken, which is the duplicate above.
+    On Error Resume Next
+        positions.Add store.UpperBound, MetadataKey(nameId)
+    On Error GoTo 0
+End Sub
 
 '@label:store-metadata-record
 '@sub-title Insert or replace a metadata record in the cache
@@ -184,10 +248,10 @@ Private Sub StoreMetadataRecord(ByVal nameId As String, ByRef record As Variant)
     Dim idx As Long
 
     idx = MetadataIndex(nameId)
-    Set store = MetadataStore()
     If idx = -1 Then
-        store.Push record
+        PushMetadataRecord nameId, record
     Else
+        Set store = MetadataStore()
         store.Item(idx) = record
     End If
 End Sub
@@ -234,33 +298,40 @@ Public Sub Initialise(ByVal targetObj As Object)
     End Select
 
     Set this.metadata = Nothing
+    Set this.nameIndex = Nothing
     LoadMetadataCache
 End Sub
 
 '@label:load-metadata-cache
 '@sub-title Scan existing hidden names and populate the metadata cache
+'@details
+'This walk is what Create costs. Every property it reads off a name is a COM
+'crossing, and it runs once per tracked name, so each read removed from the
+'body of the loop is worth hundreds on a data entry sheet.
 Private Sub LoadMetadataCache()
     Dim definition As Name
     Dim valueType As Byte
     Dim lastUpdated As Date
     Dim record As Variant
-    Dim store As BetterArray
     Dim nameId As String
+    Dim comment As String
 
     Dim container As Object
 
     Set container = NameOwner()
     If container Is Nothing Then Exit Sub
 
-    Set store = MetadataStore()
+    EnsureStores
 
     For Each definition In container.Names
         If ShouldTrack(definition) Then
             nameId = ExtractSimpleName(definition.Name)
-            valueType = NameTypeFromComment(definition.Comment)
-            lastUpdated = UpdatedFromComment(definition.Comment)
+            'One read of the comment feeds both parsers.
+            comment = definition.Comment
+            valueType = NameTypeFromComment(comment)
+            lastUpdated = UpdatedFromComment(comment)
             record = BuildMetadataRecord(nameId, valueType, lastUpdated, definition)
-            store.Push record
+            PushMetadataRecord nameId, record
         End If
     Next definition
 End Sub
@@ -361,7 +432,11 @@ End Function
 
 '@label:metadata-key
 '@sub-title Normalise a name identifier for case-insensitive lookup
-'@details Expects a pre-sanitized nameId (callers must call SanitizeNameId first).
+'@details
+'This is the key of the name index and of the two prefix comparisons in
+'ListNames and the export routines.
+'
+'Expects a pre-sanitized nameId (callers must call SanitizeNameId first).
 Private Function MetadataKey(ByVal nameId As String) As String
     MetadataKey = LCase$(nameId)
 End Function
@@ -377,6 +452,7 @@ Private Function EnsureMetadataRecord(ByVal nameId As String) As Long
     Dim definition As Name
     Dim valueType As Byte
     Dim lastUpdated As Date
+    Dim comment As String
 
     idx = MetadataIndex(nameId)
     Set store = MetadataStore()
@@ -388,10 +464,12 @@ Private Function EnsureMetadataRecord(ByVal nameId As String) As Long
             Exit Function
         End If
 
-        valueType = NameTypeFromComment(definition.Comment)
-        lastUpdated = UpdatedFromComment(definition.Comment)
+        'One read of the comment feeds both parsers.
+        comment = definition.Comment
+        valueType = NameTypeFromComment(comment)
+        lastUpdated = UpdatedFromComment(comment)
         record = BuildMetadataRecord(nameId, valueType, lastUpdated, definition)
-        store.Push record
+        PushMetadataRecord nameId, record
         EnsureMetadataRecord = store.UpperBound
         Exit Function
     End If
@@ -423,10 +501,16 @@ End Function
 
 '@label:remove-metadata-record
 '@sub-title Remove a metadata record from the cache
+'@details
+'Every record after the removed one moves down a place, so the index is rebuilt
+'in the same walk that builds the new store. Leaving the old index in place
+'would point every one of those keys at its neighbour.
 Private Sub RemoveMetadataRecord(ByVal nameId As String)
     Dim idx As Long
     Dim store As BetterArray
     Dim buffer As BetterArray
+    Dim positions As Collection
+    Dim record As Variant
     Dim i As Long
 
     idx = MetadataIndex(nameId)
@@ -435,14 +519,21 @@ Private Sub RemoveMetadataRecord(ByVal nameId As String)
     Set store = MetadataStore()
     Set buffer = New BetterArray
     buffer.LowerBound = store.LowerBound
+    Set positions = New Collection
 
     For i = store.LowerBound To store.UpperBound
         If i <> idx Then
-            buffer.Push store.Item(i)
+            record = store.Item(i)
+            buffer.Push record
+            'A key already taken is dropped here, as it is on the way in.
+            On Error Resume Next
+                positions.Add buffer.UpperBound, MetadataKey(MetadataName(record))
+            On Error GoTo 0
         End If
     Next i
 
     Set this.metadata = buffer
+    Set this.nameIndex = positions
 End Sub
 
 
@@ -609,6 +700,34 @@ End Function
 '@sub-title Escape double-quotes for formula embedding
 Private Function EscapeString(ByVal value As String) As String
     EscapeString = Replace(value, """", """""")
+End Function
+
+'@label:parse-refers-to
+'@sub-title Read the stored value back out of a RefersTo string
+'@details
+'The inverse of SerializeValue. A string was written as ="value" with every
+'inner quote doubled, and every other type as =literal, so this strips the
+'leading equals sign and then the quote wrapper when one is there.
+'@param storedFormula String. The RefersTo string of a Name definition.
+'@return String. The value the formula holds.
+Private Function ParseRefersTo(ByVal storedFormula As String) As String
+    Dim body As String
+
+    If Left$(storedFormula, 1) <> "=" Then
+        ParseRefersTo = storedFormula
+        Exit Function
+    End If
+
+    body = Mid$(storedFormula, 2)
+
+    If Len(body) >= 2 Then
+        If (Left$(body, 1) = """") And (Right$(body, 1) = """") Then
+            body = Mid$(body, 2, Len(body) - 2)
+            body = Replace(body, """""", """")
+        End If
+    End If
+
+    ParseRefersTo = body
 End Function
 
 '@label:apply-comment
@@ -861,6 +980,58 @@ End Sub
 
 '@section Public API
 '===============================================================================
+
+'@label:quick-value
+'@sub-title Read one stored value off a host, with no instance behind it
+'@details
+'Three COM crossings and a Mid$: the name is resolved by identifier, its
+'RefersTo is read, and the wrapper is parsed here. The Names walk that Create
+'pays for is skipped, and so is every property read that walk does per name.
+'
+'WHEN TO REACH FOR THIS
+'-------------------------------------------------------------------------------
+'A caller that wants ONE value off a host it will not touch again. The linelist
+'event handlers read sheet_type and table_name this way. Both are written once
+'when the sheet is built and never change while the workbook is open, and the
+'sheets that carry them hold hundreds of names.
+'
+'A caller that reads several values off the same host, or writes any, calls
+'Create instead. That instance pays the walk once and answers every later read
+'out of memory.
+'
+'THE LIMITS OF THIS
+'-------------------------------------------------------------------------------
+'A visible name answers here. Create tracks hidden names alone.
+'
+'The answer is the stored string whatever the type annotation says, so a caller
+'wanting a Boolean or a Long coerces it. The typed readers are on the instance.
+'
+'A workbook-scoped name whose RefersTo points at a worksheet is reached through
+'the workbook alone. Create reaches it through either.
+'@param targetObj Object. A Worksheet or Workbook holding the name.
+'@param nameId String. The name identifier.
+'@param defaultValue String. The answer when the host holds no such name.
+'@return String. The stored value.
+'@export
+Public Function QuickValue(ByVal targetObj As Object, _
+                           ByVal nameId As String, _
+                           Optional ByVal defaultValue As String = vbNullString) As String
+    Dim storedFormula As String
+
+    QuickValue = defaultValue
+    If targetObj Is Nothing Then Exit Function
+    If LenB(nameId) = 0 Then Exit Function
+
+    'A Names collection raises for an identifier it does not hold, and an
+    'absent name is an ordinary answer here rather than a fault.
+    On Error Resume Next
+        storedFormula = targetObj.Names(nameId).RefersTo
+    On Error GoTo 0
+
+    If LenB(storedFormula) = 0 Then Exit Function
+
+    QuickValue = ParseRefersTo(storedFormula)
+End Function
 
 '@label:has-name
 '@sub-title Check whether a hidden name exists

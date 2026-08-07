@@ -24,6 +24,12 @@ Private Const WORKBOOK_HEADER_NAME As String = "__hn_table_header__"
 'default fallback that avoids side-effects, typed round-trips for String
 '(including embedded-quote encoding), Boolean, and Long values, ListNames
 'metadata retrieval, and prefix-based filtering of listed names.
+'
+'Two more groups sit at the end. The first pins the keyed index that holds each
+'record's position: a removal shifts every record behind it, and a lookup may
+'ask in a different case from the one stored. The second covers QuickValue,
+'which reads one value off a host with no instance built.
+'
 'The fixture allocates two temporary worksheets (hn_main, hn_other) and a
 'lazy-loaded manager instance that are reset before every test to guarantee
 'full isolation.
@@ -715,5 +721,294 @@ Public Sub TestListNamesFiltersByPrefix()
 
 UnexpectedError:
     CustomTestLogFailure Assert, "TestListNamesFiltersByPrefix", Err.Number, Err.Description
+    Err.Clear
+End Sub
+
+
+'@section The keyed name index
+'===============================================================================
+'The position of every record is held in a keyed Collection. These tests pin
+'the two places that index can go wrong: a removal that shifts every record
+'after it, and a lookup whose case differs from the stored name.
+
+'@TestMethod("HiddenNames")
+'@sub-title Removing a name leaves every later name answering its own value
+'@details
+'Four names are stored and the first is removed, so the three behind it each
+'move down one place. A reader that kept the positions of the old store would
+'answer each of the three with its neighbour's value, and it would do so in
+'silence. The values are all different so that a shift shows as a wrong answer
+'rather than as a raise.
+Public Sub TestRemoveKeepsLaterNamesReachable()
+    CustomTestSetTitles Assert, "HiddenNames", "TestRemoveKeepsLaterNamesReachable"
+
+    Dim names As HiddenNames
+
+    On Error GoTo UnexpectedError
+
+    Set names = EnsureManager()
+    names.EnsureName "__hn_pos1__", "one", HiddenNameTypeString
+    names.EnsureName "__hn_pos2__", "two", HiddenNameTypeString
+    names.EnsureName "__hn_pos3__", "three", HiddenNameTypeString
+    names.EnsureName "__hn_pos4__", "four", HiddenNameTypeString
+
+    names.RemoveName "__hn_pos1__"
+
+    Assert.AreEqual "two", names.ValueAsString("__hn_pos2__"), _
+                     "The name after the removed one should still answer its own value"
+    Assert.AreEqual "three", names.ValueAsString("__hn_pos3__"), _
+                     "Every name after the removed one should still answer its own value"
+    Assert.AreEqual "four", names.ValueAsString("__hn_pos4__"), _
+                     "The last name should still answer its own value after a removal"
+    Assert.IsFalse names.HasName("__hn_pos1__"), _
+                     "The removed name should be gone from the index"
+    On Error GoTo 0
+    Exit Sub
+
+UnexpectedError:
+    CustomTestLogFailure Assert, "TestRemoveKeepsLaterNamesReachable", Err.Number, Err.Description
+    Err.Clear
+End Sub
+
+'@TestMethod("HiddenNames")
+'@sub-title A write after a removal reaches the name it was given
+'@details
+'The middle of three names is removed and the last one is then written. This is
+'where a stale index does real damage: SetValue resolves a position and writes
+'through the definition it finds there, so a position pointing at a neighbour
+'overwrites the wrong hidden name. Both survivors are read back.
+Public Sub TestSetValueAfterRemoveWritesRightName()
+    CustomTestSetTitles Assert, "HiddenNames", "TestSetValueAfterRemoveWritesRightName"
+
+    Dim names As HiddenNames
+
+    On Error GoTo UnexpectedError
+
+    Set names = EnsureManager()
+    names.EnsureName "__hn_wr1__", "first", HiddenNameTypeString
+    names.EnsureName "__hn_wr2__", "second", HiddenNameTypeString
+    names.EnsureName "__hn_wr3__", "third", HiddenNameTypeString
+
+    names.RemoveName "__hn_wr2__"
+    names.SetValue "__hn_wr3__", "changed"
+
+    Assert.AreEqual "changed", names.ValueAsString("__hn_wr3__"), _
+                     "SetValue should write the name it was given"
+    Assert.AreEqual "first", names.ValueAsString("__hn_wr1__"), _
+                     "SetValue should leave every other name alone"
+    On Error GoTo 0
+    Exit Sub
+
+UnexpectedError:
+    CustomTestLogFailure Assert, "TestSetValueAfterRemoveWritesRightName", Err.Number, Err.Description
+    Err.Clear
+End Sub
+
+'@TestMethod("HiddenNames")
+'@sub-title A lookup finds a name whose case differs from the stored one
+'@details
+'The index is keyed on the lower-cased identifier, which is what keeps the
+'case-insensitive matching the scan before it did with StrComp.
+Public Sub TestLookupIgnoresNameCase()
+    CustomTestSetTitles Assert, "HiddenNames", "TestLookupIgnoresNameCase"
+
+    Dim names As HiddenNames
+
+    On Error GoTo UnexpectedError
+
+    Set names = EnsureManager()
+    names.EnsureName "__hn_MixedCase__", "kept", HiddenNameTypeString
+
+    Assert.IsTrue names.HasName("__hn_mixedcase__"), _
+                     "HasName should find a stored name whatever the case asked for"
+    Assert.AreEqual "kept", names.ValueAsString("__HN_MIXEDCASE__"), _
+                     "ValueAsString should find a stored name whatever the case asked for"
+    On Error GoTo 0
+    Exit Sub
+
+UnexpectedError:
+    CustomTestLogFailure Assert, "TestLookupIgnoresNameCase", Err.Number, Err.Description
+    Err.Clear
+End Sub
+
+
+'@section QuickValue
+'===============================================================================
+'QuickValue reads one stored value off a host with no instance behind it. It
+'skips the Names walk Create pays for, so it holds nothing and sees every write
+'as it happens.
+
+'@TestMethod("HiddenNames")
+'@sub-title QuickValue reads a worksheet-scoped value with no instance built
+'@details
+'The name is written through an instance and read back through the class
+'itself. Nothing is created for the read, which is the whole point of the
+'member: the linelist event handlers read sheet_type and table_name this way on
+'sheets that hold hundreds of names.
+Public Sub TestQuickValueReadsWorksheetName()
+    CustomTestSetTitles Assert, "HiddenNames", "TestQuickValueReadsWorksheetName"
+
+    Dim names As HiddenNames
+
+    On Error GoTo UnexpectedError
+
+    Set names = EnsureManager()
+    names.EnsureName "__hn_quick__", "HList", HiddenNameTypeString
+
+    Assert.AreEqual "HList", HiddenNames.QuickValue(testSh, "__hn_quick__"), _
+                     "QuickValue should read a worksheet-scoped stored value"
+    On Error GoTo 0
+    Exit Sub
+
+UnexpectedError:
+    CustomTestLogFailure Assert, "TestQuickValueReadsWorksheetName", Err.Number, Err.Description
+    Err.Clear
+End Sub
+
+'@TestMethod("HiddenNames")
+'@sub-title QuickValue undoubles the quotes inside a stored string
+'@details
+'SerializeValue doubles every quote inside a string before it writes the
+'RefersTo formula, so the reader has to undo that. ValueAsString is asserted
+'beside it to show both readers answer the same thing.
+Public Sub TestQuickValueDecodesQuotes()
+    CustomTestSetTitles Assert, "HiddenNames", "TestQuickValueDecodesQuotes"
+
+    Dim names As HiddenNames
+    Dim expected As String
+
+    On Error GoTo UnexpectedError
+
+    expected = "beta""quote"
+
+    Set names = EnsureManager()
+    names.EnsureName "__hn_qtext__", expected, HiddenNameTypeString
+
+    Assert.AreEqual expected, HiddenNames.QuickValue(testSh, "__hn_qtext__"), _
+                     "QuickValue should return the text without its serialized quotes"
+    Assert.AreEqual expected, names.ValueAsString("__hn_qtext__"), _
+                     "Both readers should answer the same stored text"
+    On Error GoTo 0
+    Exit Sub
+
+UnexpectedError:
+    CustomTestLogFailure Assert, "TestQuickValueDecodesQuotes", Err.Number, Err.Description
+    Err.Clear
+End Sub
+
+'@TestMethod("HiddenNames")
+'@sub-title QuickValue answers a stored number as its digits
+'@details
+'A Long is written as =123 with no quote wrapper, so the caller gets the digits
+'and coerces them. The typed readers stay on the instance.
+Public Sub TestQuickValueReadsNumberAsText()
+    CustomTestSetTitles Assert, "HiddenNames", "TestQuickValueReadsNumberAsText"
+
+    Dim names As HiddenNames
+
+    On Error GoTo UnexpectedError
+
+    Set names = EnsureManager()
+    names.EnsureName "__hn_qlong__", 0&, HiddenNameTypeLong
+    names.SetValue "__hn_qlong__", 4321&
+
+    Assert.AreEqual "4321", HiddenNames.QuickValue(testSh, "__hn_qlong__"), _
+                     "QuickValue should answer a stored number as its digits"
+    On Error GoTo 0
+    Exit Sub
+
+UnexpectedError:
+    CustomTestLogFailure Assert, "TestQuickValueReadsNumberAsText", Err.Number, Err.Description
+    Err.Clear
+End Sub
+
+'@TestMethod("HiddenNames")
+'@sub-title QuickValue answers the default when the host holds no such name
+'@details
+'An absent name is the ordinary answer for a caller reading a tag off a sheet
+'that carries none, so it comes back as the default rather than as a raise.
+'A Nothing host and an empty identifier answer the same way.
+Public Sub TestQuickValueAnswersDefaultWhenAbsent()
+    CustomTestSetTitles Assert, "HiddenNames", "TestQuickValueAnswersDefaultWhenAbsent"
+
+    On Error GoTo UnexpectedError
+
+    Assert.AreEqual "none", HiddenNames.QuickValue(testSh, "__hn_qmissing__", "none"), _
+                     "QuickValue should answer the default for a name the sheet does not hold"
+    Assert.AreEqual vbNullString, HiddenNames.QuickValue(testSh, "__hn_qmissing__"), _
+                     "QuickValue should answer an empty string when no default is given"
+    Assert.AreEqual "none", HiddenNames.QuickValue(Nothing, "__hn_qmissing__", "none"), _
+                     "QuickValue should answer the default for a host that is Nothing"
+    Assert.AreEqual "none", HiddenNames.QuickValue(testSh, vbNullString, "none"), _
+                     "QuickValue should answer the default for an empty identifier"
+    On Error GoTo 0
+    Exit Sub
+
+UnexpectedError:
+    CustomTestLogFailure Assert, "TestQuickValueAnswersDefaultWhenAbsent", Err.Number, Err.Description
+    Err.Clear
+End Sub
+
+'@TestMethod("HiddenNames")
+'@sub-title QuickValue reads a workbook-scoped value
+'@details
+'The host is taken as an Object, so a Workbook is read the same way a Worksheet
+'is. CustomLinelistFunctions reads its workbook settings through this.
+Public Sub TestQuickValueReadsWorkbookName()
+    CustomTestSetTitles Assert, "HiddenNames", "TestQuickValueReadsWorkbookName"
+
+    Dim names As HiddenNames
+    Dim wb As Workbook
+
+    On Error GoTo UnexpectedError
+
+    Set wb = testSh.Parent
+    DeleteWorkbookName WORKBOOK_SCOPE_NAME
+
+    Set names = HiddenNames.Create(wb)
+    names.EnsureName WORKBOOK_SCOPE_NAME, "global", HiddenNameTypeString
+
+    Assert.AreEqual "global", HiddenNames.QuickValue(wb, WORKBOOK_SCOPE_NAME), _
+                     "QuickValue should read a workbook-scoped stored value"
+
+    names.RemoveName WORKBOOK_SCOPE_NAME
+    DeleteWorkbookName WORKBOOK_SCOPE_NAME
+    On Error GoTo 0
+    Exit Sub
+
+UnexpectedError:
+    CustomTestLogFailure Assert, "TestQuickValueReadsWorkbookName", Err.Number, Err.Description
+    Err.Clear
+    DeleteWorkbookName WORKBOOK_SCOPE_NAME
+End Sub
+
+'@TestMethod("HiddenNames")
+'@sub-title QuickValue sees a write made after an instance had already read it
+'@details
+'QuickValue holds nothing, so it answers what the host says right now. This is
+'the contract that lets an event handler read a tag without worrying about how
+'stale some other object's cache has become.
+Public Sub TestQuickValueSeesLaterWrites()
+    CustomTestSetTitles Assert, "HiddenNames", "TestQuickValueSeesLaterWrites"
+
+    Dim names As HiddenNames
+
+    On Error GoTo UnexpectedError
+
+    Set names = EnsureManager()
+    names.EnsureName "__hn_qlive__", "before", HiddenNameTypeString
+
+    Assert.AreEqual "before", HiddenNames.QuickValue(testSh, "__hn_qlive__"), _
+                     "QuickValue should read the value the name was created with"
+
+    names.SetValue "__hn_qlive__", "after"
+
+    Assert.AreEqual "after", HiddenNames.QuickValue(testSh, "__hn_qlive__"), _
+                     "QuickValue should read the value the name holds now"
+    On Error GoTo 0
+    Exit Sub
+
+UnexpectedError:
+    CustomTestLogFailure Assert, "TestQuickValueSeesLaterWrites", Err.Number, Err.Description
     Err.Clear
 End Sub
