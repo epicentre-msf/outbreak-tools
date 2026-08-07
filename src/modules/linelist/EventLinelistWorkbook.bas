@@ -19,19 +19,6 @@ Clean:
     mBooting = False
 End Sub
 
-Private Sub Workbook_SheetActivate(ByVal sh As Object)
-    If mBooting Then Exit Sub
-    If TypeName(sh) <> "Worksheet" Then Exit Sub
-
-    mBooting = True
-
-    On Error GoTo Clean
-    LinelistEventsManager.LLSheetActivated sh
-
-Clean:
-    mBooting = False
-End Sub
-
 Private Sub Workbook_SheetDeactivate(ByVal sh As Object)
     If mBooting Then Exit Sub
     If TypeName(sh) <> "Worksheet" Then Exit Sub

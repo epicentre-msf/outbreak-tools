@@ -57,8 +57,6 @@ Private Const SPATIALSHEET      As String = "spatial_tables__"
 Private Const DICTSHEET         As String = "Dictionary"
 Private Const LLSHEET           As String = "LinelistTranslation"
 Private Const PASSSHEET         As String = "__pass"
-Private Const PRINTPREFIX       As String = "print_"
-Private Const CRFPREFIX         As String = "crf_"
 
 ' What OnDoubleClick answers when the click asked for no geo picker. Every
 ' other answer it gives is a GeoScope value, and those start at 0, so a caller

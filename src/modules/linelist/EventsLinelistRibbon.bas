@@ -47,12 +47,6 @@ Public Sub clickRibbonExport(ByRef Control As IRibbonControl)
     ClickExport
 End Sub
 
-'@Description("Callback for btnDebug onAction")
-'@EntryPoint
-Public Sub clickRibbonDegug(ByRef Control As IRibbonControl)
-    Attribute clickRibbonDegug.VB_Description = "Callback for btnDebug onAction"
-End Sub
-
 '@Description("Callback for btnShowHideVar onAction")
 '@EntryPoint
 Public Sub clickRibbonShowHideVar(ByRef Control As IRibbonControl)
@@ -129,12 +123,6 @@ End Sub
 Public Sub clickRibbonCalculate(ByRef Control As IRibbonControl)
     Attribute clickRibbonCalculate.VB_Description = "Callback for btnCalc onAction"
     ClickCalculate
-End Sub
-
-'@Description("Callback for btnApplyFilt onAction")
-'@EntryPoint
-Public Sub clickRibbonApplyFilt(ByRef Control As IRibbonControl)
-    Attribute clickRibbonApplyFilt.VB_Description = "Callback for btnApplyFilt onAction"
 End Sub
 
 '@Description("Callback for btnGeo onAction")
