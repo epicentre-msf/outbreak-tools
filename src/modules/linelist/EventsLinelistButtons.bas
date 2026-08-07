@@ -7,7 +7,6 @@ Option Private Module
 '@ModuleDescription("Events associated to eventual buttons in the Linelist")
 
 
-Private Const LLSHEET As String = "LinelistTranslation"
 Private Const DICTSHEET As String = "Dictionary"
 Private Const PASSSHEET As String = "__pass"
 Private Const EXPORTSHEET As String = "Exports"
@@ -29,11 +28,28 @@ Private lltrads As LLTranslation
 Private wkbNames As HiddenNames
 
 'Initialize translation of forms object
+'
+'The translation helper is the one EventLinelist holds. This module used to
+'build its own on every button press, and LLTranslation.Create validates all
+'five translation tables.
 Private Sub InitializeTrads()
+    Dim linelistEvents As EventLinelist
+
     Set wb = ThisWorkbook
-    Set lltrads = LLTranslation.Create(wb.Worksheets(LLSHEET))
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    Set lltrads = linelistEvents.Translation
+
+    'The 29 reads of the two translators below all assume a translator is there.
+    'Building the helper here used to raise when the sheet was missing or a
+    'table was broken, and this keeps that: the workbook is unusable either way,
+    'and the raise says which workbook is at fault.
+    If lltrads Is Nothing Then _
+        Err.Raise ProjectError.ObjectNotInitialized, "EventsLinelistButtons", _
+                  "This linelist carries no usable translation sheet"
+
     Set tradsmess = lltrads.TransObject()
     Set tradsform = lltrads.TransObject(TranslationOfForms)
+
     Set pass = Passwords.Create(wb.Worksheets(PASSSHEET))
     Set wkbNames = HiddenNames.Create(wb)
 End Sub

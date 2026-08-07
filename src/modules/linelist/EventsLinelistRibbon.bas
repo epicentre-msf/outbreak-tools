@@ -7,15 +7,20 @@ Option Private Module
 '@Folder("Linelist Events")
 '@ModuleDescription("Events associated with the Ribbon Menu in the linelist")
 
-Private Const LLSHEET As String = "LinelistTranslation"
-
 Private tradrib As TranslationObject   'Translation of ribbon labels
 
 'Initialize translation of ribbon labels
+'
+'The translation helper is the one EventLinelist holds. Building a second one
+'here re-validated all five translation tables on every ribbon callback.
 Private Sub InitializeTrads()
     Dim lltrads As LLTranslation
+    Dim linelistEvents As EventLinelist
 
-    Set lltrads = LLTranslation.Create(ThisWorkbook.Worksheets(LLSHEET))
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    Set lltrads = linelistEvents.Translation
+    If lltrads Is Nothing Then Exit Sub
+
     Set tradrib = lltrads.TransObject(TranslationOfRibbon)
 End Sub
 
@@ -26,6 +31,8 @@ Public Sub getLLLang(ByRef Control As IRibbonControl, ByRef returnedVal)
 
     Dim codeId As String
     InitializeTrads
+    If tradrib Is Nothing Then Exit Sub
+
     codeId = Control.ID
     returnedVal = tradrib.TranslatedValue(codeId)
 End Sub

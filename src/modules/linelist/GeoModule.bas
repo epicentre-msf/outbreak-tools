@@ -14,7 +14,6 @@ Option Private Module
 
 Private Const GEOSHEET As String = "Geo"
 Private Const DROPDOWNSHEET As String = "dropdown_lists__"
-Private Const LLSHEET As String = "LinelistTranslation"
 Private Const SPATIALSHEET As String = "spatial_tables__"
 Private Const PASSSHEET As String = "__pass"
 
@@ -37,6 +36,7 @@ Private pass As Passwords
 ' @description Initialize geo elements: LLGeo, dropdowns, and translations.
 Private Sub InitializeGeoElements()
     Dim wb As Workbook
+    Dim linelistEvents As EventLinelist
 
     Set historicGeoTable = New BetterArray
     Set historicHFTable = New BetterArray
@@ -47,8 +47,14 @@ Private Sub InitializeGeoElements()
     Set geo = LLGeo.Create(wb.Worksheets(GEOSHEET))
     Set drop = DropdownLists.Create(wb.Worksheets(DROPDOWNSHEET))
 
-    Set lltrads = LLTranslation.Create(wb.Worksheets(LLSHEET))
-    Set tradmess = lltrads.TransObject()
+    'The translation helper is the one EventLinelist holds. Building a second
+    'one here re-validated all five translation tables per form open.
+    'The typed local is what call-signature-scan.R reads to check the member.
+    'A chained call is invisible to it, and this module carries no registry row,
+    'so a chain here would be checked by nothing at all.
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    Set lltrads = linelistEvents.Translation
+    If Not lltrads Is Nothing Then Set tradmess = lltrads.TransObject()
 End Sub
 
 ' @description Initialize passwords and translations for spatial analysis events.
@@ -154,9 +160,16 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
     Exit Sub
 
 ErrLoadGeo:
-    MsgBox tradmess.TranslatedValue("MSG_ErrGeo"), _
-           vbOKOnly + vbCritical, _
-           tradmess.TranslatedValue("MSG_Error")
+    'A broken translation sheet is one of the things that lands here, and the
+    'translator is Nothing when it does. Reading a label off it inside the
+    'handler raises again and the user sees nothing at all.
+    If tradmess Is Nothing Then
+        MsgBox Err.Description, vbOKOnly + vbCritical
+    Else
+        MsgBox tradmess.TranslatedValue("MSG_ErrGeo"), _
+               vbOKOnly + vbCritical, _
+               tradmess.TranslatedValue("MSG_Error")
+    End If
     NotBusyApp
 End Sub
 
