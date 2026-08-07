@@ -60,6 +60,11 @@ Private Const PASSSHEET         As String = "__pass"
 Private Const PRINTPREFIX       As String = "print_"
 Private Const CRFPREFIX         As String = "crf_"
 
+' What OnDoubleClick answers when the click asked for no geo picker. Every
+' other answer it gives is a GeoScope value, and those start at 0, so a caller
+' reads any answer below zero as "nothing to open".
+Private Const GEOSCOPENONE      As Long = -1
+
 
 '@section Factory
 '===============================================================================
@@ -175,28 +180,35 @@ End Sub
 
 
 '@sub-title Handle double-click events on analysis sheets.
+'@details
+'Answers the geo scope whose picker the double-click asked for, and
+'GEOSCOPENONE when the click asked for no picker at all. The caller is what
+'opens the picker: the form lives in the workbook and a class cannot reach it.
 '@param sh Worksheet. The worksheet where the double-click occurred.
 '@param target Range. The double-clicked cell.
+'@return Long. GeoScopeAdmin, GeoScopeHF, or GEOSCOPENONE.
 '@export
-Public Sub OnDoubleClick(ByVal sh As Worksheet, ByVal target As Range)
+Public Function OnDoubleClick(ByVal sh As Worksheet, ByVal target As Range) As Long
     Dim rngName As String
     Dim shType As String
 
-    If (sh Is Nothing) Or (target Is Nothing) Then Exit Sub
+    OnDoubleClick = GEOSCOPENONE
+
+    If (sh Is Nothing) Or (target Is Nothing) Then Exit Function
 
     On Error Resume Next
     rngName = target.Name.Name
     On Error GoTo 0
 
     shType = SheetTag(sh)
-    If shType <> "SPT-Analysis" Then Exit Sub
+    If shType <> "SPT-Analysis" Then Exit Function
 
     If (InStr(1, rngName, "INPUTSPTGEO_") > 0) Then
-        LoadGeo 0
+        OnDoubleClick = GeoScopeAdmin
     ElseIf (InStr(1, rngName, "INPUTSPTHF_") > 0) Then
-        LoadGeo 1
+        OnDoubleClick = GeoScopeHF
     End If
-End Sub
+End Function
 
 
 '@sub-title Update filter tables used by analysis sheets.
