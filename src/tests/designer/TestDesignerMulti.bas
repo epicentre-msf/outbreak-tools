@@ -19,7 +19,7 @@ Private Const TABLE_MULTI As String = "T_Multi"
 '===============================================================================
 '@ModuleInitialize
 Public Sub ModuleInitialize()
-    TestHelpers.BusyApp
+    BusyApp
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestDesignerMulti"
 End Sub
@@ -32,7 +32,7 @@ Public Sub ModuleCleanup()
         End If
     On Error GoTo 0
     Set Assert = Nothing
-    TestHelpers.RestoreApp
+    RestoreApp
 End Sub
 
 
@@ -40,10 +40,10 @@ End Sub
 '===============================================================================
 '@TestInitialize
 Public Sub TestInitialize()
-    TestHelpers.BusyApp
+    BusyApp
 
-    Set FixtureWorkbook = TestHelpers.NewWorkbook
-    Set MultiSheet = TestHelpers.EnsureWorksheet("GenerateMultiple", FixtureWorkbook)
+    Set FixtureWorkbook = NewWorkbook
+    Set MultiSheet = EnsureWorksheet("GenerateMultiple", FixtureWorkbook)
     CreateMultiTable MultiSheet
 End Sub
 
@@ -54,13 +54,13 @@ Public Sub TestCleanup()
     End If
 
     On Error Resume Next
-        TestHelpers.DeleteWorkbook FixtureWorkbook
+        DeleteWorkbook FixtureWorkbook
     On Error GoTo 0
 
     Set MultiSheet = Nothing
     Set FixtureWorkbook = Nothing
 
-    TestHelpers.RestoreApp
+    RestoreApp
 End Sub
 
 
@@ -173,7 +173,7 @@ Public Sub TestImportReplacesTableData()
 
     'Arrange: create a source T_Multi on a separate worksheet
     Dim sourceSheet As Worksheet
-    Set sourceSheet = TestHelpers.EnsureWorksheet("SourceMulti", FixtureWorkbook)
+    Set sourceSheet = EnsureWorksheet("SourceMulti", FixtureWorkbook)
     CreateMultiTable sourceSheet
     sourceSheet.ListObjects(TABLE_MULTI).Name = "T_Multi_Source"
 
@@ -227,7 +227,7 @@ Public Sub TestExportWritesToWorksheet()
     Set table = CustomTable.Create(lo)
 
     Dim exportSheet As Worksheet
-    Set exportSheet = TestHelpers.EnsureWorksheet("ExportTarget", FixtureWorkbook)
+    Set exportSheet = EnsureWorksheet("ExportTarget", FixtureWorkbook)
 
     'Act
     table.Export sh:=exportSheet, startLine:=1, startColumn:=1, addListObject:=True

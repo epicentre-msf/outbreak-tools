@@ -125,7 +125,7 @@ End Function
 'translation requirement without needing a full linelist dictionary.
 '@return TranslationObject. A lightweight translation stub.
 Private Function CreateTranslationStub() As TranslationObject
-    Set CreateTranslationStub = TestHelpers.BuildTranslationObject(ThisWorkbook, "ENG", Array())
+    Set CreateTranslationStub = BuildTranslationObject(ThisWorkbook, "ENG", Array())
 End Function
 
 

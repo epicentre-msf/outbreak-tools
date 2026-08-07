@@ -31,7 +31,7 @@ Private Const LANGUAGE_RANGE_NAME As String = "RNG_FileLang"
 '===============================================================================
 '@ModuleInitialize
 Public Sub ModuleInitialize()
-    TestHelpers.BusyApp
+    BusyApp
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestEventMasterSetup"
 End Sub
@@ -42,7 +42,7 @@ Public Sub ModuleCleanup()
         If Not Assert Is Nothing Then Assert.PrintResults TEST_OUTPUT_SHEET
     On Error GoTo 0
     Set Assert = Nothing
-    TestHelpers.RestoreApp
+    RestoreApp
 End Sub
 
 
@@ -50,14 +50,14 @@ End Sub
 '===============================================================================
 '@TestInitialize
 Public Sub TestInitialize()
-    TestHelpers.BusyApp
+    BusyApp
 
-    Set FixtureWorkbook = TestHelpers.NewWorkbook
-    Set DropdownSheet = TestHelpers.EnsureWorksheet(DROPDOWNS_SHEET_NAME, FixtureWorkbook)
-    Set VariablesSheet = TestHelpers.EnsureWorksheet(VARIABLES_SHEET_NAME, FixtureWorkbook)
-    Set ChoicesSheet = TestHelpers.EnsureWorksheet(CHOICES_SHEET_NAME, FixtureWorkbook)
-    Set TranslationsSheet = TestHelpers.EnsureWorksheet(TRANSLATIONS_SHEET_NAME, FixtureWorkbook)
-    Set RibbonSheet = TestHelpers.EnsureWorksheet(RIBBON_TRANSLATION_SHEET, FixtureWorkbook)
+    Set FixtureWorkbook = NewWorkbook
+    Set DropdownSheet = EnsureWorksheet(DROPDOWNS_SHEET_NAME, FixtureWorkbook)
+    Set VariablesSheet = EnsureWorksheet(VARIABLES_SHEET_NAME, FixtureWorkbook)
+    Set ChoicesSheet = EnsureWorksheet(CHOICES_SHEET_NAME, FixtureWorkbook)
+    Set TranslationsSheet = EnsureWorksheet(TRANSLATIONS_SHEET_NAME, FixtureWorkbook)
+    Set RibbonSheet = EnsureWorksheet(RIBBON_TRANSLATION_SHEET, FixtureWorkbook)
 
     PrepareChoicesFixture ChoicesSheet
     PrepareTranslationsFixture TranslationsSheet
@@ -71,7 +71,7 @@ Public Sub TestCleanup()
     If Not Assert Is Nothing Then Assert.Flush
 
     On Error Resume Next
-        TestHelpers.DeleteWorkbook FixtureWorkbook
+        DeleteWorkbook FixtureWorkbook
     On Error GoTo 0
 
     Set Subject = Nothing
@@ -82,7 +82,7 @@ Public Sub TestCleanup()
     Set DropdownSheet = Nothing
     Set FixtureWorkbook = Nothing
 
-    TestHelpers.RestoreApp
+    RestoreApp
 End Sub
 
 

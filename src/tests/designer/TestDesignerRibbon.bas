@@ -19,7 +19,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 '===============================================================================
 '@ModuleInitialize
 Public Sub ModuleInitialize()
-    TestHelpers.BusyApp
+    BusyApp
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestDesignerRibbon"
 End Sub
@@ -32,7 +32,7 @@ Public Sub ModuleCleanup()
         End If
     On Error GoTo 0
     Set Assert = Nothing
-    TestHelpers.RestoreApp
+    RestoreApp
 End Sub
 
 
@@ -40,11 +40,11 @@ End Sub
 '===============================================================================
 '@TestInitialize
 Public Sub TestInitialize()
-    TestHelpers.BusyApp
+    BusyApp
 
-    Set FixtureWorkbook = TestHelpers.NewWorkbook
-    Set EntrySheet = TestHelpers.EnsureWorksheet("Main", FixtureWorkbook)
-    Set TranslationSheet = TestHelpers.EnsureWorksheet("DesignerTranslation", FixtureWorkbook)
+    Set FixtureWorkbook = NewWorkbook
+    Set EntrySheet = EnsureWorksheet("Main", FixtureWorkbook)
+    Set TranslationSheet = EnsureWorksheet("DesignerTranslation", FixtureWorkbook)
 
     FixtureWorkbook.Names.Add Name:="RNG_MainLangCode", RefersTo:=TranslationSheet.Range("A1")
 End Sub
@@ -56,14 +56,14 @@ Public Sub TestCleanup()
     End If
 
     On Error Resume Next
-        TestHelpers.DeleteWorkbook FixtureWorkbook
+        DeleteWorkbook FixtureWorkbook
     On Error GoTo 0
 
     Set TranslationSheet = Nothing
     Set EntrySheet = Nothing
     Set FixtureWorkbook = Nothing
 
-    TestHelpers.RestoreApp
+    RestoreApp
 End Sub
 
 
@@ -500,9 +500,9 @@ Public Sub TestPrepareHidesInternalSheets()
     Dim formatterSheet As Worksheet
     Dim formulaSheet As Worksheet
 
-    Set passSheet = TestHelpers.EnsureWorksheet("__pass", FixtureWorkbook)
-    Set formatterSheet = TestHelpers.EnsureWorksheet("__formatter", FixtureWorkbook)
-    Set formulaSheet = TestHelpers.EnsureWorksheet("__formula", FixtureWorkbook)
+    Set passSheet = EnsureWorksheet("__pass", FixtureWorkbook)
+    Set formatterSheet = EnsureWorksheet("__formatter", FixtureWorkbook)
+    Set formulaSheet = EnsureWorksheet("__formula", FixtureWorkbook)
 
     'Act
     Dim subject As DesignerPreparation
@@ -526,7 +526,7 @@ Public Sub TestPrepareHidesTranslationSheets()
 
     'Arrange: LinelistTranslation sheet
     Dim llTransSheet As Worksheet
-    Set llTransSheet = TestHelpers.EnsureWorksheet("LinelistTranslation", FixtureWorkbook)
+    Set llTransSheet = EnsureWorksheet("LinelistTranslation", FixtureWorkbook)
 
     'Act
     Dim subject As DesignerPreparation
@@ -577,7 +577,7 @@ Public Sub TestPrepareCreatesGeoFlags()
 
     'Arrange: create Geo sheet on the fixture workbook
     Dim geoSheet As Worksheet
-    Set geoSheet = TestHelpers.EnsureWorksheet("Geo", FixtureWorkbook)
+    Set geoSheet = EnsureWorksheet("Geo", FixtureWorkbook)
 
     'Act
     Dim subject As DesignerPreparation
@@ -640,7 +640,7 @@ Public Sub TestPrepareCreatesDropdownSheet()
     subject.Prepare Nothing
 
     'Assert: __dropdowns sheet should exist and be VeryHidden
-    Assert.IsTrue TestHelpers.WorksheetExists("__dropdowns", FixtureWorkbook), _
+    Assert.IsTrue WorksheetExists("__dropdowns", FixtureWorkbook), _
                   "__dropdowns worksheet should be created."
     Assert.AreEqual CLng(xlSheetVeryHidden), _
                     CLng(FixtureWorkbook.Worksheets("__dropdowns").Visible), _
@@ -761,7 +761,7 @@ Public Sub TestDropdownsPropertyLazilyInitialises()
 
     'Assert: should have created the dropdown sheet and manager
     Assert.IsTrue Not drop Is Nothing, "Dropdowns property should return a valid manager."
-    Assert.IsTrue TestHelpers.WorksheetExists("__dropdowns", FixtureWorkbook), _
+    Assert.IsTrue WorksheetExists("__dropdowns", FixtureWorkbook), _
                   "__dropdowns worksheet should be created lazily."
     Exit Sub
 
@@ -779,7 +779,7 @@ Public Sub TestPrepareAppliesMultiValidations()
 
     'Arrange: create GenerateMultiple sheet with T_Multi table
     Dim multiSheet As Worksheet
-    Set multiSheet = TestHelpers.EnsureWorksheet("GenerateMultiple", FixtureWorkbook)
+    Set multiSheet = EnsureWorksheet("GenerateMultiple", FixtureWorkbook)
     CreateMultiTable multiSheet
 
     'Act
@@ -902,7 +902,7 @@ End Sub
 '@sub-title Build a real DesignerTranslation backed by a seeded translation sheet
 Private Function MakeDesignerTranslator() As DesignerTranslation
     Dim sh As Worksheet
-    Set sh = TestHelpers.EnsureWorksheet("DesignerTradTables", FixtureWorkbook)
+    Set sh = EnsureWorksheet("DesignerTradTables", FixtureWorkbook)
     SeedDesignerTranslationTables sh
     Set MakeDesignerTranslator = DesignerTranslation.Create(sh)
 End Function
@@ -926,8 +926,8 @@ Private Sub AddTradTable(ByVal sh As Worksheet, ByVal startCell As Range, _
     Dim dataRange As Range
     Dim lo As ListObject
 
-    matrix = TestHelpers.RowsToMatrix(rows)
-    TestHelpers.WriteMatrix startCell, matrix
+    matrix = RowsToMatrix(rows)
+    WriteMatrix startCell, matrix
     Set dataRange = startCell.Resize(UBound(matrix, 1), UBound(matrix, 2))
     Set lo = sh.ListObjects.Add(xlSrcRange, dataRange, , xlYes)
     lo.Name = tableName

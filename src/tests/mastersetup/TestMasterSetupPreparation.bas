@@ -28,7 +28,7 @@ Private Const VARIABLE_COLUMN_NAME As String = "__Col__Variables"
 '===============================================================================
 '@ModuleInitialize
 Public Sub ModuleInitialize()
-    TestHelpers.BusyApp
+    BusyApp
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestMasterSetupPreparation"
 End Sub
@@ -41,7 +41,7 @@ Public Sub ModuleCleanup()
         End If
     On Error GoTo 0
     Set Assert = Nothing
-    TestHelpers.RestoreApp
+    RestoreApp
 End Sub
 
 
@@ -49,12 +49,12 @@ End Sub
 '===============================================================================
 '@TestInitialize
 Public Sub TestInitialize()
-    TestHelpers.BusyApp
+    BusyApp
 
-    Set FixtureWorkbook = TestHelpers.NewWorkbook
-    Set DropdownSheet = TestHelpers.EnsureWorksheet(DROPDOWNS_SHEET_NAME, FixtureWorkbook)
-    Set VariablesSheet = TestHelpers.EnsureWorksheet(VARIABLES_SHEET_NAME, FixtureWorkbook)
-    Set TranslationsSheet = TestHelpers.EnsureWorksheet(TRANSLATIONS_SHEET_NAME, FixtureWorkbook)
+    Set FixtureWorkbook = NewWorkbook
+    Set DropdownSheet = EnsureWorksheet(DROPDOWNS_SHEET_NAME, FixtureWorkbook)
+    Set VariablesSheet = EnsureWorksheet(VARIABLES_SHEET_NAME, FixtureWorkbook)
+    Set TranslationsSheet = EnsureWorksheet(TRANSLATIONS_SHEET_NAME, FixtureWorkbook)
 
     PrepareTranslationsFixture TranslationsSheet
 
@@ -68,7 +68,7 @@ Public Sub TestCleanup()
     End If
 
     On Error Resume Next
-        TestHelpers.DeleteWorkbook FixtureWorkbook
+        DeleteWorkbook FixtureWorkbook
     On Error GoTo 0
 
     Set Subject = Nothing
@@ -77,7 +77,7 @@ Public Sub TestCleanup()
     Set DropdownSheet = Nothing
     Set FixtureWorkbook = Nothing
 
-    TestHelpers.RestoreApp
+    RestoreApp
 End Sub
 
 

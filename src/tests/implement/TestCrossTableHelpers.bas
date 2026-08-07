@@ -23,7 +23,7 @@ End Sub
 
 '@TestInitialize
 Private Sub TestInitialize()
-    Set FixtureWorkbook = TestHelpers.NewWorkbook
+    Set FixtureWorkbook = NewWorkbook
     Set SpecsStub = New GraphTablesSpecsStub
     SpecsStub.Configure ScopeBivariate, "TEST_TABLE"
 End Sub
@@ -31,11 +31,11 @@ End Sub
 '@TestCleanup
 Private Sub TestCleanup()
     If Not FixtureWorkbook Is Nothing Then
-        TestHelpers.DeleteWorkbook FixtureWorkbook
+        DeleteWorkbook FixtureWorkbook
         Set FixtureWorkbook = Nothing
     End If
     Set SpecsStub = Nothing
-    TestHelpers.RestoreApp
+    RestoreApp
 End Sub
 
 '@section Layout Planner
@@ -160,7 +160,7 @@ Private Sub TestRangeRegistrarRegistersNames()
     Assert.IsTrue InStr(1, refersTo, "!$C$8", vbTextCompare) > 0, "Table range should start at computed coordinates"
 
     registrar.RemoveName "STARTROW_TEST"
-    Assert.IsFalse TestHelpers.NamedRangeExists("STARTROW_TEST", FixtureWorkbook), _
+    Assert.IsFalse NamedRangeExists("STARTROW_TEST", FixtureWorkbook), _
                  "RemoveName should delete workbook-level name"
 End Sub
 
@@ -175,8 +175,8 @@ Private Sub TestWriteBufferCommitsMatrices()
     Dim body As Variant
 
     Set sheet = FixtureWorkbook.Worksheets(1)
-    header = TestHelpers.RowsToMatrix(Array(Array("H1", "H2")))
-    body = TestHelpers.RowsToMatrix(Array(Array(1, 2), Array(3, 4)))
+    header = RowsToMatrix(Array(Array("H1", "H2")))
+    body = RowsToMatrix(Array(Array(1, 2), Array(3, 4)))
 
     Set buffer = CrossTableServices.BuildWriteBuffer(5, 3)
     buffer.AssignHeader header
@@ -279,9 +279,9 @@ Private Sub TestLegacyAdapterPlanAndRegister()
     Set summary = adapter.PlanAndRegister("LEG")
 
     Assert.ObjectExists summary, "CrossTableLayoutSummary", "Adapter should return a layout summary"
-    Assert.IsTrue TestHelpers.NamedRangeExists("LEG_STARTROW", FixtureWorkbook), _
+    Assert.IsTrue NamedRangeExists("LEG_STARTROW", FixtureWorkbook), _
                  "Adapter should register the start row name"
-    Assert.IsTrue TestHelpers.NamedRangeExists("LEG_TABLE", FixtureWorkbook), _
+    Assert.IsTrue NamedRangeExists("LEG_TABLE", FixtureWorkbook), _
                  "Adapter should register the table range name"
     Assert.IsTrue adapter.PlanDurationMilliseconds >= 0, _
                  "Plan duration should be captured"
@@ -302,8 +302,8 @@ Private Sub TestLegacyAdapterWriteContent()
     Set adapter = CrossTableLegacyAdapter.Create(SpecsStub, sheet)
     adapter.PlanAndRegister "LEG"
 
-    header = TestHelpers.RowsToMatrix(Array(Array("Heading")))
-    body = TestHelpers.RowsToMatrix(Array(Array("Value")))
+    header = RowsToMatrix(Array(Array("Heading")))
+    body = RowsToMatrix(Array(Array("Value")))
 
     adapter.WriteContent header, body
 
