@@ -19,7 +19,7 @@ Option Private Module
 'A fresh Checking instance with four entries (one per severity) is created
 'in TestInitialize so every test starts from the same baseline.
 'Uses the Rubberduck test runner (Rubberduck.AssertClass).
-'@depends Checking, TestHelpers
+'@depends Checking, TestHelpersLite
 
 Private Assert As Object
 Private Fakes As Object

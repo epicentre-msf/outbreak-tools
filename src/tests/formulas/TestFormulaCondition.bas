@@ -24,7 +24,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'drives the run, and the whole suite comes back with no results file.
 '@depends FormulaCondition, LLdictionary, LLdictionary,
 '  LLVariables, BetterArray, CustomTest,
-'  DictionaryTestFixture, TestHelpers
+'  DictionaryTestFixture, TestHelpersLite
 
 Private Const DICT_SHEET As String = "FormulaConditionDict"
 Private Const OTHER_DICT_SHEET As String = "FormulaConditionDict2"

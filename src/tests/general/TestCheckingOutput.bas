@@ -16,7 +16,7 @@ Option Private Module
 '   title-priority filtering when combined with status, Worksheet_Change handler
 '   injection, handler replacement of existing code, and append behavior across
 '   multiple print calls.
-'@depends CheckingOutput, Checking, HiddenNames, BetterArray, TestHelpers
+'@depends CheckingOutput, Checking, HiddenNames, BetterArray, TestHelpersLite
 
 Private Const DEFAULTCHECKINGSHEET As String = "CheckingOutputFixture"
 Private Const DEFAULTFILTERCELL As String = "C1"

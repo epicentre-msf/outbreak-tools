@@ -16,7 +16,7 @@ Option Explicit
 '                    CustomTestSetTitles / CustomTestLogFailure pattern.
 '
 '@depends            DataSheet, HiddenNames, BetterArray, CustomTest,
-'                    TestHelpers, DictionaryTestFixture
+'                    TestHelpersLite, DictionaryTestFixture
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 

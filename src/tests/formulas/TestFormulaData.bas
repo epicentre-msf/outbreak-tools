@@ -17,7 +17,7 @@ Option Private Module
 'cache durability after worksheet mutation, and grouped-function metadata
 '(aggregator mapping, native-function flags). Each test builds a minimal
 'fixture sheet with two ListObjects seeded in PrepareFixtureSheet.
-'@depends FormulaData, CustomTest, TestHelpers
+'@depends FormulaData, CustomTest, TestHelpersLite
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 

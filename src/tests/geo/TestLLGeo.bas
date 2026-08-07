@@ -31,7 +31,7 @@ Option Explicit
 'They are hidden names on the workbook, so they outlive a worksheet clear.
 'Every fixture build drops them first, and ModuleCleanup leaves five empty
 'ones behind for whatever else in the workbook resolves them.
-'@depends LLGeo, BetterArray, CustomTest, TestHelpers, HiddenNames, Passwords
+'@depends LLGeo, BetterArray, CustomTest, TestHelpersLite, HiddenNames, Passwords
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const GEO_FIXTURE As String = "GeoFixture"

@@ -20,7 +20,7 @@ Option Explicit
 'FRA) is rebuilt in TestInitialize so every test starts from a clean baseline.
 'Uses the CustomTest harness (CustomTest) with CustomTestSetTitles and
 'CustomTestLogFailure.
-'@depends TranslationObject, TranslationObject, BetterArray, CustomTest, TestHelpers
+'@depends TranslationObject, TranslationObject, BetterArray, CustomTest, TestHelpersLite
 
 Private Assert As CustomTest
 Private TranslationSheet As Worksheet

@@ -15,7 +15,7 @@ Attribute VB_Description = "Unit tests for ExportButton"
 'the UseFilter property that reads and writes the companion checkbox state.
 'The fixture creates temporary worksheets with OLEObject controls for each
 'test and tears them down in TestCleanup to ensure isolation.
-'@depends ExportButton, TranslationObject, TestHelpers, MSForms, CustomTest
+'@depends ExportButton, TranslationObject, TestHelpersLite, MSForms, CustomTest
 
 Option Explicit
 Option Private Module

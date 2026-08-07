@@ -21,7 +21,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 '   shift behavior for InsertRowsAt/DeleteRowsAt, Export with header filtering
 '   and ListObject creation, DataRange returning Nothing when empty, and
 '   snapshot restoration on import failure.
-'@depends CustomTable, DataSheet, BetterArray, CustomTest, TestHelpers
+'@depends CustomTable, DataSheet, BetterArray, CustomTest, TestHelpersLite
 
 Private Const TABLESHEETNAME As String = "CustomTableFixture"
 Private Const TABLENAME As String = "tblCustom"

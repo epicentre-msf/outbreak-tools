@@ -15,7 +15,7 @@ Option Private Module
 '  resetNames flag, that direct LogFailure and LogSuccesses calls produce the
 '  expected entries, and that PrintResults writes structured output to a worksheet
 '  with filter integration and subtitle overrides.
-'@depends CustomTest, Checking, CheckingOutput, BetterArray, TestHelpers
+'@depends CustomTest, Checking, CheckingOutput, BetterArray, TestHelpersLite
 
 Private Const OUTPUT_SHEET_NAME As String = "HarnessOutput"
 Private Const VISIBLE_COLUMN_COUNT As Long = 3

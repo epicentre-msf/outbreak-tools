@@ -43,7 +43,7 @@ Option Explicit
 'Application.AutoCorrect.AutoFillFormulasInLists off before it builds its
 'fixture and asserts the switch took. ModuleInitialize reads what the host held
 'and ModuleCleanup puts it back.
-'@depends LLSpatial, CustomTest, TestHelpers, HiddenNames, BetterArray
+'@depends LLSpatial, CustomTest, TestHelpersLite, HiddenNames, BetterArray
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const SPATIAL_SHEET As String = "spatial_tables__"

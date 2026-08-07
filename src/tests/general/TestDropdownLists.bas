@@ -27,7 +27,7 @@ Option Explicit
 'alert styles plus forward and return hyperlinks between output and dropdown
 'sheets.
 'Uses the CustomTest harness (CustomTest), not Rubberduck.
-'@depends DropdownLists, DropdownLists, Checking, HiddenNames, TranslationObject, TranslationObject, BetterArray, CustomTest, TestHelpers
+'@depends DropdownLists, DropdownLists, Checking, HiddenNames, TranslationObject, TranslationObject, BetterArray, CustomTest, TestHelpersLite
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const DROPTESTONE As String = "DropTestList1"

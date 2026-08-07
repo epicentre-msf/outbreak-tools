@@ -33,7 +33,7 @@ Private Const WORKBOOK_HEADER_NAME As String = "__hn_table_header__"
 'The fixture allocates two temporary worksheets (hn_main, hn_other) and a
 'lazy-loaded manager instance that are reset before every test to guarantee
 'full isolation.
-'@depends HiddenNames, BetterArray, CustomTest, TestHelpers
+'@depends HiddenNames, BetterArray, CustomTest, TestHelpersLite
 
 Private Assert As CustomTest
 Private testSh As Worksheet

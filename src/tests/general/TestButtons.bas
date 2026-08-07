@@ -17,7 +17,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'against an LLFormat design template. The fixture creates a temporary
 'worksheet for each test and cleans up all shapes and format sheets on
 'teardown to guarantee isolation.
-'@depends Buttons, LLFormat, Checking, CustomTest, TestHelpers, LLFormatTestFixture
+'@depends Buttons, LLFormat, Checking, CustomTest, TestHelpersLite, LLFormatTestFixture
 
 Private Const BUTTONS_SHEET As String = "ButtonsFixture"
 Private Const DEFAULT_BUTTON_NAME As String = "FixtureButton"

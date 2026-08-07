@@ -38,7 +38,7 @@ Option Explicit
 '                                a formatted "current / max" string to the
 '                                first cell of the bar range.
 '
-' @depends ProgressBar, CustomTest, TestHelpers
+' @depends ProgressBar, CustomTest, TestHelpersLite
 ' =============================================================================
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
