@@ -1209,12 +1209,15 @@ End Function
 '===============================================================================
 
 '@sub-title Get the sheet type tag from worksheet-level HiddenNames.
+'@details
+'The quick read is what this wants. It used to build a whole HiddenNames store
+'for one value, and UpdateFilterTables and UpdateAllListAuto both call it once
+'per worksheet of the workbook, so every sheet in the loop paid a full walk of
+'its own Names collection.
 '@param sh Worksheet. The worksheet to query.
 '@return String. The sheet type tag (HList, VList, Uni-Bi-Analysis, etc.).
 Private Function SheetTag(ByRef sh As Worksheet) As String
-    Dim shHn As HiddenNames
-    Set shHn = HiddenNames.Create(sh)
-    SheetTag = shHn.ValueAsString("sheet_type")
+    SheetTag = HiddenNames.QuickValue(sh, "sheet_type")
 End Function
 
 

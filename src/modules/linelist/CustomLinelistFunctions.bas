@@ -38,53 +38,27 @@ Private valueOfCounter As Long
 '@section HiddenNames Helper
 '===============================================================================
 
+'The parser these two used to carry is now HiddenNames.QuickValue, which reads
+'the same three COM properties and also undoubles the quotes inside a stored
+'string. The two names stay because the call sites below read better with them.
+
 '@description Read a workbook-level HiddenName value as String.
-'Lightweight helper that avoids creating a HiddenNames class instance,
-'suitable for use in UDFs that are called many times during recalculation.
+'Reads the name straight off the workbook, so no HiddenNames instance is built.
+'Suitable for use in UDFs that are called many times during recalculation.
 '@param nameId String. The HiddenName identifier (e.g. "RNG_EpiWeekStart").
 '@param defaultValue String. Fallback when the name does not exist.
 '@return String. The stored value, or defaultValue on failure.
 Private Function HiddenNameValue(ByVal nameId As String, _
                                   ByVal defaultValue As String) As String
-    Dim raw As String
-
-    HiddenNameValue = defaultValue
-    On Error Resume Next
-    raw = ThisWorkbook.Names(nameId).RefersTo
-    On Error GoTo 0
-
-    If LenB(raw) = 0 Then Exit Function
-
-    ' HiddenNames stores string values as ="value" and numeric values as =123
-    If Left$(raw, 2) = "=" & Chr(34) Then
-        HiddenNameValue = Mid$(raw, 3, Len(raw) - 3)
-    ElseIf Left$(raw, 1) = "=" Then
-        HiddenNameValue = Mid$(raw, 2)
-    End If
+    HiddenNameValue = HiddenNames.QuickValue(ThisWorkbook, nameId, defaultValue)
 End Function
 
 
 '@description Read the sheet type tag from worksheet-level HiddenNames.
-'Lightweight helper similar to HiddenNameValue but reads from worksheet scope.
-'Falls back to Cell(1,3) for legacy sheets that do not yet have the HiddenName.
 '@param sh Worksheet. The worksheet to query.
 '@return String. The sheet type tag (HList, TS-Analysis, etc.).
 Private Function SheetTag(ByVal sh As Worksheet) As String
-    Dim raw As String
-
-    SheetTag = vbNullString
-    On Error Resume Next
-    raw = sh.Names("sheet_type").RefersTo
-    On Error GoTo 0
-
-    If LenB(raw) > 0 Then
-        If Left$(raw, 2) = "=" & Chr(34) Then
-            SheetTag = Mid$(raw, 3, Len(raw) - 3)
-        ElseIf Left$(raw, 1) = "=" Then
-            SheetTag = Mid$(raw, 2)
-        End If
-    End If
-
+    SheetTag = HiddenNames.QuickValue(sh, "sheet_type")
 End Function
 
 
