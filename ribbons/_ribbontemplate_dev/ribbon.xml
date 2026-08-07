@@ -4,6 +4,7 @@
             <tab id="obtTab" label="OutbreakTools">
                 <group id="customGroupTabMan" getLabel="getLLLang">
                     <button id="btnShowHideVar" getLabel="getLLLang" image="hide" size="large" onAction="clickRibbonShowHideVar"/>
+                    <button id="btnShowHideSec" getLabel="getLLLang" image="hidesection" size="large" onAction="clickRibbonShowHideSec"/>
                     <button id="btnAddRows" getLabel="getLLLang" imageMso="QueryShowTable" size="large" onAction="clickRibbonAddRows"/>
                     <button id="btnResize" getLabel="getLLLang" imageMso="SheetRowsDelete" size="large" onAction="clickRibbonResize"/>
                     <button id="btnRemFilt" getLabel="getLLLang" imageMso="FilterClearAllFilters" size="large" onAction="clickRibbonRemoveFilter"/>
