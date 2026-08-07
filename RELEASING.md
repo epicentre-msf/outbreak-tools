@@ -37,8 +37,11 @@ Binaries are **not** committed to git: `.gitignore` covers `src/bin/`, `.mock/`,
 ribbon templates (`ribbons/_ribbontemplate_*.xlsb`), and there is no `releases/`
 folder. `git history` was rewritten to purge them (`scripts/history-rewrite/`); the
 ribbon-template binaries are untracked now and folded into a later rewrite pass (they
-are listed in `02-rewrite.sh`'s `LIVE_PATHS`). The ribbon **XML** definitions and
-`ribbon_icons/` stay in git — they're source.
+are listed in `02-rewrite.sh`'s `LIVE_PATHS`). The ribbon **sources** stay in git:
+one folder per distinct ribbon under `ribbons/<name>/`, each holding `ribbon.xml`
+and the `images/` it references. `scripts/devtools/ribbon-extract.sh` writes those
+folders and `ribbon-pack.sh` puts them back into a workbook — see
+`.obt/conventions.md` §11.1.
 
 ---
 

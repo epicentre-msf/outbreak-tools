@@ -1,0 +1,29 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2006/01/customui" onLoad = "ribbonLoaded">
+    <ribbon startFromScratch="false">
+        <tabs>
+            <tab id="customTab" label="Designer">
+                <group id="customGroupManage" getLabel="LangLabel">
+                    <button id="btnDelGeo" imageMso="ClearAll" getLabel="LangLabel" size="large" onAction="clickDelGeo"/>
+                    <button id="btnClear"  getLabel = "LangLabel" imageMso="WordArtClear" size="large" onAction="clickClearEnt"/>
+                    <dropDown id = "langDrop" imageMso="TranslationPane" onAction="clickLangChange" getLabel = "LangLabel">
+                        <item id = "FRA" label = "Français"/>
+                        <item id = "ENG" label = "English"/>
+                        <item id = "ARA" label = "عربى"/>
+                        <item id = "SPA" label = "Español"/>
+                        <item id = "POR" label = "Portugués"/>
+                    </dropDown>
+                </group>
+                <group id="customGroupImp" getLabel="LangLabel">
+                    <button id="btnTransImp" getLabel="LangLabel" imageMso="GridSettings" size="large" onAction="clickImpTrans"/>
+                    <button id="btnImpPass" getLabel="LangLabel" imageMso="GridSettings" size="large" onAction="clickImpPass"/>
+                    <button id="btnImpStyle" getLabel="LangLabel" imageMso="GridSettings" size="large" onAction="clickImpStyle"/>
+                </group>
+                <group id="customGroupAdvanced">
+                    <button id="btnOpen" imageMso="FileOpen" size="normal" getLabel = "LangLabel" onAction="clickOpen"/>
+                    <checkBox id="chkAlert" getLabel = "LangLabel" getPressed = "initMainAlert" onAction="clickMainAlert"/>
+                    <checkBox id="chkInstruct" getLabel = "LangLabel" getPressed = "initMainInstruct" onAction="clickMainInstruct"/>
+                </group>
+            </tab>
+        </tabs>
+    </ribbon>
+</customUI>
