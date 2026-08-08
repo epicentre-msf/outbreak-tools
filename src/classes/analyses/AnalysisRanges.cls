@@ -216,6 +216,38 @@ Public Property Get SpatialInputTag(ByVal spatialType As String) As String
     End Select
 End Property
 
+'@label:id-of-spatial-input
+'@sub-title The range id a spatial input cell name was built from
+'@details
+'SpatialInput builds "INPUTSPTGEO_<n>_<rangeId>", and this is the way back:
+'the tag and the row number are cut off the front and the rest is the id.
+'GeoModule reads the name off the active cell at run time, and an unnamed
+'cell hands an empty string over, so the answer is empty for a name this
+'class did not build: no tag at the front, no row number behind it, or
+'nothing after the row number. Instance state is never read, so the member
+'is callable on the predeclared instance.
+'@param cellName String. A name such as "INPUTSPTGEO_2_SPT_tab1".
+'@return String. The range id, or an empty string.
+'@export
+Public Function IdOfSpatialInput(ByVal cellName As String) As String
+    Dim rest As String
+    Dim sepAt As Long
+
+    If Left$(cellName, Len(TAG_SPATIAL_GEO)) = TAG_SPATIAL_GEO Then
+        rest = Mid$(cellName, Len(TAG_SPATIAL_GEO) + 1)
+    ElseIf Left$(cellName, Len(TAG_SPATIAL_HF)) = TAG_SPATIAL_HF Then
+        rest = Mid$(cellName, Len(TAG_SPATIAL_HF) + 1)
+    Else
+        Exit Function
+    End If
+
+    sepAt = InStr(1, rest, "_")
+    If sepAt <= 1 Then Exit Function
+    If Not IsNumeric(Left$(rest, sepAt - 1)) Then Exit Function
+
+    IdOfSpatialInput = Mid$(rest, sepAt + 1)
+End Function
+
 
 '@section Category and row families
 '===============================================================================
