@@ -11,11 +11,18 @@ Private tradrib As TranslationObject   'Translation of ribbon labels
 
 'Initialize translation of ribbon labels
 '
+'The ribbon table is read once for the life of the workbook. The tab carries 25
+'getLabel bindings and every one of them lands here, so the module variable used
+'to be overwritten 25 times while the tab was first drawn. A generated linelist
+'carries one language, fixed when it was made, so the object below stays right.
+'
 'The translation helper is the one EventLinelist holds. Building a second one
 'here re-validated all five translation tables on every ribbon callback.
 Private Sub InitializeTrads()
     Dim lltrads As LLTranslation
     Dim linelistEvents As EventLinelist
+
+    If Not tradrib Is Nothing Then Exit Sub
 
     Set linelistEvents = LinelistEventsManager.EventLinelistService()
     Set lltrads = linelistEvents.Translation
