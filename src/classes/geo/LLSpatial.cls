@@ -24,6 +24,15 @@ Option Explicit
 'tables from the data sheets, Sort orders them, and TopGeoValue and TopHFValue
 'answer one ranked value.
 '
+'This class also owns the formula rewriting of the spatial analysis events.
+'RewriteFormulas moves a token through every formula of a range while keeping
+'each formula's array state, ChangeAdminLevel moves one table to a new admin
+'level, ApplyPopulationFactor divides its values by the population or restores
+'them, and FormatPopulationFactor shows or hides the factor cells. The event
+'dispatch stays with the callers: EventLinelist and GeoModule read what the
+'user changed and hand the work over here, so the array-formula handling is
+'written once.
+'
 'THE CONTRACT WITH SPATIALTABLES
 '-------------------------------------------------------------------------------
 'SpatialTables builds these tables at build time and this class fills them at
@@ -66,7 +75,7 @@ Option Explicit
 'SpatialTables.Prepare creates it and SpatialTables.FailedFormula reads it.
 'This class leaves it alone.
 '@depends BetterArray, HiddenNames, Checking
-'@version 2026-07-31
+'@version 2026-08-08
 
 
 '@section State
@@ -112,6 +121,16 @@ Private Const KEY_SEPARATOR As String = vbNullChar
 ' goes into the cell of the worksheet function, so the reader sees why the cell
 ' is not a value.
 Private Const NO_TABLE_ID As String = "#missing table id"
+
+' The named ranges of one spatial analysis table. CrossTable and AnalysisOutput
+' write them at build time, and the formula rewriting below resolves each of
+' them on the analysis sheet it is handed, suffixed with the table identifier.
+Private Const OUTER_VALUES As String = "OUTER_VALUES_"
+Private Const PREVIOUS_ADM As String = "PREVIOUS_ADM_"
+Private Const ROW_CATEGORIES As String = "ROW_CATEGORIES_"
+Private Const POP_FACTOR As String = "POPFACT_"
+Private Const POP_PREV_FACTOR As String = "POPPREVFACT_"
+Private Const POP_FACTOR_LABEL As String = "POPFACTLABEL_"
 
 '@section Factory
 '===============================================================================
@@ -758,6 +777,203 @@ Private Sub SortOneTable(ByVal Lo As ListObject, ByVal adminName As String, _
     If sortRng Is Nothing Then Exit Sub
 
     Lo.Range.Sort key1:=sortRng, Order1:=xlDescending, Header:=xlYes
+End Sub
+
+'@section Spatial Formula Rewriting
+'===============================================================================
+'@description The formula rewriting of the spatial analysis events. The caller
+'reads what the user changed and hands the sheet, the table identifier and the
+'admin code over; the loops that touch the formulas live here, so the
+'array-formula handling is written once for every caller.
+
+'@label:rewrite-formulas
+'@sub-title Replace a token in every formula of a range
+'@details
+'Walks the cells of the range and rewrites each formula that holds the old
+'text, with the new text in its place. A plain formula is written back through
+'Formula and an array formula through FormulaArray, decided by HasArray.
+'Range.FormulaArray answers the ordinary formula string for a cell outside an
+'array formula, so a read through it cannot tell the two apart: a reader built
+'on it pushed every write through FormulaArray, which turns a plain formula
+'into an array one and raises 1004 for any formula over 255 characters.
+'@param valuesRng Range. The block of cells to rewrite.
+'@param oldText String. The text to replace.
+'@param newText String. The replacement.
+'@export
+Public Sub RewriteFormulas(ByVal valuesRng As Range, ByVal oldText As String, _
+                           ByVal newText As String)
+    Dim cellRng As Range
+    Dim formulaText As String
+    Dim isArrayFormula As Boolean
+
+    If valuesRng Is Nothing Then Exit Sub
+
+    For Each cellRng In valuesRng
+        isArrayFormula = cellRng.HasArray
+        formulaText = FormulaTextOf(cellRng, isArrayFormula)
+
+        If InStr(1, formulaText, oldText) > 0 Then
+            WriteFormulaText cellRng, _
+                             Replace(formulaText, oldText, newText), _
+                             isArrayFormula
+        End If
+    Next
+End Sub
+
+'@label:change-admin-level
+'@sub-title Move the formulas of one spatial table to a new admin level
+'@details
+'Reads the level the table stands on from its PREVIOUS_ADM_ cell, rewrites
+'every formula of the OUTER_VALUES_ block from the old concat column to the
+'new one, writes the new level back, and recalculates the block. The caller
+'reads the dropdown and turns its label into an admin code, because that
+'answer needs the geo sheet and this class holds none.
+'@param sh Worksheet. The spatial analysis sheet.
+'@param tabId String. The identifier of the analysis table.
+'@param newAdmin String. The admin code to move to, "adm1" to "adm4" or "hf".
+'@export
+Public Sub ChangeAdminLevel(ByVal sh As Worksheet, ByVal tabId As String, _
+                            ByVal newAdmin As String)
+    Dim rng As Range
+    Dim previousAdmin As String
+
+    previousAdmin = CStr(sh.Range(PREVIOUS_ADM & tabId).Value)
+    Set rng = sh.Range(OUTER_VALUES & tabId)
+
+    RewriteFormulas rng, CONCAT & previousAdmin, CONCAT & newAdmin
+
+    sh.Range(PREVIOUS_ADM & tabId).Value = newAdmin
+
+    'Column C carries the admin unit names and a new level can be wider.
+    sh.Columns("C").EntireColumn.AutoFit
+    rng.Calculate
+End Sub
+
+'@label:apply-population-factor
+'@sub-title Divide the values of one spatial table by the population, or restore them
+'@details
+'Walks the OUTER_VALUES_ block and rewraps each formula that reads the concat
+'column of the given admin code. The first application wraps the formula as
+'"factor * formula / population cell", a later one swaps the old factor for
+'the new, and revertBack unwraps both pieces. The factor comes from the
+'POPFACT_ cell and falls back to 100 when that cell does not read as a number.
+'The tables are reordered on the attack rate while the division is on, and on
+'the plain value once it is off. The factor applied is written into the
+'POPPREVFACT_ cell, so the next call knows what to swap or unwrap.
+'@param sh Worksheet. The spatial analysis sheet.
+'@param tabId String. The identifier of the analysis table.
+'@param adminName String. The admin code the formulas read, "adm1" to "adm4" or "hf".
+'@param revertBack Optional Boolean. True restores the plain formulas. Defaults to False.
+'@export
+Public Sub ApplyPopulationFactor(ByVal sh As Worksheet, ByVal tabId As String, _
+                                 ByVal adminName As String, _
+                                 Optional ByVal revertBack As Boolean = False)
+    Dim rng As Range
+    Dim rowRng As Range
+    Dim cellRng As Range
+    Dim formulaText As String
+    Dim popAddress As String
+    Dim isArrayFormula As Boolean
+    Dim factorMult As Long
+    Dim prevFact As Long
+
+    prevFact = CLng(sh.Range(POP_PREV_FACTOR & tabId).Value)
+
+    'The factor cell is free text on the sheet.
+    factorMult = 100
+    On Error Resume Next
+    factorMult = CLng(Application.WorksheetFunction.Trim( _
+                          sh.Range(POP_FACTOR & tabId).Value))
+    On Error GoTo 0
+
+    Set rng = sh.Range(OUTER_VALUES & tabId)
+    Set rowRng = sh.Range(ROW_CATEGORIES & tabId)
+
+    Sort tabId:=tabId, onAR:=(Not revertBack)
+
+    For Each cellRng In rng
+        isArrayFormula = cellRng.HasArray
+        formulaText = FormulaTextOf(cellRng, isArrayFormula)
+
+        If (InStr(1, formulaText, CONCAT & adminName) > 0) And _
+           (cellRng.Column > rowRng.Column) Then
+
+            popAddress = sh.Cells(cellRng.Row, rowRng.Column - 1).Address
+
+            If (Not revertBack) And (prevFact = 0) Then
+                formulaText = Replace(formulaText, "=", vbNullString)
+                formulaText = "= " & factorMult & "*" & formulaText & _
+                              "/" & popAddress
+            ElseIf (Not revertBack) And (prevFact <> 0) Then
+                formulaText = Replace(formulaText, CStr(prevFact), _
+                                      CStr(factorMult))
+            ElseIf prevFact <> 0 Then
+                formulaText = Replace(formulaText, CStr(prevFact) & "*", _
+                                      vbNullString)
+                formulaText = Replace(formulaText, "/" & popAddress, _
+                                      vbNullString)
+            End If
+
+            WriteFormulaText cellRng, formulaText, isArrayFormula
+        End If
+    Next
+
+    sh.Range(POP_PREV_FACTOR & tabId).Value = IIf(revertBack, 0, factorMult)
+    rng.Calculate
+End Sub
+
+'@label:format-population-factor
+'@sub-title Show or hide the population factor cells of one spatial table
+'@details
+'The factor cell and its label are white, locked and hidden while the division
+'is off, and black, editable and readable while it is on. The caller decides
+'which, from the dropdown the user changed.
+'@param sh Worksheet. The spatial analysis sheet.
+'@param tabId String. The identifier of the analysis table.
+'@param factorVisible Boolean. True shows the factor cells.
+'@export
+Public Sub FormatPopulationFactor(ByVal sh As Worksheet, ByVal tabId As String, _
+                                  ByVal factorVisible As Boolean)
+    Dim factorRng As Range
+    Dim labelRng As Range
+
+    Set factorRng = sh.Range(POP_FACTOR & tabId)
+    Set labelRng = sh.Range(POP_FACTOR_LABEL & tabId)
+
+    factorRng.Font.Color = IIf(factorVisible, vbBlack, vbWhite)
+    factorRng.Locked = Not factorVisible
+    factorRng.FormulaHidden = Not factorVisible
+    labelRng.Font.Color = IIf(factorVisible, vbBlack, vbWhite)
+    labelRng.Locked = Not factorVisible
+End Sub
+
+'@label:formula-text-of
+'@sub-title Read the formula of one cell through the property that owns it
+'@param cellRng Range. The cell to read.
+'@param isArrayFormula Boolean. What HasArray answered for the cell.
+'@return String. The formula string.
+Private Function FormulaTextOf(ByVal cellRng As Range, _
+                               ByVal isArrayFormula As Boolean) As String
+    If isArrayFormula Then
+        FormulaTextOf = cellRng.FormulaArray
+    Else
+        FormulaTextOf = cellRng.Formula
+    End If
+End Function
+
+'@label:write-formula-text
+'@sub-title Write the formula of one cell through the property that owns it
+'@param cellRng Range. The cell to write.
+'@param formulaText String. The formula string.
+'@param isArrayFormula Boolean. True writes through FormulaArray.
+Private Sub WriteFormulaText(ByVal cellRng As Range, _
+                             ByVal formulaText As String, _
+                             ByVal isArrayFormula As Boolean)
+    If isArrayFormula Then
+        cellRng.FormulaArray = formulaText
+    Else
+        cellRng.Formula = formulaText
+    End If
 End Sub
 
 '@section TopGeoValue / TopHFValue
