@@ -733,3 +733,134 @@ TestFail:
     CustomTestLogFailure Assert, "TestGeoConcatIsEmptyWhenALevelIsMissing", _
                          Err.Number, Err.Description
 End Sub
+
+
+'@section The managers the buttons read
+'===============================================================================
+'The button module used to build its own workbook store, its own password
+'manager and one worksheet store per reader, on every click. It reads the held
+'ones now, so the three accessors below are what the modules stand on. Each
+'test asks twice and compares the objects: the same object back is what proves
+'the store was held rather than rebuilt.
+
+'@sub-title The workbook store is built once and handed back.
+'@TestMethod("EventLinelist")
+Public Sub TestWorkbookNamesIsHeldAcrossCalls()
+    CustomTestSetTitles Assert, TESTMODULE, "TestWorkbookNamesIsHeldAcrossCalls"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim firstRead As HiddenNames
+    Dim secondRead As HiddenNames
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+    Set firstRead = sut.WorkbookNames()
+    Set secondRead = sut.WorkbookNames()
+
+    Assert.IsNotNothing firstRead, "A workbook gives a store"
+    Assert.IsTrue firstRead Is secondRead, "The second read is the same store"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestWorkbookNamesIsHeldAcrossCalls", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Each worksheet gets its own store, held across calls.
+'@TestMethod("EventLinelist")
+Public Sub TestSheetNamesGivesOneStorePerSheet()
+    CustomTestSetTitles Assert, TESTMODULE, "TestSheetNamesGivesOneStorePerSheet"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim firstSheet As Worksheet
+    Dim secondSheet As Worksheet
+    Dim firstRead As HiddenNames
+    Dim secondRead As HiddenNames
+    Dim otherRead As HiddenNames
+
+    Set firstSheet = FixtureWkb.Worksheets(1)
+    Set secondSheet = FixtureWkb.Worksheets.Add
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    Set firstRead = sut.SheetNames(firstSheet)
+    Set secondRead = sut.SheetNames(firstSheet)
+    Set otherRead = sut.SheetNames(secondSheet)
+
+    Assert.IsNotNothing firstRead, "A worksheet gives a store"
+    Assert.IsTrue firstRead Is secondRead, "The second read is the same store"
+    Assert.IsTrue Not (firstRead Is otherRead), "Another sheet gives another store"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSheetNamesGivesOneStorePerSheet", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A missing worksheet answers Nothing.
+'@details
+'The button module reads a sheet tag through this and treats an empty tag as
+'"the wrong sheet", so the answer has to come back rather than raise.
+'@TestMethod("EventLinelist")
+Public Sub TestSheetNamesIgnoresNothing()
+    CustomTestSetTitles Assert, TESTMODULE, "TestSheetNamesIgnoresNothing"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    Assert.IsNothing sut.SheetNames(Nothing), "Nothing in answers Nothing out"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSheetNamesIgnoresNothing", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A workbook with no password worksheet answers Nothing.
+'@TestMethod("EventLinelist")
+Public Sub TestPasswordManagerIsNothingWithoutTheSheet()
+    CustomTestSetTitles Assert, TESTMODULE, "TestPasswordManagerIsNothingWithoutTheSheet"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    Assert.IsNothing sut.PasswordManager(), _
+                     "No __pass worksheet gives no manager"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestPasswordManagerIsNothingWithoutTheSheet", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A warning with no translation sheet under it shows nothing.
+'@details
+'Warn and Fail are the one warning box and the one failure box of the linelist
+'event surface, and four files used to write their own. A workbook with no
+'usable translation sheet has no text to show, so both stay quiet there. This
+'test is what holds that line: a box raised here would stop the whole run on a
+'modal dialog with nobody to press OK.
+'@TestMethod("EventLinelist")
+Public Sub TestWarnStaysQuietWithoutATranslationSheet()
+    CustomTestSetTitles Assert, TESTMODULE, "TestWarnStaysQuietWithoutATranslationSheet"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    sut.Warn "MSG_NotModify"
+    sut.Fail "MSG_ErrUpdate", "some detail"
+
+    Assert.IsNothing sut.Translation(), _
+                     "The fixture carries no translation helper, and both calls returned"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestWarnStaysQuietWithoutATranslationSheet", _
+                         Err.Number, Err.Description
+End Sub

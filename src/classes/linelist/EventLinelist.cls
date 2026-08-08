@@ -77,6 +77,9 @@ Private Const DICTSHEET         As String = "Dictionary"
 Private Const LLSHEET           As String = "LinelistTranslation"
 Private Const PASSSHEET         As String = "__pass"
 
+' The message code every box title is read from.
+Private Const MSGTITLE          As String = "MSG_Error"
+
 ' What OnDoubleClick answers when the click asked for no geo picker. Every
 ' other answer it gives is a GeoScope value, and those start at 0, so a caller
 ' reads any answer below zero as "nothing to open".
@@ -318,10 +321,7 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
     Exit Sub
 
 ErrUpdate:
-    If Not this.tradmess Is Nothing Then
-        MsgBox this.tradmess.TranslatedValue("MSG_ErrUpdate") & ": " & Err.Description, _
-               vbCritical + vbOKOnly
-    End If
+    Fail "MSG_ErrUpdate", Err.Description
 End Sub
 
 
@@ -354,10 +354,102 @@ Public Function Translation() As LLTranslation
 End Function
 
 
+'@sub-title The hidden names of the workbook, built once and held.
+'@details
+'The button module used to build its own on every click, and a workbook store
+'costs a walk of the whole Names collection.
+'@return HiddenNames. The held store, or Nothing when the build failed.
+'@export
+Public Function WorkbookNames() As HiddenNames
+    EnsureWorkbookNames
+    Set WorkbookNames = this.wkbNames
+End Function
+
+
+'@sub-title The hidden names of one worksheet, built once and held.
+'@details
+'One store serves the event handlers and the buttons together, and the class
+'drops it when that sheet raises a change. The button module read a sheet tag,
+'a table name and a blank row count through three separate stores.
+'@param sh Worksheet. The worksheet whose names are wanted.
+'@return HiddenNames. The held store, or Nothing when the build failed.
+'@export
+Public Function SheetNames(ByVal sh As Worksheet) As HiddenNames
+    Set SheetNames = SheetStore(sh)
+End Function
+
+
+'@sub-title The password manager of the workbook, built once and held.
+'@return Passwords. The held manager, or Nothing when the build failed.
+'@export
+Public Function PasswordManager() As Passwords
+    EnsurePasswords
+    Set PasswordManager = this.pass
+End Function
+
+
 '@sub-title Clear cached resources.
 '@export
 Public Sub ResetCaches()
     ResetInternalCaches
+End Sub
+
+
+'@section Messages
+'===============================================================================
+'One warning and one failure box for the whole linelist event surface. The
+'button, ribbon and geo modules reach these through
+'LinelistEventsManager.EventLinelistService. Four files used to write their own
+'MsgBox: some passed a title and some left it off, and the same class of message
+'came up with vbCritical in one file and vbExclamation in another.
+
+'@sub-title Tell the user why a button refused to act.
+'@param msgCode String. Code of the message in the message translation table.
+'@export
+Public Sub Warn(ByVal msgCode As String)
+    ShowMessage msgCode, vbOKOnly + vbExclamation, vbNullString, vbNullString
+End Sub
+
+
+'@sub-title Tell the user an operation failed.
+'@param msgCode String. Code of the message in the message translation table.
+'@param detail String. Optional. Follows the message, for an Err.Description.
+'@param fallback String. Optional. Shown when the workbook carries no usable
+'translation sheet. Leave it off to stay quiet in that state.
+'@export
+Public Sub Fail(ByVal msgCode As String, _
+                Optional ByVal detail As String = vbNullString, _
+                Optional ByVal fallback As String = vbNullString)
+    ShowMessage msgCode, vbOKOnly + vbCritical, detail, fallback
+End Sub
+
+
+'@sub-title Show one box, translated when a translator is there.
+'@details
+'A workbook with no usable translation sheet has no text to show, and the
+'callers that still have something to say pass a fallback. Every other caller
+'stays quiet, which is what the two boxes this replaced did.
+Private Sub ShowMessage(ByVal msgCode As String, _
+                        ByVal boxStyle As Long, _
+                        ByVal detail As String, _
+                        ByVal fallback As String)
+    Dim message As String
+    Dim title As String
+
+    EnsureTranslation
+
+    If this.tradmess Is Nothing Then
+        If LenB(fallback) = 0 Then Exit Sub
+        message = fallback
+        title = "Error"
+    Else
+        message = this.tradmess.TranslatedValue(msgCode)
+        title = this.tradmess.TranslatedValue(MSGTITLE)
+    End If
+
+    If LenB(detail) > 0 Then message = message & ": " & detail
+
+    MsgBox message, boxStyle, title
 End Sub
 
 
@@ -678,12 +770,7 @@ Private Sub HandleHListChange(ByRef sh As Worksheet, ByRef target As Range, _
     'Avoid modifying headers of the table (with variable names)
     If (target.Row = hRng.Row) Then
         target.Value = target.Offset(-1).Name.Name
-        EnsureTranslation
-        If Not this.tradmess Is Nothing Then
-            MsgBox this.tradmess.TranslatedValue("MSG_NotModify"), _
-                   vbOKOnly + vbCritical, _
-                   this.tradmess.TranslatedValue("MSG_Error")
-        End If
+        Warn "MSG_NotModify"
         Exit Sub
     End If
 
