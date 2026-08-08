@@ -23,6 +23,10 @@ Option Explicit
 'worksheets of the workbook that holds the spatial sheet, so it needs a workbook
 'of its own. Everything below line 168 of the class is reached through this one.
 '
+'BuildAnalysisFixture is the third, smaller shape: one sheet carrying the named
+'ranges of one spatial analysis table, which is what the formula rewriting
+'members read.
+'
 'THE SPATIAL TABLES ARE BUILT BY HAND
 '-------------------------------------------------------------------------------
 'SpatialTables builds them in production. The fixture writes them itself, so
@@ -52,6 +56,7 @@ Private Const REGISTRY_TABLE As String = "listofgeovars"
 Private Const HLIST_SHEET As String = "HLIST_ONE"
 Private Const FILTERED_SHEET As String = "FILT_ONE"
 Private Const START_NAME As String = "TAB_ONE_START"
+Private Const ANALYSIS_SHEET As String = "SPT_ANALYSIS_FIX"
 
 Private Assert As CustomTest
 
@@ -95,7 +100,7 @@ Public Sub ModuleCleanup()
     End If
     RestoreApp
     Set Assert = Nothing
-    DeleteWorksheets SPATIAL_SHEET, SPATIAL_WRONG
+    DeleteWorksheets SPATIAL_SHEET, SPATIAL_WRONG, ANALYSIS_SHEET
 End Sub
 
 '@sub-title Whether the host fills the formulas of a table column by itself.
@@ -1042,6 +1047,278 @@ Public Sub TestSortPicksTheExactTableId()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestSortPicksTheExactTableId", Err.Number, Err.Description
+End Sub
+
+'@section Formula rewriting fixture
+'===============================================================================
+
+'@sub-title Build a small spatial analysis sheet for the formula rewriting.
+'@details
+'Names the block B2:C3 as OUTER_VALUES, the column B2:B3 as ROW_CATEGORIES,
+'and one cell each for PREVIOUS_ADM, POPFACT, POPPREVFACT and POPFACTLABEL,
+'all suffixed with the given identifier and all scoped to the sheet, so
+'deleting the sheet takes the names with it. The formulas are written by each
+'test, so a test says which cells are plain and which are array ones. C2 is
+'the one data cell right of the row categories, which is where the population
+'division applies.
+'@param tabId String. The table identifier the names carry.
+'@return Worksheet. The prepared analysis fixture sheet.
+Private Function BuildAnalysisFixture(ByVal tabId As String) As Worksheet
+    Dim sh As Worksheet
+
+    Set sh = EnsureWorksheet(ANALYSIS_SHEET, clearSheet:=True, _
+                             visibility:=xlSheetHidden)
+
+    sh.Names.Add Name:="OUTER_VALUES_" & tabId, RefersTo:=sh.Range("B2:C3")
+    sh.Names.Add Name:="ROW_CATEGORIES_" & tabId, RefersTo:=sh.Range("B2:B3")
+    sh.Names.Add Name:="PREVIOUS_ADM_" & tabId, RefersTo:=sh.Cells(1, 5)
+    sh.Names.Add Name:="POPFACT_" & tabId, RefersTo:=sh.Cells(2, 5)
+    sh.Names.Add Name:="POPPREVFACT_" & tabId, RefersTo:=sh.Cells(3, 5)
+    sh.Names.Add Name:="POPFACTLABEL_" & tabId, RefersTo:=sh.Cells(4, 5)
+
+    Set BuildAnalysisFixture = sh
+End Function
+
+'@section Formula rewriting tests
+'===============================================================================
+
+'@sub-title Verify RewriteFormulas keeps a plain formula plain.
+'@details
+'Arranges one cell holding a plain formula that reads a concat column. Acts by
+'rewriting the admin token. Asserts the formula carries the new token and the
+'cell still holds a plain formula. The old readers pushed every write through
+'FormulaArray, which turned the cell into an array formula.
+'@TestMethod("LLSpatial")
+Public Sub TestRewriteFormulasKeepsAPlainFormulaPlain()
+    CustomTestSetTitles Assert, "LLSpatial", "TestRewriteFormulasKeepsAPlainFormulaPlain"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim sp As LLSpatial
+
+    Set sh = BuildAnalysisFixture("tsta")
+    sh.Range("B2").Formula = "=SUM(concat_adm1_cases)"
+
+    Set sp = LLSpatial.Create(BuildSpatialFixture())
+    sp.RewriteFormulas sh.Range("B2"), "concat_adm1", "concat_adm3"
+
+    Assert.IsTrue (InStr(1, sh.Range("B2").Formula, "concat_adm3_cases") > 0), _
+                  "The formula should read the new concat column"
+    Assert.IsTrue (Not sh.Range("B2").HasArray), _
+                  "A plain formula should stay plain after the rewrite"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestRewriteFormulasKeepsAPlainFormulaPlain", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify RewriteFormulas keeps an array formula an array one.
+'@details
+'Arranges one cell holding an array formula that reads a concat column. Acts
+'by rewriting the admin token. Asserts the formula carries the new token and
+'the cell still holds an array formula.
+'@TestMethod("LLSpatial")
+Public Sub TestRewriteFormulasKeepsAnArrayFormula()
+    CustomTestSetTitles Assert, "LLSpatial", "TestRewriteFormulasKeepsAnArrayFormula"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim sp As LLSpatial
+
+    Set sh = BuildAnalysisFixture("tstb")
+    sh.Range("B2").FormulaArray = "=SUM(concat_adm1_cases)"
+
+    Set sp = LLSpatial.Create(BuildSpatialFixture())
+    sp.RewriteFormulas sh.Range("B2"), "concat_adm1", "concat_adm3"
+
+    Assert.IsTrue (InStr(1, sh.Range("B2").FormulaArray, "concat_adm3_cases") > 0), _
+                  "The array formula should read the new concat column"
+    Assert.IsTrue sh.Range("B2").HasArray, _
+                  "An array formula should stay an array one after the rewrite"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestRewriteFormulasKeepsAnArrayFormula", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify RewriteFormulas leaves a formula without the token alone.
+'@details
+'Arranges one cell holding a formula free of the token. Acts by rewriting.
+'Asserts the formula is byte for byte what it was.
+'@TestMethod("LLSpatial")
+Public Sub TestRewriteFormulasLeavesOtherFormulasAlone()
+    CustomTestSetTitles Assert, "LLSpatial", "TestRewriteFormulasLeavesOtherFormulasAlone"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim sp As LLSpatial
+
+    Set sh = BuildAnalysisFixture("tstc")
+    sh.Range("B2").Formula = "=SUM(1,2)"
+
+    Set sp = LLSpatial.Create(BuildSpatialFixture())
+    sp.RewriteFormulas sh.Range("B2"), "concat_adm1", "concat_adm3"
+
+    Assert.AreEqual "=SUM(1,2)", sh.Range("B2").Formula, _
+                    "A formula without the token should be untouched"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestRewriteFormulasLeavesOtherFormulasAlone", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify RewriteFormulas writes a plain formula over 255 characters.
+'@details
+'Arranges one cell holding a plain formula longer than 255 characters that
+'reads a concat column. Acts by rewriting the admin token. Asserts the write
+'lands and the formula carries the new token. FormulaArray refuses any
+'formula over 255 characters with error 1004, and the old readers pushed
+'every write through it, so this length raised on every admin level change.
+'@TestMethod("LLSpatial")
+Public Sub TestRewriteFormulasWritesALongPlainFormula()
+    CustomTestSetTitles Assert, "LLSpatial", "TestRewriteFormulasWritesALongPlainFormula"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim sp As LLSpatial
+    Dim longFormula As String
+
+    Set sh = BuildAnalysisFixture("tstd")
+    longFormula = "=SUM(concat_adm1_cases)&""" & String(280, "a") & """"
+    sh.Range("B2").Formula = longFormula
+
+    Set sp = LLSpatial.Create(BuildSpatialFixture())
+    sp.RewriteFormulas sh.Range("B2"), "concat_adm1", "concat_adm2"
+
+    Assert.IsTrue (Len(sh.Range("B2").Formula) > 255), _
+                  "The rewritten formula should keep its full length"
+    Assert.IsTrue (InStr(1, sh.Range("B2").Formula, "concat_adm2_cases") > 0), _
+                  "The long formula should read the new concat column"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestRewriteFormulasWritesALongPlainFormula", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify ChangeAdminLevel moves a table and records the new level.
+'@details
+'Arranges an analysis fixture whose PREVIOUS_ADM cell holds "adm1", with one
+'plain formula and one array formula reading the adm1 concat column. Acts by
+'changing the level to adm4. Asserts both formulas read adm4, each kept its
+'array state, and the PREVIOUS_ADM cell holds the new code.
+'@TestMethod("LLSpatial")
+Public Sub TestChangeAdminLevelMovesTheTable()
+    CustomTestSetTitles Assert, "LLSpatial", "TestChangeAdminLevelMovesTheTable"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim sp As LLSpatial
+
+    Set sh = BuildAnalysisFixture("tste")
+    sh.Range("PREVIOUS_ADM_tste").Value = "adm1"
+    sh.Range("B2").Formula = "=SUM(concat_adm1_cases)"
+    sh.Range("C2").FormulaArray = "=SUM(concat_adm1_cases)"
+
+    Set sp = LLSpatial.Create(BuildSpatialFixture())
+    sp.ChangeAdminLevel sh, "tste", "adm4"
+
+    Assert.IsTrue (InStr(1, sh.Range("B2").Formula, "concat_adm4_cases") > 0), _
+                  "The plain formula should read the new concat column"
+    Assert.IsTrue (Not sh.Range("B2").HasArray), _
+                  "The plain formula should stay plain"
+    Assert.IsTrue (InStr(1, sh.Range("C2").FormulaArray, "concat_adm4_cases") > 0), _
+                  "The array formula should read the new concat column"
+    Assert.IsTrue sh.Range("C2").HasArray, _
+                  "The array formula should stay an array one"
+    Assert.AreEqual "adm4", CStr(sh.Range("PREVIOUS_ADM_tste").Value), _
+                    "The new level should be recorded for the next change"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestChangeAdminLevelMovesTheTable", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify ApplyPopulationFactor wraps the formula and revertBack unwraps it.
+'@details
+'Arranges a data cell right of the row categories, holding a plain formula on
+'the adm1 concat column, a factor of 50 and no previous factor. Acts by
+'applying the division, then reverting it. Asserts the applied formula holds
+'the factor and the population cell, the previous factor cell tracks each
+'step, and the revert restores a formula free of both.
+'@TestMethod("LLSpatial")
+Public Sub TestApplyPopulationFactorDividesThenReverts()
+    CustomTestSetTitles Assert, "LLSpatial", "TestApplyPopulationFactorDividesThenReverts"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim sp As LLSpatial
+
+    Set sh = BuildAnalysisFixture("tstf")
+    sh.Range("C2").Formula = "=SUM(concat_adm1_cases)"
+    sh.Range("POPFACT_tstf").Value = 50
+    sh.Range("POPPREVFACT_tstf").Value = 0
+
+    Set sp = LLSpatial.Create(BuildSpatialFixture())
+    sp.ApplyPopulationFactor sh, "tstf", "adm1"
+
+    Assert.IsTrue (InStr(1, sh.Range("C2").Formula, "50*") > 0), _
+                  "The applied formula should carry the factor"
+    Assert.IsTrue (InStr(1, sh.Range("C2").Formula, "/$A$2") > 0), _
+                  "The applied formula should divide by the population cell"
+    Assert.AreEqual 50, CLng(sh.Range("POPPREVFACT_tstf").Value), _
+                    "The applied factor should be recorded"
+
+    sp.ApplyPopulationFactor sh, "tstf", "adm1", revertBack:=True
+
+    Assert.IsTrue (InStr(1, sh.Range("C2").Formula, "50*") = 0), _
+                  "The reverted formula should hold no factor"
+    Assert.IsTrue (InStr(1, sh.Range("C2").Formula, "/$A$2") = 0), _
+                  "The reverted formula should hold no population cell"
+    Assert.AreEqual 0, CLng(sh.Range("POPPREVFACT_tstf").Value), _
+                    "The revert should clear the recorded factor"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestApplyPopulationFactorDividesThenReverts", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify FormatPopulationFactor shows and hides the factor cells.
+'@details
+'Acts by hiding the factor cells, then showing them. Asserts the factor cell
+'is white and locked while hidden, and black and editable while shown, with
+'the label cell following.
+'@TestMethod("LLSpatial")
+Public Sub TestFormatPopulationFactorTogglesTheCells()
+    CustomTestSetTitles Assert, "LLSpatial", "TestFormatPopulationFactorTogglesTheCells"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim sp As LLSpatial
+
+    Set sh = BuildAnalysisFixture("tstg")
+    Set sp = LLSpatial.Create(BuildSpatialFixture())
+
+    sp.FormatPopulationFactor sh, "tstg", factorVisible:=False
+
+    Assert.IsTrue (sh.Range("POPFACT_tstg").Font.Color = vbWhite), _
+                  "A hidden factor cell should be white"
+    Assert.IsTrue sh.Range("POPFACT_tstg").Locked, _
+                  "A hidden factor cell should be locked"
+    Assert.IsTrue sh.Range("POPFACTLABEL_tstg").Locked, _
+                  "A hidden factor label should be locked"
+
+    sp.FormatPopulationFactor sh, "tstg", factorVisible:=True
+
+    Assert.IsTrue (sh.Range("POPFACT_tstg").Font.Color = vbBlack), _
+                  "A shown factor cell should be black"
+    Assert.IsTrue (Not sh.Range("POPFACT_tstg").Locked), _
+                  "A shown factor cell should be editable"
+    Assert.IsTrue (Not sh.Range("POPFACTLABEL_tstg").Locked), _
+                  "A shown factor label should be editable"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestFormatPopulationFactorTogglesTheCells", Err.Number, Err.Description
 End Sub
 
 '@section TopGeoValue / TopHFValue tests
