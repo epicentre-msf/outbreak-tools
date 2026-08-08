@@ -65,8 +65,9 @@ End Sub
 '@sub-title Exit busy state, restoring Application properties on the outermost call
 '@details
 'Decrements the nesting counter. On the outermost exit: restores the
-'ApplicationState snapshot and resets the cursor. The scope itself is kept for
-'the next event, and the next LLEnterBusyState refreshes its snapshot.
+'ApplicationState snapshot, which puts back the cursor it captured. The scope
+'itself is kept for the next event, and the next LLEnterBusyState refreshes its
+'snapshot.
 Public Sub LLExitBusyState()
     If busyDepth <= 0 Then
         busyDepth = 0
@@ -78,7 +79,6 @@ Public Sub LLExitBusyState()
 
     On Error Resume Next
     If Not appScope Is Nothing Then appScope.Restore
-    Application.Cursor = xlDefault
     On Error GoTo 0
 End Sub
 
@@ -127,7 +127,6 @@ Public Sub SheetDeactivated(ByVal sh As Worksheet)
     If sh Is Nothing Then Exit Sub
     On Error GoTo Cleanup
     LLEnterBusyState busyCursor:=xlNorthwestArrow
-    Application.ScreenUpdating = False
     Service.OnSheetDeactivate sh
 Cleanup:
     LLExitBusyState
@@ -141,7 +140,6 @@ Public Sub LLSheetChanged(ByVal sh As Worksheet, ByVal target As Range)
     ' a recalculation. Drop its slot before anything recalculates.
     CustomLinelistFunctions.ResetValueOfCache sh.Name
     LLEnterBusyState busyCursor:=xlNorthwestArrow
-    Application.ScreenUpdating = False
     Service.OnSheetChange sh, target
 Cleanup:
     LLExitBusyState
@@ -151,8 +149,9 @@ Public Sub SelectionChanged(ByVal sh As Worksheet, ByVal target As Range)
     If (sh Is Nothing) Or (target Is Nothing) Then Exit Sub
 
     On Error GoTo Cleanup
-    LLEnterBusyState busyCursor:=xlNorthwestArrow
-    Application.ScreenUpdating = False
+    'No busyCursor here: this runs on every arrow key press, and flipping the
+    'mouse cursor per keystroke is visible.
+    LLEnterBusyState
     Service.OnSelectionChange sh, target
 Cleanup:
     LLExitBusyState
@@ -171,7 +170,6 @@ Public Function DoubleClicked(ByVal sh As Worksheet, ByVal target As Range) As L
 
     On Error GoTo Cleanup
     LLEnterBusyState busyCursor:=xlNorthwestArrow
-    Application.ScreenUpdating = False
     DoubleClicked = Service.OnDoubleClick(sh, target)
 Cleanup:
     LLExitBusyState
@@ -187,7 +185,6 @@ End Function
 Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
     On Error GoTo Cleanup
     LLEnterBusyState busyCursor:=xlNorthwestArrow
-    Application.ScreenUpdating = False
     Service.UpdateFilterTables calculate
 Cleanup:
     LLExitBusyState
@@ -197,7 +194,6 @@ End Sub
 Public Sub UpdateAllListAuto()
     On Error GoTo Cleanup
     LLEnterBusyState busyCursor:=xlNorthwestArrow
-    Application.ScreenUpdating = False
     Service.UpdateAllListAuto
 Cleanup:
     LLExitBusyState
