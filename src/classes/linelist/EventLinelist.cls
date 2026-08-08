@@ -250,24 +250,24 @@ End Function
 
 
 '@sub-title Update filter tables used by analysis sheets.
+'@details
+'Every filtered table is rewritten from its source table. A row is kept when
+'its source row is visible and holds at least one value. The old shape copied
+'the whole data body across, then walked every row from the bottom reading
+'EntireRow.Hidden and CountA and deleted the rejects -- two COM crossings per
+'row and an Application.Union that degrades as it grows, on tables that
+'ClickAddRows pads with 199 blank rows at a time. The recalculation at the
+'foot is one pass: the sheet pass covers the UsedRange and column passes that
+'used to follow it.
 '@param calculate Optional Boolean. When True (default), recalculates the active sheet.
 '@export
 Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
     Dim sh As Worksheet
     Dim filtsh As Worksheet
     Dim lo As ListObject
-    Dim destRng As Range
-    Dim delRng As Range
-    Dim loRng As Range
-    Dim rowCounter As Long
-    Dim filtLoHrng As Range
-    Dim wsFunc As WorksheetFunction
     Dim shHn As HiddenNames
 
     On Error GoTo ErrUpdate
-
-    EnsureTranslation
-    Set wsFunc = Application.WorksheetFunction
 
     For Each sh In this.hostBook.Worksheets
         If SheetTag(sh) = "HList" Then
@@ -275,48 +275,15 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
             Set lo = sh.ListObjects(1)
 
             If Not lo.DataBodyRange Is Nothing Then
-                Set loRng = lo.DataBodyRange
-
                 Set shHn = SheetStore(sh)
                 Set filtsh = this.hostBook.Worksheets(shHn.ValueAsString("filtered_sheet"))
 
-                rowCounter = loRng.Rows.Count
-
-                With filtsh
-                    On Error Resume Next
-                    .ListObjects(1).DataBodyRange.Delete
-                    On Error GoTo ErrUpdate
-
-                    .ListObjects(1).Resize .Range(lo.Range.Address)
-                    Set destRng = .Range(loRng.Address)
-                    Set filtLoHrng = .ListObjects(1).HeaderRowRange
-                    Set delRng = Nothing
-                End With
-
-                destRng.Value = loRng.Value
-
-                Do While rowCounter >= 1
-                    If (loRng.Cells(rowCounter, 1).EntireRow.Hidden) Or _
-                        (wsFunc.CountA(filtLoHrng.Offset(rowCounter)) = 0) Then
-                        If delRng Is Nothing Then
-                            Set delRng = filtLoHrng.Offset(rowCounter)
-                        Else
-                            Set delRng = Application.Union(delRng, filtLoHrng.Offset(rowCounter))
-                        End If
-                    End If
-                    rowCounter = rowCounter - 1
-                Loop
-
-                If Not (delRng Is Nothing) Then delRng.Delete
+                RewriteFilteredTable lo, filtsh
             End If
         End If
     Next
 
-    If calculate Then
-        ActiveSheet.Calculate
-        ActiveSheet.UsedRange.Calculate
-        ActiveSheet.Columns("A:E").Calculate
-    End If
+    If calculate Then ActiveSheet.Calculate
 
     Exit Sub
 
@@ -1403,6 +1370,134 @@ Private Function GetUniqueBA(ByRef inputTable As BetterArray) As BetterArray
     End If
 
     Set GetUniqueBA = outTable
+End Function
+
+
+'@section Private -- Filtered table copy
+'===============================================================================
+
+'@sub-title Rewrite one filtered table from the visible rows of its source.
+'@details
+'A row is kept when it is visible and holds at least one value. Visibility is
+'read off the source rows in one SpecialCells call. The read spans the whole
+'row on purpose: a column hidden by show/hide keeps its values in the filtered
+'table, and a row leaves when a filter or the user hides it. The values travel
+'through memory -- one read of the whole block, the blank test on the array,
+'and one write of the kept rows. The two tables sit at the same address on
+'their two sheets, which is the layout the builder writes.
+'@param sourceTable ListObject. The data entry table the rows come from.
+'@param filtsh Worksheet. The sheet holding the filtered table.
+Private Sub RewriteFilteredTable(ByVal sourceTable As ListObject, _
+                                 ByVal filtsh As Worksheet)
+    Dim bodyRng As Range
+    Dim visibleCells As Range
+    Dim visibleArea As Range
+    Dim filtLo As ListObject
+    Dim sourceValues As Variant
+    Dim singleValue As Variant
+    Dim keptValues() As Variant
+    Dim keepRow() As Boolean
+    Dim rowCount As Long
+    Dim columnCount As Long
+    Dim rowIdx As Long
+    Dim colIdx As Long
+    Dim keptCount As Long
+    Dim firstRow As Long
+    Dim keptIdx As Long
+
+    Set bodyRng = sourceTable.DataBodyRange
+    rowCount = bodyRng.Rows.Count
+    columnCount = bodyRng.Columns.Count
+
+    sourceValues = bodyRng.Value
+    If (rowCount = 1) And (columnCount = 1) Then
+        'A single cell answers a scalar, and the walk below wants a block.
+        singleValue = sourceValues
+        ReDim sourceValues(1 To 1, 1 To 1)
+        sourceValues(1, 1) = singleValue
+    End If
+
+    'SpecialCells raises 1004 when every row is hidden, and an empty answer is
+    'what that state means. The suppression covers that one call.
+    ReDim keepRow(1 To rowCount)
+    On Error Resume Next
+    Set visibleCells = bodyRng.EntireRow.SpecialCells(xlCellTypeVisible)
+    On Error GoTo 0
+
+    If Not visibleCells Is Nothing Then
+        For Each visibleArea In visibleCells.Areas
+            firstRow = visibleArea.Row - bodyRng.Row + 1
+            For rowIdx = firstRow To firstRow + visibleArea.Rows.Count - 1
+                If (rowIdx >= 1) And (rowIdx <= rowCount) Then keepRow(rowIdx) = True
+            Next rowIdx
+        Next visibleArea
+    End If
+
+    For rowIdx = 1 To rowCount
+        If keepRow(rowIdx) Then
+            If RowHoldsAValue(sourceValues, rowIdx, columnCount) Then
+                keptCount = keptCount + 1
+            Else
+                keepRow(rowIdx) = False
+            End If
+        End If
+    Next rowIdx
+
+    If keptCount > 0 Then
+        ReDim keptValues(1 To keptCount, 1 To columnCount)
+        For rowIdx = 1 To rowCount
+            If keepRow(rowIdx) Then
+                keptIdx = keptIdx + 1
+                For colIdx = 1 To columnCount
+                    keptValues(keptIdx, colIdx) = sourceValues(rowIdx, colIdx)
+                Next colIdx
+            End If
+        Next rowIdx
+    End If
+
+    Set filtLo = filtsh.ListObjects(1)
+
+    'A table already down to its header row has nothing to delete.
+    On Error Resume Next
+    filtLo.DataBodyRange.Delete
+    On Error GoTo 0
+
+    If keptCount > 0 Then
+        filtLo.Resize filtsh.Range(sourceTable.HeaderRowRange.Resize(keptCount + 1).Address)
+        filtLo.DataBodyRange.Value = keptValues
+    End If
+End Sub
+
+
+'@sub-title Say whether one row of a value block holds anything.
+'@details
+'Mirrors what CountA answered on the old copied row: an empty cell and an
+'empty string count as nothing, and every other value -- a zero, a date, an
+'error -- counts as data.
+'@param blockValues Variant. The value block, 1-based on both sides.
+'@param rowIdx Long. The row to read.
+'@param columnCount Long. The width of the block.
+'@return Boolean. True when at least one cell of the row holds a value.
+Private Function RowHoldsAValue(ByRef blockValues As Variant, _
+                                ByVal rowIdx As Long, _
+                                ByVal columnCount As Long) As Boolean
+    Dim colIdx As Long
+    Dim cellValue As Variant
+
+    For colIdx = 1 To columnCount
+        cellValue = blockValues(rowIdx, colIdx)
+        If Not IsEmpty(cellValue) Then
+            If VarType(cellValue) = vbString Then
+                If LenB(cellValue) > 0 Then
+                    RowHoldsAValue = True
+                    Exit Function
+                End If
+            Else
+                RowHoldsAValue = True
+                Exit Function
+            End If
+        End If
+    Next colIdx
 End Function
 
 
