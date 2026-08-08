@@ -1078,9 +1078,9 @@ Public Sub ClickGeoApp()
             hfOrGeo = ActiveSheet.Cells(startRow - 5, targetColumn).Value
             Select Case hfOrGeo
             Case "geo1"
-                LoadGeo 0
+                LoadGeo GeoScopeAdmin
             Case "hf"
-                LoadGeo 1
+                LoadGeo GeoScopeHF
             Case Else
                 WarningOnSheet "MSG_WrongCells"
             End Select
@@ -1093,9 +1093,9 @@ Public Sub ClickGeoApp()
         rngName = ActiveCell.Name.Name
         On Error GoTo 0
         If (InStr(1, rngName, "INPUTSPTGEO_") > 0) Then
-            LoadGeo 0
+            LoadGeo GeoScopeAdmin
         ElseIf (InStr(1, rngName, "INPUTSPTHF_") > 0) Then
-            LoadGeo 1
+            LoadGeo GeoScopeHF
         End If
     End Select
 End Sub

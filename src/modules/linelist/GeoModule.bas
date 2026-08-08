@@ -17,6 +17,9 @@ Private Const DROPDOWNSHEET As String = "dropdown_lists__"
 Private Const SPATIALSHEET As String = "spatial_tables__"
 Private Const PASSSHEET As String = "__pass"
 
+' How many admin levels a geobase carries.
+Private Const MAX_ADMIN_LEVEL As Long = 4
+
 '@section Module-Level State
 '===============================================================================
 
@@ -89,6 +92,11 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
     Set transValue = New BetterArray
     LinelistEventsManager.LLEnterBusyState busyCursor:=xlNorthwestArrow
 
+    'The form survives between opens through its default instance, so the
+    'lists are emptied first, whatever the geobase holds: an emptied geobase
+    'must show none of the previous session's places.
+    ClearLists
+
     Select Case hfOrGeo
 
     Case GeoScopeAdmin
@@ -103,7 +111,6 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
 
         If Not geo.HasNoData() Then
             Set transValue = geo.GeoLevel(LevelAdmin1, GeoScopeAdmin)
-            ClearLists
             F_Geo.LST_Adm1.List = transValue.Items
             concatenateGeoTable.FromExcelRange Range("adm4_concat")
             F_Geo.LST_ListeAgre.List = concatenateGeoTable.Items
@@ -125,7 +132,6 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
 
         If Not geo.HasNoData() Then
             Set transValue = geo.GeoLevel(LevelAdmin1, GeoScopeHF)
-            ClearLists
             F_Geo.LST_AdmF1.List = transValue.Items
             concatenateHFTable.FromExcelRange Range("hf_concat")
             F_Geo.LST_ListeAgreF.List = concatenateHFTable.Items
@@ -137,6 +143,14 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
         F_Geo.FRM_Geo.Visible = False
         F_Geo.LBL_Fac1.Visible = True
         F_Geo.LBL_Geo1.Visible = False
+
+    Case Else
+        'GeoScopeBoth exists on the enum and has no layout in the form. An
+        'unknown scope used to configure nothing and show the form as the
+        'previous open left it.
+        LinelistEventsManager.LLExitBusyState
+        ReportGeoError "Unknown geo scope " & hfOrGeo
+        Exit Sub
 
     End Select
 
@@ -153,17 +167,20 @@ ErrLoadGeo:
     ReportGeoError Err.Description
 End Sub
 
-' @description Clear all list controls in the F_Geo form.
+' @description Empty every list control of the F_Geo form, entries and
+'              selection both. Assigning a Value outside the list entries is
+'              the documented route to error 380, so nothing is cleared that
+'              way.
 Private Sub ClearLists()
     Dim counter As Long
 
     With F_Geo
-        .LST_AdmF1.Value = ""
-        .LST_Adm1.Value = ""
-        .LST_ListeAgreF.Value = ""
-        .LST_ListeAgre.Value = ""
-        .LST_Histo.Value = ""
-        .LST_HistoF.Value = ""
+        .LST_Adm1.Clear
+        .LST_AdmF1.Clear
+        .LST_ListeAgre.Clear
+        .LST_ListeAgreF.Clear
+        .LST_Histo.Clear
+        .LST_HistoF.Clear
         For counter = 2 To 4
             .Controls("LST_Adm" & counter).Clear
             .Controls("LST_AdmF" & counter).Clear
@@ -171,155 +188,120 @@ Private Sub ClearLists()
     End With
 End Sub
 
-'@section Admin Cascade — ShowAdmin*List
+'@section Admin Cascade
 '===============================================================================
 
-' @description Show admin2 list filtered by selected admin1.
+' @description Fill the admin list of one cascade level from the levels above
+'              it, in the geo or the facility scope. The lists from the given
+'              level down are emptied first, because they hold children of a
+'              selection that just changed. The caption joins the parents with
+'              the selected value: the geo scope reads admin1 first and the
+'              facility scope reads the deepest level first, which is the
+'              order CMD_Copier_Click splits back out.
+' @param level Cascade level to fill, 2 to 4
+' @param selectedValue The value clicked at the level above
+' @param scope GeoScopeAdmin (0) or GeoScopeHF (1)
+' @param separator Separator of the caption
 '@EntryPoint
-Public Sub ShowAdmin2List(ByVal selectedAdmin1 As String, _
-                          Optional ByVal scope As Byte = GeoScopeAdmin)
-    Dim adminTable As BetterArray
-
-    On Error GoTo ErrShowAdmin2
-    Application.Cursor = xlNorthwestArrow
-
-    With F_Geo
-        If scope = GeoScopeAdmin Then
-            .LST_Adm2.Clear
-            .LST_Adm3.Clear
-            .LST_Adm4.Clear
-        Else
-            .LST_AdmF2.Clear
-            .LST_AdmF3.Clear
-            .LST_AdmF4.Clear
-        End If
-
-        Set adminTable = geo.GeoLevel(LevelAdmin2, scope, selectedAdmin1)
-        .TXT_Msg.Value = selectedAdmin1
-
-        If adminTable.Length > 0 Then
-            If scope = GeoScopeAdmin Then
-                .LST_Adm2.List = adminTable.Items
-            Else
-                .LST_AdmF2.List = adminTable.Items
-            End If
-        End If
-    End With
-
-    Application.Cursor = xlDefault
-    Exit Sub
-
-ErrShowAdmin2:
-    Application.Cursor = xlDefault
-    ReportGeoError Err.Description
-End Sub
-
-' @description Show admin3 list filtered by selected admin1 and admin2.
-'@EntryPoint
-Public Sub ShowAdmin3List(ByVal selectedAdmin2 As String, _
-                          Optional ByVal scope As Byte = GeoScopeAdmin, _
-                          Optional ByVal separator As String = " | ")
-
-    Dim selectedAdmin1 As String
-    Dim concatenateAdmins As String
-    Dim adminTable As BetterArray
-    Dim adminNames As BetterArray
-
-    On Error GoTo ErrShowAdmin3
-    Application.Cursor = xlNorthwestArrow
-
-    With F_Geo
-        If scope = GeoScopeAdmin Then
-            .LST_Adm3.Clear
-            .LST_Adm4.Clear
-            selectedAdmin1 = .LST_Adm1.Value
-            concatenateAdmins = selectedAdmin1 & separator & selectedAdmin2
-        Else
-            .LST_AdmF3.Clear
-            .LST_AdmF4.Clear
-            selectedAdmin1 = .LST_AdmF1.Value
-            concatenateAdmins = selectedAdmin2 & separator & selectedAdmin1
-        End If
-
-        Set adminNames = New BetterArray
-        adminNames.LowerBound = 1
-        adminNames.Push selectedAdmin1, selectedAdmin2
-
-        Set adminTable = geo.GeoLevel(LevelAdmin3, scope, adminNames)
-        .TXT_Msg.Value = concatenateAdmins
-
-        If adminTable.Length > 0 Then
-            If scope = GeoScopeAdmin Then
-                .LST_Adm3.List = adminTable.Items
-            Else
-                .LST_AdmF3.List = adminTable.Items
-            End If
-        End If
-    End With
-
-    Application.Cursor = xlDefault
-    Exit Sub
-
-ErrShowAdmin3:
-    Application.Cursor = xlDefault
-    ReportGeoError Err.Description
-End Sub
-
-' @description Show admin4 list filtered by selected admin1, admin2, and admin3.
-'@EntryPoint
-Public Sub ShowAdmin4List(ByVal selectedAdmin3 As String, _
-                          Optional ByVal scope As Byte = GeoScopeAdmin, _
-                          Optional ByVal separator As String = " | ")
+Public Sub ShowAdminList(ByVal level As Long, ByVal selectedValue As String, _
+                         Optional ByVal scope As Byte = GeoScopeAdmin, _
+                         Optional ByVal separator As String = " | ")
 
     Dim adminTable As BetterArray
     Dim adminNames As BetterArray
-    Dim selectedAdmin1 As String
-    Dim selectedAdmin2 As String
-    Dim concatenateAdmins As String
+    Dim parentValues() As String
+    Dim listPrefix As String
+    Dim caption As String
+    Dim counter As Long
+    Dim levelWanted As Byte
 
-    On Error GoTo ErrShowAdmin4
+    On Error GoTo ErrShowAdmin
     Application.Cursor = xlNorthwestArrow
 
+    'Module state is lost on any unhandled error and any edit to the
+    'project, and the form outlives both.
+    If geo Is Nothing Then InitializeGeoElements
+
+    'GeoScopeBoth exists on the enum and has no lists in the form. An
+    'unknown scope used to mean facility in silence.
+    If scope <> GeoScopeAdmin And scope <> GeoScopeHF Then _
+        Err.Raise 5, "GeoModule", "The cascade knows no scope " & scope
+
+    Select Case level
+    Case 2
+        levelWanted = LevelAdmin2
+    Case 3
+        levelWanted = LevelAdmin3
+    Case 4
+        levelWanted = LevelAdmin4
+    Case Else
+        Err.Raise 5, "GeoModule", "The cascade knows no level " & level
+    End Select
+
+    listPrefix = IIf(scope = GeoScopeAdmin, "LST_Adm", "LST_AdmF")
+
     With F_Geo
-        If scope = GeoScopeAdmin Then
-            .LST_Adm4.Clear
-            selectedAdmin1 = .LST_Adm1.Value
-            selectedAdmin2 = .LST_Adm2.Value
-            concatenateAdmins = selectedAdmin1 & separator & _
-                                selectedAdmin2 & separator & _
-                                selectedAdmin3
-        Else
-            .LST_AdmF4.Clear
-            selectedAdmin1 = .LST_AdmF1.Value
-            selectedAdmin2 = .LST_AdmF2.Value
-            concatenateAdmins = selectedAdmin3 & separator & _
-                                selectedAdmin2 & separator & _
-                                selectedAdmin1
-        End If
+        For counter = level To MAX_ADMIN_LEVEL
+            .Controls(listPrefix & counter).Clear
+        Next
+
+        'The parents above the clicked value are read off their lists. A
+        'list with nothing selected answers Null, and refilling a list
+        'drops its selection, so the read has to survive both.
+        ReDim parentValues(1 To level - 1)
+        For counter = 1 To level - 2
+            parentValues(counter) = ListValueOf(.Controls(listPrefix & counter))
+        Next
+        parentValues(level - 1) = selectedValue
 
         Set adminNames = New BetterArray
         adminNames.LowerBound = 1
-        adminNames.Push selectedAdmin1, selectedAdmin2, selectedAdmin3
+        For counter = 1 To level - 1
+            adminNames.Push parentValues(counter)
+        Next
 
-        Set adminTable = geo.GeoLevel(LevelAdmin4, scope, adminNames)
-        .TXT_Msg.Value = concatenateAdmins
+        If scope = GeoScopeAdmin Then
+            caption = parentValues(1)
+            For counter = 2 To level - 1
+                caption = caption & separator & parentValues(counter)
+            Next
+        Else
+            caption = parentValues(level - 1)
+            For counter = level - 2 To 1 Step -1
+                caption = caption & separator & parentValues(counter)
+            Next
+        End If
+
+        'Admin 2 wants the name of its one parent as a single value, and the
+        'deeper levels want the table of names. GuardLevelNames holds that
+        'line on the LLGeo side.
+        If level = 2 Then
+            Set adminTable = geo.GeoLevel(levelWanted, scope, selectedValue)
+        Else
+            Set adminTable = geo.GeoLevel(levelWanted, scope, adminNames)
+        End If
+
+        .TXT_Msg.Value = caption
 
         If adminTable.Length > 0 Then
-            If scope = GeoScopeAdmin Then
-                .LST_Adm4.List = adminTable.Items
-            Else
-                .LST_AdmF4.List = adminTable.Items
-            End If
+            .Controls(listPrefix & level).List = adminTable.Items
         End If
     End With
 
     Application.Cursor = xlDefault
     Exit Sub
 
-ErrShowAdmin4:
+ErrShowAdmin:
     Application.Cursor = xlDefault
     ReportGeoError Err.Description
 End Sub
+
+' @description The value of one list control, as a string. A list with
+'              nothing selected answers Null.
+Private Function ListValueOf(ByVal listControl As Object) As String
+    If IsNull(listControl.Value) Then Exit Function
+    ListValueOf = CStr(listControl.Value)
+End Function
 
 '@section Spatial Table Updates
 '===============================================================================
@@ -342,22 +324,27 @@ End Sub
 '===============================================================================
 
 ' @description Update formulas in spatio-temporal tables when admin level changes.
+'              Runs after the user validates a place on an SPT analysis sheet:
+'              every formula column of the section moves from the previous
+'              admin level's concat column to the new one. The cell loop is
+'              LLSpatial.RewriteFormulas, so a plain formula stays plain and
+'              an array one stays an array one.
 ' @param rngName Named range of the admin level selector
 ' @param actAdm New admin level (number of admin levels selected)
 '@EntryPoint
 Public Sub UpdateSpatioTemporalFormulas(ByVal rngName As String, _
                                         ByVal actAdm As Long)
     Dim tabId As String
+    Dim prevRaw As Variant
     Dim prevAdm As Long
     Dim sh As Worksheet
     Dim counter As Long
     Dim headerRng As Range
-    Dim cellRng As Range
     Dim valuesRng As Range
-    Dim headerFormula As String
-    Dim valuesFormula As String
+    Dim headerTexts As Variant
     Dim headerCellName As String
-    Dim hasFormula As Boolean
+    Dim sp As LLSpatial
+    Dim unprotected As Boolean
 
     'The handler is armed first, so a raise in the busy-state entry or in
     'InitializeSpatialElements reaches ErrSPT and restores the application.
@@ -365,18 +352,50 @@ Public Sub UpdateSpatioTemporalFormulas(ByVal rngName As String, _
     LinelistEventsManager.LLEnterBusyState busyCursor:=xlNorthwestArrow
     InitializeSpatialElements
 
+    'An unnamed active cell hands an empty rngName over, and AnalysisRanges
+    'answers an empty id for any name it did not build. Both shapes used to
+    'be sliced by position, which raised into the handler.
+    tabId = AnalysisRanges.IdOfSpatialInput(rngName)
+    If LenB(tabId) = 0 Then
+        LinelistEventsManager.LLExitBusyState
+        Exit Sub
+    End If
+
     Set sh = ActiveSheet
-    tabId = "SPT_" & Split(rngName, "_")(3)
     Set headerRng = sh.Range("SPT_FORMULA_COLUMN_" & tabId)
-    prevAdm = sh.Range(rngName).Offset(, 1).Value
+
+    'The neighbour cell records the level the sheet stands on. A value
+    'outside 1 to 4 means it was cleared or overwritten; rewriting on it
+    'would migrate nothing while still recording the new level, and the
+    'sheet would then be one level behind with no way back.
+    prevRaw = sh.Range(rngName).Offset(, 1).Value
+    If Not IsNumeric(prevRaw) Then _
+        Err.Raise 5, "GeoModule", _
+                  "The previous admin level of " & tabId & " reads " & _
+                  Chr$(34) & prevRaw & Chr$(34)
+
+    prevAdm = CLng(prevRaw)
+    If prevAdm < 1 Or prevAdm > MAX_ADMIN_LEVEL Then _
+        Err.Raise 5, "GeoModule", _
+                  "The previous admin level of " & tabId & " reads " & prevAdm
+
+    'The caller fires on every Validate with no idea whether the level
+    'changed.
+    If prevAdm = actAdm Then
+        LinelistEventsManager.LLExitBusyState
+        Exit Sub
+    End If
+
+    Set sp = LLSpatial.Create(ThisWorkbook.Worksheets(SPATIALSHEET))
 
     pass.UnProtect "_active"
+    unprotected = True
+
+    'One read of the whole header row; the match is a string test in memory.
+    headerTexts = HeaderFormulaTexts(headerRng)
 
     For counter = 1 To headerRng.Columns.Count
-        headerFormula = Replace(headerRng.Cells(1, counter).Formula, "=", vbNullString)
-        headerFormula = Application.WorksheetFunction.Trim(headerFormula)
-
-        If InStr(1, headerFormula, rngName) > 0 Then
+        If InStr(1, CStr(headerTexts(1, counter)), rngName) > 0 Then
             Set valuesRng = Nothing
             'headerCellName is a String, so without the reset it keeps the
             'previous column's name when the read below raises -- a header
@@ -392,30 +411,15 @@ Public Sub UpdateSpatioTemporalFormulas(ByVal rngName As String, _
             On Error GoTo ErrSPT
 
             If Not valuesRng Is Nothing Then
+                'The named block ends two rows above the Total and Missing
+                'rows of its own table -- RowsCategoriesRange trims the two
+                'footer rows by count -- and their formulas move levels with
+                'the block, so the range is grown to reach them.
                 Set valuesRng = sh.Range(valuesRng.Cells(1, 1), _
                                          valuesRng.Cells(valuesRng.Rows.Count + 2, 1))
 
-                For Each cellRng In valuesRng
-                    hasFormula = False
-                    valuesFormula = cellRng.FormulaArray
-
-                    If valuesFormula = vbNullString Then
-                        valuesFormula = cellRng.Formula
-                        hasFormula = True
-                    End If
-
-                    If InStr(1, valuesFormula, "concat_adm" & prevAdm) > 0 Then
-                        valuesFormula = Replace(valuesFormula, _
-                                                "concat_adm" & prevAdm, _
-                                                "concat_adm" & actAdm)
-
-                        If hasFormula Then
-                            cellRng.Formula = valuesFormula
-                        Else
-                            cellRng.FormulaArray = valuesFormula
-                        End If
-                    End If
-                Next
+                sp.RewriteFormulas valuesRng, "concat_adm" & prevAdm, _
+                                   "concat_adm" & actAdm
             End If
         End If
     Next
@@ -423,14 +427,29 @@ Public Sub UpdateSpatioTemporalFormulas(ByVal rngName As String, _
     sh.Range(rngName).Offset(, 1).Value = actAdm
     sh.UsedRange.Calculate
 
-    pass.Protect sh, True
+    pass.Protect sh, allowShapes:=True
     LinelistEventsManager.LLExitBusyState
     Exit Sub
 
 ErrSPT:
-    'sh is Nothing when the raise came before the sheet was read, and nothing
-    'was unprotected on that path.
-    If Not sh Is Nothing Then pass.Protect sh, True
+    'The protection is put back only when this run took it off, so a raise
+    'above the UnProtect leaves a deliberately open sheet open.
+    If unprotected Then pass.Protect sh, allowShapes:=True
     LinelistEventsManager.LLExitBusyState
     ReportGeoError Err.Description
 End Sub
+
+' @description Read the header row of formulas in one crossing. A one-cell
+'              range answers a scalar, so it is wrapped to give the caller one
+'              shape.
+' @param headerRng The SPT_FORMULA_COLUMN_ row of one section
+Private Function HeaderFormulaTexts(ByVal headerRng As Range) As Variant
+    Dim oneCell(1 To 1, 1 To 1) As Variant
+
+    If headerRng.Cells.Count = 1 Then
+        oneCell(1, 1) = headerRng.Formula
+        HeaderFormulaTexts = oneCell
+    Else
+        HeaderFormulaTexts = headerRng.Formula
+    End If
+End Function

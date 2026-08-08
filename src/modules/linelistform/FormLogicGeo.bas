@@ -227,6 +227,11 @@ Private Sub CMD_Copier_Click()
     End Select
 
 ErrGeo:
+    'The write branches above switch events off around the cell writes, so a
+    'raise between the two lines lands here with events off. Left that way,
+    'every worksheet event of the linelist stays dead for the session: the
+    'checkings, the dropdown cascades, the geo autofill.
+    Application.EnableEvents = True
     MsgBox tradmess.TranslatedValue("MSG_ErrWriteGeo"), vbCritical + vbOKOnly
 End Sub
 
@@ -275,15 +280,15 @@ End Sub
 '===============================================================================
 
 Private Sub LST_Adm1_Click()
-    ShowAdmin2List Me.LST_Adm1.Value, GeoScopeAdmin
+    ShowAdminList 2, Me.LST_Adm1.Value, GeoScopeAdmin
 End Sub
 
 Private Sub LST_Adm2_Click()
-    ShowAdmin3List Me.LST_Adm2.Value, GeoScopeAdmin, SEP
+    ShowAdminList 3, Me.LST_Adm2.Value, GeoScopeAdmin, SEP
 End Sub
 
 Private Sub LST_Adm3_Click()
-    ShowAdmin4List Me.LST_Adm3.Value, GeoScopeAdmin, SEP
+    ShowAdminList 4, Me.LST_Adm3.Value, GeoScopeAdmin, SEP
 End Sub
 
 Private Sub LST_Adm4_Click()
@@ -294,15 +299,15 @@ Private Sub LST_Adm4_Click()
 End Sub
 
 Private Sub LST_AdmF1_Click()
-    ShowAdmin2List Me.LST_AdmF1.Value, GeoScopeHF
+    ShowAdminList 2, Me.LST_AdmF1.Value, GeoScopeHF
 End Sub
 
 Private Sub LST_AdmF2_Click()
-    ShowAdmin3List Me.LST_AdmF2.Value, GeoScopeHF, SEP
+    ShowAdminList 3, Me.LST_AdmF2.Value, GeoScopeHF, SEP
 End Sub
 
 Private Sub LST_AdmF3_Click()
-    ShowAdmin4List Me.LST_AdmF3.Value, GeoScopeHF, SEP
+    ShowAdminList 4, Me.LST_AdmF3.Value, GeoScopeHF, SEP
 End Sub
 
 Private Sub LST_AdmF4_Click()
