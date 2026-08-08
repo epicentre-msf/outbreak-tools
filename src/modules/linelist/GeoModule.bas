@@ -65,24 +65,26 @@ Private Sub InitializeSpatialElements()
     Set pass = Passwords.Create(wb.Worksheets(PASSSHEET))
 End Sub
 
-'@section Application State
+'@section Error Reporting
 '===============================================================================
 
-' @description Suspend heavy Excel UI features for performance.
-Private Sub BusyApp(Optional ByVal cursor As Long = xlDefault)
-    Application.ScreenUpdating = False
-    Application.DisplayAlerts = False
-    Application.Calculation = xlCalculationManual
-    Application.EnableAnimations = False
-    Application.cursor = cursor
-End Sub
+' @description Tell the user a geo operation failed. The handler that calls
+'              this has already restored the application. The translator is
+'              Nothing when the failure happened while it was being built, and
+'              reading a label off it here would raise inside the handler.
+Private Sub ReportGeoError(ByVal detail As String)
+    Dim message As String
+    Dim title As String
 
-' @description Restore Excel UI to normal state.
-Private Sub NotBusyApp()
-    Application.ScreenUpdating = True
-    Application.DisplayAlerts = True
-    Application.EnableAnimations = True
-    Application.cursor = xlDefault
+    If tradmess Is Nothing Then
+        message = "The geobase could not be read. " & detail
+        title = "Error"
+    Else
+        message = tradmess.TranslatedValue("MSG_ErrGeo")
+        title = tradmess.TranslatedValue("MSG_Error")
+    End If
+
+    MsgBox message, vbOKOnly + vbCritical, title
 End Sub
 
 '@section LoadGeo — Form Display
@@ -100,7 +102,7 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
     InitializeGeoElements
 
     Set transValue = New BetterArray
-    BusyApp
+    LinelistEventsManager.LLEnterBusyState busyCursor:=xlNorthwestArrow
 
     Select Case hfOrGeo
 
@@ -153,24 +155,17 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
 
     End Select
 
-    NotBusyApp
+    'Exit the busy state before the modal form comes up, so it is never
+    'raised over a frozen screen.
+    LinelistEventsManager.LLExitBusyState
 
     F_Geo.TXT_Msg.Value = vbNullString
     F_Geo.Show
     Exit Sub
 
 ErrLoadGeo:
-    'A broken translation sheet is one of the things that lands here, and the
-    'translator is Nothing when it does. Reading a label off it inside the
-    'handler raises again and the user sees nothing at all.
-    If tradmess Is Nothing Then
-        MsgBox Err.Description, vbOKOnly + vbCritical
-    Else
-        MsgBox tradmess.TranslatedValue("MSG_ErrGeo"), _
-               vbOKOnly + vbCritical, _
-               tradmess.TranslatedValue("MSG_Error")
-    End If
-    NotBusyApp
+    LinelistEventsManager.LLExitBusyState
+    ReportGeoError Err.Description
 End Sub
 
 ' @description Clear all list controls in the F_Geo form.
@@ -197,39 +192,47 @@ End Sub
 ' @description Show admin2 list filtered by selected admin1.
 '@EntryPoint
 Public Sub ShowAdmin2List(ByVal selectedAdmin1 As String, _
-                          Optional ByVal scope As Byte = 0)
-
-    If scope = GeoScopeAdmin Then
-        F_Geo.LST_Adm2.Clear
-        F_Geo.LST_Adm3.Clear
-        F_Geo.LST_Adm4.Clear
-    Else
-        F_Geo.LST_AdmF2.Clear
-        F_Geo.LST_AdmF3.Clear
-        F_Geo.LST_AdmF4.Clear
-    End If
-
+                          Optional ByVal scope As Byte = GeoScopeAdmin)
     Dim adminTable As BetterArray
-    Application.cursor = xlNorthwestArrow
 
-    Set adminTable = geo.GeoLevel(LevelAdmin2, scope, selectedAdmin1)
-    F_Geo.TXT_Msg.Value = selectedAdmin1
+    On Error GoTo ErrShowAdmin2
+    Application.Cursor = xlNorthwestArrow
 
-    If adminTable.Length = 0 Then Exit Sub
+    With F_Geo
+        If scope = GeoScopeAdmin Then
+            .LST_Adm2.Clear
+            .LST_Adm3.Clear
+            .LST_Adm4.Clear
+        Else
+            .LST_AdmF2.Clear
+            .LST_AdmF3.Clear
+            .LST_AdmF4.Clear
+        End If
 
-    If scope = GeoScopeAdmin Then
-        F_Geo.LST_Adm2.List = adminTable.Items
-    Else
-        F_Geo.LST_AdmF2.List = adminTable.Items
-    End If
+        Set adminTable = geo.GeoLevel(LevelAdmin2, scope, selectedAdmin1)
+        .TXT_Msg.Value = selectedAdmin1
 
-    Application.cursor = xlDefault
+        If adminTable.Length > 0 Then
+            If scope = GeoScopeAdmin Then
+                .LST_Adm2.List = adminTable.Items
+            Else
+                .LST_AdmF2.List = adminTable.Items
+            End If
+        End If
+    End With
+
+    Application.Cursor = xlDefault
+    Exit Sub
+
+ErrShowAdmin2:
+    Application.Cursor = xlDefault
+    ReportGeoError Err.Description
 End Sub
 
 ' @description Show admin3 list filtered by selected admin1 and admin2.
 '@EntryPoint
 Public Sub ShowAdmin3List(ByVal selectedAdmin2 As String, _
-                          Optional ByVal scope As Byte = 0, _
+                          Optional ByVal scope As Byte = GeoScopeAdmin, _
                           Optional ByVal separator As String = " | ")
 
     Dim selectedAdmin1 As String
@@ -237,41 +240,50 @@ Public Sub ShowAdmin3List(ByVal selectedAdmin2 As String, _
     Dim adminTable As BetterArray
     Dim adminNames As BetterArray
 
-    If scope = GeoScopeAdmin Then
-        F_Geo.LST_Adm3.Clear
-        F_Geo.LST_Adm4.Clear
-        selectedAdmin1 = F_Geo.LST_Adm1.Value
-        concatenateAdmins = selectedAdmin1 & separator & selectedAdmin2
-    Else
-        F_Geo.LST_AdmF3.Clear
-        F_Geo.LST_AdmF4.Clear
-        selectedAdmin1 = F_Geo.LST_AdmF1.Value
-        concatenateAdmins = selectedAdmin2 & separator & selectedAdmin1
-    End If
+    On Error GoTo ErrShowAdmin3
+    Application.Cursor = xlNorthwestArrow
 
-    Set adminNames = New BetterArray
-    adminNames.LowerBound = 1
-    Application.cursor = xlNorthwestArrow
+    With F_Geo
+        If scope = GeoScopeAdmin Then
+            .LST_Adm3.Clear
+            .LST_Adm4.Clear
+            selectedAdmin1 = .LST_Adm1.Value
+            concatenateAdmins = selectedAdmin1 & separator & selectedAdmin2
+        Else
+            .LST_AdmF3.Clear
+            .LST_AdmF4.Clear
+            selectedAdmin1 = .LST_AdmF1.Value
+            concatenateAdmins = selectedAdmin2 & separator & selectedAdmin1
+        End If
 
-    adminNames.Push selectedAdmin1, selectedAdmin2
-    Set adminTable = geo.GeoLevel(LevelAdmin3, scope, adminNames)
-    F_Geo.TXT_Msg.Value = concatenateAdmins
+        Set adminNames = New BetterArray
+        adminNames.LowerBound = 1
+        adminNames.Push selectedAdmin1, selectedAdmin2
 
-    If adminTable.Length = 0 Then Exit Sub
+        Set adminTable = geo.GeoLevel(LevelAdmin3, scope, adminNames)
+        .TXT_Msg.Value = concatenateAdmins
 
-    If scope = GeoScopeAdmin Then
-        F_Geo.LST_Adm3.List = adminTable.Items
-    Else
-        F_Geo.LST_AdmF3.List = adminTable.Items
-    End If
+        If adminTable.Length > 0 Then
+            If scope = GeoScopeAdmin Then
+                .LST_Adm3.List = adminTable.Items
+            Else
+                .LST_AdmF3.List = adminTable.Items
+            End If
+        End If
+    End With
 
-    Application.cursor = xlDefault
+    Application.Cursor = xlDefault
+    Exit Sub
+
+ErrShowAdmin3:
+    Application.Cursor = xlDefault
+    ReportGeoError Err.Description
 End Sub
 
 ' @description Show admin4 list filtered by selected admin1, admin2, and admin3.
 '@EntryPoint
 Public Sub ShowAdmin4List(ByVal selectedAdmin3 As String, _
-                          Optional ByVal scope As Byte = 0, _
+                          Optional ByVal scope As Byte = GeoScopeAdmin, _
                           Optional ByVal separator As String = " | ")
 
     Dim adminTable As BetterArray
@@ -280,51 +292,57 @@ Public Sub ShowAdmin4List(ByVal selectedAdmin3 As String, _
     Dim selectedAdmin2 As String
     Dim concatenateAdmins As String
 
-    If scope = GeoScopeAdmin Then
-        F_Geo.LST_Adm4.Clear
-        selectedAdmin1 = F_Geo.LST_Adm1.Value
-        selectedAdmin2 = F_Geo.LST_Adm2.Value
-        concatenateAdmins = selectedAdmin1 & separator & _
-                            selectedAdmin2 & separator & _
-                            selectedAdmin3
-    Else
-        F_Geo.LST_AdmF4.Clear
-        selectedAdmin1 = F_Geo.LST_AdmF1.Value
-        selectedAdmin2 = F_Geo.LST_AdmF2.Value
-        concatenateAdmins = selectedAdmin3 & separator & _
-                            selectedAdmin2 & separator & _
-                            selectedAdmin1
-    End If
+    On Error GoTo ErrShowAdmin4
+    Application.Cursor = xlNorthwestArrow
 
-    Set adminNames = New BetterArray
-    adminNames.LowerBound = 1
-    adminNames.Push selectedAdmin1, selectedAdmin2, selectedAdmin3
+    With F_Geo
+        If scope = GeoScopeAdmin Then
+            .LST_Adm4.Clear
+            selectedAdmin1 = .LST_Adm1.Value
+            selectedAdmin2 = .LST_Adm2.Value
+            concatenateAdmins = selectedAdmin1 & separator & _
+                                selectedAdmin2 & separator & _
+                                selectedAdmin3
+        Else
+            .LST_AdmF4.Clear
+            selectedAdmin1 = .LST_AdmF1.Value
+            selectedAdmin2 = .LST_AdmF2.Value
+            concatenateAdmins = selectedAdmin3 & separator & _
+                                selectedAdmin2 & separator & _
+                                selectedAdmin1
+        End If
 
-    Application.cursor = xlNorthwestArrow
+        Set adminNames = New BetterArray
+        adminNames.LowerBound = 1
+        adminNames.Push selectedAdmin1, selectedAdmin2, selectedAdmin3
 
-    Set adminTable = geo.GeoLevel(LevelAdmin4, scope, adminNames)
-    F_Geo.TXT_Msg.Value = concatenateAdmins
+        Set adminTable = geo.GeoLevel(LevelAdmin4, scope, adminNames)
+        .TXT_Msg.Value = concatenateAdmins
 
-    If adminTable.Length = 0 Then Exit Sub
+        If adminTable.Length > 0 Then
+            If scope = GeoScopeAdmin Then
+                .LST_Adm4.List = adminTable.Items
+            Else
+                .LST_AdmF4.List = adminTable.Items
+            End If
+        End If
+    End With
 
-    If scope = GeoScopeAdmin Then
-        F_Geo.LST_Adm4.List = adminTable.Items
-    Else
-        F_Geo.LST_AdmF4.List = adminTable.Items
-    End If
+    Application.Cursor = xlDefault
+    Exit Sub
 
-    Application.cursor = xlDefault
+ErrShowAdmin4:
+    Application.Cursor = xlDefault
+    ReportGeoError Err.Description
 End Sub
 
 '@section Spatial Table Updates
 '===============================================================================
 
 ' @description Update all spatial tables from HList filtered data.
-'              The busy state belongs to the caller. BusyApp switched the screen,
-'              the alerts and the calculation off here and NotBusyApp was skipped
-'              whenever Update raised, which left the application looking frozen
-'              with no message. ClickCalculate already wraps this call and
-'              restores the application on every path.
+'              The busy state belongs to the caller. ClickCalculate already
+'              wraps this call and restores the application on every path, and
+'              UpdateFilterTables below enters the shared busy state itself.
 '@EntryPoint
 Public Sub UpdateSpTables()
     Dim sp As LLSpatial
@@ -356,10 +374,11 @@ Public Sub UpdateSpatioTemporalFormulas(ByVal rngName As String, _
     Dim headerCellName As String
     Dim hasFormula As Boolean
 
-    BusyApp cursor:=xlNorthwestArrow
-    InitializeSpatialElements
-
+    'The handler is armed first, so a raise in the busy-state entry or in
+    'InitializeSpatialElements reaches ErrSPT and restores the application.
     On Error GoTo ErrSPT
+    LinelistEventsManager.LLEnterBusyState busyCursor:=xlNorthwestArrow
+    InitializeSpatialElements
 
     Set sh = ActiveSheet
     tabId = "SPT_" & Split(rngName, "_")(3)
@@ -412,7 +431,14 @@ Public Sub UpdateSpatioTemporalFormulas(ByVal rngName As String, _
     sh.Range(rngName).Offset(, 1).Value = actAdm
     sh.UsedRange.Calculate
 
-ErrSPT:
     pass.Protect sh, True
-    NotBusyApp
+    LinelistEventsManager.LLExitBusyState
+    Exit Sub
+
+ErrSPT:
+    'sh is Nothing when the raise came before the sheet was read, and nothing
+    'was unprotected on that path.
+    If Not sh Is Nothing Then pass.Protect sh, True
+    LinelistEventsManager.LLExitBusyState
+    ReportGeoError Err.Description
 End Sub
