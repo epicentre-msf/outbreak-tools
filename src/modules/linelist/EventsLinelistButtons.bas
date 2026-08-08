@@ -27,6 +27,23 @@ Private wb As Workbook
 Private lltrads As LLTranslation
 Private wkbNames As HiddenNames
 
+'The event service of the running linelist
+'
+'It holds the translation helper, the workbook hidden names, the password
+'manager and one hidden name store per worksheet. This module used to build its
+'own of each on every button press: three walks of a Names collection before the
+'button had done anything.
+'
+'The typed local is what call-signature-scan.R reads to check the member. A
+'chained call is invisible to it, and this module carries no registry row, so a
+'chain here would be checked by nothing at all.
+Private Function LinelistService() As EventLinelist
+    Dim linelistEvents As EventLinelist
+
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    Set LinelistService = linelistEvents
+End Function
+
 'Initialize translation of forms object
 '
 'The translation helper is the one EventLinelist holds. This module used to
@@ -36,7 +53,7 @@ Private Sub InitializeTrads()
     Dim linelistEvents As EventLinelist
 
     Set wb = ThisWorkbook
-    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    Set linelistEvents = LinelistService()
     Set lltrads = linelistEvents.Translation
 
     'The 29 reads of the two translators below all assume a translator is there.
@@ -47,16 +64,29 @@ Private Sub InitializeTrads()
         Err.Raise ProjectError.ObjectNotInitialized, "EventsLinelistButtons", _
                   "This linelist carries no usable translation sheet"
 
+    'Both scopes are cached inside the helper and answered on the first read.
     Set tradsmess = lltrads.TransObject()
     Set tradsform = lltrads.TransObject(TranslationOfForms)
 
-    Set pass = Passwords.Create(wb.Worksheets(PASSSHEET))
-    Set wkbNames = HiddenNames.Create(wb)
+    Set pass = linelistEvents.PasswordManager()
+    Set wkbNames = linelistEvents.WorkbookNames()
 End Sub
 
+'Tell the user why a button refused to act.
 Private Sub WarningOnSheet(ByVal msgCode As String)
-    InitializeTrads
-    MsgBox tradsmess.TranslatedValue(msgCode), vbOKOnly + vbExclamation
+    Dim linelistEvents As EventLinelist
+
+    Set linelistEvents = LinelistService()
+    linelistEvents.Warn msgCode
+End Sub
+
+'Tell the user a button failed. The detail carries the error description.
+Private Sub FailureOnSheet(ByVal msgCode As String, _
+                           Optional ByVal detail As String = vbNullString)
+    Dim linelistEvents As EventLinelist
+
+    Set linelistEvents = LinelistService()
+    linelistEvents.Fail msgCode, detail
 End Sub
 
 'Resolve the ShowHideWorksheetLayer from a sheet tag
@@ -91,17 +121,36 @@ Private Function BaseSheetName(ByVal sh As Worksheet) As String
     End Select
 End Function
 
-'Get the sheet type tag (HiddenNames first, cell fallback for legacy sheets).
+'The hidden names of one worksheet.
+'
+'The service holds one store per sheet and drops it when that sheet raises a
+'change, so the three readers below share one walk. A click on a sheet whose
+'names cannot be read answers Nothing, and each reader then gives its empty
+'value, which the callers already treat as "this is the wrong sheet".
+Private Function SheetStoreOf(ByVal sh As Worksheet) As HiddenNames
+    Dim linelistEvents As EventLinelist
+
+    Set linelistEvents = LinelistService()
+    Set SheetStoreOf = linelistEvents.SheetNames(sh)
+End Function
+
+'Get the sheet type tag.
 Private Function SheetTag(ByVal sh As Worksheet) As String
     Dim shHn As HiddenNames
-    Set shHn = HiddenNames.Create(sh)
+
+    Set shHn = SheetStoreOf(sh)
+    If shHn Is Nothing Then Exit Function
+
     SheetTag = shHn.ValueAsString("sheet_type")
 End Function
 
 'Get the table name from worksheet-level HiddenNames.
 Private Function TableNameOf(ByVal sh As Worksheet) As String
     Dim shHn As HiddenNames
-    Set shHn = HiddenNames.Create(sh)
+
+    Set shHn = SheetStoreOf(sh)
+    If shHn Is Nothing Then Exit Function
+
     TableNameOf = shHn.ValueAsString("table_name")
 End Function
 
@@ -110,7 +159,10 @@ End Function
 'cells than this is a row the user has typed into.
 Private Function BlankRowCountOf(ByVal sh As Worksheet) As Long
     Dim shHn As HiddenNames
-    Set shHn = HiddenNames.Create(sh)
+
+    Set shHn = SheetStoreOf(sh)
+    If shHn Is Nothing Then Exit Function
+
     BlankRowCountOf = shHn.ValueAsLong("blank_row_count")
 End Function
 
@@ -828,9 +880,7 @@ errAddRows:
     On Error Resume Next
     If shType = "HList" Then pass.Protect "_active"
     LinelistEventsManager.LLExitBusyState
-    MsgBox tradsmess.TranslatedValue("MSG_ErrAddRows"), _
-          vbOKOnly + vbCritical, _
-          tradsmess.TranslatedValue("MSG_Error")
+    FailureOnSheet "MSG_ErrAddRows"
     On Error GoTo 0
 End Sub
 
@@ -877,9 +927,7 @@ errDelRows:
     On Error Resume Next
     If shType = "HList" Then pass.Protect "_active"
     LinelistEventsManager.LLExitBusyState
-    MsgBox tradsmess.TranslatedValue("MSG_ErrDelRows"), _
-          vbOKOnly + vbCritical, _
-          tradsmess.TranslatedValue("MSG_Error")
+    FailureOnSheet "MSG_ErrDelRows"
     On Error GoTo 0
 
 End Sub
@@ -990,10 +1038,7 @@ Public Sub ClickExport()
 
 errLoadExp:
     On Error Resume Next
-    MsgBox tradsmess.TranslatedValue("MSG_ErrLoadExport"), _
-           vbOKOnly + vbCritical, _
-           tradsmess.TranslatedValue("MSG_Error")
-    Exit Sub
+    FailureOnSheet "MSG_ErrLoadExport"
     On Error GoTo 0
 End Sub
 
@@ -1037,11 +1082,10 @@ Public Sub ClickGeoApp()
             Case "hf"
                 LoadGeo 1
             Case Else
-                MsgBox tradsmess.TranslatedValue("MSG_WrongCells")
+                WarningOnSheet "MSG_WrongCells"
             End Select
         Else
-            MsgBox tradsmess.TranslatedValue("MSG_WrongCells"), _
-            vbOKOnly + vbCritical, tradsmess.TranslatedValue("MSG_Error")
+            WarningOnSheet "MSG_WrongCells"
         End If
 
     Case "SPT-Analysis"
@@ -1064,20 +1108,16 @@ Public Sub ClickCalculate()
     Dim sh As Worksheet
     Dim sheetName As String
     Dim anaSheetsList As BetterArray
-    Static previousHit As Long
-    Dim timePeriod As Long
     Dim counter As Long
 
-    If (previousHit = 0) Then 
-        previousHit = Now()
-        timePeriod = 0
-    Else
-        timePeriod = Now() - previousHit
-    End If
-
-    'If the duration is less than 2 minutes, Exit to avoid mutiple recomputations
-    If (timePeriod < 60 & timePeriod > 0) Then Exit Sub
-    
+    'A guard used to sit here to skip a second click that came soon after the
+    'first. It never once skipped anything: it read
+    '"If (timePeriod < 60 & timePeriod > 0)", where & joins two strings and binds
+    'tighter than the comparisons, so the test was always False. Its clock was
+    'wrong too -- a Long held a whole day number and was written on the first
+    'click alone. Calculate is a button the user presses on purpose, so the
+    'answer is to calculate every time, which is what the workbook has always
+    'done.
     InitializeTrads
     On Error GoTo ErrHand
 
@@ -1095,8 +1135,10 @@ Public Sub ClickCalculate()
     For counter = anaSheetsList.LowerBound To anaSheetsList.UpperBound
         sheetName = anaSheetsList.Item(counter)
         Set sh = wb.Worksheets(sheetName)
-        sh.UsedRange.calculate
-        sh.Columns("A:E").calculate
+        'One pass covers the sheet. These four sheets carry array formulas over
+        'the whole linelist, and the second pass over columns A to E was inside
+        'the first. HandleAnalysisChange calculates the same sheets this way.
+        sh.calculate
     Next
 
 ErrHand:
@@ -1256,10 +1298,13 @@ Public Sub ClickOpenVarLab()
             'Move to next line
             Set cellRng = cellRng.Offset(1)
         End If
-        'Get the whole table from fill in range
-        varLabTab.FromExcelRange tempsh.Cells(1, 1), _
-                                 DetectLastRow:=True, DetectLastColumn:=True
     Next
+
+    'Get the whole table from fill in range. This read used to sit inside the
+    'loop above, so a 400-variable dictionary read the whole sheet 400 times and
+    'threw away every result but the last.
+    varLabTab.FromExcelRange tempsh.Cells(1, 1), _
+                             DetectLastRow:=True, DetectLastColumn:=True
 
     'Affect the table to the list
     F_ShowVarLabels.LST_CustomTabList.List = varLabTab.Items
