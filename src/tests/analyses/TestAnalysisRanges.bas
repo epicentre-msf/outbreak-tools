@@ -290,6 +290,55 @@ TestFail:
     CustomTestLogFailure Assert, "TestSpatialInputRejectsAnUnknownType", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify IdOfSpatialInput answers the id SpatialInput was built from.
+'@details
+'The two directions have to agree: what SpatialInput builds, IdOfSpatialInput
+'takes apart. Both tags are exercised, and the expectations are spelled out.
+'@TestMethod("AnalysisRanges")
+Public Sub TestIdOfSpatialInputInvertsTheBuilder()
+    CustomTestSetTitles Assert, "AnalysisRanges", "TestIdOfSpatialInputInvertsTheBuilder"
+    On Error GoTo TestFail
+
+    Assert.AreEqual "SPT_tab1", _
+                    AnalysisRanges.IdOfSpatialInput("INPUTSPTGEO_2_SPT_tab1"), _
+                    "The geographic tag and the row number should be cut off the front"
+    Assert.AreEqual "SPT_tab1", _
+                    AnalysisRanges.IdOfSpatialInput("INPUTSPTHF_11_SPT_tab1"), _
+                    "The facility tag should be recognised, with any row number"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestIdOfSpatialInputInvertsTheBuilder", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify IdOfSpatialInput answers empty for a name it did not build.
+'@details
+'GeoModule reads the name off the active cell at run time, and an unnamed cell
+'hands an empty string over. Slicing such a name by position raised subscript
+'out of range into a silent handler, so every malformed shape has to come back
+'empty: no name at all, a foreign name, a missing row number, and a tag with
+'nothing behind it.
+'@TestMethod("AnalysisRanges")
+Public Sub TestIdOfSpatialInputRefusesAForeignName()
+    CustomTestSetTitles Assert, "AnalysisRanges", "TestIdOfSpatialInputRefusesAForeignName"
+    On Error GoTo TestFail
+
+    Assert.AreEqual vbNullString, AnalysisRanges.IdOfSpatialInput(vbNullString), _
+                    "An unnamed cell hands an empty string over and gets one back"
+    Assert.AreEqual vbNullString, AnalysisRanges.IdOfSpatialInput("VALUES_COL_1_BA_tab5"), _
+                    "A name without a spatial tag should answer empty"
+    Assert.AreEqual vbNullString, AnalysisRanges.IdOfSpatialInput("INPUTSPTGEO_SPT_tab1"), _
+                    "A name whose first token is no row number should answer empty"
+    Assert.AreEqual vbNullString, AnalysisRanges.IdOfSpatialInput("INPUTSPTGEO_2_"), _
+                    "A name with nothing after the row number should answer empty"
+    Assert.AreEqual vbNullString, AnalysisRanges.IdOfSpatialInput("INPUTSPTGEO_2"), _
+                    "A name that ends at the row number should answer empty"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestIdOfSpatialInputRefusesAForeignName", Err.Number, Err.Description
+End Sub
+
 
 '@section Category, total and missing families
 '===============================================================================
