@@ -59,24 +59,6 @@ Private Sub WarningOnSheet(ByVal msgCode As String)
     MsgBox tradsmess.TranslatedValue(msgCode), vbOKOnly + vbExclamation
 End Sub
 
-'Subs to speed up the application
-'speed app
-Private Sub BusyApp(Optional ByVal cursor As Long = xlDefault)
-    Application.ScreenUpdating = False
-    Application.EnableAnimations = False
-    On Error Resume Next
-    Application.Calculation = xlCalculationManual
-    On Error GoTo 0
-    Application.cursor = cursor
-End Sub
-
-'Return back to previous state
-Private Sub NotBusyApp()
-    Application.ScreenUpdating = True
-    Application.EnableAnimations = True
-    Application.cursor = xlDefault
-End Sub
-
 'Resolve the ShowHideWorksheetLayer from a sheet tag
 Private Function ResolveShowHideLayer(ByVal shType As String) As Byte
     Select Case shType
@@ -349,12 +331,14 @@ Public Sub ClickShowHideSection()
     'than half.
     hideThem = Not AllSectionsHidden(secMap, touched)
 
-    BusyApp
+    On Error GoTo ErrHand
+    LinelistEventsManager.LLEnterBusyState
     ApplyToSections secMap, touched, hideThem
     showHideEntries.Apply showHideLayout
     SaveShowHideState showHideEntries, showHideLayout
-    NotBusyApp
 
+ErrHand:
+    LinelistEventsManager.LLExitBusyState
     Set showHideEntries = Nothing
     Set showHideLayout = Nothing
 End Sub
@@ -690,21 +674,21 @@ Public Sub ClickRotateAll()
 
     'Unprotect the sheet if it is protected.
     pass.UnProtect sh.Name
-    BusyApp cursor:=xlNorthwestArrow
+    LinelistEventsManager.LLEnterBusyState busyCursor:=xlNorthwestArrow
 
     Set Lo = sh.ListObjects(1)
     Set hRng = Lo.HeaderRowRange.Offset(-1)
     actualOrientation = IIf(hRng.Orientation = xlUpward, xlHorizontal, xlUpward)
     hRng.Orientation = actualOrientation
     hRng.RowHeight = 100
-    
+
     'AutoFit only non hidden columns
     For Each cRng In hRng
         If Not cRng.EntireColumn.HIDDEN Then cRng.EntireColumn.AutoFit
     Next
 
 ErrHand:
-    NotBusyApp
+    LinelistEventsManager.LLExitBusyState
 End Sub
 
 '@Description("Change the Row height of cells in the print sheet")
@@ -731,7 +715,7 @@ Public Sub ClickRowHeight()
     On Error GoTo ErrHand
 
     InitializeTrads
-    BusyApp cursor:=xlNorthwestArrow
+    LinelistEventsManager.LLEnterBusyState busyCursor:=xlNorthwestArrow
 
     If shType = "HList" Then Set sh = wb.Worksheets(PRINTPREFIX & sh.Name)
     pass.UnProtect sh.Name
@@ -743,14 +727,15 @@ Public Sub ClickRowHeight()
         Set LoRng = Lo.DataBodyRange
     End If
 
-    'Ask for rowheight
+    'Ask for rowheight. A plain Exit Sub here would skip the busy-state exit
+    'and leave the application locked, so both refusals go through ErrHand.
     Do While (True)
         inputValue = InputBox(tradsmess.TranslatedValue("MSG_RowHeight"), _
                              tradsmess.TranslatedValue("MSG_Enter"))
-        If inputValue = vbNullString Then Exit Sub
+        If inputValue = vbNullString Then GoTo ErrHand
         If IsNumeric(inputValue) Then Exit Do
         If (MsgBox(tradsmess.TranslatedValue("MSG_EnterNumeric"), _
-             vbOkCancel, vbNullString) = vbCancel) Then Exit Sub
+             vbOkCancel, vbNullString) = vbCancel) Then GoTo ErrHand
     Loop
 
     On Error Resume Next
@@ -759,7 +744,7 @@ Public Sub ClickRowHeight()
     On Error GoTo 0
 
 ErrHand:
-    NotBusyApp
+    LinelistEventsManager.LLExitBusyState
 End Sub
 
 
@@ -785,16 +770,19 @@ Public Sub ClickRemoveFilters()
     On Error GoTo ErrHand
 
     If Not (Lo.AutoFilter Is Nothing) Then
-        BusyApp cursor:=xlNorthwestArrow
+        LinelistEventsManager.LLEnterBusyState busyCursor:=xlNorthwestArrow
         'Unprotect current worksheet
         pass.UnProtect "_active"
         'remove the filters
         Lo.AutoFilter.ShowAllData
         pass.Protect "_active"
+        LinelistEventsManager.LLExitBusyState
     End If
+    Exit Sub
+
 ErrHand:
     pass.Protect "_active"
-    NotBusyApp
+    LinelistEventsManager.LLExitBusyState
 End Sub
 
 '@Description("Add rows to a data entry table in the Linelist")
@@ -809,39 +797,37 @@ Public Sub ClickAddRows()
     Dim nbRows As Long
 
     On Error GoTo errAddRows
-    BusyApp cursor:=xlNorthwestArrow
+    LinelistEventsManager.LLEnterBusyState busyCursor:=xlNorthwestArrow
     InitializeTrads
-    pass.UnProtect "_active"
 
-    'Unprotect and sending everything
     Set sh = ActiveSheet
     shType = SheetTag(sh)
 
-    'Warning if not on print or hlist worksheet
+    'Warning if not on print or hlist worksheet. The busy state is already on,
+    'so the refusal leaves through the cleanup label below.
     If shType <> "HList" And shType <> "HList Print" Then
         WarningOnSheet "MSG_PrintOrDataSheet"
-        Exit Sub
+        GoTo Cleanup
     End If
 
-    Application.EnableEvents = False
+    'The busy state keeps events off while the rows come in.
+    pass.UnProtect "_active"
 
     Set Lo = sh.ListObjects(1)
     Set csTab = CustomTable.Create(Lo)
     nbRows = IIf(shType = "HList", 199, 10)
     csTab.AddRows nbRows:=nbRows
-    
-    NotBusyApp
-    Application.EnableEvents = True
-    'Protect only HList
 
+Cleanup:
+    'Protect only HList
     If shType = "HList" Then pass.Protect "_active"
+    LinelistEventsManager.LLExitBusyState
     Exit Sub
 
 errAddRows:
     On Error Resume Next
     If shType = "HList" Then pass.Protect "_active"
-    NotBusyApp
-    Application.EnableEvents = True
+    LinelistEventsManager.LLExitBusyState
     MsgBox tradsmess.TranslatedValue("MSG_ErrAddRows"), _
           vbOKOnly + vbCritical, _
           tradsmess.TranslatedValue("MSG_Error")
@@ -860,21 +846,21 @@ Public Sub ClickResize()
     Dim nbBlank As Long
 
     On Error GoTo errDelRows
-    BusyApp cursor:=xlWait
+    LinelistEventsManager.LLEnterBusyState busyCursor:=xlWait
     InitializeTrads
-    pass.UnProtect "_active"
 
-    'Unprotect and sending everything
     Set sh = ActiveSheet
     shType = SheetTag(sh)
 
-    'Warning if not on print or hlist worksheet
+    'Warning if not on print or hlist worksheet. The busy state is already on,
+    'so the refusal leaves through the cleanup label below.
     If shType <> "HList" And shType <> "HList Print" Then
         WarningOnSheet "MSG_PrintOrDataSheet"
-        Exit Sub
+        GoTo Cleanup
     End If
 
-    Application.EnableEvents = False
+    'The busy state keeps events off while the rows go out.
+    pass.UnProtect "_active"
 
     nbBlank = BlankRowCountOf(sh)
     Set Lo = sh.ListObjects(1)
@@ -882,16 +868,15 @@ Public Sub ClickResize()
 
     csTab.RemoveRows totalCount:=nbBlank
 
-    Application.EnableEvents = True
-    NotBusyApp
+Cleanup:
     If shType = "HList" Then pass.Protect "_active"
+    LinelistEventsManager.LLExitBusyState
     Exit Sub
 
 errDelRows:
     On Error Resume Next
     If shType = "HList" Then pass.Protect "_active"
-    NotBusyApp
-    Application.EnableEvents = True
+    LinelistEventsManager.LLExitBusyState
     MsgBox tradsmess.TranslatedValue("MSG_ErrDelRows"), _
           vbOKOnly + vbCritical, _
           tradsmess.TranslatedValue("MSG_Error")
@@ -1096,8 +1081,9 @@ Public Sub ClickCalculate()
     InitializeTrads
     On Error GoTo ErrHand
 
-    'Calculate
-    BusyApp
+    'Calculate. UpdateSpTables enters the same busy state underneath;
+    'busyDepth counts the nesting and the restore happens here alone.
+    LinelistEventsManager.LLEnterBusyState
     UpdateSpTables
 
     Set anaSheetsList = New BetterArray
@@ -1114,7 +1100,7 @@ Public Sub ClickCalculate()
     Next
 
 ErrHand:
-    NotBusyApp
+    LinelistEventsManager.LLExitBusyState
 End Sub
 
 
@@ -1236,7 +1222,7 @@ Public Sub ClickOpenVarLab()
     'Pivot block titles are worksheet hidden names written by CustomPivotTable.
     'One manager for the whole loop - creating one scans every name on the sheet.
     Set pivotNames = HiddenNames.Create(actsh)
-    BusyApp
+    LinelistEventsManager.LLEnterBusyState
 
     Set tempsh = ThisWorkbook.Worksheets(TEMPSHEET)
     tempsh.Cells.Clear
@@ -1277,12 +1263,14 @@ Public Sub ClickOpenVarLab()
 
     'Affect the table to the list
     F_ShowVarLabels.LST_CustomTabList.List = varLabTab.Items
-    NotBusyApp
-    
+    LinelistEventsManager.LLExitBusyState
+
     'This will open the form with variable name and variable labels for
     [F_ShowVarLabels].Show
+    Exit Sub
+
 ErrHand:
-    NotBusyApp
+    LinelistEventsManager.LLExitBusyState
 End Sub
 
 
@@ -1343,7 +1331,7 @@ Public Sub ClickSortTable()
         Set sortRng = sh.ListObjects(TabName).ListColumns(headerName).Range
         nbTimes = nbTimes + 1
         
-        BusyApp cursor:=xlNorthwestArrow
+        LinelistEventsManager.LLEnterBusyState busyCursor:=xlNorthwestArrow
         'Unprotect the active worksheet, sort the range, and protect back.
         'I have to keep the protect/unprotect step as far as possible for
         'performance issues
@@ -1352,10 +1340,12 @@ Public Sub ClickSortTable()
         LoRng.Sort key1:=sortRng, Order1:=sortOrder, Header:=xlYes
         On Error GoTo 0
         pass.Protect "_active"
+        LinelistEventsManager.LLExitBusyState
     End If
+    Exit Sub
 
 ErrHand:
-    NotBusyApp
+    LinelistEventsManager.LLExitBusyState
 End Sub
 
 
@@ -1429,10 +1419,9 @@ Public Sub ClickResetColumns()
     Dim counter As Long
     Dim posIdx As Long
 
-    BusyApp
-    InitializeTrads
-
     On Error GoTo ErrHand
+    LinelistEventsManager.LLEnterBusyState
+    InitializeTrads
 
     'A fresh entry list is the state the dictionary authored, so building one
     'per sheet and applying it is the whole reset. The saved choices are
@@ -1466,7 +1455,7 @@ Public Sub ClickResetColumns()
     Next
 
 ErrHand:
-    NotBusyApp
+    LinelistEventsManager.LLExitBusyState
 End Sub
 
 '@Description("Hide/Unhide Optional variables in the linelist")
@@ -1482,7 +1471,7 @@ Public Sub ClickShowHideMinimal()
 
     On Error GoTo ErrHand
 
-    BusyApp
+    LinelistEventsManager.LLEnterBusyState
     InitializeTrads
 
     showOptional = (wkbNames.ValueAsString(RNGSHOWALLOPTIONALS) = "yes")
@@ -1515,7 +1504,7 @@ Public Sub ClickShowHideMinimal()
     End If
 
 ErrHand:
-    NotBusyApp
+    LinelistEventsManager.LLExitBusyState
 End Sub
 
 
@@ -1539,7 +1528,7 @@ Public Sub ClickMatchLinelistShowHide()
 
     On Error GoTo ErrHand
 
-    BusyApp
+    LinelistEventsManager.LLEnterBusyState
     InitializeTrads
 
     'Warn user: they will lose current shown/hidden status
@@ -1590,7 +1579,7 @@ Public Sub ClickMatchLinelistShowHide()
     End If
 
 ErrHand:
-    NotBusyApp
+    LinelistEventsManager.LLExitBusyState
 End Sub
 
 '@Description("AutoFit columns/rows in a linelist worksheet")
@@ -1614,7 +1603,7 @@ Public Sub clickAutoFit()
         Exit Sub
     End If
 
-    BusyApp
+    LinelistEventsManager.LLEnterBusyState
     'Table data entry on linelist
     Set Lo = sh.ListObjects(1)
 
@@ -1629,5 +1618,5 @@ Public Sub clickAutoFit()
     Next
 ErrHand:
     On Error Resume Next
-    NotBusyApp    
+    LinelistEventsManager.LLExitBusyState
 End Sub
