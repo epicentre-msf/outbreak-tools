@@ -256,6 +256,52 @@ Private Function SeedHListSheet(ByVal varName As String, _
 End Function
 
 
+'@sub-title Build an HList sheet and the filtered companion its store names.
+'@details
+'The source table holds two columns with its header on row 8, the way the
+'builder lays a data entry sheet out. The filtered sheet carries a header-only
+'table at the same address, which is the layout UpdateFilterTables relies on.
+'@param sourceRows Variant. One entry per data row: an array of two values.
+'@return Worksheet. The filtered sheet.
+Private Function SeedFilteredPair(ByVal sourceRows As Variant) As Worksheet
+    Dim sh As Worksheet
+    Dim filtsh As Worksheet
+    Dim store As HiddenNames
+    Dim rowIdx As Long
+    Dim lastRow As Long
+
+    Set sh = FixtureWkb.Worksheets(1)
+
+    sh.Cells(8, 2).Value = "var1"
+    sh.Cells(8, 3).Value = "var2"
+
+    For rowIdx = LBound(sourceRows) To UBound(sourceRows)
+        sh.Cells(9 + rowIdx - LBound(sourceRows), 2).Value = sourceRows(rowIdx)(0)
+        sh.Cells(9 + rowIdx - LBound(sourceRows), 3).Value = sourceRows(rowIdx)(1)
+    Next rowIdx
+
+    lastRow = 9 + UBound(sourceRows) - LBound(sourceRows)
+    sh.ListObjects.Add(SourceType:=xlSrcRange, _
+                       Source:=sh.Range(sh.Cells(8, 2), sh.Cells(lastRow, 3)), _
+                       XlListObjectHasHeaders:=xlYes).Name = "table1"
+
+    Set filtsh = FixtureWkb.Worksheets.Add(After:=sh)
+    filtsh.Name = "filtered1"
+    filtsh.Cells(8, 2).Value = "var1"
+    filtsh.Cells(8, 3).Value = "var2"
+    filtsh.ListObjects.Add(SourceType:=xlSrcRange, _
+                           Source:=filtsh.Range(filtsh.Cells(8, 2), filtsh.Cells(8, 3)), _
+                           XlListObjectHasHeaders:=xlYes).Name = "ftable1"
+
+    Set store = HiddenNames.Create(sh)
+    store.EnsureName "sheet_type", "HList", HiddenNameTypeString
+    store.EnsureName "table_name", "table1", HiddenNameTypeString
+    store.EnsureName "filtered_sheet", "filtered1", HiddenNameTypeString
+
+    Set SeedFilteredPair = filtsh
+End Function
+
+
 '@section Factory Tests
 '===============================================================================
 
@@ -862,5 +908,115 @@ Public Sub TestWarnStaysQuietWithoutATranslationSheet()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestWarnStaysQuietWithoutATranslationSheet", _
+                         Err.Number, Err.Description
+End Sub
+
+
+'@section The filter tables
+'===============================================================================
+'UpdateFilterTables rewrites each filtered table from the visible rows of its
+'source table that hold data. The fixture is the pair SeedFilteredPair builds:
+'a two-column HList table and a header-only companion at the same address.
+
+'@sub-title The filtered table holds the visible rows that carry data.
+'@details
+'One source row is hidden and two are blank, which is what a table padded by
+'ClickAddRows looks like. The hidden row and the blank rows stay out, and the
+'kept rows keep their order.
+'@TestMethod("EventLinelist")
+Public Sub TestFilterTablesKeepVisibleFilledRows()
+    CustomTestSetTitles Assert, TESTMODULE, "TestFilterTablesKeepVisibleFilledRows"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim filtsh As Worksheet
+    Dim bodyRng As Range
+
+    Set filtsh = SeedFilteredPair(Array( _
+        Array("a", 1), _
+        Array("b", 2), _
+        Array(vbNullString, vbNullString), _
+        Array("d", 4), _
+        Array(vbNullString, vbNullString)))
+    FixtureWkb.Worksheets(1).Rows(10).Hidden = True
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+    sut.UpdateFilterTables calculate:=False
+
+    Set bodyRng = filtsh.ListObjects(1).DataBodyRange
+    Assert.AreEqual 2&, bodyRng.Rows.Count, _
+                    "The visible rows holding data are the rows kept"
+    Assert.AreEqual "a", CStr(bodyRng.Cells(1, 1).Value), _
+                    "The first kept row is the first visible row with data"
+    Assert.AreEqual "d", CStr(bodyRng.Cells(2, 1).Value), _
+                    "The hidden row and the blank rows stay out"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestFilterTablesKeepVisibleFilledRows", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A hidden column keeps its values in the filtered table.
+'@details
+'Show/hide hides variable columns on a data entry sheet. The filtered table
+'feeds the analysis formulas, so a hidden variable still has to travel.
+'@TestMethod("EventLinelist")
+Public Sub TestFilterTablesCarryHiddenColumns()
+    CustomTestSetTitles Assert, TESTMODULE, "TestFilterTablesCarryHiddenColumns"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim filtsh As Worksheet
+    Dim bodyRng As Range
+
+    Set filtsh = SeedFilteredPair(Array(Array("a", 1), Array("b", 2)))
+    FixtureWkb.Worksheets(1).Columns(3).Hidden = True
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+    sut.UpdateFilterTables calculate:=False
+
+    Set bodyRng = filtsh.ListObjects(1).DataBodyRange
+    Assert.AreEqual 2&, bodyRng.Rows.Count, _
+                    "Both rows travel while a column is hidden"
+    Assert.AreEqual "1", CStr(bodyRng.Cells(1, 2).Value), _
+                    "The hidden column keeps its values"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestFilterTablesCarryHiddenColumns", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Stale rows leave when every source row is hidden.
+'@details
+'The filtered table starts with rows from an earlier pass. Hiding every source
+'row is what a filter matching nothing does, and the rewrite has to leave the
+'table header-only in that state.
+'@TestMethod("EventLinelist")
+Public Sub TestFilterTablesClearStaleRowsWhenEverythingIsHidden()
+    CustomTestSetTitles Assert, TESTMODULE, _
+                        "TestFilterTablesClearStaleRowsWhenEverythingIsHidden"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim filtsh As Worksheet
+
+    Set filtsh = SeedFilteredPair(Array(Array("a", 1), Array("b", 2)))
+    filtsh.ListObjects(1).Resize filtsh.Range("B8:C10")
+    filtsh.Range("B9").Value = "old1"
+    filtsh.Range("B10").Value = "old2"
+    FixtureWkb.Worksheets(1).Rows("9:10").Hidden = True
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+    sut.UpdateFilterTables calculate:=False
+
+    Assert.IsNothing filtsh.ListObjects(1).DataBodyRange, _
+                     "The stale rows are gone and the table is header-only"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, _
+                         "TestFilterTablesClearStaleRowsWhenEverythingIsHidden", _
                          Err.Number, Err.Description
 End Sub
