@@ -26,8 +26,6 @@ Private concatenateGeoTable As BetterArray
 Private concatenateHFTable As BetterArray
 Private geo As LLGeo
 Private drop As DropdownLists
-Private tradmess As TranslationObject
-Private lltrads As LLTranslation
 Private pass As Passwords
 
 '@section Initialization
@@ -36,7 +34,6 @@ Private pass As Passwords
 ' @description Initialize geo elements: LLGeo, dropdowns, and translations.
 Private Sub InitializeGeoElements()
     Dim wb As Workbook
-    Dim linelistEvents As EventLinelist
 
     Set historicGeoTable = New BetterArray
     Set historicHFTable = New BetterArray
@@ -46,15 +43,6 @@ Private Sub InitializeGeoElements()
     Set wb = ThisWorkbook
     Set geo = LLGeo.Create(wb.Worksheets(GEOSHEET))
     Set drop = DropdownLists.Create(wb.Worksheets(DROPDOWNSHEET))
-
-    'The translation helper is the one EventLinelist holds. Building a second
-    'one here re-validated all five translation tables per form open.
-    'The typed local is what call-signature-scan.R reads to check the member.
-    'A chained call is invisible to it, and this module carries no registry row,
-    'so a chain here would be checked by nothing at all.
-    Set linelistEvents = LinelistEventsManager.EventLinelistService()
-    Set lltrads = linelistEvents.Translation
-    If Not lltrads Is Nothing Then Set tradmess = lltrads.TransObject()
 End Sub
 
 ' @description Initialize passwords and translations for spatial analysis events.
@@ -69,22 +57,19 @@ End Sub
 '===============================================================================
 
 ' @description Tell the user a geo operation failed. The handler that calls
-'              this has already restored the application. The translator is
-'              Nothing when the failure happened while it was being built, and
-'              reading a label off it here would raise inside the handler.
+'              this has already restored the application. The message comes off
+'              the shared surface, so every failure box of the linelist reads
+'              the same way. The fallback is what a workbook with no usable
+'              translation sheet shows, and a geo failure is exactly the state
+'              where that can happen.
+'              The typed local is what call-signature-scan.R reads to check the
+'              member. A chained call is invisible to it, and this module carries
+'              no registry row, so a chain here would be checked by nothing.
 Private Sub ReportGeoError(ByVal detail As String)
-    Dim message As String
-    Dim title As String
+    Dim linelistEvents As EventLinelist
 
-    If tradmess Is Nothing Then
-        message = "The geobase could not be read. " & detail
-        title = "Error"
-    Else
-        message = tradmess.TranslatedValue("MSG_ErrGeo")
-        title = tradmess.TranslatedValue("MSG_Error")
-    End If
-
-    MsgBox message, vbOKOnly + vbCritical, title
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    linelistEvents.Fail "MSG_ErrGeo", detail, "The geobase could not be read"
 End Sub
 
 '@section LoadGeo — Form Display
