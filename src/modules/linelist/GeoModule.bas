@@ -378,10 +378,17 @@ Public Sub UpdateSpatioTemporalFormulas(ByVal rngName As String, _
 
         If InStr(1, headerFormula, rngName) > 0 Then
             Set valuesRng = Nothing
+            'headerCellName is a String, so without the reset it keeps the
+            'previous column's name when the read below raises -- a header
+            'cell has a name only when something named it -- and the Replace
+            'would then resolve the previous column's VALUES block.
+            headerCellName = vbNullString
 
             On Error Resume Next
             headerCellName = headerRng.Cells(1, counter).Name.Name
-            Set valuesRng = sh.Range(Replace(headerCellName, "LABEL", "VALUES"))
+            If LenB(headerCellName) > 0 Then
+                Set valuesRng = sh.Range(Replace(headerCellName, "LABEL", "VALUES"))
+            End If
             On Error GoTo ErrSPT
 
             If Not valuesRng Is Nothing Then
