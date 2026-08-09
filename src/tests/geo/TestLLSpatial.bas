@@ -27,6 +27,10 @@ Option Explicit
 'ranges of one spatial analysis table, which is what the formula rewriting
 'members read.
 '
+'BuildSectionFixture is the fourth: one sheet carrying the named ranges of one
+'spatio-temporal section, which is what PreviousSectionLevel and
+'MigrateSection read.
+'
 'THE SPATIAL TABLES ARE BUILT BY HAND
 '-------------------------------------------------------------------------------
 'SpatialTables builds them in production. The fixture writes them itself, so
@@ -1236,6 +1240,250 @@ Public Sub TestChangeAdminLevelMovesTheTable()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestChangeAdminLevelMovesTheTable", Err.Number, Err.Description
+End Sub
+
+'@section Spatio-temporal section migration tests
+'===============================================================================
+
+'@sub-title Build one sheet carrying the named ranges of a spatio-temporal section.
+'@details
+'The header row B1:D1 carries the SPT_FORMULA_COLUMN_ name. Column B is a
+'named formula column: its header cell carries a LABEL name and B2 a one-row
+'VALUES block, so the migration grows it to B2:B4 and rows B3 and B4 stand in
+'for the Total and Missing rows. Column C matches the selector with an unnamed
+'header cell. Column D carries a named header whose formula stays clear of the
+'selector. F1 is the level selector and G1 the cell recording the level. The
+'data formulas are written by each test.
+'@param tabId String. The table identifier the names carry.
+'@param selName String. The name given to the selector cell.
+'@return Worksheet. The prepared section fixture sheet.
+Private Function BuildSectionFixture(ByVal tabId As String, _
+                                     ByVal selName As String) As Worksheet
+    Dim sh As Worksheet
+
+    Set sh = EnsureWorksheet(ANALYSIS_SHEET, clearSheet:=True, _
+                             visibility:=xlSheetHidden)
+
+    sh.Names.Add Name:="SPT_FORMULA_COLUMN_" & tabId, RefersTo:=sh.Range("B1:D1")
+    sh.Names.Add Name:="SPT_LABEL_1_" & tabId, RefersTo:=sh.Range("B1")
+    sh.Names.Add Name:="SPT_VALUES_1_" & tabId, RefersTo:=sh.Range("B2")
+    sh.Names.Add Name:="SPT_LABEL_3_" & tabId, RefersTo:=sh.Range("D1")
+    sh.Names.Add Name:="SPT_VALUES_3_" & tabId, RefersTo:=sh.Range("D2")
+    sh.Names.Add Name:=selName, RefersTo:=sh.Range("F1")
+
+    sh.Range("B1").Formula = "=" & selName
+    sh.Range("C1").Formula = "=" & selName
+    sh.Range("D1").Formula = "=1"
+
+    Set BuildSectionFixture = sh
+End Function
+
+'@sub-title Verify PreviousSectionLevel answers the recorded level.
+'@details
+'Arranges a section fixture whose recording cell holds 3. Acts by reading the
+'level. Asserts the answer is 3.
+'@TestMethod("LLSpatial")
+Public Sub TestPreviousSectionLevelAnswersTheRecordedLevel()
+    CustomTestSetTitles Assert, "LLSpatial", "TestPreviousSectionLevelAnswersTheRecordedLevel"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim sp As LLSpatial
+
+    Set sh = BuildSectionFixture("tstg", "SPT_SEL_tstg")
+    sh.Range("G1").Value = 3
+
+    Set sp = LLSpatial.Create(BuildSpatialFixture())
+
+    Assert.AreEqual CLng(3), sp.PreviousSectionLevel(sh, "SPT_SEL_tstg", "tstg"), _
+                    "The recorded level should be answered as it stands"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestPreviousSectionLevelAnswersTheRecordedLevel", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify PreviousSectionLevel refuses a cell holding text.
+'@details
+'Arranges a section fixture whose recording cell holds text. Acts by reading
+'the level under On Error Resume Next and captures the error number. Asserts
+'the number is InvalidArgument. The old reader ran CLng on the raw value, so a
+'text cell raised a bare type mismatch into the caller's silence.
+'@TestMethod("LLSpatial")
+Public Sub TestPreviousSectionLevelRefusesText()
+    CustomTestSetTitles Assert, "LLSpatial", "TestPreviousSectionLevelRefusesText"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim sp As LLSpatial
+    Dim errNumber As Long
+    Dim errDescription As String
+
+    Set sh = BuildSectionFixture("tsth", "SPT_SEL_tsth")
+    sh.Range("G1").Value = "cleared"
+
+    Set sp = LLSpatial.Create(BuildSpatialFixture())
+
+    On Error Resume Next
+    sp.PreviousSectionLevel sh, "SPT_SEL_tsth", "tsth"
+    errNumber = Err.Number
+    errDescription = Err.Description
+    Err.Clear
+    On Error GoTo TestFail
+
+    Assert.AreEqual CLng(ProjectError.InvalidArgument), errNumber, _
+                    "A text level should raise InvalidArgument - " & _
+                    "description was [" & errDescription & "]"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestPreviousSectionLevelRefusesText", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify PreviousSectionLevel refuses a level outside 1 to 4.
+'@details
+'Arranges a section fixture and reads the level twice, once over 0 and once
+'over 5, each under On Error Resume Next. Asserts both reads raise
+'InvalidArgument. A blank cell reads as 0, matches no concat column, and a
+'rewrite on it would record the new level while migrating nothing.
+'@TestMethod("LLSpatial")
+Public Sub TestPreviousSectionLevelRefusesALevelOutsideTheRange()
+    CustomTestSetTitles Assert, "LLSpatial", "TestPreviousSectionLevelRefusesALevelOutsideTheRange"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim sp As LLSpatial
+    Dim errBelow As Long
+    Dim errAbove As Long
+
+    Set sh = BuildSectionFixture("tsti", "SPT_SEL_tsti")
+    Set sp = LLSpatial.Create(BuildSpatialFixture())
+
+    sh.Range("G1").Value = 0
+    On Error Resume Next
+    sp.PreviousSectionLevel sh, "SPT_SEL_tsti", "tsti"
+    errBelow = Err.Number
+    Err.Clear
+    On Error GoTo TestFail
+
+    sh.Range("G1").Value = 5
+    On Error Resume Next
+    sp.PreviousSectionLevel sh, "SPT_SEL_tsti", "tsti"
+    errAbove = Err.Number
+    Err.Clear
+    On Error GoTo TestFail
+
+    Assert.AreEqual CLng(ProjectError.InvalidArgument), errBelow, _
+                    "A level of 0 should raise InvalidArgument"
+    Assert.AreEqual CLng(ProjectError.InvalidArgument), errAbove, _
+                    "A level of 5 should raise InvalidArgument"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestPreviousSectionLevelRefusesALevelOutsideTheRange", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify MigrateSection moves the named column and its two footer rows.
+'@details
+'Arranges the section fixture with formulas on the adm1 concat column in the
+'VALUES cell, the two rows under it, and a third row past the growth. Acts by
+'migrating from level 1 to level 2. Asserts the VALUES cell and both footer
+'rows read adm2, the row past the growth still reads adm1, and the recording
+'cell holds the new level.
+'@TestMethod("LLSpatial")
+Public Sub TestMigrateSectionMovesTheColumnAndItsFooterRows()
+    CustomTestSetTitles Assert, "LLSpatial", "TestMigrateSectionMovesTheColumnAndItsFooterRows"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim sp As LLSpatial
+
+    Set sh = BuildSectionFixture("tstj", "SPT_SEL_tstj")
+    sh.Range("G1").Value = 1
+    sh.Range("B2").Formula = "=SUM(concat_adm1_cases)"
+    sh.Range("B3").Formula = "=SUM(concat_adm1_total)"
+    sh.Range("B4").Formula = "=SUM(concat_adm1_missing)"
+    sh.Range("B5").Formula = "=SUM(concat_adm1_below)"
+
+    Set sp = LLSpatial.Create(BuildSpatialFixture())
+    sp.MigrateSection sh, "SPT_SEL_tstj", "tstj", 1, 2
+
+    Assert.IsTrue (InStr(1, sh.Range("B2").Formula, "concat_adm2_cases") > 0), _
+                  "The VALUES cell should read the new concat column"
+    Assert.IsTrue (InStr(1, sh.Range("B3").Formula, "concat_adm2_total") > 0), _
+                  "The first footer row should move with the block"
+    Assert.IsTrue (InStr(1, sh.Range("B4").Formula, "concat_adm2_missing") > 0), _
+                  "The second footer row should move with the block"
+    Assert.IsTrue (InStr(1, sh.Range("B5").Formula, "concat_adm1_below") > 0), _
+                  "The growth should stop two rows under the block"
+    Assert.AreEqual CLng(2), CLng(sh.Range("G1").Value), _
+                    "The new level should be recorded beside the selector"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestMigrateSectionMovesTheColumnAndItsFooterRows", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify MigrateSection leaves a column with an unnamed header alone.
+'@details
+'Arranges the fixture with formulas under the named column and under the
+'column whose header cell has no name. Acts by migrating. Asserts the named
+'column moved and the unnamed one is untouched. A header cell has a name only
+'when something named it, and a stale name from the previous column used to
+'send the rewrite into the previous column's block.
+'@TestMethod("LLSpatial")
+Public Sub TestMigrateSectionLeavesAnUnnamedColumnAlone()
+    CustomTestSetTitles Assert, "LLSpatial", "TestMigrateSectionLeavesAnUnnamedColumnAlone"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim sp As LLSpatial
+
+    Set sh = BuildSectionFixture("tstk", "SPT_SEL_tstk")
+    sh.Range("G1").Value = 1
+    sh.Range("B2").Formula = "=SUM(concat_adm1_cases)"
+    sh.Range("C2").Formula = "=SUM(concat_adm1_cases)"
+
+    Set sp = LLSpatial.Create(BuildSpatialFixture())
+    sp.MigrateSection sh, "SPT_SEL_tstk", "tstk", 1, 4
+
+    Assert.IsTrue (InStr(1, sh.Range("B2").Formula, "concat_adm4_cases") > 0), _
+                  "The named column should read the new concat column"
+    Assert.IsTrue (InStr(1, sh.Range("C2").Formula, "concat_adm1_cases") > 0), _
+                  "The unnamed column should be untouched"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestMigrateSectionLeavesAnUnnamedColumnAlone", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify MigrateSection leaves the column of another selector alone.
+'@details
+'Arranges the fixture with a formula under the named column whose header
+'formula stays clear of the selector. Acts by migrating. Asserts that column
+'is untouched: the header match is what decides which columns belong to the
+'selector that fired.
+'@TestMethod("LLSpatial")
+Public Sub TestMigrateSectionLeavesAnotherSelectorAlone()
+    CustomTestSetTitles Assert, "LLSpatial", "TestMigrateSectionLeavesAnotherSelectorAlone"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim sp As LLSpatial
+
+    Set sh = BuildSectionFixture("tstl", "SPT_SEL_tstl")
+    sh.Range("G1").Value = 1
+    sh.Range("D2").Formula = "=SUM(concat_adm1_cases)"
+
+    Set sp = LLSpatial.Create(BuildSpatialFixture())
+    sp.MigrateSection sh, "SPT_SEL_tstl", "tstl", 1, 2
+
+    Assert.IsTrue (InStr(1, sh.Range("D2").Formula, "concat_adm1_cases") > 0), _
+                  "A column clear of the selector should be untouched"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestMigrateSectionLeavesAnotherSelectorAlone", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify ApplyPopulationFactor wraps the formula and revertBack unwraps it.
