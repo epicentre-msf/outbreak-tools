@@ -27,11 +27,12 @@ Option Explicit
 'This class also owns the formula rewriting of the spatial analysis events.
 'RewriteFormulas moves a token through every formula of a range while keeping
 'each formula's array state, ChangeAdminLevel moves one table to a new admin
-'level, ApplyPopulationFactor divides its values by the population or restores
-'them, and FormatPopulationFactor shows or hides the factor cells. The event
-'dispatch stays with the callers: EventLinelist and GeoModule read what the
-'user changed and hand the work over here, so the array-formula handling is
-'written once.
+'level, PreviousSectionLevel and MigrateSection move the formula columns of a
+'spatio-temporal section the same way, ApplyPopulationFactor divides values by
+'the population or restores them, and FormatPopulationFactor shows or hides
+'the factor cells. The event dispatch stays with the callers: EventLinelist
+'and GeoModule read what the user changed and hand the work over here, so the
+'array-formula handling is written once.
 '
 'THE CONTRACT WITH SPATIALTABLES
 '-------------------------------------------------------------------------------
@@ -75,7 +76,7 @@ Option Explicit
 'SpatialTables.Prepare creates it and SpatialTables.FailedFormula reads it.
 'This class leaves it alone.
 '@depends BetterArray, HiddenNames, Checking
-'@version 2026-08-08
+'@version 2026-08-10
 
 
 '@section State
@@ -131,6 +132,13 @@ Private Const ROW_CATEGORIES As String = "ROW_CATEGORIES_"
 Private Const POP_FACTOR As String = "POPFACT_"
 Private Const POP_PREV_FACTOR As String = "POPPREVFACT_"
 Private Const POP_FACTOR_LABEL As String = "POPFACTLABEL_"
+
+' The named ranges of one spatio-temporal section. AnalysisOutput names the
+' header row of formula columns per table, and one LABEL cell per named column;
+' the VALUES block of a column derives from the name of its header cell.
+Private Const SPT_FORMULA_COLUMN As String = "SPT_FORMULA_COLUMN_"
+Private Const LABEL_TOKEN As String = "LABEL"
+Private Const VALUES_TOKEN As String = "VALUES"
 
 '@section Factory
 '===============================================================================
@@ -848,6 +856,121 @@ Public Sub ChangeAdminLevel(ByVal sh As Worksheet, ByVal tabId As String, _
     sh.Columns("C").EntireColumn.AutoFit
     rng.Calculate
 End Sub
+
+'@label:previous-section-level
+'@sub-title Read the admin level a spatio-temporal section stands on
+'@details
+'The cell right of the level selector records the level the section's formulas
+'read. A value outside 1 to 4 means the cell was cleared or overwritten: a
+'rewrite on it would migrate nothing while still recording the new level, and
+'the sheet would then be one level behind with no way back. GeoModule reads
+'this before it unprotects the sheet, so a raise here leaves a deliberately
+'open sheet open.
+'@param sh Worksheet. The spatio-temporal analysis sheet.
+'@param rngName String. The named range of the level selector.
+'@param tabId String. The identifier of the analysis table, for the message.
+'@return Long. The recorded level, 1 to 4.
+'@throws ProjectError.InvalidArgument When the cell reads outside 1 to 4.
+'@export
+Public Function PreviousSectionLevel(ByVal sh As Worksheet, _
+                                     ByVal rngName As String, _
+                                     ByVal tabId As String) As Long
+    Dim prevRaw As Variant
+    Dim prevAdm As Long
+
+    prevRaw = sh.Range(rngName).Offset(, 1).Value
+    If Not IsNumeric(prevRaw) Then _
+        ThrowError InvalidArgument, _
+                   "The previous admin level of " & tabId & " reads " & _
+                   Chr$(34) & prevRaw & Chr$(34)
+
+    prevAdm = CLng(prevRaw)
+    If prevAdm < 1 Or prevAdm > ADMIN_LEVELS Then _
+        ThrowError InvalidArgument, _
+                   "The previous admin level of " & tabId & " reads " & prevAdm
+
+    PreviousSectionLevel = prevAdm
+End Function
+
+'@label:migrate-section
+'@sub-title Move the formula columns of one spatio-temporal section to a new admin level
+'@details
+'Walks the SPT_FORMULA_COLUMN_ header row of the section. A header formula
+'naming the selector marks a formula column, the VALUES block of that column
+'derives from the name of its header cell, and a header cell with no name
+'leaves its column alone -- a cell has a name only when something named it.
+'The block is grown by two rows to reach the Total and Missing rows of its own
+'table, which RowsCategoriesRange trims by count at build time, and their
+'formulas move levels with the block. Every formula of the grown block moves
+'from the old concat column to the new one, the new level is recorded beside
+'the selector, and the sheet recalculates.
+'@param sh Worksheet. The spatio-temporal analysis sheet.
+'@param rngName String. The named range of the level selector.
+'@param tabId String. The identifier of the analysis table.
+'@param prevAdm Long. The level the section stands on.
+'@param actAdm Long. The level to move to.
+'@export
+Public Sub MigrateSection(ByVal sh As Worksheet, ByVal rngName As String, _
+                          ByVal tabId As String, ByVal prevAdm As Long, _
+                          ByVal actAdm As Long)
+    Dim headerRng As Range
+    Dim valuesRng As Range
+    Dim headerTexts As Variant
+    Dim headerCellName As String
+    Dim counter As Long
+
+    Set headerRng = sh.Range(SPT_FORMULA_COLUMN & tabId)
+
+    'One read of the whole header row; the match is a string test in memory.
+    headerTexts = HeaderFormulaTexts(headerRng)
+
+    For counter = 1 To headerRng.Columns.Count
+        If InStr(1, CStr(headerTexts(1, counter)), rngName) > 0 Then
+            Set valuesRng = Nothing
+            'headerCellName is a String, so without the reset it keeps the
+            'previous column's name when the read below raises, and the
+            'Replace would then resolve the previous column's VALUES block.
+            headerCellName = vbNullString
+
+            On Error Resume Next
+            headerCellName = headerRng.Cells(1, counter).Name.Name
+            If LenB(headerCellName) > 0 Then
+                Set valuesRng = sh.Range(Replace(headerCellName, _
+                                                 LABEL_TOKEN, VALUES_TOKEN))
+            End If
+            On Error GoTo 0
+
+            If Not valuesRng Is Nothing Then
+                Set valuesRng = sh.Range(valuesRng.Cells(1, 1), _
+                                         valuesRng.Cells(valuesRng.Rows.Count + 2, 1))
+
+                RewriteFormulas valuesRng, CONCAT & ADMIN & prevAdm, _
+                                CONCAT & ADMIN & actAdm
+            End If
+        End If
+    Next
+
+    sh.Range(rngName).Offset(, 1).Value = actAdm
+    sh.UsedRange.Calculate
+End Sub
+
+'@label:header-formula-texts
+'@sub-title Read the header row of formulas in one crossing
+'@details
+'A one-cell range answers a scalar through Formula, so it is wrapped to give
+'the caller one shape.
+'@param headerRng Range. The SPT_FORMULA_COLUMN_ row of one section.
+'@return Variant. A two-dimensional array of formula strings.
+Private Function HeaderFormulaTexts(ByVal headerRng As Range) As Variant
+    Dim oneCell(1 To 1, 1 To 1) As Variant
+
+    If headerRng.Cells.Count = 1 Then
+        oneCell(1, 1) = headerRng.Formula
+        HeaderFormulaTexts = oneCell
+    Else
+        HeaderFormulaTexts = headerRng.Formula
+    End If
+End Function
 
 '@label:apply-population-factor
 '@sub-title Divide the values of one spatial table by the population, or restore them
