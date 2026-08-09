@@ -13,6 +13,10 @@ Private Const SEP As String = " | "
 Private Const NACHAR As String = " | N/A"
 Private Const NACHARREV As String = "N/A | "
 
+' How many hits a search pushes into its list. A picker showing more wants a
+' narrower search, and the ListBox refill is the expensive part of a keystroke.
+Private Const MAX_SEARCH_HITS As Long = 200
+
 Private tradform As TranslationObject
 Private tradmess As TranslationObject
 Private geo As LLGeo
@@ -28,16 +32,24 @@ End Function
 '@section Initialization
 '===============================================================================
 
-' @description Initialize translation objects and the LLGeo instance.
+' @description Initialize translation objects and the LLGeo instance. Each
+'              object is built when it is missing and kept when it is there.
+'              The translation build walks its five tables and LLGeo.Create
+'              walks two whole Names collections, which is a price per open
+'              with no guard.
 Private Sub InitializeTrads()
     Dim lltrads As LLTranslation
     Dim wb As Workbook
 
     Set wb = ThisWorkbook
-    Set lltrads = LLTranslation.Create(wb.Worksheets(LLSHEET))
-    Set tradform = lltrads.TransObject(TranslationOfForms)
-    Set tradmess = lltrads.TransObject()
-    Set geo = LLGeo.Create(wb.Worksheets(GEOSHEET))
+
+    If tradform Is Nothing Or tradmess Is Nothing Then
+        Set lltrads = LLTranslation.Create(wb.Worksheets(LLSHEET))
+        Set tradform = lltrads.TransObject(TranslationOfForms)
+        Set tradmess = lltrads.TransObject()
+    End If
+
+    If geo Is Nothing Then Set geo = LLGeo.Create(wb.Worksheets(GEOSHEET))
 End Sub
 
 ' @description Determine the current scope (geo vs hf) from form visibility.
@@ -53,6 +65,9 @@ End Sub
 '===============================================================================
 
 ' @description Search values in concat/historic lists and filter the form list.
+'              The lists come off the cache GeoModule filled at LoadGeo, so a
+'              keystroke scans memory. The old shape read the range from the
+'              worksheet on every character typed.
 Private Sub SearchValue(ByVal searchedValue As String, _
                         Optional ByVal scope As Byte = 0, _
                         Optional ByVal onHistoric As Boolean = False)
@@ -61,43 +76,61 @@ Private Sub SearchValue(ByVal searchedValue As String, _
     Dim counter As Long
     Dim lstObj As Object
     Dim concatTab As BetterArray
-
-    Set resultTable = New BetterArray
-    Set concatTab = New BetterArray
+    Dim loweredSearch As String
 
     If scope = GeoScopeAdmin Then
         If onHistoric Then
             Set lstObj = Me.LST_Histo
-            concatTab.FromExcelRange Range("histo_geo")
         Else
             Set lstObj = Me.LST_ListeAgre
-            concatTab.FromExcelRange Range("adm4_concat")
         End If
     Else
         If onHistoric Then
             Set lstObj = Me.LST_HistoF
-            concatTab.FromExcelRange Range("histo_hf")
         Else
             Set lstObj = Me.LST_ListeAgreF
-            concatTab.FromExcelRange Range("hf_concat")
         End If
     End If
 
+    If onHistoric Then
+        Set concatTab = GeoFormCache.HistoricList(scope)
+    Else
+        Set concatTab = GeoFormCache.ConcatList(scope)
+    End If
+
     If Len(searchedValue) >= 3 Then
+        Set resultTable = New BetterArray
+        loweredSearch = LCase$(searchedValue)
+
         For counter = concatTab.LowerBound To concatTab.UpperBound
-            If InStr(1, LCase(concatTab.Item(counter)), LCase(searchedValue)) > 0 Then
+            If InStr(1, LCase$(concatTab.Item(counter)), loweredSearch) > 0 Then
                 resultTable.Push concatTab.Item(counter)
+                If resultTable.Length >= MAX_SEARCH_HITS Then Exit For
             End If
         Next
 
+        'The concat lists are sorted once at load, so their hits arrive in
+        'order. The sort here keeps the historic hits ordered too, and it
+        'runs over the capped hits alone.
         If resultTable.Length > 0 Then
             resultTable.Sort
             lstObj.List = resultTable.Items
         Else
             lstObj.Clear
         End If
+    ElseIf onHistoric Then
+        'The historic list is short and shows whole below the floor, which
+        'is how a backspace brings every entry back.
+        If concatTab.Length > 0 Then
+            lstObj.List = concatTab.Items
+        Else
+            lstObj.Clear
+        End If
     Else
-        lstObj.List = concatTab.Items
+        'The concat list holds hits alone. Pushing the whole geobase back
+        'ran on characters one and two of every search and was the worst
+        'refill of all.
+        lstObj.Clear
     End If
 End Sub
 
@@ -119,6 +152,10 @@ Private Sub CMD_Copier_Click()
     Dim nbLines As Long
 
     On Error GoTo ErrGeo
+
+    'Module state dies on any unhandled error and the form outlives it, so
+    'the write below rebuilds what it reads when the state is gone.
+    If geo Is Nothing Or tradmess Is Nothing Then InitializeTrads
     InitializeElements
 
     selectedValue = Me.TXT_Msg.Value
@@ -232,7 +269,14 @@ ErrGeo:
     'every worksheet event of the linelist stays dead for the session: the
     'checkings, the dropdown cascades, the geo autofill.
     Application.EnableEvents = True
-    MsgBox tradmess.TranslatedValue("MSG_ErrWriteGeo"), vbCritical + vbOKOnly
+
+    'The translator is Nothing exactly when building it is what failed, and a
+    'handler that raises loses the message it was there to show.
+    If tradmess Is Nothing Then
+        MsgBox "The value could not be written", vbCritical + vbOKOnly
+    Else
+        MsgBox tradmess.TranslatedValue("MSG_ErrWriteGeo"), vbCritical + vbOKOnly
+    End If
 End Sub
 
 '@section Historic
@@ -265,6 +309,8 @@ Private Sub ClearOneHistoricGeobase(Optional ByVal scope As Byte = 0)
 End Sub
 
 Private Sub CMD_GeoClearHisto_Click()
+    'Module state dies on any unhandled error and the form outlives it.
+    If geo Is Nothing Or tradmess Is Nothing Then InitializeTrads
     InitializeElements
     ClearOneHistoricGeobase hfOrGeo
 End Sub
