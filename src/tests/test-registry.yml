@@ -638,15 +638,25 @@ suites:
   # Most of its tests build a workbook of their own, for the same reason the
   # LLGeo ones do: Update walks every worksheet of the workbook that owns the
   # spatial sheet.
+  #
+  # GeoFormCache joined on 2026-08-09: the in-memory lists of the geo form,
+  # read once per form open and searched per keystroke. It names BetterArray
+  # and Checking, both baked in, and the GeoScope enum on LLGeo right above,
+  # so its row opens nothing further. Every TestGeoFormCache fixture is a
+  # workbook of its own, because the fixture names (adm4_concat and its three
+  # siblings) would collide with the LLGeo fixtures in this workbook.
   - folder: geo
     classes:
       - name: LLGeo
       - name: LLSpatial
+      - name: GeoFormCache
     tests:
       - module: TestLLGeo
         covers: [LLGeo]
       - module: TestLLSpatial
         covers: [LLSpatial]
+      - module: TestGeoFormCache
+        covers: [GeoFormCache]
 
   # --- designer (InitTransfer) ----------------------------------------------
   # LinelistSpecs.Prepare calls InitTransfer.TransferToLinelist and its seven
