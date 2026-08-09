@@ -6,7 +6,6 @@ Attribute VB_Description = "Combined geo and spatial analysis logic for the line
 '@IgnoreModule UnrecognizedAnnotation, ImplicitActiveSheetReference, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Option Base 1
 Option Private Module
 
 '@section Constants
@@ -23,10 +22,6 @@ Private Const MAX_ADMIN_LEVEL As Long = 4
 '@section Module-Level State
 '===============================================================================
 
-Private historicGeoTable As BetterArray
-Private historicHFTable As BetterArray
-Private concatenateGeoTable As BetterArray
-Private concatenateHFTable As BetterArray
 Private geo As LLGeo
 Private drop As DropdownLists
 Private pass As Passwords
@@ -34,26 +29,23 @@ Private pass As Passwords
 '@section Initialization
 '===============================================================================
 
-' @description Initialize geo elements: LLGeo, dropdowns, and translations.
+' @description Initialize geo elements: LLGeo and the dropdowns. Each object
+'              is built when it is missing and kept when it is there.
+'              LLGeo.Create walks two whole Names collections, and the old
+'              shape paid that walk on every form open by overwriting the
+'              module state each call.
 Private Sub InitializeGeoElements()
     Dim wb As Workbook
 
-    Set historicGeoTable = New BetterArray
-    Set historicHFTable = New BetterArray
-    Set concatenateGeoTable = New BetterArray
-    Set concatenateHFTable = New BetterArray
-
     Set wb = ThisWorkbook
-    Set geo = LLGeo.Create(wb.Worksheets(GEOSHEET))
-    Set drop = DropdownLists.Create(wb.Worksheets(DROPDOWNSHEET))
+    If geo Is Nothing Then Set geo = LLGeo.Create(wb.Worksheets(GEOSHEET))
+    If drop Is Nothing Then Set drop = DropdownLists.Create(wb.Worksheets(DROPDOWNSHEET))
 End Sub
 
-' @description Initialize passwords and translations for spatial analysis events.
+' @description Initialize passwords for spatial analysis events. The old shape
+'              rebuilt the manager on every Validate.
 Private Sub InitializeSpatialElements()
-    Dim wb As Workbook
-
-    Set wb = ThisWorkbook
-    Set pass = Passwords.Create(wb.Worksheets(PASSSHEET))
+    If pass Is Nothing Then Set pass = Passwords.Create(ThisWorkbook.Worksheets(PASSSHEET))
 End Sub
 
 '@section Error Reporting
@@ -83,19 +75,22 @@ End Sub
 ' @param hfOrGeo GeoScopeAdmin (0) for geo, GeoScopeHF (1) for health facility
 '@EntryPoint
 Public Sub LoadGeo(ByVal hfOrGeo As Byte)
-    Dim transValue As BetterArray
+    Dim geoList As BetterArray
+    Dim historicList As BetterArray
 
     On Error GoTo ErrLoadGeo
 
     InitializeGeoElements
-
-    Set transValue = New BetterArray
     LinelistEventsManager.LLEnterBusyState busyCursor:=xlNorthwestArrow
 
     'The form survives between opens through its default instance, so the
     'lists are emptied first, whatever the geobase holds: an emptied geobase
     'must show none of the previous session's places.
     ClearLists
+
+    'One read of each list per open. The search boxes then scan memory on
+    'every keystroke, off the same cache the form reads.
+    GeoFormCache.LoadFrom ThisWorkbook
 
     Select Case hfOrGeo
 
@@ -110,14 +105,17 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
         drop.ClearList "admin4"
 
         If Not geo.HasNoData() Then
-            Set transValue = geo.GeoLevel(LevelAdmin1, GeoScopeAdmin)
-            F_Geo.LST_Adm1.List = transValue.Items
-            concatenateGeoTable.FromExcelRange Range("adm4_concat")
-            F_Geo.LST_ListeAgre.List = concatenateGeoTable.Items
+            Set geoList = geo.GeoLevel(LevelAdmin1, GeoScopeAdmin)
+            F_Geo.LST_Adm1.List = geoList.Items
         End If
 
-        historicGeoTable.FromExcelRange Range("histo_geo")
-        F_Geo.LST_Histo.List = historicGeoTable.Items
+        'The concatenated tab is a search surface: its list starts empty and
+        'fills from the search box at three characters. Pushing the whole
+        'adm4 column here was the largest single allocation of the open, and
+        'an MSForms ListBox stops outright at 65536 rows.
+
+        Set historicList = GeoFormCache.HistoricList(GeoScopeAdmin)
+        F_Geo.LST_Histo.List = historicList.Items
 
         F_Geo.FRM_Facility.Visible = False
         F_Geo.FRM_Geo.Visible = True
@@ -131,14 +129,15 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
         F_Geo.LBL_Adm1F.Caption = geo.GeoNames("adm1_name")
 
         If Not geo.HasNoData() Then
-            Set transValue = geo.GeoLevel(LevelAdmin1, GeoScopeHF)
-            F_Geo.LST_AdmF1.List = transValue.Items
-            concatenateHFTable.FromExcelRange Range("hf_concat")
-            F_Geo.LST_ListeAgreF.List = concatenateHFTable.Items
+            Set geoList = geo.GeoLevel(LevelAdmin1, GeoScopeHF)
+            F_Geo.LST_AdmF1.List = geoList.Items
         End If
 
-        historicHFTable.FromExcelRange Range("histo_hf")
-        F_Geo.LST_HistoF.List = historicHFTable.Items
+        'The facility concatenated list follows the admin one: empty until
+        'the search box holds three characters.
+
+        Set historicList = GeoFormCache.HistoricList(GeoScopeHF)
+        F_Geo.LST_HistoF.List = historicList.Items
         F_Geo.FRM_Facility.Visible = True
         F_Geo.FRM_Geo.Visible = False
         F_Geo.LBL_Fac1.Visible = True
