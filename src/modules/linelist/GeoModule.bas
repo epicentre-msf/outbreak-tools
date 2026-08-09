@@ -306,42 +306,50 @@ End Function
 '===============================================================================
 
 ' @description Update all spatial tables from HList filtered data.
-'              The busy state belongs to the caller. ClickCalculate already
-'              wraps this call and restores the application on every path, and
-'              UpdateFilterTables below enters the shared busy state itself.
+'              The spatial refresh button reaches this sub bare through its
+'              shape's OnAction, so it holds the shared busy state and a
+'              handler itself. The busy depth counts, so the wrap that
+'              ClickCalculate puts around the same call nests cleanly.
 '@EntryPoint
 Public Sub UpdateSpTables()
     Dim sp As LLSpatial
+
+    On Error GoTo ErrUpdate
+    LinelistEventsManager.LLEnterBusyState
+
     Set sp = LLSpatial.Create(ThisWorkbook.Worksheets(SPATIALSHEET))
 
     UpdateFilterTables calculate:=False
 
     sp.Update
+
+    LinelistEventsManager.LLExitBusyState
+    Exit Sub
+
+ErrUpdate:
+    LinelistEventsManager.LLExitBusyState
+    ReportGeoError Err.Description
 End Sub
 
 '@section Spatio-Temporal Formula Updates
 '===============================================================================
 
 ' @description Update formulas in spatio-temporal tables when admin level changes.
-'              Runs after the user validates a place on an SPT analysis sheet:
-'              every formula column of the section moves from the previous
-'              admin level's concat column to the new one. The cell loop is
-'              LLSpatial.RewriteFormulas, so a plain formula stays plain and
-'              an array one stays an array one.
+'              Runs after the user validates a place on an SPT analysis sheet.
+'              The section walk is LLSpatial.MigrateSection, so the harness
+'              measures it through TestLLSpatial: every formula column of the
+'              section moves from the previous admin level's concat column to
+'              the new one, and a plain formula stays plain while an array one
+'              stays an array one. This sub keeps the event side: the busy
+'              state, the active sheet, the protection pair and the report.
 ' @param rngName Named range of the admin level selector
 ' @param actAdm New admin level (number of admin levels selected)
 '@EntryPoint
 Public Sub UpdateSpatioTemporalFormulas(ByVal rngName As String, _
                                         ByVal actAdm As Long)
     Dim tabId As String
-    Dim prevRaw As Variant
     Dim prevAdm As Long
     Dim sh As Worksheet
-    Dim counter As Long
-    Dim headerRng As Range
-    Dim valuesRng As Range
-    Dim headerTexts As Variant
-    Dim headerCellName As String
     Dim sp As LLSpatial
     Dim unprotected As Boolean
 
@@ -361,22 +369,11 @@ Public Sub UpdateSpatioTemporalFormulas(ByVal rngName As String, _
     End If
 
     Set sh = ActiveSheet
-    Set headerRng = sh.Range("SPT_FORMULA_COLUMN_" & tabId)
+    Set sp = LLSpatial.Create(ThisWorkbook.Worksheets(SPATIALSHEET))
 
-    'The neighbour cell records the level the sheet stands on. A value
-    'outside 1 to 4 means it was cleared or overwritten; rewriting on it
-    'would migrate nothing while still recording the new level, and the
-    'sheet would then be one level behind with no way back.
-    prevRaw = sh.Range(rngName).Offset(, 1).Value
-    If Not IsNumeric(prevRaw) Then _
-        Err.Raise 5, "GeoModule", _
-                  "The previous admin level of " & tabId & " reads " & _
-                  Chr$(34) & prevRaw & Chr$(34)
-
-    prevAdm = CLng(prevRaw)
-    If prevAdm < 1 Or prevAdm > MAX_ADMIN_LEVEL Then _
-        Err.Raise 5, "GeoModule", _
-                  "The previous admin level of " & tabId & " reads " & prevAdm
+    'The level is read and checked above the UnProtect, so a bad level
+    'raises while a deliberately open sheet is still open.
+    prevAdm = sp.PreviousSectionLevel(sh, rngName, tabId)
 
     'The caller fires on every Validate with no idea whether the level
     'changed.
@@ -385,46 +382,10 @@ Public Sub UpdateSpatioTemporalFormulas(ByVal rngName As String, _
         Exit Sub
     End If
 
-    Set sp = LLSpatial.Create(ThisWorkbook.Worksheets(SPATIALSHEET))
-
     pass.UnProtect "_active"
     unprotected = True
 
-    'One read of the whole header row; the match is a string test in memory.
-    headerTexts = HeaderFormulaTexts(headerRng)
-
-    For counter = 1 To headerRng.Columns.Count
-        If InStr(1, CStr(headerTexts(1, counter)), rngName) > 0 Then
-            Set valuesRng = Nothing
-            'headerCellName is a String, so without the reset it keeps the
-            'previous column's name when the read below raises -- a header
-            'cell has a name only when something named it -- and the Replace
-            'would then resolve the previous column's VALUES block.
-            headerCellName = vbNullString
-
-            On Error Resume Next
-            headerCellName = headerRng.Cells(1, counter).Name.Name
-            If LenB(headerCellName) > 0 Then
-                Set valuesRng = sh.Range(Replace(headerCellName, "LABEL", "VALUES"))
-            End If
-            On Error GoTo ErrSPT
-
-            If Not valuesRng Is Nothing Then
-                'The named block ends two rows above the Total and Missing
-                'rows of its own table -- RowsCategoriesRange trims the two
-                'footer rows by count -- and their formulas move levels with
-                'the block, so the range is grown to reach them.
-                Set valuesRng = sh.Range(valuesRng.Cells(1, 1), _
-                                         valuesRng.Cells(valuesRng.Rows.Count + 2, 1))
-
-                sp.RewriteFormulas valuesRng, "concat_adm" & prevAdm, _
-                                   "concat_adm" & actAdm
-            End If
-        End If
-    Next
-
-    sh.Range(rngName).Offset(, 1).Value = actAdm
-    sh.UsedRange.Calculate
+    sp.MigrateSection sh, rngName, tabId, prevAdm, actAdm
 
     pass.Protect sh, allowShapes:=True
     LinelistEventsManager.LLExitBusyState
@@ -437,18 +398,3 @@ ErrSPT:
     LinelistEventsManager.LLExitBusyState
     ReportGeoError Err.Description
 End Sub
-
-' @description Read the header row of formulas in one crossing. A one-cell
-'              range answers a scalar, so it is wrapped to give the caller one
-'              shape.
-' @param headerRng The SPT_FORMULA_COLUMN_ row of one section
-Private Function HeaderFormulaTexts(ByVal headerRng As Range) As Variant
-    Dim oneCell(1 To 1, 1 To 1) As Variant
-
-    If headerRng.Cells.Count = 1 Then
-        oneCell(1, 1) = headerRng.Formula
-        HeaderFormulaTexts = oneCell
-    Else
-        HeaderFormulaTexts = headerRng.Formula
-    End If
-End Function
