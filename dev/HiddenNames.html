@@ -16,8 +16,19 @@ serialization and metadata caching. Each name carries a type annotation
 (String/Boolean/Long/Variant) and a last-updated timestamp stored in
 the Name.Comment field. Supports cross-scope import/export between
 worksheets and workbooks.</p>
+<details open class="doc-section" id="what-create-costs">
+<summary>WHAT CREATE COSTS</summary>
+<div class="section-body">
+<p>Create walks the whole Names collection of the host and reads several COM
+properties off every name it tracks. A data entry sheet holds hundreds of
+names, so the walk is the largest cost this class has. An instance pays it
+once and answers every later read out of memory, keyed by name.</p>
+<p>A caller that wants ONE value off a host it will not touch again calls
+QuickValue instead, which skips the walk entirely.</p>
 <p><strong>Depends on:</strong> <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, What a Names collection raises for an identifier it does not hold. Excel, answers 1004 and the collection itself answers 9, so both are read as &quot;the, container has no such name&quot;.</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+</div>
+</details>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -57,6 +68,47 @@ the supplied worksheet or workbook.</p>
 <details open class="doc-section" id="public-api">
 <summary>Public API</summary>
 <div class="section-body">
+<h3 id="quickvalue">QuickValue <a class="anchor-link" href="#quickvalue">#</a></h3>
+<p><em>quick-value</em></p>
+<p><strong>Read one stored value off a host, with no instance behind it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function QuickValue(ByVal targetObj As Object, _
+                           ByVal nameId As String, _
+                           Optional ByVal defaultValue As String = vbNullString) As String
+</code></pre>
+<p>Three COM crossings and a Mid$: the name is resolved by identifier, its
+RefersTo is read, and the wrapper is parsed here. The Names walk that Create
+pays for is skipped, and so is every property read that walk does per name.</p>
+</div>
+</details>
+<details open class="doc-section" id="when-to-reach-for-this">
+<summary>WHEN TO REACH FOR THIS</summary>
+<div class="section-body">
+<p>A caller that wants ONE value off a host it will not touch again. The linelist
+event handlers read sheet_type and table_name this way. Both are written once
+when the sheet is built and never change while the workbook is open, and the
+sheets that carry them hold hundreds of names.</p>
+<p>A caller that reads several values off the same host, or writes any, calls
+Create instead. That instance pays the walk once and answers every later read
+out of memory.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-limits-of-this">
+<summary>THE LIMITS OF THIS</summary>
+<div class="section-body">
+<p>A visible name answers here. Create tracks hidden names alone.</p>
+<p>The answer is the stored string whatever the type annotation says, so a caller
+wanting a Boolean or a Long coerces it. The typed readers are on the instance.</p>
+<p>A workbook-scoped name whose RefersTo points at a worksheet is reached through
+the workbook alone. Create reaches it through either.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetObj</code>: Object. A Worksheet or Workbook holding the name.</li>
+<li><code>nameId</code>: String. The name identifier.</li>
+<li><code>defaultValue</code>: String. The answer when the host holds no such name.</li>
+</ul>
+<p><strong>Returns:</strong> String. The stored value.</p>
+<hr />
 <h3 id="hasname">HasName <a class="anchor-link" href="#hasname">#</a></h3>
 <p><em>has-name</em></p>
 <p><strong>Check whether a hidden name exists</strong></p>
@@ -174,6 +226,16 @@ the supplied worksheet or workbook.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-metadata-helpers">Metadata Helpers</h2>
+<h3 id="int-ensurestores">EnsureStores <a class="anchor-link" href="#int-ensurestores">#</a></h3>
+<p><em>ensure-stores</em></p>
+<p><strong>Build the record store and the name index</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureStores()
+</code></pre>
+<p>The two are built together and thrown away together, so this is the one place
+either of them comes into being. A host holding no hidden name still ends up
+with an empty store, which is the state every reader here expects.</p>
+<hr />
 <h3 id="int-metadatastore">MetadataStore <a class="anchor-link" href="#int-metadatastore">#</a></h3>
 <p><em>metadata-store</em></p>
 <p><strong>Lazy-initialised BetterArray holding all metadata records</strong></p>
@@ -181,6 +243,17 @@ the supplied worksheet or workbook.</p>
 <pre><code class="language-vb">Private Function MetadataStore() As BetterArray
 </code></pre>
 <p><strong>Returns:</strong> BetterArray. The metadata cache.</p>
+<hr />
+<h3 id="int-nameindex">NameIndex <a class="anchor-link" href="#int-nameindex">#</a></h3>
+<p><em>name-index</em></p>
+<p><strong>Lazy-initialised keyed Collection holding each record's position</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NameIndex() As Collection
+</code></pre>
+<p>The key is MetadataKey(nameId) and the item is the position of that record in
+the store. Lookups are kept in a keyed Collection because Scripting.Dictionary
+is missing on Mac Excel. LLFormat holds its three caches the same shape.</p>
+<p><strong>Returns:</strong> Collection. The name index.</p>
 <hr />
 <h3 id="int-buildmetadatarecord">BuildMetadataRecord <a class="anchor-link" href="#int-buildmetadatarecord">#</a></h3>
 <p><em>build-metadata-record</em></p>
@@ -247,7 +320,35 @@ the supplied worksheet or workbook.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function MetadataIndex(ByVal nameId As String) As Long
 </code></pre>
+<p>The position is read straight out of the keyed index, so the cost of a lookup
+no longer grows with the number of names the host holds. This used to walk
+every record comparing strings, and a data entry sheet holds hundreds.</p>
+<p>A Collection has no &quot;does this key exist&quot; test, so the miss is read off Err.
+Err is cleared first, because On Error Resume Next and On Error GoTo 0 both
+leave it alone and a stale number from earlier code would read as a miss.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nameId</code>: String. The identifier to find.</li>
+</ul>
 <p><strong>Returns:</strong> Long. The index, or -1 when not found.</p>
+<hr />
+<h3 id="int-pushmetadatarecord">PushMetadataRecord <a class="anchor-link" href="#int-pushmetadatarecord">#</a></h3>
+<p><em>push-metadata-record</em></p>
+<p><strong>Append a record to the store and key its position in the index</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub PushMetadataRecord(ByVal nameId As String, ByRef record As Variant)
+</code></pre>
+<p>The first record to claim a key keeps it. Two tracked names can share an
+identifier: on a worksheet host, ShouldTrack accepts a sheet-scoped name and
+also a workbook-scoped name whose RefersTo points at that sheet. The walk this
+index replaced answered the first of the two, and this keeps that answer.
+Both records stay in the store, so ListNames and the two export routines still
+see them.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nameId</code>: String. The identifier the record is keyed under.</li>
+<li><code>record</code>: Variant. The metadata record to append.</li>
+</ul>
 <hr />
 <h3 id="int-storemetadatarecord">StoreMetadataRecord <a class="anchor-link" href="#int-storemetadatarecord">#</a></h3>
 <p><em>store-metadata-record</em></p>
@@ -270,6 +371,9 @@ the supplied worksheet or workbook.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LoadMetadataCache()
 </code></pre>
+<p>This walk is what Create costs. Every property it reads off a name is a COM
+crossing, and it runs once per tracked name, so each read removed from the
+body of the loop is worth hundreds on a data entry sheet.</p>
 <hr />
 <h2 id="int-interface-helpers">Interface Helpers</h2>
 <h3 id="int-validateinput">ValidateInput <a class="anchor-link" href="#int-validateinput">#</a></h3>
@@ -317,6 +421,8 @@ internal methods receive pre-sanitized identifiers.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function MetadataKey(ByVal nameId As String) As String
 </code></pre>
+<p>This is the key of the name index and of the two prefix comparisons in
+ListNames and the export routines.</p>
 <p>Expects a pre-sanitized nameId (callers must call SanitizeNameId first).</p>
 <hr />
 <h3 id="int-ensuremetadatarecord">EnsureMetadataRecord <a class="anchor-link" href="#int-ensuremetadatarecord">#</a></h3>
@@ -341,6 +447,9 @@ internal methods receive pre-sanitized identifiers.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveMetadataRecord(ByVal nameId As String)
 </code></pre>
+<p>Every record after the removed one moves down a place, so the index is rebuilt
+in the same walk that builds the new store. Leaving the old index in place
+would point every one of those keys at its neighbour.</p>
 <hr />
 <h2 id="int-lookup-helpers">Lookup Helpers</h2>
 <h3 id="int-shouldtrack">ShouldTrack <a class="anchor-link" href="#int-shouldtrack">#</a></h3>
@@ -405,6 +514,21 @@ store. Nothing in the tree writes one.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EscapeString(ByVal value As String) As String
 </code></pre>
+<hr />
+<h3 id="int-parserefersto">ParseRefersTo <a class="anchor-link" href="#int-parserefersto">#</a></h3>
+<p><em>parse-refers-to</em></p>
+<p><strong>Read the stored value back out of a RefersTo string</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ParseRefersTo(ByVal storedFormula As String) As String
+</code></pre>
+<p>The inverse of SerializeValue. A string was written as =&quot;value&quot; with every
+inner quote doubled, and every other type as =literal, so this strips the
+leading equals sign and then the quote wrapper when one is there.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>storedFormula</code>: String. The RefersTo string of a Name definition.</li>
+</ul>
+<p><strong>Returns:</strong> String. The value the formula holds.</p>
 <hr />
 <h3 id="int-applycomment">ApplyComment <a class="anchor-link" href="#int-applycomment">#</a></h3>
 <p><em>apply-comment</em></p>
@@ -561,7 +685,7 @@ metadata index lookups when the record is already resolved.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (60 file(s))</summary>
+<summary>Used in (62 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
@@ -586,6 +710,7 @@ metadata index lookups when the record is already resolved.</p>
 <li><a href="DiseaseSheet.html">DiseaseSheet.cls</a></li>
 <li><a href="MasterSetupPreparation.html">MasterSetupPreparation.cls</a></li>
 <li><a href="MasterSetupVariables.html">MasterSetupVariables.cls</a></li>
+<li><a href="SectionMap.html">SectionMap.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li><a href="EventSetup.html">EventSetup.cls</a></li>
 <li><a href="SetupImport.html">SetupImport.cls</a></li>
@@ -598,7 +723,6 @@ metadata index lookups when the record is already resolved.</p>
 <li>InitTransfer.bas</li>
 <li>CustomLinelistFunctions.bas</li>
 <li>EventsLinelistButtons.bas</li>
-<li>LinelistEventsManager.bas</li>
 <li>FormLogicEpiWeek.bas</li>
 <li>FormLogicGeo.bas</li>
 <li>MasterSetupHelpers.bas</li>
@@ -615,10 +739,12 @@ metadata index lookups when the record is already resolved.</p>
 <li>TestLLGeo.bas</li>
 <li>TestLLSpatial.bas</li>
 <li>TestCustomLinelistFunctions.bas</li>
+<li>TestEventLinelist.bas</li>
 <li>TestLLDataEntry.bas</li>
 <li>TestLLTranslation.bas</li>
 <li>TestDiseaseSheet.bas</li>
 <li>TestMasterSetupVariables.bas</li>
+<li>TestSectionMap.bas</li>
 <li>TestEventSetup.bas</li>
 <li>TestEventsManager.bas</li>
 <li>TestSetupImport.bas</li>

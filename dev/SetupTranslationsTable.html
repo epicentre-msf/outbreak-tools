@@ -34,6 +34,25 @@ are matched without regard to case. Excel matches defined names that way
 itself.</p>
 </div>
 </details>
+<details open class="doc-section" id="duplicates-are-coloured-by-group">
+<summary>DUPLICATES ARE COLOURED BY GROUP</summary>
+<div class="section-body">
+<p>ApplyFormatting gives every duplicate group in a column a fill of its own,
+walked off the hue wheel by DuplicateGroupColor. A column painted in one colour
+says which cells are duplicated and nothing about which of them go together,
+and a translator staring at forty red cells has to read every one to find the
+pairs. One rule per group answers both questions at a glance.</p>
+<p>CollectDuplicateGroups finds the groups, and the summary message reads its
+groups from the same function, so the sheet and the message never disagree. The
+rules are EXACT tests, which is what carries the capitalisation through to the
+sheet: &quot;Hello&quot; and &quot;hello&quot; are two labels here and neither takes the colour of
+the other.</p>
+<p>The red rule that used to paint every duplicate is still there, added last so
+it holds the lowest priority. It now marks a duplicate this class could not
+group: one past the end of the palette, one whose label is too long for a rule
+formula, or one whose formula Excel refused.</p>
+</div>
+</details>
 <details open class="doc-section" id="the-helper-tag-column">
 <summary>THE HELPER TAG COLUMN</summary>
 <div class="section-body">
@@ -88,6 +107,30 @@ caller reading the number alone sees one value for both.</p>
 <li><code>stateScope</code>: Optional ApplicationState. Guard for Excel settings during updates.</li>
 </ul>
 <p><strong>Returns:</strong> SetupTranslationsTable. Ready to process registry updates.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="tag-column-infrastructure">
+<summary>Tag column infrastructure</summary>
+<div class="section-body">
+<h3 id="duplicategroupcolor">DuplicateGroupColor <a class="anchor-link" href="#duplicategroupcolor">#</a></h3>
+<p><em>duplicate-group-color</em></p>
+<p><strong>Colour for the nth duplicate group.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function DuplicateGroupColor(ByVal groupIndex As Long) As Long
+</code></pre>
+<p>The hue walks the wheel in strides of DUPLICATE_HUE_STRIDE. The stride
+and the hue count share no factor, so every hue is still reached, and
+two groups that follow each other land most of a wheel apart rather
+than one step apart. Each further lap of the wheel drops the lightness
+by one band. Past the palette the index wraps, so two groups do share
+a colour there; HighlightDuplicateGroups stops before that happens and
+leaves the rest to the red catch-all.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>groupIndex</code>: Long. Zero based position of the group.</li>
+</ul>
+<p><strong>Returns:</strong> Long. An RGB value ready for Interior.Color.</p>
 <hr />
 </div>
 </details>
@@ -619,6 +662,27 @@ carries the separator still yields its sequence number.</p>
 linear in the row count. Two spellings of the same word are two
 labels here, so neither is reported as a duplicate of the other.</p>
 <hr />
+<h3 id="int-collectduplicategroups">CollectDuplicateGroups <a class="anchor-link" href="#int-collectduplicategroups">#</a></h3>
+<p><em>collect-duplicate-groups</em></p>
+<p><strong>Find every value a column holds more than once, in first-appearance order.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CollectDuplicateGroups(ByVal targetRange As Range, _
+                                        ByRef groupLabels() As String, _
+</code></pre>
+<p>One keyed Collection carries the whole count, so the cost is linear in
+the row count. The key comes from LabelKey and spells the
+capitalisation out, so &quot;Hello&quot; and &quot;hello&quot; are counted apart and
+neither is a duplicate of the other. Both the summary message and the
+sheet colouring read their groups from here, which is what keeps the
+two of them saying the same thing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetRange</code>: Range. The one column to count.</li>
+<li><code>groupLabels</code>: ByRef String(). Receives the duplicated values, 1 based.</li>
+<li><code>groupCounts</code>: ByRef Long(). Receives how many times each one appears, 1 based.</li>
+</ul>
+<p><strong>Returns:</strong> Long. Number of duplicate groups found.</p>
+<hr />
 <h3 id="int-labelcolumndata">LabelColumnData <a class="anchor-link" href="#int-labelcolumndata">#</a></h3>
 <p><em>label-column-data</em></p>
 <p><strong>Access the label column data range.</strong></p>
@@ -684,6 +748,88 @@ mismatch that pointed nowhere.</p>
 <p><strong>Apply font, sizing, and duplicate highlighting to a language column.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyLangColumnFormatting(ByVal langRng As Range)
+</code></pre>
+<p>The group rules go on first and the red catch-all goes on last.
+FormatConditions.Add appends, so the rule added last holds the lowest
+priority and shows through only where no group rule claimed the cell.</p>
+<hr />
+<h3 id="int-highlightduplicategroups">HighlightDuplicateGroups <a class="anchor-link" href="#int-highlightduplicategroups">#</a></h3>
+<p><em>highlight-duplicate-groups</em></p>
+<p><strong>Give every duplicate group in a column a fill of its own.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub HighlightDuplicateGroups(ByVal langRng As Range)
+</code></pre>
+<p>A column painted in one colour says which cells are duplicated and
+nothing about which of them belong together. One rule per group says
+both, and the eye pairs them without reading a word.</p>
+<p>Three things send a group back to the red catch-all: a palette that
+has run out (MAX_DUPLICATE_GROUPS), a label whose rule formula would
+pass MAX_RULE_FORMULA_LENGTH, and a formula Excel refuses. So red no
+longer reads as &quot;duplicate&quot;. It reads as &quot;duplicate this could not
+group&quot;, and a sheet with red on it is still telling the truth.</p>
+<hr />
+<h3 id="int-addgroupcondition">AddGroupCondition <a class="anchor-link" href="#int-addgroupcondition">#</a></h3>
+<p><em>add-group-condition</em></p>
+<p><strong>Give one duplicate group its own format condition.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function AddGroupCondition(ByVal langRng As Range, _
+                                   ByVal anchor As String, _
+                                   ByVal label As String, _
+                                   ByVal fillColor As Long) As Boolean
+</code></pre>
+<p>EXACT is what carries the case, so the sheet groups labels the way
+CollectDuplicateGroups counts them and &quot;Hello&quot; never shares a colour
+with &quot;hello&quot;.</p>
+<p>Range.Formula reads US syntax whatever the host locale is and Formula1
+follows it, so the formula is written in US form with a comma and no
+localised form is attempted. FormatConditions.Add appends without
+complaint, so the count is what says whether it was accepted.</p>
+<p><strong>Returns:</strong> Boolean. True when the group came away with a rule.</p>
+<hr />
+<h3 id="int-groupconditionformula">GroupConditionFormula <a class="anchor-link" href="#int-groupconditionformula">#</a></h3>
+<p><em>group-condition-formula</em></p>
+<p><strong>Build the EXACT test for one duplicate group.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function GroupConditionFormula(ByVal anchor As String, _
+                                       ByVal label As String) As String
+</code></pre>
+<p>A label carrying a double quote has to have it doubled or the formula
+closes early and Excel refuses the whole rule.</p>
+<p><strong>Returns:</strong> String. The formula, or empty when it would pass the length cap.</p>
+<hr />
+<h3 id="int-duplicatecolorcount">DuplicateColorCount <a class="anchor-link" href="#int-duplicatecolorcount">#</a></h3>
+<p><em>duplicate-color-count</em></p>
+<p><strong>How many duplicate groups the palette colours before it repeats.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DuplicateColorCount() As Long
+</code></pre>
+<hr />
+<h3 id="int-hsltorgb">HslToRgb <a class="anchor-link" href="#int-hsltorgb">#</a></h3>
+<p><em>hsl-to-rgb</em></p>
+<p><strong>Convert one HSL triplet into the Long an Interior.Color takes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HslToRgb(ByVal hue As Double, _
+                          ByVal saturation As Double, _
+                          ByVal lightness As Double) As Long
+</code></pre>
+<p>Hue picks the sector of the wheel, chroma is how far the colour sits
+from grey at that lightness, and the match value lifts all three
+channels so the result reads back at the lightness asked for. Stepping
+hue alone then keeps every group equally pale, which is what makes the
+black Consolas text on top stay readable whatever colour a group drew.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hue</code>: Double. Degrees, 0 to 360.</li>
+<li><code>saturation</code>: Double. 0 to 1.</li>
+<li><code>lightness</code>: Double. 0 to 1.</li>
+</ul>
+<p><strong>Returns:</strong> Long. RGB colour.</p>
+<hr />
+<h3 id="int-colorbyte">ColorByte <a class="anchor-link" href="#int-colorbyte">#</a></h3>
+<p><em>color-byte</em></p>
+<p><strong>Turn a 0 to 1 channel into the 0 to 255 byte RGB expects.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColorByte(ByVal channel As Double) As Long
 </code></pre>
 <hr />
 <h3 id="int-configuretagcolumn">ConfigureTagColumn <a class="anchor-link" href="#int-configuretagcolumn">#</a></h3>

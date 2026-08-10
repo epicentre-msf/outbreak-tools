@@ -16,6 +16,15 @@ reads ranked values back out for the TopAdmin, TopPop and TopHF worksheet
 functions. Exists says whether the registry table is there, Update fills the
 tables from the data sheets, Sort orders them, and TopGeoValue and TopHFValue
 answer one ranked value.</p>
+<p>This class also owns the formula rewriting of the spatial analysis events.
+RewriteFormulas moves a token through every formula of a range while keeping
+each formula's array state, ChangeAdminLevel moves one table to a new admin
+level, PreviousSectionLevel and MigrateSection move the formula columns of a
+spatio-temporal section the same way, ApplyPopulationFactor divides values by
+the population or restores them, and FormatPopulationFactor shows or hides
+the factor cells. The event dispatch stays with the callers: EventLinelist
+and GeoModule read what the user changed and hand the work over here, so the
+array-formula handling is written once.</p>
 <details open class="doc-section" id="the-contract-with-spatialtables">
 <summary>THE CONTRACT WITH SPATIALTABLES</summary>
 <div class="section-body">
@@ -63,7 +72,7 @@ lookup and Sort all answer empty when the table is absent.</p>
 <p>SpatialTables.Prepare creates it and SpatialTables.FailedFormula reads it.
 This class leaves it alone.</p>
 <p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Checking.html">Checking</a></p>
-<p><strong>Version:</strong> 2026-07-31</p>
+<p><strong>Version:</strong> 2026-08-10</p>
 </div>
 </details>
 <details open class="doc-section" id="factory">
@@ -157,6 +166,148 @@ variable carries one table and a geographic one carries four.</p>
 <ul>
 <li><code>tabId</code>: String. The identifier of the analysis table.</li>
 <li><code>onAR</code>: Optional Boolean. True to order on the attack rate. Defaults to False.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="spatial-formula-rewriting">
+<summary>Spatial Formula Rewriting</summary>
+<div class="section-body">
+<h3 id="rewriteformulas">RewriteFormulas <a class="anchor-link" href="#rewriteformulas">#</a></h3>
+<p><em>rewrite-formulas</em></p>
+<p><strong>Replace a token in every formula of a range</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RewriteFormulas(ByVal valuesRng As Range, ByVal oldText As String, _
+                           ByVal newText As String)
+</code></pre>
+<p>The formula rewriting of the spatial analysis events. The caller
+reads what the user changed and hands the sheet, the table identifier and the
+admin code over; the loops that touch the formulas live here, so the
+array-formula handling is written once for every caller.</p>
+<p>Walks the cells of the range and rewrites each formula that holds the old
+text, with the new text in its place. A plain formula is written back through
+Formula and an array formula through FormulaArray, decided by HasArray.
+Range.FormulaArray answers the ordinary formula string for a cell outside an
+array formula, so a read through it cannot tell the two apart: a reader built
+on it pushed every write through FormulaArray, which turns a plain formula
+into an array one and raises 1004 for any formula over 255 characters.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>valuesRng</code>: Range. The block of cells to rewrite.</li>
+<li><code>oldText</code>: String. The text to replace.</li>
+<li><code>newText</code>: String. The replacement.</li>
+</ul>
+<hr />
+<h3 id="changeadminlevel">ChangeAdminLevel <a class="anchor-link" href="#changeadminlevel">#</a></h3>
+<p><em>change-admin-level</em></p>
+<p><strong>Move the formulas of one spatial table to a new admin level</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ChangeAdminLevel(ByVal sh As Worksheet, ByVal tabId As String, _
+                            ByVal newAdmin As String)
+</code></pre>
+<p>Reads the level the table stands on from its PREVIOUS_ADM_ cell, rewrites
+every formula of the OUTER_VALUES_ block from the old concat column to the
+new one, writes the new level back, and recalculates the block. The caller
+reads the dropdown and turns its label into an admin code, because that
+answer needs the geo sheet and this class holds none.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The spatial analysis sheet.</li>
+<li><code>tabId</code>: String. The identifier of the analysis table.</li>
+<li><code>newAdmin</code>: String. The admin code to move to, &quot;adm1&quot; to &quot;adm4&quot; or &quot;hf&quot;.</li>
+</ul>
+<hr />
+<h3 id="previoussectionlevel">PreviousSectionLevel <a class="anchor-link" href="#previoussectionlevel">#</a></h3>
+<p><em>previous-section-level</em></p>
+<p><strong>Read the admin level a spatio-temporal section stands on</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function PreviousSectionLevel(ByVal sh As Worksheet, _
+                                     ByVal rngName As String, _
+                                     ByVal tabId As String) As Long
+</code></pre>
+<p>The cell right of the level selector records the level the section's formulas
+read. A value outside 1 to 4 means the cell was cleared or overwritten: a
+rewrite on it would migrate nothing while still recording the new level, and
+the sheet would then be one level behind with no way back. GeoModule reads
+this before it unprotects the sheet, so a raise here leaves a deliberately
+open sheet open.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The spatio-temporal analysis sheet.</li>
+<li><code>rngName</code>: String. The named range of the level selector.</li>
+<li><code>tabId</code>: String. The identifier of the analysis table, for the message.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The recorded level, 1 to 4.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the cell reads outside 1 to 4.</li>
+</ul>
+<hr />
+<h3 id="migratesection">MigrateSection <a class="anchor-link" href="#migratesection">#</a></h3>
+<p><em>migrate-section</em></p>
+<p><strong>Move the formula columns of one spatio-temporal section to a new admin level</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub MigrateSection(ByVal sh As Worksheet, ByVal rngName As String, _
+                          ByVal tabId As String, ByVal prevAdm As Long, _
+                          ByVal actAdm As Long)
+</code></pre>
+<p>Walks the SPT_FORMULA_COLUMN_ header row of the section. A header formula
+naming the selector marks a formula column, the VALUES block of that column
+derives from the name of its header cell, and a header cell with no name
+leaves its column alone -- a cell has a name only when something named it.
+The block is grown by two rows to reach the Total and Missing rows of its own
+table, which RowsCategoriesRange trims by count at build time, and their
+formulas move levels with the block. Every formula of the grown block moves
+from the old concat column to the new one, the new level is recorded beside
+the selector, and the sheet recalculates.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The spatio-temporal analysis sheet.</li>
+<li><code>rngName</code>: String. The named range of the level selector.</li>
+<li><code>tabId</code>: String. The identifier of the analysis table.</li>
+<li><code>prevAdm</code>: Long. The level the section stands on.</li>
+<li><code>actAdm</code>: Long. The level to move to.</li>
+</ul>
+<hr />
+<h3 id="applypopulationfactor">ApplyPopulationFactor <a class="anchor-link" href="#applypopulationfactor">#</a></h3>
+<p><em>apply-population-factor</em></p>
+<p><strong>Divide the values of one spatial table by the population, or restore them</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ApplyPopulationFactor(ByVal sh As Worksheet, ByVal tabId As String, _
+                                 ByVal adminName As String, _
+                                 Optional ByVal revertBack As Boolean = False)
+</code></pre>
+<p>Walks the OUTER_VALUES_ block and rewraps each formula that reads the concat
+column of the given admin code. The first application wraps the formula as
+&quot;factor * formula / population cell&quot;, a later one swaps the old factor for
+the new, and revertBack unwraps both pieces. The factor comes from the
+POPFACT_ cell and falls back to 100 when that cell does not read as a number.
+The tables are reordered on the attack rate while the division is on, and on
+the plain value once it is off. The factor applied is written into the
+POPPREVFACT_ cell, so the next call knows what to swap or unwrap.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The spatial analysis sheet.</li>
+<li><code>tabId</code>: String. The identifier of the analysis table.</li>
+<li><code>adminName</code>: String. The admin code the formulas read, &quot;adm1&quot; to &quot;adm4&quot; or &quot;hf&quot;.</li>
+<li><code>revertBack</code>: Optional Boolean. True restores the plain formulas. Defaults to False.</li>
+</ul>
+<hr />
+<h3 id="formatpopulationfactor">FormatPopulationFactor <a class="anchor-link" href="#formatpopulationfactor">#</a></h3>
+<p><em>format-population-factor</em></p>
+<p><strong>Show or hide the population factor cells of one spatial table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub FormatPopulationFactor(ByVal sh As Worksheet, ByVal tabId As String, _
+                                  ByVal factorVisible As Boolean)
+</code></pre>
+<p>The factor cell and its label are white, locked and hidden while the division
+is off, and black, editable and readable while it is on. The caller decides
+which, from the dropdown the user changed.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The spatial analysis sheet.</li>
+<li><code>tabId</code>: String. The identifier of the analysis table.</li>
+<li><code>factorVisible</code>: Boolean. True shows the factor cells.</li>
 </ul>
 <hr />
 </div>
@@ -529,6 +680,50 @@ them with the row they belong to.</p>
 <li><code>Lo</code>: ListObject. The table to order.</li>
 <li><code>adminName</code>: String. The level identifier the value columns are named for.</li>
 <li><code>onAR</code>: Boolean. True to order on the attack rate.</li>
+</ul>
+<hr />
+<h2 id="int-spatial-formula-rewriting">Spatial Formula Rewriting</h2>
+<h3 id="int-headerformulatexts">HeaderFormulaTexts <a class="anchor-link" href="#int-headerformulatexts">#</a></h3>
+<p><em>header-formula-texts</em></p>
+<p><strong>Read the header row of formulas in one crossing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HeaderFormulaTexts(ByVal headerRng As Range) As Variant
+</code></pre>
+<p>A one-cell range answers a scalar through Formula, so it is wrapped to give
+the caller one shape.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>headerRng</code>: Range. The SPT_FORMULA_COLUMN_ row of one section.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. A two-dimensional array of formula strings.</p>
+<hr />
+<h3 id="int-formulatextof">FormulaTextOf <a class="anchor-link" href="#int-formulatextof">#</a></h3>
+<p><em>formula-text-of</em></p>
+<p><strong>Read the formula of one cell through the property that owns it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FormulaTextOf(ByVal cellRng As Range, _
+                               ByVal isArrayFormula As Boolean) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellRng</code>: Range. The cell to read.</li>
+<li><code>isArrayFormula</code>: Boolean. What HasArray answered for the cell.</li>
+</ul>
+<p><strong>Returns:</strong> String. The formula string.</p>
+<hr />
+<h3 id="int-writeformulatext">WriteFormulaText <a class="anchor-link" href="#int-writeformulatext">#</a></h3>
+<p><em>write-formula-text</em></p>
+<p><strong>Write the formula of one cell through the property that owns it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteFormulaText(ByVal cellRng As Range, _
+                             ByVal formulaText As String, _
+                             ByVal isArrayFormula As Boolean)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellRng</code>: Range. The cell to write.</li>
+<li><code>formulaText</code>: String. The formula string.</li>
+<li><code>isArrayFormula</code>: Boolean. True writes through FormulaArray.</li>
 </ul>
 <hr />
 <h2 id="int-validation">Validation</h2>

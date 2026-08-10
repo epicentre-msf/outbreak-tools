@@ -192,6 +192,25 @@ below compares against the same two strings.</p>
 <li>InvalidArgument When spatialType is neither &quot;hf&quot; nor &quot;geo&quot;.</li>
 </ul>
 <hr />
+<h3 id="idofspatialinput">IdOfSpatialInput <a class="anchor-link" href="#idofspatialinput">#</a></h3>
+<p><em>id-of-spatial-input</em></p>
+<p><strong>The range id a spatial input cell name was built from</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function IdOfSpatialInput(ByVal cellName As String) As String
+</code></pre>
+<p>SpatialInput builds &quot;INPUTSPTGEO_<n>_<rangeId>&quot;, and this is the way back:
+the tag and the row number are cut off the front and the rest is the id.
+GeoModule reads the name off the active cell at run time, and an unnamed
+cell hands an empty string over, so the answer is empty for a name this
+class did not build: no tag at the front, no row number behind it, or
+nothing after the row number. Instance state is never read, so the member
+is callable on the predeclared instance.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellName</code>: String. A name such as &quot;INPUTSPTGEO_2_SPT_tab1&quot;.</li>
+</ul>
+<p><strong>Returns:</strong> String. The range id, or an empty string.</p>
+<hr />
 </div>
 </details>
 <details open class="doc-section" id="category-and-row-families">
@@ -640,10 +659,11 @@ a scope reads is what stops them disagreeing again.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (5 file(s))</summary>
 <ul>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
 <li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
+<li>GeoModule.bas</li>
 <li>TestAnalysisRanges.bas</li>
 <li>TestCrossTableFormula.bas</li>
 </ul>

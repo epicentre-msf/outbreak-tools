@@ -15,10 +15,21 @@
 visible or hidden choice for each of them. The list is built from the
 dictionary. EntryCount, FieldKey, HeaderText, IsHidden, PositionIndex,
 ControlType and AuthoredVertical read one entry, IndexOf and HasField find
-one, SetHidden and SetAllOptionalHidden change the choices, Apply writes them
+one, SetHidden and SetAllOptionalHidden change the choices, SetHiddenInRange
+and RangeState do the same for a whole span of positions, Apply writes them
 through a layout and Adopt reads them back from a saved set. The class reads
 the dictionary alone: the worksheet is ShowHideLayout's work and the saved
 choices are ShowHideStore's.</p>
+<details open class="doc-section" id="a-section-is-a-span-of-positions">
+<summary>A SECTION IS A SPAN OF POSITIONS</summary>
+<div class="section-body">
+<p>Hiding a whole section is SetHiddenInRange over the positions SectionMap
+recorded for it. Nothing about a section is stored here or anywhere else: the
+choice lands on the member entries, so it travels through the store and
+through a migration file with no column of its own, and there is no second
+record that could disagree with the first.</p>
+</div>
+</details>
 <details open class="doc-section" id="four-kinds-of-entry">
 <summary>FOUR KINDS OF ENTRY</summary>
 <div class="section-body">
@@ -50,7 +61,7 @@ where it is.</p>
 &quot;Mandatory&quot;) are translated at the form and stored nowhere. A user who changes
 the interface language between two sessions keeps every choice.</p>
 <p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="ShowHideLayout.html">ShowHideLayout</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, Dictionary column names, The one <code>register book</code> value that asks for a turned header</p>
-<p><strong>Version:</strong> 1.0 (2026-08-01)</p>
+<p><strong>Version:</strong> 1.1 (2026-08-06)</p>
 </div>
 </details>
 <details open class="doc-section" id="instantiation">
@@ -331,6 +342,49 @@ caller that loops the whole list needs no guard of its own.</p>
 <li><code>hidden</code>: Boolean. True to hide all the free entries.</li>
 </ul>
 <hr />
+<h3 id="sethiddeninrange">SetHiddenInRange <a class="anchor-link" href="#sethiddeninrange">#</a></h3>
+<p><em>set-hidden-in-range</em></p>
+<p><strong>Hide or show every entry sitting in a span of positions</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function SetHiddenInRange(ByVal firstPos As Long, _
+                                 ByVal lastPos As Long, _
+                                 ByVal hidden As Boolean) As Long
+</code></pre>
+<p>What hiding a whole section comes down to. The span is a range of column
+numbers on an HList sheet and of row numbers on a VList one, which is what
+SectionMap records for each section.</p>
+<p>Hiding a section stores nothing of its own: the choice lands on each member
+entry, so the store, the show/hide form and a migration file all carry a
+collapsed section without knowing the word &quot;section&quot;. Nothing can drift out of
+step with anything else, because there is only one record of the choice.</p>
+<p>A mandatory or locked entry inside the span keeps its state, as it does
+everywhere else. So a section holding a mandatory variable never disappears
+whole, and the count says how many entries actually moved.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>firstPos</code>: Long. One end of the span.</li>
+<li><code>lastPos</code>: Long. The other end of the span.</li>
+<li><code>hidden</code>: Boolean. True to hide the span.</li>
+</ul>
+<p><strong>Returns:</strong> Long. How many entries the call changed.</p>
+<hr />
+<h3 id="rangestate">RangeState <a class="anchor-link" href="#rangestate">#</a></h3>
+<p><em>range-state</em></p>
+<p><strong>Where a span of positions stands</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function RangeState(ByVal firstPos As Long, ByVal lastPos As Long) As Byte
+</code></pre>
+<p>Read from the entries the user owns, so a section whose only visible column is
+a mandatory one still answers Hidden and a caller toggling it offers Show.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>firstPos</code>: Long. One end of the span.</li>
+<li><code>lastPos</code>: Long. The other end of the span.</li>
+</ul>
+<p><strong>Returns:</strong> Byte. A ShowHideRangeState value. Empty when no entry sits in the span,
+Fixed when none of those that do is free, and otherwise Shown, Hidden or
+Mixed by what the free entries say.</p>
+<hr />
 </div>
 </details>
 <details open class="doc-section" id="worksheet">
@@ -406,6 +460,25 @@ sheet is read once and the arrays are trimmed to what matched.</p>
 <li><code>index</code>: Long. A one based entry index.</li>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the entry is hidden.</p>
+<hr />
+<h3 id="int-positioninrange">PositionInRange <a class="anchor-link" href="#int-positioninrange">#</a></h3>
+<p><em>position-in-range</em></p>
+<p><strong>Whether one entry sits inside a span of positions</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function PositionInRange(ByVal position As Long, _
+                                 ByVal firstPos As Long, _
+                                 ByVal lastPos As Long) As Boolean
+</code></pre>
+<p>The two bounds are read in either order, so a caller that hands them over the
+other way round gets the same answer. An entry with no position, which is what
+a variable the dictionary gives no <code>column index</code> looks like, is in no span.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>position</code>: Long. The entry position.</li>
+<li><code>firstPos</code>: Long. One end of the span.</li>
+<li><code>lastPos</code>: Long. The other end of the span.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the position falls inside the span.</p>
 <hr />
 <h3 id="int-matchessheet">MatchesSheet <a class="anchor-link" href="#int-matchessheet">#</a></h3>
 <p><em>matches-sheet</em></p>
@@ -605,11 +678,12 @@ state was dropped on every load.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (7 file(s))</summary>
+<summary>Used in (8 file(s))</summary>
 <ul>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
+<li><a href="SectionMap.html">SectionMap.cls</a></li>
 <li><a href="ShowHideLayout.html">ShowHideLayout.cls</a></li>
 <li><a href="ShowHideStore.html">ShowHideStore.cls</a></li>
 <li>EventsLinelistButtons.bas</li>

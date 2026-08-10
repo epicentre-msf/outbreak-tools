@@ -30,8 +30,20 @@ crossings, and every boundary scan after that runs in memory.</p>
 <p><code>Build</code> creates the <code>VarWriter</code> and hands it to every subsection. The writer
 holds a hidden name store, the dictionary block, the design format and the
 translated messages, and all four cover a whole sheet.</p>
-<p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLFormat.html">LLFormat</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="VarWriter.html">VarWriter</a>, <a href="Checking.html">Checking</a>, Checking support, Row/column constants for section and subsection headers, The CRF companion places a section four rows above the first variable of the, section and a subsection three rows above.</p>
-<p><strong>Version:</strong> 1.1 (2026-07-31)</p>
+</div>
+</details>
+<details open class="doc-section" id="the-boundaries-are-left-behind-on-the-sheet">
+<summary>THE BOUNDARIES ARE LEFT BEHIND ON THE SHEET</summary>
+<div class="section-body">
+<p>Every section <code>Build</code> lays out is also recorded in a <code>SectionMap</code>, so that a
+later session can act on a whole section without walking the dictionary again.
+The map is cleared at the head of the build and one block is added per section,
+holding the first and last position and the section title.</p>
+<p>The map is written on the main sheet alone. The printed companion carries the
+same columns and the CRF carries its own, and neither is offered a section
+action today.</p>
+<p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLFormat.html">LLFormat</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="VarWriter.html">VarWriter</a>, <a href="SectionMap.html">SectionMap</a>, <a href="Checking.html">Checking</a>, Checking support, Row/column constants for section and subsection headers, The CRF companion places a section four rows above the first variable of the, section and a subsection three rows above.</p>
+<p><strong>Version:</strong> 1.2 (2026-08-06)</p>
 </div>
 </details>
 <details open class="doc-section" id="instantiation">
@@ -86,6 +98,10 @@ rows matching sheetName starting from startRow. Groups consecutive rows by
 their &quot;main section&quot; value, delegates to BuildSubSections for subsection
 grouping and variable writing, and applies merged-cell section header
 formatting. Stops when the sheet name changes or the dictionary ends.</p>
+<p>Each section is also recorded in the sheet's SectionMap as it is laid out.
+The map is opened before the writer runs, because opening it reads every
+hidden name the sheet holds and the writer adds three to five of them per
+variable.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sheetName</code>: String. The sheet name as it appears in the dictionary &quot;sheet name&quot; column.</li>
@@ -290,6 +306,45 @@ end of the data is reached without a change, returns the last data row.</p>
 <li><code>sheetName</code>: String. The current sheet name to match.</li>
 </ul>
 <p><strong>Returns:</strong> Long. The 1-based row index of the last row in the section.</p>
+<hr />
+<h2 id="int-section-map">Section Map</h2>
+<h3 id="int-opensectionmap">OpenSectionMap <a class="anchor-link" href="#int-opensectionmap">#</a></h3>
+<p><em>open-section-map</em></p>
+<p><strong>Open the sheet's section map and empty it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub OpenSectionMap()
+</code></pre>
+<p>The boundaries of every section, left on the sheet for a later session. A
+section is a run of consecutive dictionary rows, and the map holds the first
+and last position of each run with the title alongside them. The reader of the
+map starts from a selected cell, so the position range is what it looks a
+section up by.</p>
+<p>Called at the head of the build, before the writer adds its own names, and the
+clear is what stops a sheet rebuilt with fewer sections than last time from
+keeping the tail of the old map.</p>
+<p><strong>Depends on:</strong></p>
+<ul>
+<li>SectionMap</li>
+</ul>
+<hr />
+<h3 id="int-recordsection">RecordSection <a class="anchor-link" href="#int-recordsection">#</a></h3>
+<p><em>record-section</em></p>
+<p><strong>Record the boundaries of one section in the map</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RecordSection(ByVal sectionName As String, _
+                           ByVal startRow As Long, _
+                           ByVal endRow As Long)
+</code></pre>
+<p>The positions are the same <code>column index</code> values the headers were laid out on:
+a column number on an HList sheet, a row number on a VList one. A section
+whose first or last row carries no position is skipped, for the same reason
+FormatSection leaves it alone.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sectionName</code>: String. The section title.</li>
+<li><code>startRow</code>: Long. The first dictionary row of the section.</li>
+<li><code>endRow</code>: Long. The last dictionary row of the section.</li>
+</ul>
 <hr />
 <h2 id="int-subsection-processing">Subsection Processing</h2>
 <h3 id="int-buildsubsections">BuildSubSections <a class="anchor-link" href="#int-buildsubsections">#</a></h3>
@@ -508,12 +563,15 @@ build.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (7 file(s))</summary>
 <ul>
 <li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
+<li><a href="SectionMap.html">SectionMap.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
+<li>EventsLinelistButtons.bas</li>
 <li>TestLLDataEntry.bas</li>
 <li>TestSectionBuilder.bas</li>
+<li>TestSectionMap.bas</li>
 </ul>
 </details>
   </main>
