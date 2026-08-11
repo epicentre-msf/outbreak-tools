@@ -584,6 +584,101 @@ TestFail:
     CustomTestLogFailure Assert, "TestAdoptReadsTheSheetBackIntoTheEntries", Err.Number, Err.Description
 End Sub
 
+'@TestMethod("ShowHide")
+Public Sub TestResetToAuthoredPutsTheChoicesBack()
+    CustomTestSetTitles Assert, TESTMODULE, "TestResetToAuthoredPutsTheChoicesBack"
+    If Not FixtureReady("TestResetToAuthoredPutsTheChoicesBack") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim entries As ShowHide
+    Dim layout As ShowHideLayout
+    Dim visIdx As Long
+    Dim hidIdx As Long
+    Dim visPos As Long
+    Dim hidPos As Long
+
+    Set sh = ScratchSheet()
+    Set entries = ShowHide.Create(Dict, ShowHideLayerHList, HLIST_SHEET)
+    Set layout = ShowHideLayout.Create(sh, ShowHideLayerHList)
+
+    visIdx = entries.IndexOf("opt_vis_h2")
+    hidIdx = entries.IndexOf("opt_hid_h2")
+    visPos = entries.PositionIndex(visIdx)
+    hidPos = entries.PositionIndex(hidIdx)
+
+    'The user turned both free entries around and the sheet followed
+    entries.SetHidden visIdx, True
+    entries.SetHidden hidIdx, False
+    entries.Apply layout
+    Assert.IsTrue sh.Columns(visPos).Hidden, _
+                  "The user's choice landed on the sheet"
+
+    Assert.IsTrue entries.ResetToAuthored(layout) > 0, _
+                  "ResetToAuthored reports the positions it set"
+
+    Assert.IsFalse entries.IsHidden(visIdx), _
+                   "An optional visible variable is back where the dictionary started it"
+    Assert.IsTrue entries.IsHidden(hidIdx), _
+                  "And an optional hidden variable is back hidden"
+    Assert.IsFalse sh.Columns(visPos).Hidden, _
+                   "The sheet shows the authored visible column again"
+    Assert.IsTrue sh.Columns(hidPos).Hidden, _
+                  "And hides the authored hidden one"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestResetToAuthoredPutsTheChoicesBack", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestResetToAuthoredRestoresThePrintedHeaderDirection()
+    CustomTestSetTitles Assert, TESTMODULE, "TestResetToAuthoredRestoresThePrintedHeaderDirection"
+    If Not FixtureReady("TestResetToAuthoredRestoresThePrintedHeaderDirection") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim entries As ShowHide
+    Dim layout As ShowHideLayout
+    Dim idx As Long
+    Dim position As Long
+
+    Set sh = ScratchSheet()
+    Set entries = ShowHide.Create(Dict, ShowHideLayerPrinted, HLIST_SHEET)
+
+    'The printed header sits one row above the PRINTSTART anchor
+    sh.Names.Add Name:="table1_PRINTSTART", _
+                 RefersTo:="='" & sh.Name & "'!" & sh.Cells(5, 1).Address
+    Set layout = ShowHideLayout.Create(sh, ShowHideLayerPrinted, _
+                                       baseTableName:="table1")
+
+    idx = entries.IndexOf("opt_vis_h2")
+    position = entries.PositionIndex(idx)
+    Assert.IsFalse entries.AuthoredVertical(idx), _
+                   "The dictionary never asked this header to be turned"
+
+    'Excel reports a flat cell as xlHorizontal, and IsVertical used to read
+    'that as turned, so every flat header answered vertical.
+    Assert.IsFalse layout.IsVertical(position), _
+                   "A header never turned reads flat"
+
+    'The user turned the header by hand
+    layout.SetOrientation position, True
+    Assert.IsTrue layout.IsVertical(position), _
+                  "The turned header reads back vertical"
+
+    entries.ResetToAuthored layout
+
+    Assert.AreEqual CLng(0), layout.FailureCount, _
+                    "The reset was refused by nothing"
+    Assert.IsFalse layout.IsVertical(position), _
+                   "The reset lays the header back flat"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestResetToAuthoredRestoresThePrintedHeaderDirection", Err.Number, Err.Description
+End Sub
+
 
 '@section The store
 '===============================================================================

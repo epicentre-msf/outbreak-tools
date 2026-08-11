@@ -328,6 +328,11 @@ End Function
 
 '@label:is-vertical
 '@sub-title Whether the printed header of one position is turned
+'@details
+'Excel stores a flat cell two ways: the angle 0, and the constant xlHorizontal
+'(-4128), which is what a cell written with `Orientation = 0` reads back as.
+'Both mean flat, so both answer False here. Every flat header used to read as
+'turned, because the test was `angle <> 0`.
 '@param position Long. The column number.
 '@return Boolean. True when the header cell reads bottom to top.
 '@export
@@ -344,7 +349,7 @@ Public Function IsVertical(ByVal position As Long) As Boolean
     angle = CLng(headerCell.Orientation)
     On Error GoTo 0
 
-    IsVertical = (angle <> 0)
+    IsVertical = (angle <> 0) And (angle <> xlHorizontal)
 End Function
 
 '@label:set-orientation

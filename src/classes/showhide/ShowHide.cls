@@ -50,9 +50,10 @@ End Enum
 'ControlType and AuthoredVertical read one entry, IndexOf and HasField find
 'one, SetHidden and SetAllOptionalHidden change the choices, SetHiddenInRange
 'and RangeState do the same for a whole span of positions, Apply writes them
-'through a layout and Adopt reads them back from a saved set. The class reads
-'the dictionary alone: the worksheet is ShowHideLayout's work and the saved
-'choices are ShowHideStore's.
+'through a layout, Adopt reads them back from a saved set and ResetToAuthored
+'puts the choices, the sheet and the printed header directions back where the
+'dictionary started them. The class reads the dictionary alone: the worksheet
+'is ShowHideLayout's work and the saved choices are ShowHideStore's.
 '
 'A SECTION IS A SPAN OF POSITIONS
 '-------------------------------------------------------------------------------
@@ -92,7 +93,7 @@ End Enum
 '"Mandatory") are translated at the form and stored nowhere. A user who changes
 'the interface language between two sessions keeps every choice.
 '@depends LLdictionary, LLVariables, ShowHideLayout, BetterArray, Checking
-'@version 1.1 (2026-08-06)
+'@version 1.2 (2026-08-11)
 
 
 Private Const CLASS_NAME As String = "ShowHide"
@@ -118,6 +119,7 @@ Private Type TShowHide
     fieldKeys() As String
     headers() As String
     hidden() As Boolean
+    authoredHidden() As Boolean
     mandatory() As Boolean
     locked() As Boolean
     verticalHeader() As Boolean
@@ -524,6 +526,41 @@ Public Function Adopt(ByVal layout As ShowHideLayout) As Long
     Adopt = adopted
 End Function
 
+'@label:reset-to-authored
+'@sub-title Put the choices and the sheet back where the dictionary started them
+'@details
+'The reset button of the advanced form comes through here, once per worksheet.
+'Every free entry goes back to the hidden or visible state the dictionary
+'authored, the sheet is put in step through Apply, and on a printed sheet each
+'header direction goes back to what `register book` asked. Mandatory and locked
+'entries never left their authored state, so they are covered by the same walk.
+'@param layout ShowHideLayout. The sheet to reconcile, or Nothing to reset the
+'  choices alone.
+'@return Long. The number of positions Apply set.
+'@export
+Public Function ResetToAuthored(ByVal layout As ShowHideLayout) As Long
+    Dim idx As Long
+    Dim position As Long
+
+    For idx = 1 To this.entryCount
+        this.hidden(idx) = this.authoredHidden(idx)
+    Next idx
+
+    ResetToAuthored = Apply(layout)
+
+    If layout Is Nothing Then Exit Function
+    If Not layout.SupportsOrientation Then Exit Function
+
+    layout.BeginBatch
+    For idx = 1 To this.entryCount
+        position = this.positions(idx)
+        If position > 0 Then
+            layout.SetOrientation position, this.verticalHeader(idx)
+        End If
+    Next idx
+    layout.EndBatch
+End Function
+
 
 '@section Build
 '===============================================================================
@@ -591,6 +628,7 @@ Public Sub Initialise(ByVal dict As LLdictionary, _
     ReDim this.fieldKeys(1 To maxEntries)
     ReDim this.headers(1 To maxEntries)
     ReDim this.hidden(1 To maxEntries)
+    ReDim this.authoredHidden(1 To maxEntries)
     ReDim this.mandatory(1 To maxEntries)
     ReDim this.locked(1 To maxEntries)
     ReDim this.verticalHeader(1 To maxEntries)
@@ -659,6 +697,7 @@ Public Sub Initialise(ByVal dict As LLdictionary, _
         this.locked(count) = IsLockedStatus(layerStatus, controlVal, layer, _
                                             this.mandatory(count), hasListAuto, vars, varName)
         this.hidden(count) = InitialHidden(layerStatus)
+        this.authoredHidden(count) = this.hidden(count)
 
         this.keyIndex.Add count, NormaliseKey(varName)
 
@@ -670,6 +709,7 @@ NextVar:
         ReDim Preserve this.fieldKeys(1 To count)
         ReDim Preserve this.headers(1 To count)
         ReDim Preserve this.hidden(1 To count)
+        ReDim Preserve this.authoredHidden(1 To count)
         ReDim Preserve this.mandatory(1 To count)
         ReDim Preserve this.locked(1 To count)
         ReDim Preserve this.verticalHeader(1 To count)
