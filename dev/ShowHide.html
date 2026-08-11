@@ -17,9 +17,10 @@ dictionary. EntryCount, FieldKey, HeaderText, IsHidden, PositionIndex,
 ControlType and AuthoredVertical read one entry, IndexOf and HasField find
 one, SetHidden and SetAllOptionalHidden change the choices, SetHiddenInRange
 and RangeState do the same for a whole span of positions, Apply writes them
-through a layout and Adopt reads them back from a saved set. The class reads
-the dictionary alone: the worksheet is ShowHideLayout's work and the saved
-choices are ShowHideStore's.</p>
+through a layout, Adopt reads them back from a saved set and ResetToAuthored
+puts the choices, the sheet and the printed header directions back where the
+dictionary started them. The class reads the dictionary alone: the worksheet
+is ShowHideLayout's work and the saved choices are ShowHideStore's.</p>
 <details open class="doc-section" id="a-section-is-a-span-of-positions">
 <summary>A SECTION IS A SPAN OF POSITIONS</summary>
 <div class="section-body">
@@ -61,7 +62,7 @@ where it is.</p>
 &quot;Mandatory&quot;) are translated at the form and stored nowhere. A user who changes
 the interface language between two sessions keeps every choice.</p>
 <p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="ShowHideLayout.html">ShowHideLayout</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, Dictionary column names, The one <code>register book</code> value that asks for a turned header</p>
-<p><strong>Version:</strong> 1.1 (2026-08-06)</p>
+<p><strong>Version:</strong> 1.2 (2026-08-11)</p>
 </div>
 </details>
 <details open class="doc-section" id="instantiation">
@@ -420,6 +421,24 @@ Mandatory and locked entries keep what the dictionary said.</p>
 </ul>
 <p><strong>Returns:</strong> Long. The number of entries that were read.</p>
 <hr />
+<h3 id="resettoauthored">ResetToAuthored <a class="anchor-link" href="#resettoauthored">#</a></h3>
+<p><em>reset-to-authored</em></p>
+<p><strong>Put the choices and the sheet back where the dictionary started them</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ResetToAuthored(ByVal layout As ShowHideLayout) As Long
+</code></pre>
+<p>The reset button of the advanced form comes through here, once per worksheet.
+Every free entry goes back to the hidden or visible state the dictionary
+authored, the sheet is put in step through Apply, and on a printed sheet each
+header direction goes back to what <code>register book</code> asked. Mandatory and locked
+entries never left their authored state, so they are covered by the same walk.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>layout</code>: ShowHideLayout. The sheet to reconcile, or Nothing to reset the
+choices alone.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The number of positions Apply set.</p>
+<hr />
 </div>
 </details>
 <details open class="doc-section" id="build">
@@ -678,7 +697,7 @@ state was dropped on every load.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (8 file(s))</summary>
+<summary>Used in (9 file(s))</summary>
 <ul>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
@@ -687,6 +706,7 @@ state was dropped on every load.</p>
 <li><a href="ShowHideLayout.html">ShowHideLayout.cls</a></li>
 <li><a href="ShowHideStore.html">ShowHideStore.cls</a></li>
 <li>EventsLinelistButtons.bas</li>
+<li>FormLogicAdvanced.bas</li>
 <li>TestShowHide.bas</li>
 </ul>
 </details>

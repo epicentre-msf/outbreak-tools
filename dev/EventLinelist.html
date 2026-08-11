@@ -186,6 +186,39 @@ a table name and a blank row count through three separate stores.</p>
 </code></pre>
 <p><strong>Returns:</strong> Passwords. The held manager, or Nothing when the build failed.</p>
 <hr />
+<h3 id="dictionary">Dictionary <a class="anchor-link" href="#dictionary">#</a></h3>
+<p><strong>The dictionary of the linelist, built once and held.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Dictionary() As LLdictionary
+</code></pre>
+<p>The variable-labels button used to build a dictionary per click, and creating
+one walks the whole Dictionary worksheet. A workbook with no Dictionary sheet
+answers Nothing, and the tried flag keeps the failed build from repeating.</p>
+<p><strong>Returns:</strong> LLdictionary. The held dictionary, or Nothing when the build failed.</p>
+<hr />
+<h3 id="variables">Variables <a class="anchor-link" href="#variables">#</a></h3>
+<p><strong>The variable reader of the dictionary, built once and held.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Variables() As LLVariables
+</code></pre>
+<p><strong>Returns:</strong> LLVariables. The held reader, or Nothing when the build failed.</p>
+<hr />
+<h3 id="varlabeltable">VarLabelTable <a class="anchor-link" href="#varlabeltable">#</a></h3>
+<p><strong>The table the variable-labels form shows.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function VarLabelTable() As BetterArray
+</code></pre>
+<p>One row per hlist2D variable: the pivot block title of its table, the
+variable name and the main label. The pivot titles are worksheet hidden names
+CustomPivotTable writes on the custom pivot sheet, and that sheet is reached
+through the workbook hidden name RNG_CustomPivot. A workbook where the
+dictionary or the pivot sheet cannot be read answers what it can: an empty
+table, or rows with empty titles.</p>
+<p>The rows are built in memory. The button used to stage them on the temp__
+worksheet and read them back, one Excel crossing per cell.</p>
+<p><strong>Returns:</strong> BetterArray. One item per variable, each an array of title, name and
+label.</p>
+<hr />
 <h3 id="resetcaches">ResetCaches <a class="anchor-link" href="#resetcaches">#</a></h3>
 <p><strong>Clear cached resources.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -676,7 +709,7 @@ permanent refusal to build the manager again.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (14 file(s))</summary>
+<summary>Used in (17 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
@@ -684,12 +717,15 @@ permanent refusal to build the manager again.</p>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
+<li><a href="ShowHideStore.html">ShowHideStore.cls</a></li>
 <li>CustomLinelistFunctions.bas</li>
 <li>EventLinelistWorkbook.bas</li>
 <li>EventsLinelistButtons.bas</li>
 <li>EventsLinelistRibbon.bas</li>
 <li>GeoModule.bas</li>
 <li>LinelistEventsManager.bas</li>
+<li>FormLogicAdvanced.bas</li>
+<li>FormLogicShowHideSave.bas</li>
 <li>TestLLGeo.bas</li>
 <li>TestEventLinelist.bas</li>
 </ul>

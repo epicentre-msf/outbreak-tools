@@ -231,6 +231,10 @@ enough to read its real size and hides it again.</p>
 <pre><code class="language-vb">Public Function IsVertical(ByVal position As Long) As Boolean
 </code></pre>
 <p>The turned header of a printed sheet.</p>
+<p>Excel stores a flat cell two ways: the angle 0, and the constant xlHorizontal
+(-4128), which is what a cell written with <code>Orientation = 0</code> reads back as.
+Both mean flat, so both answer False here. Every flat header used to read as
+turned, because the test was <code>angle &lt;&gt; 0</code>.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>position</code>: Long. The column number.</li>
@@ -338,7 +342,7 @@ nothing but the word Unlock is read as one of those and the compile breaks.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (8 file(s))</summary>
+<summary>Used in (9 file(s))</summary>
 <ul>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
@@ -347,6 +351,7 @@ nothing but the word Unlock is read as one of those and the compile breaks.</p>
 <li><a href="ShowHide.html">ShowHide.cls</a></li>
 <li><a href="ShowHideStore.html">ShowHideStore.cls</a></li>
 <li>EventsLinelistButtons.bas</li>
+<li>FormLogicAdvanced.bas</li>
 <li>TestShowHide.bas</li>
 </ul>
 </details>
