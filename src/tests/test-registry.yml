@@ -777,6 +777,12 @@ suites:
       # generated linelist beside GeoModule and F_Geo, so the call still binds
       # at run time. Modules call modules, which is what the house rule wants.
       - name: EventLinelist
+      # LLLog keeps the dated user-action log of a running linelist on the
+      # very hidden __log worksheet, one Checking bundle per event flushed
+      # through CheckingOutput. It names Checking, CheckingOutput, HiddenNames
+      # and BetterArray, all baked into the driver workbook, so this row
+      # closes its own compile closure.
+      - name: LLLog
     modules:
       # LinelistEventsManager holds the single EventLinelist instance and the
       # busy-state counter, which is why it is a module: module-level state is
@@ -874,6 +880,15 @@ suites:
       # unqualified so they resolve to TestHelpersLite.
       - module: TestEventLinelistSheets
         covers: [EventLinelist]
+      # TestLLLog drives the log store over a bare workbook per test: the
+      # sheet provisioning, the append across two flushes, the outcome
+      # colours, the rotation past the row cap and the separator guard on
+      # the detail. The rotation is reached by seeding one cell past the
+      # cap, so the suite never writes ten thousand rows. It reaches no
+      # fixture module; its helper calls are unqualified, so they resolve
+      # to TestHelpersLite.
+      - module: TestLLLog
+        covers: [LLLog]
 
   # --- dev (Development) ----------------------------------------------------
   # THIS BLOCK CARRIES A TEST MODULE AND NO CLASS, AND IT MUST STAY THAT WAY.
