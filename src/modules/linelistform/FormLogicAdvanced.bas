@@ -313,9 +313,6 @@ Public Sub HandleResetColumns(ByVal sourceWkb As Workbook, _
     Dim entries As ShowHide
     Dim layout As ShowHideLayout
     Dim store As ShowHideStore
-    Dim shNames As HiddenNames
-    Dim shType As String
-    Dim layer As Byte
 
     Set dict = LLdictionary.Create(sourceWkb.Worksheets(DICTIONARY_SHEET), 1, 1)
 
@@ -326,23 +323,133 @@ Public Sub HandleResetColumns(ByVal sourceWkb As Workbook, _
     On Error GoTo 0
 
     For Each sh In sourceWkb.Worksheets
-        Set shNames = SheetNamesOf(sh)
-
-        If Not shNames Is Nothing Then
-            shType = shNames.ValueAsString("sheet_type")
-            layer = ShowHideLayerOf(shType)
-
-            If layer > 0 Then
-                Set entries = ShowHide.Create(dict, layer, BaseSheetNameOf(sh, shType))
-                Set layout = ShowHideLayout.Create(sh, layer, pass, _
-                                                   BaseTableNameOf(shNames.ValueAsString("table_name")))
-
-                entries.ResetToAuthored layout
-                If Not store Is Nothing Then store.Save entries, layout
-            End If
+        If LayerContextOf(sh, dict, pass, entries, layout) Then
+            entries.ResetToAuthored layout
+            If Not store Is Nothing Then store.Save entries, layout
         End If
     Next
 End Sub
+
+
+' @description Save what the user sees on every layered worksheet as one named
+' layout: visibility, sizes and printed header directions, over all four
+' layers. The sheet is the record, so each entry list adopts its sheet before
+' the save. The caller holds the busy state.
+' @param sourceWkb Workbook. The linelist workbook.
+' @param pass Passwords. The protection keys, or Nothing.
+' @param layoutName String. The name to save under.
+' @return Boolean. True when the layout was saved. False on an empty name, and
+' on a new name when the store already holds its maximum of saved layouts.
+Public Function HandleSaveShowHideLayout(ByVal sourceWkb As Workbook, _
+                                         ByVal pass As Passwords, _
+                                         ByVal layoutName As String) As Boolean
+
+    Dim sh As Worksheet
+    Dim dict As LLdictionary
+    Dim entries As ShowHide
+    Dim layout As ShowHideLayout
+    Dim store As ShowHideStore
+
+    layoutName = Trim$(layoutName)
+    If LenB(layoutName) = 0 Then Exit Function
+
+    Set store = ShowHideStore.Create(sourceWkb)
+    If Not store.HasLayout(layoutName) Then
+        If store.LayoutCount() >= store.MaxSavedLayouts Then Exit Function
+    End If
+
+    Set dict = LLdictionary.Create(sourceWkb.Worksheets(DICTIONARY_SHEET), 1, 1)
+
+    For Each sh In sourceWkb.Worksheets
+        If LayerContextOf(sh, dict, pass, entries, layout) Then
+            entries.Adopt layout
+            store.Save entries, layout, layoutName
+        End If
+    Next
+
+    HandleSaveShowHideLayout = True
+End Function
+
+
+' @description Put every layered worksheet in the state one saved layout
+' describes, and record that state as the current one, so it survives the
+' workbook closing. A sheet the layout has no rows for keeps its state. The
+' caller holds the busy state.
+' @param sourceWkb Workbook. The linelist workbook.
+' @param pass Passwords. The protection keys, or Nothing.
+' @param layoutName String. The saved layout to restore.
+' @return Long. How many stored rows landed on an entry, 0 when the name is
+' unknown.
+Public Function HandleRestoreShowHideLayout(ByVal sourceWkb As Workbook, _
+                                            ByVal pass As Passwords, _
+                                            ByVal layoutName As String) As Long
+
+    Dim sh As Worksheet
+    Dim dict As LLdictionary
+    Dim entries As ShowHide
+    Dim layout As ShowHideLayout
+    Dim store As ShowHideStore
+    Dim matched As Long
+    Dim total As Long
+
+    layoutName = Trim$(layoutName)
+    If LenB(layoutName) = 0 Then Exit Function
+
+    Set store = ShowHideStore.Create(sourceWkb)
+    If Not store.HasLayout(layoutName) Then Exit Function
+
+    Set dict = LLdictionary.Create(sourceWkb.Worksheets(DICTIONARY_SHEET), 1, 1)
+
+    For Each sh In sourceWkb.Worksheets
+        If LayerContextOf(sh, dict, pass, entries, layout) Then
+            matched = store.Load(entries, layout, layoutName)
+
+            If matched > 0 Then
+                entries.Apply layout
+                store.Save entries, layout
+                total = total + matched
+            End If
+        End If
+    Next
+
+    HandleRestoreShowHideLayout = total
+End Function
+
+
+' @description Build the entry list and the layout of one worksheet. A sheet
+' outside the four show/hide layers answers False and both stay Nothing.
+' @param sh Worksheet. The worksheet to read.
+' @param dict LLdictionary. The dictionary of the workbook.
+' @param pass Passwords. The protection keys, or Nothing.
+' @param entries ShowHide. Set to the sheet's entry list.
+' @param layout ShowHideLayout. Set to the sheet's layout.
+' @return Boolean. True when the sheet carries a layer.
+Private Function LayerContextOf(ByVal sh As Worksheet, _
+                                ByVal dict As LLdictionary, _
+                                ByVal pass As Passwords, _
+                                ByRef entries As ShowHide, _
+                                ByRef layout As ShowHideLayout) As Boolean
+
+    Dim shNames As HiddenNames
+    Dim shType As String
+    Dim layer As Byte
+
+    Set entries = Nothing
+    Set layout = Nothing
+
+    Set shNames = SheetNamesOf(sh)
+    If shNames Is Nothing Then Exit Function
+
+    shType = shNames.ValueAsString("sheet_type")
+    layer = ShowHideLayerOf(shType)
+    If layer = 0 Then Exit Function
+
+    Set entries = ShowHide.Create(dict, layer, BaseSheetNameOf(sh, shType))
+    Set layout = ShowHideLayout.Create(sh, layer, pass, _
+                                       BaseTableNameOf(shNames.ValueAsString("table_name")))
+
+    LayerContextOf = True
+End Function
 
 
 ' @description The held hidden names of one worksheet, through the event
