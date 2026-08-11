@@ -1248,6 +1248,8 @@ Private Sub AddShowHide(ByVal outwb As Workbook)
     Dim printSh As Worksheet
     Dim crfSh As Worksheet
     Dim outStore As ShowHideStore
+    Dim srcSh As Worksheet
+    Dim srcStore As ShowHideStore
     Dim counter As Long
     Dim nbExp As Long
 
@@ -1292,6 +1294,15 @@ Private Sub AddShowHide(ByVal outwb As Workbook)
 
 NextSheet:
     Next counter
+
+    'The saved layouts travel with the current state. The source store is read
+    'as it stands; a linelist with no store sheet has nothing to carry, and the
+    'export table starts empty of layouts, so nothing is ever skipped here.
+    On Error Resume Next
+    Set srcSh = this.sourceWkb.Worksheets(SHOWHIDESHEET)
+    On Error GoTo 0
+    Set srcStore = ShowHideStore.CreateForRead(srcSh)
+    outStore.MergeLayoutsFrom srcStore
 
     On Error Resume Next
     outsh.Cells.EntireColumn.AutoFit

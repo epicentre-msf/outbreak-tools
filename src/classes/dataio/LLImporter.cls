@@ -592,6 +592,8 @@ Public Sub ImportShowHide(ByVal impwb As Workbook, ByVal meta As ImportMetadata)
     Dim crfSh As Worksheet
     Dim impsh As Worksheet
     Dim impStore As ShowHideStore
+    Dim localStore As ShowHideStore
+    Dim skippedNames As BetterArray
     Dim counter As Long
 
     ' Prerequisites
@@ -637,6 +639,28 @@ Public Sub ImportShowHide(ByVal impwb As Workbook, ByVal meta As ImportMetadata)
 
 NextShowHideSheet:
     Next counter
+
+    'The file's saved layouts come across too. A name both stores hold is
+    'taken from the file; a new name past the cap is skipped and reported.
+    On Error Resume Next
+    Set localStore = ShowHideStore.Create(this.sourceWkb)
+    On Error GoTo 0
+
+    If Not localStore Is Nothing Then
+        Set skippedNames = localStore.MergeLayoutsFrom(impStore)
+
+        If skippedNames.Length = 0 Then Exit Sub
+        For counter = skippedNames.LowerBound To skippedNames.UpperBound
+            FileChecking "show hide layout " & CStr(skippedNames.Item(counter)), _
+                         "The file carries a saved layout named '" & _
+                         CStr(skippedNames.Item(counter)) & "', and this " & _
+                         "linelist already holds " & _
+                         CStr(localStore.MaxSavedLayouts) & " saved layouts, " & _
+                         "so it was left out. Delete a saved layout and " & _
+                         "import again to bring it in.", _
+                         checkingWarning
+        Next counter
+    End If
 End Sub
 
 '@label:apply-one-show-hide-layer
