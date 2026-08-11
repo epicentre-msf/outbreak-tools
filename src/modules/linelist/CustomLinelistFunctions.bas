@@ -15,6 +15,29 @@ Public Enum DayList
     Sunday = 0
 End Enum
 
+'@section Recalculation
+'===============================================================================
+'Six functions here call Application.Volatile: VALUE_OF, ComputedOnFiltered and
+'the four geo delegates. Each one reads something the formula does not name -- a
+'lookup table picked by a string, the filter state of every HList sheet, the geo
+'cells beside the one passed in, the ranked spatial tables -- and the code that
+'changes those inputs leaves the formula cells clean. The Volatile call is what
+'brings Excel back to them.
+'
+'The date and validation functions (Epiweek, FindLastDay, FormatDateFromLastDay,
+'ValidMin, ValidMax, InfoUser) take their values from their own arguments, from
+'HiddenNames written once when the linelist is built (RNG_Week, RNG_Quarter,
+'RNG_InfoStart, RNG_InfoEnd), and from RNG_EpiWeekStart. The two places that
+'write RNG_EpiWeekStart at run time -- FormLogicEpiWeek.RecomputeAndUpdate and
+'LLImporter.ImportSingleValues -- each run UsedRange.Calculate over every sheet
+'tag that can hold one of these formulas, and that forces a clean cell as well.
+'So they recalculate on their own arguments and carry no Volatile call.
+'
+'One read still to fix: GetAgg reads the sheet tag of ActiveSheet, so the four
+'functions that go through it answer for whatever sheet is on screen. Leaving
+'them off the volatile passes keeps them away from the recalculations fired
+'while the user sits on another sheet, which is where that read went wrong.
+
 '@section VALUE_OF lookup cache
 '===============================================================================
 'VALUE_OF runs once per formula cell on every recalculation pass, so it caches
@@ -345,7 +368,6 @@ End Function
 '@EntryPoint
 Public Function Epiweek(ByVal currentDate As Long, _
                          Optional ByVal userStart As Integer = -1) As String
-    Application.Volatile
 
     Dim weekStart As Integer
     Dim weekTag As String
@@ -444,7 +466,6 @@ End Function
 '@return Long. Date serial of the last day of the aggregation period.
 '@EntryPoint
 Public Function FindLastDay(sAggregate As String, inDate As Long) As Long
-    Application.Volatile
 
     Dim sAgg As String
     Dim dLastDay As Long
@@ -502,8 +523,6 @@ Public Function FormatDateFromLastDay(sAggregate As String, _
                                       startDate As Long, _
                                       endDate As Long, _
                                       MaxDate As Long) As String
-
-    Application.Volatile
 
     Dim sAgg As String
     Dim sValue As String
@@ -602,7 +621,6 @@ End Function
 Public Function ValidMin(startDate As Long, endDate As Long, _
                          MinDate As Long, _
                          MaxDate As Long, agg As String) As Long
-    Application.Volatile
 
     Dim validation As Long
     Dim timeStamp As Long
@@ -628,7 +646,6 @@ End Function
 Public Function ValidMax(startDate As Long, _
                          endDate As Long, _
                          MinDate As Long, MaxDate As Long, agg As String) As Long
-    Application.Volatile
 
     Dim validation As Long
     Dim timeStamp As Long
@@ -669,7 +686,6 @@ End Function
 Public Function InfoUser(userDate As Long, _
                          actualDate As Long, _
                          Optional infotype As Byte = 1) As String
-    Application.Volatile
 
     Dim infoStartTag As String
     Dim infoEndTag As String
