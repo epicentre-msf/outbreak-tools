@@ -798,6 +798,104 @@ TestFail:
                          Err.Number, Err.Description
 End Sub
 
+'@sub-title A level outside 1 to 4 answers empty.
+'@details
+'The formula writer only authors levels 1 to 4, so this branch is only
+'reachable from a hand-typed formula. It used to answer the first cell alone,
+'a value that looks real and matches no geobase entry.
+'@TestMethod("EventLinelist")
+Public Sub TestGeoConcatAnswersEmptyOutsideTheLevels()
+    CustomTestSetTitles Assert, TESTMODULE, "TestGeoConcatAnswersEmptyOutsideTheLevels"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim firstCell As Range
+
+    Set firstCell = SeedGeoRow(Array("Region", "District", "Chiefdom", "Village"))
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    Assert.AreEqual vbNullString, sut.GeoConcat(firstCell, 0), _
+                    "Level zero answers empty on a fully filled row"
+    Assert.AreEqual vbNullString, sut.GeoConcat(firstCell, 5), _
+                    "A level past four answers empty on a fully filled row"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestGeoConcatAnswersEmptyOutsideTheLevels", _
+                         Err.Number, Err.Description
+End Sub
+
+
+'@section Spatial name cleaning
+'===============================================================================
+'The spatial formulas carry the variable name with the tag the formula writer
+'put in front -- "concat_adm1_" or "hf_" -- and the spatial tables are keyed on
+'the bare name. BareSpatialName takes the tag off whole. The delegates used to
+'split on "_" and take the third piece, which cut "concat_adm1_case_zone" down
+'to "case", and to count the tag's characters off the front, which raised on
+'any name shorter than the tag.
+
+'@sub-title The authored tag comes off whole and nothing else does.
+'@TestMethod("EventLinelist")
+Public Sub TestBareSpatialNameTakesTheTagOffWhole()
+    CustomTestSetTitles Assert, TESTMODULE, "TestBareSpatialNameTakesTheTagOffWhole"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    Assert.AreEqual "myvar", sut.BareSpatialName("concat_adm1_myvar"), _
+                    "The geo tag comes off the front"
+    Assert.AreEqual "case_zone", sut.BareSpatialName("concat_adm1_case_zone"), _
+                    "A bare name carrying underscores survives whole"
+    Assert.AreEqual "facility", sut.BareSpatialName("hf_facility"), _
+                    "The facility tag comes off the front"
+    Assert.AreEqual "health_post", sut.BareSpatialName("hf_health_post"), _
+                    "A facility name carrying underscores survives whole"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestBareSpatialNameTakesTheTagOffWhole", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A name with no tag passes through, however short.
+'@details
+'The character-counting form raised "invalid procedure call" on any name
+'shorter than the tag it counted off. A short or untagged name is not this
+'member's error to raise: it passes through, and the table lookup answers its
+'usual empty string.
+'@TestMethod("EventLinelist")
+Public Sub TestBareSpatialNamePassesUntaggedNamesThrough()
+    CustomTestSetTitles Assert, TESTMODULE, "TestBareSpatialNamePassesUntaggedNamesThrough"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim errNumber As Long
+    Dim shortAnswer As String
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    On Error Resume Next
+        shortAnswer = sut.BareSpatialName("ad")
+        errNumber = Err.Number
+    On Error GoTo 0
+
+    On Error GoTo TestFail
+    Assert.AreEqual 0&, errNumber, "A name shorter than the tag raises nothing"
+    Assert.AreEqual "ad", shortAnswer, "And comes back unchanged"
+    Assert.AreEqual "plainvar", sut.BareSpatialName("plainvar"), _
+                    "A name with no tag passes through unchanged"
+    Assert.AreEqual vbNullString, sut.BareSpatialName("concat_adm1_"), _
+                    "A tag with nothing behind it answers empty"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestBareSpatialNamePassesUntaggedNamesThrough", _
+                         Err.Number, Err.Description
+End Sub
+
 
 '@section The managers the buttons read
 '===============================================================================

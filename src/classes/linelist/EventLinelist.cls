@@ -88,6 +88,12 @@ Private Const MSGTITLE          As String = "MSG_Error"
 ' reads any answer below zero as "nothing to open".
 Private Const GEOSCOPENONE      As Long = -1
 
+' The tags TableSpecs.SpatialConcatVariableName writes in front of the bare
+' variable name when it authors the spatial formulas. BareSpatialName takes
+' them back off.
+Private Const CONCATADMPREFIX   As String = "concat_adm1_"
+Private Const HFPREFIX          As String = "hf_"
+
 
 '@section Factory
 '===============================================================================
@@ -553,7 +559,10 @@ Public Function GeoConcat(ByVal cellRng As Range, ByVal geoLevel As Byte) As Str
                           vbNullString)
 
     Case Else
-        concatValue = cellRng.Value
+        'Only a hand-typed formula can carry a level outside 1 to 4. It used
+        'to answer the first cell alone, which looks like a real value; an
+        'empty cell is the same answer a half-filled geo row gives.
+        concatValue = vbNullString
 
     End Select
 
@@ -561,10 +570,34 @@ Public Function GeoConcat(ByVal cellRng As Range, ByVal geoLevel As Byte) As Str
 End Function
 
 
+'@sub-title Take the authored spatial tag off a variable name.
+'@details
+'The spatial formulas carry the dictionary variable the tables were summed
+'over -- "concat_adm1_" in front of a geographic name, "hf_" in front of a
+'facility one -- and the spatial tables are keyed on the bare name. The tag
+'comes off whole, so a bare name carrying underscores of its own survives; a
+'name with no tag passes through unchanged, and the table lookup then answers
+'its usual empty string. The delegates below used to split on "_" and count
+'characters instead, which cut an underscored name short and raised on a name
+'shorter than the tag.
+'@param varName String. Variable name as the formula carries it.
+'@return String. The bare variable name.
+'@export
+Public Function BareSpatialName(ByVal varName As String) As String
+    If Left$(varName, Len(CONCATADMPREFIX)) = CONCATADMPREFIX Then
+        BareSpatialName = Mid$(varName, Len(CONCATADMPREFIX) + 1)
+    ElseIf Left$(varName, Len(HFPREFIX)) = HFPREFIX Then
+        BareSpatialName = Mid$(varName, Len(HFPREFIX) + 1)
+    Else
+        BareSpatialName = varName
+    End If
+End Function
+
+
 '@sub-title Return the top admin name for a spatial variable.
 '@param adminLevel String. Admin level label (e.g. "adm1").
 '@param adminOrder Integer. Rank order (1 = top, 2 = second, etc.).
-'@param varName String. Variable name (with prefix, e.g. "adm1_concat_adm1_myvar").
+'@param varName String. Variable name (with prefix, e.g. "concat_adm1_myvar").
 '@param tabId Optional String. Spatial table identifier.
 '@return String. Admin name at the given rank.
 '@export
@@ -581,7 +614,7 @@ Public Function TopAdmin(ByVal adminLevel As String, _
     If this.geo Is Nothing Then Exit Function
     If this.sp Is Nothing Then Exit Function
 
-    actualVarName = Split(varName, "_")(2)
+    actualVarName = BareSpatialName(varName)
     adminName = this.geo.AdminCode(adminLevel)
     TopAdmin = this.sp.TopGeoValue(adminName, adminOrder, actualVarName, tabId)
 End Function
@@ -608,8 +641,7 @@ Public Function TopPop(ByVal adminLevel As String, _
     If this.geo Is Nothing Then Exit Function
     If this.sp Is Nothing Then Exit Function
 
-    ' 12 is the length of the "concat_adm1_" prefix
-    actualVarName = Right(varName, (Len(varName) - 12))
+    actualVarName = BareSpatialName(varName)
     adminName = this.geo.AdminCode(adminLevel)
 
     pop = 0
@@ -636,8 +668,7 @@ Public Function TopHF(ByVal adminOrder As Integer, _
 
     If this.sp Is Nothing Then Exit Function
 
-    ' 3 is the length of the "hf_" prefix
-    actualVarName = Right(varName, (Len(varName) - 3))
+    actualVarName = BareSpatialName(varName)
     TopHF = this.sp.TopHFValue(adminOrder, actualVarName, tabId)
 End Function
 
