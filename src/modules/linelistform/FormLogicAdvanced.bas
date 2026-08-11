@@ -23,6 +23,22 @@ Private Const PASTING_RULE_BOTTOM As Byte = 1
 Private Const PASTING_RULE_STOP As Byte = 2
 
 
+' @description Drop the held managers of the event service.
+' The walks below rewrite the worksheets those managers were built over: an
+' import rewrites the data, the dropdowns and the dictionary metadata, a
+' geobase import the Geo sheet, a clear the data tables. The service builds
+' fresh managers on the next event. Called on the error paths too, because a
+' walk that failed midway has already rewritten part of what the managers read.
+Private Sub ResetEventCaches()
+    Dim linelistEvents As EventLinelist
+
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    If linelistEvents Is Nothing Then Exit Sub
+
+    linelistEvents.ResetCaches
+End Sub
+
+
 ' @description Import data from a migration workbook.
 ' Shows file picker, asks what to do with data already entered, checks language,
 ' imports data and metadata, shows report.
@@ -104,6 +120,9 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
     actsh.Activate
     appState.Restore
 
+    ' The import rewrote the sheets the held managers were built over
+    ResetEventCaches
+
     ' Show result. MSG_FinishImportRep asks whether the user wants to see a
     ' report, and it used to be asked with an OK button, so there was no way to
     ' answer and nothing behind it either.
@@ -153,6 +172,7 @@ ErrHand:
     If Not impwb Is Nothing Then impwb.Close savechanges:=False
     If Not actsh Is Nothing Then actsh.Activate
     If Not appState Is Nothing Then appState.Restore
+    ResetEventCaches
 End Sub
 
 
@@ -284,6 +304,9 @@ Public Sub HandleImportGeobase(ByVal sourceWkb As Workbook, _
 
     appState.Restore
 
+    ' The import rewrote the Geo sheet the held geo manager was built over
+    ResetEventCaches
+
     MsgBox trads.TranslatedValue("MSG_FinishImportGeo"), _
            vbOKOnly, trads.TranslatedValue("MSG_Imports")
     Exit Sub
@@ -294,6 +317,7 @@ ErrHand:
            vbCritical + vbOKOnly, trads.TranslatedValue("MSG_Imports")
     If Not impwb Is Nothing Then impwb.Close savechanges:=False
     If Not appState Is Nothing Then appState.Restore
+    ResetEventCaches
 End Sub
 
 
@@ -575,6 +599,9 @@ Public Sub HandleClearData(ByVal sourceWkb As Workbook, _
     impObj.ClearData
 
     appState.Restore
+
+    ' The clear emptied the tables the held managers were built over
+    ResetEventCaches
     Exit Sub
 
 ErrHand:
@@ -582,4 +609,5 @@ ErrHand:
     MsgBox trads.TranslatedValue("MSG_ErrClearData"), _
            vbCritical + vbOKOnly, trads.TranslatedValue("MSG_Error")
     If Not appState Is Nothing Then appState.Restore
+    ResetEventCaches
 End Sub
