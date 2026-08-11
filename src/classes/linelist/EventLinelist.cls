@@ -77,6 +77,9 @@ Private Const DICTSHEET         As String = "Dictionary"
 Private Const LLSHEET           As String = "LinelistTranslation"
 Private Const PASSSHEET         As String = "__pass"
 
+' The workbook hidden name holding the custom pivot sheet's name.
+Private Const PIVOTSHEETNAME    As String = "RNG_CustomPivot"
+
 ' The message code every box title is read from.
 Private Const MSGTITLE          As String = "MSG_Error"
 
@@ -352,6 +355,91 @@ End Function
 Public Function PasswordManager() As Passwords
     EnsurePasswords
     Set PasswordManager = this.pass
+End Function
+
+
+'@sub-title The dictionary of the linelist, built once and held.
+'@details
+'The variable-labels button used to build a dictionary per click, and creating
+'one walks the whole Dictionary worksheet. A workbook with no Dictionary sheet
+'answers Nothing, and the tried flag keeps the failed build from repeating.
+'@return LLdictionary. The held dictionary, or Nothing when the build failed.
+'@export
+Public Function Dictionary() As LLdictionary
+    EnsureDictionary
+    Set Dictionary = this.dict
+End Function
+
+
+'@sub-title The variable reader of the dictionary, built once and held.
+'@return LLVariables. The held reader, or Nothing when the build failed.
+'@export
+Public Function Variables() As LLVariables
+    EnsureVariables
+    Set Variables = this.vars
+End Function
+
+
+'@sub-title The table the variable-labels form shows.
+'@details
+'One row per hlist2D variable: the pivot block title of its table, the
+'variable name and the main label. The pivot titles are worksheet hidden names
+'CustomPivotTable writes on the custom pivot sheet, and that sheet is reached
+'through the workbook hidden name RNG_CustomPivot. A workbook where the
+'dictionary or the pivot sheet cannot be read answers what it can: an empty
+'table, or rows with empty titles.
+'
+'The rows are built in memory. The button used to stage them on the temp__
+'worksheet and read them back, one Excel crossing per cell.
+'@return BetterArray. One item per variable, each an array of title, name and
+'  label.
+'@export
+Public Function VarLabelTable() As BetterArray
+    Dim result As BetterArray
+    Dim varNames As BetterArray
+    Dim bookNames As HiddenNames
+    Dim pivotStore As HiddenNames
+    Dim pivotSh As Worksheet
+    Dim pivotLabel As String
+    Dim idx As Long
+    Dim varName As String
+    Dim pivotTitle As String
+
+    Set result = New BetterArray
+    Set VarLabelTable = result
+
+    EnsureVariables
+    If this.vars Is Nothing Then Exit Function
+
+    'The two derived columns this walk reads, `table name` and the prepared
+    '`sheet type`, are written by Prepare. A generated linelist carries them
+    'already, so this is a no-op there.
+    If Not this.dict.Prepared Then this.dict.Prepare
+
+    Set bookNames = WorkbookNames()
+    If Not bookNames Is Nothing Then
+        pivotLabel = bookNames.ValueAsString(PIVOTSHEETNAME)
+        Set pivotSh = SheetOrNothing(pivotLabel)
+        If Not pivotSh Is Nothing Then Set pivotStore = SheetStore(pivotSh)
+    End If
+
+    Set varNames = this.vars.VariableNames
+    If varNames Is Nothing Then Exit Function
+
+    For idx = varNames.LowerBound To varNames.UpperBound
+        varName = CStr(varNames.Item(idx))
+
+        If this.vars.Value(colName:="sheet type", varName:=varName) = "hlist2D" Then
+            pivotTitle = vbNullString
+            If Not pivotStore Is Nothing Then
+                pivotTitle = pivotStore.ValueAsString( _
+                    "pivot_title_" & this.vars.Value(colName:="table name", varName:=varName))
+            End If
+
+            result.Push Array(pivotTitle, varName, _
+                              this.vars.Value(colName:="main label", varName:=varName))
+        End If
+    Next idx
 End Function
 
 

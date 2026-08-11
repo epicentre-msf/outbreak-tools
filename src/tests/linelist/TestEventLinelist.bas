@@ -301,6 +301,24 @@ Private Function SeedFilteredPair(ByVal sourceRows As Variant) As Worksheet
     Set SeedFilteredPair = filtsh
 End Function
 
+'@fun-title The row of one variable in a VarLabelTable answer.
+'@param labelRows BetterArray. The table VarLabelTable gave back.
+'@param varName String. The variable name to look for.
+'@return Variant. The row's array of title, name and label, or Empty.
+Private Function VarLabelRowOf(ByVal labelRows As BetterArray, _
+                               ByVal varName As String) As Variant
+    Dim idx As Long
+    Dim rowData As Variant
+
+    For idx = labelRows.LowerBound To labelRows.UpperBound
+        rowData = labelRows.Item(idx)
+        If CStr(rowData(LBound(rowData) + 1)) = varName Then
+            VarLabelRowOf = rowData
+            Exit Function
+        End If
+    Next idx
+End Function
+
 
 '@section Factory Tests
 '===============================================================================
@@ -908,6 +926,140 @@ Public Sub TestWarnStaysQuietWithoutATranslationSheet()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestWarnStaysQuietWithoutATranslationSheet", _
+                         Err.Number, Err.Description
+End Sub
+
+
+'@section The dictionary managers and the variable-labels table
+'===============================================================================
+'The variable-labels button used to build a dictionary and a variable reader on
+'every click, and stage its rows on the temp__ worksheet. Both managers are
+'held on the service now, and VarLabelTable builds the rows in memory: one row
+'per hlist2D variable, carrying the pivot block title of its table, the
+'variable name and the main label.
+
+'@sub-title A workbook with no Dictionary sheet answers Nothing, once.
+'@TestMethod("EventLinelist")
+Public Sub TestDictionaryStopsRetryingAfterAFailedBuild()
+    CustomTestSetTitles Assert, TESTMODULE, "TestDictionaryStopsRetryingAfterAFailedBuild"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+    Assert.IsNothing sut.Dictionary(), _
+                     "A workbook with no Dictionary sheet answers Nothing"
+
+    'The sheet arrives after the failed build. The tried flag holds the answer.
+    DictionaryTestFixture.PrepareDictionaryFixture "Dictionary", FixtureWkb
+    Assert.IsNothing sut.Dictionary(), _
+                     "The session keeps the answer of the first build"
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+    Assert.IsNotNothing sut.Dictionary(), "A fresh service sees the sheet"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestDictionaryStopsRetryingAfterAFailedBuild", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title The dictionary and the variable reader are built once and handed back.
+'@TestMethod("EventLinelist")
+Public Sub TestDictionaryAndVariablesAreHeldAcrossCalls()
+    CustomTestSetTitles Assert, TESTMODULE, "TestDictionaryAndVariablesAreHeldAcrossCalls"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+
+    DictionaryTestFixture.PrepareDictionaryFixture "Dictionary", FixtureWkb
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    Assert.IsNotNothing sut.Dictionary(), "A workbook with the sheet gives a dictionary"
+    Assert.IsTrue sut.Dictionary() Is sut.Dictionary(), _
+                  "The second read is the same dictionary"
+    Assert.IsNotNothing sut.Variables(), "And a variable reader stands on it"
+    Assert.IsTrue sut.Variables() Is sut.Variables(), _
+                  "The second read is the same reader"
+    Assert.IsTrue sut.Variables().Dictionary Is sut.Dictionary(), _
+                  "The reader reads the held dictionary"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestDictionaryAndVariablesAreHeldAcrossCalls", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A workbook with no dictionary gives an empty table.
+'@TestMethod("EventLinelist")
+Public Sub TestVarLabelTableIsEmptyWithoutADictionary()
+    CustomTestSetTitles Assert, TESTMODULE, "TestVarLabelTableIsEmptyWithoutADictionary"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim labelRows As BetterArray
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+    Set labelRows = sut.VarLabelTable()
+
+    Assert.IsNotNothing labelRows, "The table itself always comes back"
+    Assert.AreEqual CLng(0), labelRows.Length, _
+                    "A workbook with no dictionary has no rows to offer"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestVarLabelTableIsEmptyWithoutADictionary", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title One row per hlist2D variable: pivot title, name and label.
+'@TestMethod("EventLinelist")
+Public Sub TestVarLabelTableListsTheHListVariables()
+    CustomTestSetTitles Assert, TESTMODULE, "TestVarLabelTableListsTheHListVariables"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim labelRows As BetterArray
+    Dim pivotSh As Worksheet
+    Dim pivotStore As HiddenNames
+    Dim tabName As String
+    Dim rowData As Variant
+
+    DictionaryTestFixture.PrepareDictionaryFixture "Dictionary", FixtureWkb
+    Set pivotSh = FixtureWkb.Worksheets.Add
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    '`table name` is derived by Prepare, so the fixture writes it nowhere and a
+    'test that wrote it down would be asserting a guess. Read it off the reader.
+    sut.Dictionary().Prepare
+    tabName = sut.Variables().Value(colName:="table name", varName:="mand_h2")
+
+    'The custom pivot sheet is reached through RNG_CustomPivot, and each table's
+    'title is a hidden name CustomPivotTable writes on that sheet.
+    SetWorkbookName FixtureWkb, "RNG_CustomPivot", pivotSh.Name
+    Set pivotStore = HiddenNames.Create(pivotSh)
+    pivotStore.EnsureName "pivot_title_" & tabName, "Case listing", HiddenNameTypeString
+
+    Set labelRows = sut.VarLabelTable()
+
+    Assert.AreEqual DictionaryTestFixture.DictionaryFieldEquals("Sheet Type", "hlist2D").Length, _
+                    labelRows.Length, _
+                    "The table holds one row per hlist2D variable of the dictionary"
+
+    rowData = VarLabelRowOf(labelRows, "mand_h2")
+    Assert.IsFalse IsEmpty(rowData), "mand_h2 is on a data entry sheet, so it has a row"
+    Assert.AreEqual "Case listing", CStr(rowData(LBound(rowData))), _
+                    "The row opens with the pivot title of its table"
+    Assert.AreEqual "Mandatory variable on hlist2D", _
+                    CStr(rowData(LBound(rowData) + 2)), _
+                    "And closes with the main label"
+
+    rowData = VarLabelRowOf(labelRows, "mand_v1")
+    Assert.IsTrue IsEmpty(rowData), "A vlist1D variable has no row here"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestVarLabelTableListsTheHListVariables", _
                          Err.Number, Err.Description
 End Sub
 
