@@ -35,6 +35,7 @@ Option Explicit
 'criteria it should, how many criteria it carries, and that the failure marker
 'the class used to write is nowhere on the sheet.
 '@depends CrossTableFormula, CrossTable, TableSpecs, AnalysisRanges, SpatialTables,
+'  DropdownLists,
 '  FormulaData, Formulas, LLdictionary, LLVariables, TranslationObject,
 '  LinelistDataStub, Checking, BetterArray, CustomTest, TestHelpersLite
 
@@ -47,6 +48,7 @@ Private Const TRANS_TABLE As String = "T_CTFormulaTranslation"
 Private Const TOKENS_SHEET As String = "CTFormulaTokens"
 Private Const LINELIST_SHEET As String = "CTFormulaLinelist"
 Private Const SPATIAL_SHEET As String = "spatial_tables__"
+Private Const TIMEUNIT_SHEET As String = "CTFormulaTimeUnit"
 
 ' The header row of every fixture table. Data rows start immediately below.
 Private Const HEADER_ROW As Long = 5
@@ -740,6 +742,30 @@ Public Sub ModuleInitialize()
     ' SpatialTables.Create requires this worksheet in the same workbook, and the
     ' spatial arm registers every table it writes with it.
     EnsureWorksheet SPATIAL_SHEET, clearSheet:=True, visibility:=xlSheetHidden
+
+    PrepareTimeUnitList
+End Sub
+
+'@sub-title Add the shared time unit dropdown the temporal validations bind to.
+'@details
+'Excel refuses a list validation naming a range the workbook does not carry, so
+'a temporal table can only get its dropdown when the shared list is there.
+'Linelist.Prepare adds it in production, through the standard DropdownLists
+'manager, and this is the same call over a fixture sheet of its own.
+'
+'The sheet is separate from the fixture and output sheets because both of those
+'are cleared between tests and the defined name would be left pointing at
+'nothing.
+Private Sub PrepareTimeUnitList()
+    Dim drop As DropdownLists
+    Dim listValues As BetterArray
+
+    Set drop = DropdownLists.Create( _
+        EnsureWorksheet(TIMEUNIT_SHEET, clearSheet:=True, visibility:=xlSheetHidden), _
+        "dropdown_")
+
+    Set listValues = BetterArrayFromList("Day", "Week", "Month", "Quarter", "Year")
+    drop.Add listValues, AnalysisRanges.TimeUnitListName
 End Sub
 
 '@sub-title Write one dictionary row for an appended geo variable.
@@ -776,6 +802,7 @@ Public Sub ModuleCleanup()
     DeleteWorksheet TOKENS_SHEET
     DeleteWorksheet LINELIST_SHEET
     DeleteWorksheet SPATIAL_SHEET
+    DeleteWorksheet TIMEUNIT_SHEET
     RestoreApp
 
     Set dict = Nothing
@@ -1649,7 +1676,7 @@ Public Sub TestTimeSeriesCreatesTheTimeUnitDropdown()
 
     validationFormula = TimeUnitValidationOf(sh, tabId)
 
-    Assert.AreEqual "=TIME_UNIT_LIST", validationFormula, _
+    Assert.AreEqual "=dropdown_time_unit", validationFormula, _
                     "A time series table reads the shared time unit list"
     Assert.AreEqual CLng(0), ErrorCheckCount(writer), _
                     "Creating the dropdown should report no error, and it reported " & _
@@ -1792,12 +1819,12 @@ Public Sub TestSpatioTemporalLabelsReadTheGeoInputs()
                     "A spatio-temporal table should report no error, and it reported " & _
                     CheckMessages(writer)
 
-    ' The spatio-temporal tables sit on a worksheet of their own and carry a time
-    ' unit list of their own. The table writer built that name and this class
-    ' asked for the plain one, so the dropdown was bound to a list the sheet does
-    ' not carry and the failure was swallowed.
-    Assert.AreEqual "=SPTIME_UNIT_LIST", TimeUnitValidationOf(sh, tabId), _
-                    "A spatio-temporal table reads the spatio-temporal time unit list"
+    ' Every temporal table binds to the one workbook-level list, whatever sheet
+    ' it sits on. The two sheets used to carry a copy each, this class asked for
+    ' the time series spelling on both, and the failure on the spatio-temporal
+    ' sheet was swallowed.
+    Assert.AreEqual "=dropdown_time_unit", TimeUnitValidationOf(sh, tabId), _
+                    "A spatio-temporal table reads the same shared time unit list"
 
     Exit Sub
 TestFail:

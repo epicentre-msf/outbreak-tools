@@ -51,7 +51,7 @@ Option Explicit
 '@depends LinelistSpecs, LLdictionary, LLSheets, TranslationObject,
 '  LLFormat, DropdownLists, CustomPivotTable, TemporaryRepos,
 '  Buttons, CodeTransfer, Passwords, HiddenNames, AnaTabIds,
-'  ShowHideStore, Checking, BetterArray
+'  ShowHideStore, AnalysisRanges, Checking, BetterArray
 '@version 1.4 (2026-08-01)
 
 
@@ -452,6 +452,7 @@ Public Sub Prepare()
     Next
 
     PrepareTemporarySheets
+    PrepareAnalysisLists
 
     'Instruction sheet (template only)
     If this.specs.HasTemplate() Then
@@ -858,6 +859,43 @@ Private Sub PrepareTemporarySheets()
     sheetName = this.specs.TemporarySheetName(TempSheetShowHide)
     Set sh = outWkb.Worksheets(sheetName)
     ShowHideStore.CreateOnSheet sh
+End Sub
+
+'@label:prepare-analysis-lists
+'@sub-title Add the choice lists every analysis sheet shares
+'@details
+'ONE LIST FOR THE WHOLE WORKBOOK
+'-------------------------------------------------------------------------------
+'The time units a temporal table can group by are one workbook-level dropdown on
+'the list sheet. Every temporal table binds its own time unit cell to it, and
+'GetAgg in CustomLinelistFunctions reads the same list to turn the chosen label
+'back into a time unit.
+'
+'Each analysis sheet used to build a copy of its own, which is why there were
+'two spellings of the same five words. A reader that named one of them answered
+'wrongly on the sheet carrying the other, and answered nothing at all in a
+'workbook that carried neither.
+'
+'The words come from the message translations, so the list is written in the
+'language of the linelist. The dropdown is added once; DropdownLists refuses a
+'second one under the same name and files the reason.
+Private Sub PrepareAnalysisLists()
+    Dim listValues As BetterArray
+    Dim trans As TranslationObject
+    Dim drop As DropdownLists
+
+    Set trans = this.specs.TransObject
+    Set drop = Dropdown(1)
+
+    Set listValues = New BetterArray
+    listValues.LowerBound = 1
+    listValues.Push trans.TranslatedValue("MSG_Day"), _
+                    trans.TranslatedValue("MSG_Week"), _
+                    trans.TranslatedValue("MSG_Month"), _
+                    trans.TranslatedValue("MSG_Quarter"), _
+                    trans.TranslatedValue("MSG_Year")
+
+    drop.Add listValues, AnalysisRanges.TimeUnitListName
 End Sub
 
 '@label:initialise-workbook-names

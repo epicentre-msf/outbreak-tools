@@ -795,9 +795,10 @@ suites:
       # answering week 53 for 29 to 31 December 2025. The implementation that
       # behaved that way was replaced in February 2026 and nothing proved the
       # replacement, because src/modules/linelist/ had no registry row at all.
-      # The module is self-contained: it declares its own DropWorkbookName and
-      # SetWorkbookName, and its other helper calls are unqualified so they
-      # resolve to TestHelpersLite.
+      # The module declares its own DropWorkbookName and SetWorkbookName, and
+      # its other helper calls are unqualified so they resolve to
+      # TestHelpersLite. The aggregation tests build the shared time unit
+      # dropdown, so they also name DropdownLists, registered under `general`.
       - module: TestCustomLinelistFunctions
         covers: [CustomLinelistFunctions]
       # TestLinelistSpecs moved here from the src/tests/ root, where it had no

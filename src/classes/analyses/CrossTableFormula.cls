@@ -1092,12 +1092,10 @@ Public Sub AddFormulas()
                              "RNG_AnaPeriod & PLAGE_VALUE(" & tabNames.StartDate & "," & _
                              tabNames.EndDate & ")", False
 
-                ' Time unit validation. The spatio-temporal tables are written to
-                ' a worksheet of their own and carry a time unit list of their
-                ' own, so the scope decides which list the dropdown reads.
-                AddListValidation tabNames.TimeUnit, _
-                                  AnalysisRanges.TimeUnitListOfScope( _
-                                      tabType = ScopeSpatioTemporal)
+                ' Time unit validation. One workbook-level list serves every
+                ' temporal table on every sheet, so the scope no longer picks
+                ' between two spellings of the same five words.
+                AddListValidation tabNames.TimeUnit, AnalysisRanges.TimeUnitList
             End If
 
             ' The section anchor carries the period cells every table of the

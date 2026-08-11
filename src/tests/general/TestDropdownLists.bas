@@ -158,6 +158,49 @@ Fail:
     CustomTestLogFailure Assert, "TestName", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify a caller can predict the workbook name and read the list by it.
+'@details
+'The linelist reads the shared time unit list from a worksheet function, where
+'building a manager per call is too costly, so it holds the workbook-level name
+'as a literal and reads the range straight off it. Two things have to hold for
+'that to work, and this is where both are stated.
+'
+'First, the name a caller can predict before adding the list is the name Add
+'registers. Second, the registered name resolves through
+'Names(...).RefersToRange, which is what the reader does. The name refers to a
+'structured reference over the ListObject column rather than to a cell block,
+'so the second point is worth a test of its own.
+'@TestMethod("DropdownLists")
+Public Sub TestTheWorkbookNameIsPredictableAndResolves()
+    CustomTestSetTitles Assert, "DropdownLists", "TestTheWorkbookNameIsPredictableAndResolves"
+
+    Dim valuesList As BetterArray
+    Dim listRng As Range
+    Dim predicted As String
+
+    On Error GoTo Fail
+
+    predicted = dropTwo.WorkbookName("time_unit")
+    Assert.AreEqual "dropdown_time_unit", predicted, _
+                    "The prefix and the list name should make the workbook name"
+
+    Set valuesList = BetterArrayFromList("Day", "Week", "Month", "Quarter", "Year")
+    dropTwo.Add valuesList, "time_unit"
+
+    Set listRng = ThisWorkbook.Names(predicted).RefersToRange
+
+    Assert.AreEqual CLng(5), CLng(listRng.Rows.Count), _
+                    "The name should resolve to the five values that were added"
+    Assert.AreEqual "Day", CStr(listRng.Cells(1, 1).Value), _
+                    "The first value should be the first one pushed"
+    Assert.AreEqual "Year", CStr(listRng.Cells(5, 1).Value), _
+                    "The last value should be the last one pushed"
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestTheWorkbookNameIsPredictableAndResolves", Err.Number, Err.Description
+End Sub
+
 '@sub-title Verify Add writes multiple named lists with different label and prefix options.
 '@details
 'Adds three lists to dropOne with varying addLabel and counterPrefix

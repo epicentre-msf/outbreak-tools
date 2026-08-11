@@ -623,42 +623,40 @@ End Property
 
 '@label:time-unit-list
 '@prop-title Name of the time unit choice list
-'@return String. "TIME_UNIT_LIST".
+'@details
+'ONE LIST SERVES THE WHOLE WORKBOOK
+'-------------------------------------------------------------------------------
+'The time units are a workbook-level dropdown on the list sheet, added by
+'Linelist.Prepare through the standard DropdownLists manager. Every temporal
+'table on every sheet binds its dropdown to this one name, and GetAgg in
+'CustomLinelistFunctions reads the same name to map the chosen label back to a
+'time unit.
+'
+'The sheet used to carry its own copy: a time series sheet built
+'TIME_UNIT_LIST and a spatio-temporal sheet built SPTIME_UNIT_LIST, because a
+'range name resolves to one cell block and the two sheets each wanted their
+'own. The reader in CustomLinelistFunctions asked for the plain name whatever
+'sheet it ran on, so a workbook whose only temporal analyses were
+'spatio-temporal had no such name and every period cell answered #VALUE!.
+'
+'The spelling is what DropdownLists derives from the list name TIME_UNIT_NAME
+'below and the "dropdown_" prefix of the standard manager. TestAnalysisRanges
+'pins the two together.
+'@return String. "dropdown_time_unit".
 '@export
 Public Property Get TimeUnitList() As String
-    TimeUnitList = "TIME_UNIT_LIST"
+    TimeUnitList = "dropdown_time_unit"
 End Property
 
-'@label:spatio-temporal-time-unit-list
-'@prop-title Name of the time unit choice list of the spatio-temporal sheet
+'@label:time-unit-list-name
+'@prop-title The dropdown list name the time units are registered under
 '@details
-'A spatio-temporal table takes its time units from a list of its own, because
-'the spatio-temporal tables are written to their own worksheet and a
-'workbook-wide name resolves to one cell range only. The table writer built this
-'name by prefixing the name above and the formula writer asked for the name
-'above, so the dropdown of every spatio-temporal table was bound to a list that
-'sheet did not carry.
-'@return String. "SPTIME_UNIT_LIST".
+'What Linelist.Prepare passes to DropdownLists.Add. The workbook-level name
+'above is what every reader uses; this is the registry key that produces it.
+'@return String. "time_unit".
 '@export
-Public Property Get SpatioTemporalTimeUnitList() As String
-    SpatioTemporalTimeUnitList = "SP" & TimeUnitList()
-End Property
-
-'@label:time-unit-list-for-scope
-'@prop-title The time unit list one temporal table reads
-'@details
-'The two callers of this pair are the class that creates the list and the class
-'that binds the dropdown to it, and they disagreed. Asking one member which list
-'a scope reads is what stops them disagreeing again.
-'@param spatioTemporal Boolean. True for a spatio-temporal table.
-'@return String. One of the two list names.
-'@export
-Public Property Get TimeUnitListOfScope(ByVal spatioTemporal As Boolean) As String
-    If spatioTemporal Then
-        TimeUnitListOfScope = SpatioTemporalTimeUnitList()
-    Else
-        TimeUnitListOfScope = TimeUnitList()
-    End If
+Public Property Get TimeUnitListName() As String
+    TimeUnitListName = "time_unit"
 End Property
 
 '@label:adm-unit-list

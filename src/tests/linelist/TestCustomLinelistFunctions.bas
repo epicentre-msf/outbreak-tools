@@ -37,7 +37,8 @@ Option Explicit
 'answer starts with. Both are user data by the time a linelist is delivered, and
 'both are absent in this workbook, so the tests that need one create it and
 'delete it again.
-'@depends CustomLinelistFunctions, CustomTest, TestHelpersLite
+'@depends CustomLinelistFunctions, DropdownLists, BetterArray, CustomTest,
+'  TestHelpersLite
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const TESTMODULE As String = "CustomLinelistFunctions"
@@ -45,6 +46,10 @@ Private Const TESTMODULE As String = "CustomLinelistFunctions"
 ' The two workbook-level names the epiweek arithmetic reads.
 Private Const WEEK_START_NAME As String = "RNG_EpiWeekStart"
 Private Const WEEK_TAG_NAME As String = "RNG_Week"
+
+' The shared time unit dropdown, and the sheet the suite parks it on.
+Private Const TIMEUNIT_LIST_NAME As String = "dropdown_time_unit"
+Private Const TIMEUNIT_SHEET As String = "CLFTimeUnit"
 
 Private Assert As CustomTest
 
@@ -261,4 +266,114 @@ TestFail:
     DropWorkbookName WEEK_TAG_NAME
     CustomTestLogFailure Assert, "TestTheWeekLetterComesFromTheHiddenName", _
                          Err.Number, Err.Description
+End Sub
+
+
+'@section Aggregation
+'===============================================================================
+'GetAgg is Private, so these drive it through FindLastDay, which is the function
+'that turns the chosen label into the last day of a period.
+
+'@sub-title The shared time unit list decides the aggregation, on any sheet.
+'@details
+'The five labels are one workbook-level dropdown that Linelist.Prepare adds
+'through DropdownLists, and the reader names it and nothing else. The reader
+'used to test the tag of ActiveSheet first and answer "week" for every sheet
+'that was not an analysis sheet, so a recalculation fired while the user sat
+'anywhere else computed a monthly table as weeks. No test in this module opens
+'an analysis sheet, so the answers below are the proof that the tag is gone.
+'
+'It also proves the read itself. The name refers to a structured reference over
+'a ListObject column, and RefersToRange is what has to resolve it.
+'@TestMethod("CustomLinelistFunctions")
+Public Sub TestTheTimeUnitListDecidesTheAggregation()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheTimeUnitListDecidesTheAggregation"
+    On Error GoTo TestFail
+
+    Dim someDay As Long
+
+    DropWorkbookName WEEK_START_NAME
+    AddTimeUnitList
+
+    someDay = CLng(DateSerial(2026, 3, 10))
+
+    Assert.AreEqual CLng(DateSerial(2026, 3, 10)), FindLastDay("Day", someDay), _
+                    "A daily aggregation ends on the day itself"
+    Assert.AreEqual CLng(DateSerial(2026, 3, 31)), FindLastDay("Month", someDay), _
+                    "A monthly aggregation ends on the last day of the month"
+    Assert.AreEqual CLng(DateSerial(2026, 3, 31)), FindLastDay("Quarter", someDay), _
+                    "A quarterly aggregation ends on the last day of the quarter"
+    Assert.AreEqual CLng(DateSerial(2026, 12, 31)), FindLastDay("Year", someDay), _
+                    "A yearly aggregation ends on the last day of the year"
+
+    DropTimeUnitList
+    Exit Sub
+TestFail:
+    DropTimeUnitList
+    CustomTestLogFailure Assert, "TestTheTimeUnitListDecidesTheAggregation", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A label the list does not carry falls back to the week.
+'@details
+'The dropdown holds a user to the five labels, so a label outside them means a
+'workbook built by an older version or a cell written by hand. The same answer
+'covers a workbook whose list is missing, which is what a read that raises
+'leaves behind.
+'@TestMethod("CustomLinelistFunctions")
+Public Sub TestAnUnknownTimeUnitFallsBackToTheWeek()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAnUnknownTimeUnitFallsBackToTheWeek"
+    On Error GoTo TestFail
+
+    Dim someDay As Long
+    Dim weekEnd As Long
+
+    ' 10 March 2026 is a Tuesday, so the Monday week holding it ends on the 15th.
+    someDay = CLng(DateSerial(2026, 3, 10))
+    weekEnd = CLng(DateSerial(2026, 3, 15))
+
+    DropWorkbookName WEEK_START_NAME
+    AddTimeUnitList
+
+    Assert.AreEqual weekEnd, FindLastDay("Fortnight", someDay), _
+                    "A label outside the list is aggregated as a week"
+
+    DropTimeUnitList
+
+    Assert.AreEqual weekEnd, FindLastDay("Month", someDay), _
+                    "and a missing list is aggregated as a week as well"
+
+    Exit Sub
+TestFail:
+    DropTimeUnitList
+    CustomTestLogFailure Assert, "TestAnUnknownTimeUnitFallsBackToTheWeek", _
+                         Err.Number, Err.Description
+End Sub
+
+
+'@section Aggregation helpers
+'===============================================================================
+
+'@sub-title Add the shared time unit dropdown the way a linelist carries it.
+Private Sub AddTimeUnitList()
+    Dim drop As DropdownLists
+    Dim listValues As BetterArray
+
+    DropTimeUnitList
+
+    Set drop = DropdownLists.Create( _
+        EnsureWorksheet(TIMEUNIT_SHEET, clearSheet:=True, visibility:=xlSheetHidden), _
+        "dropdown_")
+
+    Set listValues = New BetterArray
+    listValues.LowerBound = 1
+    listValues.Push "Day", "Week", "Month", "Quarter", "Year"
+
+    drop.Add listValues, "time_unit"
+End Sub
+
+'@sub-title Take the dropdown and its worksheet away again.
+Private Sub DropTimeUnitList()
+    DropWorkbookName TIMEUNIT_LIST_NAME
+    DeleteWorksheet TIMEUNIT_SHEET
 End Sub

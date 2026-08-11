@@ -1328,10 +1328,16 @@ TestFail:
     CustomTestLogFailure Assert, "TestTimeSeriesCreatesDateControls", Err.Number, Err.Description
 End Sub
 
-'@sub-title Verify the shared time unit list is created once and locked.
+'@sub-title Verify the time unit cell starts on the week and the sheet builds no list.
+'@details
+'The five time units are one workbook-level dropdown that Linelist.Prepare
+'adds, so a table writes its own starting value and nothing else. Each analysis
+'sheet used to build five cells in column Z, under TIME_UNIT_LIST on a time
+'series sheet and SPTIME_UNIT_LIST on a spatio-temporal one, and the reader in
+'CustomLinelistFunctions named the first whatever sheet it ran on.
 '@TestMethod("CrossTable")
-Public Sub TestTimeSeriesCreatesTheTimeUnitList()
-    CustomTestSetTitles Assert, "CrossTable", "TestTimeSeriesCreatesTheTimeUnitList"
+Public Sub TestTimeSeriesStartsOnTheWeekAndBuildsNoList()
+    CustomTestSetTitles Assert, "CrossTable", "TestTimeSeriesStartsOnTheWeekAndBuildsNoList"
     On Error GoTo TestFail
 
     Dim tabl As CrossTable
@@ -1341,18 +1347,14 @@ Public Sub TestTimeSeriesCreatesTheTimeUnitList()
     Set sh = OutputSheet()
     Set tabl = BuildTable(sh, 1)
 
-    Assert.IsTrue RangeExistsOnSheet(sh, "TIME_UNIT_LIST"), _
-                  "A time series build should create the time unit list"
-    Assert.AreEqual CLng(5), CLng(sh.Range("TIME_UNIT_LIST").Rows.Count), _
-                    "The time unit list holds five units"
-    Assert.AreEqual "Day", sh.Range("TIME_UNIT_LIST").Cells(1, 1).Value, _
-                    "The first time unit should be the translated day"
     Assert.AreEqual "Week", sh.Range("TIME_UNIT_" & tabl.Specifications.TableId).Value, _
                     "The time unit cell should default to the week"
+    Assert.IsFalse RangeExistsOnSheet(sh, "TIME_UNIT_LIST"), _
+                   "The sheet should carry no time unit list of its own"
 
     Exit Sub
 TestFail:
-    CustomTestLogFailure Assert, "TestTimeSeriesCreatesTheTimeUnitList", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestTimeSeriesStartsOnTheWeekAndBuildsNoList", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify a time series table reserves the fixed row grid.
@@ -1874,8 +1876,8 @@ Public Sub TestSpatioTemporalColumnsFollowTheGeoCount()
                     "The geo count decides how many columns a spatio-temporal table has"
     Assert.AreEqual tabl.StartRow + NB_ROWS_TIME_SERIES, tabl.EndRow, _
                     "A spatio-temporal table reserves the same fixed grid"
-    Assert.IsTrue RangeExistsOnSheet(sh, "SPTIME_UNIT_LIST"), _
-                  "A spatio-temporal build should create its own time unit list"
+    Assert.IsFalse RangeExistsOnSheet(sh, "SPTIME_UNIT_LIST"), _
+                   "A spatio-temporal build should carry no time unit list of its own"
 
     Exit Sub
 TestFail:

@@ -684,6 +684,22 @@ Public Function Exists(ByVal listName As String) As Boolean
     Exists = HasDropdown(listName)
 End Function
 
+'@label:workbook-name
+'@prop-title Workbook-level name a dropdown answers to
+'@details
+'The name SetValidation points a cell at, and the name any other reader uses to
+'reach the values. It is derived from the list name and the header prefix, so
+'it can be asked for before the dropdown is added.
+'
+'This is here because a reader outside the class needs the name in a place
+'where building a manager is too costly - a worksheet function called once per
+'formula cell reads the range by this name and nothing else.
+'@param listName String. Dropdown name.
+'@return String. The workbook-level name.
+Public Property Get WorkbookName(ByVal listName As String) As String
+    WorkbookName = CorrespondingWorkbookName(listName)
+End Property
+
 '@label:label-range
 '@prop-title Label cell above a dropdown ListObject
 '@details

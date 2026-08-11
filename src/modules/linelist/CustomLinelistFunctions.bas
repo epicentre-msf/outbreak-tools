@@ -48,6 +48,11 @@ End Enum
 
 Private Const VALUEOF_SLOT_COUNT As Long = 4
 
+'The workbook-level name of the shared time unit dropdown. AnalysisRanges
+'answers the same string on the designer side, and Linelist.Prepare is what
+'adds the list under it.
+Private Const TIMEUNITLIST As String = "dropdown_time_unit"
+
 Private valueOfSheetName(1 To VALUEOF_SLOT_COUNT) As String
 Private valueOfLookupIndex(1 To VALUEOF_SLOT_COUNT) As Long
 Private valueOfValueIndex(1 To VALUEOF_SLOT_COUNT) As Long
@@ -425,20 +430,27 @@ End Function
 '@section Aggregation Helpers
 '===============================================================================
 
-'Quick function to define the aggregate
+'@description Turn the label a user picked into a time unit.
+'The five labels are one workbook-level dropdown that Linelist.Prepare adds,
+'and the list is read by name, so this answers the same way whatever sheet the
+'calling cell sits on and whatever sheet is on screen.
+'
+'Week is the answer to everything this cannot place: a label that is in no
+'list, a workbook whose list is missing, and a read that raises. The dropdown
+'holds the user to the five labels, so an unplaceable one means the workbook
+'was built by an older version or the cell was written by hand.
+'@param sAggregate String. The label shown in the time unit cell.
+'@return String. One of day, week, month, quarter, year.
 Private Function GetAgg(sAggregate As String) As String
 
     Dim rng As Range
     Dim aggVal As String
-    Dim tagName As String
 
-    tagName = SheetTag(ActiveSheet)
-    If (tagName <> "TS-Analysis") And (tagName <> "SPT-Analysis") Then
-        GetAgg = "week"
-        Exit Function
-    End If
+    GetAgg = "week"
 
-    Set rng = Range("TIME_UNIT_LIST")
+    On Error GoTo ErrorHandler
+    Set rng = ThisWorkbook.Names(TIMEUNITLIST).RefersToRange
+
     Select Case sAggregate
 
     Case rng.Cells(1, 1).Value
@@ -457,6 +469,9 @@ Private Function GetAgg(sAggregate As String) As String
     End Select
 
     GetAgg = aggVal
+    Exit Function
+
+ErrorHandler:
 End Function
 
 '@description Find the last day of an aggregation period containing inDate.
@@ -529,10 +544,12 @@ Public Function FormatDateFromLastDay(sAggregate As String, _
     Dim monthDate As Integer
     Dim quarterDate As Integer
     Dim quarterTag As String
-    Dim tagName As String
 
-    tagName = SheetTag(ActiveSheet)
-    If startDate > MaxDate Or ((tagName <> "TS-Analysis") And (tagName <> "SPT-Analysis"))  Then
+    'A period that starts after the last date of the series has no label. The
+    'sheet tag used to be tested here as well, and the tag it read was the one
+    'of the sheet on screen, so a recalculation fired from anywhere else blanked
+    'every period label until the next edit.
+    If startDate > MaxDate Then
         FormatDateFromLastDay = vbNullString
         Exit Function
     End If

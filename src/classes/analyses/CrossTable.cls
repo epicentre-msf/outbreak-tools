@@ -1543,7 +1543,6 @@ End Function
 Private Sub AddTemporalDateControls(ByVal anchorRng As Range)
     Dim tabId As String
     Dim trans As TranslationObject
-    Dim listRng As Range
 
     tabId = TableId()
     Set trans = Translations()
@@ -1575,46 +1574,11 @@ Private Sub AddTemporalDateControls(ByVal anchorRng As Range)
         .Cells(4, 15).Name = "MAX_MAX_DATE_" & tabId
     End With
 
-    Set listRng = EnsureTimeUnitList()
-    Wksh().Range("TIME_UNIT_" & tabId).Value = listRng.Cells(2, 1).Value
+    'The time units are one workbook-level dropdown that Linelist.Prepare adds,
+    'so a table only has to say which of them it starts on. Each analysis sheet
+    'used to build five cells of its own in column Z under one of two names.
+    Wksh().Range("TIME_UNIT_" & tabId).Value = trans.TranslatedValue("MSG_Week")
 End Sub
-
-'@label:ensure-time-unit-list
-'@sub-title Build the five time unit names the dropdown reads, once per sheet.
-'@details
-'The formula writer binds the time unit dropdown to this same name, and the two
-'used to build it separately: this one prefixed the spatio-temporal spelling and
-'the other one always asked for the plain one, so no spatio-temporal table ever
-'got its dropdown. One member of AnalysisRanges answers for both now.
-'@return Range. The top cell of the list block, whether it was just built or
-'was already there.
-Private Function EnsureTimeUnitList() As Range
-    Dim sh As Worksheet
-    Dim cellRng As Range
-    Dim listRng As Range
-    Dim listName As String
-    Dim trans As TranslationObject
-
-    Set sh = Wksh()
-    listName = AnalysisRanges.TimeUnitListOfScope(TableScope() = ScopeSpatioTemporal)
-    Set cellRng = sh.Cells(1, 26)
-    Set EnsureTimeUnitList = cellRng
-
-    If RangeExists(listName) Then Exit Function
-
-    Set trans = Translations()
-    cellRng.Cells(1, 1).Value = trans.TranslatedValue("MSG_Day")
-    cellRng.Cells(2, 1).Value = trans.TranslatedValue("MSG_Week")
-    cellRng.Cells(3, 1).Value = trans.TranslatedValue("MSG_Month")
-    cellRng.Cells(4, 1).Value = trans.TranslatedValue("MSG_Quarter")
-    cellRng.Cells(5, 1).Value = trans.TranslatedValue("MSG_Year")
-
-    Set listRng = sh.Range(sh.Cells(1, cellRng.Column), sh.Cells(5, cellRng.Column))
-    listRng.Name = listName
-    listRng.Font.Color = vbWhite
-    listRng.Interior.Color = vbWhite
-    listRng.Locked = True
-End Function
 
 '@label:add-spatial-header
 '@sub-title Write the dropdowns and the title of a spatial table.

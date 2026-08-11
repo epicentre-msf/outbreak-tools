@@ -476,29 +476,37 @@ TestFail:
     CustomTestLogFailure Assert, "TestPeriodInformationAndValidationNames", Err.Number, Err.Description
 End Sub
 
-'@sub-title Verify the two time unit lists and the scope that picks between them.
+'@sub-title Verify the one time unit list name matches what DropdownLists builds.
 '@details
-'The spatio-temporal tables live on a worksheet of their own and read a time unit
-'list of their own. The table writer built that name and the formula writer asked
-'for the plain one, so no spatio-temporal table ever got its dropdown. One member
-'answers for both callers now.
+'The list is a workbook-level dropdown, so its name is what DropdownLists
+'derives from the list name and the prefix of the manager Linelist uses. Three
+'parties spell it: this class for the dropdown binding, DropdownLists for the
+'defined name, and a module const in CustomLinelistFunctions for the reader.
+'This test is what holds the first two together, and the third is asserted
+'beside the reader.
+'
+'The sheets used to carry a copy each, under TIME_UNIT_LIST and
+'SPTIME_UNIT_LIST, and the reader always asked for the first one.
 '@TestMethod("AnalysisRanges")
-Public Sub TestTheTwoTimeUnitListsAndTheScopeThatPicks()
-    CustomTestSetTitles Assert, "AnalysisRanges", "TestTheTwoTimeUnitListsAndTheScopeThatPicks"
+Public Sub TestTheTimeUnitListNameIsTheDropdownName()
+    CustomTestSetTitles Assert, "AnalysisRanges", "TestTheTimeUnitListNameIsTheDropdownName"
     On Error GoTo TestFail
 
-    Assert.AreEqual "TIME_UNIT_LIST", AnalysisRanges.TimeUnitList, _
-                    "TimeUnitList should spell the shared time unit list"
-    Assert.AreEqual "SPTIME_UNIT_LIST", AnalysisRanges.SpatioTemporalTimeUnitList, _
-                    "The spatio-temporal list carries the SP prefix"
-    Assert.AreEqual "TIME_UNIT_LIST", AnalysisRanges.TimeUnitListOfScope(False), _
-                    "A time series table reads the shared list"
-    Assert.AreEqual "SPTIME_UNIT_LIST", AnalysisRanges.TimeUnitListOfScope(True), _
-                    "A spatio-temporal table reads its own list"
+    Assert.AreEqual "time_unit", AnalysisRanges.TimeUnitListName, _
+                    "TimeUnitListName should spell the registry key of the list"
+    Assert.AreEqual "dropdown_time_unit", AnalysisRanges.TimeUnitList, _
+                    "TimeUnitList should spell the workbook-level name"
+
+    ' The name has to be the one DropdownLists derives from the registry key on
+    ' a manager carrying the "dropdown_" prefix. TestDropdownLists asserts that
+    ' derivation against a real manager.
+    Assert.AreEqual "dropdown_" & AnalysisRanges.TimeUnitListName, _
+                    AnalysisRanges.TimeUnitList, _
+                    "The workbook name should be the prefix and the registry key"
 
     Exit Sub
 TestFail:
-    CustomTestLogFailure Assert, "TestTheTwoTimeUnitListsAndTheScopeThatPicks", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestTheTimeUnitListNameIsTheDropdownName", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify the administrative dropdown and population divisor names.
@@ -535,7 +543,7 @@ Public Sub TestWorkbookWideListsCarryNoIdentifier()
     CustomTestSetTitles Assert, "AnalysisRanges", "TestWorkbookWideListsCarryNoIdentifier"
     On Error GoTo TestFail
 
-    Assert.AreEqual "TIME_UNIT_LIST", AnalysisRanges.TimeUnitList, _
+    Assert.AreEqual "dropdown_time_unit", AnalysisRanges.TimeUnitList, _
                     "TimeUnitList should carry no identifier"
     Assert.AreEqual "ADM_UNIT_LIST", AnalysisRanges.AdmUnitList, _
                     "AdmUnitList should carry no identifier"
@@ -544,7 +552,7 @@ Public Sub TestWorkbookWideListsCarryNoIdentifier()
 
     ' A bound instance answers the same strings, so a caller that happens to
     ' hold one does not get a second, table-scoped list by accident.
-    Assert.AreEqual "TIME_UNIT_LIST", AnalysisRanges.Create(TABLE_ID).TimeUnitList, _
+    Assert.AreEqual "dropdown_time_unit", AnalysisRanges.Create(TABLE_ID).TimeUnitList, _
                     "A bound instance should answer the same shared list name"
 
     Exit Sub
@@ -554,9 +562,9 @@ End Sub
 
 '@sub-title Verify the time unit list name differs from the per-table time unit name.
 '@details
-'"TIME_UNIT_LIST" and "TIME_UNIT_" & id are two different ranges, and the first
-'is a prefix of nothing the second builds, so a partial match cannot confuse
-'them. Stated as a test because the two names read alike.
+'The shared list and "TIME_UNIT_" & id are two different ranges, and neither
+'name is a prefix of the other, so a partial match cannot confuse them. Stated
+'as a test because the two members read alike.
 '@TestMethod("AnalysisRanges")
 Public Sub TestTheSharedListIsNotThePerTableTimeUnit()
     CustomTestSetTitles Assert, "AnalysisRanges", "TestTheSharedListIsNotThePerTableTimeUnit"
