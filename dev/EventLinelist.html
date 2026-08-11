@@ -272,6 +272,25 @@ translation sheet. Leave it off to stay quiet in that state.</li>
 </ul>
 <p><strong>Returns:</strong> String. Pipe-delimited concatenation of non-empty admin values.</p>
 <hr />
+<h3 id="barespatialname">BareSpatialName <a class="anchor-link" href="#barespatialname">#</a></h3>
+<p><strong>Take the authored spatial tag off a variable name.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function BareSpatialName(ByVal varName As String) As String
+</code></pre>
+<p>The spatial formulas carry the dictionary variable the tables were summed
+over -- &quot;concat_adm1_&quot; in front of a geographic name, &quot;hf_&quot; in front of a
+facility one -- and the spatial tables are keyed on the bare name. The tag
+comes off whole, so a bare name carrying underscores of its own survives; a
+name with no tag passes through unchanged, and the table lookup then answers
+its usual empty string. The delegates below used to split on &quot;_&quot; and count
+characters instead, which cut an underscored name short and raised on a name
+shorter than the tag.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. Variable name as the formula carries it.</li>
+</ul>
+<p><strong>Returns:</strong> String. The bare variable name.</p>
+<hr />
 <h3 id="topadmin">TopAdmin <a class="anchor-link" href="#topadmin">#</a></h3>
 <p><strong>Return the top admin name for a spatial variable.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -284,7 +303,7 @@ translation sheet. Leave it off to stay quiet in that state.</li>
 <ul>
 <li><code>adminLevel</code>: String. Admin level label (e.g. &quot;adm1&quot;).</li>
 <li><code>adminOrder</code>: Integer. Rank order (1 = top, 2 = second, etc.).</li>
-<li><code>varName</code>: String. Variable name (with prefix, e.g. &quot;adm1_concat_adm1_myvar&quot;).</li>
+<li><code>varName</code>: String. Variable name (with prefix, e.g. &quot;concat_adm1_myvar&quot;).</li>
 <li><code>tabId</code>: Optional String. Spatial table identifier.</li>
 </ul>
 <p><strong>Returns:</strong> String. Admin name at the given rank.</p>
@@ -709,7 +728,7 @@ permanent refusal to build the manager again.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (17 file(s))</summary>
+<summary>Used in (19 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
@@ -727,7 +746,9 @@ permanent refusal to build the manager again.</p>
 <li>FormLogicAdvanced.bas</li>
 <li>FormLogicShowHideSave.bas</li>
 <li>TestLLGeo.bas</li>
+<li>GeoTestFixture.bas</li>
 <li>TestEventLinelist.bas</li>
+<li>TestEventLinelistSheets.bas</li>
 </ul>
 </details>
   </main>
