@@ -99,7 +99,8 @@ Private Sub CMD_ShowHideAdd_Click()
 
     On Error GoTo ErrHand
     LinelistEventsManager.LLEnterBusyState
-    HandleSaveShowHideLayout ThisWorkbook, PasswordsOf(), layoutName
+    'Qualified through the form: the walk lives in the F_Advanced code-behind
+    F_Advanced.HandleSaveShowHideLayout ThisWorkbook, PasswordsOf(), layoutName
 
 ErrHand:
     LinelistEventsManager.LLExitBusyState
@@ -120,7 +121,8 @@ Private Sub CMD_ShowHideApply_Click()
 
     On Error GoTo ErrHand
     LinelistEventsManager.LLEnterBusyState
-    HandleRestoreShowHideLayout ThisWorkbook, PasswordsOf(), layoutName
+    'Qualified through the form: the walk lives in the F_Advanced code-behind
+    F_Advanced.HandleRestoreShowHideLayout ThisWorkbook, PasswordsOf(), layoutName
 
 ErrHand:
     LinelistEventsManager.LLExitBusyState

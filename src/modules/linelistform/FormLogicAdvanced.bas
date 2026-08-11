@@ -1,19 +1,26 @@
 Attribute VB_Name = "FormLogicAdvanced"
 
 '@Folder("Linelist Forms")
-'@ModuleDescription("Import data, import geobase, clear data and reset columns workflows")
-'@depends LLImporter, ImportMetadata, ApplicationState, OSFiles, LLdictionary, ShowHide, ShowHideLayout, ShowHideStore, HiddenNames, Passwords
+'@ModuleDescription("Complete code-behind of F_Advanced -- imports, clears, reset and saved layouts")
+'@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
+'@depends LLImporter, ImportMetadata, ApplicationState, OSFiles, LLdictionary, ShowHide, ShowHideLayout, ShowHideStore, HiddenNames, Passwords, LLGeo, LLTranslation, TranslationObject
 
-' The handlers of the F_Advanced form. The form's own event stubs stay thin:
-' CMD_ExportData_Click hides the form and calls ClickExportMigration,
-' CMD_ImportGeoHistoric_Click calls HandleImportGeobase with histoOnly:=True,
-' CMD_ClearData_Click calls HandleClearData, CMD_ImportMigRep_Click shows
-' F_ImportRep, and CMD_ResetCols_Click calls ClickResetColumns, which holds
-' the busy state and comes to HandleResetColumns here.
+' This module is the complete code-behind of the F_Advanced form and is
+' copied into the form at deployment, so the control callbacks, the
+' translation build and the Handle* walks all live here. Callers outside the
+' form reach the walks through the form, the qualified route, so the
+' standard-module copy of this code is never compiled and its form
+' references cost nothing there: EventsLinelistButtons calls
+' F_Advanced.HandleImportData, F_Advanced.HandleImportGeobase and
+' F_Advanced.HandleResetColumns, and the F_ShowHideSave code-behind calls
+' F_Advanced.HandleSaveShowHideLayout and
+' F_Advanced.HandleRestoreShowHideLayout.
 
 Option Explicit
 
 Private Const DICTIONARY_SHEET As String = "Dictionary"
+Private Const GEOSHEET As String = "Geo"
+Private Const LLSHEET As String = "LinelistTranslation"
 Private Const PRINT_PREFIX As String = "print_"
 Private Const CRF_PREFIX As String = "crf_"
 
@@ -21,6 +28,88 @@ Private Const CRF_PREFIX As String = "crf_"
 Private Const PASTING_RULE_EMPTY As Byte = 0
 Private Const PASTING_RULE_BOTTOM As Byte = 1
 Private Const PASTING_RULE_STOP As Byte = 2
+
+Private tradform As TranslationObject 'Translation of forms
+Private tradmess As TranslationObject 'Translation of messages
+Private currwb As Workbook
+
+
+'@section Initialization and control callbacks
+'===============================================================================
+
+'Initialize the two translation objects
+Private Sub InitializeTrads()
+    Dim lltrads As LLTranslation
+
+    Set currwb = ThisWorkbook
+    Set lltrads = LLTranslation.Create(currwb.Worksheets(LLSHEET))
+    Set tradform = lltrads.TransObject(TranslationOfForms)
+    Set tradmess = lltrads.TransObject()
+End Sub
+
+'Open the export data form for exports
+Private Sub CMD_ExportData_Click()
+    Me.Hide
+    ClickExportMigration
+End Sub
+
+'Import the historic of the geobase alone
+Private Sub CMD_ImportGeoHistoric_Click()
+    Me.Hide
+    HandleImportGeobase currwb, tradmess, histoOnly:=True
+End Sub
+
+'Show the report of the last import
+Private Sub CMD_ImportMigRep_Click()
+    Me.Hide
+    F_ImportRep.Show
+End Sub
+
+'Clear all the data in the current workbook
+Private Sub CMD_ClearData_Click()
+    Me.Hide
+    HandleClearData currwb, tradmess
+End Sub
+
+'Clear the historic of the geobase
+Private Sub CMD_ClearGeo_Click()
+    Dim geoObj As LLGeo
+
+    If MsgBox(tradmess.TranslatedValue("MSG_HistoricDelete"), _
+              vbExclamation + vbYesNo, _
+              tradmess.TranslatedValue("MSG_DeleteHistoric")) = vbYes Then
+
+        Set geoObj = LLGeo.Create(currwb.Worksheets(GEOSHEET))
+        geoObj.ClearHistoric
+
+        MsgBox tradmess.TranslatedValue("MSG_Done"), _
+               vbInformation, _
+               tradmess.TranslatedValue("MSG_DeleteHistoric")
+    End If
+End Sub
+
+'Put the show/hide state of every worksheet back to the state at creation.
+'ClickResetColumns holds the busy state and hands the walk back to
+'HandleResetColumns below.
+Private Sub CMD_ResetCols_Click()
+    Me.Hide
+    ClickResetColumns
+End Sub
+
+'Leave the advanced form
+Private Sub CMD_ImportMigQuit_Click()
+    Me.Hide
+End Sub
+
+Private Sub UserForm_Initialize()
+    InitializeTrads
+
+    Me.Caption = tradform.TranslatedValue(Me.Name)
+    tradform.TranslateForm Me
+
+    Me.Width = 250
+    Me.Height = 550
+End Sub
 
 
 ' @description Drop the held managers of the event service.

@@ -1347,7 +1347,11 @@ Public Sub ClickExportAnalysis()
     Attribute ClickExportAnalysis.VB_Description = "Export all Analysis worksheets to a workbook"
 
     InitializeTrads
-    HandleAnalysisExport wb, tradsmess
+
+    'The walk lives in the F_ExportMig code-behind, whose source is the
+    'FormLogicExportMig module. The qualified call runs the form's copy; the
+    'standard-module copy carries form references and is never compiled.
+    F_ExportMig.HandleAnalysisExport wb, tradsmess
 End Sub
 
 '@Description("Import new data in the linelist")
@@ -1379,8 +1383,9 @@ Public Sub ClickImportData()
     Next
 
     'Import data using LLImporter API (handles file picker, the question about
-    'the rows already entered, busy state and report)
-    HandleImportData wb, tradsmess
+    'the rows already entered, busy state and report). Qualified through the
+    'form: the walk lives in the F_Advanced code-behind.
+    F_Advanced.HandleImportData wb, tradsmess
 
     'Update all the listAuto in the workbook
     LinelistEventsManager.UpdateAllListAuto
@@ -1394,7 +1399,7 @@ Public Sub ClickImportGeobase()
     Attribute clickImportGeobase.VB_Description = "Import a new geobase in the linelist"
 
     InitializeTrads
-    HandleImportGeobase wb, tradsmess
+    F_Advanced.HandleImportGeobase wb, tradsmess
 End Sub
 
 '@Description("Reset hidden columns in the linelist")
@@ -1406,9 +1411,10 @@ Public Sub ClickResetColumns()
     LinelistEventsManager.LLEnterBusyState
     InitializeTrads
 
-    'The walk lives beside the other handlers of the advanced form. The Reset
-    'Columns button of F_Advanced comes through here for the busy state.
-    HandleResetColumns wb, pass
+    'The walk lives in the F_Advanced code-behind. The Reset Columns button
+    'of F_Advanced comes through here for the busy state, and the walk is
+    'reached back through the form.
+    F_Advanced.HandleResetColumns wb, pass
 
 ErrHand:
     LinelistEventsManager.LLExitBusyState
