@@ -843,6 +843,26 @@ suites:
       # TestHelpersLite.
       - module: TestEventLinelist
         covers: [EventLinelist]
+      # TestEventLinelistSheets drives the four heavy members of EventLinelist
+      # -- OnSheetChange, OnSelectionChange, UpdateFilterTables and
+      # UpdateAllListAuto -- over worksheets LLDataEntry built, which is what
+      # TestEventLinelist above cannot do: it seeds its sheets by hand, and a
+      # hand-seeded sheet agrees with whatever the test that wrote it believed.
+      # That is how the go-to branch stayed dead on every sheet the builder
+      # makes while the suite reported green. The fixture is the one
+      # TestLLDataEntry uses -- a designer-shaped workbook and a workbook
+      # standing in for the linelist, both built once per module -- with a
+      # dictionary copy added so the editable label branch can write back, and
+      # the list auto origin marked the way LinelistSpecs marks it. The
+      # workbook carries NO LinelistTranslation worksheet on purpose: the
+      # header branch answers a refused edit with a message box whenever a
+      # translator is there, and a box stops a headless run on a modal. It
+      # reaches PrepareDictionaryFixture, PrepareChoicesFixture,
+      # PrepareLLFormatFixture, PrepareFormulaFixtureSheet and
+      # PreparePasswordsFixture under `helpers`, and its helper calls are
+      # unqualified so they resolve to TestHelpersLite.
+      - module: TestEventLinelistSheets
+        covers: [EventLinelist]
 
   # --- dev (Development) ----------------------------------------------------
   # THIS BLOCK CARRIES A TEST MODULE AND NO CLASS, AND IT MUST STAY THAT WAY.
