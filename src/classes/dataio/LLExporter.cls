@@ -24,7 +24,9 @@ Option Explicit
 'ExportAnalysis writes the analysis sheets, and ExportGeo writes the geobase.
 'Each mode builds a temporary output workbook, fills it with the data, the
 'metadata and the formatting the mode calls for, then saves it and closes it.
-'CloseAll closes whatever is still open.
+'CloseAll closes whatever is still open. Create binds the exporter to a
+'workbook the caller holds; CreateFromFile opens a linelist file itself, and
+'the workbook it opened is closed by CloseAll.
 '
 'WHAT AN EXPORT CARRIES
 '-------------------------------------------------------------------------------
@@ -100,6 +102,7 @@ Private Type TLLExporter
     lastPassword As String
     activeWkb As Workbook
     sealed As Boolean
+    openedSource As Boolean
 End Type
 
 Private this As TLLExporter
@@ -131,6 +134,117 @@ Public Function Create(ByVal sourceWkb As Workbook) As LLExporter
     Set Create = newExporter
 End Function
 
+'@label:create-from-file
+'@sub-title Create an exporter on a linelist file, opened here
+'@details
+'Opens the linelist file at the given path, read-only and with the given
+'password, and builds an exporter on it. The workbook opened here belongs to
+'this instance, and CloseAll is what closes it: the export walks write into the
+'source's temp sheet, so the copy in memory changes, and a read-only open with
+'no save is how none of that reaches the file. When the file is already open in
+'this Excel session, the open workbook is used as it stands and stays out of
+'CloseAll's reach.
+'
+'The caller decides the application state. A linelist carries open events, so
+'an open with events running starts them; the form logic applies its busy
+'state, events suppressed, before calling here.
+'@param filePath String. Full path of the linelist file.
+'@param password Optional String. The password the file opens with. Defaults to none.
+'@return LLExporter. An instance bound to the opened workbook.
+'@throws ProjectError.ElementNotFound When no file sits at the given path.
+'@throws ProjectError.ErrorUnexpectedState When the file does not open with the
+'  given password, or when the opened workbook misses a linelist sheet.
+'@export
+Public Function CreateFromFile(ByVal filePath As String, _
+                               Optional ByVal password As String = vbNullString) As LLExporter
+
+    Dim wkb As Workbook
+    Dim missingSheet As String
+    Dim openedHere As Boolean
+
+    If LenB(Dir(filePath)) = 0 Then
+        ThrowError ProjectError.ElementNotFound, _
+                   "There is no file at " & filePath
+    End If
+
+    Set wkb = FindOpenWorkbook(filePath)
+
+    If wkb Is Nothing Then
+        'A wrong password or an unreadable file raises inside Workbooks.Open,
+        'and the raise below is what carries the failure to the caller.
+        On Error Resume Next
+        Set wkb = Workbooks.Open(fileName:=filePath, ReadOnly:=True, password:=password)
+        On Error GoTo 0
+        openedHere = True
+    End If
+
+    If wkb Is Nothing Then
+        ThrowError ProjectError.ErrorUnexpectedState, _
+                   "The file did not open with the given password: " & filePath
+    End If
+
+    missingSheet = MissingLinelistSheet(wkb)
+    If LenB(missingSheet) > 0 Then
+        If openedHere Then wkb.Close savechanges:=False
+        ThrowError ProjectError.ErrorUnexpectedState, _
+                   "The workbook is not a linelist, it has no " & missingSheet & " sheet"
+    End If
+
+    Dim newExporter As LLExporter
+    Set newExporter = New LLExporter
+    Set newExporter.SourceWorkbook = wkb
+    If openedHere Then newExporter.MarkSourceOpened
+    newExporter.Seal
+    Set CreateFromFile = newExporter
+End Function
+
+'@label:find-open-workbook
+'@sub-title The workbook of this session already open on a path, or Nothing
+'@param filePath String. Full path to look for.
+'@return Workbook. The open workbook, or Nothing when the path is open nowhere.
+Private Function FindOpenWorkbook(ByVal filePath As String) As Workbook
+    Dim wkb As Workbook
+
+    For Each wkb In Application.Workbooks
+        If LCase$(wkb.FullName) = LCase$(filePath) Then
+            Set FindOpenWorkbook = wkb
+            Exit Function
+        End If
+    Next
+End Function
+
+'@label:missing-linelist-sheet
+'@sub-title The first sheet a linelist carries and a workbook misses
+'@details
+'The export walks read the dictionary, the export definitions, the passwords,
+'the geobase and the temp sheet, so those five names are what marks a workbook
+'as a linelist here.
+'@param wkb Workbook. The workbook to look through.
+'@return String. The first missing sheet name, or an empty string when all five are there.
+Private Function MissingLinelistSheet(ByVal wkb As Workbook) As String
+    Dim requiredSheets As BetterArray
+    Dim counter As Long
+    Dim sheetName As String
+    Dim foundSheet As Worksheet
+
+    Set requiredSheets = New BetterArray
+    requiredSheets.Push DICTIONARYSHEET, EXPORTSHEET, PASSWORDSHEET, _
+                        GEOSHEET, TEMPSHEET
+
+    For counter = requiredSheets.LowerBound To requiredSheets.UpperBound
+        sheetName = requiredSheets.Item(counter)
+        Set foundSheet = Nothing
+        'A missing sheet raises on the read, and Nothing is the answer read back.
+        On Error Resume Next
+        Set foundSheet = wkb.Worksheets(sheetName)
+        On Error GoTo 0
+        If foundSheet Is Nothing Then
+            MissingLinelistSheet = sheetName
+            Exit Function
+        End If
+    Next
+End Function
+
 
 '@section Public Accessors
 '===============================================================================
@@ -154,6 +268,27 @@ End Property
 '@prop-title Prevent further changes to setup-only properties
 Public Sub Seal()
     this.sealed = True
+End Sub
+
+'@label:opened-from-file
+'@prop-title Whether this instance opened its source workbook itself
+'@details
+'True on an instance built by CreateFromFile that opened the file, and that is
+'the instance whose CloseAll closes the source. An instance built on a workbook
+'the caller already held answers False and leaves that workbook open.
+'@return Boolean. True when CloseAll closes the source workbook.
+'@export
+Public Property Get OpenedFromFile() As Boolean
+    OpenedFromFile = this.openedSource
+End Property
+
+'@label:mark-source-opened
+'@sub-title Record that this instance opened its source workbook
+'@details
+'Set at creation only, by CreateFromFile, before the seal.
+Public Sub MarkSourceOpened()
+    GuardNotSealed "MarkSourceOpened"
+    this.openedSource = True
 End Sub
 
 '@label:guard-not-sealed
@@ -546,16 +681,22 @@ Public Function ExportGeo(ByVal folderPath As String, _
 End Function
 
 '@label:close-all
-'@sub-title Close all output workbooks that may still be open
+'@sub-title Close the workbooks this instance still holds open
 '@details
 'Closes any output workbook left open after an export error, preventing
-'orphaned minimized windows. Safe to call even when no workbook is open.
+'orphaned minimized windows, and closes the source workbook when this instance
+'opened it through CreateFromFile. Nothing is saved on either close. Safe to
+'call even when no workbook is open.
 '@export
 Public Sub CloseAll()
     On Error Resume Next
     If Not this.activeWkb Is Nothing Then
         this.activeWkb.Close savechanges:=False
         Set this.activeWkb = Nothing
+    End If
+    If this.openedSource And Not this.sourceWkb Is Nothing Then
+        this.sourceWkb.Close savechanges:=False
+        Set this.sourceWkb = Nothing
     End If
     On Error GoTo 0
 End Sub
