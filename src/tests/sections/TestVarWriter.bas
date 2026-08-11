@@ -698,6 +698,16 @@ Public Sub TestAConditionalFormatVariableGetsOneCondition()
     Assert.AreEqual CLng(1), CLng(cellRng.FormatConditions.Count), _
                     "A conditional format variable should leave exactly one condition"
 
+    'A count on its own cannot tell the fault this test was written for from
+    'Excel declining both formulas. AddOneCondition files a warning naming the
+    'variable when it is refused, so reading it labels the next occurrence
+    'instead of leaving a bare count to be guessed at. This answered
+    'expected 1, actual 0 on 2026-08-01 and again on 2026-08-11, both times on
+    'a tree whose diff reached nothing in this folder.
+    Assert.IsFalse sut.HasCheckings, _
+                   "The writer should file nothing while adding one condition - " & _
+                   "a checking here means Excel refused both formulas"
+
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestAConditionalFormatVariableGetsOneCondition", Err.Number, Err.Description

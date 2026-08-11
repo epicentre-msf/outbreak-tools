@@ -729,6 +729,13 @@ Private Sub WriteMainSheet()
     AddValidation
     On Error GoTo 0
 
+    'Every conditional formatting step is suppressed the same way. Neither
+    'WriteVariable nor this routine carries a handler, and SectionBuilder runs
+    'the whole sheet under On Error GoTo BuildFailed, so a raise here used to
+    'abandon the entire data entry sheet over the formatting of one variable.
+    'The two below the geo one were left open, which also meant a raise in the
+    'first of them skipped the second. What each step could not do it files
+    'through Checking.
     ' HList-specific conditional formatting
     If this.layer = VarWriterLayerHList Then
 
@@ -736,13 +743,20 @@ Private Sub WriteMainSheet()
         AddGeoConditionalFormatting
         On Error GoTo 0
 
+        On Error Resume Next
         AddConditionalFormatting
+        On Error GoTo 0
+
+        On Error Resume Next
         AddUniqueConditionalFormatting
+        On Error GoTo 0
     End If
 
     ' VList also has conditional formatting
     If this.layer = VarWriterLayerVList Then
+        On Error Resume Next
         AddConditionalFormatting
+        On Error GoTo 0
     End If
 End Sub
 
@@ -1938,20 +1952,46 @@ End Function
 '@return String. The OS-local formula string.
 Private Function OSFormula(ByVal formVal As String) As String
     Dim scratchRng As Range
+    Dim prevAlert As Boolean
     Dim prevForm As String
-
-    OSFormula = vbNullString
 
     If (this.layer = VarWriterLayerVList) And (Application.OperatingSystem Like "*Mac*") Then
         OSFormula = formVal
         Exit Function
     End If
 
+    'The standard form is the answer until the round trip gives a better one.
+    'A caller that gets this back still holds a formula it can use, which is
+    'what keeps a scratch cell Excel refuses from ending the sheet.
+    OSFormula = "=" & formVal
+
     Set scratchRng = ScratchRange()
+    prevAlert = Application.DisplayAlerts
     prevForm = scratchRng.formula
+
+    Application.DisplayAlerts = False
+
+    On Error GoTo RoundTripFailed
     scratchRng.formula = "=" & formVal
     OSFormula = scratchRng.FormulaLocal
-    scratchRng.formula = prevForm
+    On Error GoTo 0
+
+CleanUpRoundTrip:
+    'The cleanup sits under its own suppression and is reached by Resume, so a
+    'second failure here cannot end the call the way an inline restore inside
+    'an armed handler would. This is the shape FailedFormula uses.
+    On Error Resume Next
+        scratchRng.formula = prevForm
+        Application.DisplayAlerts = prevAlert
+    On Error GoTo 0
+
+    Exit Function
+
+RoundTripFailed:
+    'A1 is the scratch cell, and on a data entry sheet A1 carries the go-to
+    'dropdown. Leaving the test formula in it breaks that dropdown, so the
+    'restore below has to run whatever happened here.
+    Resume CleanUpRoundTrip
 End Function
 
 '@section Error Handling
