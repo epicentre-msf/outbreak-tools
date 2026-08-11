@@ -1076,7 +1076,7 @@ Private Function AppendToken(ByVal chunk As String, _
         Exit Function
     End If
 
-    If IsNumeric(chunk) Then
+    If IsNumericLiteral(chunk) Then
         tokens.Push chunk
         AppendToken = True
         Exit Function
@@ -1102,6 +1102,39 @@ End Function
 Private Function IsQuotedString(ByVal value As String) As Boolean
     If Len(value) < 2 Then Exit Function
     IsQuotedString = (Left$(value, 1) = QUOTE_CHAR And Right$(value, 1) = QUOTE_CHAR)
+End Function
+
+'@label:is-numeric-literal
+'@sub-title Determine whether the supplied chunk is an English-form numeric literal
+'@details
+'Accepts digits around at most one dot. The convention keeps setup formulas
+'in English, and Range.Formula reads US syntax on every host, so the English
+'form is the one form a literal may take here. IsNumeric would read the
+'chunk in the HOST's regional separators, and on a comma machine it refused
+'every dot literal a setup file carried. A sign never reaches this test:
+''+' and '-' are separator characters, so they split off before the chunk
+'arrives.
+'@param chunk String. Candidate literal.
+'@return Boolean. True when the chunk holds at least one digit and nothing besides digits and a single dot.
+Private Function IsNumericLiteral(ByVal chunk As String) As Boolean
+    Dim idx As Long
+    Dim oneChar As String
+    Dim dotSeen As Boolean
+    Dim digitSeen As Boolean
+
+    For idx = 1 To Len(chunk)
+        oneChar = Mid$(chunk, idx, 1)
+        If oneChar = "." Then
+            If dotSeen Then Exit Function
+            dotSeen = True
+        ElseIf oneChar >= "0" And oneChar <= "9" Then
+            digitSeen = True
+        Else
+            Exit Function
+        End If
+    Next idx
+
+    IsNumericLiteral = digitSeen
 End Function
 
 '@label:clean-string

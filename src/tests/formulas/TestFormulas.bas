@@ -357,7 +357,7 @@ End Function
 'Public, so the headless runner reaches it: the runner calls every lifecycle
 'hook through Application.Run, which cannot see a Private Sub. The handler
 'matters as much. An error escaping a lifecycle hook aborts the WHOLE module,
-'so a fixture problem here would drop all 27 tests and the run would report
+'so a fixture problem here would drop every test and the run would report
 'no failures, because nothing ran.
 '@ModuleInitialize
 Public Sub ModuleInitialize()
@@ -856,6 +856,90 @@ Public Sub TestBooleanLiteralsAccepted()
 
 Fail:
     CustomTestLogFailure Assert, "TestBooleanLiteralsAccepted", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify a dot decimal literal is accepted whatever the host locale
+'@details
+'Arranges a formula "variable + 0.5". The tokeniser used to hand the chunk
+'to IsNumeric, which reads the HOST's decimal separator, so a setup file
+'authored under the English convention lost every dot literal on a comma
+'machine. Asserts the expression is valid and that the literal reaches the
+'parsed output verbatim, which is the form Range.Formula reads on every
+'host. On a comma-decimal machine this test is the live measurement of the
+'Session 75 fix; on a dot machine it stays green, so the suite proves the
+'behaviour independent of where it runs.
+'@TestMethod("Formulas")
+Public Sub TestDotDecimalLiteralAccepted()
+    CustomTestSetTitles Assert, "Formulas", "TestDotDecimalLiteralAccepted"
+    Dim variableName As String
+    Dim formulaInstance As Formulas
+    Dim parsed As String
+
+    On Error GoTo Fail
+
+    variableName = AnyVariableName()
+    Set formulaInstance = BuildFormula(variableName & " + 0.5")
+
+    Assert.IsTrue formulaInstance.Valid("simple"), _
+                  "A dot decimal literal should be valid on every host. Reason: " & formulaInstance.Reason("simple")
+    parsed = formulaInstance.ParsedLinelistFormula(useTableName:=True, tablePrefix:="tbl_")
+    Assert.IsTrue InStr(1, parsed, "0.5", vbBinaryCompare) > 0, _
+                  "The dot literal should reach the parsed formula verbatim. Parsed: " & parsed
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDotDecimalLiteralAccepted", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify a chunk carrying two dots is refused as an unknown token
+'@details
+'Arranges a formula "variable + 0..5". The invariant literal test accepts
+'at most one dot, so the chunk has to come back as the unknown-token
+'failure rather than slipping into the parsed output as a broken literal.
+'@TestMethod("Formulas")
+Public Sub TestTwoDotChunkRefused()
+    CustomTestSetTitles Assert, "Formulas", "TestTwoDotChunkRefused"
+    Dim variableName As String
+    Dim formulaInstance As Formulas
+    Dim expectedReason As String
+
+    On Error GoTo Fail
+
+    variableName = AnyVariableName()
+    Set formulaInstance = BuildFormula(variableName & " + 0..5")
+    expectedReason = UnknownTokenReason("0..5")
+
+    Assert.IsFalse formulaInstance.Valid("simple"), "A chunk with two dots should be refused"
+    Assert.AreEqual expectedReason, formulaInstance.Reason("simple"), _
+                    "The refusal should name the malformed chunk. Found: " & formulaInstance.Reason("simple")
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestTwoDotChunkRefused", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify an integer literal still passes the invariant literal test
+'@details
+'Arranges a formula "variable + 12". The digit walk demands at least one
+'digit and tolerates the absence of a dot, so a plain integer passes the
+'same way it did through IsNumeric before the Session 75 fix.
+'@TestMethod("Formulas")
+Public Sub TestIntegerLiteralStillAccepted()
+    CustomTestSetTitles Assert, "Formulas", "TestIntegerLiteralStillAccepted"
+    Dim variableName As String
+    Dim formulaInstance As Formulas
+
+    On Error GoTo Fail
+
+    variableName = AnyVariableName()
+    Set formulaInstance = BuildFormula(variableName & " + 12")
+
+    Assert.IsTrue formulaInstance.Valid("simple"), _
+                  "An integer literal should stay accepted. Reason: " & formulaInstance.Reason("simple")
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestIntegerLiteralStillAccepted", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify unknown functions trigger the standard unknown-token failure
