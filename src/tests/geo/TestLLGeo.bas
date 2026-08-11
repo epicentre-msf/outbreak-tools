@@ -11,27 +11,28 @@ Option Explicit
 'ListObjects for four admin levels (T_ADM1 through T_ADM4), health facilities
 '(T_HF), translation names (T_NAMES), historic entries, and metadata.
 '
+'THE TABLES ARE BUILT BY A SHARED FIXTURE MODULE
+'-------------------------------------------------------------------------------
+'`GeoTestFixture` under `helpers` writes the nine tables, and its own header
+'block carries the shape of the geobase: what each table holds, why one admin1
+'value is a number, and why T_HF carries a column the class has nothing for.
+'These routines were private here until TestEventLinelistSheets needed the same
+'geobase to drive the geo cascade of a generated linelist.
+'
 'THE FIXTURE COMES IN TWO SHAPES
 '-------------------------------------------------------------------------------
 'BuildGeoFixture builds the nine tables with headers alone, which is what the
-'factory and flag tests need. BuildGeoFixture(withData:=True) fills them with
-'3 admin1 by 2 admin2 by 2 admin3 rows, a health facility table and the five
-'level translations, which is what the cascade, the import, the translation
-'round trip and the historic tests need. The third admin1 value is the number
-'3, because two call sites in EventLinelist hand GeoLevel a raw cell value.
-'
-'T_HF CARRIES A COLUMN THE CLASS HAS NOTHING FOR
-'-------------------------------------------------------------------------------
-'Its columns are hf_name, hf_pcode, hf_extra, adm3_name, adm2_name, adm1_name.
-'The extra column and the reversed level order are what pin the header
-'translation to a lookup by name.
+'factory and flag tests need. BuildGeoFixture(withData:=True) fills them, which
+'is what the cascade, the import, the translation round trip and the historic
+'tests need.
 '
 'THE FIVE LEVEL LABELS ARE WORKBOOK-SCOPED
 '-------------------------------------------------------------------------------
 'They are hidden names on the workbook, so they outlive a worksheet clear.
 'Every fixture build drops them first, and ModuleCleanup leaves five empty
 'ones behind for whatever else in the workbook resolves them.
-'@depends LLGeo, BetterArray, CustomTest, TestHelpersLite, HiddenNames, Passwords
+'@depends LLGeo, BetterArray, CustomTest, TestHelpersLite, HiddenNames,
+'  Passwords, GeoTestFixture
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const GEO_FIXTURE As String = "GeoFixture"
@@ -101,16 +102,7 @@ End Sub
 'refers to no sheet, so each fixture build has to drop them by hand.
 '@param wb Workbook. The workbook holding them.
 Private Sub DropLevelNames(ByVal wb As Workbook)
-    Dim ids As Variant
-    Dim counter As Long
-
-    ids = LevelNameIds()
-
-    For counter = LBound(ids) To UBound(ids)
-        On Error Resume Next
-        wb.Names(CStr(ids(counter))).Delete
-        On Error GoTo 0
-    Next
+    GeoTestFixture.DropGeoLevelNames wb
 End Sub
 
 '@sub-title Leave the five level labels defined and empty.
@@ -132,8 +124,7 @@ End Sub
 '@sub-title The five hidden names holding the level labels.
 '@return Variant. An array of the five identifiers.
 Private Function LevelNameIds() As Variant
-    LevelNameIds = Array("RNG_ADM1NAME", "RNG_ADM2NAME", "RNG_ADM3NAME", _
-                         "RNG_ADM4NAME", "RNG_HFNAME")
+    LevelNameIds = GeoTestFixture.GeoFixtureLevelNameIds()
 End Function
 
 '@sub-title Read one level label out of the workbook store.
@@ -153,7 +144,7 @@ End Function
 Private Sub WriteTableCell(ByVal sh As Worksheet, ByVal Lo As ListObject, _
                            ByVal rowOffset As Long, ByVal colOffset As Long, _
                            ByVal cellValue As Variant)
-    sh.Cells(Lo.Range.Row + rowOffset, Lo.Range.Column + colOffset).Value = cellValue
+    GeoTestFixture.GeoFixtureWriteCell sh, Lo, rowOffset, colOffset, cellValue
 End Sub
 
 '@sub-title Grow a fixture table to hold a number of data rows.
@@ -162,187 +153,7 @@ End Sub
 '@param dataRows Long. The number of data rows wanted.
 Private Sub ResizeTable(ByVal sh As Worksheet, ByVal Lo As ListObject, _
                         ByVal dataRows As Long)
-    Dim firstRow As Long
-    Dim firstCol As Long
-    Dim lastCol As Long
-
-    firstRow = Lo.Range.Row
-    firstCol = Lo.Range.Column
-    lastCol = firstCol + Lo.Range.Columns.Count - 1
-
-    Lo.Resize sh.Range(sh.Cells(firstRow, firstCol), _
-                       sh.Cells(firstRow + dataRows, lastCol))
-End Sub
-
-'@sub-title Build the nine geobase tables and the geo hidden names on a sheet.
-'@details
-'Creates T_ADM1 through T_ADM4, T_HF, T_NAMES, T_HISTOGEO, T_HISTOHF and
-'T_METADATA side by side with one blank column between them, the
-'RNG_PastingGeoCol cell, and the four hidden names the factory asks for.
-'@param sh Worksheet. The worksheet to build on.
-'@param withData Boolean. True to fill the tables with geographic data.
-Private Sub BuildGeoTables(ByVal sh As Worksheet, ByVal withData As Boolean)
-    Dim rng As Range
-    Dim counter As Long
-    Dim tblNames As Variant
-    Dim tblCols As Variant
-    Dim startCol As Long
-    Dim geoStore As HiddenNames
-
-    tblNames = Array("T_ADM1", "T_ADM2", "T_ADM3", "T_ADM4", "T_HF", _
-                     "T_NAMES", "T_HISTOGEO", "T_HISTOHF", "T_METADATA")
-    tblCols = Array(2, 3, 4, 5, 6, 2, 1, 1, 2)
-
-    startCol = 1
-    For counter = LBound(tblNames) To UBound(tblNames)
-        Set rng = sh.Range(sh.Cells(1, startCol), _
-                           sh.Cells(2, startCol + CLng(tblCols(counter)) - 1))
-
-        Select Case CStr(tblNames(counter))
-        Case "T_ADM1"
-            sh.Cells(1, startCol).Value = "adm1_name"
-            sh.Cells(1, startCol + 1).Value = "adm1_concat"
-        Case "T_ADM2"
-            sh.Cells(1, startCol).Value = "adm1_name"
-            sh.Cells(1, startCol + 1).Value = "adm2_name"
-            sh.Cells(1, startCol + 2).Value = "adm2_concat"
-        Case "T_ADM3"
-            sh.Cells(1, startCol).Value = "adm1_name"
-            sh.Cells(1, startCol + 1).Value = "adm2_name"
-            sh.Cells(1, startCol + 2).Value = "adm3_name"
-            sh.Cells(1, startCol + 3).Value = "adm3_concat"
-        Case "T_ADM4"
-            sh.Cells(1, startCol).Value = "adm1_name"
-            sh.Cells(1, startCol + 1).Value = "adm2_name"
-            sh.Cells(1, startCol + 2).Value = "adm3_name"
-            sh.Cells(1, startCol + 3).Value = "adm4_name"
-            sh.Cells(1, startCol + 4).Value = "adm4_concat"
-        Case "T_HF"
-            sh.Cells(1, startCol).Value = "hf_name"
-            sh.Cells(1, startCol + 1).Value = "hf_pcode"
-            sh.Cells(1, startCol + 2).Value = "hf_extra"
-            sh.Cells(1, startCol + 3).Value = "adm3_name"
-            sh.Cells(1, startCol + 4).Value = "adm2_name"
-            sh.Cells(1, startCol + 5).Value = "adm1_name"
-        Case "T_NAMES"
-            sh.Cells(1, startCol).Value = "level"
-            sh.Cells(1, startCol + 1).Value = "EN"
-        Case "T_HISTOGEO"
-            sh.Cells(1, startCol).Value = "HistoGeo"
-        Case "T_HISTOHF"
-            sh.Cells(1, startCol).Value = "HistoFacility"
-        Case "T_METADATA"
-            sh.Cells(1, startCol).Value = "variable"
-            sh.Cells(1, startCol + 1).Value = "value"
-        End Select
-
-        sh.ListObjects.Add(xlSrcRange, rng, , xlYes).Name = CStr(tblNames(counter))
-        startCol = startCol + CLng(tblCols(counter)) + 1
-    Next counter
-
-    'The paste anchor stays a real cell
-    sh.Cells(40, 1).Name = "RNG_PastingGeoCol"
-
-    Set geoStore = HiddenNames.Create(sh)
-    geoStore.EnsureName "RNG_GeoUpdated", "empty", HiddenNameTypeString
-    geoStore.EnsureName "RNG_GeoName", "test_geo", HiddenNameTypeString
-    geoStore.EnsureName "RNG_GeoLangCode", vbNullString, HiddenNameTypeString
-    geoStore.EnsureName "RNG_MetaLang", vbNullString, HiddenNameTypeString
-
-    DropLevelNames sh.Parent
-
-    If withData Then FillGeoData sh, geoStore
-End Sub
-
-'@sub-title Fill the fixture tables with a small geobase.
-'@details
-'Three admin1 values, two admin2 under each and two admin3 under each of
-'those, one admin4 per admin3, three health facilities and the five level
-'translations in an EN column. The third admin1 value is the number 3.
-'@param sh Worksheet. The fixture worksheet.
-'@param geoStore HiddenNames. The hidden name store of that worksheet.
-Private Sub FillGeoData(ByVal sh As Worksheet, ByVal geoStore As HiddenNames)
-    Dim adm1Values As Variant
-    Dim adm1Idx As Long
-    Dim childIdx As Long
-    Dim grandIdx As Long
-    Dim adm2Row As Long
-    Dim adm3Row As Long
-    Dim adm1Value As Variant
-    Dim adm2Value As String
-    Dim adm3Value As String
-    Dim loAdm1 As ListObject
-    Dim loAdm2 As ListObject
-    Dim loAdm3 As ListObject
-    Dim loAdm4 As ListObject
-    Dim loHF As ListObject
-    Dim loNames As ListObject
-
-    adm1Values = Array("P1", "P2", 3)
-
-    Set loAdm1 = sh.ListObjects("T_ADM1")
-    Set loAdm2 = sh.ListObjects("T_ADM2")
-    Set loAdm3 = sh.ListObjects("T_ADM3")
-    Set loAdm4 = sh.ListObjects("T_ADM4")
-    Set loHF = sh.ListObjects("T_HF")
-    Set loNames = sh.ListObjects("T_NAMES")
-
-    For adm1Idx = 0 To 2
-        adm1Value = adm1Values(adm1Idx)
-        WriteTableCell sh, loAdm1, adm1Idx + 1, 0, adm1Value
-
-        For childIdx = 1 To 2
-            adm2Row = adm2Row + 1
-            adm2Value = "D" & adm2Row
-            WriteTableCell sh, loAdm2, adm2Row, 0, adm1Value
-            WriteTableCell sh, loAdm2, adm2Row, 1, adm2Value
-
-            For grandIdx = 1 To 2
-                adm3Row = adm3Row + 1
-                adm3Value = "C" & adm3Row
-
-                WriteTableCell sh, loAdm3, adm3Row, 0, adm1Value
-                WriteTableCell sh, loAdm3, adm3Row, 1, adm2Value
-                WriteTableCell sh, loAdm3, adm3Row, 2, adm3Value
-
-                WriteTableCell sh, loAdm4, adm3Row, 0, adm1Value
-                WriteTableCell sh, loAdm4, adm3Row, 1, adm2Value
-                WriteTableCell sh, loAdm4, adm3Row, 2, adm3Value
-                WriteTableCell sh, loAdm4, adm3Row, 3, "V" & adm3Row
-            Next grandIdx
-        Next childIdx
-    Next adm1Idx
-
-    ResizeTable sh, loAdm1, 3
-    ResizeTable sh, loAdm2, adm2Row
-    ResizeTable sh, loAdm3, adm3Row
-    ResizeTable sh, loAdm4, adm3Row
-
-    'T_HF: hf_name, hf_pcode, hf_extra, adm3_name, adm2_name, adm1_name
-    For childIdx = 1 To 3
-        WriteTableCell sh, loHF, childIdx, 0, "HF" & childIdx
-        WriteTableCell sh, loHF, childIdx, 1, "PC" & childIdx
-        WriteTableCell sh, loHF, childIdx, 2, "X" & childIdx
-        WriteTableCell sh, loHF, childIdx, 3, "C" & childIdx
-        WriteTableCell sh, loHF, childIdx, 4, "D1"
-        WriteTableCell sh, loHF, childIdx, 5, "P1"
-    Next childIdx
-    ResizeTable sh, loHF, 3
-
-    WriteTableCell sh, loNames, 1, 0, "adm1_name"
-    WriteTableCell sh, loNames, 1, 1, "Province"
-    WriteTableCell sh, loNames, 2, 0, "adm2_name"
-    WriteTableCell sh, loNames, 2, 1, "District"
-    WriteTableCell sh, loNames, 3, 0, "adm3_name"
-    WriteTableCell sh, loNames, 3, 1, "Commune"
-    WriteTableCell sh, loNames, 4, 0, "adm4_name"
-    WriteTableCell sh, loNames, 4, 1, "Village"
-    WriteTableCell sh, loNames, 5, 0, "hf_name"
-    WriteTableCell sh, loNames, 5, 1, "Health Facility"
-    ResizeTable sh, loNames, 5
-
-    geoStore.SetValue "RNG_GeoLangCode", "EN"
-    geoStore.SetValue "RNG_GeoUpdated", "updated"
+    GeoTestFixture.GeoFixtureResizeTable sh, Lo, dataRows
 End Sub
 
 '@sub-title Build a geobase fixture worksheet in the test workbook.
@@ -351,8 +162,7 @@ End Sub
 Private Function BuildGeoFixture(Optional ByVal withData As Boolean = False) As Worksheet
     Dim sh As Worksheet
 
-    Set sh = EnsureWorksheet(GEO_FIXTURE, clearSheet:=True, visibility:=xlSheetHidden)
-    BuildGeoTables sh, withData
+    Set sh = GeoTestFixture.PrepareGeoFixture(GEO_FIXTURE, ThisWorkbook, withData)
 
     Set BuildGeoFixture = sh
 End Function
@@ -367,10 +177,13 @@ Private Function BuildGeoWorkbook(ByVal withData As Boolean) As Workbook
     Dim wb As Workbook
     Dim sh As Worksheet
 
+    'The first sheet of the new workbook is renamed rather than added to, so
+    'the workbook carries the geo sheet and nothing else. That is why this
+    'reaches the table builder directly instead of PrepareGeoFixture.
     Set wb = NewWorkbook()
     Set sh = wb.Worksheets(1)
     sh.Name = GEO_SHEET_NAME
-    BuildGeoTables sh, withData
+    GeoTestFixture.BuildGeoFixtureTables sh, withData
 
     Set BuildGeoWorkbook = wb
 End Function

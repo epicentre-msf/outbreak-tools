@@ -67,23 +67,28 @@ Option Explicit
 'before the build. VarWriter then writes "text_h2 -- listauto" and the
 'sheet-level has_listauto flag, which is what UpdateAllListAuto reads.
 '
-'WHAT THIS MODULE LEAVES OPEN
+'THE GEO CASCADE NEEDS A GEOBASE IN BOTH WORKBOOKS
 '-------------------------------------------------------------------------------
-'The geo cascade. LLdictionary.Prepare expands a geo variable into geo1 to geo4
-'columns only when it is handed an LLGeo, and building one wants the nine
-'geobase tables. The seeding for those lives as private routines inside
-'TestLLGeo. Covering the cascade means promoting that seeding into
-'src/tests/helpers/ first, and that is its own piece of work.
+'`LLdictionary.Prepare` expands a geo variable into geo1 to geo4 columns only
+'when it is handed an `LLGeo`, so the designer workbook gets a geobase before
+'the dictionary is prepared. `LinelistSpecs` resolves its own geo through the
+'worksheet called Geo of that same workbook, which is what lets `VarWriter`
+'build the four admin dropdown lists while it writes the geo1 column. The
+'linelist workbook gets a geobase of its own, because `EventLinelist.EnsureGeo`
+'reads the Geo worksheet of the workbook it was configured with and a
+'generation copies the designer's across. Both come from `GeoTestFixture`
+'under `helpers`.
 '@depends EventLinelist, LLDataEntry, Linelist, LinelistSpecs, LLdictionary,
-'  LLVariables, LLSheets, LLFormat, LLChoices, FormulaData, DropdownLists,
+'  LLVariables, LLSheets, LLFormat, LLChoices, LLGeo, FormulaData, DropdownLists,
 '  HiddenNames, Passwords, CustomTest, DictionaryTestFixture, ChoicesTestFixture,
-'  LLFormatTestFixture, FormulaTestFixture, PasswordsTestFixture
+'  LLFormatTestFixture, FormulaTestFixture, PasswordsTestFixture, GeoTestFixture
 
 Private Assert As CustomTest
 Private SpecsWkb As Workbook
 Private OutWkb As Workbook
 Private Dict As LLdictionary
 Private Vars As LLVariables
+Private Geo As LLGeo
 Private Specs As LinelistSpecs
 Private LL As Linelist
 Private SheetInfo As LLSheets
@@ -110,6 +115,13 @@ Private Const SHEET_DROPDOWN_LISTS As String = "dropdown_lists__"
 Private Const SHEET_CUSTOM_CHOICE As String = "LLSHEET_CustomChoice"
 Private Const SHEET_CUSTOM_PIVOT As String = "LLSHEET_CustomPivotTable"
 Private Const SHEET_DICTIONARY As String = "Dictionary"
+Private Const GEO_SHEET As String = "Geo"
+
+'The four dropdown lists the geo cascade rewrites. VarWriter creates them when
+'it writes the geo1 column, and every geo sheet of a linelist shares them.
+Private Const LIST_ADMIN2 As String = "admin2"
+Private Const LIST_ADMIN3 As String = "admin3"
+Private Const LIST_ADMIN4 As String = "admin4"
 
 'The workbook hidden name the list auto branch raises.
 Private Const LISTAUTO_FLAG As String = "RNG_UpdateListAuto"
@@ -129,6 +141,22 @@ Private Const HIDDEN_VAR As String = "hid_h2"
 Private Const VLIST_EDITABLE_VAR As String = "ed_var_v1"
 Private Const VLIST_CHOICE_VAR As String = "choi_mult_v1"
 
+'AppendGeoLines turns the geo variable geo_h2 into twelve rows. The four the
+'cascade drives are adm1_ to adm4_, carrying the controls geo1 to geo4, and
+'they sit in that order on the built sheet.
+Private Const GEO_VAR_ADM1 As String = "adm1_geo_h2"
+Private Const GEO_VAR_ADM2 As String = "adm2_geo_h2"
+Private Const GEO_VAR_ADM3 As String = "adm3_geo_h2"
+Private Const GEO_VAR_ADM4 As String = "adm4_geo_h2"
+
+'What the geobase fixture holds: three admin1 values, two admin2 under each,
+'two admin3 under each of those.
+Private Const GEO_ADM1_VALUE As String = "P1"
+Private Const GEO_ADM2_OF_P1 As String = "D1"
+Private Const GEO_ADM2_SECOND As String = "D2"
+Private Const GEO_ADM3_OF_D1 As String = "C1"
+Private Const GEO_ADM4_OF_C1 As String = "V1"
+
 'The main label int_h2 arrives with. The test that writes over its label row
 'reads this back out of the dictionary.
 Private Const PLAIN_VAR_LABEL As String = "Integer on hlist2D"
@@ -146,6 +174,8 @@ Private Const ROW_CHOICE_UNHELD As Long = 6
 Private Const ROW_FILTER_VISIBLE As Long = 7
 Private Const ROW_FILTER_HIDDEN As Long = 8
 Private Const ROW_FILTER_HIDDENCOL As Long = 9
+Private Const ROW_GEO_CHANGE As Long = 10
+Private Const ROW_GEO_SELECTION As Long = 11
 
 'What the tests type into the sheets. Each one is unique, so a test reads its
 'own writing back out of a table every other test has also written to.
@@ -217,6 +247,7 @@ Public Sub ModuleCleanup()
 
     Set Sut = Nothing
     Set Guard = Nothing
+    Set Geo = Nothing
     Set SheetInfo = Nothing
     Set LL = Nothing
     Set Specs = Nothing
@@ -266,13 +297,23 @@ Private Sub BuildFixture()
     Dim formulaSheet As Worksheet
     Dim choicesObj As LLChoices
     Dim bookNames As HiddenNames
+    Dim designerGeoSheet As Worksheet
 
     Set SpecsWkb = NewWorkbook()
     Set OutWkb = NewWorkbook()
 
+    'The geobase of the designer. Prepare expands a geo variable into geo1 to
+    'geo4 columns only when it is handed an LLGeo, so this is built before the
+    'dictionary is prepared. LinelistSpecs resolves its own geo through the
+    'worksheet called Geo of the designer workbook, which is this one, and that
+    'is what lets VarWriter build the four admin dropdown lists.
+    Set designerGeoSheet = GeoTestFixture.PrepareGeoFixture(GEO_SHEET, SpecsWkb, _
+                                                            withData:=True)
+    Set Geo = LLGeo.Create(designerGeoSheet)
+
     DictionaryTestFixture.PrepareDictionaryFixture DICTIONARY_SHEET, SpecsWkb
     Set Dict = LLdictionary.Create(SpecsWkb.Worksheets(DICTIONARY_SHEET), 1, 1)
-    Dict.Prepare
+    Dict.Prepare geoObject:=Geo
 
     'What LinelistSpecs.AddListAuto writes in a generation. The TestAssign
     'setters below hand the dictionary over without running it.
@@ -311,6 +352,12 @@ Private Sub BuildFixture()
     'the worksheet called Dictionary of the host workbook, and the editable
     'label branch writes the new label back into it.
     DictionaryTestFixture.PrepareDictionaryFixture SHEET_DICTIONARY, OutWkb
+
+    'The geobase copy a generated linelist carries. EnsureGeo reads the
+    'worksheet called Geo of the host workbook, and the cascade asks it for the
+    'children of the value the user picked. A generation copies the designer's
+    'geo sheet across, so the two carry the same geography.
+    GeoTestFixture.PrepareGeoFixture GEO_SHEET, OutWkb, withData:=True
 
     'The flag the list auto branch raises. SetValue answers a name it cannot
     'find with a raise, and the raise lands on the handler's error label, so a
@@ -772,6 +819,242 @@ Public Sub TestTheGoToDropdownMovesToTheSection()
 TestFail:
     HandBackTheScreen
     CustomTestLogFailure Assert, "TestTheGoToDropdownMovesToTheSection", Err.Number, Err.Description
+End Sub
+
+
+'@section OnSheetChange -- the geo cascade
+'===============================================================================
+'The four admin columns sit next to each other on the built sheet, because
+'AppendGeoLines gives adm2 to adm4 the column index of adm1 plus one, two and
+'three. Every branch below reads the columns to its left and writes the
+'dropdown list of the level under it.
+
+'@sub-title Picking an admin1 value fills the dropdown of the level under it.
+'@TestMethod("EventLinelist")
+Public Sub TestAGeoEditFillsTheDropdownOfTheLevelBelow()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAGeoEditFillsTheDropdownOfTheLevelBelow"
+    If Not FixtureReady("TestAGeoEditFillsTheDropdownOfTheLevelBelow") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim adm1Rng As Range
+    Dim listValues As BetterArray
+
+    Set adm1Rng = HListCell(GEO_VAR_ADM1, ROW_GEO_CHANGE)
+    adm1Rng.Value = GEO_ADM1_VALUE
+
+    Sut.OnSheetChange HListSheet(), adm1Rng
+
+    Set listValues = DropdownValues(LIST_ADMIN2)
+
+    Assert.IsTrue CountOf(listValues, GEO_ADM2_OF_P1) > 0, _
+                  "The admin2 dropdown should hold the first child of the value picked"
+    Assert.IsTrue CountOf(listValues, GEO_ADM2_SECOND) > 0, _
+                  "The admin2 dropdown should hold every child of the value picked"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAGeoEditFillsTheDropdownOfTheLevelBelow", Err.Number, Err.Description
+End Sub
+
+'@sub-title Picking an admin1 value empties the three levels under it.
+'@details
+'The three cells to the right of the edited one are the lower admin levels, and
+'what they held belongs to the admin1 value that was there before.
+'@TestMethod("EventLinelist")
+Public Sub TestAGeoEditClearsTheLevelsUnderIt()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAGeoEditClearsTheLevelsUnderIt"
+    If Not FixtureReady("TestAGeoEditClearsTheLevelsUnderIt") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim adm1Rng As Range
+
+    Set adm1Rng = HListCell(GEO_VAR_ADM1, ROW_GEO_CHANGE)
+
+    HListCell(GEO_VAR_ADM2, ROW_GEO_CHANGE).Value = GEO_ADM2_OF_P1
+    HListCell(GEO_VAR_ADM3, ROW_GEO_CHANGE).Value = GEO_ADM3_OF_D1
+    HListCell(GEO_VAR_ADM4, ROW_GEO_CHANGE).Value = GEO_ADM4_OF_C1
+
+    adm1Rng.Value = GEO_ADM1_VALUE
+    Sut.OnSheetChange HListSheet(), adm1Rng
+
+    Assert.AreEqual vbNullString, _
+                    CStr(HListCell(GEO_VAR_ADM2, ROW_GEO_CHANGE).Value), _
+                    "An admin1 edit should empty the admin2 cell beside it"
+    Assert.AreEqual vbNullString, _
+                    CStr(HListCell(GEO_VAR_ADM3, ROW_GEO_CHANGE).Value), _
+                    "An admin1 edit should empty the admin3 cell beside it"
+    Assert.AreEqual vbNullString, _
+                    CStr(HListCell(GEO_VAR_ADM4, ROW_GEO_CHANGE).Value), _
+                    "An admin1 edit should empty the admin4 cell beside it"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAGeoEditClearsTheLevelsUnderIt", Err.Number, Err.Description
+End Sub
+
+'@sub-title Picking an admin2 value fills the admin3 dropdown.
+'@details
+'This level reads two cells: the admin1 value to its left and the value just
+'picked, because an admin2 name is unique under its parent alone.
+'@TestMethod("EventLinelist")
+Public Sub TestASecondLevelGeoEditFillsTheThirdDropdown()
+    CustomTestSetTitles Assert, TESTMODULE, "TestASecondLevelGeoEditFillsTheThirdDropdown"
+    If Not FixtureReady("TestASecondLevelGeoEditFillsTheThirdDropdown") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim adm2Rng As Range
+
+    HListCell(GEO_VAR_ADM1, ROW_GEO_CHANGE).Value = GEO_ADM1_VALUE
+    Set adm2Rng = HListCell(GEO_VAR_ADM2, ROW_GEO_CHANGE)
+    adm2Rng.Value = GEO_ADM2_OF_P1
+
+    Sut.OnSheetChange HListSheet(), adm2Rng
+
+    Assert.IsTrue CountOf(DropdownValues(LIST_ADMIN3), GEO_ADM3_OF_D1) > 0, _
+                  "The admin3 dropdown should hold the children of the admin2 value picked"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestASecondLevelGeoEditFillsTheThirdDropdown", Err.Number, Err.Description
+End Sub
+
+'@sub-title Picking an admin3 value fills the admin4 dropdown.
+'@TestMethod("EventLinelist")
+Public Sub TestAThirdLevelGeoEditFillsTheFourthDropdown()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAThirdLevelGeoEditFillsTheFourthDropdown"
+    If Not FixtureReady("TestAThirdLevelGeoEditFillsTheFourthDropdown") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim adm3Rng As Range
+
+    HListCell(GEO_VAR_ADM1, ROW_GEO_CHANGE).Value = GEO_ADM1_VALUE
+    HListCell(GEO_VAR_ADM2, ROW_GEO_CHANGE).Value = GEO_ADM2_OF_P1
+    Set adm3Rng = HListCell(GEO_VAR_ADM3, ROW_GEO_CHANGE)
+    adm3Rng.Value = GEO_ADM3_OF_D1
+
+    Sut.OnSheetChange HListSheet(), adm3Rng
+
+    Assert.IsTrue CountOf(DropdownValues(LIST_ADMIN4), GEO_ADM4_OF_C1) > 0, _
+                  "The admin4 dropdown should hold the children of the admin3 value picked"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAThirdLevelGeoEditFillsTheFourthDropdown", Err.Number, Err.Description
+End Sub
+
+'@sub-title An empty geo cell leaves the dropdowns as they stand.
+'@details
+'Deleting the value of a geo cell reaches the handler the same way typing one
+'does, and there is no parent to read children from.
+'@TestMethod("EventLinelist")
+Public Sub TestAnEmptiedGeoCellLeavesTheDropdownAlone()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAnEmptiedGeoCellLeavesTheDropdownAlone"
+    If Not FixtureReady("TestAnEmptiedGeoCellLeavesTheDropdownAlone") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim adm1Rng As Range
+    Dim heldCount As Long
+
+    Set adm1Rng = HListCell(GEO_VAR_ADM1, ROW_GEO_CHANGE)
+    adm1Rng.Value = GEO_ADM1_VALUE
+    Sut.OnSheetChange HListSheet(), adm1Rng
+    heldCount = DropdownValues(LIST_ADMIN2).Length
+
+    adm1Rng.ClearContents
+    Sut.OnSheetChange HListSheet(), adm1Rng
+
+    Assert.AreEqual heldCount, DropdownValues(LIST_ADMIN2).Length, _
+                    "Emptying a geo cell should leave the dropdown under it as it stood"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAnEmptiedGeoCellLeavesTheDropdownAlone", Err.Number, Err.Description
+End Sub
+
+
+'@section OnSelectionChange -- the geo cascade
+'===============================================================================
+
+'@sub-title Landing on an admin2 cell rebuilds its dropdown from its parent.
+'@details
+'This is what makes the dropdown of a row show the right children when the user
+'walks back to a row filled earlier: the change handler wrote the list for
+'whichever row was edited last, and arriving on a cell rewrites it for this one.
+'@TestMethod("EventLinelist")
+Public Sub TestLandingOnAGeoCellRebuildsItsDropdown()
+    CustomTestSetTitles Assert, TESTMODULE, "TestLandingOnAGeoCellRebuildsItsDropdown"
+    If Not FixtureReady("TestLandingOnAGeoCellRebuildsItsDropdown") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim adm2Rng As Range
+
+    'The row this test walks back to carries P1, and the dropdown is left
+    'holding the children of another admin1 value first.
+    HListCell(GEO_VAR_ADM1, ROW_GEO_SELECTION).Value = GEO_ADM1_VALUE
+    Set adm2Rng = HListCell(GEO_VAR_ADM2, ROW_GEO_SELECTION)
+
+    Sut.OnSelectionChange HListSheet(), adm2Rng
+
+    Assert.IsTrue CountOf(DropdownValues(LIST_ADMIN2), GEO_ADM2_OF_P1) > 0, _
+                  "Landing on an admin2 cell should fill its dropdown from the row's admin1 value"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestLandingOnAGeoCellRebuildsItsDropdown", Err.Number, Err.Description
+End Sub
+
+'@sub-title Landing on an admin3 cell reads both levels above it.
+'@TestMethod("EventLinelist")
+Public Sub TestLandingOnAThirdLevelCellReadsBothParents()
+    CustomTestSetTitles Assert, TESTMODULE, "TestLandingOnAThirdLevelCellReadsBothParents"
+    If Not FixtureReady("TestLandingOnAThirdLevelCellReadsBothParents") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim adm3Rng As Range
+
+    HListCell(GEO_VAR_ADM1, ROW_GEO_SELECTION).Value = GEO_ADM1_VALUE
+    HListCell(GEO_VAR_ADM2, ROW_GEO_SELECTION).Value = GEO_ADM2_OF_P1
+    Set adm3Rng = HListCell(GEO_VAR_ADM3, ROW_GEO_SELECTION)
+
+    Sut.OnSelectionChange HListSheet(), adm3Rng
+
+    Assert.IsTrue CountOf(DropdownValues(LIST_ADMIN3), GEO_ADM3_OF_D1) > 0, _
+                  "Landing on an admin3 cell should fill its dropdown from the two levels above"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestLandingOnAThirdLevelCellReadsBothParents", Err.Number, Err.Description
+End Sub
+
+'@sub-title The build gives the geo variable its four admin columns.
+'@details
+'The cascade rests on this: the dictionary carried one variable with a geo
+'control, and Prepare turned it into four columns carrying geo1 to geo4, in
+'that order and next to each other.
+'@TestMethod("EventLinelist")
+Public Sub TestTheBuiltSheetCarriesTheFourAdminColumns()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheBuiltSheetCarriesTheFourAdminColumns"
+    If Not FixtureReady("TestTheBuiltSheetCarriesTheFourAdminColumns") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim store As HiddenNames
+    Dim adm1Column As Long
+
+    Set store = StoreOf(HListSheet())
+    adm1Column = HeaderColumnOf(GEO_VAR_ADM1)
+
+    Assert.AreEqual "geo1", store.ValueAsString(GEO_VAR_ADM1 & " -- control"), _
+                    "The first admin column should carry the geo1 control"
+    Assert.AreEqual "geo4", store.ValueAsString(GEO_VAR_ADM4 & " -- control"), _
+                    "The fourth admin column should carry the geo4 control"
+    Assert.AreEqual adm1Column + 1, HeaderColumnOf(GEO_VAR_ADM2), _
+                    "The admin2 column should sit beside the admin1 column"
+    Assert.AreEqual adm1Column + 3, HeaderColumnOf(GEO_VAR_ADM4), _
+                    "The four admin columns should sit next to each other"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheBuiltSheetCarriesTheFourAdminColumns", Err.Number, Err.Description
 End Sub
 
 

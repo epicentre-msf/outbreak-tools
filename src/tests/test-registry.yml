@@ -91,6 +91,16 @@ suites:
       # FormulaData reads, and TestFormulas calls it. It declares no
       # @TestMethod, so the runner imports it and runs it as a 0-test no-op.
       - module: FormulaTestFixture
+      # GeoTestFixture builds the nine geobase ListObjects LLGeo reads. These
+      # routines were private to TestLLGeo until TestEventLinelistSheets needed
+      # the same tables: LLdictionary.Prepare expands a geo variable into geo1
+      # to geo4 columns ONLY when it is handed an LLGeo, so a suite that drives
+      # the geo cascade of a generated linelist has to build a geobase first.
+      # TestLLGeo now calls it too and keeps thin wrappers over its own names,
+      # so its 34 direct uses of the two table utilities were left untouched.
+      # It declares no @TestMethod, so the runner imports it and runs it as a
+      # 0-test no-op.
+      - module: GeoTestFixture
       # SetupImportTestFixture is the same shape again. It builds the
       # Dictionary, Choices, Exports, Analysis and Translations sheets that
       # TestSetupImport reads, and TestSetupErrors will call it too.
