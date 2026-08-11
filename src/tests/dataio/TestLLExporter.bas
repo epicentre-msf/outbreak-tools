@@ -39,7 +39,15 @@ Option Explicit
 '  export 1      p-codes off, identifiers off
 '  export 2      both on
 '  export 3      p-codes on, identifiers off
-'@depends LLExporter, LLdictionary, LLExport, HiddenNames, ChoiceKeys, CustomTest
+'
+'THE OPEN-FROM-FILE SEAM
+'-------------------------------------------------------------------------------
+'CreateFromFile backs the other-linelist export of F_ExportMig. The tests here
+'save small workbooks beside the driver and open them back: a missing path and
+'a workbook without the linelist sheets are refused, a file the factory opened
+'belongs to it and CloseAll closes it, and a workbook already open in the
+'session is used as it stands and stays open.
+'@depends LLExporter, LLdictionary, LLExport, HiddenNames, ChoiceKeys, CustomTest, Checking
 
 Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
@@ -53,6 +61,14 @@ Private Const EXPORTS_SHEET As String = "Exports"
 
 Private Const EPIWEEK_NAME As String = "RNG_EpiWeekStart"
 Private Const EPIWEEK_VALUE As String = "3"
+
+'The three sheets a linelist shell needs on top of Dictionary and Exports
+Private Const PASS_SHEET As String = "__pass"
+Private Const GEO_SHEET As String = "Geo"
+Private Const TEMP_SHEET As String = "temp__"
+
+'Where the open-from-file tests put their saved workbooks
+Private Const FILES_FOLDER As String = "ExporterFiles"
 
 'The two fixture rows the exclusion has to find
 Private Const PCODE_VARIABLE As String = "hid_beg_v1"
@@ -632,6 +648,173 @@ TestFail:
 End Sub
 
 
+'@section The open-from-file seam
+'===============================================================================
+
+'@sub-title A path with no file behind it is refused before any open.
+'@TestMethod("LLExporter")
+Public Sub TestCreateFromFileRefusesAMissingPath()
+    CustomTestSetTitles Assert, TESTMODULE, "TestCreateFromFileRefusesAMissingPath"
+    On Error GoTo TestFail
+
+    Dim exporter As LLExporter
+    Dim missingPath As String
+    Dim raisedNumber As Long
+
+    missingPath = BuildTempFolder(ThisWorkbook, FILES_FOLDER) & _
+                  Application.PathSeparator & "no_such_linelist.xlsb"
+
+    On Error Resume Next
+    Set exporter = LLExporter.CreateFromFile(missingPath)
+    raisedNumber = Err.Number
+    On Error GoTo TestFail
+
+    Assert.AreEqual CLng(ProjectError.ElementNotFound), raisedNumber, _
+                    "A path with no file behind it raises ElementNotFound"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestCreateFromFileRefusesAMissingPath", Err.Number, Err.Description
+End Sub
+
+'@sub-title A workbook without the linelist sheets is refused and closed again.
+'@details
+'The factory opened the file to look inside, so the refusal has to close what
+'it opened: the user picks a wrong file, reads the message and picks again,
+'and a copy of the wrong file must not be left standing in the session.
+'@TestMethod("LLExporter")
+Public Sub TestCreateFromFileRefusesANonLinelist()
+    CustomTestSetTitles Assert, TESTMODULE, "TestCreateFromFileRefusesANonLinelist"
+    On Error GoTo TestFail
+
+    Dim exporter As LLExporter
+    Dim plainBook As Workbook
+    Dim filePath As String
+    Dim savedName As String
+    Dim raisedNumber As Long
+    Dim raisedMessage As String
+
+    filePath = BuildWorkbookPath(BuildTempFolder(ThisWorkbook, FILES_FOLDER), _
+                                 "not_a_linelist")
+
+    Set plainBook = NewWorkbook()
+    plainBook.SaveAs fileName:=filePath, fileFormat:=xlExcel12
+    savedName = plainBook.Name
+    plainBook.Close savechanges:=False
+    Set plainBook = Nothing
+
+    On Error Resume Next
+    Set exporter = LLExporter.CreateFromFile(filePath)
+    raisedNumber = Err.Number
+    raisedMessage = Err.Description
+    On Error GoTo TestFail
+
+    'The description does not survive the class boundary, so the number is
+    'what is asserted and the text rides along in the report
+    '(.obt/gotchas/err-description-at-class-boundary.md).
+    Assert.AreEqual CLng(ProjectError.ErrorUnexpectedState), raisedNumber, _
+                    "A workbook missing a linelist sheet raises unexpected state" & _
+                    " - description was [" & raisedMessage & "]"
+    Assert.IsFalse WorkbookOpenByName(savedName), _
+                   "The refused workbook is closed again"
+
+    Kill filePath
+    Exit Sub
+TestFail:
+    On Error Resume Next
+    If Not plainBook Is Nothing Then plainBook.Close savechanges:=False
+    If LenB(savedName) > 0 And WorkbookOpenByName(savedName) Then _
+        Application.Workbooks(savedName).Close savechanges:=False
+    If LenB(filePath) > 0 Then
+        If Dir$(filePath) <> vbNullString Then Kill filePath
+    End If
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestCreateFromFileRefusesANonLinelist", Err.Number, Err.Description
+End Sub
+
+'@sub-title A file the factory opened belongs to it, and CloseAll closes it.
+'@TestMethod("LLExporter")
+Public Sub TestCreateFromFileOwnsTheFileItOpened()
+    CustomTestSetTitles Assert, TESTMODULE, "TestCreateFromFileOwnsTheFileItOpened"
+    On Error GoTo TestFail
+
+    Dim exporter As LLExporter
+    Dim filePath As String
+    Dim savedName As String
+
+    filePath = BuildWorkbookPath(BuildTempFolder(ThisWorkbook, FILES_FOLDER), _
+                                 "owned_linelist")
+    savedName = SaveLinelistShell(filePath)
+
+    Set exporter = LLExporter.CreateFromFile(filePath)
+
+    Assert.IsTrue exporter.OpenedFromFile, _
+                  "An instance that opened its file says so"
+    Assert.IsTrue WorkbookOpenByName(savedName), _
+                  "The linelist file is open in the session"
+
+    exporter.CloseAll
+
+    Assert.IsFalse WorkbookOpenByName(savedName), _
+                   "CloseAll closes the source it opened"
+
+    Kill filePath
+    Exit Sub
+TestFail:
+    On Error Resume Next
+    If LenB(savedName) > 0 And WorkbookOpenByName(savedName) Then _
+        Application.Workbooks(savedName).Close savechanges:=False
+    If LenB(filePath) > 0 Then
+        If Dir$(filePath) <> vbNullString Then Kill filePath
+    End If
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestCreateFromFileOwnsTheFileItOpened", Err.Number, Err.Description
+End Sub
+
+'@sub-title A workbook already open in the session is used as it stands.
+'@details
+'This is also what protects the current linelist: a path already open is
+'answered with the open workbook, ownership stays False, and CloseAll leaves
+'it standing.
+'@TestMethod("LLExporter")
+Public Sub TestCreateFromFileLeavesAnOpenWorkbookStanding()
+    CustomTestSetTitles Assert, TESTMODULE, "TestCreateFromFileLeavesAnOpenWorkbookStanding"
+    On Error GoTo TestFail
+
+    Dim exporter As LLExporter
+    Dim shellBook As Workbook
+    Dim filePath As String
+
+    filePath = BuildWorkbookPath(BuildTempFolder(ThisWorkbook, FILES_FOLDER), _
+                                 "open_linelist")
+
+    Set shellBook = LinelistShellWorkbook()
+    shellBook.SaveAs fileName:=filePath, fileFormat:=xlExcel12
+
+    Set exporter = LLExporter.CreateFromFile(filePath)
+
+    Assert.IsFalse exporter.OpenedFromFile, _
+                   "An instance on a workbook the session already held owns nothing"
+
+    exporter.CloseAll
+
+    Assert.IsTrue WorkbookOpenByName(shellBook.Name), _
+                  "CloseAll leaves the workbook it never opened standing"
+
+    shellBook.Close savechanges:=False
+    Kill filePath
+    Exit Sub
+TestFail:
+    On Error Resume Next
+    If Not shellBook Is Nothing Then shellBook.Close savechanges:=False
+    If LenB(filePath) > 0 Then
+        If Dir$(filePath) <> vbNullString Then Kill filePath
+    End If
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestCreateFromFileLeavesAnOpenWorkbookStanding", Err.Number, Err.Description
+End Sub
+
+
 '@section Fixture helpers
 '===============================================================================
 
@@ -694,6 +877,50 @@ Private Sub BuildExportsSheet()
     WriteRow sh.Cells(4, 1), 3, "active", "identifiers off", "xlsx", "three", "no", _
                              "no", "yes", "default", "no", "no"
 End Sub
+
+'@fun-title A workbook carrying the five sheets CreateFromFile looks for.
+'@details
+'Dictionary, Exports, __pass, Geo and temp__, all empty: the factory checks
+'presence and reads nothing, so a shell is enough.
+'@return Workbook. The new workbook, open and unsaved.
+Private Function LinelistShellWorkbook() As Workbook
+    Dim shellBook As Workbook
+
+    Set shellBook = NewWorkbook()
+    EnsureWorksheet DICTIONARY_SHEET, shellBook
+    EnsureWorksheet EXPORTS_SHEET, shellBook
+    EnsureWorksheet PASS_SHEET, shellBook
+    EnsureWorksheet GEO_SHEET, shellBook
+    EnsureWorksheet TEMP_SHEET, shellBook
+
+    Set LinelistShellWorkbook = shellBook
+End Function
+
+'@fun-title Save a linelist shell to a path and close it.
+'@param filePath String. Where the file lands.
+'@return String. The file name the saved workbook carries.
+Private Function SaveLinelistShell(ByVal filePath As String) As String
+    Dim shellBook As Workbook
+
+    Set shellBook = LinelistShellWorkbook()
+    shellBook.SaveAs fileName:=filePath, fileFormat:=xlExcel12
+    SaveLinelistShell = shellBook.Name
+    shellBook.Close savechanges:=False
+End Function
+
+'@fun-title Whether a workbook of that name is open in the session.
+'@param bookName String. The workbook name, extension included.
+'@return Boolean. True when the session holds it.
+Private Function WorkbookOpenByName(ByVal bookName As String) As Boolean
+    Dim wkb As Workbook
+
+    'An absent name raises on the read, and Nothing is the answer read back.
+    On Error Resume Next
+    Set wkb = Application.Workbooks(bookName)
+    On Error GoTo 0
+
+    WorkbookOpenByName = Not wkb Is Nothing
+End Function
 
 '@fun-title Read the export 1 column of the fixture dictionary.
 '@return Variant. A 1-based array of the cell values.
