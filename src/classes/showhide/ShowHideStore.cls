@@ -20,19 +20,20 @@ Option Explicit
 '@description
 'The table that carries a user's show/hide choices from one session to the
 'next, and from one workbook to another during a migration. One table holds all
-'four layers, told apart by the `layer` column. Save writes the choices of one
-'layer, Load reads them back, Clear empties the table, HasLayer says whether a
-'layer has rows, and HasTable, Table and RowCount answer where the store
-'stands.
+'four layers, told apart by the `layer` column, and every saved layout, told
+'apart by the `layout_name` column. Save writes choices, Load reads them back,
+'Clear drops them, HasLayer says whether a layer has rows, and HasTable, Table
+'and RowCount answer where the store stands.
 '
 'THE STORE MAKES ITS OWN TABLE
 '-------------------------------------------------------------------------------
-'Create and CreateOnSheet build the ListObject when it is absent.
+'Create and CreateOnSheet build the ListObject when it is absent, and add the
+'`layout_name` column to a table an older build made without it.
 '
 'CreateForRead binds to whatever table a workbook already carries and builds
 'nothing, which is what reading a migration file needs.
 '
-'SIX COLUMNS
+'SEVEN COLUMNS
 '-------------------------------------------------------------------------------
 '  layer         hlist / printed / vlist / crf
 '  field_key     the variable name, and the key rows are matched on
@@ -41,14 +42,34 @@ Option Explicit
 '  entry_size    the width or the height the entry has when shown, blank when
 '                unknown
 '  orientation   vertical / horizontal, blank off the printed layer
+'  layout_name   empty on the rows of the current state, the layout's name on
+'                the rows of a saved layout
 '
 'The size and the hidden flag are two separate columns. A size at or below zero
 'means "leave the sheet alone".
 '
 'A file written by an older build carries `column_width` where this one writes
-'`entry_size`. Load reads either name.
-'@depends ShowHide, ShowHideLayout, Checking
-'@version 1.0 (2026-08-01)
+'`entry_size`, and no `layout_name` at all. Load reads either size name, and
+'every row of a file without the layout column reads as current state.
+'
+'SAVED LAYOUTS
+'-------------------------------------------------------------------------------
+'A saved layout is a named copy of the same rows. Save and Load take the name;
+'LayoutNames, HasLayout and LayoutCount answer what is stored; DeleteLayout and
+'RenameLayout manage the list; MergeLayoutsFrom copies another store's layouts
+'in, which is how they travel through a migration file. The store holds at
+'most MaxSavedLayouts names, and Save refuses the one past the cap.
+'
+'SAVE REPLACES BY KEY
+'-------------------------------------------------------------------------------
+'Save replaces the rows whose layer, layout name and field key match the entry
+'list, and keeps every other row. Several worksheets share one layer - every
+'HList sheet writes `hlist` rows - so replacing a whole layer would drop the
+'other sheets' rows on every save. Variable names are unique across the
+'workbook, which is what makes the key safe. A row whose variable left the
+'dictionary lingers; Load skips it.
+'@depends ShowHide, ShowHideLayout, Checking, BetterArray
+'@version 1.1 (2026-08-11)
 
 
 Private Const CLASS_NAME As String = "ShowHideStore"
@@ -70,9 +91,13 @@ Private Const COL_HEADER As String = "header_text"
 Private Const COL_HIDDEN As String = "hidden_flag"
 Private Const COL_SIZE As String = "entry_size"
 Private Const COL_ORIENTATION As String = "orientation"
+Private Const COL_LAYOUT As String = "layout_name"
 Private Const COL_LEGACY_SIZE As String = "column_width"
 
-Private Const COLUMN_COUNT As Long = 6
+Private Const COLUMN_COUNT As Long = 7
+
+'How many saved layouts one store holds at most
+Private Const MAX_SAVED_LAYOUTS As Long = 10
 
 Private Type TShowHideStore
     lo As ListObject
@@ -231,21 +256,29 @@ End Function
 '@description Writing an entry list into the table.
 
 '@label:save
-'@sub-title Write one layer's choices, leaving the other layers alone
+'@sub-title Write one layer's choices, leaving every other row alone
 '@details
-'The rows of the entry list's own layer are replaced and every other layer's rows are
-'carried over untouched, so four layers share one table.
+'The rows whose layer, layout name and field key match the entry list are
+'replaced; everything else is carried over untouched. So four layers share one
+'table, several worksheets share one layer, and the current state sits beside
+'the saved layouts.
 '
 'Without a layout the store writes visibility alone, which is what closing the
 'form needs. With one it also records the size each entry has when shown and,
 'on a printed sheet, the direction of its header - which is what a migration
-'export needs.
+'export and a saved layout need.
 '@param entries ShowHide. The entry list to write.
 '@param layout Optional ShowHideLayout. The sheet to read sizes from.
+'@param layoutName Optional String. Empty writes the current state; a name
+'  writes a saved layout.
 '@throws ProjectError.ObjectNotInitialized When the entry list is Nothing.
-'@throws ProjectError.ElementNotFound When the store has no table.
+'@throws ProjectError.ElementNotFound When the store has no table, or a name is
+'  given and the table has no layout_name column.
+'@throws ProjectError.InvalidArgument When a new name would pass the cap.
 '@export
-Public Sub Save(ByVal entries As ShowHide, Optional ByVal layout As ShowHideLayout)
+Public Sub Save(ByVal entries As ShowHide, _
+                Optional ByVal layout As ShowHideLayout, _
+                Optional ByVal layoutName As String = vbNullString)
     Dim kept As Variant
     Dim keptCount As Long
     Dim block As Variant
@@ -259,6 +292,7 @@ Public Sub Save(ByVal entries As ShowHide, Optional ByVal layout As ShowHideLayo
     Dim hiddenCol As Long
     Dim sizeCol As Long
     Dim orientCol As Long
+    Dim layoutCol As Long
     Dim entrySize As Double
 
     If entries Is Nothing Then
@@ -274,14 +308,30 @@ Public Sub Save(ByVal entries As ShowHide, Optional ByVal layout As ShowHideLayo
     hiddenCol = ColumnIndex(COL_HIDDEN)
     sizeCol = SizeColumnIndex()
     orientCol = ColumnIndex(COL_ORIENTATION)
+    layoutCol = ColumnIndex(COL_LAYOUT)
 
     If layerCol = 0 Or fieldCol = 0 Or hiddenCol = 0 Then
         ThrowError ProjectError.ElementNotFound, _
                    "The show/hide table is missing one of layer, field_key or hidden_flag"
     End If
 
+    layoutName = Trim$(layoutName)
+    If LenB(layoutName) > 0 Then
+        If layoutCol = 0 Then
+            ThrowError ProjectError.ElementNotFound, _
+                       "The show/hide table has no " & COL_LAYOUT & " column"
+        End If
+        If Not HasLayout(layoutName) Then
+            If LayoutCount() >= MAX_SAVED_LAYOUTS Then
+                ThrowError ProjectError.InvalidArgument, _
+                           "The store already holds " & CStr(MAX_SAVED_LAYOUTS) & _
+                           " saved layouts; delete one before saving another"
+            End If
+        End If
+    End If
+
     token = LayerToken(entries.TargetLayer)
-    kept = RowsOfOtherLayers(token, layerCol, keptCount)
+    kept = KeptRows(token, layerCol, layoutName, layoutCol, entries, fieldCol, keptCount)
 
     If keptCount + entries.EntryCount = 0 Then
         WriteAll kept, 0
@@ -304,6 +354,7 @@ Public Sub Save(ByVal entries As ShowHide, Optional ByVal layout As ShowHideLayo
         block(target, fieldCol) = entries.FieldKey(idx)
         If headerCol > 0 Then block(target, headerCol) = entries.HeaderText(idx)
         block(target, hiddenCol) = BoolToString(entries.IsHidden(idx))
+        If layoutCol > 0 And LenB(layoutName) > 0 Then block(target, layoutCol) = layoutName
 
         If Not layout Is Nothing Then
             position = entries.PositionIndex(idx)
@@ -325,11 +376,14 @@ Public Sub Save(ByVal entries As ShowHide, Optional ByVal layout As ShowHideLayo
 End Sub
 
 '@label:clear
-'@sub-title Drop every row of one layer
+'@sub-title Drop every row of one layer of one state
 '@param layer Byte. A ShowHideWorksheetLayer value. The layer to drop.
+'@param layoutName Optional String. Empty drops current-state rows; a name
+'  drops that layout's rows of the layer. DeleteLayout drops a whole layout.
 '@throws ProjectError.ElementNotFound When the store has no table.
 '@export
-Public Sub Clear(ByVal layer As Byte)
+Public Sub Clear(ByVal layer As Byte, _
+                 Optional ByVal layoutName As String = vbNullString)
     Dim kept As Variant
     Dim keptCount As Long
     Dim layerCol As Long
@@ -342,7 +396,8 @@ Public Sub Clear(ByVal layer As Byte)
                    "The show/hide table is missing its " & COL_LAYER & " column"
     End If
 
-    kept = RowsOfOtherLayers(LayerToken(layer), layerCol, keptCount)
+    kept = KeptRows(LayerToken(layer), layerCol, Trim$(layoutName), _
+                    ColumnIndex(COL_LAYOUT), Nothing, 0, keptCount)
 
     WriteAll kept, keptCount
 End Sub
@@ -355,18 +410,23 @@ End Sub
 '@label:load
 '@sub-title Read one layer's saved choices into an entry list
 '@details
-'Only the rows of the entry list's own layer are read. A variable the list does not
-'carry is skipped, which is what happens when the dictionary changed between two
-'sessions.
+'Only the rows of the entry list's own layer and of the named state are read.
+'A variable the list does not carry is skipped, which is what happens when the
+'dictionary changed between two sessions. On a file written before saved
+'layouts existed, every row reads as current state.
 '
 'With a layout, the saved size and header direction are applied to the sheet as
 'well. Visibility is left to ShowHide.Apply, so a caller that wants the sheet to
 'match the list calls Load and then Apply.
 '@param entries ShowHide. The entry list to fill.
 '@param layout Optional ShowHideLayout. The sheet to size.
+'@param layoutName Optional String. Empty reads the current state; a name reads
+'  that saved layout.
 '@return Long. The number of rows that matched an entry.
 '@export
-Public Function Load(ByVal entries As ShowHide, Optional ByVal layout As ShowHideLayout) As Long
+Public Function Load(ByVal entries As ShowHide, _
+                     Optional ByVal layout As ShowHideLayout, _
+                     Optional ByVal layoutName As String = vbNullString) As Long
     Dim tableRows As Variant
     Dim token As String
     Dim layerCol As Long
@@ -374,6 +434,7 @@ Public Function Load(ByVal entries As ShowHide, Optional ByVal layout As ShowHid
     Dim hiddenCol As Long
     Dim sizeCol As Long
     Dim orientCol As Long
+    Dim layoutCol As Long
     Dim counter As Long
     Dim entryIndex As Long
     Dim position As Long
@@ -390,16 +451,19 @@ Public Function Load(ByVal entries As ShowHide, Optional ByVal layout As ShowHid
     hiddenCol = ColumnIndex(COL_HIDDEN)
     sizeCol = SizeColumnIndex()
     orientCol = ColumnIndex(COL_ORIENTATION)
+    layoutCol = ColumnIndex(COL_LAYOUT)
 
     If layerCol = 0 Or fieldCol = 0 Or hiddenCol = 0 Then Exit Function
 
+    layoutName = Trim$(layoutName)
     token = LayerToken(entries.TargetLayer)
     tableRows = this.lo.DataBodyRange.Value
 
     If Not layout Is Nothing Then layout.BeginBatch
 
     For counter = LBound(tableRows, 1) To UBound(tableRows, 1)
-        If StrComp(CStr(tableRows(counter, layerCol)), token, vbTextCompare) = 0 Then
+        If StrComp(CStr(tableRows(counter, layerCol)), token, vbTextCompare) = 0 _
+           And LayoutMatches(RowLayoutName(tableRows, counter, layoutCol), layoutName) Then
             entryIndex = entries.IndexOf(CStr(tableRows(counter, fieldCol)))
 
             If entryIndex > 0 Then
@@ -431,6 +495,288 @@ Public Function Load(ByVal entries As ShowHide, Optional ByVal layout As ShowHid
 End Function
 
 
+'@section Saved layouts
+'===============================================================================
+'@description The named copies of the show/hide state, and their bookkeeping.
+
+'@label:max-saved-layouts
+'@prop-title How many saved layouts one store holds at most
+'@export
+Public Property Get MaxSavedLayouts() As Long
+    MaxSavedLayouts = MAX_SAVED_LAYOUTS
+End Property
+
+'@label:layout-names
+'@sub-title The saved layout names, in the order they first appear
+'@details
+'Names are compared without regard to case, and each keeps the casing of its
+'first row. The current state has no name and is never listed.
+'@return BetterArray. The distinct names, empty when nothing is saved.
+'@export
+Public Function LayoutNames() As BetterArray
+    Dim names As BetterArray
+    Dim seen As Collection
+    Dim tableRows As Variant
+    Dim layoutCol As Long
+    Dim counter As Long
+    Dim layoutName As String
+
+    Set names = New BetterArray
+    Set LayoutNames = names
+
+    If this.lo Is Nothing Then Exit Function
+    If this.lo.DataBodyRange Is Nothing Then Exit Function
+
+    layoutCol = ColumnIndex(COL_LAYOUT)
+    If layoutCol = 0 Then Exit Function
+
+    Set seen = New Collection
+    tableRows = this.lo.DataBodyRange.Value
+
+    For counter = LBound(tableRows, 1) To UBound(tableRows, 1)
+        layoutName = Trim$(CStr(tableRows(counter, layoutCol)))
+        If LenB(layoutName) > 0 Then
+            'A Collection has no "does this key exist" test, so the miss is
+            'read off Err, the same shape EventLinelist uses for its stores.
+            On Error Resume Next
+                Err.Clear
+                seen.Add layoutName, LCase$(layoutName)
+                If Err.Number = 0 Then names.Push layoutName
+                Err.Clear
+            On Error GoTo 0
+        End If
+    Next counter
+End Function
+
+'@label:layout-count
+'@sub-title How many saved layouts the store holds
+'@export
+Public Function LayoutCount() As Long
+    LayoutCount = LayoutNames().Length
+End Function
+
+'@label:has-layout
+'@sub-title Whether a saved layout of one name is stored
+'@param layoutName String. The name to look for, compared without regard to case.
+'@return Boolean. True when at least one row carries the name.
+'@export
+Public Function HasLayout(ByVal layoutName As String) As Boolean
+    Dim tableRows As Variant
+    Dim layoutCol As Long
+    Dim counter As Long
+
+    layoutName = Trim$(layoutName)
+    If LenB(layoutName) = 0 Then Exit Function
+    If this.lo Is Nothing Then Exit Function
+    If this.lo.DataBodyRange Is Nothing Then Exit Function
+
+    layoutCol = ColumnIndex(COL_LAYOUT)
+    If layoutCol = 0 Then Exit Function
+
+    tableRows = this.lo.DataBodyRange.Value
+
+    For counter = LBound(tableRows, 1) To UBound(tableRows, 1)
+        If LayoutMatches(RowLayoutName(tableRows, counter, layoutCol), layoutName) Then
+            HasLayout = True
+            Exit Function
+        End If
+    Next counter
+End Function
+
+'@label:delete-layout
+'@sub-title Drop every row of one saved layout, over all its layers
+'@param layoutName String. The name to drop. The current state has no name and
+'  is cleared through Clear.
+'@throws ProjectError.ElementNotFound When the store has no table.
+'@throws ProjectError.InvalidArgument When the name is empty.
+'@export
+Public Sub DeleteLayout(ByVal layoutName As String)
+    Dim tableRows As Variant
+    Dim kept As Variant
+    Dim keptCount As Long
+    Dim layoutCol As Long
+    Dim counter As Long
+    Dim target As Long
+    Dim colCount As Long
+
+    RequireTable
+
+    layoutName = Trim$(layoutName)
+    If LenB(layoutName) = 0 Then
+        ThrowError ProjectError.InvalidArgument, _
+                   "A name is needed to delete a saved layout"
+    End If
+
+    layoutCol = ColumnIndex(COL_LAYOUT)
+    If layoutCol = 0 Then Exit Sub
+    If this.lo.DataBodyRange Is Nothing Then Exit Sub
+
+    colCount = this.lo.ListColumns.Count
+    tableRows = this.lo.DataBodyRange.Value
+    ReDim kept(1 To UBound(tableRows, 1), 1 To colCount)
+
+    For counter = LBound(tableRows, 1) To UBound(tableRows, 1)
+        If Not LayoutMatches(RowLayoutName(tableRows, counter, layoutCol), layoutName) Then
+            keptCount = keptCount + 1
+            For target = 1 To colCount
+                kept(keptCount, target) = tableRows(counter, target)
+            Next target
+        End If
+    Next counter
+
+    WriteAll kept, keptCount
+End Sub
+
+'@label:rename-layout
+'@sub-title Give one saved layout another name
+'@details
+'Renaming onto a name the store already holds is refused, because the rows of
+'the two layouts would merge and neither could be told apart again. Renaming a
+'layout onto its own name with other casing is allowed.
+'@param oldName String. The name the layout holds.
+'@param newName String. The name to give it.
+'@throws ProjectError.ElementNotFound When the store has no table or no layout
+'  of the old name.
+'@throws ProjectError.InvalidArgument When a name is empty or the new name is
+'  already stored.
+'@export
+Public Sub RenameLayout(ByVal oldName As String, ByVal newName As String)
+    Dim tableRows As Variant
+    Dim layoutCol As Long
+    Dim counter As Long
+    Dim sameName As Boolean
+
+    RequireTable
+
+    oldName = Trim$(oldName)
+    newName = Trim$(newName)
+
+    If LenB(oldName) = 0 Or LenB(newName) = 0 Then
+        ThrowError ProjectError.InvalidArgument, _
+                   "Renaming a saved layout needs the old name and the new one"
+    End If
+
+    If Not HasLayout(oldName) Then
+        ThrowError ProjectError.ElementNotFound, _
+                   "There is no saved layout named '" & oldName & "'"
+    End If
+
+    sameName = LayoutMatches(oldName, newName)
+    If Not sameName Then
+        If HasLayout(newName) Then
+            ThrowError ProjectError.InvalidArgument, _
+                       "There is already a saved layout named '" & newName & "'"
+        End If
+    End If
+
+    layoutCol = ColumnIndex(COL_LAYOUT)
+    tableRows = this.lo.DataBodyRange.Value
+
+    For counter = LBound(tableRows, 1) To UBound(tableRows, 1)
+        If LayoutMatches(RowLayoutName(tableRows, counter, layoutCol), oldName) Then
+            tableRows(counter, layoutCol) = newName
+        End If
+    Next counter
+
+    this.lo.DataBodyRange.Value = tableRows
+End Sub
+
+'@label:merge-layouts-from
+'@sub-title Copy another store's saved layouts into this one
+'@details
+'How saved layouts travel: the exporter merges the linelist's layouts into the
+'migration file's store, and the importer merges the file's layouts back. A
+'name both stores hold is taken from the source, replacing the local rows. A
+'new name is taken while the cap has room; the rest are skipped and answered
+'to the caller, so an import can report them. Rows are copied as they stand -
+'a variable the receiving dictionary does not carry is skipped by Load later.
+'@param source ShowHideStore. The store to copy from.
+'@return BetterArray. The names that were skipped over the cap, empty when
+'  every layout came across.
+'@export
+Public Function MergeLayoutsFrom(ByVal source As ShowHideStore) As BetterArray
+    Dim skipped As BetterArray
+    Dim accepted As Collection
+    Dim incoming As BetterArray
+    Dim srcRows As Variant
+    Dim tableRows As Variant
+    Dim block As Variant
+    Dim srcLo As ListObject
+    Dim total As Long
+    Dim counter As Long
+    Dim target As Long
+    Dim rowCount As Long
+    Dim colCount As Long
+    Dim incomingName As String
+    Dim rowName As String
+    Dim layoutCol As Long
+    Dim srcLayoutCol As Long
+
+    Set skipped = New BetterArray
+    Set MergeLayoutsFrom = skipped
+
+    RequireTable
+    layoutCol = ColumnIndex(COL_LAYOUT)
+    If layoutCol = 0 Then Exit Function
+
+    If source Is Nothing Then Exit Function
+    If Not source.HasTable Then Exit Function
+
+    Set srcLo = source.Table
+    srcLayoutCol = ColumnIndexOf(srcLo, COL_LAYOUT)
+    If srcLayoutCol = 0 Then Exit Function
+    If srcLo.DataBodyRange Is Nothing Then Exit Function
+
+    Set incoming = source.LayoutNames()
+    If incoming.Length = 0 Then Exit Function
+
+    'Which incoming names come across. A collision costs no slot, because the
+    'local rows of that name go first.
+    Set accepted = New Collection
+    total = LayoutCount()
+
+    For counter = incoming.LowerBound To incoming.UpperBound
+        incomingName = CStr(incoming.Item(counter))
+        If HasLayout(incomingName) Then
+            accepted.Add incomingName, LCase$(incomingName)
+        ElseIf total < MAX_SAVED_LAYOUTS Then
+            accepted.Add incomingName, LCase$(incomingName)
+            total = total + 1
+        Else
+            skipped.Push incomingName
+        End If
+    Next counter
+
+    If accepted.Count = 0 Then Exit Function
+
+    srcRows = srcLo.DataBodyRange.Value
+    colCount = this.lo.ListColumns.Count
+
+    If this.lo.DataBodyRange Is Nothing Then
+        ReDim block(1 To UBound(srcRows, 1), 1 To colCount)
+    Else
+        tableRows = this.lo.DataBodyRange.Value
+        ReDim block(1 To UBound(tableRows, 1) + UBound(srcRows, 1), 1 To colCount)
+
+        'Local rows first, minus the layouts the source replaces
+        For counter = LBound(tableRows, 1) To UBound(tableRows, 1)
+            rowName = RowLayoutName(tableRows, counter, layoutCol)
+            If LenB(rowName) = 0 Or Not InCollection(accepted, rowName) Then
+                rowCount = rowCount + 1
+                For target = 1 To colCount
+                    block(rowCount, target) = tableRows(counter, target)
+                Next target
+            End If
+        Next counter
+    End If
+
+    'Then the accepted rows of the source, mapped column by column
+    rowCount = AppendSourceLayoutRows(block, rowCount, srcLo, srcRows, accepted, srcLayoutCol)
+
+    WriteAll block, rowCount
+End Function
+
+
 '@section Helpers
 '===============================================================================
 '@description Private workers of the three factories and the two writers.
@@ -449,12 +795,13 @@ Private Function Provision(ByVal sh As Worksheet) As ListObject
 
     Set lo = NamedTable(sh)
     If Not lo Is Nothing Then
+        EnsureLayoutColumn lo
         Set Provision = lo
         Exit Function
     End If
 
     headers = Array(COL_LAYER, COL_FIELD_KEY, COL_HEADER, COL_HIDDEN, _
-                    COL_SIZE, COL_ORIENTATION)
+                    COL_SIZE, COL_ORIENTATION, COL_LAYOUT)
 
     For counter = LBound(headers) To UBound(headers)
         sh.Cells(1, counter - LBound(headers) + 1).Value = CStr(headers(counter))
@@ -466,6 +813,26 @@ Private Function Provision(ByVal sh As Worksheet) As ListObject
 
     Set Provision = lo
 End Function
+
+'@label:ensure-layout-column
+'@sub-title Add the layout_name column to a table an older build made
+'@details
+'A linelist generated before saved layouts existed carries a six column table.
+'The column lands at the right edge and every existing row keeps an empty
+'cell there, which is exactly what a current-state row looks like.
+'@param lo ListObject. The table to check.
+Private Sub EnsureLayoutColumn(ByVal lo As ListObject)
+    Dim found As Range
+
+    On Error Resume Next
+    Set found = lo.HeaderRowRange.Find(What:=COL_LAYOUT, LookAt:=xlWhole, MatchCase:=False)
+    On Error GoTo 0
+    If Not found Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    lo.ListColumns.Add.Name = COL_LAYOUT
+    On Error GoTo 0
+End Sub
 
 '@label:named-table
 '@sub-title Look for a store table by name
@@ -526,20 +893,33 @@ Private Sub DropLegacyTables(ByVal sh As Worksheet)
     Next counter
 End Sub
 
-'@label:rows-of-other-layers
-'@sub-title Every row that does not belong to one layer
+'@label:kept-rows
+'@sub-title Every row a save or a clear carries over untouched
+'@details
+'A row is replaced when its layer, its layout name and its field key all
+'match. With no entry list, every key of the layer and state matches, which is
+'what Clear asks for.
 '@param token String. The layer token being replaced.
 '@param layerCol Long. The index of the layer column.
+'@param layoutName String. The state being replaced, empty for the current one.
+'@param layoutCol Long. The index of the layout column, or 0 on an old table.
+'@param entries ShowHide. The entry list whose keys are replaced, or Nothing.
+'@param fieldCol Long. The index of the field key column, or 0.
 '@param keptCount Long. Set to the number of rows kept.
 '@return Variant. A two dimensional block of the kept rows, or Empty.
-Private Function RowsOfOtherLayers(ByVal token As String, _
-                                   ByVal layerCol As Long, _
-                                   ByRef keptCount As Long) As Variant
+Private Function KeptRows(ByVal token As String, _
+                          ByVal layerCol As Long, _
+                          ByVal layoutName As String, _
+                          ByVal layoutCol As Long, _
+                          ByVal entries As ShowHide, _
+                          ByVal fieldCol As Long, _
+                          ByRef keptCount As Long) As Variant
     Dim tableRows As Variant
     Dim kept As Variant
     Dim counter As Long
     Dim colCount As Long
     Dim target As Long
+    Dim replaced As Boolean
 
     keptCount = 0
 
@@ -551,7 +931,17 @@ Private Function RowsOfOtherLayers(ByVal token As String, _
     ReDim kept(1 To UBound(tableRows, 1), 1 To colCount)
 
     For counter = LBound(tableRows, 1) To UBound(tableRows, 1)
-        If StrComp(CStr(tableRows(counter, layerCol)), token, vbTextCompare) <> 0 Then
+        replaced = (StrComp(CStr(tableRows(counter, layerCol)), token, vbTextCompare) = 0)
+
+        If replaced Then
+            replaced = LayoutMatches(RowLayoutName(tableRows, counter, layoutCol), layoutName)
+        End If
+
+        If replaced And Not (entries Is Nothing) And fieldCol > 0 Then
+            replaced = entries.HasField(CStr(tableRows(counter, fieldCol)))
+        End If
+
+        If Not replaced Then
             keptCount = keptCount + 1
             For target = 1 To colCount
                 kept(keptCount, target) = tableRows(counter, target)
@@ -559,7 +949,125 @@ Private Function RowsOfOtherLayers(ByVal token As String, _
         End If
     Next counter
 
-    RowsOfOtherLayers = kept
+    KeptRows = kept
+End Function
+
+'@label:append-source-layout-rows
+'@sub-title Copy the accepted layout rows of another table into a block
+'@details
+'Columns are matched by header on both sides, so a source written by another
+'build still lands in the right cells here.
+'@param block Variant. The block being filled, sized by the caller.
+'@param startCount Long. How many rows the block already holds.
+'@param srcLo ListObject. The source table, for its headers.
+'@param srcRows Variant. The source body, already read.
+'@param accepted Collection. The layout names to copy, keyed on their lower case.
+'@param srcLayoutCol Long. The source's layout column index.
+'@return Long. The row count of the block once the copies are in.
+Private Function AppendSourceLayoutRows(ByRef block As Variant, _
+                                        ByVal startCount As Long, _
+                                        ByVal srcLo As ListObject, _
+                                        ByVal srcRows As Variant, _
+                                        ByVal accepted As Collection, _
+                                        ByVal srcLayoutCol As Long) As Long
+    Dim rowCount As Long
+    Dim counter As Long
+    Dim rowName As String
+    Dim layerCol As Long
+    Dim fieldCol As Long
+    Dim headerCol As Long
+    Dim hiddenCol As Long
+    Dim sizeCol As Long
+    Dim orientCol As Long
+    Dim layoutCol As Long
+    Dim srcLayerCol As Long
+    Dim srcFieldCol As Long
+    Dim srcHeaderCol As Long
+    Dim srcHiddenCol As Long
+    Dim srcSizeCol As Long
+    Dim srcOrientCol As Long
+
+    layerCol = ColumnIndex(COL_LAYER)
+    fieldCol = ColumnIndex(COL_FIELD_KEY)
+    headerCol = ColumnIndex(COL_HEADER)
+    hiddenCol = ColumnIndex(COL_HIDDEN)
+    sizeCol = SizeColumnIndex()
+    orientCol = ColumnIndex(COL_ORIENTATION)
+    layoutCol = ColumnIndex(COL_LAYOUT)
+
+    srcLayerCol = ColumnIndexOf(srcLo, COL_LAYER)
+    srcFieldCol = ColumnIndexOf(srcLo, COL_FIELD_KEY)
+    srcHeaderCol = ColumnIndexOf(srcLo, COL_HEADER)
+    srcHiddenCol = ColumnIndexOf(srcLo, COL_HIDDEN)
+    srcSizeCol = ColumnIndexOf(srcLo, COL_SIZE)
+    If srcSizeCol = 0 Then srcSizeCol = ColumnIndexOf(srcLo, COL_LEGACY_SIZE)
+    srcOrientCol = ColumnIndexOf(srcLo, COL_ORIENTATION)
+
+    rowCount = startCount
+    If srcLayerCol = 0 Or srcFieldCol = 0 Or srcHiddenCol = 0 Then
+        AppendSourceLayoutRows = rowCount
+        Exit Function
+    End If
+
+    For counter = LBound(srcRows, 1) To UBound(srcRows, 1)
+        rowName = RowLayoutName(srcRows, counter, srcLayoutCol)
+
+        If LenB(rowName) > 0 Then
+            If InCollection(accepted, rowName) Then
+                rowCount = rowCount + 1
+                block(rowCount, layerCol) = srcRows(counter, srcLayerCol)
+                block(rowCount, fieldCol) = srcRows(counter, srcFieldCol)
+                If headerCol > 0 And srcHeaderCol > 0 Then _
+                    block(rowCount, headerCol) = srcRows(counter, srcHeaderCol)
+                block(rowCount, hiddenCol) = srcRows(counter, srcHiddenCol)
+                If sizeCol > 0 And srcSizeCol > 0 Then _
+                    block(rowCount, sizeCol) = srcRows(counter, srcSizeCol)
+                If orientCol > 0 And srcOrientCol > 0 Then _
+                    block(rowCount, orientCol) = srcRows(counter, srcOrientCol)
+                block(rowCount, layoutCol) = rowName
+            End If
+        End If
+    Next counter
+
+    AppendSourceLayoutRows = rowCount
+End Function
+
+'@label:row-layout-name
+'@sub-title The layout name one row carries
+'@param tableRows Variant. The body block being read.
+'@param rowIndex Long. The row to read.
+'@param layoutCol Long. The layout column index, or 0 on an old table.
+'@return String. The trimmed name, empty for a current-state row.
+Private Function RowLayoutName(ByVal tableRows As Variant, _
+                               ByVal rowIndex As Long, _
+                               ByVal layoutCol As Long) As String
+    If layoutCol = 0 Then Exit Function
+    RowLayoutName = Trim$(CStr(tableRows(rowIndex, layoutCol)))
+End Function
+
+'@label:layout-matches
+'@sub-title Whether two layout names are the same name
+'@param firstName String. One name, already trimmed.
+'@param secondName String. The other, already trimmed.
+'@return Boolean. True when they match without regard to case.
+Private Function LayoutMatches(ByVal firstName As String, _
+                               ByVal secondName As String) As Boolean
+    LayoutMatches = (StrComp(firstName, secondName, vbTextCompare) = 0)
+End Function
+
+'@label:in-collection
+'@sub-title Whether a keyed Collection holds one name
+'@param keyed Collection. The collection, keyed on lower cased names.
+'@param layoutName String. The name to look for.
+'@return Boolean. True when the key is there.
+Private Function InCollection(ByVal keyed As Collection, _
+                              ByVal layoutName As String) As Boolean
+    On Error Resume Next
+        Err.Clear
+        keyed.Item LCase$(layoutName)
+        InCollection = (Err.Number = 0)
+        Err.Clear
+    On Error GoTo 0
 End Function
 
 '@label:write-all
@@ -622,20 +1130,33 @@ Private Function TrimBlock(ByVal block As Variant, _
 End Function
 
 '@label:column-index
-'@sub-title Where one named column sits in the table
+'@sub-title Where one named column sits in the store's own table
 '@param headerName String. The column header to find.
 '@return Long. The one based column number, or 0 when the header is absent.
 Private Function ColumnIndex(ByVal headerName As String) As Long
+    ColumnIndex = ColumnIndexOf(this.lo, headerName)
+End Function
+
+'@label:column-index-of
+'@sub-title Where one named column sits in any store table
+'@details
+'The merge reads another store's table through this, so both sides are matched
+'by header and a source written by another build still maps.
+'@param lo ListObject. The table to search.
+'@param headerName String. The column header to find.
+'@return Long. The one based column number, or 0 when the header is absent.
+Private Function ColumnIndexOf(ByVal lo As ListObject, _
+                               ByVal headerName As String) As Long
     Dim found As Range
 
-    If this.lo Is Nothing Then Exit Function
+    If lo Is Nothing Then Exit Function
 
     On Error Resume Next
-    Set found = this.lo.HeaderRowRange.Find(What:=headerName, LookAt:=xlWhole, MatchCase:=False)
+    Set found = lo.HeaderRowRange.Find(What:=headerName, LookAt:=xlWhole, MatchCase:=False)
     On Error GoTo 0
 
     If found Is Nothing Then Exit Function
-    ColumnIndex = found.Column - this.lo.HeaderRowRange.Column + 1
+    ColumnIndexOf = found.Column - lo.HeaderRowRange.Column + 1
 End Function
 
 '@label:size-column-index

@@ -703,8 +703,8 @@ Public Sub TestStoreBuildsItsOwnTable()
     Assert.IsTrue store.HasTable, "The store makes the table it needs"
     Assert.AreEqual CLng(1), CLng(sh.ListObjects.Count), _
                      "One table lands on the sheet"
-    Assert.AreEqual CLng(6), CLng(store.Table.ListColumns.Count), _
-                     "It carries the six columns the store writes"
+    Assert.AreEqual CLng(7), CLng(store.Table.ListColumns.Count), _
+                     "It carries the seven columns the store writes"
     Assert.AreEqual CLng(0), store.RowCount, "And it starts empty"
 
     Exit Sub
@@ -940,6 +940,368 @@ Public Sub TestReadingASheetWithNoTable()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestReadingASheetWithNoTable", Err.Number, Err.Description
+End Sub
+
+
+'@section Saved layouts
+'===============================================================================
+'@description
+'A saved layout is a named copy of the show/hide rows, kept in the same table
+'behind the layout_name column. The current state has no name.
+
+'@TestMethod("ShowHide")
+Public Sub TestASavedLayoutSitsBesideTheCurrentState()
+    CustomTestSetTitles Assert, TESTMODULE, "TestASavedLayoutSitsBesideTheCurrentState"
+    If Not FixtureReady("TestASavedLayoutSitsBesideTheCurrentState") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim store As ShowHideStore
+    Dim entries As ShowHide
+    Dim reloaded As ShowHide
+
+    Set store = ShowHideStore.CreateOnSheet(ScratchSheet())
+    Set entries = ShowHide.Create(Dict, ShowHideLayerVList, VLIST_SHEET)
+
+    store.Save entries
+    entries.SetHidden entries.IndexOf("opt_vis_v1"), True
+    store.Save entries, layoutName:="compact"
+
+    Assert.AreEqual entries.EntryCount * 2, store.RowCount, _
+                     "The current state and the layout each hold their rows"
+    Assert.IsTrue store.HasLayout("compact"), "The layout is stored under its name"
+    Assert.AreEqual CLng(1), store.LayoutCount(), "And it is the only one"
+
+    Set reloaded = ShowHide.Create(Dict, ShowHideLayerVList, VLIST_SHEET)
+    store.Load reloaded
+    Assert.IsFalse reloaded.IsHidden(reloaded.IndexOf("opt_vis_v1")), _
+                   "The current state still reads what it held before the layout"
+
+    Set reloaded = ShowHide.Create(Dict, ShowHideLayerVList, VLIST_SHEET)
+    Assert.IsTrue store.Load(reloaded, layoutName:="compact") > 0, _
+                  "Loading by name reports the rows it matched"
+    Assert.IsTrue reloaded.IsHidden(reloaded.IndexOf("opt_vis_v1")), _
+                  "And the layout reads the choice it was saved with"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestASavedLayoutSitsBesideTheCurrentState", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestSaveReplacesByKeySoSheetsShareALayer()
+    CustomTestSetTitles Assert, TESTMODULE, "TestSaveReplacesByKeySoSheetsShareALayer"
+    If Not FixtureReady("TestSaveReplacesByKeySoSheetsShareALayer") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim store As ShowHideStore
+    Dim firstSheet As ShowHide
+    Dim secondSheet As ShowHide
+
+    'Both data entry sheets write hlist rows. Replacing the whole layer on
+    'every save dropped the first sheet's rows the moment the second saved.
+    Set store = ShowHideStore.CreateOnSheet(ScratchSheet())
+    Set firstSheet = ShowHide.Create(Dict, ShowHideLayerHList, HLIST_SHEET)
+    Set secondSheet = ShowHide.Create(Dict, ShowHideLayerHList, HLIST_SHEET_TWO)
+
+    store.Save firstSheet
+    store.Save secondSheet
+
+    Assert.AreEqual firstSheet.EntryCount + secondSheet.EntryCount, store.RowCount, _
+                     "Two sheets of one layer keep their rows side by side"
+
+    store.Save secondSheet
+    Assert.AreEqual firstSheet.EntryCount + secondSheet.EntryCount, store.RowCount, _
+                     "Saving one sheet again replaces its own rows alone"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSaveReplacesByKeySoSheetsShareALayer", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestALayoutCarriesSizesAndHeaderDirections()
+    CustomTestSetTitles Assert, TESTMODULE, "TestALayoutCarriesSizesAndHeaderDirections"
+    If Not FixtureReady("TestALayoutCarriesSizesAndHeaderDirections") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim store As ShowHideStore
+    Dim sh As Worksheet
+    Dim entries As ShowHide
+    Dim layout As ShowHideLayout
+    Dim reloaded As ShowHide
+    Dim position As Long
+
+    Set store = ShowHideStore.CreateOnSheet(ScratchSheet())
+    Set sh = ScratchSheet()
+    Set entries = ShowHide.Create(Dict, ShowHideLayerPrinted, HLIST_SHEET)
+
+    sh.Names.Add Name:="table1_PRINTSTART", _
+                 RefersTo:="='" & sh.Name & "'!" & sh.Cells(5, 1).Address
+    Set layout = ShowHideLayout.Create(sh, ShowHideLayerPrinted, _
+                                       baseTableName:="table1")
+
+    position = entries.PositionIndex(entries.IndexOf("opt_vis_h2"))
+    layout.SetSize position, 27
+    layout.SetOrientation position, True
+    entries.Adopt layout
+    store.Save entries, layout, "register"
+
+    'The user works on, and the sheet drifts away from the saved layout
+    layout.SetSize position, 15
+    layout.SetOrientation position, False
+
+    Set reloaded = ShowHide.Create(Dict, ShowHideLayerPrinted, HLIST_SHEET)
+    Assert.IsTrue store.Load(reloaded, layout, "register") > 0, _
+                  "The named load reports the rows it matched"
+    Assert.AreEqual CDbl(27), layout.SizeWhenShown(position), _
+                     "The saved size lands back on the sheet"
+    Assert.IsTrue layout.IsVertical(position), _
+                  "And the header is turned the way the layout kept it"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestALayoutCarriesSizesAndHeaderDirections", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestDeleteLayoutDropsItsRowsAlone()
+    CustomTestSetTitles Assert, TESTMODULE, "TestDeleteLayoutDropsItsRowsAlone"
+    If Not FixtureReady("TestDeleteLayoutDropsItsRowsAlone") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim store As ShowHideStore
+    Dim entries As ShowHide
+
+    Set store = ShowHideStore.CreateOnSheet(ScratchSheet())
+    Set entries = ShowHide.Create(Dict, ShowHideLayerVList, VLIST_SHEET)
+
+    store.Save entries
+    store.Save entries, layoutName:="one"
+    store.Save entries, layoutName:="two"
+
+    store.DeleteLayout "one"
+
+    Assert.IsFalse store.HasLayout("one"), "The deleted layout is gone"
+    Assert.IsTrue store.HasLayout("two"), "Its neighbour stays"
+    Assert.AreEqual entries.EntryCount * 2, store.RowCount, _
+                     "And the current state keeps its rows"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestDeleteLayoutDropsItsRowsAlone", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestRenameLayoutKeepsTheRows()
+    CustomTestSetTitles Assert, TESTMODULE, "TestRenameLayoutKeepsTheRows"
+    If Not FixtureReady("TestRenameLayoutKeepsTheRows") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim store As ShowHideStore
+    Dim entries As ShowHide
+    Dim reloaded As ShowHide
+    Dim raised As Long
+
+    Set store = ShowHideStore.CreateOnSheet(ScratchSheet())
+    Set entries = ShowHide.Create(Dict, ShowHideLayerVList, VLIST_SHEET)
+
+    entries.SetHidden entries.IndexOf("opt_vis_v1"), True
+    store.Save entries, layoutName:="draft"
+    store.Save entries, layoutName:="other"
+
+    store.RenameLayout "draft", "final"
+
+    Assert.IsFalse store.HasLayout("draft"), "The old name is gone"
+    Assert.IsTrue store.HasLayout("final"), "The new name is there"
+
+    Set reloaded = ShowHide.Create(Dict, ShowHideLayerVList, VLIST_SHEET)
+    store.Load reloaded, layoutName:="final"
+    Assert.IsTrue reloaded.IsHidden(reloaded.IndexOf("opt_vis_v1")), _
+                  "And the rows moved with the name"
+
+    'Renaming onto a stored name would merge two layouts, so it is refused
+    On Error Resume Next
+    Err.Clear
+    store.RenameLayout "final", "other"
+    raised = Err.Number
+    On Error GoTo TestFail
+
+    Assert.AreEqual CLng(ProjectError.InvalidArgument), raised, _
+                     "Renaming onto a name the store holds is refused"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestRenameLayoutKeepsTheRows", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestTheCapRefusesTheEleventhName()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheCapRefusesTheEleventhName"
+    If Not FixtureReady("TestTheCapRefusesTheEleventhName") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim store As ShowHideStore
+    Dim entries As ShowHide
+    Dim counter As Long
+    Dim raised As Long
+
+    'The small sheet keeps the eleven table rewrites cheap
+    Set store = ShowHideStore.CreateOnSheet(ScratchSheet())
+    Set entries = ShowHide.Create(Dict, ShowHideLayerHList, HLIST_SHEET_TWO)
+
+    For counter = 1 To store.MaxSavedLayouts
+        store.Save entries, layoutName:="layout" & CStr(counter)
+    Next counter
+
+    Assert.AreEqual store.MaxSavedLayouts, store.LayoutCount(), _
+                     "The store holds its maximum of saved layouts"
+
+    On Error Resume Next
+    Err.Clear
+    store.Save entries, layoutName:="one too many"
+    raised = Err.Number
+    On Error GoTo TestFail
+
+    Assert.AreEqual CLng(ProjectError.InvalidArgument), raised, _
+                     "The name past the cap is refused"
+
+    store.Save entries, layoutName:="layout1"
+    Assert.AreEqual store.MaxSavedLayouts, store.LayoutCount(), _
+                     "A name already stored still saves at the cap"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheCapRefusesTheEleventhName", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestAnOldTableGainsTheLayoutColumn()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAnOldTableGainsTheLayoutColumn"
+    If Not FixtureReady("TestAnOldTableGainsTheLayoutColumn") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim store As ShowHideStore
+    Dim entries As ShowHide
+    Dim headers As Variant
+    Dim counter As Long
+
+    'The six column table a linelist generated before saved layouts carries
+    Set sh = ScratchSheet()
+    headers = Array("layer", "field_key", "header_text", "hidden_flag", _
+                    "entry_size", "orientation")
+    For counter = LBound(headers) To UBound(headers)
+        sh.Cells(1, counter + 1).Value = CStr(headers(counter))
+    Next counter
+    sh.Cells(2, 1).Value = "vlist"
+    sh.Cells(2, 2).Value = "opt_vis_v1"
+    sh.Cells(2, 4).Value = "true"
+    sh.ListObjects.Add(xlSrcRange, sh.Range(sh.Cells(1, 1), sh.Cells(2, 6)), , xlYes) _
+      .Name = "show_hide_state"
+
+    Set store = ShowHideStore.CreateOnSheet(sh)
+
+    Assert.AreEqual CLng(7), CLng(store.Table.ListColumns.Count), _
+                     "Opening the store adds the layout column"
+    Assert.AreEqual CLng(0), store.LayoutCount(), _
+                     "The old rows name no layout"
+
+    Set entries = ShowHide.Create(Dict, ShowHideLayerVList, VLIST_SHEET)
+    Assert.IsTrue store.Load(entries) > 0, _
+                  "And they read as the current state"
+    Assert.IsTrue entries.IsHidden(entries.IndexOf("opt_vis_v1")), _
+                  "With the choice they carried"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAnOldTableGainsTheLayoutColumn", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestLayoutsTravelBetweenStores()
+    CustomTestSetTitles Assert, TESTMODULE, "TestLayoutsTravelBetweenStores"
+    If Not FixtureReady("TestLayoutsTravelBetweenStores") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sourceStore As ShowHideStore
+    Dim targetStore As ShowHideStore
+    Dim entries As ShowHide
+    Dim reloaded As ShowHide
+    Dim skippedNames As BetterArray
+
+    'The exporter and the importer both come down to this pair of stores
+    Set sourceStore = ShowHideStore.CreateOnSheet(ScratchSheet())
+    Set targetStore = ShowHideStore.CreateOnSheet(ScratchSheet())
+    Set entries = ShowHide.Create(Dict, ShowHideLayerVList, VLIST_SHEET)
+
+    sourceStore.Save entries
+    entries.SetHidden entries.IndexOf("opt_vis_v1"), True
+    sourceStore.Save entries, layoutName:="compact"
+
+    Set skippedNames = targetStore.MergeLayoutsFrom(sourceStore)
+
+    Assert.AreEqual CLng(0), skippedNames.Length, "Nothing is skipped under the cap"
+    Assert.IsTrue targetStore.HasLayout("compact"), "The layout came across"
+    Assert.AreEqual entries.EntryCount, targetStore.RowCount, _
+                     "And the source's current state stayed home"
+
+    'A second merge of the same name replaces rather than doubles
+    targetStore.MergeLayoutsFrom sourceStore
+    Assert.AreEqual entries.EntryCount, targetStore.RowCount, _
+                     "Merging the same layout again does not double its rows"
+
+    Set reloaded = ShowHide.Create(Dict, ShowHideLayerVList, VLIST_SHEET)
+    targetStore.Load reloaded, layoutName:="compact"
+    Assert.IsTrue reloaded.IsHidden(reloaded.IndexOf("opt_vis_v1")), _
+                  "The travelled layout reads what it was saved with"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestLayoutsTravelBetweenStores", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestMergeTakesCollisionsAndSkipsPastTheCap()
+    CustomTestSetTitles Assert, TESTMODULE, "TestMergeTakesCollisionsAndSkipsPastTheCap"
+    If Not FixtureReady("TestMergeTakesCollisionsAndSkipsPastTheCap") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sourceStore As ShowHideStore
+    Dim targetStore As ShowHideStore
+    Dim entries As ShowHide
+    Dim reloaded As ShowHide
+    Dim skippedNames As BetterArray
+    Dim counter As Long
+
+    Set sourceStore = ShowHideStore.CreateOnSheet(ScratchSheet())
+    Set targetStore = ShowHideStore.CreateOnSheet(ScratchSheet())
+    Set entries = ShowHide.Create(Dict, ShowHideLayerHList, HLIST_SHEET_TWO)
+
+    'The target is full, and one of its names is also in the file
+    For counter = 1 To targetStore.MaxSavedLayouts - 1
+        targetStore.Save entries, layoutName:="local" & CStr(counter)
+    Next counter
+    targetStore.Save entries, layoutName:="shared"
+
+    entries.SetHidden entries.IndexOf("lauto_drop_h2"), True
+    sourceStore.Save entries, layoutName:="shared"
+    sourceStore.Save entries, layoutName:="fresh"
+
+    Set skippedNames = targetStore.MergeLayoutsFrom(sourceStore)
+
+    Assert.AreEqual CLng(1), skippedNames.Length, "One name found no room"
+    Assert.AreEqual "fresh", CStr(skippedNames.Item(skippedNames.LowerBound)), _
+                     "It is the new one, because a collision costs no slot"
+    Assert.IsFalse targetStore.HasLayout("fresh"), "The skipped layout stayed out"
+
+    Set reloaded = ShowHide.Create(Dict, ShowHideLayerHList, HLIST_SHEET_TWO)
+    targetStore.Load reloaded, layoutName:="shared"
+    Assert.IsTrue reloaded.IsHidden(reloaded.IndexOf("lauto_drop_h2")), _
+                  "The collided name carries the file's rows"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestMergeTakesCollisionsAndSkipsPastTheCap", Err.Number, Err.Description
 End Sub
 
 
