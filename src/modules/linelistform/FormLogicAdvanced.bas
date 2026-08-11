@@ -1,10 +1,21 @@
 Attribute VB_Name = "FormLogicAdvanced"
 
 '@Folder("Linelist Forms")
-'@ModuleDescription("Import data, import geobase, and clear data workflows")
-'@depends LLImporter, ImportMetadata, ApplicationState, OSFiles
+'@ModuleDescription("Import data, import geobase, clear data and reset columns workflows")
+'@depends LLImporter, ImportMetadata, ApplicationState, OSFiles, LLdictionary, ShowHide, ShowHideLayout, ShowHideStore, HiddenNames, Passwords
+
+' The handlers of the F_Advanced form. The form's own event stubs stay thin:
+' CMD_ExportData_Click hides the form and calls ClickExportMigration,
+' CMD_ImportGeoHistoric_Click calls HandleImportGeobase with histoOnly:=True,
+' CMD_ClearData_Click calls HandleClearData, CMD_ImportMigRep_Click shows
+' F_ImportRep, and CMD_ResetCols_Click calls ClickResetColumns, which holds
+' the busy state and comes to HandleResetColumns here.
 
 Option Explicit
+
+Private Const DICTIONARY_SHEET As String = "Dictionary"
+Private Const PRINT_PREFIX As String = "print_"
+Private Const CRF_PREFIX As String = "crf_"
 
 ' What an import does with the rows the linelist already holds
 Private Const PASTING_RULE_EMPTY As Byte = 0
@@ -284,6 +295,118 @@ ErrHand:
     If Not impwb Is Nothing Then impwb.Close savechanges:=False
     If Not appState Is Nothing Then appState.Restore
 End Sub
+
+
+' @description Put the show/hide state of every worksheet back where the
+' dictionary started it. Each layered worksheet - data entry, printed, VList
+' and CRF - gets a fresh entry list, ShowHide.ResetToAuthored applies the
+' authored state and the printed header directions, and the saved choices are
+' overwritten, so the reset survives the workbook closing. A workbook with no
+' show/hide worksheet resets the sheets alone.
+' @param sourceWkb Workbook. The linelist workbook.
+' @param pass Passwords. The protection keys, or Nothing.
+Public Sub HandleResetColumns(ByVal sourceWkb As Workbook, _
+                              ByVal pass As Passwords)
+
+    Dim sh As Worksheet
+    Dim dict As LLdictionary
+    Dim entries As ShowHide
+    Dim layout As ShowHideLayout
+    Dim store As ShowHideStore
+    Dim shNames As HiddenNames
+    Dim shType As String
+    Dim layer As Byte
+
+    Set dict = LLdictionary.Create(sourceWkb.Worksheets(DICTIONARY_SHEET), 1, 1)
+
+    ' An older linelist carries no show/hide worksheet. The reset still walks
+    ' the sheets, and there is simply nothing to overwrite.
+    On Error Resume Next
+    Set store = ShowHideStore.Create(sourceWkb)
+    On Error GoTo 0
+
+    For Each sh In sourceWkb.Worksheets
+        Set shNames = SheetNamesOf(sh)
+
+        If Not shNames Is Nothing Then
+            shType = shNames.ValueAsString("sheet_type")
+            layer = ShowHideLayerOf(shType)
+
+            If layer > 0 Then
+                Set entries = ShowHide.Create(dict, layer, BaseSheetNameOf(sh, shType))
+                Set layout = ShowHideLayout.Create(sh, layer, pass, _
+                                                   BaseTableNameOf(shNames.ValueAsString("table_name")))
+
+                entries.ResetToAuthored layout
+                If Not store Is Nothing Then store.Save entries, layout
+            End If
+        End If
+    Next
+End Sub
+
+
+' @description The held hidden names of one worksheet, through the event
+' service, so the walk shares the stores every button already uses. A sheet
+' whose names cannot be read answers Nothing and the walk passes it by.
+' @param sh Worksheet. The worksheet whose names are wanted.
+' @return HiddenNames. The held store, or Nothing.
+Private Function SheetNamesOf(ByVal sh As Worksheet) As HiddenNames
+    Dim linelistEvents As EventLinelist
+
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    Set SheetNamesOf = linelistEvents.SheetNames(sh)
+End Function
+
+
+' @description The show/hide layer of one sheet tag. A sheet outside the four
+' layers answers 0 and the reset leaves it alone.
+' @param shType String. The sheet_type hidden name value.
+' @return Byte. A ShowHideWorksheetLayer value, or 0.
+Private Function ShowHideLayerOf(ByVal shType As String) As Byte
+    Select Case shType
+    Case "HList"
+        ShowHideLayerOf = ShowHideLayerHList
+    Case "HList Print"
+        ShowHideLayerOf = ShowHideLayerPrinted
+    Case "VList"
+        ShowHideLayerOf = ShowHideLayerVList
+    Case "HList CRF"
+        ShowHideLayerOf = ShowHideLayerCRF
+    Case Else
+        ShowHideLayerOf = 0
+    End Select
+End Function
+
+
+' @description The base sheet name the dictionary knows, with the print_ or
+' crf_ prefix of a companion sheet cut off the front.
+' @param sh Worksheet. The worksheet being reset.
+' @param shType String. The sheet_type hidden name value.
+' @return String. The base sheet name.
+Private Function BaseSheetNameOf(ByVal sh As Worksheet, ByVal shType As String) As String
+    Select Case shType
+    Case "HList Print"
+        BaseSheetNameOf = Mid$(sh.Name, Len(PRINT_PREFIX) + 1)
+    Case "HList CRF"
+        BaseSheetNameOf = Mid$(sh.Name, Len(CRF_PREFIX) + 1)
+    Case Else
+        BaseSheetNameOf = sh.Name
+    End Select
+End Function
+
+
+' @description The table name the PRINTSTART anchor is named after. A printed
+' sheet stores its own table name with the print_ prefix in front, and the
+' anchor carries none.
+' @param tabName String. The table_name hidden name value.
+' @return String. The base table name.
+Private Function BaseTableNameOf(ByVal tabName As String) As String
+    If InStr(1, tabName, PRINT_PREFIX, vbTextCompare) = 1 Then
+        tabName = Mid$(tabName, Len(PRINT_PREFIX) + 1)
+    End If
+
+    BaseTableNameOf = tabName
+End Function
 
 
 ' @description Clear all entered data from the linelist.

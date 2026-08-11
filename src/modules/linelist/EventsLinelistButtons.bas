@@ -12,8 +12,6 @@ Private Const PASSSHEET As String = "__pass"
 Private Const EXPORTSHEET As String = "Exports"
 Private Const PRINTPREFIX As String = "print_"
 Private Const CRFPREFIX As String = "crf_"
-Private Const TEMPSHEET As String = "temp__"
-Private Const SHOWHIDESHEET As String = "show_hide__"
 
 'The pair the show/hide form is open on: which variables the sheet offers, and
 'the sheet itself. Both are rebuilt each time the form opens.
@@ -1243,68 +1241,17 @@ End Sub
 Public Sub ClickOpenVarLab()
     Attribute ClickOpenVarLab.VB_Description = "For each table, show the variables and corresponding labels"
 
-    Dim counter As Long 'Counter for the number of tables
-    Dim actsh As Worksheet
-    Dim tempsh As Worksheet
-    Dim dict As LLdictionary
-    Dim varRng As Range
-    Dim vars As LLVariables
-    Dim cellRng As Range
-    Dim tablename As String
+    Dim linelistEvents As EventLinelist
     Dim varLabTab As BetterArray
-    Dim varName As String
-    Dim pivotNames As HiddenNames
 
     InitializeTrads
     On Error GoTo ErrHand
-
-    'Prepare the temporary Sheet
-    Set actsh = wb.Worksheets(wkbNames.ValueAsString("RNG_CustomPivot"))
-
-    'Pivot block titles are worksheet hidden names written by CustomPivotTable.
-    'One manager for the whole loop - creating one scans every name on the sheet.
-    Set pivotNames = HiddenNames.Create(actsh)
     LinelistEventsManager.LLEnterBusyState
 
-    Set tempsh = ThisWorkbook.Worksheets(TEMPSHEET)
-    tempsh.Cells.Clear
-
-    'Fill in values on pivot table names, and corresponding variables
-    Set cellRng = tempsh.Cells(1, 1)
-
-    Set dict = LLdictionary.Create(wb.Worksheets(DICTSHEET), 1, 1)
-    Set vars = LLVariables.Create(dict)
-    
-    'Range for variables, as well as final table for the form
-    Set varRng = dict.DataRange("variable name")
-    Set varLabTab = New BetterArray
-
-    For counter = 1 To varRng.Rows.Count
-        varName = varRng.Cells(counter, 1).Value
-
-        'take only variables on sheet of tyme HList, and add them to the table
-        If vars.Value(colName:="sheet type", varName:=varName) = "hlist2D" Then
-
-            tablename = vars.Value(colName:="table name", varName:=varName)
-
-            'Pivot table title
-            cellRng.Cells(1, 1).Value = pivotNames.ValueAsString("pivot_title_" & tablename)
-            'Varname
-            cellRng.Cells(1, 2).Value = varName
-            'Corresponding variable label
-            cellRng.Cells(1, 3).Value = vars.Value( _
-                                        colName:="main label", _
-                                        varName:=varName)
-            'Move to next line
-            Set cellRng = cellRng.Offset(1)
-        End If
-    Next
-
-    'Get the whole table from fill in range. This read used to sit inside the
-    'loop above, so a 400-variable dictionary read the whole sheet 400 times and
-    'threw away every result but the last.
-    varLabTab.FromExcelRange tempsh.Cells(1, 1), _
-                             DetectLastRow:=True, DetectLastColumn:=True
+    'The rows come from the held dictionary and variable reader. This used to
+    'build both per click and stage the rows on the temp__ worksheet.
+    Set linelistEvents = LinelistService()
+    Set varLabTab = linelistEvents.VarLabelTable()
 
     'Affect the table to the list
     F_ShowVarLabels.LST_CustomTabList.List = varLabTab.Items
@@ -1455,49 +1402,13 @@ End Sub
 Public Sub ClickResetColumns()
     Attribute clickResetColumns.VB_Description = "Reset hidden columns in the linelist"
 
-    Dim sh As Worksheet
-    Dim dict As LLdictionary
-    Dim entries As ShowHide
-    Dim layout As ShowHideLayout
-    Dim store As ShowHideStore
-    Dim layer As Byte
-    Dim counter As Long
-    Dim posIdx As Long
-
     On Error GoTo ErrHand
     LinelistEventsManager.LLEnterBusyState
     InitializeTrads
 
-    'A fresh entry list is the state the dictionary authored, so building one
-    'per sheet and applying it is the whole reset. The saved choices are
-    'overwritten with it, so the reset survives the workbook closing.
-    Set dict = DictionaryObject()
-    Set store = ShowHideStoreOf()
-
-    For Each sh In wb.Worksheets
-        layer = ResolveShowHideLayer(SheetTag(sh))
-
-        If layer > 0 Then
-            Set entries = EntriesFor(sh, layer, dict)
-            Set layout = LayoutFor(sh, layer)
-
-            entries.Apply layout
-
-            'Put every printed header back the way the dictionary asked
-            If layout.SupportsOrientation Then
-                layout.BeginBatch
-                For counter = 1 To entries.EntryCount
-                    posIdx = entries.PositionIndex(counter)
-                    If posIdx > 0 Then
-                        layout.SetOrientation posIdx, entries.AuthoredVertical(counter)
-                    End If
-                Next
-                layout.EndBatch
-            End If
-
-            If Not store Is Nothing Then store.Save entries
-        End If
-    Next
+    'The walk lives beside the other handlers of the advanced form. The Reset
+    'Columns button of F_Advanced comes through here for the busy state.
+    HandleResetColumns wb, pass
 
 ErrHand:
     LinelistEventsManager.LLExitBusyState
