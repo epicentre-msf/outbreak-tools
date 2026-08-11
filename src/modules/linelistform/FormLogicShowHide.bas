@@ -24,6 +24,11 @@ Private Sub CMD_Back_Click()
     Me.Hide
 End Sub
 
+Private Sub CMD_ShowHideLayout_Click()
+    Me.Hide
+    ClickShowHideLayouts
+End Sub
+
 Private Sub CMD_ShowHideMinimal_Click()
     ClickShowHideMinimal
     Me.Hide

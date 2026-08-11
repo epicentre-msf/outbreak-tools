@@ -1465,6 +1465,30 @@ End Sub
 
 
 
+'@Description("Callback for click on the layouts button of the show/hide form")
+'@EntryPoint
+Public Sub ClickShowHideLayouts()
+    Attribute ClickShowHideLayouts.VB_Description = "Callback for click on the layouts button of the show/hide form"
+
+    F_ShowHideSave.Show
+
+    'The show/hide form hides itself before this runs, but ClickShowHide still
+    'saves the pair once the click handler returns. The pair is read back from
+    'the store here, so that save records what the sheets now show rather than
+    'the choices from before a restore.
+    If showHideEntries Is Nothing Then Exit Sub
+
+    If LoadShowHideState(showHideEntries, showHideLayout) > 0 Then
+        showHideEntries.Apply showHideLayout
+    Else
+        showHideEntries.Adopt showHideLayout
+    End If
+
+    If Not activeShowHideForm Is Nothing Then
+        PopulateShowHideList activeShowHideForm
+    End If
+End Sub
+
 '@Description("Match the show/hide state in the linelist from the print sheet")
 '@EntryPoint
 Public Sub ClickMatchLinelistShowHide()

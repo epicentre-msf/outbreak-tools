@@ -1050,12 +1050,12 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
         codeTransfer.TransferModule "EventsLinelistRibbon"
     End If
 
-    'Transfer forms (9 forms)
+    'Transfer forms (10 forms)
     codesList.Clear
     codesList.Push "F_Advanced", "F_Export", "F_ExportMig", _
                    "F_Geo", "F_ImportRep", _
-                   "F_ShowHideLL", "F_ShowHidePrint", "F_ShowVarLabels", _
-                   "F_EpiWeek"
+                   "F_ShowHideLL", "F_ShowHidePrint", "F_ShowHideSave", _
+                   "F_ShowVarLabels", "F_EpiWeek"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
