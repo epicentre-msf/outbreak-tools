@@ -218,7 +218,7 @@ End Property
 '@prop-title Dropdown lists manager for the output workbook
 '@details
 'Returns the DropdownLists instance backed by the appropriate list sheet.
-'Scope 1 uses the temporary dropdown_lists__ sheet with the "dropdown_" header
+'Scope 1 uses the temporary __dropdown_lists sheet with the "dropdown_" header
 'prefix; scope 2 uses the custom choice sheet with no prefix.
 '
 'Each scope is built once and kept. DropdownLists accumulates its report entries

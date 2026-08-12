@@ -89,7 +89,7 @@ End Type
 
 Private this As TLLSpatial
 Private Const CLASS_NAME As String = "LLSpatial"
-Private Const SPATIAL_SHEET As String = "spatial_tables__"
+Private Const SPATIAL_SHEET As String = "__spatial_tables"
 Private Const ADMIN As String = "adm"
 Private Const CONCAT As String = "concat_"
 Private Const HF As String = "hf"
@@ -147,7 +147,7 @@ Private Const VALUES_TOKEN As String = "VALUES"
 '@sub-title Create a new LLSpatial instance from the spatial tables worksheet
 '@details
 'Factory method that checks the supplied worksheet is given and is named
-'"spatial_tables__", then returns a new instance. Called on the predeclared
+'"__spatial_tables", then returns a new instance. Called on the predeclared
 'instance.
 '
 'The listofgeovars table is left out of the check on purpose: the worksheet and
@@ -157,7 +157,7 @@ Private Const VALUES_TOKEN As String = "VALUES"
 '@param sh Worksheet. The spatial tables worksheet.
 '@return LLSpatial. A fully initialised instance ready for use.
 '@throws ProjectError.ObjectNotInitialized When the worksheet is Nothing.
-'@throws ProjectError.InvalidArgument When the worksheet name is not "spatial_tables__".
+'@throws ProjectError.InvalidArgument When the worksheet name is not "__spatial_tables".
 '@export
 Public Function Create(ByVal sh As Worksheet) As LLSpatial
     CheckRequirements sh
@@ -1176,10 +1176,10 @@ End Property
 '@sub-title Validate that the worksheet is the spatial tables sheet
 '@details
 'Guards the factory by checking the worksheet is given and its name matches the
-'expected "spatial_tables__" constant.
+'expected "__spatial_tables" constant.
 '@param sh Worksheet. The worksheet to validate.
 '@throws ProjectError.ObjectNotInitialized When the worksheet is Nothing.
-'@throws ProjectError.InvalidArgument When the worksheet name does not match "spatial_tables__".
+'@throws ProjectError.InvalidArgument When the worksheet name does not match "__spatial_tables".
 Private Sub CheckRequirements(ByVal sh As Worksheet)
     If sh Is Nothing Then
         ThrowError ObjectNotInitialized, "Worksheet not provided"

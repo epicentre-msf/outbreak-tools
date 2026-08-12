@@ -63,11 +63,17 @@ Private Const DICTTRANSLATIONSHEET As String = "Translations"
 Private Const LINELISTTRANSLATIONSHEET As String = "LinelistTranslation"
 Private Const METADATASHEET As String = "Metadata"
 Private Const PASSWORDSHEET As String = "__pass"
-Private Const TEMPSHEET As String = "temp__"
+Private Const TEMPSHEET As String = "__temp"
 Private Const EXPORTSHEET As String = "Exports"
-Private Const ANANAMESSHEET As String = "ana_tabnames__"
-Private Const SHOWHIDESHEET As String = "show_hide__"
+Private Const ANANAMESSHEET As String = "__ana_tabnames"
+Private Const SHOWHIDESHEET As String = "__show_hide"
 Private Const GEOSHEET As String = "Geo"
+
+' The names a linelist generated before the internal-sheet rename gave the
+' temp and show/hide sheets. CreateFromFile opens such files, so the reads
+' on the source workbook look for the new name first and fall back to these.
+Private Const TEMPSHEET_OLD As String = "temp__"
+Private Const SHOWHIDESHEET_OLD As String = "show_hide__"
 
 ' Prefixes of the two companion sheets a data entry sheet can have
 Private Const PRINTPREFIX As String = "print_"
@@ -228,8 +234,7 @@ Private Function MissingLinelistSheet(ByVal wkb As Workbook) As String
     Dim foundSheet As Worksheet
 
     Set requiredSheets = New BetterArray
-    requiredSheets.Push DICTIONARYSHEET, EXPORTSHEET, PASSWORDSHEET, _
-                        GEOSHEET, TEMPSHEET
+    requiredSheets.Push DICTIONARYSHEET, EXPORTSHEET, PASSWORDSHEET, GEOSHEET
 
     For counter = requiredSheets.LowerBound To requiredSheets.UpperBound
         sheetName = requiredSheets.Item(counter)
@@ -243,6 +248,36 @@ Private Function MissingLinelistSheet(ByVal wkb As Workbook) As String
             Exit Function
         End If
     Next
+
+    'The temp sheet answers to either name, since the file may be older than
+    'the internal-sheet rename.
+    If InternalSheetOf(wkb, TEMPSHEET, TEMPSHEET_OLD) Is Nothing Then
+        MissingLinelistSheet = TEMPSHEET
+    End If
+End Function
+
+'@label:internal-sheet-of
+'@sub-title An internal worksheet of a workbook under either of its names
+'@details
+'A linelist generated before the internal-sheet rename carries the old
+'trailing name, so the new name is looked for first and the old one answers
+'when it is absent.
+'@param wkb Workbook. The workbook to look through.
+'@param newName String. The name the sheet carries today.
+'@param oldName String. The name an older linelist gave it.
+'@return Worksheet. The worksheet, or Nothing when the workbook has neither name.
+Private Function InternalSheetOf(ByVal wkb As Workbook, _
+                                 ByVal newName As String, _
+                                 ByVal oldName As String) As Worksheet
+    Dim sh As Worksheet
+
+    'A missing sheet raises on the read, and Nothing is the answer read back.
+    On Error Resume Next
+    Set sh = wkb.Worksheets(newName)
+    If sh Is Nothing Then Set sh = wkb.Worksheets(oldName)
+    On Error GoTo 0
+
+    Set InternalSheetOf = sh
 End Function
 
 
@@ -450,7 +485,7 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
     ' and Dictionary worksheets AND the show/hide sheet, so the tags the file
     ' carries describe what is really in it. Owner decision, 2026-08-01.
     ' AddShowHide used to run from ExportMigration alone while the tag was
-    ' written True here, so every custom export promised a show_hide__ sheet it
+    ' written True here, so every custom export promised a __show_hide sheet it
     ' had no copy of.
     withMetadata = (expObj.ColumnValue(exportNumber, "export metadata sheets") = "yes")
     If withMetadata Then
@@ -1010,7 +1045,7 @@ End Function
 'When fullExport is True, copies the entire dictionary. When False,
 'filters on the export column name to include only rows assigned to that
 'export. The variables the export excludes are dropped from the block in
-'memory. Writes the result to the temp__ sheet and adds a blue font tag
+'memory. Writes the result to the __temp sheet and adds a blue font tag
 'to mark the dictionary as prepared.
 '@param dict LLdictionary. The source dictionary.
 '@param expName String. The export column name to filter on, or vbNullString for full.
@@ -1024,7 +1059,7 @@ Private Sub PrepareTempDictionary(ByVal dict As LLdictionary, _
     Dim dictData As BetterArray
     Dim tempsh As Worksheet
 
-    Set tempsh = this.sourceWkb.Worksheets(TEMPSHEET)
+    Set tempsh = InternalSheetOf(this.sourceWkb, TEMPSHEET, TEMPSHEET_OLD)
 
     If fullExport Then
         Set dictData = New BetterArray
@@ -1051,10 +1086,10 @@ End Sub
 '@label:export-dictionary-from-temp
 '@sub-title Create an export dictionary from the temp sheet
 '@param nbExp Long. Number of export columns.
-'@return LLdictionary. Dictionary built from the temp__ sheet.
+'@return LLdictionary. Dictionary built from the __temp sheet.
 Private Function ExportDictionaryFromTemp(ByVal nbExp As Long) As LLdictionary
     Set ExportDictionaryFromTemp = LLdictionary.Create( _
-        this.sourceWkb.Worksheets(TEMPSHEET), 1, 1, nbExp)
+        InternalSheetOf(this.sourceWkb, TEMPSHEET, TEMPSHEET_OLD), 1, 1, nbExp)
 End Function
 
 '@label:sort-export-dictionary
@@ -1369,7 +1404,7 @@ End Function
 '@label:add-show-hide
 '@sub-title Export the show/hide choices with their sizes to the output workbook
 '@details
-'Builds a show_hide__ sheet in the output workbook and asks ShowHideStore to
+'Builds a __show_hide sheet in the output workbook and asks ShowHideStore to
 'provision its table. Every data sheet contributes each layer it has: HList and
 'CRF for a data entry sheet, Printed for its companion, VList for an info sheet.
 'The choices the user made are read out of the source workbook first, so the
@@ -1439,9 +1474,7 @@ NextSheet:
     'The saved layouts travel with the current state. The source store is read
     'as it stands; a linelist with no store sheet has nothing to carry, and the
     'export table starts empty of layouts, so nothing is ever skipped here.
-    On Error Resume Next
-    Set srcSh = this.sourceWkb.Worksheets(SHOWHIDESHEET)
-    On Error GoTo 0
+    Set srcSh = InternalSheetOf(this.sourceWkb, SHOWHIDESHEET, SHOWHIDESHEET_OLD)
     Set srcStore = ShowHideStore.CreateForRead(srcSh)
     outStore.MergeLayoutsFrom srcStore
 
@@ -1524,11 +1557,7 @@ Private Sub ImportCurrentShowHide(ByVal entries As ShowHide)
     Dim showHideSh As Worksheet
     Dim srcStore As ShowHideStore
 
-    Set showHideSh = Nothing
-    On Error Resume Next
-    Set showHideSh = this.sourceWkb.Worksheets(SHOWHIDESHEET)
-    On Error GoTo 0
-
+    Set showHideSh = InternalSheetOf(this.sourceWkb, SHOWHIDESHEET, SHOWHIDESHEET_OLD)
     If showHideSh Is Nothing Then Exit Sub
 
     Set srcStore = ShowHideStore.CreateForRead(showHideSh)

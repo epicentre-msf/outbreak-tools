@@ -74,8 +74,10 @@ Option Explicit
 
 Private Const CLASS_NAME As String = "ShowHideStore"
 
-'The worksheet a linelist keeps its show/hide table on
-Private Const STORE_SHEET As String = "show_hide__"
+'The worksheet a linelist keeps its show/hide table on, and the name a
+'linelist generated before the internal-sheet rename gave it
+Private Const STORE_SHEET As String = "__show_hide"
+Private Const LEGACY_SHEET As String = "show_hide__"
 
 'The table this class writes, and the name an older build wrote
 Private Const STORE_TABLE As String = "show_hide_state"
@@ -113,10 +115,10 @@ Private this As TShowHideStore
 
 '@label:create
 '@sub-title Open the store of a workbook, making the table when it is absent
-'@param wkb Workbook. The workbook holding the show_hide__ worksheet.
+'@param wkb Workbook. The workbook holding the __show_hide worksheet.
 '@return ShowHideStore. A store ready to save and load.
 '@throws ProjectError.ObjectNotInitialized When the workbook is Nothing.
-'@throws ProjectError.ElementNotFound When the workbook has no show_hide__
+'@throws ProjectError.ElementNotFound When the workbook has no __show_hide
 '  worksheet.
 '@export
 Public Function Create(ByVal wkb As Workbook) As ShowHideStore
@@ -127,8 +129,12 @@ Public Function Create(ByVal wkb As Workbook) As ShowHideStore
                    "A workbook is needed to find the show/hide store"
     End If
 
+    'A workbook generated before the internal-sheet rename still carries the
+    'old trailing name, so the new name is looked for first and the old one
+    'answers when it is absent.
     On Error Resume Next
     Set sh = wkb.Worksheets(STORE_SHEET)
+    If sh Is Nothing Then Set sh = wkb.Worksheets(LEGACY_SHEET)
     On Error GoTo 0
 
     If sh Is Nothing Then

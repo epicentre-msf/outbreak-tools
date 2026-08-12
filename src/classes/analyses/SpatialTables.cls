@@ -18,7 +18,7 @@ Option Explicit
 
 '@class SpatialTables
 '@description
-'Creates the spatial analysis ListObjects on the "spatial_tables__" worksheet
+'Creates the spatial analysis ListObjects on the "__spatial_tables" worksheet
 'at build time. Add takes one cross-table and builds, for each of its row
 'variables, either four administrative tables (adm1 to adm4) or one health
 'facility table. Entries filed along the way leave through HasCheckings and
@@ -72,7 +72,7 @@ Private this As TSpatialTables
 Private checkCounter As Long
 
 Private Const CLASS_NAME As String = "SpatialTables"
-Private Const SPATIAL_SHEET As String = "spatial_tables__"
+Private Const SPATIAL_SHEET As String = "__spatial_tables"
 Private Const ADMIN As String = "adm"
 Private Const HF As String = "hf"
 Private Const GEO As String = "geo"
@@ -107,7 +107,7 @@ Private Const ADMIN_LEVELS As Long = 4
 '@sub-title Create a SpatialTables instance from a cross-table
 '@details
 'Factory method on the predeclared instance. Validates that the cross-table is
-'given and that the "spatial_tables__" worksheet exists in the same workbook,
+'given and that the "__spatial_tables" worksheet exists in the same workbook,
 'then hands the resolved worksheet to the instance so it is looked up once.
 '@param tabl CrossTable. The cross-table whose row variable defines the spatial
 'tables to create.
@@ -166,7 +166,7 @@ End Property
 
 '@label:spatial-sheet-set
 '@prop-title Assign the spatial worksheet the factory resolved
-'@param sh Worksheet. The "spatial_tables__" worksheet.
+'@param sh Worksheet. The "__spatial_tables" worksheet.
 '@export
 Public Property Set SpatialSheet(ByVal sh As Worksheet)
     GuardNotSealed "SpatialSheet"

@@ -63,7 +63,9 @@ Private Const DICTTRANSLATIONSHEET As String = "Translations"
 Private Const LINELISTTRANSLATIONSHEET As String = "LinelistTranslation"
 Private Const METADATASHEET As String = "Metadata"
 Private Const PASSWORDSHEET As String = "__pass"
-Private Const SHOWHIDESHEET As String = "show_hide__"
+Private Const SHOWHIDESHEET As String = "__show_hide"
+'The name a linelist generated before the internal-sheet rename gave that sheet
+Private Const SHOWHIDESHEET_OLD As String = "show_hide__"
 Private Const GEOSHEET As String = "Geo"
 
 ' Prefixes of the two companion sheets a data entry sheet can have
@@ -337,9 +339,9 @@ Public Function CheckImportFile(ByVal impwb As Workbook, _
                      checkingError
     End If
 
-    If Not SheetExists(impwb, SHOWHIDESHEET) Then
+    If ShowHideSheetOf(impwb) Is Nothing Then
         FileChecking "show hide sheet", _
-                     "The file carries no show_hide__ worksheet, so the " & _
+                     "The file carries no show/hide worksheet, so the " & _
                      "hidden and shown state of this linelist is left as it is.", _
                      checkingWarning
     End If
@@ -576,7 +578,7 @@ End Sub
 'width cell was read as a width of zero and written to the sheet, which is how
 'Excel hides a column, so entries vanished for the opposite reason.
 '
-'Skips when the file carries no show_hide__ sheet, and when its `show_hide` tag
+'Skips when the file carries no show/hide sheet, and when its `show_hide` tag
 'asks for no update.
 '@param impwb Workbook. The opened migration workbook.
 '@param meta ImportMetadata. The metadata of that workbook.
@@ -599,10 +601,10 @@ Public Sub ImportShowHide(ByVal impwb As Workbook, ByVal meta As ImportMetadata)
     ' Prerequisites
     If meta Is Nothing Then Exit Sub
     If Not meta.UpdatesOnImport("show_hide") Then Exit Sub
-    If Not SheetExists(impwb, SHOWHIDESHEET) Then Exit Sub
 
     ' The show/hide table of the file being imported
-    Set impsh = impwb.Worksheets(SHOWHIDESHEET)
+    Set impsh = ShowHideSheetOf(impwb)
+    If impsh Is Nothing Then Exit Sub
     Set impStore = ShowHideStore.CreateForRead(impsh)
     If Not impStore.HasTable Then Exit Sub
 
@@ -701,7 +703,7 @@ End Sub
 '@label:own-show-hide-store
 '@sub-title The show/hide store of the workbook being written into
 '@return ShowHideStore. The store, or Nothing when the workbook has no
-'  show_hide__ worksheet.
+'  __show_hide worksheet.
 Private Function OwnShowHideStore() As ShowHideStore
     On Error Resume Next
     Set OwnShowHideStore = ShowHideStore.Create(this.sourceWkb)
@@ -1302,7 +1304,7 @@ End Sub
 '@sub-title Keep the report where it survives the workbook closing
 '@details
 'The four lists used to live in memory alone and die with this object at the end
-'of the import, while the four ListObjects they belong on sat on import_rep__
+'of the import, while the four ListObjects they belong on sat on __import_rep
 'with nothing writing to them. They are written now, so F_ImportRep can be
 'opened again days later from the advanced form.
 '
@@ -1533,7 +1535,28 @@ Private Function IsReservedSheet(ByVal sheetName As String) As Boolean
                       (sheetName = LINELISTTRANSLATIONSHEET) Or _
                       (sheetName = CHOICESSHEET) Or _
                       (sheetName = METADATASHEET) Or _
-                      (sheetName = SHOWHIDESHEET)
+                      (sheetName = SHOWHIDESHEET) Or _
+                      (sheetName = SHOWHIDESHEET_OLD)
+End Function
+
+'@label:show-hide-sheet-of
+'@sub-title The show/hide worksheet of a workbook, or Nothing
+'@details
+'A file written before the internal-sheet rename carries the old trailing
+'name, so the new name is looked for first and the old one answers when it
+'is absent.
+'@param wb Workbook. The workbook to look through.
+'@return Worksheet. The show/hide worksheet, or Nothing when the workbook has none.
+Private Function ShowHideSheetOf(ByVal wb As Workbook) As Worksheet
+    Dim sh As Worksheet
+
+    'A missing sheet raises on the read, and Nothing is the answer read back.
+    On Error Resume Next
+    Set sh = wb.Worksheets(SHOWHIDESHEET)
+    If sh Is Nothing Then Set sh = wb.Worksheets(SHOWHIDESHEET_OLD)
+    On Error GoTo 0
+
+    Set ShowHideSheetOf = sh
 End Function
 
 '@label:import-vlist-sheet

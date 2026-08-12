@@ -411,20 +411,20 @@ Public Sub TestTemporarySheetNames()
     CustomTestSetTitles Assert, "LinelistSpecs", "TestTemporarySheetNames"
     On Error GoTo TestFail
 
-    Assert.AreEqual "temp__", Specs.TemporarySheetName(TempSheetSingle), _
-                    "The single temporary sheet is temp__"
-    Assert.AreEqual "dropdown_lists__", Specs.TemporarySheetName(TempSheetList), _
-                    "The list sheet is dropdown_lists__"
+    Assert.AreEqual "__temp", Specs.TemporarySheetName(TempSheetSingle), _
+                    "The single temporary sheet is __temp"
+    Assert.AreEqual "__dropdown_lists", Specs.TemporarySheetName(TempSheetList), _
+                    "The list sheet is __dropdown_lists"
     Assert.AreEqual "Metadata", Specs.TemporarySheetName(TempSheetMetadata), _
                     "The geo metadata sheet is Metadata"
-    Assert.AreEqual "ana_tabnames__", Specs.TemporarySheetName(TempSheetAnalysis), _
-                    "The analysis registry sheet is ana_tabnames__"
-    Assert.AreEqual "import_rep__", Specs.TemporarySheetName(TempSheetImport), _
-                    "The import report sheet is import_rep__"
-    Assert.AreEqual "spatial_tables__", Specs.TemporarySheetName(TempSheetSpatial), _
-                    "The spatial sheet is spatial_tables__"
-    Assert.AreEqual "show_hide__", Specs.TemporarySheetName(TempSheetShowHide), _
-                    "The show and hide sheet is show_hide__"
+    Assert.AreEqual "__ana_tabnames", Specs.TemporarySheetName(TempSheetAnalysis), _
+                    "The analysis registry sheet is __ana_tabnames"
+    Assert.AreEqual "__import_rep", Specs.TemporarySheetName(TempSheetImport), _
+                    "The import report sheet is __import_rep"
+    Assert.AreEqual "__spatial_tables", Specs.TemporarySheetName(TempSheetSpatial), _
+                    "The spatial sheet is __spatial_tables"
+    Assert.AreEqual "__show_hide", Specs.TemporarySheetName(TempSheetShowHide), _
+                    "The show and hide sheet is __show_hide"
 
     Exit Sub
 TestFail:

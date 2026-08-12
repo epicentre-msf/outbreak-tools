@@ -1215,19 +1215,19 @@ End Function
 Public Property Get TemporarySheetName(ByVal scope As Byte) As String
     Select Case scope
         Case TempSheetAnalysis
-            TemporarySheetName = "ana_tabnames__"
+            TemporarySheetName = "__ana_tabnames"
         Case TempSheetMetadata
             TemporarySheetName = "Metadata"
         Case TempSheetList
-            TemporarySheetName = "dropdown_lists__"
+            TemporarySheetName = "__dropdown_lists"
         Case TempSheetImport
-            TemporarySheetName = "import_rep__"
+            TemporarySheetName = "__import_rep"
         Case TempSheetSingle
-            TemporarySheetName = "temp__"
+            TemporarySheetName = "__temp"
         Case TempSheetSpatial
-            TemporarySheetName = "spatial_tables__"
+            TemporarySheetName = "__spatial_tables"
         Case TempSheetShowHide
-            TemporarySheetName = "show_hide__"
+            TemporarySheetName = "__show_hide"
         Case Else
             ThrowError ProjectError.InvalidArgument, _
                       "Unknown temporary sheet scope '" & CStr(scope) & "'"

@@ -7,7 +7,7 @@ Attribute VB_Description = "Form code-behind for F_ImportRep"
 
 '@description
 'The code behind F_ImportRep. The form shows the report of the last import,
-'read straight off the four ListObjects ImportReport keeps on import_rep__.
+'read straight off the four ListObjects ImportReport keeps on __import_rep.
 '
 'Nothing is passed in. The report is a worksheet store, so opening the form
 'days after the import shows the same four lists, and the advanced form's

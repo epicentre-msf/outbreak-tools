@@ -1589,7 +1589,7 @@ End Sub
 'Walks the HList worksheets of the parent workbook, finds the columns
 'controlled by geo1 through geo4 and hf, and writes the level labels into
 'their header cells and into the matching cells of the print sheet. Then
-'refreshes the admin1 dropdown list on the dropdown_lists__ sheet.
+'refreshes the admin1 dropdown list on the __dropdown_lists sheet.
 '
 'A sheet the walk cannot finish leaves its name in SkippedSheets and the walk
 'carries on with the next one. Every sheet that is unprotected is protected
@@ -1598,7 +1598,7 @@ End Sub
 '@export
 Public Sub Update(ByVal pass As Passwords)
 
-    Const DROPDOWNSHEET As String = "dropdown_lists__"
+    Const DROPDOWNSHEET As String = "__dropdown_lists"
 
     Dim sh As Worksheet
     Dim dropSh As Worksheet

@@ -21,7 +21,7 @@ Option Explicit
 '
 'ONE WORKBOOK PER MODULE
 '-------------------------------------------------------------------------------
-'A bare workbook with no import_rep__ worksheet at all, so the provisioning is
+'A bare workbook with no __import_rep worksheet at all, so the provisioning is
 'driven from nothing. The tests that write put the store back with Clear.
 '@depends ImportReport, LLImporter, CustomTest
 
@@ -33,7 +33,7 @@ Private SetupMessage As String
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const TESTMODULE As String = "ImportReport"
 
-Private Const STORE_SHEET As String = "import_rep__"
+Private Const STORE_SHEET As String = "__import_rep"
 Private Const TAB_SHEETS_NOT_IMP As String = "reptab_sheetsNotImp"
 Private Const TAB_SHEETS_NOT_TOUCH As String = "reptab_sheetsNotTouch"
 Private Const TAB_VARS_NOT_IMP As String = "reptab_varsNotImp"

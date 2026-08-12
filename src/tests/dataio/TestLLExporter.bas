@@ -65,7 +65,9 @@ Private Const EPIWEEK_VALUE As String = "3"
 'The three sheets a linelist shell needs on top of Dictionary and Exports
 Private Const PASS_SHEET As String = "__pass"
 Private Const GEO_SHEET As String = "Geo"
-Private Const TEMP_SHEET As String = "temp__"
+Private Const TEMP_SHEET As String = "__temp"
+'The name a linelist generated before the internal-sheet rename gave it
+Private Const TEMP_SHEET_OLD As String = "temp__"
 
 'Where the open-from-file tests put their saved workbooks
 Private Const FILES_FOLDER As String = "ExporterFiles"
@@ -814,6 +816,59 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateFromFileLeavesAnOpenWorkbookStanding", Err.Number, Err.Description
 End Sub
 
+'@sub-title A linelist saved before the internal-sheet rename still opens.
+'@details
+'The temp sheet of such a file carries the old trailing name, and the factory
+'reads it through the same fallback the export walks use.
+'@TestMethod("LLExporter")
+Public Sub TestCreateFromFileReadsTheOldTempName()
+    CustomTestSetTitles Assert, TESTMODULE, "TestCreateFromFileReadsTheOldTempName"
+    On Error GoTo TestFail
+
+    Dim exporter As LLExporter
+    Dim shellBook As Workbook
+    Dim filePath As String
+    Dim savedName As String
+
+    filePath = BuildWorkbookPath(BuildTempFolder(ThisWorkbook, FILES_FOLDER), _
+                                 "old_named_linelist")
+
+    Set shellBook = NewWorkbook()
+    EnsureWorksheet DICTIONARY_SHEET, shellBook
+    EnsureWorksheet EXPORTS_SHEET, shellBook
+    EnsureWorksheet PASS_SHEET, shellBook
+    EnsureWorksheet GEO_SHEET, shellBook
+    EnsureWorksheet TEMP_SHEET_OLD, shellBook
+    shellBook.SaveAs fileName:=filePath, fileFormat:=xlExcel12
+    savedName = shellBook.Name
+    shellBook.Close savechanges:=False
+    Set shellBook = Nothing
+
+    Set exporter = LLExporter.CreateFromFile(filePath)
+
+    Assert.IsTrue exporter.OpenedFromFile, _
+                  "The factory accepts the old temp sheet name"
+
+    exporter.CloseAll
+
+    Assert.IsFalse WorkbookOpenByName(savedName), _
+                   "CloseAll closes the file it opened"
+
+    Kill filePath
+    Exit Sub
+TestFail:
+    On Error Resume Next
+    If Not shellBook Is Nothing Then shellBook.Close savechanges:=False
+    If Not exporter Is Nothing Then exporter.CloseAll
+    If LenB(savedName) > 0 And WorkbookOpenByName(savedName) Then _
+        Application.Workbooks(savedName).Close savechanges:=False
+    If LenB(filePath) > 0 Then
+        If Dir$(filePath) <> vbNullString Then Kill filePath
+    End If
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestCreateFromFileReadsTheOldTempName", Err.Number, Err.Description
+End Sub
+
 
 '@section Fixture helpers
 '===============================================================================
@@ -880,7 +935,7 @@ End Sub
 
 '@fun-title A workbook carrying the five sheets CreateFromFile looks for.
 '@details
-'Dictionary, Exports, __pass, Geo and temp__, all empty: the factory checks
+'Dictionary, Exports, __pass, Geo and __temp, all empty: the factory checks
 'presence and reads nothing, so a shell is enough.
 '@return Workbook. The new workbook, open and unsaved.
 Private Function LinelistShellWorkbook() As Workbook

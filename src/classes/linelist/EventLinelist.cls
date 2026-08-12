@@ -72,9 +72,9 @@ Private this As TEventLinelist
 '===============================================================================
 Private Const CLASSNAME         As String = "EventLinelist"
 Private Const GOTOSECCODE       As String = "go_to_section"
-Private Const DROPDOWNSHEET     As String = "dropdown_lists__"
+Private Const DROPDOWNSHEET     As String = "__dropdown_lists"
 Private Const GEOSHEET          As String = "Geo"
-Private Const SPATIALSHEET      As String = "spatial_tables__"
+Private Const SPATIALSHEET      As String = "__spatial_tables"
 Private Const DICTSHEET         As String = "Dictionary"
 Private Const LLSHEET           As String = "LinelistTranslation"
 Private Const PASSSHEET         As String = "__pass"
@@ -416,7 +416,7 @@ End Function
 'dictionary or the pivot sheet cannot be read answers what it can: an empty
 'table, or rows with empty titles.
 '
-'The rows are built in memory. The button used to stage them on the temp__
+'The rows are built in memory. The button used to stage them on the __temp
 'worksheet and read them back, one Excel crossing per cell.
 '@return BetterArray. One item per variable, each an array of title, name and
 '  label.

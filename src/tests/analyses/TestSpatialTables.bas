@@ -10,7 +10,7 @@ Option Explicit
 'Drives SpatialTables, which writes the spatial ListObjects the generated
 'linelist refreshes. The fixture is a real spatial specification row inside a
 'Tab_Spatial_Analysis ListObject, a built CrossTable on an output worksheet, a
-'linelist for the formulas to point at, and an empty "spatial_tables__" sheet.
+'linelist for the formulas to point at, and an empty "__spatial_tables" sheet.
 '
 'WHAT THE SUITE PINS
 '-------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ Private Const TRANS_SHEET As String = "SpTablesTrans"
 Private Const TRANS_TABLE As String = "T_SpTablesTranslation"
 Private Const TOKENS_SHEET As String = "SpTablesTokens"
 Private Const LINELIST_SHEET As String = "SpTablesLinelist"
-Private Const SPATIAL_SHEET As String = "spatial_tables__"
+Private Const SPATIAL_SHEET As String = "__spatial_tables"
 
 ' The specification header sits below the first rows the way the setup workbook
 ' lays it out, and the analysis scope is read from the ListObject name.

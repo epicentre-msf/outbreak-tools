@@ -111,7 +111,7 @@ Private Const HLIST_SHEET As String = "hlist2D-sheet1"
 'The worksheets the cached managers of EventLinelist read. The dictionary copy
 'is what lets EnsureDictionary and EnsureVariables answer, which the editable
 'label branch needs.
-Private Const SHEET_DROPDOWN_LISTS As String = "dropdown_lists__"
+Private Const SHEET_DROPDOWN_LISTS As String = "__dropdown_lists"
 Private Const SHEET_CUSTOM_CHOICE As String = "LLSHEET_CustomChoice"
 Private Const SHEET_CUSTOM_PIVOT As String = "LLSHEET_CustomPivotTable"
 Private Const SHEET_DICTIONARY As String = "Dictionary"

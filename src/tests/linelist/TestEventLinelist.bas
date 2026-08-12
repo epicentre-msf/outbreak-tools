@@ -1186,7 +1186,7 @@ End Sub
 '@section The dictionary managers and the variable-labels table
 '===============================================================================
 'The variable-labels button used to build a dictionary and a variable reader on
-'every click, and stage its rows on the temp__ worksheet. Both managers are
+'every click, and stage its rows on the __temp worksheet. Both managers are
 'held on the service now, and VarLabelTable builds the rows in memory: one row
 'per hlist2D variable, carrying the pivot block title of its table, the
 'variable name and the main label.

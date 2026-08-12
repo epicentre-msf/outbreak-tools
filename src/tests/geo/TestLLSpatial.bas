@@ -8,7 +8,7 @@ Option Explicit
 
 '@description
 'Validates the LLSpatial class, which fills the ListObjects of the
-'"spatial_tables__" worksheet from the filtered companion sheets of a linelist,
+'"__spatial_tables" worksheet from the filtered companion sheets of a linelist,
 'orders them, and reads ranked values back out.
 '
 'THE FIXTURE COMES IN TWO SHAPES
@@ -54,7 +54,7 @@ Option Explicit
 '@depends LLSpatial, CustomTest, TestHelpersLite, HiddenNames, BetterArray
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
-Private Const SPATIAL_SHEET As String = "spatial_tables__"
+Private Const SPATIAL_SHEET As String = "__spatial_tables"
 Private Const SPATIAL_WRONG As String = "WrongSheetName"
 Private Const REGISTRY_TABLE As String = "listofgeovars"
 Private Const HLIST_SHEET As String = "HLIST_ONE"
@@ -162,7 +162,7 @@ End Sub
 
 '@sub-title Build a spatial worksheet in this workbook.
 '@details
-'Creates a hidden worksheet named "spatial_tables__" carrying the
+'Creates a hidden worksheet named "__spatial_tables" carrying the
 '"listofgeovars" ListObject and the RNG_PastingCol scratch cell. When addVars
 'is True the table holds "cases_sp1" and "deaths_sp1", so Exists lookups have
 'something to find. When withRegistry is False the table is left out, which is

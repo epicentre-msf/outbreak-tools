@@ -80,7 +80,7 @@ Private Const HLIST_SHEET As String = "hlist2D-sheet1"
 'The sheets Dropdown and Pivots resolve. The translator the fixture installs
 'answers every tag with the tag itself, so these are the names the class asks
 'for.
-Private Const SHEET_DROPDOWN_LISTS As String = "dropdown_lists__"
+Private Const SHEET_DROPDOWN_LISTS As String = "__dropdown_lists"
 Private Const SHEET_CUSTOM_CHOICE As String = "LLSHEET_CustomChoice"
 Private Const SHEET_CUSTOM_PIVOT As String = "LLSHEET_CustomPivotTable"
 

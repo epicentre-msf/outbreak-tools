@@ -1358,7 +1358,7 @@ Public Sub ClickOpenVarLab()
     LinelistEventsManager.LLEnterBusyState
 
     'The rows come from the held dictionary and variable reader. This used to
-    'build both per click and stage the rows on the temp__ worksheet.
+    'build both per click and stage the rows on the __temp worksheet.
     Set linelistEvents = LinelistService()
     Set varLabTab = linelistEvents.VarLabelTable()
 

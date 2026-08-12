@@ -19,7 +19,7 @@ Option Explicit
 '@class ImportReport
 '@description
 'The store an import report is kept in. It owns four ListObjects on the
-'import_rep__ worksheet. ProvisionTables builds the tables, SaveSheets and
+'__import_rep worksheet. ProvisionTables builds the tables, SaveSheets and
 'SaveVariables write the entries, Clear empties them, HasEntries says whether
 'anything was recorded, and SheetNames and VariableEntries read the entries
 'back. The class knows nothing about forms.
@@ -55,7 +55,7 @@ Option Explicit
 Private Const CLASS_NAME As String = "ImportReport"
 
 'The worksheet a linelist keeps its last import report on
-Private Const STORE_SHEET As String = "import_rep__"
+Private Const STORE_SHEET As String = "__import_rep"
 
 'The four tables and the columns each one starts at
 Private Const TAB_SHEETS_NOT_IMP As String = "reptab_sheetsNotImp"
@@ -156,7 +156,7 @@ End Sub
 '@sub-title Build any of the four tables the worksheet is missing
 '@details
 'Public because Create calls it on the instance it just made, after sealing.
-'Never activates or selects the sheet: import_rep__ is very hidden and
+'Never activates or selects the sheet: __import_rep is very hidden and
 'activating a very hidden sheet raises.
 '@export
 Public Sub ProvisionTables()

@@ -72,9 +72,9 @@ Private Const SHEET_SPATIAL As String = "LLSHEET_SpatialAnalysis"
 Private Const SHEET_SPATIOTEMPORAL As String = "LLSHEET_SpatioTemporalAnalysis"
 Private Const SHEET_CUSTOM_CHOICE As String = "LLSHEET_CustomChoice"
 Private Const SHEET_CUSTOM_PIVOT As String = "LLSHEET_CustomPivotTable"
-Private Const SHEET_ANA_NAMES As String = "ana_tabnames__"
-Private Const SHEET_DROPDOWN_LISTS As String = "dropdown_lists__"
-Private Const SHEET_SPATIAL_TABLES As String = "spatial_tables__"
+Private Const SHEET_ANA_NAMES As String = "__ana_tabnames"
+Private Const SHEET_DROPDOWN_LISTS As String = "__dropdown_lists"
+Private Const SHEET_SPATIAL_TABLES As String = "__spatial_tables"
 
 ' The analysis setup ListObject this suite writes, spelled the way the setup
 ' workbook spells it.

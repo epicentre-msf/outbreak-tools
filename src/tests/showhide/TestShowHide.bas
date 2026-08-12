@@ -744,6 +744,46 @@ TestFail:
 End Sub
 
 '@TestMethod("ShowHide")
+Public Sub TestCreateReadsBothStoreSheetNames()
+    CustomTestSetTitles Assert, TESTMODULE, "TestCreateReadsBothStoreSheetNames"
+    If Not FixtureReady("TestCreateReadsBothStoreSheetNames") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim oldSh As Worksheet
+    Dim newSh As Worksheet
+    Dim store As ShowHideStore
+
+    'The two sheets live in the fixture workbook: opening and closing an
+    'extra workbook mid-module leaves another window holding the screen,
+    'and PrintResults then fails at cleanup. ModuleCleanup drops the whole
+    'fixture workbook, so nothing lingers.
+    'A linelist generated before the internal-sheet rename carries the old
+    'trailing name alone, and Create still has to find its store there.
+    Set oldSh = FixtureWorkbook.Worksheets.Add
+    oldSh.Name = "show_hide__"
+
+    Set store = ShowHideStore.Create(FixtureWorkbook)
+
+    Assert.IsTrue store.HasTable, "The old trailing name still opens the store"
+    Assert.AreEqual CLng(1), CLng(oldSh.ListObjects.Count), _
+                     "The table lands on the old-named sheet"
+
+    'Once the workbook carries the leading name, that sheet wins.
+    Set newSh = FixtureWorkbook.Worksheets.Add
+    newSh.Name = "__show_hide"
+
+    Set store = ShowHideStore.Create(FixtureWorkbook)
+
+    Assert.IsTrue store.HasTable, "The leading name opens the store too"
+    Assert.AreEqual CLng(1), CLng(newSh.ListObjects.Count), _
+                     "The table lands on the leading-named sheet first"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestCreateReadsBothStoreSheetNames", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
 Public Sub TestSavedChoiceComesBackOnLoad()
     CustomTestSetTitles Assert, TESTMODULE, "TestSavedChoiceComesBackOnLoad"
     If Not FixtureReady("TestSavedChoiceComesBackOnLoad") Then Exit Sub

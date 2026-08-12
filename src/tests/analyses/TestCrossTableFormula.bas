@@ -47,7 +47,7 @@ Private Const TRANS_SHEET As String = "CTFormulaTrans"
 Private Const TRANS_TABLE As String = "T_CTFormulaTranslation"
 Private Const TOKENS_SHEET As String = "CTFormulaTokens"
 Private Const LINELIST_SHEET As String = "CTFormulaLinelist"
-Private Const SPATIAL_SHEET As String = "spatial_tables__"
+Private Const SPATIAL_SHEET As String = "__spatial_tables"
 Private Const TIMEUNIT_SHEET As String = "CTFormulaTimeUnit"
 
 ' The header row of every fixture table. Data rows start immediately below.

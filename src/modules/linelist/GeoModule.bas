@@ -12,8 +12,8 @@ Option Private Module
 '===============================================================================
 
 Private Const GEOSHEET As String = "Geo"
-Private Const DROPDOWNSHEET As String = "dropdown_lists__"
-Private Const SPATIALSHEET As String = "spatial_tables__"
+Private Const DROPDOWNSHEET As String = "__dropdown_lists"
+Private Const SPATIALSHEET As String = "__spatial_tables"
 Private Const PASSSHEET As String = "__pass"
 
 ' How many admin levels a geobase carries.

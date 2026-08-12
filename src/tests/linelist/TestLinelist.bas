@@ -61,7 +61,7 @@ Private Const DICTIONARY_SHEET As String = "DictFixture"
 'answers every tag with the tag itself, so these are the names the class asks for.
 Private Const SHEET_CUSTOM_CHOICE As String = "LLSHEET_CustomChoice"
 Private Const SHEET_CUSTOM_PIVOT As String = "LLSHEET_CustomPivotTable"
-Private Const SHEET_DROPDOWN_LISTS As String = "dropdown_lists__"
+Private Const SHEET_DROPDOWN_LISTS As String = "__dropdown_lists"
 
 '26 characters. With the print_ prefix that is 32, one over what Excel accepts,
 'and with crf_ it is 30, which fits. The two together state that the cut happens
