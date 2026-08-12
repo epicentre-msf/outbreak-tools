@@ -420,6 +420,21 @@ Public Function Variables() As LLVariables
 End Function
 
 
+'@sub-title The geobase manager of the workbook, built once and held.
+'@details
+'The geo and form modules used to build one each, and LLGeo.Create walks two
+'whole Names collections per build. A held instance also caches the five admin
+'level labels, so anything that rewrites the Geo sheet has to be followed by
+'ResetCaches for the labels to be read again. HandleImportGeobase already does
+'that on both its paths.
+'@return LLGeo. The held manager, or Nothing when the build failed.
+'@export
+Public Function GeoManager() As LLGeo
+    EnsureGeo
+    Set GeoManager = this.geo
+End Function
+
+
 '@sub-title The table the variable-labels form shows.
 '@details
 'One row per hlist2D variable: the pivot block title of its table, the

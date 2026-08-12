@@ -11,7 +11,6 @@ Option Private Module
 '@section Constants
 '===============================================================================
 
-Private Const GEOSHEET As String = "Geo"
 Private Const DROPDOWNSHEET As String = "__dropdown_lists"
 Private Const SPATIALSHEET As String = "__spatial_tables"
 Private Const PASSSHEET As String = "__pass"
@@ -22,23 +21,18 @@ Private Const MAX_ADMIN_LEVEL As Long = 4
 '@section Module-Level State
 '===============================================================================
 
-Private geo As LLGeo
 Private drop As DropdownLists
 Private pass As Passwords
 
 '@section Initialization
 '===============================================================================
 
-' @description Initialize geo elements: LLGeo and the dropdowns. Each object
-'              is built when it is missing and kept when it is there.
-'              LLGeo.Create walks two whole Names collections, and the old
-'              shape paid that walk on every form open by overwriting the
-'              module state each call.
+' @description Initialize the dropdown lists. The object is built when it is
+'              missing and kept when it is there.
 Private Sub InitializeGeoElements()
     Dim wb As Workbook
 
     Set wb = ThisWorkbook
-    If geo Is Nothing Then Set geo = LLGeo.Create(wb.Worksheets(GEOSHEET))
     If drop Is Nothing Then Set drop = DropdownLists.Create(wb.Worksheets(DROPDOWNSHEET))
 End Sub
 
@@ -67,6 +61,22 @@ Private Sub ReportGeoError(ByVal detail As String)
     linelistEvents.Fail "MSG_ErrGeo", detail, "The geobase could not be read"
 End Sub
 
+' @description The one geobase manager of the workbook. EventLinelist builds it
+'              once and drops it in ResetCaches, so a geobase import is followed
+'              by a fresh build and the level labels below are read again. The
+'              answer lives in a procedure-local at every use site: a module
+'              field here would hold a manager nothing invalidates.
+'              The typed local is what call-signature-scan.R reads to check the
+'              member, the same reason ReportGeoError above carries one.
+Private Function GeoOf() As LLGeo
+    Dim linelistEvents As EventLinelist
+
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    If linelistEvents Is Nothing Then Exit Function
+
+    Set GeoOf = linelistEvents.GeoManager()
+End Function
+
 '@section LoadGeo — Form Display
 '===============================================================================
 
@@ -77,10 +87,20 @@ End Sub
 Public Sub LoadGeo(ByVal hfOrGeo As Byte)
     Dim geoList As BetterArray
     Dim historicList As BetterArray
+    Dim geoObj As LLGeo
 
     On Error GoTo ErrLoadGeo
 
     InitializeGeoElements
+
+    'The manager answers Nothing when its build failed, where LLGeo.Create used
+    'to raise, so the report the user reads is asked for here.
+    Set geoObj = GeoOf()
+    If geoObj Is Nothing Then
+        ReportGeoError "The geobase manager could not be built"
+        Exit Sub
+    End If
+
     LinelistEventsManager.LLEnterBusyState busyCursor:=xlNorthwestArrow
 
     'The form survives between opens through its default instance, so the
@@ -95,17 +115,17 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
     Select Case hfOrGeo
 
     Case GeoScopeAdmin
-        F_Geo.LBL_Adm1.Caption = geo.GeoNames("adm1_name")
-        F_Geo.LBL_Adm2.Caption = geo.GeoNames("adm2_name")
-        F_Geo.LBL_Adm3.Caption = geo.GeoNames("adm3_name")
-        F_Geo.LBL_Adm4.Caption = geo.GeoNames("adm4_name")
+        F_Geo.LBL_Adm1.Caption = geoObj.GeoNames("adm1_name")
+        F_Geo.LBL_Adm2.Caption = geoObj.GeoNames("adm2_name")
+        F_Geo.LBL_Adm3.Caption = geoObj.GeoNames("adm3_name")
+        F_Geo.LBL_Adm4.Caption = geoObj.GeoNames("adm4_name")
 
         drop.ClearList "admin2"
         drop.ClearList "admin3"
         drop.ClearList "admin4"
 
-        If Not geo.HasNoData() Then
-            Set geoList = geo.GeoLevel(LevelAdmin1, GeoScopeAdmin)
+        If Not geoObj.HasNoData() Then
+            Set geoList = geoObj.GeoLevel(LevelAdmin1, GeoScopeAdmin)
             F_Geo.LST_Adm1.List = geoList.Items
         End If
 
@@ -123,13 +143,13 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
         F_Geo.LBL_Geo1.Visible = True
 
     Case GeoScopeHF
-        F_Geo.LBL_Adm4F.Caption = geo.GeoNames("hf_name")
-        F_Geo.LBL_Adm3F.Caption = geo.GeoNames("adm3_name")
-        F_Geo.LBL_Adm2F.Caption = geo.GeoNames("adm2_name")
-        F_Geo.LBL_Adm1F.Caption = geo.GeoNames("adm1_name")
+        F_Geo.LBL_Adm4F.Caption = geoObj.GeoNames("hf_name")
+        F_Geo.LBL_Adm3F.Caption = geoObj.GeoNames("adm3_name")
+        F_Geo.LBL_Adm2F.Caption = geoObj.GeoNames("adm2_name")
+        F_Geo.LBL_Adm1F.Caption = geoObj.GeoNames("adm1_name")
 
-        If Not geo.HasNoData() Then
-            Set geoList = geo.GeoLevel(LevelAdmin1, GeoScopeHF)
+        If Not geoObj.HasNoData() Then
+            Set geoList = geoObj.GeoLevel(LevelAdmin1, GeoScopeHF)
             F_Geo.LST_AdmF1.List = geoList.Items
         End If
 
@@ -213,13 +233,19 @@ Public Sub ShowAdminList(ByVal level As Long, ByVal selectedValue As String, _
     Dim caption As String
     Dim counter As Long
     Dim levelWanted As Byte
+    Dim geoObj As LLGeo
 
     On Error GoTo ErrShowAdmin
     Application.Cursor = xlNorthwestArrow
 
-    'Module state is lost on any unhandled error and any edit to the
-    'project, and the form outlives both.
-    If geo Is Nothing Then InitializeGeoElements
+    'The form outlives any dead module state, so the manager is read fresh on
+    'every click.
+    Set geoObj = GeoOf()
+    If geoObj Is Nothing Then
+        Application.Cursor = xlDefault
+        ReportGeoError "The geobase manager could not be built"
+        Exit Sub
+    End If
 
     'GeoScopeBoth exists on the enum and has no lists in the form. An
     'unknown scope used to mean facility in silence.
@@ -275,9 +301,9 @@ Public Sub ShowAdminList(ByVal level As Long, ByVal selectedValue As String, _
         'deeper levels want the table of names. GuardLevelNames holds that
         'line on the LLGeo side.
         If level = 2 Then
-            Set adminTable = geo.GeoLevel(levelWanted, scope, selectedValue)
+            Set adminTable = geoObj.GeoLevel(levelWanted, scope, selectedValue)
         Else
-            Set adminTable = geo.GeoLevel(levelWanted, scope, adminNames)
+            Set adminTable = geoObj.GeoLevel(levelWanted, scope, adminNames)
         End If
 
         .TXT_Msg.Value = caption

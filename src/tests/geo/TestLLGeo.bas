@@ -638,6 +638,53 @@ TestFail:
     CustomTestLogFailure Assert, "TestUpdateLevelNamesSkipsWithNoLangCode", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify two instances over one sheet disagree once a label changes.
+'@details
+'The five level labels are cached on the instance, so an instance that has
+'read one keeps it whatever the store does afterwards. Arranges a geobase
+'fixture and two managers over it. Acts by reading the label through the
+'first, then moving the store through the second the way a geobase import
+'does. Asserts the first still answers the old label and the second answers
+'the new one.
+'
+'This is the premise a whole workbook rests on: one owner of the manager, and
+'a ResetCaches after anything that rewrites the Geo sheet.
+'@TestMethod("LLGeo")
+Public Sub TestTwoInstancesOverOneSheetDisagreeAfterALabelChange()
+    CustomTestSetTitles Assert, "LLGeo", "TestTwoInstancesOverOneSheetDisagreeAfterALabelChange"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim reader As LLGeo
+    Dim mover As LLGeo
+    Dim cachedLabel As String
+
+    Set sh = BuildGeoFixture(withData:=True)
+
+    Set reader = LLGeo.Create(sh)
+    reader.Translate rawNames:=False
+    cachedLabel = reader.GeoNames("adm1_name")
+
+    'The three steps of an import: the headers go back to raw, T_NAMES takes
+    'the labels of the new geobase, and the translate writes them to the store.
+    Set mover = LLGeo.Create(sh)
+    mover.Translate rawNames:=True
+    WriteTableCell sh, sh.ListObjects("T_NAMES"), 1, 1, "Region"
+    mover.Translate rawNames:=False
+
+    Assert.AreEqual "Province", cachedLabel, _
+                    "The first read gives the label T_NAMES carried at the start"
+    Assert.AreEqual "Province", reader.GeoNames("adm1_name"), _
+                    "The instance that cached the label keeps it after the store moved"
+    Assert.AreEqual "Region", mover.GeoNames("adm1_name"), _
+                    "The instance that moved the store answers the new label"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTwoInstancesOverOneSheetDisagreeAfterALabelChange", _
+                         Err.Number, Err.Description
+End Sub
+
 '@section Translate tests
 '===============================================================================
 

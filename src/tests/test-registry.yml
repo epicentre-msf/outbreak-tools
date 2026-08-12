@@ -876,11 +876,21 @@ suites:
       # cover a shipped bug -- the workbook hidden name store used to be
       # assigned below the exit taken when the LinelistTranslation worksheet is
       # missing, so the list-auto flag was never cleared on such a workbook.
+      # GeoManager gives that same rule a second reader, over a manager whose
+      # build reads a worksheet carrying nine ListObjects, and two of its tests
+      # cover the reported caption bug: LLGeo caches the five admin level labels
+      # per instance, so a held manager answers the labels of the geobase an
+      # import has already replaced, and ResetCaches is what refreshes it.
       # The fixture is a bare workbook per test, seeded with the five
-      # translation tables by the tests that want them, and seeded part way
-      # through by the test that measures the flag. It reaches no fixture
-      # module; its helper calls are unqualified, so they resolve to
-      # TestHelpersLite.
+      # translation tables by the tests that want them, seeded with a geobase by
+      # the geo manager tests, and seeded part way through by the test that
+      # measures the flag. Every test builds a workbook of its own and writing a
+      # ListObject into it brings it to the front, so both cleanup hooks hand
+      # the screen back with ThisWorkbook.Activate: PrintResults raises 1004
+      # while another workbook holds it, and that raise is a modal that stops
+      # the whole run. It reaches PrepareGeoFixture and GeoFixtureWriteCell in
+      # GeoTestFixture under `helpers`; its other helper calls are unqualified,
+      # so they resolve to TestHelpersLite.
       - module: TestEventLinelist
         covers: [EventLinelist]
       # TestEventLinelistSheets drives the four heavy members of EventLinelist

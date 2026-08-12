@@ -19,7 +19,6 @@ Attribute VB_Name = "FormLogicAdvanced"
 Option Explicit
 
 Private Const DICTIONARY_SHEET As String = "Dictionary"
-Private Const GEOSHEET As String = "Geo"
 Private Const LLSHEET As String = "LinelistTranslation"
 Private Const PRINT_PREFIX As String = "print_"
 Private Const CRF_PREFIX As String = "crf_"
@@ -75,11 +74,21 @@ End Sub
 Private Sub CMD_ClearGeo_Click()
     Dim geoObj As LLGeo
 
+    'The event service holds the one geobase manager of the workbook. It
+    'answers Nothing when the build failed, where LLGeo.Create used to raise,
+    'so the failure is reported through the box this form already shows.
+    Set geoObj = GeoOf()
+    If geoObj Is Nothing Then
+        MsgBox tradmess.TranslatedValue("MSG_ErrImportGeo"), _
+               vbCritical + vbOKOnly, _
+               tradmess.TranslatedValue("MSG_DeleteHistoric")
+        Exit Sub
+    End If
+
     If MsgBox(tradmess.TranslatedValue("MSG_HistoricDelete"), _
               vbExclamation + vbYesNo, _
               tradmess.TranslatedValue("MSG_DeleteHistoric")) = vbYes Then
 
-        Set geoObj = LLGeo.Create(currwb.Worksheets(GEOSHEET))
         geoObj.ClearHistoric
 
         MsgBox tradmess.TranslatedValue("MSG_Done"), _
@@ -132,6 +141,19 @@ Private Sub ResetEventCaches()
 
     linelistEvents.ResetCaches
 End Sub
+
+
+' @description The one geobase manager of the workbook, held by the event
+' service and dropped by ResetCaches. The answer lives in a procedure-local:
+' a module field here would hold a manager an import leaves stale.
+Private Function GeoOf() As LLGeo
+    Dim linelistEvents As EventLinelist
+
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    If linelistEvents Is Nothing Then Exit Function
+
+    Set GeoOf = linelistEvents.GeoManager()
+End Function
 
 
 ' @description The user log the event service holds. A workbook whose log

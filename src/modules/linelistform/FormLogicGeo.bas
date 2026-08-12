@@ -7,7 +7,6 @@ Attribute VB_Description = "Form callbacks for F_Geo — delegates to GeoModule"
 
 Option Explicit
 
-Private Const GEOSHEET As String = "Geo"
 Private Const LLSHEET As String = "LinelistTranslation"
 Private Const SEP As String = " | "
 Private Const NACHAR As String = " | N/A"
@@ -19,7 +18,6 @@ Private Const MAX_SEARCH_HITS As Long = 200
 
 Private tradform As TranslationObject
 Private tradmess As TranslationObject
-Private geo As LLGeo
 Private hfOrGeo As Byte
 
 'Get the sheet type tag (HiddenNames first, cell fallback for legacy sheets).
@@ -32,11 +30,10 @@ End Function
 '@section Initialization
 '===============================================================================
 
-' @description Initialize translation objects and the LLGeo instance. Each
-'              object is built when it is missing and kept when it is there.
-'              The translation build walks its five tables and LLGeo.Create
-'              walks two whole Names collections, which is a price per open
-'              with no guard.
+' @description Initialize the two translation objects. Each object is built
+'              when it is missing and kept when it is there. The translation
+'              build walks its five tables, which is a price per open with no
+'              guard.
 Private Sub InitializeTrads()
     Dim lltrads As LLTranslation
     Dim wb As Workbook
@@ -48,9 +45,32 @@ Private Sub InitializeTrads()
         Set tradform = lltrads.TransObject(TranslationOfForms)
         Set tradmess = lltrads.TransObject()
     End If
-
-    If geo Is Nothing Then Set geo = LLGeo.Create(wb.Worksheets(GEOSHEET))
 End Sub
+
+' @description The one geobase manager of the workbook. EventLinelist builds it
+'              once and drops it in ResetCaches, so a geobase import is followed
+'              by a fresh build and the level labels are read again. Each
+'              handler reads it into its own local: a module field here would
+'              hold a manager nothing invalidates.
+Private Function GeoOf() As LLGeo
+    Dim linelistEvents As EventLinelist
+
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    If linelistEvents Is Nothing Then Exit Function
+
+    Set GeoOf = linelistEvents.GeoManager()
+End Function
+
+' @description The message a geobase failure shows. The translator is Nothing
+'              exactly when building it is what failed, and the plain English
+'              line is what the user reads then.
+Private Function GeoFailureMessage() As String
+    If tradmess Is Nothing Then
+        GeoFailureMessage = "The value could not be written"
+    Else
+        GeoFailureMessage = tradmess.TranslatedValue("MSG_ErrWriteGeo")
+    End If
+End Function
 
 ' @description Determine the current scope (geo vs hf) from form visibility.
 Private Sub InitializeElements()
@@ -150,12 +170,13 @@ Private Sub CMD_Copier_Click()
     Dim cellName As String
     Dim selectedRng As Range
     Dim nbLines As Long
+    Dim geoObj As LLGeo
 
     On Error GoTo ErrGeo
 
     'Module state dies on any unhandled error and the form outlives it, so
     'the write below rebuilds what it reads when the state is gone.
-    If geo Is Nothing Or tradmess Is Nothing Then InitializeTrads
+    If tradmess Is Nothing Then InitializeTrads
     InitializeElements
 
     selectedValue = Me.TXT_Msg.Value
@@ -175,6 +196,13 @@ Private Sub CMD_Copier_Click()
     Select Case shType
 
     Case "HList"
+        'The historic write below is the one geobase call of this handler.
+        'The manager answers Nothing when its build failed, where LLGeo.Create
+        'used to raise, so the raise is made here and ErrGeo shows the message.
+        Set geoObj = GeoOf()
+        If geoObj Is Nothing Then _
+            Err.Raise 5, "FormLogicGeo", "The geobase manager could not be built"
+
         Set hRng = sh.ListObjects(1).HeaderRowRange
         nbOffset = cellRng.Row - hRng.Row
         Set calcRng = hRng.Offset(nbOffset)
@@ -204,7 +232,7 @@ Private Sub CMD_Copier_Click()
                 Application.EnableEvents = True
             End If
 
-            geo.UpdateHistoric selectedValue, GeoScopeAdmin
+            geoObj.UpdateHistoric selectedValue, GeoScopeAdmin
 
         Case GeoScopeHF
             Application.EnableEvents = False
@@ -220,7 +248,7 @@ Private Sub CMD_Copier_Click()
             End If
 
             Application.EnableEvents = True
-            geo.UpdateHistoric selectedValue, GeoScopeHF
+            geoObj.UpdateHistoric selectedValue, GeoScopeHF
         End Select
 
         calcRng.Calculate
@@ -270,13 +298,9 @@ ErrGeo:
     'checkings, the dropdown cascades, the geo autofill.
     Application.EnableEvents = True
 
-    'The translator is Nothing exactly when building it is what failed, and a
-    'handler that raises loses the message it was there to show.
-    If tradmess Is Nothing Then
-        MsgBox "The value could not be written", vbCritical + vbOKOnly
-    Else
-        MsgBox tradmess.TranslatedValue("MSG_ErrWriteGeo"), vbCritical + vbOKOnly
-    End If
+    'A handler that raises loses the message it was there to show, which is why
+    'GeoFailureMessage carries the plain English fallback.
+    MsgBox GeoFailureMessage(), vbCritical + vbOKOnly
 End Sub
 
 '@section Historic
@@ -286,6 +310,16 @@ End Sub
 Private Sub ClearOneHistoricGeobase(Optional ByVal scope As Byte = 0)
     Dim confirm As Boolean
     Dim lstObj As Object
+    Dim geoObj As LLGeo
+
+    'The manager is read before the question, so a workbook whose geobase
+    'cannot be built says so rather than asking the user to confirm a clear
+    'that fails.
+    Set geoObj = GeoOf()
+    If geoObj Is Nothing Then
+        MsgBox GeoFailureMessage(), vbCritical + vbOKOnly
+        Exit Sub
+    End If
 
     confirm = (MsgBox( _
         tradmess.TranslatedValue("MSG_DeleteOneHistoric"), _
@@ -300,7 +334,7 @@ Private Sub ClearOneHistoricGeobase(Optional ByVal scope As Byte = 0)
         Set lstObj = Me.LST_HistoF
     End If
 
-    geo.ClearHistoric scope
+    geoObj.ClearHistoric scope
     lstObj.Clear
 
     MsgBox tradmess.TranslatedValue("MSG_Done"), _
@@ -310,7 +344,7 @@ End Sub
 
 Private Sub CMD_GeoClearHisto_Click()
     'Module state dies on any unhandled error and the form outlives it.
-    If geo Is Nothing Or tradmess Is Nothing Then InitializeTrads
+    If tradmess Is Nothing Then InitializeTrads
     InitializeElements
     ClearOneHistoricGeobase hfOrGeo
 End Sub

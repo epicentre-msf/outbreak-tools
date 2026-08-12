@@ -43,7 +43,16 @@ Option Explicit
 'string, so the lookup raised on every sheet it makes and both branches were
 'dead. The dispatch fixture carries no go-to caption on purpose: the toggle and
 'the header restore working there is what proves the reorder.
-'@depends EventLinelist, CustomTest, HiddenNames, LLTranslation, TranslationObject, LLLog
+'THE GEOBASE MANAGER TESTS COVER A REPORTED BUG
+'-------------------------------------------------------------------------------
+'LLGeo caches the five admin level labels on the instance, and the geo and form
+'modules used to hold an LLGeo of their own that nothing dropped. After an
+'in-session geobase import the F_Geo level captions read the previous geobase
+'while the lists under them read the new one. GeoManager makes the service the
+'one owner, so the ResetCaches every import already runs refreshes every reader.
+'TestTheHeldGeoManagerKeepsItsLevelLabels states the hazard and
+'TestResetCachesRereadsTheLevelLabels is the regression test.
+'@depends EventLinelist, CustomTest, HiddenNames, LLTranslation, TranslationObject, LLLog, LLGeo, GeoTestFixture
 
 Private Assert As CustomTest
 Private FixtureWkb As Workbook
@@ -52,6 +61,11 @@ Private Const TESTOUTPUTSHEET As String = "testsOutputs"
 Private Const TESTMODULE As String = "EventLinelist"
 Private Const TRANS_SHEET_NAME As String = "LinelistTranslation"
 Private Const LISTAUTO_FLAG As String = "RNG_UpdateListAuto"
+
+'The geobase worksheet the class looks for, and the T_NAMES table the level
+'labels are translated from.
+Private Const GEO_SHEET_NAME As String = "Geo"
+Private Const GEO_NAMES_TABLE As String = "T_NAMES"
 
 'The log worksheet and the two columns the funnel tests read: the output
 'column carries the action and the outcome word, the detail column carries
@@ -84,11 +98,26 @@ End Sub
 'Application.Run.
 '@ModuleCleanup
 Public Sub ModuleCleanup()
+    HandBackTheScreen
+
     If Not Assert Is Nothing Then
         Assert.PrintResults TESTOUTPUTSHEET
     End If
     RestoreApp
     Set Assert = Nothing
+End Sub
+
+'@sub-title Give the screen back to the workbook the harness writes into.
+'@details
+'Every test builds a workbook of its own, and writing a ListObject or a hidden
+'name into it brings it to the front. CustomTest.PrintResults writes into a
+'worksheet of this workbook and raises 1004 while another workbook holds the
+'screen, and a raise inside a lifecycle hook is a modal dialog that stops the
+'whole headless run.
+Private Sub HandBackTheScreen()
+    On Error Resume Next
+        ThisWorkbook.Activate
+    On Error GoTo 0
 End Sub
 
 '@sub-title Build a fresh bare workbook before each test.
@@ -113,6 +142,7 @@ Private Sub TestCleanup()
     On Error GoTo 0
 
     Set FixtureWkb = Nothing
+    HandBackTheScreen
 End Sub
 
 
@@ -148,6 +178,39 @@ Private Sub SeedTranslationSheet(ByVal targetWkb As Workbook)
     'TransObject reads both language codes from the WORKBOOK store.
     SetWorkbookName targetWkb, "RNG_LLLanguageCode", "en"
     SetWorkbookName targetWkb, "RNG_DictionaryLanguage", "en"
+End Sub
+
+'@sub-title Build the geobase worksheet the class looks for.
+'@details
+'LLGeo.Create refuses a sheet missing one of its nine tables, so the fixture is
+'built whole. It carries data because the two label tests translate through it,
+'and the five level labels land in the workbook store of the fixture workbook.
+'@param targetWkb Workbook. The workbook to seed.
+'@return Worksheet. The geobase worksheet.
+Private Function SeedGeoSheet(ByVal targetWkb As Workbook) As Worksheet
+    Set SeedGeoSheet = GeoTestFixture.PrepareGeoFixture(GEO_SHEET_NAME, targetWkb, _
+                                                        withData:=True)
+End Function
+
+'@sub-title Give the admin1 level a new label, the way a geobase import does.
+'@details
+'An import reverts the headers, rewrites T_NAMES and translates again, and the
+'instance that runs it is its own. This walks the same three steps through a
+'second LLGeo over the one geobase worksheet, which is what puts a new label in
+'the workbook store under any manager already held.
+'@param geoSheet Worksheet. The geobase worksheet.
+'@param newLabel String. The label admin1 takes.
+Private Sub MoveAdmin1Label(ByVal geoSheet As Worksheet, ByVal newLabel As String)
+    Dim mover As LLGeo
+
+    Set mover = LLGeo.Create(geoSheet)
+    mover.Translate rawNames:=True
+
+    GeoTestFixture.GeoFixtureWriteCell geoSheet, _
+                                       geoSheet.ListObjects(GEO_NAMES_TABLE), _
+                                       1, 1, newLabel
+
+    mover.Translate rawNames:=False
 End Sub
 
 '@sub-title Write one translation table and name it.
@@ -564,6 +627,232 @@ Public Sub TestResetCachesDropsTheHeldTranslation()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestResetCachesDropsTheHeldTranslation", Err.Number, Err.Description
+End Sub
+
+
+'@section The shared geobase manager
+'===============================================================================
+
+'@sub-title A workbook carrying a geobase gives a geo manager.
+'@TestMethod("EventLinelist")
+Public Sub TestGeoManagerGivesTheManager()
+    CustomTestSetTitles Assert, TESTMODULE, "TestGeoManagerGivesTheManager"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim manager As LLGeo
+
+    SeedGeoSheet FixtureWkb
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    Set manager = sut.GeoManager()
+
+    Assert.IsTrue (Not manager Is Nothing), _
+                  "A workbook carrying the nine geobase tables gives a manager"
+    Assert.AreEqual GEO_SHEET_NAME, manager.Wksh().Name, _
+                    "The manager is bound to the geobase worksheet"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestGeoManagerGivesTheManager", Err.Number, Err.Description
+End Sub
+
+'@sub-title The manager is held, so two reads give one object.
+'@details
+'This is what lets the geo and form modules share it. Two objects here would
+'mean each caller paid for its own build, and LLGeo.Create walks two whole
+'Names collections.
+'@TestMethod("EventLinelist")
+Public Sub TestGeoManagerIsHeldAcrossCalls()
+    CustomTestSetTitles Assert, TESTMODULE, "TestGeoManagerIsHeldAcrossCalls"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim firstRead As LLGeo
+    Dim secondRead As LLGeo
+
+    SeedGeoSheet FixtureWkb
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    Set firstRead = sut.GeoManager()
+    Set secondRead = sut.GeoManager()
+
+    Assert.IsTrue (Not firstRead Is Nothing), "The first read gives a manager"
+    Assert.IsTrue (firstRead Is secondRead), _
+                  "The second read gives the same object as the first"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestGeoManagerIsHeldAcrossCalls", Err.Number, Err.Description
+End Sub
+
+'@sub-title A workbook with no geobase worksheet gives Nothing, twice, quietly.
+'@details
+'The accessor swallows the failed build, so a module reading it guards on
+'Nothing. The build used to raise, and the guard is what stands in for that.
+'@TestMethod("EventLinelist")
+Public Sub TestGeoManagerIsNothingWithoutTheSheet()
+    CustomTestSetTitles Assert, TESTMODULE, "TestGeoManagerIsNothingWithoutTheSheet"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim firstRead As LLGeo
+    Dim secondRead As LLGeo
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    Set firstRead = sut.GeoManager()
+    Set secondRead = sut.GeoManager()
+
+    Assert.IsTrue (firstRead Is Nothing), _
+                  "A workbook with no geobase worksheet gives Nothing"
+    Assert.IsTrue (secondRead Is Nothing), _
+                  "Asking a second time gives Nothing and raises nothing"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestGeoManagerIsNothingWithoutTheSheet", Err.Number, Err.Description
+End Sub
+
+'@sub-title A failed build is attempted once, and ResetCaches buys another go.
+'@details
+'The tried flag measured end to end over a manager whose build reads a
+'worksheet carrying nine ListObjects. The geobase appears between the second
+'read and the third, and the class is meant to ignore it until it is asked to
+'forget what it holds.
+'@TestMethod("EventLinelist")
+Public Sub TestGeoManagerStopsRetryingAfterAFailedBuild()
+    CustomTestSetTitles Assert, TESTMODULE, "TestGeoManagerStopsRetryingAfterAFailedBuild"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim beforeSeed As LLGeo
+    Dim afterSeed As LLGeo
+    Dim afterReset As LLGeo
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    Set beforeSeed = sut.GeoManager()
+
+    SeedGeoSheet FixtureWkb
+    Set afterSeed = sut.GeoManager()
+
+    sut.ResetCaches
+    Set afterReset = sut.GeoManager()
+
+    Assert.IsTrue (beforeSeed Is Nothing), _
+                  "The build fails while the workbook has no geobase worksheet"
+    Assert.IsTrue (afterSeed Is Nothing), _
+                  "The failed build is not attempted again on the next read"
+    Assert.IsTrue (Not afterReset Is Nothing), _
+                  "ResetCaches clears the flag and the next read builds the manager"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestGeoManagerStopsRetryingAfterAFailedBuild", Err.Number, Err.Description
+End Sub
+
+'@sub-title ResetCaches drops a manager that was built.
+'@TestMethod("EventLinelist")
+Public Sub TestResetCachesDropsTheHeldGeoManager()
+    CustomTestSetTitles Assert, TESTMODULE, "TestResetCachesDropsTheHeldGeoManager"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim firstRead As LLGeo
+    Dim afterReset As LLGeo
+
+    SeedGeoSheet FixtureWkb
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    Set firstRead = sut.GeoManager()
+    sut.ResetCaches
+    Set afterReset = sut.GeoManager()
+
+    Assert.IsTrue (Not afterReset Is Nothing), "The manager is built again"
+    Assert.IsTrue (Not (firstRead Is afterReset)), _
+                  "The manager built after ResetCaches is a different object"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestResetCachesDropsTheHeldGeoManager", Err.Number, Err.Description
+End Sub
+
+'@sub-title A held manager keeps the level label it cached.
+'@details
+'LLGeo reads the five admin level labels once per instance. A geobase import
+'runs through an instance of its own and moves the store under everything else,
+'so the manager the service still holds answers the label of the geobase that
+'has gone. This states the hazard the single owner exists to close.
+'@TestMethod("EventLinelist")
+Public Sub TestTheHeldGeoManagerKeepsItsLevelLabels()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheHeldGeoManagerKeepsItsLevelLabels"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim geoSheet As Worksheet
+    Dim held As LLGeo
+    Dim beforeMove As String
+
+    Set geoSheet = SeedGeoSheet(FixtureWkb)
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    Set held = sut.GeoManager()
+    held.Translate rawNames:=False
+    beforeMove = held.GeoNames("adm1_name")
+
+    MoveAdmin1Label geoSheet, "Region"
+
+    Assert.AreEqual "Province", beforeMove, _
+                    "The held manager reads the label T_NAMES carried at the start"
+    Assert.AreEqual "Province", held.GeoNames("adm1_name"), _
+                    "The held manager still answers the old label after the store moved"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheHeldGeoManagerKeepsItsLevelLabels", Err.Number, Err.Description
+End Sub
+
+'@sub-title ResetCaches makes the next read answer the new level label.
+'@details
+'This is the regression test for the reported caption bug. HandleImportGeobase
+'follows every geobase import with ResetCaches on both its paths, and one owner
+'means that one call refreshes every reader in the workbook.
+'@TestMethod("EventLinelist")
+Public Sub TestResetCachesRereadsTheLevelLabels()
+    CustomTestSetTitles Assert, TESTMODULE, "TestResetCachesRereadsTheLevelLabels"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim geoSheet As Worksheet
+    Dim held As LLGeo
+    Dim afterReset As LLGeo
+    Dim cachedLabel As String
+
+    Set geoSheet = SeedGeoSheet(FixtureWkb)
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    Set held = sut.GeoManager()
+    held.Translate rawNames:=False
+
+    'The read is what loads the label cache of the held manager, which is the
+    'state the import then moves the store under.
+    cachedLabel = held.GeoNames("adm1_name")
+
+    MoveAdmin1Label geoSheet, "Region"
+
+    sut.ResetCaches
+    Set afterReset = sut.GeoManager()
+
+    Assert.AreEqual "Province", cachedLabel, _
+                    "The held manager cached the label T_NAMES carried at the start"
+    Assert.IsTrue (Not afterReset Is Nothing), "The manager is built again"
+    Assert.AreEqual "Region", afterReset.GeoNames("adm1_name"), _
+                    "The read after ResetCaches answers the label of the new geobase"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestResetCachesRereadsTheLevelLabels", Err.Number, Err.Description
 End Sub
 
 
