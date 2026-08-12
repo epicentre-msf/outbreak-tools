@@ -32,6 +32,27 @@
 #     tests    -> "tests modules"        fixtures -> "tests classes"
 # `interface: true` on a class also imports the matching I<name>.cls.
 #
+# ----------------------------------------------------------------------------
+# NARROWING THIS FILE FOR A PROBE
+#
+# A session is verified by a probe: this registry narrowed to the work of that
+# session, then the usual `run-tests.R --build`. A full run is about 38 minutes
+# over 74 modules; a probe is two to four. The rule is `.obt/conventions.md`
+# section 13 and `automated-testing-macos.md` section 1.1.
+#
+# Comment out the `- module:` rows under a non-helpers `tests:` key that the
+# probe does not need, each one WITH its `covers:` continuation line -- comment
+# one and leave the other and the YAML dies on a duplicate key. Leave every
+# `classes:`, `modules:` and `fixtures:` row alone: the compile closure has to
+# stay whole or the project does not build and the run answers the opaque -50.
+# The whole `helpers` block below stays in every probe, `TestHelpersLite` above
+# all, because every CustomTest module calls it.
+#
+# Restore with `git checkout -- src/tests/test-registry.yml`, so the file comes
+# back byte-identical for any other session reading it. A NARROWED REGISTRY IS
+# NEVER COMMITTED.
+# ----------------------------------------------------------------------------
+#
 # `tests[].covers` is DOCUMENTATION ONLY. It records which production class(es)
 # a test module exercises, so the test<->class mapping is visible at a glance
 # (and available to a future coverage report). The generator does not read it:

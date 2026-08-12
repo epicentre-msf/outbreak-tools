@@ -61,6 +61,53 @@ The command:
 That is the whole user‑facing surface. Everything below is how it works and how
 to set it up the first time.
 
+### 1.1 A session closes on a scoped probe
+
+**The command above runs all 74 modules and takes about 38 minutes. Run it
+rarely.** A session is verified by a **probe**: the same command over a
+registry narrowed to the work of that session. A probe answers in two to four
+minutes, which is what makes it worth running again after a fix. Set by the
+owner on 2026-08-12; the rule is `.obt/conventions.md` section 13.
+
+What goes in a probe:
+
+- the test modules of every class and module the session touched,
+- every fixture module those tests call (`DictionaryTestFixture`,
+  `PasswordsTestFixture`, `GeoTestFixture`, …),
+- any other suite that drives the same class from a different angle
+  (`TestEventLinelist` and `TestEventLinelistSheets` are one such pair),
+- **`TestHelpersLite`, always.** It is a `- module:` row like the suites, and
+  a regex that comments every `- module: Test\w+` row takes it too. Without it
+  `BusyApp` is undefined, every `ModuleInitialize` raises the compile box, and
+  the run wedges on a modal only a human can see.
+
+How to narrow: comment out the other `- module:` rows under a non‑helpers
+`tests:` key, each one together with its `covers:` continuation line (comment
+one and leave the other and the YAML dies on a duplicate key). **Leave every
+`classes:`, `modules:` and `fixtures:` row alone** — the compile closure has to
+stay whole or the project does not build and the run answers the opaque `-50`.
+The whole `helpers` block stays as it is.
+
+Restore the registry with `git checkout -- src/tests/test-registry.yml`, so it
+comes back byte‑identical for any other session reading it. **A narrowed
+registry is never committed.**
+
+Report the probe's own module and assertion counts and name the suites it
+held. A probe count is a statement about those suites alone.
+
+**Run the full suite when:** the registry gains or loses a module; a class many
+folders name changes (`Checking`, `BetterArray`, `HiddenNames`, `CustomTable`,
+`LLFormat`); the harness itself changes; or a release is being cut. Current
+full‑suite baseline: `total=3617 failures=0`, `modulesRun=74 testsFound=1323
+vbe=ok(159)` (2026-08-12).
+
+For a full run, prefer the wrapper — it detaches the run, keeps the whole log,
+and prints only the lines worth reading:
+
+```bash
+scripts/tests/run-tests-bg.sh --build --wait
+```
+
 ---
 
 ## 2. What actually happens (the chain)
@@ -395,7 +442,11 @@ copies the CSV to `.test-runner/tests/staging/test-results.csv`.
    components, but any *other* classes they reference must already be imported
    (once) as part of setup — otherwise the project won't compile and the run
    fails. (This is why the throwaway probe uses self‑contained classes.)
-4. Run `Rscript scripts/tests/run-tests.R --build`.
+4. Run `Rscript scripts/tests/run-tests.R --build` over a registry narrowed to
+   the new suite, its fixtures and `TestHelpersLite` — see
+   [1.1](#11-a-session-closes-on-a-scoped-probe). Adding a module changes the
+   module count, so this is one of the cases that earns a full run too, once
+   the probe is green.
 
 > Iterating on the **harness** (`OBTImport`/`OBTHeadless`) needs no manual
 > re‑import — `OBTRefreshHarness` reloads them from the run dir each run. Only
