@@ -41,7 +41,7 @@ the user learns which sheet came out under a different name.</p>
 <p>Prepare files its own entries and folds in the ones CodeTransfer filed, so
 HasCheckings and CheckingValues answer over both. clickGenerate flushes them
 into the generation report right after Prepare returns.</p>
-<p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLSheets.html">LLSheets</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="LLFormat.html">LLFormat</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="CustomPivotTable.html">CustomPivotTable</a>, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="Buttons.html">Buttons</a>, <a href="CodeTransfer.html">CodeTransfer</a>, <a href="Passwords.html">Passwords</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="ShowHideStore.html">ShowHideStore</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLSheets.html">LLSheets</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="LLFormat.html">LLFormat</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="CustomPivotTable.html">CustomPivotTable</a>, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="Buttons.html">Buttons</a>, <a href="CodeTransfer.html">CodeTransfer</a>, <a href="Passwords.html">Passwords</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="ShowHideStore.html">ShowHideStore</a>, <a href="AnalysisRanges.html">AnalysisRanges</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a></p>
 <p><strong>Version:</strong> 1.4 (2026-08-01)</p>
 </div>
 </details>
@@ -506,6 +506,25 @@ and variables not imported/found.</li>
 class reads the columns, so it writes the headers.</li>
 </ol>
 <hr />
+<h3 id="int-prepareanalysislists">PrepareAnalysisLists <a class="anchor-link" href="#int-prepareanalysislists">#</a></h3>
+<p><em>prepare-analysis-lists</em></p>
+<p><strong>Add the choice lists every analysis sheet shares</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub PrepareAnalysisLists()
+</code></pre>
+<h2 id="int-one-list-for-the-whole-workbook">ONE LIST FOR THE WHOLE WORKBOOK</h2>
+<p>The time units a temporal table can group by are one workbook-level dropdown on
+the list sheet. Every temporal table binds its own time unit cell to it, and
+GetAgg in CustomLinelistFunctions reads the same list to turn the chosen label
+back into a time unit.</p>
+<p>Each analysis sheet used to build a copy of its own, which is why there were
+two spellings of the same five words. A reader that named one of them answered
+wrongly on the sheet carrying the other, and answered nothing at all in a
+workbook that carried neither.</p>
+<p>The words come from the message translations, so the list is written in the
+language of the linelist. The dropdown is added once; DropdownLists refuses a
+second one under the same name and files the reason.</p>
+<hr />
 <h3 id="int-initialiseworkbooknames">InitialiseWorkbookNames <a class="anchor-link" href="#int-initialiseworkbooknames">#</a></h3>
 <p><em>initialise-workbook-names</em></p>
 <p><strong>Check the two language selections before the build starts</strong></p>
@@ -564,11 +583,13 @@ shape-specific translated labels for the buttons.</li>
 </code></pre>
 <p>Moves the VBA the generated linelist runs on, in five steps:</p>
 <ol>
-<li>29 class modules. ChoiceKeys, ImportMetadata, ImportReport and
+<li>30 class modules. ChoiceKeys, ImportMetadata, ImportReport and
 CheckingOutput joined the list with the import work: LLExporter types
 ChoiceKeys, LLImporter types the first three, ImportChecking types
 CheckingOutput and F_ImportRep reads ImportReport, so a linelist without
-them fails project compilation.</li>
+them fails project compilation. LLLog joined with the user log:
+EventLinelist holds one and the button and form modules write their
+outcome lines through it.</li>
 <li>9 standard modules. Five carry the linelist toolbar and its helpers, and
 four hold the code behind the user forms: FormLogicAdvanced,
 FormLogicExportMig, FormLogicExport and FormLogicEpiWeek. Those four are the
@@ -638,9 +659,10 @@ error attribution across all methods in this class.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (46 file(s))</summary>
+<summary>Used in (53 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
+<li><a href="AnalysisRanges.html">AnalysisRanges.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
 <li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
 <li><a href="TableSpecs.html">TableSpecs.cls</a></li>
@@ -657,8 +679,10 @@ error attribution across all methods in this class.</p>
 <li><a href="EventLinelist.html">EventLinelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
 <li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
+<li><a href="LLLog.html">LLLog.cls</a></li>
 <li><a href="LLTranslation.html">LLTranslation.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
+<li>CustomLinelistFunctions.bas</li>
 <li>EventLinelistSheet.bas</li>
 <li>EventLinelistWorkbook.bas</li>
 <li>EventsLinelistButtons.bas</li>
@@ -676,11 +700,15 @@ error attribution across all methods in this class.</p>
 <li>FormLogicShowHideSave.bas</li>
 <li>FormLogicShowVarLabels.bas</li>
 <li>TestAnalysisOutput.bas</li>
+<li>TestAnalysisRanges.bas</li>
+<li>TestCrossTable.bas</li>
+<li>TestCrossTableFormula.bas</li>
 <li>TestFormulas.bas</li>
 <li><a href="LinelistDataStub.html">LinelistDataStub.cls</a></li>
 <li>LLFormatTestFixture.bas</li>
 <li>TestHelpersLite.bas</li>
 <li>TestCodeTransfer.bas</li>
+<li>TestCustomLinelistFunctions.bas</li>
 <li>TestEventLinelistSheets.bas</li>
 <li>TestLinelist.bas</li>
 <li>TestLinelistSpecs.bas</li>

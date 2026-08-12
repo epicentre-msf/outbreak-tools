@@ -19,7 +19,7 @@ multiple choices; analysis go-to-section and spatial dispatch), sheet deactivate
 (list auto update), selection change (geo dropdown refresh),
 double-click (spatio-temporal geo form), filter table updates, list-auto
 dropdown maintenance, and geo/spatial UDF delegation.</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLSpatial.html">LLSpatial</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="Passwords.html">Passwords</a>, ProjectError</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLSpatial.html">LLSpatial</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="Passwords.html">Passwords</a>, <a href="LLLog.html">LLLog</a>, ProjectError</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -62,6 +62,8 @@ dropdown maintenance, and geo/spatial UDF delegation.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub OnWorkbookOpen()
 </code></pre>
+<p>The open is the first line of the session in the user log, so a reader of
+the log sees where each working session started.</p>
 <hr />
 <h3 id="onsheetchange">OnSheetChange <a class="anchor-link" href="#onsheetchange">#</a></h3>
 <p><strong>Handle worksheet change events.</strong></p>
@@ -186,6 +188,17 @@ a table name and a blank row count through three separate stores.</p>
 </code></pre>
 <p><strong>Returns:</strong> Passwords. The held manager, or Nothing when the build failed.</p>
 <hr />
+<h3 id="userlog">UserLog <a class="anchor-link" href="#userlog">#</a></h3>
+<p><strong>The user log of the workbook, built once and held.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function UserLog() As LLLog
+</code></pre>
+<p>The dated record of the user actions, kept on the very hidden log
+worksheet. Fail and Warn write their line through it, and the button and
+form modules write their outcome lines through it. An old linelist grows
+the log sheet on the first logged event.</p>
+<p><strong>Returns:</strong> LLLog. The held log, or Nothing when the build failed.</p>
+<hr />
 <h3 id="dictionary">Dictionary <a class="anchor-link" href="#dictionary">#</a></h3>
 <p><strong>The dictionary of the linelist, built once and held.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -235,6 +248,10 @@ label.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Warn(ByVal msgCode As String)
 </code></pre>
+<p>The refusal is also one warning line of the user log, written before the
+box shows, with the message code as the action. Every refusal box of the
+button, ribbon and geo modules comes through here, so the log covers them
+all through this one edit.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>msgCode</code>: String. Code of the message in the message translation table.</li>
@@ -247,6 +264,10 @@ label.</p>
                 Optional ByVal detail As String = vbNullString, _
                 Optional ByVal fallback As String = vbNullString)
 </code></pre>
+<p>The failure is also one failure line of the user log, written before the
+box shows, with the message code as the action and the detail beside the
+date. Every failure box of the button, ribbon and geo modules comes
+through here, so the log covers them all through this one edit.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>msgCode</code>: String. Code of the message in the message translation table.</li>
@@ -356,6 +377,23 @@ shorter than the tag.</p>
 <p>A workbook with no usable translation sheet has no text to show, and the
 callers that still have something to say pass a fallback. Every other caller
 stays quiet, which is what the two boxes this replaced did.</p>
+<hr />
+<h3 id="int-logeventline">LogEventLine <a class="anchor-link" href="#int-logeventline">#</a></h3>
+<p><strong>Write one line of the user log.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogEventLine(ByVal scope As Byte, _
+                         ByVal action As String, _
+                         ByVal detail As String)
+</code></pre>
+<p>A log write must never take down the box or the walk it records, so a
+workbook whose log cannot be built stays quiet and a write that raises is
+swallowed here.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scope</code>: Byte. CheckingScope value carrying the outcome.</li>
+<li><code>action</code>: String. The action code, used as the bundle title.</li>
+<li><code>detail</code>: String. Short free text beside the timestamp.</li>
+</ul>
 <hr />
 <h2 id="int-private-hlist-change-handler">Private -- HList change handler</h2>
 <h3 id="int-handlehlistchange">HandleHListChange <a class="anchor-link" href="#int-handlehlistchange">#</a></h3>
@@ -657,6 +695,17 @@ labels and leaves everything else working.</p>
 <pre><code class="language-vb">Private Sub EnsurePasswords()
 </code></pre>
 <hr />
+<h3 id="int-ensurelog">EnsureLog <a class="anchor-link" href="#int-ensurelog">#</a></h3>
+<p><strong>Lazily initialise the user log.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureLog()
+</code></pre>
+<p>Growing the log sheet on an old linelist wants the workbook structure
+unprotected, so the build unprotects around Create when the sheet is
+missing and protects back after. The password manager is Nothing on a
+workbook with no password worksheet, and such a workbook is unprotected
+anyway.</p>
+<hr />
 <h3 id="int-ensuredictionary">EnsureDictionary <a class="anchor-link" href="#int-ensuredictionary">#</a></h3>
 <p><strong>Lazily initialise the dictionary and variables helpers.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -728,7 +777,7 @@ permanent refusal to build the manager again.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (19 file(s))</summary>
+<summary>Used in (20 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
@@ -744,6 +793,7 @@ permanent refusal to build the manager again.</p>
 <li>GeoModule.bas</li>
 <li>LinelistEventsManager.bas</li>
 <li>FormLogicAdvanced.bas</li>
+<li>FormLogicExportMig.bas</li>
 <li>FormLogicShowHideSave.bas</li>
 <li>TestLLGeo.bas</li>
 <li>GeoTestFixture.bas</li>

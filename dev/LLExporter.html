@@ -17,7 +17,9 @@ ExportMigration writes the whole linelist for a move to another workbook,
 ExportAnalysis writes the analysis sheets, and ExportGeo writes the geobase.
 Each mode builds a temporary output workbook, fills it with the data, the
 metadata and the formatting the mode calls for, then saves it and closes it.
-CloseAll closes whatever is still open.</p>
+CloseAll closes whatever is still open. Create binds the exporter to a
+workbook the caller holds; CreateFromFile opens a linelist file itself, and
+the workbook it opened is closed by CloseAll.</p>
 <details open class="doc-section" id="what-an-export-carries">
 <summary>WHAT AN EXPORT CARRIES</summary>
 <div class="section-body">
@@ -49,11 +51,52 @@ and returns a new LLExporter instance. Called on the predeclared instance.</p>
 <li>ProjectError.ObjectNotInitialized When the workbook is Nothing.</li>
 </ul>
 <hr />
+<h3 id="createfromfile">CreateFromFile <a class="anchor-link" href="#createfromfile">#</a></h3>
+<p><em>create-from-file</em></p>
+<p><strong>Create an exporter on a linelist file, opened here</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function CreateFromFile(ByVal filePath As String, _
+                               Optional ByVal password As String = vbNullString) As LLExporter
+</code></pre>
+<p>Opens the linelist file at the given path, read-only and with the given
+password, and builds an exporter on it. The workbook opened here belongs to
+this instance, and CloseAll is what closes it: the export walks write into the
+source's temp sheet, so the copy in memory changes, and a read-only open with
+no save is how none of that reaches the file. When the file is already open in
+this Excel session, the open workbook is used as it stands and stays out of
+CloseAll's reach.</p>
+<p>The caller decides the application state. A linelist carries open events, so
+an open with events running starts them; the form logic applies its busy
+state, events suppressed, before calling here.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>filePath</code>: String. Full path of the linelist file.</li>
+<li><code>password</code>: Optional String. The password the file opens with. Defaults to none.</li>
+</ul>
+<p><strong>Returns:</strong> LLExporter. An instance bound to the opened workbook.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When no file sits at the given path.</li>
+<li>ProjectError.ErrorUnexpectedState When the file does not open with the
+given password, or when the opened workbook misses a linelist sheet.</li>
+</ul>
+<hr />
 </div>
 </details>
 <details open class="doc-section" id="public-accessors">
 <summary>Public Accessors</summary>
 <div class="section-body">
+<h3 id="openedfromfile">OpenedFromFile <a class="anchor-link" href="#openedfromfile">#</a></h3>
+<p><em>opened-from-file</em></p>
+<p><strong>Whether this instance opened its source workbook itself</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get OpenedFromFile() As Boolean
+</code></pre>
+<p>True on an instance built by CreateFromFile that opened the file, and that is
+the instance whose CloseAll closes the source. An instance built on a workbook
+the caller already held answers False and leaves that workbook open.</p>
+<p><strong>Returns:</strong> Boolean. True when CloseAll closes the source workbook.</p>
+<hr />
 <h3 id="lastexportpassword">LastExportPassword <a class="anchor-link" href="#lastexportpassword">#</a></h3>
 <p><em>last-export-password</em></p>
 <p><strong>Password used in the last export operation</strong></p>
@@ -209,17 +252,47 @@ suffix.</p>
 <hr />
 <h3 id="closeall">CloseAll <a class="anchor-link" href="#closeall">#</a></h3>
 <p><em>close-all</em></p>
-<p><strong>Close all output workbooks that may still be open</strong></p>
+<p><strong>Close the workbooks this instance still holds open</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub CloseAll()
 </code></pre>
 <p>Closes any output workbook left open after an export error, preventing
-orphaned minimized windows. Safe to call even when no workbook is open.</p>
+orphaned minimized windows, and closes the source workbook when this instance
+opened it through CreateFromFile. Nothing is saved on either close. Safe to
+call even when no workbook is open.</p>
 <hr />
 </div>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-findopenworkbook">FindOpenWorkbook <a class="anchor-link" href="#int-findopenworkbook">#</a></h3>
+<p><em>find-open-workbook</em></p>
+<p><strong>The workbook of this session already open on a path, or Nothing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindOpenWorkbook(ByVal filePath As String) As Workbook
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>filePath</code>: String. Full path to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Workbook. The open workbook, or Nothing when the path is open nowhere.</p>
+<hr />
+<h3 id="int-missinglinelistsheet">MissingLinelistSheet <a class="anchor-link" href="#int-missinglinelistsheet">#</a></h3>
+<p><em>missing-linelist-sheet</em></p>
+<p><strong>The first sheet a linelist carries and a workbook misses</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MissingLinelistSheet(ByVal wkb As Workbook) As String
+</code></pre>
+<p>The export walks read the dictionary, the export definitions, the passwords,
+the geobase and the temp sheet, so those five names are what marks a workbook
+as a linelist here.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>wkb</code>: Workbook. The workbook to look through.</li>
+</ul>
+<p><strong>Returns:</strong> String. The first missing sheet name, or an empty string when all five are there.</p>
+<hr />
 <h2 id="int-public-accessors">Public Accessors</h2>
 <h3 id="int-sourceworkbook">SourceWorkbook <a class="anchor-link" href="#int-sourceworkbook">#</a></h3>
 <p><em>source-workbook</em></p>
@@ -246,6 +319,14 @@ orphaned minimized windows. Safe to call even when no workbook is open.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Seal()
 </code></pre>
+<hr />
+<h3 id="int-marksourceopened">MarkSourceOpened <a class="anchor-link" href="#int-marksourceopened">#</a></h3>
+<p><em>mark-source-opened</em></p>
+<p><strong>Record that this instance opened its source workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub MarkSourceOpened()
+</code></pre>
+<p>Set at creation only, by CreateFromFile, before the seal.</p>
 <hr />
 <h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
 <p><em>guard-not-sealed</em></p>

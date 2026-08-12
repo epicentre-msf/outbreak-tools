@@ -593,36 +593,36 @@ so it belongs here beside the two dates derived from it.</p>
 <p>Names carrying no identifier, because one copy of each serves
 every table on the sheet. Read them off the predeclared instance without
 calling Create.</p>
-<p><strong>Returns:</strong> String. &quot;TIME_UNIT_LIST&quot;.</p>
+</div>
+</details>
+<details open class="doc-section" id="one-list-serves-the-whole-workbook">
+<summary>ONE LIST SERVES THE WHOLE WORKBOOK</summary>
+<div class="section-body">
+<p>The time units are a workbook-level dropdown on the list sheet, added by
+Linelist.Prepare through the standard DropdownLists manager. Every temporal
+table on every sheet binds its dropdown to this one name, and GetAgg in
+CustomLinelistFunctions reads the same name to map the chosen label back to a
+time unit.</p>
+<p>The sheet used to carry its own copy: a time series sheet built
+TIME_UNIT_LIST and a spatio-temporal sheet built SPTIME_UNIT_LIST, because a
+range name resolves to one cell block and the two sheets each wanted their
+own. The reader in CustomLinelistFunctions asked for the plain name whatever
+sheet it ran on, so a workbook whose only temporal analyses were
+spatio-temporal had no such name and every period cell answered #VALUE!.</p>
+<p>The spelling is what DropdownLists derives from the list name TIME_UNIT_NAME
+below and the &quot;dropdown_&quot; prefix of the standard manager. TestAnalysisRanges
+pins the two together.</p>
+<p><strong>Returns:</strong> String. &quot;dropdown_time_unit&quot;.</p>
 <hr />
-<h3 id="spatiotemporaltimeunitlist">SpatioTemporalTimeUnitList <a class="anchor-link" href="#spatiotemporaltimeunitlist">#</a></h3>
-<p><em>spatio-temporal-time-unit-list</em></p>
-<p><strong>Name of the time unit choice list of the spatio-temporal sheet</strong></p>
+<h3 id="timeunitlistname">TimeUnitListName <a class="anchor-link" href="#timeunitlistname">#</a></h3>
+<p><em>time-unit-list-name</em></p>
+<p><strong>The dropdown list name the time units are registered under</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get SpatioTemporalTimeUnitList() As String
+<pre><code class="language-vb">Public Property Get TimeUnitListName() As String
 </code></pre>
-<p>A spatio-temporal table takes its time units from a list of its own, because
-the spatio-temporal tables are written to their own worksheet and a
-workbook-wide name resolves to one cell range only. The table writer built this
-name by prefixing the name above and the formula writer asked for the name
-above, so the dropdown of every spatio-temporal table was bound to a list that
-sheet did not carry.</p>
-<p><strong>Returns:</strong> String. &quot;SPTIME_UNIT_LIST&quot;.</p>
-<hr />
-<h3 id="timeunitlistofscope">TimeUnitListOfScope <a class="anchor-link" href="#timeunitlistofscope">#</a></h3>
-<p><em>time-unit-list-for-scope</em></p>
-<p><strong>The time unit list one temporal table reads</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get TimeUnitListOfScope(ByVal spatioTemporal As Boolean) As String
-</code></pre>
-<p>The two callers of this pair are the class that creates the list and the class
-that binds the dropdown to it, and they disagreed. Asking one member which list
-a scope reads is what stops them disagreeing again.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>spatioTemporal</code>: Boolean. True for a spatio-temporal table.</li>
-</ul>
-<p><strong>Returns:</strong> String. One of the two list names.</p>
+<p>What Linelist.Prepare passes to DropdownLists.Add. The workbook-level name
+above is what every reader uses; this is the registry key that produces it.</p>
+<p><strong>Returns:</strong> String. &quot;time_unit&quot;.</p>
 <hr />
 <h3 id="admunitlist">AdmUnitList <a class="anchor-link" href="#admunitlist">#</a></h3>
 <p><em>adm-unit-list</em></p>
@@ -659,10 +659,12 @@ a scope reads is what stops them disagreeing again.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (5 file(s))</summary>
+<summary>Used in (7 file(s))</summary>
 <ul>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
 <li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
+<li><a href="Linelist.html">Linelist.cls</a></li>
+<li>CustomLinelistFunctions.bas</li>
 <li>GeoModule.bas</li>
 <li>TestAnalysisRanges.bas</li>
 <li>TestCrossTableFormula.bas</li>

@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLLog - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>LLLog</h1>
+<p>Keeps the dated record of the important user actions of a running
+linelist on the very hidden __log worksheet. Each event is one Checking
+bundle: the action code is the bundle title, the entry label carries the
+timestamp and a short detail, and the scope carries the outcome. Every
+bundle is flushed through CheckingOutput.PrintOutput, which appends
+across renders, so the sheet grows one block per event and the built-in
+status and title dropdowns of the output sheet filter the log by outcome
+and by action.</p>
+<details open class="doc-section" id="provisioning">
+<summary>PROVISIONING</summary>
+<div class="section-body">
+<p>Create(wkb) binds to the __log worksheet of the given workbook and builds
+it very hidden when the workbook has none. An old linelist grows the
+sheet on its first logged event, so the generation tree stays untouched.
+Building a sheet wants the workbook structure unprotected, which is the
+caller''s duty.</p>
+</div>
+</details>
+<details open class="doc-section" id="rotation">
+<summary>ROTATION</summary>
+<div class="section-body">
+<p>LOG_MAX_ENTRIES is read as a row cap. A flush that finds the last
+written row past the cap clears the sheet and removes the row marker
+CheckingOutput keeps, so the next render re-initialises the sheet, and
+the fresh log opens with one info line (&quot;restarted&quot;).</p>
+</div>
+</details>
+<details open class="doc-section" id="filter-dropdowns">
+<summary>FILTER DROPDOWNS</summary>
+<div class="section-body">
+<p>The interactive row hiding of the output sheet wants a Worksheet_Change
+handler injected through the VBE, and injecting code wants VBE trust,
+which field machines lack. LLLog leaves the worksheet code module alone;
+the dropdowns stay plain validation cells and the filtering is reachable
+through CheckingOutput.FilterWorksheet.</p>
+<p><strong>Version:</strong> 1.0 (2026-08-12)</p>
+</div>
+</details>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
+<p><strong>Create a log store bound to the __log worksheet of a workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal wkb As Workbook) As LLLog
+</code></pre>
+<p>Entry point for creating LLLog instances.</p>
+<p>Binds to the __log worksheet of the given workbook. When the workbook
+has none, the sheet is appended after the last worksheet and made very
+hidden, so an old linelist grows its log on first use.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>wkb</code>: Workbook. The linelist workbook carrying the log.</li>
+</ul>
+<p><strong>Returns:</strong> LLLog. Fully initialised instance.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When wkb is Nothing.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="publicaccessors">
+<summary>PublicAccessors</summary>
+<div class="section-body">
+<h3 id="sheetname">SheetName <a class="anchor-link" href="#sheetname">#</a></h3>
+<p><em>sheet-name</em></p>
+<p><strong>Name of the log worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SheetName() As String
+</code></pre>
+<p>Answers the internal sheet name so the viewing surface and the close
+guard reach the sheet through the class.</p>
+<p><strong>Returns:</strong> String. The log worksheet name.</p>
+<hr />
+<h3 id="maxentries">MaxEntries <a class="anchor-link" href="#maxentries">#</a></h3>
+<p><em>max-entries</em></p>
+<p><strong>Row cap of the log sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get MaxEntries() As Long
+</code></pre>
+<p>Answers the cap the rotation reads, so a test can seed a row past it
+without writing ten thousand lines.</p>
+<p><strong>Returns:</strong> Long. The row cap.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="logging">
+<summary>Logging</summary>
+<div class="section-body">
+<h3 id="logsuccess">LogSuccess <a class="anchor-link" href="#logsuccess">#</a></h3>
+<p><em>log-success</em></p>
+<p><strong>Log an action that ended well</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub LogSuccess(ByVal action As String, Optional ByVal detail As String = vbNullString)
+</code></pre>
+<p>One method per outcome, each flushing one Checking bundle.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>action</code>: String. The action code, used as the bundle title.</li>
+<li><code>detail</code>: Optional String. Short free text beside the timestamp.</li>
+</ul>
+<hr />
+<h3 id="logwarning">LogWarning <a class="anchor-link" href="#logwarning">#</a></h3>
+<p><em>log-warning</em></p>
+<p><strong>Log a refusal or a degraded run</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub LogWarning(ByVal action As String, Optional ByVal detail As String = vbNullString)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>action</code>: String. The action code, used as the bundle title.</li>
+<li><code>detail</code>: Optional String. Short free text beside the timestamp.</li>
+</ul>
+<hr />
+<h3 id="logfailure">LogFailure <a class="anchor-link" href="#logfailure">#</a></h3>
+<p><em>log-failure</em></p>
+<p><strong>Log an action that failed</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub LogFailure(ByVal action As String, Optional ByVal detail As String = vbNullString)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>action</code>: String. The action code, used as the bundle title.</li>
+<li><code>detail</code>: Optional String. Short free text beside the timestamp.</li>
+</ul>
+<hr />
+<h3 id="loginfo">LogInfo <a class="anchor-link" href="#loginfo">#</a></h3>
+<p><em>log-info</em></p>
+<p><strong>Log a lifecycle line</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub LogInfo(ByVal action As String, Optional ByVal detail As String = vbNullString)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>action</code>: String. The action code, used as the bundle title.</li>
+<li><code>detail</code>: Optional String. Short free text beside the timestamp.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-publicaccessors">PublicAccessors</h2>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh</em></p>
+<p><strong>Retrieve the log worksheet backing this store</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet
+</code></pre>
+<p>Properties that expose internal state.</p>
+<p><strong>Returns:</strong> Worksheet. Reference to the log worksheet.</p>
+<hr />
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh-set</em></p>
+<p><strong>Define the worksheet that will receive the log</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. Target worksheet to use.</li>
+</ul>
+<hr />
+<h2 id="int-internals">Internals</h2>
+<h3 id="int-resolvelogsheet">ResolveLogSheet <a class="anchor-link" href="#int-resolvelogsheet">#</a></h3>
+<p><em>resolve-log-sheet</em></p>
+<p><strong>Resolve the log worksheet, building it very hidden when absent</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveLogSheet(ByVal wkb As Workbook) As Worksheet
+</code></pre>
+<p>Sheet resolution, entry building, and rotation.</p>
+<p>The sheet is appended after the last worksheet, because a bare Add puts
+a new sheet in front of whatever is active. An existing sheet keeps its
+visibility, so the viewing surface can hold it open across a bind.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>wkb</code>: Workbook. The linelist workbook.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The resolved or newly created worksheet.</p>
+<hr />
+<h3 id="int-writeentry">WriteEntry <a class="anchor-link" href="#int-writeentry">#</a></h3>
+<p><em>write-entry</em></p>
+<p><strong>Rotate when the cap is passed, then flush one dated entry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteEntry(ByVal action As String, ByVal detail As String, ByVal scope As Byte)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>action</code>: String. The action code, used as the bundle title.</li>
+<li><code>detail</code>: String. Short free text beside the timestamp.</li>
+<li><code>scope</code>: Byte. CheckingScope value carrying the outcome.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the action code is empty.</li>
+</ul>
+<hr />
+<h3 id="int-flushentry">FlushEntry <a class="anchor-link" href="#int-flushentry">#</a></h3>
+<p><em>flush-entry</em></p>
+<p><strong>Build one Checking bundle and flush it through the writer</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FlushEntry(ByVal action As String, ByVal detail As String, ByVal scope As Byte)
+</code></pre>
+<p>The bundle carries one key, so the key uniqueness of Checking binds
+inside the bundle and every event stays a plain append.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>action</code>: String. The action code, used as the bundle title.</li>
+<li><code>detail</code>: String. Short free text beside the timestamp.</li>
+<li><code>scope</code>: Byte. CheckingScope value carrying the outcome.</li>
+</ul>
+<hr />
+<h3 id="int-entrylabel">EntryLabel <a class="anchor-link" href="#int-entrylabel">#</a></h3>
+<p><em>entry-label</em></p>
+<p><strong>Compose the dated label of one entry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EntryLabel(ByVal detail As String) As String
+</code></pre>
+<p>The label opens with the timestamp; the detail follows behind the
+separator, so the two land in their own columns of the log sheet. A
+separator inside the detail would push text past the last written
+column, so it is softened to a single dash first.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>detail</code>: String. Short free text beside the timestamp.</li>
+</ul>
+<p><strong>Returns:</strong> String. The composed label.</p>
+<hr />
+<h3 id="int-rotatewhenpastcap">RotateWhenPastCap <a class="anchor-link" href="#int-rotatewhenpastcap">#</a></h3>
+<p><em>rotate-when-past-cap</em></p>
+<p><strong>Clear the sheet and restart the log once the cap is passed</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RotateWhenPastCap()
+</code></pre>
+<p>Reads the last written row of the output column. Past the cap, the
+sheet is cleared and the row marker removed, so CheckingOutput
+re-initialises on the next render, and the fresh log opens with one
+info line.</p>
+<hr />
+<h3 id="int-writer">Writer <a class="anchor-link" href="#int-writer">#</a></h3>
+<p><em>writer</em></p>
+<p><strong>Lazily create and return the CheckingOutput writer</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Writer() As CheckingOutput
+</code></pre>
+<p><strong>Returns:</strong> CheckingOutput. Writer bound to the log worksheet.</p>
+<hr />
+<h3 id="int-hiddenstore">HiddenStore <a class="anchor-link" href="#int-hiddenstore">#</a></h3>
+<p><em>hidden-store</em></p>
+<p><strong>Lazily create and return the HiddenNames store of the log sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HiddenStore() As HiddenNames
+</code></pre>
+<p><strong>Returns:</strong> HiddenNames. Hidden name store bound to the log worksheet.</p>
+<hr />
+<h2 id="int-errorhandling">ErrorHandling</h2>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
+<p><strong>Raise a ProjectError-coded runtime error</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
+</code></pre>
+<p>Centralised error-raising pattern and the set-once seal.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumb</code>: Long. ProjectError enumeration value.</li>
+<li><code>errorMessage</code>: String. Human-readable description.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance so setup setters can no longer be written</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup setter against writes after sealing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. Name of the property being guarded.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (7 file(s))</summary>
+<ul>
+<li><a href="EventLinelist.html">EventLinelist.cls</a></li>
+<li><a href="Linelist.html">Linelist.cls</a></li>
+<li>EventsLinelistButtons.bas</li>
+<li>FormLogicAdvanced.bas</li>
+<li>FormLogicExportMig.bas</li>
+<li>TestEventLinelist.bas</li>
+<li>TestLLLog.bas</li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

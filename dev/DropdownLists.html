@@ -677,6 +677,24 @@ hold a dropdown of the same name without seeing each other.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the dropdown is found.</p>
 <hr />
+<h3 id="int-workbookname">WorkbookName <a class="anchor-link" href="#int-workbookname">#</a></h3>
+<p><em>workbook-name</em></p>
+<p><strong>Workbook-level name a dropdown answers to</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get WorkbookName(ByVal listName As String) As String
+</code></pre>
+<p>The name SetValidation points a cell at, and the name any other reader uses to
+reach the values. It is derived from the list name and the header prefix, so
+it can be asked for before the dropdown is added.</p>
+<p>This is here because a reader outside the class needs the name in a place
+where building a manager is too costly - a worksheet function called once per
+formula cell reads the range by this name and nothing else.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown name.</li>
+</ul>
+<p><strong>Returns:</strong> String. The workbook-level name.</p>
+<hr />
 <h3 id="int-labelrange">LabelRange <a class="anchor-link" href="#int-labelrange">#</a></h3>
 <p><em>label-range</em></p>
 <p><strong>Label cell above a dropdown ListObject</strong></p>
@@ -799,9 +817,10 @@ Preserves the original cell formatting after link insertion.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (46 file(s))</summary>
+<summary>Used in (50 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
+<li><a href="AnalysisRanges.html">AnalysisRanges.cls</a></li>
 <li><a href="ChoiceKeys.html">ChoiceKeys.cls</a></li>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
@@ -830,12 +849,15 @@ Preserves the original cell formatting after link insertion.</p>
 <li>Exports.bas</li>
 <li>ManageDiseases.bas</li>
 <li>Misc.bas</li>
+<li>TestAnalysisRanges.bas</li>
+<li>TestCrossTableFormula.bas</li>
 <li>TestChoiceKeys.bas</li>
 <li>TestLLExporter.bas</li>
 <li>TestLLImporter.bas</li>
 <li>TestDesignerPreparation.bas</li>
 <li>TestDesignerRibbon.bas</li>
 <li>TestDropdownLists.bas</li>
+<li>TestCustomLinelistFunctions.bas</li>
 <li>TestEventLinelistSheets.bas</li>
 <li>TestLinelist.bas</li>
 <li>TestLLDataEntry.bas</li>

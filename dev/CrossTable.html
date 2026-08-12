@@ -1041,19 +1041,6 @@ INPUTSPTHF_ names that were never created.</p>
 <li><code>anchorRng</code>: Range. The cell the control block is measured from.</li>
 </ul>
 <hr />
-<h3 id="int-ensuretimeunitlist">EnsureTimeUnitList <a class="anchor-link" href="#int-ensuretimeunitlist">#</a></h3>
-<p><em>ensure-time-unit-list</em></p>
-<p><strong>Build the five time unit names the dropdown reads, once per sheet.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function EnsureTimeUnitList() As Range
-</code></pre>
-<p>The formula writer binds the time unit dropdown to this same name, and the two
-used to build it separately: this one prefixed the spatio-temporal spelling and
-the other one always asked for the plain one, so no spatio-temporal table ever
-got its dropdown. One member of AnalysisRanges answers for both now.</p>
-<p><strong>Returns:</strong> Range. The top cell of the list block, whether it was just built or
-was already there.</p>
-<hr />
 <h3 id="int-addspatialheader">AddSpatialHeader <a class="anchor-link" href="#int-addspatialheader">#</a></h3>
 <p><em>add-spatial-header</em></p>
 <p><strong>Write the dropdowns and the title of a spatial table.</strong></p>

@@ -632,6 +632,25 @@ character and has a length of at least two.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the string is quoted.</p>
 <hr />
+<h3 id="int-isnumericliteral">IsNumericLiteral <a class="anchor-link" href="#int-isnumericliteral">#</a></h3>
+<p><em>is-numeric-literal</em></p>
+<p><strong>Determine whether the supplied chunk is an English-form numeric literal</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsNumericLiteral(ByVal chunk As String) As Boolean
+</code></pre>
+<p>Accepts digits around at most one dot. The convention keeps setup formulas
+in English, and Range.Formula reads US syntax on every host, so the English
+form is the one form a literal may take here. IsNumeric would read the
+chunk in the HOST's regional separators, and on a comma machine it refused
+every dot literal a setup file carried. A sign never reaches this test:
+'+' and '-' are separator characters, so they split off before the chunk
+arrives.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>chunk</code>: String. Candidate literal.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the chunk holds at least one digit and nothing besides digits and a single dot.</p>
+<hr />
 <h3 id="int-cleanstring">CleanString <a class="anchor-link" href="#int-cleanstring">#</a></h3>
 <p><em>clean-string</em></p>
 <p><strong>Normalise the incoming token by removing control characters and duplicate spaces</strong></p>
