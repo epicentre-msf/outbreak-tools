@@ -561,6 +561,69 @@ TestFail:
 End Sub
 
 
+'@section The application state
+'===============================================================================
+
+'@sub-title WriteAnalysis hands back the state it opened on.
+'@details
+'The class opens an ApplicationState of its own, suppresses events for the
+'length of the build and restores on the way out, so a caller reads the same
+'settings after the build as before it. The known state is written on the line
+'above the call, because that is the moment the snapshot is taken. It is a
+'deliberately IDLE state -- screen on, events live, automatic calculation --
+'since a restore can only be seen against settings the build actually changes.
+'The freeze-pane pass runs inside, and each of its four activations writes the
+'busy state again; those forced calls are the ones that must not leak past the
+'restore.
+'@TestMethod("AnalysisOutput")
+Public Sub TestWriteAnalysisRestoresTheStateItOpenedOn()
+    Dim sut As AnalysisOutput
+    Dim specSh As Worksheet
+    Dim errNumber As Long
+    Dim errDesc As String
+
+    CustomTestSetTitles Assert, "AnalysisOutput", "TestWriteAnalysisRestoresTheStateItOpenedOn"
+    If Not FixtureReady("TestWriteAnalysisRestoresTheStateItOpenedOn") Then Exit Sub
+    On Error GoTo TestFail
+
+    Set specSh = BuildSetupTable(TwoWholeSections())
+    NewLinelistWorkbook
+    Set sut = AnalysisOutput.Create(specSh, LL)
+
+    Application.ScreenUpdating = True
+    Application.EnableEvents = True
+    Application.Calculation = xlCalculationAutomatic
+
+    sut.WriteAnalysis AnalysisBuildStageTimeSeriesTables
+
+    ' Same reason as RunTimeSeriesBuild: the freeze-pane pass leaves the
+    ' linelist workbook active and the harness writes into this one.
+    ThisWorkbook.Activate
+
+    Assert.IsTrue Application.ScreenUpdating, _
+                  "WriteAnalysis owns the screen for the build, so it owes it " & _
+                  "back on the way out"
+    Assert.IsTrue Application.EnableEvents, _
+                  "And the events it suppressed"
+    Assert.AreEqual CLng(xlCalculationAutomatic), CLng(Application.Calculation), _
+                    "And the calculation mode it found"
+
+    Exit Sub
+TestFail:
+    errNumber = Err.Number
+    errDesc = Err.Description
+
+    ' A failure inside the build can leave the screen off, and every test after
+    ' this one would then run blind.
+    On Error Resume Next
+    Application.ScreenUpdating = True
+    Application.EnableEvents = True
+    On Error GoTo 0
+
+    CustomTestLogFailure Assert, "TestWriteAnalysisRestoresTheStateItOpenedOn", _
+                         errNumber, errDesc
+End Sub
+
 
 '@section Helpers used by the assertions
 '===============================================================================

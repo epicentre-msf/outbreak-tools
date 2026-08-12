@@ -584,13 +584,20 @@ suites:
       # under `helpers` for the tests that drive Format against a real LLFormat.
       - module: TestCustomPivotTable
         covers: [CustomPivotTable]
-      # TestAnalysisOutput reaches the two Create rejections and nothing else.
-      # AnalysisOutput is 1,551 lines and every other member needs a complete
-      # linelist workbook: the analysis setup ListObjects, the four output
-      # worksheets, the translation tables, the formula data and a prepared
-      # dictionary. Its lifecycle hooks shipped Private, which Application.Run
-      # cannot reach, and they are Public here. Registering it is what gives the
-      # class its first compile.
+      # TestAnalysisOutput builds a complete linelist workbook -- the analysis
+      # setup ListObjects, the four output worksheets, the translation tables,
+      # the formula data and a prepared dictionary -- and runs
+      # WriteAnalysis at the time series stage through RunTimeSeriesBuild. Four
+      # of its tests read the section loop back out of that build, and one reads
+      # the application state after it. Its lifecycle hooks shipped Private,
+      # which Application.Run cannot reach, and they are Public here.
+      # Registering it is what gives the class its first compile.
+      #
+      # This comment used to read "reaches the two Create rejections and nothing
+      # else", which was true when the row was added and stopped being true when
+      # the section-loop tests landed. A stale coverage note is worse than none:
+      # Session 97 believed it over the module and reported the probe as blind
+      # to WriteAnalysis when it had just run it.
       - module: TestAnalysisOutput
         covers: [AnalysisOutput]
 
