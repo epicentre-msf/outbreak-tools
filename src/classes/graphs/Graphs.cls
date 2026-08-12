@@ -549,11 +549,15 @@ End Function
 'stretches a time series graph. The height coefficient grows the chart with
 'the number of geographic units it shows.
 '
-'Both coefficients are fractional and both were declared As Long. 1.75 was
+'Both coefficients are fractional and both were declared As Long once. 1.75 was
 'stored as 2, so every time series chart came out 14 per cent larger than the
 'code asks for, and a spatial chart of five geographic units got 0.48 rounded
-'down to zero, which is a chart of no height at all. The floor keeps a small
-'chart at its normal size and lets a large one grow.
+'down to zero, which is a chart of no height at all.
+'
+'The height curve anchors at one geographic unit and each further unit adds
+'8 per cent, so five units give 1.32 and twenty give 2.52. Every count a user
+'can set moves the chart, and the bars keep their thickness as the count rises.
+'The floor answers a count below 1, which the callers already clamp away.
 '@param scope Byte. A GraphScope value.
 '@param heightFactor Long. The geographic unit count, 1 or more.
 '@return TGraphLayout. The dimensions to apply.
@@ -566,7 +570,7 @@ Private Function SizeForScope(ByVal scope As Byte, _
     widthCoef = 1
     If scope = GraphScopeTimeSeries Then widthCoef = TIME_SERIES_COEF
 
-    heightCoef = (heightFactor + 1) * HEIGHT_STEP
+    heightCoef = 1 + (heightFactor - 1) * HEIGHT_STEP
     If heightCoef < 1 Then heightCoef = 1
 
     layout.chartWidth = CHART_WIDTH * widthCoef

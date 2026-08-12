@@ -737,13 +737,16 @@ TestFail:
                          Err.Number, Err.Description
 End Sub
 
-'@sub-title Verify the height of a chart never collapses, whatever the geo count.
+'@sub-title Verify the chart height grows with the geo count and never collapses.
 '@details
-'The height coefficient is (geo count + 1) times 0.08 and it was held in a Long
-'too. Five geographic units gave 0.48, which rounded down to zero, and the chart
-'came out with no height at all. The floor keeps a small chart at its normal
-'size and lets a large one grow. Twenty Format calls on one chart cost far less
-'than twenty charts.
+'The height coefficient is 1 plus (geo count - 1) times 0.08, and it was held in
+'a Long once. Five geographic units gave 0.48 under the earlier curve, which
+'rounded down to zero, and the chart came out with no height at all.
+'
+'Five units is the default a user gets, so the height there is what says the
+'setting reaches the chart at all. An earlier curve floored every count from 1
+'to 11 at the same height and passed a test that only walked the ends.
+'Twenty Format calls on one chart cost far less than twenty charts.
 '@TestMethod("Graphs")
 Public Sub TestTheChartHeightNeverCollapses()
     CustomTestSetTitles Assert, "Graphs", "TestTheChartHeightNeverCollapses"
@@ -755,6 +758,7 @@ Public Sub TestTheChartHeightNeverCollapses()
     Dim geoCount As Long
     Dim smallestHeight As Double
     Dim heightAtOne As Double
+    Dim heightAtFive As Double
     Dim heightAtTwenty As Double
 
     Set sh = BuildFixture()
@@ -770,13 +774,16 @@ Public Sub TestTheChartHeightNeverCollapses()
 
         If co.height < smallestHeight Then smallestHeight = co.height
         If geoCount = 1 Then heightAtOne = co.height
+        If geoCount = 5 Then heightAtFive = co.height
         If geoCount = 20 Then heightAtTwenty = co.height
     Next geoCount
 
     Assert.IsTrue (smallestHeight > 0), _
                   "Every geographic unit count from 1 to 20 gives a chart with a height"
-    Assert.IsTrue (heightAtTwenty > heightAtOne), _
-                  "And twenty units give a taller chart than one"
+    Assert.IsTrue (heightAtFive > heightAtOne), _
+                  "The default of five units gives a taller chart than one unit"
+    Assert.IsTrue (heightAtTwenty > heightAtFive), _
+                  "And twenty units give a taller chart again"
 
     Exit Sub
 TestFail:
