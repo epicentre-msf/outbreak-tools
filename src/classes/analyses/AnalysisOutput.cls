@@ -47,14 +47,15 @@ End Enum
 'translation provider, and entries filed along the way leave through
 'HasCheckings and CheckingValues.
 '
-'THE CALLER OWNS THE APPLICATION STATE
+'THE CLASS OWNS THE STATE ITS OWN WORK NEEDS
 '-------------------------------------------------------------------------------
-'BusyApp turns screen updating, alerts, automatic calculation and animations
-'off, and nothing here turns them back on. WriteAnalysis runs inside an
-'ApplicationState the caller opens and restores, which is what clickGenerate
-'does. BusyApp leaves Application.EnableEvents where it finds it, so a caller
-'that skips that scope builds the sheets with the linelist change handlers
-'live.
+'WriteAnalysis opens an ApplicationState of its own, turns screen updating,
+'alerts, automatic calculation, animations and events off for the length of the
+'build, and restores on the way out -- on the error path too. The sheets are
+'therefore written under the state the analysis needs whoever calls it, and a
+'caller that keeps its own scope, which is what clickGenerate does, is not
+'disturbed: the snapshot taken here is the caller's busy state, so restoring
+'puts that back rather than the pre-generation values.
 '
 'A SECTION IS TOLD TO THE LOOP
 '-------------------------------------------------------------------------------
@@ -62,8 +63,8 @@ End Enum
 'a TemporalSection. The loop closes the section it holds when it meets a table
 'that starts a new one, and closes the last one after the loop. Nothing reads
 'the row below to decide where a section ends.
-'@depends Linelist, LinelistSpecs, LLFormat, TranslationObject, TableSpecs, CrossTable, CrossTableFormula, Graphs, GraphSeries, TimeSeriesGraphs, SeriesBuffer, AnaTabIds, TemporalSection, Buttons, Passwords, DropdownLists, HiddenNames, LLdictionary, LLVariables, FormulaData, Checking, BetterArray
-'@version 2026-07-30
+'@depends Linelist, LinelistSpecs, LLFormat, TranslationObject, TableSpecs, CrossTable, CrossTableFormula, Graphs, GraphSeries, TimeSeriesGraphs, SeriesBuffer, AnaTabIds, TemporalSection, ApplicationState, Buttons, Passwords, DropdownLists, HiddenNames, LLdictionary, LLVariables, FormulaData, Checking, BetterArray
+'@version 2026-08-12
 
 
 Private Const UPDATEFILTERCOMMAND As String = "UpdateFilterTables"
@@ -89,6 +90,7 @@ Private Type TAnaOutput
     namObj As AnaTabIds                             'Cached analysis tracking object
     outSheets(1 To 4) As Worksheet                  'One output worksheet per scope
     outNames(1 To 4) As HiddenNames                 'One metadata reader per scope
+    appScope As ApplicationState                    'Busy state held for the length of one build
     hasChecks As Boolean
     sealed As Boolean
 End Type
@@ -398,20 +400,22 @@ End Function
 '@section Application Helpers
 '===============================================================================
 
-'@label:busy-app
-'@sub-title Suppress Excel visual feedback and recalculation for performance.
+'@label:app-scope
+'@prop-title The application state this class builds under.
 '@details
-'Turns ScreenUpdating, DisplayAlerts, Calculation (to manual) and
-'EnableAnimations off on the Application object for the length of the build.
-'The caller restores them: see the note at the top of this class.
-'@remarks Called again inside SplitOutputSheet, because activating a worksheet
-'turns screen updating back on in some Excel versions.
-Private Sub BusyApp()
-    Application.ScreenUpdating = False
-    Application.DisplayAlerts = False
-    Application.Calculation = xlCalculationManual
-    Application.EnableAnimations = False
-End Sub
+'Built on first read and kept for the life of the instance. The snapshot is
+'taken when the object is built, which is inside whatever state the caller was
+'already in, so restoring hands that state back rather than guessing at one.
+'@return ApplicationState. Bound to the running Excel Application.
+'@remarks WriteAnalysis is what opens and restores it: see the note at the top
+'of this class.
+Private Property Get AppScope() As ApplicationState
+    If this.appScope Is Nothing Then
+        Set this.appScope = ApplicationState.Create(Application)
+    End If
+
+    Set AppScope = this.appScope
+End Property
 
 '@label:split-output-sheet
 '@sub-title Apply the freeze-pane split to an analysis output worksheet.
@@ -425,6 +429,9 @@ End Sub
 '@remarks Activating the sheet is what the freeze-pane API needs. A protected
 'sheet or a hidden window makes it fail, and the failure is filed as a warning
 'rather than passed over in silence.
+'@remarks The busy state is written again after the activation, because
+'activating a worksheet turns screen updating back on in some Excel versions.
+'The scope is already busy at that point, which is why the call forces.
 Private Sub SplitOutputSheet(ByVal scope As Byte)
     Dim outsh As Worksheet
     Dim rowSplit As Long
@@ -433,9 +440,8 @@ Private Sub SplitOutputSheet(ByVal scope As Byte)
     rowSplit = IIf(scope = AnalysisScopeTimeSeries Or scope = AnalysisScopeSpatioTemporal, 3, 2)
 
     On Error GoTo SplitFailed
-    BusyApp
     outsh.Activate
-    BusyApp
+    AppScope.ApplyBusyState suppressEvents:=True, force:=True
     With Application.ActiveWindow
         .SplitRow = rowSplit
         .SplitColumn = 3
@@ -1493,10 +1499,14 @@ End Function
 'Defaults to AnalysisBuildStageAll, which builds the four sheets. Any other
 'value stops after the stage it names.
 '@export
-'@remarks The caller opens and restores the Application state: see the note at
-'the top of this class.
+'@remarks This is what opens and restores the application state the build runs
+'under: see the note at the top of this class. A raise inside the build restores
+'it before the error travels on, so no failure leaves Excel with a frozen
+'screen.
+'@throws Whatever the build raises, after the application state is restored.
 Public Sub WriteAnalysis(Optional ByVal part As Byte = AnalysisBuildStageAll)
-    BusyApp
+    On Error GoTo Cleanup
+    AppScope.ApplyBusyState suppressEvents:=True
 
     ' Univariate and bivariate analysis =======================================
     BuildScope AnalysisScopeNormal, ScopeTables(AnalysisScopeNormal), False
@@ -1529,6 +1539,26 @@ SplitSheets:
     SplitOutputSheet AnalysisScopeTimeSeries
     SplitOutputSheet AnalysisScopeSpatial
     SplitOutputSheet AnalysisScopeSpatioTemporal
+
+    'The handler stays armed over the restore: a restore that fails is caught
+    'below rather than escaping with the screen still off.
+    AppScope.Restore
+    Exit Sub
+
+Cleanup:
+    Dim errNumber As Long
+    Dim errDesc As String
+
+    errNumber = Err.Number
+    errDesc = Err.Description
+
+    'Restore silently: the build's own failure is the one worth reporting, and a
+    'restore that raises on top of it would hide it.
+    On Error Resume Next
+    AppScope.Restore silent:=True
+    On Error GoTo 0
+
+    ThrowError errNumber, errDesc
 End Sub
 
 '@section Checkings

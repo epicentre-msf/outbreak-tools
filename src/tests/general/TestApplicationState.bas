@@ -451,6 +451,40 @@ Public Sub TestSecondApplyBusyStateIsIgnored()
     scope.Restore
 End Sub
 
+'@sub-title Verify ApplyBusyState force:=True writes the settings again.
+'@details
+'Excel puts screen updating back on by itself on some hosts -- activating a
+'worksheet is the case AnalysisOutput meets -- so a caller has to be able to
+'re-assert the busy state in the middle of one scope. The force call must write
+'the settings again without touching the snapshot, which is what the Restore
+'assertion at the end holds.
+'@TestMethod("ApplicationState")
+Public Sub TestForcedApplyBusyStateWritesSettingsAgain()
+    CustomTestSetTitles Assert, "ApplicationState", "ForcedApplyBusyStateWritesSettingsAgain"
+
+    Dim scope As ApplicationState
+
+    SetIdleApplicationState
+    Set scope = ApplicationState.Create(Application)
+
+    scope.ApplyBusyState
+    'Excel turning the screen back on by itself, which is what the force call
+    'exists to answer.
+    Application.ScreenUpdating = True
+
+    scope.ApplyBusyState force:=True
+
+    Assert.IsFalse Application.ScreenUpdating, _
+                   "ApplyBusyState force:=True must turn screen updating off again"
+    Assert.IsTrue scope.IsBusy, _
+                  "A forced ApplyBusyState must leave the scope busy"
+
+    scope.Restore
+
+    Assert.IsTrue Application.ScreenUpdating, _
+                  "The forced call must leave the snapshot alone, so Restore still answers the idle value"
+End Sub
+
 '@sub-title Verify Create without an argument guards the host application.
 '@details
 'Most call sites in the tree use ApplicationState.Create() with no

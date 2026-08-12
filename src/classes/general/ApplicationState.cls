@@ -30,7 +30,10 @@ Option Explicit
 '-------------------------------------------------------------------------------
 'ApplyBusyState restores from the copy the object already holds, and takes no
 'new one. RefreshSnapshot takes a fresh copy, which is what a caller that
-'changed a setting between two busy blocks calls first.
+'changed a setting between two busy blocks calls first. ApplyBusyState does
+'nothing when the scope is already busy; a caller that needs the settings
+'written again inside one scope passes force:=True, and the copy still holds
+'the values the scope opened on.
 '
 'THE SETTINGS THIS CLASS COVERS
 '-------------------------------------------------------------------------------
@@ -145,15 +148,22 @@ End Sub
 '@param calculateOnSave Optional Boolean. Value assigned to CalculateBeforeSave. Defaults to True.
 '@param busyCursor Optional Long. Cursor shown while busy. When 0 (default), leaves cursor unchanged.
 '@param blockSecurity Optional Boolean. When True, forces msoAutomationSecurityForceDisable. Defaults to False.
+'@param force Optional Boolean. When True, writes the settings again even though
+'the scope is already busy. Defaults to False. Excel puts screen updating back
+'on by itself on some hosts -- activating a worksheet is the known case -- and
+'a caller that has to re-assert the busy state in the middle of one scope passes
+'True. The snapshot is untouched, so Restore still answers the values the scope
+'opened on.
 '@throws ProjectError.ErrorUnexpectedState When the application settings cannot be applied.
 '@export
 Public Sub ApplyBusyState(Optional ByVal suppressEvents As Boolean = False, _
                                Optional ByVal calculateOnSave As Boolean = True, _
                                Optional ByVal busyCursor As Long = 0, _
-                               Optional ByVal blockSecurity As Boolean = False)
+                               Optional ByVal blockSecurity As Boolean = False, _
+                               Optional ByVal force As Boolean = False)
     Dim target As Application
 
-    If this.isBusy Then Exit Sub
+    If this.isBusy And Not force Then Exit Sub
 
     EnsureSnapshot
     Set target = TargetApplication

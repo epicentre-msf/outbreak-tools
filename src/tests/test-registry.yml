@@ -531,8 +531,10 @@ suites:
       # is the row added under `linelist` in the same commit. Everything else it
       # names is registered already: TableSpecs, CrossTable, CrossTableFormula,
       # Graphs, SeriesBuffer, GraphSeries, TimeSeriesGraphs, AnaTabIds and
-      # TemporalSection here or under `graphs`, LLFormat, DropdownLists and
-      # Buttons under `general`, LLdictionary, LLVariables and LLExport under
+      # TemporalSection here or under `graphs`, LLFormat, DropdownLists,
+      # ApplicationState and Buttons under `general` -- ApplicationState is what
+      # WriteAnalysis opens its busy state on, since Session 97 --,
+      # LLdictionary, LLVariables and LLExport under
       # `dictionary`, FormulaData under `formulas`, LinelistSpecs under
       # `linelist`. TranslationObject, Passwords, HiddenNames, Checking and
       # BetterArray are baked into the driver workbook.
