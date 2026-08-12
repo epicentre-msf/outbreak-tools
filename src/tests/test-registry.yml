@@ -1038,15 +1038,17 @@ suites:
   # were aimed at a sheet of a book that was not active. That change is proved
   # now: the suite runs.
   #
-  # ExportButton stays out. It declares
-  # `WithEvents Btn As MSForms.CommandButton`, which would put a form-library
-  # type on the compile path of every run. TestExportButton stays out with it,
-  # and it also calls TestHelpers.BuildTranslationObject, which the run does not
-  # import.
+  # ExportButton joined on 2026-08-12, and the two reasons it used to stay out
+  # are both gone. It declares `WithEvents Btn As MSForms.CommandButton`, so it
+  # puts the Forms 2.0 library on the compile path of every run; the driver
+  # workbook already references that library, because it carries a UserForm.
+  # And TestExportButton's translation stub reads BuildTranslationObject, which
+  # was copied into TestHelpersLite for the sections and linelist suites.
   #
   - folder: dataio
     classes:
       - name: ChoiceKeys
+      - name: ExportButton
       - name: FilteredData
       - name: ImportMetadata
       - name: ImportReport
@@ -1055,6 +1057,14 @@ suites:
     tests:
       - module: TestChoiceKeys
         covers: [ChoiceKeys]
+      # TestExportButton drives the wrapper behind every custom export button
+      # on F_Export: the factory guards, the export number read off the button
+      # name, and the filter checkbox. RunExport opens a folder picker and ends
+      # in a message box, so the click path stays a hand check. It reaches no
+      # fixture module; its helper calls are unqualified, so they resolve to
+      # TestHelpersLite.
+      - module: TestExportButton
+        covers: [ExportButton]
       # TestFilteredData drives the filtered-companion sync ExportButton runs
       # ahead of a filtered export: the copy, the hidden-row and empty-row
       # removal, the contiguous-run delete, the skip-and-record failure
@@ -1076,8 +1086,8 @@ suites:
 # TEMPLATE — copy per folder as coverage is added. Delete fields left empty.
 # Expansion backlog (suite folders under src/tests/ that are not yet
 # registered): mastersetup. src/tests/dataio/ joined on 2026-08-02 with five
-# classes and five suites; TestExportButton is the one module of it left out,
-# for the reason in the block above. src/tests/showhide/ joined on 2026-08-01
+# classes and five suites, and is whole as of 2026-08-12: FilteredData and
+# ExportButton joined with their suites. src/tests/showhide/ joined on 2026-08-01
 # with the three classes that replaced LLShowHide and ShowHideManager.
 # src/tests/tables/ is gone as of
 # 2026-07-31 — it held TestCustomPivotTable alone, whose class lives in

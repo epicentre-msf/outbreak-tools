@@ -11,17 +11,30 @@ Attribute VB_Description = "Unit tests for ExportButton"
 'optional MSForms.CheckBox to drive filtered custom exports from the linelist.
 'Tests cover factory initialisation (Create with valid arguments, rejection of
 'Nothing workbook, translations, and button), the ExportNumber property that
-'parses the numeric suffix from the button name (e.g. "CMDExport3" yields 3),
-'and the UseFilter property, which reads the companion checkbox on every ask.
-'The fixture creates temporary worksheets with OLEObject controls for each
-'test and tears them down in TestCleanup to ensure isolation.
+'parses the numeric suffix from the button name (e.g. "CMDExport3" yields 3)
+'and answers 0 for a name it cannot place, and the UseFilter property, which
+'reads the companion checkbox on every ask.
+'The fixture builds its controls on a UserForm and takes them off again in
+'TestCleanup, so the order the tests run in decides nothing.
+'
+'WHAT STAYS OUT OF REACH
+'-------------------------------------------------------------------------------
+'RunExport opens a folder picker and ends in a message box, so the click path
+'itself runs under no headless test. What it does with the answers is measured
+'here through ExportNumber and UseFilter, and the sync it drives is measured in
+'TestFilteredData.
 '@depends ExportButton, TranslationObject, TestHelpersLite, MSForms, CustomTest
 
 Option Explicit
 Option Private Module
 
+Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
+
 Private Assert As CustomTest
-Private testSheet As Worksheet
+
+'The names of the controls this module put on the host form. Only these come
+'off again, so the controls the form was designed with stay where they are.
+Private addedControls As Collection
 
 
 '@section Module Lifecycle
@@ -29,93 +42,121 @@ Private testSheet As Worksheet
 
 '@sub-title Initialise the test module before any tests run.
 '@details
-'Creates the CustomTest assertion object used by all test methods in this
-'module. Called once before the first test executes.
+'Ensures the output worksheet exists and creates the CustomTest assertion
+'object used by all test methods in this module. Called once before the
+'first test executes.
 '@ModuleInitialize
 Public Sub ModuleInitialize()
-    Set Assert = CustomTest.Create(ThisWorkbook)
+    EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
+    Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
 End Sub
 
 '@sub-title Tear down the module after all tests complete.
 '@details
-'Releases the assertion object to avoid memory leaks. Called once after
-'the last test finishes.
+'Renders the collected results to the output worksheet, which is what the
+'headless runner harvests into the results file, then restores the
+'application state and releases the assertion object. Called once after the
+'last test finishes.
 '@ModuleCleanup
 Public Sub ModuleCleanup()
+    If Not Assert Is Nothing Then
+        Assert.PrintResults TEST_OUTPUT_SHEET
+    End If
+
+    RestoreApp
     Set Assert = Nothing
 End Sub
 
-'@sub-title Reset state before each individual test.
+'@sub-title Clear the host form before each individual test.
 '@TestInitialize
 Public Sub TestInitialize()
-    '
+    ClearHostForm
 End Sub
 
-'@sub-title Clean up after each individual test.
+'@sub-title Flush the assert state and take the fixture controls off.
 '@details
-'Deletes the temporary worksheet created during the test to remove any
-'OLEObject controls and ensure the next test starts with a clean workbook.
+'Flush persists the assertions of the test that just ran into the results
+'buffer. PrintResults renders that buffer alone, so a test that skips the
+'flush leaves no trace in the results file.
+'
+'The controls go with it. A form instance keeps everything added to it until
+'the instance is unloaded, and Controls.Add refuses a name already in use, so
+'a test that left its button behind would break the next one.
 '@TestCleanup
 Public Sub TestCleanup()
-    CleanupTestSheet
+    If Not Assert Is Nothing Then Assert.Flush
+    ClearHostForm
 End Sub
 
 
 '@section Helpers
 '===============================================================================
 
-'@sub-title Create a temporary worksheet for hosting OLEObject controls.
+'@sub-title The form the fixture controls are built on.
 '@details
-'Adds a new worksheet to ThisWorkbook, stores it in the module-level
-'testSheet variable for cleanup, and returns a reference to the caller.
-Private Function CreateTestSheet() As Worksheet
-    Set testSheet = ThisWorkbook.Worksheets.Add
-    Set CreateTestSheet = testSheet
+'Excel for Mac carries no ActiveX worksheet controls, so OLEObjects.Add
+'answered "Unable to get the Add property" for every Forms.CommandButton.1
+'the old fixture asked for, and all seven tests errored on the arrange. A
+'UserForm builds the same controls on every host, and it is the surface the
+'class meets in production: SetupExportForm adds each export button to
+'F_Export the same way.
+'
+'DraftForm is the spare form of the driver workbook. It carries no code of
+'its own and the import sweep leaves it in place, so it is a host this suite
+'gets for free.
+'@return Object. The host form.
+Private Function HostForm() As Object
+    Set HostForm = DraftForm
 End Function
 
-'@sub-title Delete the temporary worksheet if it exists.
+'@sub-title Take every control this module added off the host form.
 '@details
-'Checks the module-level testSheet variable and, when set, deletes the
-'worksheet with alerts suppressed to avoid user confirmation dialogs.
-'Resets the reference to Nothing so repeated calls are safe.
-Private Sub CleanupTestSheet()
-    If Not testSheet Is Nothing Then
-        Application.DisplayAlerts = False
-        testSheet.Delete
-        Application.DisplayAlerts = True
-        Set testSheet = Nothing
+'Only the names this module recorded come off, so a control the form was
+'designed with stays on it. Remove refuses a designed control anyway, and the
+'handler carries that.
+Private Sub ClearHostForm()
+    Dim controlName As Variant
+
+    If Not addedControls Is Nothing Then
+        For Each controlName In addedControls
+            On Error Resume Next
+            HostForm().Controls.Remove CStr(controlName)
+            On Error GoTo 0
+        Next controlName
     End If
+
+    Set addedControls = New Collection
 End Sub
 
-'@sub-title Create a CommandButton OLEObject on the given worksheet.
+'@sub-title Create a CommandButton on the host form.
 '@details
-'Adds a Forms.CommandButton.1 OLE control to the worksheet, assigns
-'the requested name to the underlying MSForms.CommandButton, and returns
-'it. The button name drives ExportNumber parsing (e.g. "CMDExport3").
-'@param sh Worksheet. The host worksheet for the OLEObject.
-'@param buttonName String. The name to assign to the button control.
+'Adds a Forms.CommandButton.1 to the host form under the requested name and
+'records that name for cleanup. The button name drives ExportNumber parsing
+'(e.g. "CMDExport3").
+'@param buttonName String. The name to give the button control.
 '@return MSForms.CommandButton. The newly created button.
-Private Function CreateButton(ByVal sh As Worksheet, _
-                               ByVal buttonName As String) As MSForms.CommandButton
-    Dim ole As OLEObject
-    Set ole = sh.OLEObjects.Add(ClassType:="Forms.CommandButton.1")
+Private Function CreateButton(ByVal buttonName As String) As MSForms.CommandButton
     Dim btn As MSForms.CommandButton
-    Set btn = ole.Object
-    btn.Name = buttonName
+
+    Set btn = HostForm().Controls.Add("Forms.CommandButton.1", buttonName, True)
+    addedControls.Add buttonName
     Set CreateButton = btn
 End Function
 
-'@sub-title Create a CheckBox OLEObject on the given worksheet.
+'@sub-title Create a CheckBox on the host form.
 '@details
-'Adds a Forms.CheckBox.1 OLE control to the worksheet and returns the
-'underlying MSForms.CheckBox. Used to test the UseFilter property which
-'reads and writes the companion checkbox state.
-'@param sh Worksheet. The host worksheet for the OLEObject.
+'Adds a Forms.CheckBox.1 to the host form and records its name for cleanup.
+'Used to test the UseFilter property, which reads the companion checkbox on
+'every ask.
 '@return MSForms.CheckBox. The newly created checkbox.
-Private Function CreateCheckBox(ByVal sh As Worksheet) As MSForms.CheckBox
-    Dim ole As OLEObject
-    Set ole = sh.OLEObjects.Add(ClassType:="Forms.CheckBox.1")
-    Set CreateCheckBox = ole.Object
+Private Function CreateCheckBox() As MSForms.CheckBox
+    Dim chk As MSForms.CheckBox
+    Dim controlName As String
+
+    controlName = "CHKFilterFixture"
+    Set chk = HostForm().Controls.Add("Forms.CheckBox.1", controlName, True)
+    addedControls.Add controlName
+    Set CreateCheckBox = chk
 End Function
 
 '@sub-title Create a stub TranslationObject for factory calls.
@@ -143,11 +184,8 @@ Public Sub FactoryCreatesWithValidArgs()
     CustomTestSetTitles Assert, "ExportButton", "FactoryCreatesWithValidArgs"
     On Error GoTo TestFail
 
-    Dim sh As Worksheet
-    Set sh = CreateTestSheet()
-
     Dim btn As MSForms.CommandButton
-    Set btn = CreateButton(sh, "CMDExport1")
+    Set btn = CreateButton("CMDExport1")
 
     Dim sut As ExportButton
     Set sut = ExportButton.Create(ThisWorkbook, CreateTranslationStub(), btn)
@@ -237,11 +275,8 @@ Public Sub ExportNumberParsesButtonName()
     CustomTestSetTitles Assert, "ExportButton", "ExportNumberParsesButtonName"
     On Error GoTo TestFail
 
-    Dim sh As Worksheet
-    Set sh = CreateTestSheet()
-
     Dim btn As MSForms.CommandButton
-    Set btn = CreateButton(sh, "CMDExport3")
+    Set btn = CreateButton("CMDExport3")
 
     Dim sut As ExportButton
     Set sut = ExportButton.Create(ThisWorkbook, CreateTranslationStub(), btn)
@@ -251,6 +286,54 @@ Public Sub ExportNumberParsesButtonName()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "ExportNumberParsesButtonName", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify ExportNumber answers 0 for a name without the tag.
+'@details
+'Arranges a button named "Export", which carries no "CMDExport" prefix. Acts
+'by reading ExportNumber. Asserts the answer is 0, confirming the read places
+'no number on a name it does not recognise. The read runs on the click path,
+'so answering 0 is what keeps a stray name off the raise route.
+'@TestMethod("ExportButton")
+Public Sub ExportNumberZeroWithoutTheTag()
+    CustomTestSetTitles Assert, "ExportButton", "ExportNumberZeroWithoutTheTag"
+    On Error GoTo TestFail
+
+    Dim btn As MSForms.CommandButton
+    Set btn = CreateButton("Export")
+
+    Dim sut As ExportButton
+    Set sut = ExportButton.Create(ThisWorkbook, CreateTranslationStub(), btn)
+    Assert.AreEqual 0&, sut.ExportNumber, _
+                    "ExportNumber should answer 0 for a name without the tag"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "ExportNumberZeroWithoutTheTag", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify ExportNumber answers 0 when the tag is followed by letters.
+'@details
+'Arranges a button named "CMDExportABC". Acts by reading ExportNumber.
+'Asserts the answer is 0. The old read handed the remainder to CLng, which
+'raises 13 on a word, and the raise came out of a property read inside the
+'click handler.
+'@TestMethod("ExportButton")
+Public Sub ExportNumberZeroForLettersAfterTheTag()
+    CustomTestSetTitles Assert, "ExportButton", "ExportNumberZeroForLettersAfterTheTag"
+    On Error GoTo TestFail
+
+    Dim btn As MSForms.CommandButton
+    Set btn = CreateButton("CMDExportABC")
+
+    Dim sut As ExportButton
+    Set sut = ExportButton.Create(ThisWorkbook, CreateTranslationStub(), btn)
+    Assert.AreEqual 0&, sut.ExportNumber, _
+                    "ExportNumber should answer 0 when no digits follow the tag"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "ExportNumberZeroForLettersAfterTheTag", Err.Number, Err.Description
 End Sub
 
 
@@ -268,11 +351,8 @@ Public Sub UseFilterFalseWithoutCheckbox()
     CustomTestSetTitles Assert, "ExportButton", "UseFilterFalseWithoutCheckbox"
     On Error GoTo TestFail
 
-    Dim sh As Worksheet
-    Set sh = CreateTestSheet()
-
     Dim btn As MSForms.CommandButton
-    Set btn = CreateButton(sh, "CMDExport1")
+    Set btn = CreateButton("CMDExport1")
 
     Dim sut As ExportButton
     Set sut = ExportButton.Create(ThisWorkbook, CreateTranslationStub(), btn)
@@ -295,14 +375,11 @@ Public Sub UseFilterReadsCheckboxValue()
     CustomTestSetTitles Assert, "ExportButton", "UseFilterReadsCheckboxValue"
     On Error GoTo TestFail
 
-    Dim sh As Worksheet
-    Set sh = CreateTestSheet()
-
     Dim btn As MSForms.CommandButton
-    Set btn = CreateButton(sh, "CMDExport1")
+    Set btn = CreateButton("CMDExport1")
 
     Dim chk As MSForms.CheckBox
-    Set chk = CreateCheckBox(sh)
+    Set chk = CreateCheckBox()
     chk.Value = True
 
     Dim sut As ExportButton
@@ -326,14 +403,11 @@ Public Sub UseFilterFollowsTheCheckbox()
     CustomTestSetTitles Assert, "ExportButton", "UseFilterFollowsTheCheckbox"
     On Error GoTo TestFail
 
-    Dim sh As Worksheet
-    Set sh = CreateTestSheet()
-
     Dim btn As MSForms.CommandButton
-    Set btn = CreateButton(sh, "CMDExport1")
+    Set btn = CreateButton("CMDExport1")
 
     Dim chk As MSForms.CheckBox
-    Set chk = CreateCheckBox(sh)
+    Set chk = CreateCheckBox()
     chk.Value = True
 
     Dim sut As ExportButton

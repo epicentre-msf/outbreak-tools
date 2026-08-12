@@ -50,6 +50,7 @@ Private Type TExportButton
     sourceWkb As Workbook
     trads As TranslationObject
     sealed As Boolean
+    running As Boolean
 End Type
 
 Private this As TExportButton
@@ -150,13 +151,34 @@ End Sub
 '@label:export-number
 '@prop-title Export number derived from button name
 '@details
-'Parses the button Name property by removing the NAMETAG prefix
-'("CMDExport") and converting the remainder to Long. For example,
-'"CMDExport1" yields 1, "CMDExport3" yields 3.
-'@return Long. The 1-based export number.
+'Reads the button Name property, takes the NAMETAG prefix ("CMDExport") off
+'the front and reads the digits that follow. "CMDExport1" answers 1 and
+'"CMDExport3" answers 3.
+'
+'The property answers 0 for every name it cannot place: no button bound, a
+'name that does not lead with the tag, a remainder with no digits in it, and
+'a number outside the Long range. The read runs on the click path, so it
+'raises nothing and RunExport refuses the 0.
+'@return Long. The 1-based export number, or 0 when the name carries none.
 '@export
 Public Property Get ExportNumber() As Long
-    ExportNumber = CLng(Replace(Btn.Name, NAMETAG, vbNullString))
+
+    Dim buttonName As String
+    Dim numericPart As Double
+
+    If Btn Is Nothing Then Exit Property
+
+    buttonName = Btn.Name
+    If StrComp(Left$(buttonName, Len(NAMETAG)), NAMETAG, vbTextCompare) <> 0 Then _
+        Exit Property
+
+    'Val reads the leading digits and answers 0 for a remainder with none, so
+    'it never raises the way CLng of a word does. Int drops any fraction, so
+    'the answer is the number that was written.
+    numericPart = Int(Val(Mid$(buttonName, Len(NAMETAG) + 1)))
+    If numericPart < 1 Or numericPart > 2147483647# Then Exit Property
+
+    ExportNumber = CLng(numericPart)
 End Property
 
 '@label:use-filter
@@ -180,17 +202,34 @@ End Property
 
 '@label:btn-click
 '@sub-title Handle button click event
+'@details
+'A click that arrives while this button is already exporting is dropped.
+'Screen updating is off for most of an export, so the form does not repaint
+'and a user who reads that as nothing happening clicks again. The queued
+'click runs when the first export returns, and it would ask for a folder a
+'second time and write a second file.
 Private Sub Btn_Click()
+
+    If this.running Then Exit Sub
+
+    this.running = True
     RunExport
+    this.running = False
 End Sub
 
 '@label:run-export
 '@sub-title Perform a custom export
 '@details
-'Prompts the user to select a folder via OSFiles, applies busy state,
-'optionally confirms filter usage via MsgBox, then delegates to
-'LLExporter.ExportCustom and tells the user where the file went. On error,
-'displays a translated error message and closes any orphaned output workbook.
+'Asks the user everything it needs first: the folder through OSFiles, then
+'the filter confirmation. Both questions are answered before the busy state
+'goes on, because a box drawn under suppressed screen updating can end up
+'behind the workbook window on Mac Excel. The busy state then covers the
+'work: the filtered companions are synced and LLExporter.ExportCustom writes
+'the file. The state is restored before the user is told where the file went.
+'On error, displays a translated error message and closes any orphaned
+'output workbook.
+'@throws ProjectError.SomethingWentWrong When the button name carries no
+'export number.
 Private Sub RunExport()
 
     Dim exporter As LLExporter
@@ -200,8 +239,14 @@ Private Sub RunExport()
     Dim filePath As String
     Dim useFilt As Boolean
     Dim failureDetail As String
+    Dim runNumber As Long
 
     On Error GoTo ErrHand
+
+    ' The export this button runs
+    runNumber = ExportNumber
+    If runNumber < 1 Then _
+        ThrowError SomethingWentWrong, "The button name carries no export number"
 
     ' Select export folder
     Set io = OSFiles.Create()
@@ -209,19 +254,12 @@ Private Sub RunExport()
     If Not io.HasValidFolder Then Exit Sub
     folderPath = io.Folder()
 
-    ' Apply busy state
-    Set appState = ApplicationState.Create()
-    appState.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, _
-                            busyCursor:=xlWait, blockSecurity:=False
-
     ' Handle filter confirmation
     useFilt = UseFilter
     If useFilt Then
         If MsgBox(TranslatedValue("MSG_AskFilter"), _
                   vbYesNo + vbQuestion, _
-                  TranslatedValue("MSG_ThereIsFilter")) = vbYes Then
-            SyncFilteredData
-        Else
+                  TranslatedValue("MSG_ThereIsFilter")) = vbNo Then
             'The refusal stays with this export. The box is shared by every
             'button of the form, and unticking it here would answer for the
             'next export the user runs.
@@ -229,9 +267,17 @@ Private Sub RunExport()
         End If
     End If
 
+    ' Apply busy state
+    Set appState = ApplicationState.Create()
+    appState.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, _
+                            busyCursor:=xlWait, blockSecurity:=False
+
+    ' Sync the filtered companions the export reads
+    If useFilt Then SyncFilteredData
+
     ' Export
     Set exporter = LLExporter.Create(this.sourceWkb)
-    filePath = exporter.ExportCustom(ExportNumber, folderPath, useFilt)
+    filePath = exporter.ExportCustom(runNumber, folderPath, useFilt)
 
     appState.Restore
 

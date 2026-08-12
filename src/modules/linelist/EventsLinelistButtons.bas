@@ -1060,7 +1060,7 @@ Public Sub ClickExport()
     'initialize translations
     InitializeTrads
 
-    Set expsh = ThisWorkbook.Worksheets(EXPORTSHEET)
+    Set expsh = wb.Worksheets(EXPORTSHEET)
     Set expObj = LLExport.Create(expsh)
 
     On Error GoTo errLoadExp
@@ -1070,7 +1070,9 @@ Public Sub ClickExport()
     'The qualified call runs the F_Export code-behind, whose source is the
     'FormLogicExport module. It answers the free position under the last
     'button, which the fixed controls are laid out from.
-    topPosition = F_Export.SetupExportForm(ThisWorkbook, tradsmess, expObj, _
+    'The workbook is the module-level wb, which InitializeTrads set above and
+    'every other entry point of this module uses.
+    topPosition = F_Export.SetupExportForm(wb, tradsmess, expObj, _
                                            COMMANDGAPS, COMMANDHEIGHT, COMMANDGAPS)
 
     With F_Export
