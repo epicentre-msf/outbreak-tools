@@ -22,12 +22,14 @@ Option Explicit
 'export sheet and performs a custom export when clicked. The factory wires
 'the button, an optional filter checkbox, and translation/workbook
 'references. On click, RunExport selects a folder, optionally confirms
-'filter usage, then delegates to LLExporter.ExportCustom. The factory
-'returns the concrete class because the caller holds a reference to keep the
-'WithEvents binding alive. That caller is the F_Export code-behind, which
-'keeps one instance per button in a module-level collection for as long as
-'the form carries the buttons.
-'@depends LLExporter, ApplicationState, OSFiles
+'filter usage, syncs the filtered companions through FilteredData, then
+'delegates to LLExporter.ExportCustom. A sheet the sync skipped aborts the
+'export through the click handler's error path. The factory returns the
+'concrete class because the caller holds a reference to keep the WithEvents
+'binding alive. That caller is the F_Export code-behind, which keeps one
+'instance per button in a module-level collection for as long as the form
+'carries the buttons.
+'@depends LLExporter, FilteredData, ApplicationState, OSFiles
 
 
 '@section Constants
@@ -197,6 +199,7 @@ Private Sub RunExport()
     Dim folderPath As String
     Dim filePath As String
     Dim useFilt As Boolean
+    Dim failureDetail As String
 
     On Error GoTo ErrHand
 
@@ -217,7 +220,7 @@ Private Sub RunExport()
         If MsgBox(TranslatedValue("MSG_AskFilter"), _
                   vbYesNo + vbQuestion, _
                   TranslatedValue("MSG_ThereIsFilter")) = vbYes Then
-            UpdateFilteredData
+            SyncFilteredData
         Else
             'The refusal stays with this export. The box is shared by every
             'button of the form, and unticking it here would answer for the
@@ -236,23 +239,15 @@ Private Sub RunExport()
     Exit Sub
 
 ErrHand:
+    'Any On Error statement resets the Err object, so the detail is read
+    'before the handler shields itself.
+    failureDetail = Err.Description
     On Error Resume Next
-    MsgBox TranslatedValue("MSG_ErrHandExport"), _
+    MsgBox TranslatedValue("MSG_ErrHandExport") & ": " & failureDetail, _
            vbOKOnly + vbCritical, TranslatedValue("MSG_Error")
     If Not exporter Is Nothing Then exporter.CloseAll
     If Not appState Is Nothing Then appState.Restore
 End Sub
-
-
-'@sub-title Get the sheet type tag from worksheet-level HiddenNames.
-'@param sh Worksheet. The worksheet to query.
-'@return String. The sheet type tag (HList, VList, etc.).
-Private Function SheetTagOf(ByVal sh As Worksheet, _
-                            Optional ByVal nameKey As String = "sheet_type") As String
-    Dim shHn As HiddenNames
-    Set shHn = HiddenNames.Create(sh)
-    SheetTagOf = shHn.ValueAsString(nameKey)
-End Function
 
 '@section Private Helpers
 '===============================================================================
@@ -296,75 +291,36 @@ Private Sub ReportSavedFile(ByVal filePath As String, ByVal password As String)
     MsgBox message, vbOKOnly + vbInformation, TranslatedValue("MSG_FileSaved")
 End Sub
 
-'@label:update-filtered-data
-'@sub-title Sync filtered data sheets before a filtered export
+'@label:sync-filtered-data
+'@sub-title Sync the filtered companions and abort on a skipped sheet
 '@details
-'Copies HList data to companion filtered sheets and removes hidden or
-'empty rows, ensuring the filtered export reflects the user current
-'filter state.
-Private Sub UpdateFilteredData()
+'Builds a FilteredData over the source workbook and runs the sync. A sheet
+'the sync skipped means the export would read a companion that no longer
+'matches its table, so the failures are joined into one message and raised.
+'The raise lands in RunExport's handler, which shows the message, closes
+'any orphaned output workbook and restores the application state.
+'@throws ProjectError.SomethingWentWrong When the sync skipped a sheet.
+Private Sub SyncFilteredData()
 
-    Dim sh As Worksheet
-    Dim filtsh As Worksheet
-    Dim lo As ListObject
-    Dim loRng As Range
-    Dim destRng As Range
-    Dim delRng As Range
-    Dim filtLoHRng As Range
-    Dim rowCounter As Long
-    Dim wsFunc As WorksheetFunction
+    Dim filtered As FilteredData
+    Dim failures As BetterArray
+    Dim failureText As String
+    Dim counter As Long
 
-    On Error GoTo ErrUpdate
+    Set filtered = FilteredData.Create(this.sourceWkb)
+    filtered.Sync
 
-    Set wsFunc = Application.WorksheetFunction
+    Set failures = filtered.FailedSheets
+    If failures.Length = 0 Then Exit Sub
 
-    For Each sh In this.sourceWkb.Worksheets
-        If SheetTagOf(sh) = "HList" Then
-            Set lo = sh.ListObjects(1)
+    For counter = failures.LowerBound To failures.UpperBound
+        failureText = failureText & vbNewLine & failures.Item(counter)
+    Next counter
 
-            If Not lo.DataBodyRange Is Nothing Then
-                Set loRng = lo.DataBodyRange
-                Set filtsh = this.sourceWkb.Worksheets(SheetTagOf(sh, "filtered_sheet"))
-                rowCounter = loRng.Rows.Count
-
-                With filtsh
-                    On Error Resume Next
-                    .ListObjects(1).DataBodyRange.Delete
-                    On Error GoTo ErrUpdate
-
-                    .ListObjects(1).Resize .Range(lo.Range.Address)
-                    Set destRng = .Range(loRng.Address)
-                    Set filtLoHRng = .ListObjects(1).HeaderRowRange
-                    Set delRng = Nothing
-                End With
-
-                ' Copy values to filtered sheet
-                destRng.Value = loRng.Value
-
-                ' Mark hidden or empty rows for deletion (bottom-up)
-                Do While rowCounter >= 1
-                    If loRng.Cells(rowCounter, 1).EntireRow.Hidden Or _
-                       wsFunc.CountA(filtLoHRng.Offset(rowCounter)) = 0 Then
-                        If delRng Is Nothing Then
-                            Set delRng = filtLoHRng.Offset(rowCounter)
-                        Else
-                            Set delRng = Application.Union(delRng, filtLoHRng.Offset(rowCounter))
-                        End If
-                    End If
-                    rowCounter = rowCounter - 1
-                Loop
-
-                If Not delRng Is Nothing Then delRng.Delete
-            End If
-        End If
-    Next sh
-    Exit Sub
-
-ErrUpdate:
-    'MSG_ErrUpdate is in neither translation workbook, and TranslateTag answers
-    'the tag itself on a miss, so this box used to show the raw key.
-    MsgBox TranslatedValue("MSG_ErrExportData") & ": " & Err.Description, _
-           vbCritical + vbOKOnly, TranslatedValue("MSG_Error")
+    'The MSG_ErrUpdate row is still owed to the translation workbooks, and
+    'TranslateTag answers the tag itself on a miss, so the box shows the raw
+    'key until the row lands.
+    ThrowError SomethingWentWrong, TranslatedValue("MSG_ErrUpdate") & failureText
 End Sub
 
 '@label:throw-error

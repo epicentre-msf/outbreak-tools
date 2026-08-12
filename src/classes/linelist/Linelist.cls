@@ -1067,7 +1067,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
 
     Set codesList = New BetterArray
 
-    'Transfer classes (30 classes)
+    'Transfer classes (33 classes)
     codesList.Push "BetterArray", "DataSheet", "LLExport", _
                    "LLChoices", _
                    "LLdictionary", "LLGeo", _
@@ -1085,7 +1085,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
                    "ChoiceKeys", "ImportMetadata", "ImportReport", _
                    "CheckingOutput", _
                    "Graphs", "AnaTabIds", _
-                   "ExportButton", _
+                   "ExportButton", "FilteredData", _
                    "HiddenNames", _
                    "EventLinelist", _
                    "LLLog", _
