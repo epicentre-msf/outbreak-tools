@@ -112,72 +112,80 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
     'every keystroke, off the same cache the form reads.
     GeoFormCache.LoadFrom ThisWorkbook
 
-    Select Case hfOrGeo
+    'Every control below is reached through one block. Naming F_Geo resolves
+    'the default instance and looks the control up again on each line, and the
+    'open touched about twenty of them.
+    With F_Geo
 
-    Case GeoScopeAdmin
-        F_Geo.LBL_Adm1.Caption = geoObj.GeoNames("adm1_name")
-        F_Geo.LBL_Adm2.Caption = geoObj.GeoNames("adm2_name")
-        F_Geo.LBL_Adm3.Caption = geoObj.GeoNames("adm3_name")
-        F_Geo.LBL_Adm4.Caption = geoObj.GeoNames("adm4_name")
+        Select Case hfOrGeo
 
-        drop.ClearList "admin2"
-        drop.ClearList "admin3"
-        drop.ClearList "admin4"
+        Case GeoScopeAdmin
+            .LBL_Adm1.Caption = geoObj.GeoNames("adm1_name")
+            .LBL_Adm2.Caption = geoObj.GeoNames("adm2_name")
+            .LBL_Adm3.Caption = geoObj.GeoNames("adm3_name")
+            .LBL_Adm4.Caption = geoObj.GeoNames("adm4_name")
 
-        If Not geoObj.HasNoData() Then
-            Set geoList = geoObj.GeoLevel(LevelAdmin1, GeoScopeAdmin)
-            F_Geo.LST_Adm1.List = geoList.Items
-        End If
+            drop.ClearList "admin2"
+            drop.ClearList "admin3"
+            drop.ClearList "admin4"
 
-        'The concatenated tab is a search surface: its list starts empty and
-        'fills from the search box at three characters. Pushing the whole
-        'adm4 column here was the largest single allocation of the open, and
-        'an MSForms ListBox stops outright at 65536 rows.
+            If Not geoObj.HasNoData() Then
+                Set geoList = geoObj.GeoLevel(LevelAdmin1, GeoScopeAdmin)
+                .LST_Adm1.List = geoList.Items
+            End If
 
-        Set historicList = GeoFormCache.HistoricList(GeoScopeAdmin)
-        F_Geo.LST_Histo.List = historicList.Items
+            'The concatenated tab is a search surface: its list starts empty
+            'and fills from the search box at three characters. Pushing the
+            'whole adm4 column here was the largest single allocation of the
+            'open, and an MSForms ListBox stops outright at 65536 rows.
 
-        F_Geo.FRM_Facility.Visible = False
-        F_Geo.FRM_Geo.Visible = True
-        F_Geo.LBL_Fac1.Visible = False
-        F_Geo.LBL_Geo1.Visible = True
+            Set historicList = GeoFormCache.HistoricList(GeoScopeAdmin)
+            .LST_Histo.List = historicList.Items
 
-    Case GeoScopeHF
-        F_Geo.LBL_Adm4F.Caption = geoObj.GeoNames("hf_name")
-        F_Geo.LBL_Adm3F.Caption = geoObj.GeoNames("adm3_name")
-        F_Geo.LBL_Adm2F.Caption = geoObj.GeoNames("adm2_name")
-        F_Geo.LBL_Adm1F.Caption = geoObj.GeoNames("adm1_name")
+            .FRM_Facility.Visible = False
+            .FRM_Geo.Visible = True
+            .LBL_Fac1.Visible = False
+            .LBL_Geo1.Visible = True
 
-        If Not geoObj.HasNoData() Then
-            Set geoList = geoObj.GeoLevel(LevelAdmin1, GeoScopeHF)
-            F_Geo.LST_AdmF1.List = geoList.Items
-        End If
+        Case GeoScopeHF
+            .LBL_Adm4F.Caption = geoObj.GeoNames("hf_name")
+            .LBL_Adm3F.Caption = geoObj.GeoNames("adm3_name")
+            .LBL_Adm2F.Caption = geoObj.GeoNames("adm2_name")
+            .LBL_Adm1F.Caption = geoObj.GeoNames("adm1_name")
 
-        'The facility concatenated list follows the admin one: empty until
-        'the search box holds three characters.
+            If Not geoObj.HasNoData() Then
+                Set geoList = geoObj.GeoLevel(LevelAdmin1, GeoScopeHF)
+                .LST_AdmF1.List = geoList.Items
+            End If
 
-        Set historicList = GeoFormCache.HistoricList(GeoScopeHF)
-        F_Geo.LST_HistoF.List = historicList.Items
-        F_Geo.FRM_Facility.Visible = True
-        F_Geo.FRM_Geo.Visible = False
-        F_Geo.LBL_Fac1.Visible = True
-        F_Geo.LBL_Geo1.Visible = False
+            'The facility concatenated list follows the admin one: empty until
+            'the search box holds three characters.
 
-    Case Else
-        'GeoScopeBoth exists on the enum and has no layout in the form. An
-        'unknown scope used to configure nothing and show the form as the
-        'previous open left it.
-        LinelistEventsManager.LLExitBusyState
-        ReportGeoError "Unknown geo scope " & hfOrGeo
-        Exit Sub
+            Set historicList = GeoFormCache.HistoricList(GeoScopeHF)
+            .LST_HistoF.List = historicList.Items
+            .FRM_Facility.Visible = True
+            .FRM_Geo.Visible = False
+            .LBL_Fac1.Visible = True
+            .LBL_Geo1.Visible = False
 
-    End Select
+        Case Else
+            'GeoScopeBoth exists on the enum and has no layout in the form. An
+            'unknown scope used to configure nothing and show the form as the
+            'previous open left it.
+            LinelistEventsManager.LLExitBusyState
+            ReportGeoError "Unknown geo scope " & hfOrGeo
+            Exit Sub
+
+        End Select
+
+        .TXT_Msg.Value = vbNullString
+    End With
 
     'Exit the busy state before the modal form comes up, so it is never
-    'raised over a frozen screen.
+    'raised over a frozen screen. Show blocks until the form hides, so it
+    'stands outside the block above: nothing holds a reference to the form
+    'while the form runs.
     LinelistEventsManager.LLExitBusyState
-
-    F_Geo.TXT_Msg.Value = vbNullString
     F_Geo.Show
     Exit Sub
 
