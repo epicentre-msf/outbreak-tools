@@ -377,6 +377,13 @@ Cleanup:
     End If
 End Sub
 
+'@Description("Generate one linelist per row of the multi table. The driver that walks the rows arrives in a later update; this stub keeps the ribbon button wired.")
+'@EntryPoint
+Public Sub clickGenerateMulti(ByRef control As IRibbonControl)
+    MsgBox "Multi generation is under construction.", _
+           vbInformation + vbOKOnly, PROMPT_TITLE
+End Sub
+
 
 '@section Internal helpers
 '===============================================================================

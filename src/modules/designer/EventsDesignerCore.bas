@@ -243,25 +243,59 @@ End Sub
 '@Description("Initialise checkbox state for alerts from persisted hidden names.")
 '@EntryPoint
 Public Sub initMainAlert(ByRef control As IRibbonControl, ByRef returnedVal)
+
+    'getPressed fires at ribbon load; a raise here drops the whole tab,
+    'so any failure falls back to the checked default.
+    On Error GoTo Fallback
     returnedVal = ResolvePreparation().GetFlag("chkAlert", True)
+    Exit Sub
+
+Fallback:
+    returnedVal = True
 End Sub
 
 '@Description("Persist alert checkbox state.")
 '@EntryPoint
 Public Sub clickMainAlert(ByRef control As IRibbonControl, ByVal pressed As Boolean)
+
+    On Error GoTo Handler
     ResolvePreparation().SetFlag "chkAlert", pressed
+    Exit Sub
+
+Handler:
+    Debug.Print "clickMainAlert: "; Err.Number; Err.Description
+    MsgBox "Unable to save the alert setting: " & Err.Description, _
+           vbExclamation + vbOKOnly, PROMPT_TITLE
+    Err.Clear
 End Sub
 
 '@Description("Initialise checkbox state for instructions from persisted hidden names.")
 '@EntryPoint
 Public Sub initMainInstruct(ByRef control As IRibbonControl, ByRef returnedVal)
+
+    'getPressed fires at ribbon load; a raise here drops the whole tab,
+    'so any failure falls back to the checked default.
+    On Error GoTo Fallback
     returnedVal = ResolvePreparation().GetFlag("chkInstruct", True)
+    Exit Sub
+
+Fallback:
+    returnedVal = True
 End Sub
 
 '@Description("Persist instruction checkbox state.")
 '@EntryPoint
 Public Sub clickMainInstruct(ByRef control As IRibbonControl, ByVal pressed As Boolean)
+
+    On Error GoTo Handler
     ResolvePreparation().SetFlag "chkInstruct", pressed
+    Exit Sub
+
+Handler:
+    Debug.Print "clickMainInstruct: "; Err.Number; Err.Description
+    MsgBox "Unable to save the instruction setting: " & Err.Description, _
+           vbExclamation + vbOKOnly, PROMPT_TITLE
+    Err.Clear
 End Sub
 
 

@@ -154,13 +154,13 @@ End Sub
 
 '@EntryPoint
 '@Description("Resize development tables by trimming data rows")
-Public Sub clicDevResize(ByRef control As IRibbonControl)
+Public Sub clickDevResize(ByRef control As IRibbonControl)
     UpdateTables addRows:=False
 End Sub
 
 '@EntryPoint
 '@Description("Copy module code into mapped forms")
-Public Sub clicDevAddFormTable(ByRef control As IRibbonControl)
+Public Sub clickDevAddFormsCodes(ByRef control As IRibbonControl)
     Dim manager As Development
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub

@@ -30,7 +30,7 @@ Private Const DROP_SETUP_LANGUAGES As String = "__setup_languages"
 
 '@Description("Initialise the designer workbook: import translations, hide sheets, seed flags.")
 '@EntryPoint
-Public Sub clickDevInitialize(ByRef control As IRibbonControl)
+Public Sub clickDesignerInitialize(ByRef control As IRibbonControl)
     Dim prep As DesignerPreparation
     Dim appScope As ApplicationState
 
@@ -57,7 +57,7 @@ Cleanup:
     On Error GoTo 0
 
     If errNumber <> 0 Then
-        Debug.Print "clickDevInitialize: "; errNumber; errDesc
+        Debug.Print "clickDesignerInitialize: "; errNumber; errDesc
         MsgBox "Unable to initialise designer: " & errDesc, _
                vbExclamation + vbOKOnly, PROMPT_TITLE
     End If
@@ -69,7 +69,7 @@ End Sub
 
 '@Description("Clear all geobase data from the Geo worksheet.")
 '@EntryPoint
-Public Sub clickDelGeo()
+Public Sub clickDelGeo(ByRef control As IRibbonControl)
     Dim geoSheet As Worksheet
     Dim geo As LLGeo
     Dim appScope As ApplicationState
@@ -102,7 +102,7 @@ End Sub
 
 '@Description("Clear all entry input ranges on the Main sheet.")
 '@EntryPoint
-Public Sub clickClearEnt()
+Public Sub clickClearEnt(ByRef control As IRibbonControl)
     Dim entry As DesignerEntry
     Dim appScope As ApplicationState
 
