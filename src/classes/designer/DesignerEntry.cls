@@ -12,19 +12,20 @@ Attribute VB_Description = "Coordinates clearing and translation behaviours for 
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Coordinates clearing and translation behaviours for designer entry sheets.")
-'@depends ProjectError, DesignerTranslation
+'@depends ProjectError, DesignerTranslation, Checking
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
 
 '@class DesignerEntry
 '@description
-'Coordinates clearing, translation, and info read/write actions for a
-'designer entry worksheet. Lazily resolves a DesignerTranslation
-'translator (for applying language translations and translating message
-'codes) from the host worksheet and its parent workbook. A test injects
-'its translator through UseTranslator before the first resolve.
-'@depends DesignerTranslation
+'Coordinates clearing, translation, validation, and info read/write
+'actions for a designer entry worksheet. Lazily resolves a
+'DesignerTranslation translator (for applying language translations and
+'translating message codes) from the host worksheet and its parent
+'workbook. A test injects its translator through UseTranslator before
+'the first resolve.
+'@depends DesignerTranslation, Checking
 
 
 '@section State
@@ -53,7 +54,13 @@ Private Const RNG_LL_NAME As String = "RNG_LLName"
 Private Const RNG_LANG_SETUP As String = "RNG_LangSetup"
 Private Const RNG_TEMP_PATH As String = "RNG_LLTemp"
 Private Const RNG_LL_FORM As String = "RNG_LLForm"
+Private Const RNG_DESIGN_LL As String = "RNG_DesignLL"
 Private Const RNG_WARNING As String = "RNG_Warning"
+
+'Leading shape of the internal tag columns of a setup file. A tag column
+'header can reach the setup language dropdown through the fallback read,
+'and Validate refuses it as a language.
+Private Const INTERNAL_TAG_LEAD As String = "__"
 
 
 '@section Factory
@@ -217,6 +224,106 @@ Public Property Get ValueOf(ByVal infoName As String) As String
     On Error GoTo 0
 End Property
 
+'@label:validate
+'@sub-title Check the generation entries on the host worksheet
+'@details
+'Reads the generation entries from the Main named ranges and files one
+'entry per fault into a Checking, every entry with the error scope. The
+'checks: the setup path is set and on disk, the output folder is set
+'and on disk, the linelist name is set, the setup language is set and
+'is free of the internal double-underscore tag shape, the linelist
+'language is set, the design value is set, and the template and geobase
+'paths are on disk when they are set. An empty checking means every
+'entry passes. A named range missing from the worksheet reads as an
+'empty value and files the matching fault.
+'@return Checking. One entry per faulty generation entry.
+'@export
+Public Function Validate() As Checking
+    Dim checks As Checking
+    Dim entryValue As String
+
+    Set checks = Checking.Create("Generation entries", _
+                                 "Checks run on the Main entries before the build")
+
+    'Setup file: required, and the file has to be on disk
+    entryValue = ValueOf("setuppath")
+    If LenB(entryValue) = 0 Then
+        checks.Add "setup path", _
+                   "The setup file path is empty. Load a setup file first.", _
+                   checkingError
+    ElseIf LenB(Dir(entryValue)) = 0 Then
+        checks.Add "setup path", _
+                   "The setup file was not found: " & entryValue, _
+                   checkingError
+    End If
+
+    'Output folder: required, and the folder has to be on disk
+    entryValue = ValueOf("lldir")
+    If LenB(entryValue) = 0 Then
+        checks.Add "output folder", _
+                   "The output folder is empty. Pick where the linelist will be written.", _
+                   checkingError
+    ElseIf LenB(Dir(entryValue, vbDirectory)) = 0 Then
+        checks.Add "output folder", _
+                   "The output folder was not found: " & entryValue, _
+                   checkingError
+    End If
+
+    'Linelist name: required
+    If LenB(ValueOf("llname")) = 0 Then
+        checks.Add "linelist name", "The linelist name is empty.", checkingError
+    End If
+
+    'Setup language: required, and an internal tag column is refused
+    entryValue = ValueOf("setuplang")
+    If LenB(entryValue) = 0 Then
+        checks.Add "setup language", _
+                   "The setup language is empty. Load a setup file and pick a language.", _
+                   checkingError
+    ElseIf Left$(entryValue, Len(INTERNAL_TAG_LEAD)) = INTERNAL_TAG_LEAD Then
+        checks.Add "setup language", _
+                   "The setup language reads as an internal tag: " & entryValue & _
+                   ". Pick a language from the dropdown.", _
+                   checkingError
+    End If
+
+    'Linelist language: required
+    If LenB(ValueOf("lllang")) = 0 Then
+        checks.Add "linelist language", _
+                   "The linelist language is empty. Pick the language of the generated file.", _
+                   checkingError
+    End If
+
+    'Design value: required
+    If LenB(ValueOf("design")) = 0 Then
+        checks.Add "design", _
+                   "The design value is empty. Pick a design for the linelist.", _
+                   checkingError
+    End If
+
+    'Template file: optional, and the file has to be on disk when set
+    entryValue = ValueOf("temppath")
+    If LenB(entryValue) > 0 Then
+        If LenB(Dir(entryValue)) = 0 Then
+            checks.Add "template", _
+                       "The template file was not found: " & entryValue, _
+                       checkingError
+        End If
+    End If
+
+    'Geobase file: optional, and the file has to be on disk when set
+    entryValue = ValueOf("geopath")
+    If LenB(entryValue) > 0 Then
+        If LenB(Dir(entryValue)) = 0 Then
+            checks.Add "geobase", _
+                       "The geobase file was not found: " & entryValue, _
+                       checkingError
+        End If
+    End If
+
+    Set Validate = checks
+End Function
+
 '@label:translate-message
 '@sub-title Translate a message code using the designer translations
 '@details
@@ -327,6 +434,8 @@ Private Function ResolveInfoRange(ByVal infoName As String) As Range
         rngName = RNG_TEMP_PATH
     Case "lllang"
         rngName = RNG_LL_FORM
+    Case "design"
+        rngName = RNG_DESIGN_LL
     Case "warning"
         rngName = RNG_WARNING
     Case Else

@@ -100,14 +100,18 @@ Public Sub TestPrepareHidesInternalSheets()
     CustomTestSetTitles Assert, "DesignerPreparation", "TestPrepareHidesInternalSheets"
     On Error GoTo Fail
 
-    'Arrange: create the internal sheets on the fixture workbook
+    'Arrange: create the internal sheets on the fixture workbook. The
+    '__check sheet starts visible, the way a finished generation run
+    'leaves it.
     Dim passSheet As Worksheet
     Dim formatterSheet As Worksheet
     Dim formulaSheet As Worksheet
+    Dim checkSheet As Worksheet
 
     Set passSheet = EnsureWorksheet("__pass", FixtureWorkbook)
     Set formatterSheet = EnsureWorksheet("__formatter", FixtureWorkbook)
     Set formulaSheet = EnsureWorksheet("__formula", FixtureWorkbook)
+    Set checkSheet = EnsureWorksheet("__check", FixtureWorkbook)
 
     'Act
     Dim subject As DesignerPreparation
@@ -118,6 +122,7 @@ Public Sub TestPrepareHidesInternalSheets()
     Assert.AreEqual CLng(xlSheetVeryHidden), CLng(passSheet.Visible), "__pass should be VeryHidden."
     Assert.AreEqual CLng(xlSheetVeryHidden), CLng(formatterSheet.Visible), "__formatter should be VeryHidden."
     Assert.AreEqual CLng(xlSheetVeryHidden), CLng(formulaSheet.Visible), "__formula should be VeryHidden."
+    Assert.AreEqual CLng(xlSheetVeryHidden), CLng(checkSheet.Visible), "__check should be VeryHidden."
     Exit Sub
 
 Fail:

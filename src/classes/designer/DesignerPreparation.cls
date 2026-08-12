@@ -58,6 +58,7 @@ Private Const FLAG_OFF As String = "No"
 Private Const SHEET_PASS As String = "__pass"
 Private Const SHEET_FORMATTER As String = "__formatter"
 Private Const SHEET_FORMULA As String = "__formula"
+Private Const SHEET_CHECKING As String = "__check"
 Private Const SHEET_LL_TRANSLATION As String = "LinelistTranslation"
 Private Const SHEET_DES_TRANSLATION As String = "DesignerTranslation"
 Private Const SHEET_GEO As String = "Geo"
@@ -174,7 +175,7 @@ End Sub
 '2. Creates the dropdown worksheet and registers all standard dropdown
 '   lists (setup languages, interface languages, epiweek start, design).
 '3. Hides internal worksheets (VeryHidden for __pass/__formatter/
-'   __formula/__dropdowns, Hidden for LinelistTranslation,
+'   __formula/__dropdowns/__check, Hidden for LinelistTranslation,
 '   DesignerTranslation).
 '4. Seeds workbook-level HiddenNames flags (ribbon checks, language
 '   codes, last opened date).
@@ -380,17 +381,21 @@ End Sub
 '@label:hide-worksheets
 '@sub-title Hide internal worksheets and register them with the dev manager
 '@details
-'Sets __pass, __formatter, __formula, __dropdowns to xlSheetVeryHidden.
-'Sets LinelistTranslation and DesignerTranslation to xlSheetHidden
-'(visible in the VBA editor for developers). When a development manager
-'is provided, all sheets are also registered via AddHiddenSheet for
-'deployment. Silently skips any worksheet that does not exist.
+'Sets __pass, __formatter, __formula, __dropdowns and __check to
+'xlSheetVeryHidden. The __check sheet holds the generation report and
+'FinaliseReport shows it after a run, so a prepared designer ships it
+'hidden again. Sets LinelistTranslation and DesignerTranslation to
+'xlSheetHidden (visible in the VBA editor for developers). When a
+'development manager is provided, all sheets are also registered via
+'AddHiddenSheet for deployment. Silently skips any worksheet that does
+'not exist.
 '@param devManager Development. Development manager for deployment registration, or Nothing.
 Private Sub HideWorksheets(ByRef devManager As Development)
     SetSheetVisibility SHEET_PASS, xlSheetVeryHidden
     SetSheetVisibility SHEET_FORMATTER, xlSheetVeryHidden
     SetSheetVisibility SHEET_FORMULA, xlSheetVeryHidden
     SetSheetVisibility SHEET_DROPDOWNS, xlSheetVeryHidden
+    SetSheetVisibility SHEET_CHECKING, xlSheetVeryHidden
     SetSheetVisibility SHEET_LL_TRANSLATION, xlSheetHidden
     SetSheetVisibility SHEET_DES_TRANSLATION, xlSheetHidden
 
@@ -399,6 +404,7 @@ Private Sub HideWorksheets(ByRef devManager As Development)
         RegisterHiddenSheet devManager, SHEET_FORMATTER
         RegisterHiddenSheet devManager, SHEET_FORMULA
         RegisterHiddenSheet devManager, SHEET_DROPDOWNS
+        RegisterHiddenSheet devManager, SHEET_CHECKING
         RegisterHiddenSheet devManager, SHEET_LL_TRANSLATION
         RegisterHiddenSheet devManager, SHEET_DES_TRANSLATION
     End If

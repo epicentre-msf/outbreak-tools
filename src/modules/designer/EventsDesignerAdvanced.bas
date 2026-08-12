@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, DropdownLists, InitTransfer, LinelistSpecs, LinelistSpecs, Linelist, Linelist, LLDataEntry, LLSheets, GenerationReport
+'@depends DesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, LinelistSpecs, Linelist, LLDataEntry, LLSheets, AnalysisOutput, Checking, GenerationReport
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -338,17 +338,35 @@ Public Sub clickGenerate()
 
     Set entry = DesignerEntry.Create(ThisWorkbook.Worksheets(SHEET_MAIN))
 
-    'Run readiness checks; exit silently when requirements are not met
-    If Not ValidateGenerationReadiness(entry) Then GoTo Cleanup
+    'Initialise the generation report on the designer __check sheet
+    GenerationReport.InitReport ThisWorkbook
+
+    'The entry checks are the report's first bundle. Every fault carries
+    'the error scope, so a checking with any entry aborts the run with the
+    'report sheet shown.
+    Dim entryChecks As Checking
+    Set entryChecks = entry.Validate()
+
+    If entryChecks.Length > 0 Then
+        Dim entryBatch As BetterArray
+        Set entryBatch = New BetterArray
+        entryBatch.LowerBound = 1
+        entryBatch.Push entryChecks
+        GenerationReport.FlushCheckings entryBatch
+
+        entry.AddInfo entry.TranslateMessage("MSG_NotReady"), "edition"
+        GenerationReport.FinaliseReport
+        appScope.Restore
+        MsgBox entry.TranslateMessage("MSG_NotReady"), _
+               vbExclamation + vbOKOnly, PROMPT_TITLE
+        Exit Sub
+    End If
 
     setupPath = entry.ValueOf("setuppath")
 
     'Build the linelist: Prepare creates the output workbook and hands it to
     'InitTransfer, which fills it from the setup file and from this designer.
     entry.AddInfo entry.TranslateMessage("MSG_ReadSetup"), "edition"
-
-    'Initialise the generation report on the designer __checking sheet
-    GenerationReport.InitReport ThisWorkbook
 
     Set specs = LinelistSpecs.Create(ThisWorkbook)
     specs.Prepare setupPath
@@ -550,61 +568,6 @@ Private Sub ExtractAndUpdateLanguages(ByVal tradSheet As Worksheet)
     On Error GoTo 0
 
 End Sub
-
-'@Description("Check that all required fields for generation are filled and valid.")
-'@return Boolean. True when all required fields pass validation.
-Private Function ValidateGenerationReadiness(ByVal entry As DesignerEntry) As Boolean
-    Dim setupPath As String
-    Dim llDir As String
-    Dim llName As String
-    Dim ribbonName As String
-    Dim errors As BetterArray
-
-    Set errors = New BetterArray
-    errors.LowerBound = 1
-
-    setupPath = entry.ValueOf("setuppath")
-    llDir = entry.ValueOf("lldir")
-    llName = entry.ValueOf("llname")
-    ribbonName = entry.ValueOf("temppath")
-
-    'Setup file path must be set and the file must exist on disk
-    If LenB(setupPath) = 0 Then
-        errors.Push "Setup file path is missing."
-    ElseIf LenB(Dir(setupPath)) = 0 Then
-        errors.Push "Setup file not found: " & setupPath
-    End If
-
-    'Linelist output directory must be set and exist
-    If LenB(llDir) = 0 Then
-        errors.Push "Linelist output directory is missing."
-    ElseIf LenB(Dir(llDir, vbDirectory)) = 0 Then
-        errors.Push "Output directory not found: " & llDir
-    End If
-
-    'Linelist name must be set
-    If LenB(llName) = 0 Then
-        errors.Push "Linelist name is missing."
-    End If
-
-    'Template ribbon must exist when configured
-    If LenB(ribbonName) <> 0 Then
-        If LenB(Dir(ribbonName)) = 0 Then
-            errors.Push "Template ribbon file is missing: " & ribbonName
-        End If
-    End If
-
-    If errors.Length > 0 Then
-        entry.AddInfo entry.TranslateMessage("MSG_NotReady"), "edition"
-        MsgBox errors.ToString(Separator:=vbCrLf, _
-                               OpeningDelimiter:=vbNullString, _
-                               ClosingDelimiter:=vbNullString), _
-               vbExclamation + vbOKOnly, PROMPT_TITLE
-        ValidateGenerationReadiness = False
-    Else
-        ValidateGenerationReadiness = True
-    End If
-End Function
 
 '@Description("Fallback: extract languages from the header row of the first ListObject on the Translations sheet.")
 Private Sub ExtractLanguagesFromHeaders(ByVal tradSheet As Worksheet)

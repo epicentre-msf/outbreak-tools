@@ -4,7 +4,7 @@ Attribute VB_Description = "Unit tests for DesignerEntry class"
 Option Explicit
 
 '@Folder("CustomTests.Designer")
-'@ModuleDescription("Validates DesignerEntry for clearing, translation, AddInfo/ValueOf, TranslateMessage and sealing.")
+'@ModuleDescription("Validates DesignerEntry for clearing, translation, AddInfo/ValueOf, TranslateMessage, Validate and sealing.")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As CustomTest
@@ -425,6 +425,287 @@ Fail:
 End Sub
 
 
+'@section Validate Tests
+'===============================================================================
+'@TestMethod("DesignerEntry.Validate")
+Public Sub TestValidatePassesOnValidEntries()
+    CustomTestSetTitles Assert, "DesignerEntry", "TestValidatePassesOnValidEntries"
+    On Error GoTo Fail
+
+    ArrangeValidEntries
+
+    Dim subject As DesignerEntry
+    Set subject = DesignerEntry.Create(EntrySheet)
+
+    Dim checks As Checking
+    Set checks = subject.Validate()
+
+    Assert.AreEqual CLng(0), CLng(checks.Length), _
+                    "Validate should file no entry when every value is valid."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestValidatePassesOnValidEntries"
+End Sub
+
+'@TestMethod("DesignerEntry.Validate")
+Public Sub TestValidateFilesEmptySetupPath()
+    CustomTestSetTitles Assert, "DesignerEntry", "TestValidateFilesEmptySetupPath"
+    On Error GoTo Fail
+
+    ArrangeValidEntries
+    EntrySheet.Range("RNG_PathDico").value = vbNullString
+
+    Dim checks As Checking
+    Set checks = DesignerEntry.Create(EntrySheet).Validate()
+
+    Assert.IsTrue checks.KeyExists("setup path"), _
+                  "An empty setup path should file the setup path fault."
+    Assert.IsTrue InStr(1, checks.ValueOf("setup path", checkingType), "Error", vbTextCompare) > 0, _
+                  "The setup path fault should carry the error scope."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestValidateFilesEmptySetupPath"
+End Sub
+
+'@TestMethod("DesignerEntry.Validate")
+Public Sub TestValidateFilesUnfoundSetupFile()
+    CustomTestSetTitles Assert, "DesignerEntry", "TestValidateFilesUnfoundSetupFile"
+    On Error GoTo Fail
+
+    ArrangeValidEntries
+    EntrySheet.Range("RNG_PathDico").value = ThisWorkbook.Path & _
+        Application.PathSeparator & "no_such_setup_file.xlsb"
+
+    Dim checks As Checking
+    Set checks = DesignerEntry.Create(EntrySheet).Validate()
+
+    Assert.IsTrue checks.KeyExists("setup path"), _
+                  "A setup path absent from the disk should file the setup path fault."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestValidateFilesUnfoundSetupFile"
+End Sub
+
+'@TestMethod("DesignerEntry.Validate")
+Public Sub TestValidateFilesEmptyOutputFolder()
+    CustomTestSetTitles Assert, "DesignerEntry", "TestValidateFilesEmptyOutputFolder"
+    On Error GoTo Fail
+
+    ArrangeValidEntries
+    EntrySheet.Range("RNG_LLDir").value = vbNullString
+
+    Dim checks As Checking
+    Set checks = DesignerEntry.Create(EntrySheet).Validate()
+
+    Assert.IsTrue checks.KeyExists("output folder"), _
+                  "An empty output folder should file the output folder fault."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestValidateFilesEmptyOutputFolder"
+End Sub
+
+'@TestMethod("DesignerEntry.Validate")
+Public Sub TestValidateFilesUnfoundOutputFolder()
+    CustomTestSetTitles Assert, "DesignerEntry", "TestValidateFilesUnfoundOutputFolder"
+    On Error GoTo Fail
+
+    ArrangeValidEntries
+    EntrySheet.Range("RNG_LLDir").value = ThisWorkbook.Path & _
+        Application.PathSeparator & "no_such_output_folder"
+
+    Dim checks As Checking
+    Set checks = DesignerEntry.Create(EntrySheet).Validate()
+
+    Assert.IsTrue checks.KeyExists("output folder"), _
+                  "An output folder absent from the disk should file the output folder fault."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestValidateFilesUnfoundOutputFolder"
+End Sub
+
+'@TestMethod("DesignerEntry.Validate")
+Public Sub TestValidateFilesEmptyLinelistName()
+    CustomTestSetTitles Assert, "DesignerEntry", "TestValidateFilesEmptyLinelistName"
+    On Error GoTo Fail
+
+    ArrangeValidEntries
+    EntrySheet.Range("RNG_LLName").value = vbNullString
+
+    Dim checks As Checking
+    Set checks = DesignerEntry.Create(EntrySheet).Validate()
+
+    Assert.IsTrue checks.KeyExists("linelist name"), _
+                  "An empty linelist name should file the linelist name fault."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestValidateFilesEmptyLinelistName"
+End Sub
+
+'@TestMethod("DesignerEntry.Validate")
+Public Sub TestValidateFilesEmptySetupLanguage()
+    CustomTestSetTitles Assert, "DesignerEntry", "TestValidateFilesEmptySetupLanguage"
+    On Error GoTo Fail
+
+    ArrangeValidEntries
+    EntrySheet.Range("RNG_LangSetup").value = vbNullString
+
+    Dim checks As Checking
+    Set checks = DesignerEntry.Create(EntrySheet).Validate()
+
+    Assert.IsTrue checks.KeyExists("setup language"), _
+                  "An empty setup language should file the setup language fault."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestValidateFilesEmptySetupLanguage"
+End Sub
+
+'@TestMethod("DesignerEntry.Validate")
+Public Sub TestValidateRefusesTagShapedSetupLanguage()
+    CustomTestSetTitles Assert, "DesignerEntry", "TestValidateRefusesTagShapedSetupLanguage"
+    On Error GoTo Fail
+
+    'A tag column header can reach the language dropdown through the
+    'fallback header read on a setup with no persisted language list.
+    ArrangeValidEntries
+    EntrySheet.Range("RNG_LangSetup").value = "__TagInternal__"
+
+    Dim checks As Checking
+    Set checks = DesignerEntry.Create(EntrySheet).Validate()
+
+    Assert.IsTrue checks.KeyExists("setup language"), _
+                  "A tag-shaped setup language should file the setup language fault."
+    Assert.IsTrue InStr(1, checks.ValueOf("setup language", checkingType), "Error", vbTextCompare) > 0, _
+                  "The tag-shaped language fault should carry the error scope."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestValidateRefusesTagShapedSetupLanguage"
+End Sub
+
+'@TestMethod("DesignerEntry.Validate")
+Public Sub TestValidateFilesEmptyLinelistLanguage()
+    CustomTestSetTitles Assert, "DesignerEntry", "TestValidateFilesEmptyLinelistLanguage"
+    On Error GoTo Fail
+
+    ArrangeValidEntries
+    EntrySheet.Range("RNG_LLForm").value = vbNullString
+
+    Dim checks As Checking
+    Set checks = DesignerEntry.Create(EntrySheet).Validate()
+
+    Assert.IsTrue checks.KeyExists("linelist language"), _
+                  "An empty linelist language should file the linelist language fault."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestValidateFilesEmptyLinelistLanguage"
+End Sub
+
+'@TestMethod("DesignerEntry.Validate")
+Public Sub TestValidateFilesEmptyDesign()
+    CustomTestSetTitles Assert, "DesignerEntry", "TestValidateFilesEmptyDesign"
+    On Error GoTo Fail
+
+    ArrangeValidEntries
+    EntrySheet.Range("RNG_DesignLL").value = vbNullString
+
+    Dim checks As Checking
+    Set checks = DesignerEntry.Create(EntrySheet).Validate()
+
+    Assert.IsTrue checks.KeyExists("design"), _
+                  "An empty design value should file the design fault."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestValidateFilesEmptyDesign"
+End Sub
+
+'@TestMethod("DesignerEntry.Validate")
+Public Sub TestValidateSkipsEmptyGeoPath()
+    CustomTestSetTitles Assert, "DesignerEntry", "TestValidateSkipsEmptyGeoPath"
+    On Error GoTo Fail
+
+    'The geobase is optional: an empty path is a valid entry
+    ArrangeValidEntries
+    EntrySheet.Range("RNG_PathGeo").value = vbNullString
+
+    Dim checks As Checking
+    Set checks = DesignerEntry.Create(EntrySheet).Validate()
+
+    Assert.IsFalse checks.KeyExists("geobase"), _
+                   "An empty geobase path should file no fault."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestValidateSkipsEmptyGeoPath"
+End Sub
+
+'@TestMethod("DesignerEntry.Validate")
+Public Sub TestValidateFilesUnfoundGeoFile()
+    CustomTestSetTitles Assert, "DesignerEntry", "TestValidateFilesUnfoundGeoFile"
+    On Error GoTo Fail
+
+    ArrangeValidEntries
+    EntrySheet.Range("RNG_PathGeo").value = ThisWorkbook.Path & _
+        Application.PathSeparator & "no_such_geobase.xlsx"
+
+    Dim checks As Checking
+    Set checks = DesignerEntry.Create(EntrySheet).Validate()
+
+    Assert.IsTrue checks.KeyExists("geobase"), _
+                  "A geobase path absent from the disk should file the geobase fault."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestValidateFilesUnfoundGeoFile"
+End Sub
+
+'@TestMethod("DesignerEntry.Validate")
+Public Sub TestValidateFilesUnfoundTemplateFile()
+    CustomTestSetTitles Assert, "DesignerEntry", "TestValidateFilesUnfoundTemplateFile"
+    On Error GoTo Fail
+
+    ArrangeValidEntries
+    EntrySheet.Range("RNG_LLTemp").value = ThisWorkbook.Path & _
+        Application.PathSeparator & "no_such_template.xlsb"
+
+    Dim checks As Checking
+    Set checks = DesignerEntry.Create(EntrySheet).Validate()
+
+    Assert.IsTrue checks.KeyExists("template"), _
+                  "A template path absent from the disk should file the template fault."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestValidateFilesUnfoundTemplateFile"
+End Sub
+
+'@TestMethod("DesignerEntry.Validate")
+Public Sub TestValidateFilesEveryFaultAtOnce()
+    CustomTestSetTitles Assert, "DesignerEntry", "TestValidateFilesEveryFaultAtOnce"
+    On Error GoTo Fail
+
+    'A worksheet with none of the named ranges reads every value as
+    'empty: the six required entries file, the two optional paths skip
+    Dim checks As Checking
+    Set checks = DesignerEntry.Create(EntrySheet).Validate()
+
+    Assert.AreEqual CLng(6), CLng(checks.Length), _
+                    "A bare worksheet should file the six required-entry faults."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestValidateFilesEveryFaultAtOnce"
+End Sub
+
+
 '@section Sealing Tests
 '===============================================================================
 '@TestMethod("DesignerEntry.Sealing")
@@ -512,6 +793,29 @@ Private Sub ReportTestFailure(ByVal context As String)
     message = context & " failed with error " & Err.Number & " (" & Err.Source & "): " & Err.Description
     Assert.LogFailure message
     Err.Clear
+End Sub
+
+'@sub-title Create the Main named ranges and fill them with valid entries
+'@details
+'The setup path points at this workbook and the output folder at its
+'folder, so both disk checks pass. The geobase and template paths stay
+'empty, the valid shape for the two optional entries.
+Private Sub ArrangeValidEntries()
+    FixtureWorkbook.Names.Add Name:="RNG_PathGeo", RefersTo:=EntrySheet.Range("A1")
+    FixtureWorkbook.Names.Add Name:="RNG_PathDico", RefersTo:=EntrySheet.Range("A2")
+    FixtureWorkbook.Names.Add Name:="RNG_LLName", RefersTo:=EntrySheet.Range("A3")
+    FixtureWorkbook.Names.Add Name:="RNG_LLDir", RefersTo:=EntrySheet.Range("A4")
+    FixtureWorkbook.Names.Add Name:="RNG_LLTemp", RefersTo:=EntrySheet.Range("A6")
+    FixtureWorkbook.Names.Add Name:="RNG_LangSetup", RefersTo:=EntrySheet.Range("A7")
+    FixtureWorkbook.Names.Add Name:="RNG_LLForm", RefersTo:=EntrySheet.Range("A8")
+    FixtureWorkbook.Names.Add Name:="RNG_DesignLL", RefersTo:=EntrySheet.Range("A9")
+
+    EntrySheet.Range("A2").value = ThisWorkbook.FullName
+    EntrySheet.Range("A3").value = "my_linelist"
+    EntrySheet.Range("A4").value = ThisWorkbook.Path
+    EntrySheet.Range("A7").value = "ENG"
+    EntrySheet.Range("A8").value = "FRA - Francais"
+    EntrySheet.Range("A9").value = "Standard"
 End Sub
 
 '@sub-title Build a real DesignerTranslation backed by a seeded translation sheet
