@@ -60,8 +60,8 @@ Option Explicit
 'by hf names a variable, and the filtered companion sheet of that HList carries
 'the concatenated geo values of that variable, one column per administrative
 'level. The distinct values of that column are the rows of the spatial table.
-'The reading and the de-duplication happen in memory, and nothing is pasted
-'through the RNG_PastingCol scratch column that SpatialTables creates.
+'The reading and the de-duplication happen in memory: one read of the column
+'and a delimited index of the values already kept.
 '
 'WHAT A MISSING REGISTRY MEANS
 '-------------------------------------------------------------------------------
@@ -76,7 +76,7 @@ Option Explicit
 'SpatialTables.Prepare creates it and SpatialTables.FailedFormula reads it.
 'This class leaves it alone.
 '@depends BetterArray, HiddenNames, Checking
-'@version 2026-08-10
+'@version 2026-08-12
 
 
 '@section State

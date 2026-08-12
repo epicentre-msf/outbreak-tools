@@ -32,7 +32,6 @@ Option Explicit
 'in LLSpatial in the same commit.
 '
 '    listofgeovars              one row per spatial variable
-'    RNG_PastingCol             a scratch column on the sheet
 '    spatial_<level>_<var>      one ListObject per level
 '      column 1  tabl_<level>_<var>    the lookup key
 '      column 2  formula_<level>       the value LLSpatial sorts on
@@ -53,7 +52,7 @@ Option Explicit
 'LLSpatial.Update resizes a spatial table as it refreshes it, and reads the
 'width off the table itself.
 '@depends CrossTable, TableSpecs, Formulas, FormulaBuilder, Checking
-'@version 2026-07-30
+'@version 2026-08-12
 
 
 
@@ -82,12 +81,6 @@ Private Const CONCAT As String = "concat_"
 Private Const REGISTRY_TABLE As String = "listofgeovars"
 Private Const REGISTRY_HEADER As String = "listofvars"
 Private Const REGISTRY_COL As Long = 3
-
-' A scratch column on the sheet, and the name it is reached by. LLSpatial used to
-' paste every value list through it to de-duplicate on the worksheet; it reads
-' the values into memory now and the column stays free.
-Private Const PASTING_COL As Long = 5
-Private Const PASTING_NAME As String = "RNG_PastingCol"
 
 ' Where the first spatial table starts, how wide one is, and how far past the
 ' last used column the next one starts. Prepare and LastColumn share these; the
@@ -306,8 +299,8 @@ End Function
 '@prop-title The column the next spatial table starts in
 '@details
 'Reads the last used column of row 1 and leaves a gap after it. A sheet carrying
-'only the registry answers with the first table column, which keeps the pasting
-'column free.
+'only the registry answers with the first table column, so the columns between
+'the registry and the first table stay empty.
 '@return Long. The 1-based column index.
 Private Property Get LastColumn() As Long
     Dim sh As Worksheet
@@ -385,10 +378,10 @@ End Property
 '===============================================================================
 
 '@label:prepare
-'@sub-title Put the registry and the pasting column on the spatial sheet
+'@sub-title Put the registry on the spatial sheet
 '@details
-'Creates the listofgeovars ListObject and names the pasting column LLSpatial
-'reads. Add calls this the first time it finds no registry.
+'Creates the listofgeovars ListObject LLSpatial walks. Add calls this the first
+'time it finds no registry.
 Private Sub Prepare()
     Dim rng As Range
     Dim sh As Worksheet
@@ -399,8 +392,6 @@ Private Sub Prepare()
         Set rng = .Range(.Cells(1, REGISTRY_COL), .Cells(2, REGISTRY_COL))
         rng.Cells(1, 1).Value = REGISTRY_HEADER
         .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = REGISTRY_TABLE
-
-        .Cells(1, PASTING_COL).Name = PASTING_NAME
     End With
 End Sub
 

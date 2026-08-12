@@ -163,10 +163,10 @@ End Sub
 '@sub-title Build a spatial worksheet in this workbook.
 '@details
 'Creates a hidden worksheet named "__spatial_tables" carrying the
-'"listofgeovars" ListObject and the RNG_PastingCol scratch cell. When addVars
-'is True the table holds "cases_sp1" and "deaths_sp1", so Exists lookups have
-'something to find. When withRegistry is False the table is left out, which is
-'the shape of a linelist that has geo variables and no spatial analysis.
+'"listofgeovars" ListObject. When addVars is True the table holds "cases_sp1"
+'and "deaths_sp1", so Exists lookups have something to find. When withRegistry
+'is False the table is left out, which is the shape of a linelist that has geo
+'variables and no spatial analysis.
 '@param addVars Optional Boolean. True to populate sample variable rows. Defaults to True.
 '@param withRegistry Optional Boolean. True to build the listofgeovars table. Defaults to True.
 '@return Worksheet. The prepared spatial fixture sheet.
@@ -184,9 +184,6 @@ Private Function BuildSpatialFixture(Optional ByVal addVars As Boolean = True, _
             RegisterSpatialVar sh, "deaths_sp1"
         End If
     End If
-
-    sh.Cells(1, 5).Value = "scratch"
-    sh.Cells(1, 5).Name = "RNG_PastingCol"
 
     Set BuildSpatialFixture = sh
 End Function
@@ -243,9 +240,6 @@ Private Function BuildSpatialWorkbook(ByVal withRegistry As Boolean) As Workbook
     sh.Name = SPATIAL_SHEET
 
     If withRegistry Then BuildRegistry sh
-
-    sh.Cells(1, 5).Value = "scratch"
-    sh.Cells(1, 5).Name = "RNG_PastingCol"
 
     Set BuildSpatialWorkbook = wb
 End Function

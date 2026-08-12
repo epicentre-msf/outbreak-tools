@@ -63,7 +63,6 @@ Private Const COUNT_CALL_FUNCTION As String = "N()"
 Private Const BROKEN_FUNCTION As String = "NOSUCHFUNCTION(int_v1)"
 
 Private Const REGISTRY_TABLE As String = "listofgeovars"
-Private Const PASTING_NAME As String = "RNG_PastingCol"
 
 ' Where Prepare puts the registry, and where the first spatial table starts.
 Private Const REGISTRY_COL As Long = 3
@@ -751,32 +750,6 @@ TestFail:
     CustomTestLogFailure Assert, "TestAddCreatesTheRegistry", Err.Number, Err.Description
 End Sub
 
-'@sub-title Verify the pasting column LLSpatial writes through is named.
-'@TestMethod("SpatialTables")
-Public Sub TestAddNamesThePastingColumn()
-    CustomTestSetTitles Assert, "SpatialTables", "TestAddNamesThePastingColumn"
-    On Error GoTo TestFail
-
-    Dim varName As String
-    Dim rng As Range
-
-    SpatialSheet
-    BuildFixture SpatialRows(GEO_VARIABLE, COUNT_CALL_FUNCTION)
-    WriteSpatial 1, varName
-
-    On Error Resume Next
-    Set rng = ThisWorkbook.Worksheets(SPATIAL_SHEET).Range(PASTING_NAME)
-    On Error GoTo 0
-
-    Assert.IsTrue (Not rng Is Nothing), PASTING_NAME & " should be defined"
-    Assert.AreEqual CLng(5), rng.Column, _
-                    "The pasting column is the one LLSpatial pastes its names into"
-
-    Exit Sub
-TestFail:
-    CustomTestLogFailure Assert, "TestAddNamesThePastingColumn", Err.Number, Err.Description
-End Sub
-
 '@sub-title Verify a second variable reuses the registry already there.
 '@TestMethod("SpatialTables")
 Public Sub TestTheRegistryIsBuiltOnce()
@@ -939,7 +912,7 @@ Public Sub TestGeoLeavesAGapBetweenTables()
 
     Assert.AreEqual CLng(FIRST_TABLE_COL), _
                     SpatialTable("spatial_adm1_" & varName).Range.Column, _
-                    "The first table starts past the pasting column"
+                    "The first table starts in the column the layout gives it"
     Assert.AreEqual CLng(SECOND_TABLE_COL), _
                     SpatialTable("spatial_adm2_" & varName).Range.Column, _
                     "The next table starts two columns past the last one used"
@@ -1304,9 +1277,9 @@ End Sub
 
 '@sub-title Verify every name LLSpatial looks for is produced.
 '@details
-'LLSpatial reads listofgeovars, RNG_PastingCol, the ListObject of each level and
-'the two columns it sorts on. The two classes never reference each other, so this
-'test is the contract.
+'LLSpatial reads listofgeovars, the ListObject of each level and the two columns
+'it sorts on. The two classes never reference each other, so this test is the
+'contract.
 '@TestMethod("SpatialTables")
 Public Sub TestTheNamesLLSpatialReadsAreProduced()
     CustomTestSetTitles Assert, "SpatialTables", "TestTheNamesLLSpatialReadsAreProduced"
