@@ -12,7 +12,7 @@ Attribute VB_Description = "Unit tests for ExportButton"
 'Tests cover factory initialisation (Create with valid arguments, rejection of
 'Nothing workbook, translations, and button), the ExportNumber property that
 'parses the numeric suffix from the button name (e.g. "CMDExport3" yields 3),
-'the UseFilter property that reads and writes the companion checkbox state.
+'and the UseFilter property, which reads the companion checkbox on every ask.
 'The fixture creates temporary worksheets with OLEObject controls for each
 'test and tears them down in TestCleanup to ensure isolation.
 '@depends ExportButton, TranslationObject, TestHelpersLite, MSForms, CustomTest
@@ -315,15 +315,15 @@ TestFail:
     CustomTestLogFailure Assert, "UseFilterReadsCheckboxValue", Err.Number, Err.Description
 End Sub
 
-'@sub-title Verify UseFilter Let updates the underlying checkbox control.
+'@sub-title Verify UseFilter answers the checkbox on every read.
 '@details
-'Arranges a button with a companion checkbox initially set to True. Acts
-'by setting UseFilter to False on the ExportButton. Asserts that the
-'checkbox Value is now False, confirming the Property Let propagates the
-'new state back to the underlying OLEObject control.
+'Arranges a button with a companion checkbox. Acts by reading UseFilter,
+'changing the control, and reading it again. Asserts that both reads match
+'the control, which is what lets one box serve every export button on the
+'form: the class keeps no copy of the answer.
 '@TestMethod("ExportButton")
-Public Sub UseFilterLetUpdatesCheckbox()
-    CustomTestSetTitles Assert, "ExportButton", "UseFilterLetUpdatesCheckbox"
+Public Sub UseFilterFollowsTheCheckbox()
+    CustomTestSetTitles Assert, "ExportButton", "UseFilterFollowsTheCheckbox"
     On Error GoTo TestFail
 
     Dim sh As Worksheet
@@ -339,11 +339,14 @@ Public Sub UseFilterLetUpdatesCheckbox()
     Dim sut As ExportButton
     Set sut = ExportButton.Create(ThisWorkbook, CreateTranslationStub(), btn, chk)
 
-    sut.UseFilter = False
-    Assert.IsFalse chk.Value, _
-                   "Setting UseFilter to False should uncheck the checkbox"
+    Assert.IsTrue sut.UseFilter, _
+                  "UseFilter should be True while the checkbox is ticked"
+
+    chk.Value = False
+    Assert.IsFalse sut.UseFilter, _
+                   "UseFilter should follow the checkbox once it is unticked"
 
     Exit Sub
 TestFail:
-    CustomTestLogFailure Assert, "UseFilterLetUpdatesCheckbox", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "UseFilterFollowsTheCheckbox", Err.Number, Err.Description
 End Sub

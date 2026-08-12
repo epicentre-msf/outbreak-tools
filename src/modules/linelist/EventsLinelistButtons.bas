@@ -1053,50 +1053,25 @@ Public Sub ClickExport()
     Const COMMANDHEIGHT As Integer = 25
     Const COMMANDGAPS As Byte = 6
 
-    Dim exportNumber As Integer
-    Dim topPosition As Integer
+    Dim topPosition As Single
     Dim expObj As LLExport
     Dim expsh As Worksheet
-    Dim totalNumberOfExports As Long
-    Dim controlCommand As String
-    Dim cmdArray As BetterArray 'List of controls
-    Dim btn As MSForms.CommandButton
-    Dim btnObj As ExportButton
 
     'initialize translations
     InitializeTrads
 
     Set expsh = ThisWorkbook.Worksheets(EXPORTSHEET)
     Set expObj = LLExport.Create(expsh)
-    Set cmdArray = New BetterArray
-        
-    totalNumberOfExports = expObj.NumberOfExports()
-    topPosition = COMMANDGAPS
 
     On Error GoTo errLoadExp
 
-    'Dynamically create and add buttons to the form
-        
-        For exportNumber = 1 To totalNumberOfExports
-            'Add the control if not initialized  
-            If expObj.IsActive(exportNumber) Then
-                Set btn = F_Export.Controls.Add("Forms.CommandButton.1", "CMDExport" & exportNumber, True)
-                'Read the button wording from the export row. LLExport exposes
-                'this as ColumnValue(exportNumber, columnName); it has no Value
-                'member, so the old expObj.Value("label button", exportNumber)
-                'call stopped this module compiling.
-                btn.Caption = expObj.ColumnValue(exportNumber, "label button")
-                btn.Top = topPosition
-                btn.height = COMMANDHEIGHT
-                btn.width = 160
-                btn.Left = 20
-                btn.WordWrap = True
-                topPosition = topPosition + COMMANDHEIGHT + COMMANDGAPS
-                Set btnObj = ExportButton.Create(ThisWorkbook, tradsmess, btn, F_Export.CHK_ExportFiltered)
-                cmdArray.Push btnObj
-                Set btnObj = Nothing
-            End If
-        Next
+    'The form owns its export buttons: it adds one per active export, it holds
+    'the object that answers each click, and it takes them off again below.
+    'The qualified call runs the F_Export code-behind, whose source is the
+    'FormLogicExport module. It answers the free position under the last
+    'button, which the fixed controls are laid out from.
+    topPosition = F_Export.SetupExportForm(ThisWorkbook, tradsmess, expObj, _
+                                           COMMANDGAPS, COMMANDHEIGHT, COMMANDGAPS)
 
     With F_Export
         'Overall height and width of the form and other parts of the form ------
@@ -1138,12 +1113,16 @@ Public Sub ClickExport()
         .Show
     End With
 
+    'The form takes its own buttons off on both ways out, and SetupExportForm
+    'clears whatever is left before it adds any. Reading F_Export here would
+    'build the instance back up when the user closed it with the window box.
     LogSuccessLine "export"
 
     Exit Sub
 
 errLoadExp:
     On Error Resume Next
+    F_Export.TeardownExportForm
     FailureOnSheet "MSG_ErrLoadExport"
     On Error GoTo 0
 End Sub

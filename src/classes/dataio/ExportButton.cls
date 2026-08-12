@@ -23,8 +23,10 @@ Option Explicit
 'the button, an optional filter checkbox, and translation/workbook
 'references. On click, RunExport selects a folder, optionally confirms
 'filter usage, then delegates to LLExporter.ExportCustom. The factory
-'returns the concrete class because callers hold a
-'reference to keep the WithEvents binding alive.
+'returns the concrete class because the caller holds a reference to keep the
+'WithEvents binding alive. That caller is the F_Export code-behind, which
+'keeps one instance per button in a module-level collection for as long as
+'the form carries the buttons.
 '@depends LLExporter, ApplicationState, OSFiles
 
 
@@ -60,8 +62,7 @@ Private this As TExportButton
 'Factory method that validates the workbook, translations, and button are
 'not Nothing, then wires the WithEvents binding and optional filter
 'checkbox. Called on the predeclared instance. Returns the concrete class
-'(not an interface) because callers hold a reference to keep the
-'WithEvents binding alive.
+'because the caller holds a reference to keep the WithEvents binding alive.
 '@param sourceWkb Workbook. The linelist workbook.
 '@param trads TranslationObject. Translations for user-facing messages.
 '@param expBtn MSForms.CommandButton. The button to listen to.
@@ -161,17 +162,14 @@ End Property
 '@details
 'Returns the current value of the filter checkbox. Returns False when
 'no checkbox was bound.
+'
+'The box is read only. Every export button on the form reads the same one,
+'and two exports never run at the same time, so the box holds the user's
+'standing wish and the confirmation is answered per export.
 '@return Boolean. True when the filter checkbox is checked.
 '@export
 Public Property Get UseFilter() As Boolean
     If Not chkFilt Is Nothing Then UseFilter = chkFilt.Value
-End Property
-
-'@label:use-filter-set
-'@prop-title Set the filter checkbox value
-'@param value Boolean. True to check, False to uncheck.
-Public Property Let UseFilter(ByVal value As Boolean)
-    If Not chkFilt Is Nothing Then chkFilt.Value = value
 End Property
 
 
@@ -221,7 +219,9 @@ Private Sub RunExport()
                   TranslatedValue("MSG_ThereIsFilter")) = vbYes Then
             UpdateFilteredData
         Else
-            UseFilter = False
+            'The refusal stays with this export. The box is shared by every
+            'button of the form, and unticking it here would answer for the
+            'next export the user runs.
             useFilt = False
         End If
     End If
