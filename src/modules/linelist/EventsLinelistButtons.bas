@@ -738,32 +738,42 @@ ErrOpen:
     pass.Protect wb
 End Sub
 
-'@Description("Callback for click on close print sheet")
+'@Description("Callback for click on close print, CRF or log sheet")
 '@EntryPoint
-Public Sub ClickClosePrint()
-    Attribute ClickClosePrint.VB_Description = "Callback for click on close print/crf sheet"
+Public Sub ClickCloseSheet()
+    Attribute ClickCloseSheet.VB_Description = "Callback for click on close print/crf/log sheet"
 
     Dim sh As Worksheet
     Dim shType As String
     Dim printsh As Worksheet
     Dim crfsh As Worksheet
+    Dim logSheetName As String
+    Dim actionCode As String
 
     On Error GoTo ErrClose
+    actionCode = "close-print"
     Set sh = ActiveSheet
 
     InitializeTrads
 
     shType = SheetTag(sh)
 
-    If shType <> "HList" And shType <> "HList Print" And shType <> "HList CRF" Then
+    'The log sheet carries no sheet tag; its name is the mark.
+    logSheetName = LLLog.SheetName
+
+    If shType <> "HList" And shType <> "HList Print" And shType <> "HList CRF" _
+       And sh.Name <> logSheetName Then
         WarningOnSheet "MSG_PrintCRFOrDataSheet"
         Exit Sub
     End If
 
     'Unprotect workbook
     pass.UnProtect wb
-    
-    If shType = "HList" Then
+
+    If sh.Name = logSheetName Then
+        actionCode = "close-log"
+        sh.Visible = xlSheetVeryHidden
+    ElseIf shType = "HList" Then
         Set printsh = wb.Worksheets(PRINTPREFIX & sh.Name)
         Set crfsh = wb.Worksheets(CRFPREFIX & sh.Name)
         printsh.Visible = xlSheetVeryHidden
@@ -778,7 +788,7 @@ Public Sub ClickClosePrint()
 
 
 ErrClose:
-    LogOutcomeLine "close-print", Err.Number, Err.Description
+    LogOutcomeLine actionCode, Err.Number, Err.Description
     pass.Protect wb
 End Sub
 

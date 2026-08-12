@@ -96,6 +96,12 @@ Private Sub CMD_ResetCols_Click()
     ClickResetColumns
 End Sub
 
+'Show the user log sheet
+Private Sub CMD_OpenLog_Click()
+    Me.Hide
+    HandleOpenLog currwb
+End Sub
+
 'Leave the advanced form
 Private Sub CMD_ImportMigQuit_Click()
     Me.Hide
@@ -135,6 +141,18 @@ Private Function UserLogOf() As LLLog
 
     Set linelistEvents = LinelistEventsManager.EventLinelistService()
     Set UserLogOf = linelistEvents.UserLog()
+End Function
+
+
+' @description The password manager the event service holds. A workbook with
+' no usable keys answers Nothing and the visibility walk below runs bare.
+Private Function PasswordManagerOf() As Passwords
+    Dim linelistEvents As EventLinelist
+
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    If linelistEvents Is Nothing Then Exit Function
+
+    Set PasswordManagerOf = linelistEvents.PasswordManager()
 End Function
 
 
@@ -533,6 +551,43 @@ Public Sub HandleResetColumns(ByVal sourceWkb As Workbook, _
             LogRefusedWritesLine "reset-columns", layout, sh.Name
         End If
     Next
+End Sub
+
+
+' @description Show the very hidden log sheet and land the user on it, so the
+' record of the past runs can be read in place. The workbook structure guards
+' sheet visibility, so the walk unprotects the workbook around the change and
+' protects it again on both paths. The ribbon close button hides the sheet
+' again through ClickCloseSheet. A workbook whose log cannot be built has no
+' sheet to show and the walk leaves quietly.
+' @param sourceWkb Workbook. The linelist workbook.
+Public Sub HandleOpenLog(ByVal sourceWkb As Workbook)
+
+    Dim logStore As LLLog
+    Dim pass As Passwords
+    Dim failDetail As String
+
+    On Error GoTo ErrHand
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    Set pass = PasswordManagerOf()
+    If Not pass Is Nothing Then pass.UnProtect sourceWkb
+
+    logStore.Wksh.Visible = xlSheetVisible
+    logStore.Wksh.Activate
+
+    If Not pass Is Nothing Then pass.Protect sourceWkb
+    LogSuccessLine "open-log"
+    Exit Sub
+
+ErrHand:
+    ' Err is read before the Resume Next below clears it.
+    failDetail = Err.Description
+    On Error Resume Next
+    LogFailureLine "open-log", failDetail
+    If Not pass Is Nothing Then pass.Protect sourceWkb
 End Sub
 
 

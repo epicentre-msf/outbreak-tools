@@ -115,7 +115,7 @@ End Sub
 '@EntryPoint
 Public Sub clickRibbonClosePrint(ByRef Control As IRibbonControl)
     Attribute clickRibbonClosePrint.VB_Description = "Callback for btnClosePrint onAction"
-    ClickClosePrint
+    ClickCloseSheet
 End Sub
 
 '@Description("Callback for btnRotateHead onAction")
