@@ -1042,12 +1042,44 @@ Public Sub TestAdminCodeResolvesEachLevel()
     Assert.AreEqual "adm2", geo.AdminCode("District"), "District is admin 2"
     Assert.AreEqual "adm3", geo.AdminCode("Commune"), "Commune is admin 3"
     Assert.AreEqual "adm4", geo.AdminCode("Village"), "Village is admin 4"
-    Assert.AreEqual "adm1", geo.AdminCode("Nowhere"), _
-                    "A label naming no level answers admin 1, which is what EventLinelist reads"
+    Assert.AreEqual vbNullString, geo.AdminCode("Nowhere"), _
+                    "A label naming no level answers empty, so the caller can tell a miss " & _
+                    "from a deliberate choice of admin 1"
 
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestAdminCodeResolvesEachLevel", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify the two dropdown states that name no level both answer empty.
+'@details
+'Arranges a translated geobase. Acts by asking for the code of an emptied
+'dropdown cell and of the prompt CrossTable seeds a freshly built spatial table
+'with. Asserts both answer empty. Both used to answer "adm1": the prompt made
+'every new table read admin 1 before the user had picked anything, and the
+'emptied cell migrated a table down to admin 1 on the Change event that the
+'Delete key fires.
+'@TestMethod("LLGeo")
+Public Sub TestAdminCodeAnswersEmptyForADropdownNamingNoLevel()
+    CustomTestSetTitles Assert, "LLGeo", "TestAdminCodeAnswersEmptyForADropdownNamingNoLevel"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim geo As LLGeo
+
+    Set sh = BuildGeoFixture(withData:=True)
+    Set geo = LLGeo.Create(sh)
+    geo.Translate rawNames:=False
+
+    Assert.AreEqual vbNullString, geo.AdminCode(vbNullString), _
+                    "A dropdown a user cleared names no level"
+    Assert.AreEqual vbNullString, geo.AdminCode("Select an admin level"), _
+                    "The prompt a freshly built table carries names no level"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAdminCodeAnswersEmptyForADropdownNamingNoLevel", _
+                         Err.Number, Err.Description
 End Sub
 
 '@section Historic tests

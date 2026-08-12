@@ -1863,12 +1863,17 @@ End Sub
 'Compares the supplied label against the label of each admin level and returns
 'the matching raw code ("adm1" through "adm4").
 '
-'A label that matches no level answers "adm1". The four call sites in
-'EventLinelist act on the answer and none of them handles an empty one, so the
-'answer stays what it has always been until that class has a session of its
-'own.
+'A label that matches no level answers an empty string. It used to answer
+'"adm1", which reads on the sheet as a deliberate choice of the first level.
+'Three states reach this arm and none of them is that choice: a freshly
+'generated table still carrying its "select a level" prompt in the dropdown
+'cell, a dropdown a user cleared with Delete, and a geobase re-imported under
+'labels the cell never saw. The two call sites in EventLinelist that rewrite
+'formulas refuse an empty answer outright, and the two that read fall back to
+'PREVIOUS_ADM_<tabId>, the cell recording the level those formulas stand on.
 '@param selectedAdmin String. The level label to resolve.
-'@return String. Admin code ("adm1", "adm2", "adm3", or "adm4").
+'@return String. Admin code ("adm1", "adm2", "adm3", or "adm4"), or an empty
+'string when the label names no level.
 '@export
 Public Function AdminCode(ByVal selectedAdmin As String) As String
     Dim adm1Name As String
@@ -1891,7 +1896,7 @@ Public Function AdminCode(ByVal selectedAdmin As String) As String
     Case adm4Name
         AdminCode = "adm4"
     Case Else
-        AdminCode = "adm1"
+        AdminCode = vbNullString
     End Select
 End Function
 

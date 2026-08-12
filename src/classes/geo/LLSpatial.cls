@@ -1128,7 +1128,9 @@ End Sub
 '
 'A rank below 1 used to read the header cell or the cells above the table, and
 'the rank comes straight from the argument of a worksheet function, so
-'=TopAdmin("adm1", 0, ...) in a cell answered with the internal table name.
+'=FindTopAdmin(ADM_DROPDOWN_sp1, 0, ...) in a cell answered with the internal
+'table name. The level arrives here as the raw code; the worksheet function
+'takes the label of the level and EventLinelist resolves the two.
 '@param adminName String. Level identifier ("adm1" to "adm4", or "hf").
 '@param orderValue Long. Rank position in the ordered table, 1 for the top one.
 '@param inputVarName String. The bare variable name.

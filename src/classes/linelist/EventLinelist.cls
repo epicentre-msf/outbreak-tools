@@ -101,6 +101,12 @@ Private Const GEOSCOPENONE      As Long = -1
 Private Const CONCATADMPREFIX   As String = "concat_adm1_"
 Private Const HFPREFIX          As String = "hf_"
 
+' The cell beside each spatial admin dropdown, holding the admin level that
+' table's formulas stand on. CrossTable seeds it with "adm1" when it builds the
+' table and LLSpatial rewrites it on every migration, so it answers for a
+' dropdown label that resolves to no level at all.
+Private Const PREVIOUSADM       As String = "PREVIOUS_ADM_"
+
 
 '@section Factory
 '===============================================================================
@@ -686,8 +692,39 @@ Public Function BareSpatialName(ByVal varName As String) As String
 End Function
 
 
+'@sub-title The admin level a spatial table's formulas stand on.
+'@details
+'The dropdown label is the first source of the level and this cell is the
+'second. A freshly generated table carries the "select a level" prompt in its
+'dropdown, a user can clear the dropdown with Delete, and a geobase re-imported
+'in another language leaves the cell holding a label no level answers to. In
+'all three the label resolves to nothing while this cell still records the
+'level the formulas of that table were last written against, so the reads stay
+'on the level the sheet is actually showing.
+'@param tabId String. The identifier of the analysis table.
+'@return String. The recorded admin code, or an empty string when the table
+'carries no such cell.
+Private Function RecordedAdminCode(ByVal tabId As String) As String
+    Dim recorded As Range
+
+    If this.hostBook Is Nothing Then Exit Function
+    If LenB(tabId) = 0 Then Exit Function
+
+    'A hand-typed formula naming a table that does not exist, and a spatial
+    'table built before this cell did, both raise 1004 on the lookup. Either
+    'way there is no level recorded and the empty answer says so.
+    On Error Resume Next
+    Set recorded = this.hostBook.Names(PREVIOUSADM & tabId).RefersToRange
+    On Error GoTo 0
+
+    If recorded Is Nothing Then Exit Function
+
+    RecordedAdminCode = Trim$(CStr(recorded.Cells(1, 1).Value))
+End Function
+
+
 '@sub-title Return the top admin name for a spatial variable.
-'@param adminLevel String. Admin level label (e.g. "adm1").
+'@param adminLevel String. The level label as the dropdown carries it (e.g. "District").
 '@param adminOrder Integer. Rank order (1 = top, 2 = second, etc.).
 '@param varName String. Variable name (with prefix, e.g. "concat_adm1_myvar").
 '@param tabId Optional String. Spatial table identifier.
@@ -708,12 +745,14 @@ Public Function TopAdmin(ByVal adminLevel As String, _
 
     actualVarName = BareSpatialName(varName)
     adminName = this.geo.AdminCode(adminLevel)
+    If LenB(adminName) = 0 Then adminName = RecordedAdminCode(tabId)
+
     TopAdmin = this.sp.TopGeoValue(adminName, adminOrder, actualVarName, tabId)
 End Function
 
 
 '@sub-title Return the population for the top admin of a spatial variable.
-'@param adminLevel String. Admin level label (e.g. "adm1").
+'@param adminLevel String. The level label as the dropdown carries it (e.g. "District").
 '@param adminOrder Integer. Rank order (1 = top, 2 = second, etc.).
 '@param varName String. Variable name (with prefix "concat_adm1_").
 '@param tabId Optional String. Spatial table identifier.
@@ -735,6 +774,7 @@ Public Function TopPop(ByVal adminLevel As String, _
 
     actualVarName = BareSpatialName(varName)
     adminName = this.geo.AdminCode(adminLevel)
+    If LenB(adminName) = 0 Then adminName = RecordedAdminCode(tabId)
 
     pop = 0
     On Error Resume Next
@@ -1134,6 +1174,13 @@ End Sub
 'formula's array state. Busy state is managed by the calling
 'LinelistEventsManager. The sheet protection is restored on every path,
 'raise included.
+'
+'A label naming no level stops the whole thing here. Data validation checks
+'what a user types or picks and says nothing about Delete, so an emptied
+'dropdown reaches this sub as a Change like any other. Running on it would
+'rewrite every concat_adm<n> in the block to concat_ and then record the empty
+'level, which leaves the table reading a column that does not exist with
+'nothing left on the sheet saying where it came from.
 '@param rngName String. Named range of the admin dropdown (e.g. "ADM_DROPDOWN_sp1").
 Private Sub UpdateSingleSpTable(ByVal rngName As String)
     Dim tabId As String
@@ -1151,6 +1198,7 @@ Private Sub UpdateSingleSpTable(ByVal rngName As String)
     Set sh = ActiveSheet
     tabId = Replace(rngName, "ADM_DROPDOWN_", vbNullString)
     newAdmin = this.geo.AdminCode(sh.Range(rngName).Value)
+    If LenB(newAdmin) = 0 Then Exit Sub
 
     On Error GoTo ErrUpdateSp
     this.pass.UnProtect "_active"
@@ -1171,6 +1219,11 @@ End Sub
 'Reads the admin dropdown of the table, turns its label into an admin code
 'through the held LLGeo, and hands the formula arithmetic to LLSpatial. The
 'sheet protection is restored on every path, raise included.
+'
+'A label naming no level stops the whole thing here, for the same reason it
+'stops UpdateSingleSpTable: the population column of an empty level is a
+'column that does not exist, and dividing by it puts an error in every cell of
+'the block that the revert then cannot read its way back out of.
 '@param rngName String. Named range of the population factor (e.g. "POPFACT_sp1").
 '@param revertBack Optional Boolean. True to remove the division and restore original formulas.
 Private Sub DevideByPopulation(ByVal rngName As String, _
@@ -1190,6 +1243,7 @@ Private Sub DevideByPopulation(ByVal rngName As String, _
     Set sh = ActiveSheet
     tabId = Replace(rngName, "POPFACT_", vbNullString)
     adminName = this.geo.AdminCode(sh.Range("ADM_DROPDOWN_" & tabId).Value)
+    If LenB(adminName) = 0 Then Exit Sub
 
     On Error GoTo ErrDivide
     this.pass.UnProtect "_active"
