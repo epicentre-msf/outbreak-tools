@@ -83,6 +83,7 @@ Private Type TLinelist
     customDropdowns As DropdownLists
     pivotTables As CustomPivotTable
     sheetNames As BetterArray
+    sheetInfo As LLSheets
     checks As Checking
     shortened As Collection
 End Type
@@ -170,6 +171,19 @@ End Property
 '@export
 Public Property Get SheetNames() As BetterArray
     Set SheetNames = DictionarySheetNames()
+End Property
+
+'@label:sheet-info-manager
+'@prop-title The LLSheets over the dictionary, shared by the whole build
+'@details
+'One LLSheets instance over the specifications dictionary, built on first read
+'and kept for the whole build. TransferAllCode and the sheet-building loop of
+'clickGenerate each created their own over the same dictionary, so every row
+'resolution and every cache slot was computed twice.
+'@return LLSheets. The sheet information manager of the dictionary.
+'@export
+Public Property Get SheetInfoManager() As LLSheets
+    Set SheetInfoManager = DictionarySheetInfo()
 End Property
 
 '@label:wksh
@@ -757,6 +771,19 @@ Private Function DictionarySheetNames() As BetterArray
     Set DictionarySheetNames = this.sheetNames
 End Function
 
+'@label:dictionary-sheet-info
+'@sub-title The dictionary's sheet manager, built on first read
+'@details
+'The dictionary is meaningful once specs.Prepare has run, and a build on first
+'read keeps an early ask safe.
+'@return LLSheets. The sheet information manager of the dictionary.
+Private Function DictionarySheetInfo() As LLSheets
+    If this.sheetInfo Is Nothing Then
+        Set this.sheetInfo = LLSheets.Create(this.specs.Dictionary)
+    End If
+    Set DictionarySheetInfo = this.sheetInfo
+End Function
+
 '@label:build-dropdown
 '@sub-title Build the dropdown manager of one scope
 '@param scope Byte. 1 = standard dropdowns, 2 = custom choice dropdowns.
@@ -1111,7 +1138,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
     'source template module (EventLinelistSheet) is read from the designer
     'workbook and its code is written into each HList worksheet's CodeModule in
     'the output workbook.
-    Set llshs = LLSheets.Create(this.specs.Dictionary)
+    Set llshs = SheetInfoManager
 
     For counter = sheetNames.LowerBound To sheetNames.UpperBound
         codeName = CStr(sheetNames.Item(counter))

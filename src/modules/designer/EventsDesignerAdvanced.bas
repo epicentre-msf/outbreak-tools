@@ -386,9 +386,10 @@ Public Sub clickGenerate()
         Set sheetChecks = New BetterArray
         sheetChecks.LowerBound = 1
 
-        'One LLSheets for the whole loop. BuildOneSheet used to create its own
-        'per sheet, and building one reads the dictionary.
-        Set llSheetInfo = LLSheets.Create(specs.Dictionary)
+        'The shared LLSheets the linelist holds. This loop and TransferAllCode
+        'each created their own over the same dictionary, so every row
+        'resolution was computed twice.
+        Set llSheetInfo = ll.SheetInfoManager
 
         For counter = sheetLists.LowerBound To sheetLists.UpperBound
             Set listBld = BuildOneSheet(llSheetInfo, ll, sheetLists.Item(counter))

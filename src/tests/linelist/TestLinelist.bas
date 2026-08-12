@@ -42,7 +42,7 @@ Option Explicit
 'TestALongPrintNameResolvesToTheSheetThatWasCreated is what holds the two sides
 'together, and TestALongCRFNameKeepsItsWholeName states that the same base name
 'under the shorter prefix is left as it is.
-'@depends Linelist, LinelistSpecs, LLdictionary, DropdownLists,
+'@depends Linelist, LinelistSpecs, LLdictionary, LLSheets, DropdownLists,
 '  CustomPivotTable, CustomTest, DictionaryTestFixture
 
 Private Assert As CustomTest
@@ -272,6 +272,47 @@ Public Sub TestSheetNamesIsWalkedOnce()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestSheetNamesIsWalkedOnce", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("Linelist")
+Public Sub TestSheetInfoManagerIsBuiltOnce()
+    CustomTestSetTitles Assert, TESTMODULE, "TestSheetInfoManagerIsBuiltOnce"
+    If Not FixtureReady("TestSheetInfoManagerIsBuiltOnce") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sut As Linelist
+    Dim firstRead As LLSheets
+    Dim secondRead As LLSheets
+
+    Set sut = Linelist.Create(Specs)
+    Set firstRead = sut.SheetInfoManager
+    Set secondRead = sut.SheetInfoManager
+
+    Assert.IsTrue Not firstRead Is Nothing, _
+                  "SheetInfoManager should answer an instance"
+    Assert.IsTrue firstRead Is secondRead, _
+                  "The second read should answer the instance the first read built"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSheetInfoManagerIsBuiltOnce", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("Linelist")
+Public Sub TestSheetInfoManagerReadsTheSpecsDictionary()
+    CustomTestSetTitles Assert, TESTMODULE, "TestSheetInfoManagerReadsTheSpecsDictionary"
+    If Not FixtureReady("TestSheetInfoManagerReadsTheSpecsDictionary") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sut As Linelist
+    Set sut = Linelist.Create(Specs)
+
+    Assert.IsTrue sut.SheetInfoManager.Dictionary Is Dict, _
+                  "The manager should read the dictionary held by the specifications"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSheetInfoManagerReadsTheSpecsDictionary", Err.Number, Err.Description
 End Sub
 
 
