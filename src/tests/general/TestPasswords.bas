@@ -1095,7 +1095,11 @@ Cleanup:
             End If
             If Not tempWb Is Nothing Then tempWb.Close SaveChanges:=False
             CleanupExportedFiles exportedFiles
-            Kill exportFolder
+            'BuildTempFolder makes this folder with MkDir. Kill works on files,
+            'so it raised quietly in here and the empty folder stayed behind
+            'after every run. RmDir is the matching teardown, and it fails just
+            'as quietly when something above leaves a file in the folder.
+            RmDir exportFolder
         On Error GoTo 0
         Exit Sub
 

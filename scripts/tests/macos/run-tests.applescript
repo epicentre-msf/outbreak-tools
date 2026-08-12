@@ -62,9 +62,17 @@ on run argv
 		-- was about half its present size. At 46 modules the run sits right on
 		-- that edge: one run finished in about 7 minutes and reported success,
 		-- the next took 10 minutes 10 seconds and reported failure with a green
-		-- results file already on disk. Raised to 1200 so a green run stops
-		-- being reported as a failure; it still guards against a wedged modal.
-		with timeout of 1200 seconds
+		-- results file already on disk. Raised to 1200 for that.
+		--
+		-- Raised again to 3600 on 2026-08-12, when TestPasswords came back into
+		-- the loop and made it 74 modules. The 73-module run before it already
+		-- finished BEHIND the 1200 cap, green, and readable only from the
+		-- run-dir CSV. The first 74-module run then died on -609 with a
+		-- zero-byte CSV. A cap the run crosses on a healthy day reports every
+		-- green run as a failure and loses the results with it. One hour is a
+		-- ceiling the suite is expected to stay well under, and it still stops
+		-- a wedged modal from hanging the driver forever.
+		with timeout of 3600 seconds
 			-- 0) refresh the harness modules (OBTImport/OBTHeadless) from the run
 			--    dir, so their code can be iterated without a manual VBE re-import.
 			--    Separate call, so the refreshed code is loaded for the steps below.

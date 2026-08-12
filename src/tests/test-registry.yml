@@ -80,11 +80,11 @@ suites:
       - module: ChoicesTestFixture
       # PasswordsTestFixture lives beside the other .bas fixtures in
       # src/tests/helpers/, so it is registered here rather than under `general`
-      # with the suites it serves. It stays registered while TestPasswords is
-      # parked: PreparePasswordsFixture is also called by TestSetupErrors,
-      # TestEventSetup, TestSetupImport, TestLLExport and TestDevelopment,
-      # so it is wanted again the moment any of those is added. It declares no
-      # @TestMethod, so the runner imports it and runs it as a 0-test no-op.
+      # with the suites it serves. PreparePasswordsFixture is called by
+      # TestPasswords, TestSetupErrors, TestEventSetup, TestSetupImport,
+      # TestLLExport and TestDevelopment, so it stays registered whichever of
+      # those are in the loop. It declares no @TestMethod, so the runner
+      # imports it and runs it as a 0-test no-op.
       - module: PasswordsTestFixture
       # FormulaTestFixture is the same shape again. PrepareFormulaFixtureSheet
       # builds the two lookup ListObjects (T_XlsFonctions and T_ascii) that
@@ -209,12 +209,14 @@ suites:
       # Application.DefaultFilePath, which sits outside the granted folder.
       - module: TestTemporaryRepos
         covers: [TemporaryRepos]
-      # TestPasswords is parked by owner decision: it ran once, green at 60
-      # assertions, and is not wanted in the regular loop. Re-enable by
-      # uncommenting -- nothing else has to change, and PasswordsTestFixture
-      # stays registered because five other suites use it.
-      # - module: TestPasswords
-      #   covers: [Passwords]
+      # TestPasswords was parked by owner decision for a while and is back in
+      # the loop as of 2026-08-12. It drives the copy of Passwords baked into
+      # the driver workbook, the same way TestHiddenNames and
+      # TestTranslationObject do, so an edit to src/classes/general/Passwords.cls
+      # reaches it only after a hand re-import in the VBE.
+      # PasswordsTestFixture stays registered because five other suites use it.
+      - module: TestPasswords
+        covers: [Passwords]
 
   # --- dictionary (LLExport, LLSheets) ---------------------------------------
   # LLExport names LLdictionary, LLVariables, DataSheet, CustomTable, Passwords,
