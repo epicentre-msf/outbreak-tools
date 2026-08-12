@@ -179,6 +179,56 @@ Fail:
     ReportTestFailure "TestPrepareCreatesWorkbookFlags"
 End Sub
 
+'@TestMethod("DesignerPreparation.Formatter")
+Public Sub TestFormatterFlagStartsCleared()
+    CustomTestSetTitles Assert, "DesignerPreparation", "TestFormatterFlagStartsCleared"
+    On Error GoTo Fail
+
+    'A designer that never met the styles import button reads the setup's
+    'formatter, so the flag answers False with no hidden name in the workbook
+    Dim subject As DesignerPreparation
+    Set subject = DesignerPreparation.Create(FixtureWorkbook)
+
+    Assert.IsFalse subject.FormatterImported, _
+                   "A workbook with no formatter flag should read False."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestFormatterFlagStartsCleared"
+End Sub
+
+'@TestMethod("DesignerPreparation.Formatter")
+Public Sub TestFormatterFlagIsSetAndCleared()
+    CustomTestSetTitles Assert, "DesignerPreparation", "TestFormatterFlagIsSetAndCleared"
+    On Error GoTo Fail
+
+    'Arrange
+    Dim subject As DesignerPreparation
+    Set subject = DesignerPreparation.Create(FixtureWorkbook)
+
+    'Act: the styles import sets the flag
+    subject.FormatterImported = True
+
+    'Assert
+    Assert.IsTrue subject.FormatterImported, _
+                  "The flag should read True after a styles import."
+    Assert.AreEqual "Yes", subject.HiddenStore.ValueAsString("TAG_FORMATTER_IMPORTED"), _
+                    "The hidden name should store Yes."
+
+    'Act: loading a setup file clears it
+    subject.FormatterImported = False
+
+    'Assert
+    Assert.IsFalse subject.FormatterImported, _
+                   "The flag should read False once a setup file is loaded."
+    Assert.AreEqual "No", subject.HiddenStore.ValueAsString("TAG_FORMATTER_IMPORTED"), _
+                    "The hidden name should store No."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestFormatterFlagIsSetAndCleared"
+End Sub
+
 '@TestMethod("DesignerPreparation")
 Public Sub TestPrepareCreatesGeoFlags()
     CustomTestSetTitles Assert, "DesignerPreparation", "TestPrepareCreatesGeoFlags"
@@ -567,6 +617,38 @@ Fail:
 End Sub
 
 '@TestMethod("DesignerPreparation.Import")
+Public Sub TestPrepareImportsDropdownTranslations()
+    CustomTestSetTitles Assert, "DesignerPreparation", "TestPrepareImportsDropdownTranslations"
+    On Error GoTo Fail
+
+    'Arrange: T_tradDrop on both sides. DesignerTranslation refuses to build
+    'without that table and the import used to walk past it
+    Dim sourceSheet As Worksheet
+    Set sourceSheet = EnsureWorksheet("DesignerTranslation", TranslationsSource)
+
+    AddTradTable TranslationSheet, "T_tradDrop", 1, "placeholder", vbNullString
+    AddTradTable sourceSheet, "T_tradDrop", 1, "DROP_Test", "Choice"
+
+    'Act
+    Dim subject As DesignerPreparation
+    Set subject = DesignerPreparation.Create(FixtureWorkbook)
+    subject.Prepare Nothing, TranslationsSource
+
+    'Assert: the source values should land in the fixture table
+    Dim lo As ListObject
+    Set lo = TranslationSheet.ListObjects("T_tradDrop")
+
+    Assert.AreEqual "DROP_Test", CStr(lo.DataBodyRange.Cells(1, 1).Value), _
+                    "The import should bring the source dropdown tag."
+    Assert.AreEqual "Choice", CStr(lo.DataBodyRange.Cells(1, 2).Value), _
+                    "The import should bring the source dropdown value."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareImportsDropdownTranslations"
+End Sub
+
+'@TestMethod("DesignerPreparation.Import")
 Public Sub TestPrepareSkipsImportWhenSourceSheetMissing()
     CustomTestSetTitles Assert, "DesignerPreparation", "TestPrepareSkipsImportWhenSourceSheetMissing"
     On Error GoTo Fail
@@ -658,26 +740,39 @@ End Sub
 
 '@label:add-trad-msg-table
 '@sub-title Create a two-column T_tradMsg ListObject with one data row
-'@details
-'Writes tag/ENG headers and one data row in the first free columns of
-'the supplied worksheet, then converts the range to a ListObject named
-'T_tradMsg, the shape ImportTranslations looks for.
 '@param sh Worksheet. The worksheet to create the table on.
 '@param tagValue String. The value of the tag cell.
 '@param engValue String. The value of the ENG cell.
 Private Sub AddTradMsgTable(ByVal sh As Worksheet, ByVal tagValue As String, _
                             ByVal engValue As String)
-    sh.Cells(1, 1).Value = "tag"
-    sh.Cells(1, 2).Value = "ENG"
-    sh.Cells(2, 1).Value = tagValue
-    sh.Cells(2, 2).Value = engValue
+    AddTradTable sh, "T_tradMsg", 1, tagValue, engValue
+End Sub
+
+'@label:add-trad-table
+'@sub-title Create a two-column translation ListObject with one data row
+'@details
+'Writes tag/ENG headers and one data row from the given column of the
+'supplied worksheet, then converts the range to a ListObject of the given
+'name, the shape ImportTranslations looks for.
+'@param sh Worksheet. The worksheet to create the table on.
+'@param tableName String. The ListObject name.
+'@param firstColumn Long. The column the two-column table starts on.
+'@param tagValue String. The value of the tag cell.
+'@param engValue String. The value of the ENG cell.
+Private Sub AddTradTable(ByVal sh As Worksheet, ByVal tableName As String, _
+                         ByVal firstColumn As Long, ByVal tagValue As String, _
+                         ByVal engValue As String)
+    sh.Cells(1, firstColumn).Value = "tag"
+    sh.Cells(1, firstColumn + 1).Value = "ENG"
+    sh.Cells(2, firstColumn).Value = tagValue
+    sh.Cells(2, firstColumn + 1).Value = engValue
 
     Dim lo As ListObject
     Set lo = sh.ListObjects.Add( _
         SourceType:=xlSrcRange, _
-        Source:=sh.Range(sh.Cells(1, 1), sh.Cells(2, 2)), _
+        Source:=sh.Range(sh.Cells(1, firstColumn), sh.Cells(2, firstColumn + 1)), _
         XlListObjectHasHeaders:=xlYes)
-    lo.Name = "T_tradMsg"
+    lo.Name = tableName
 End Sub
 
 Private Sub ReportTestFailure(ByVal context As String)

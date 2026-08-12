@@ -3,14 +3,14 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, RibbonDev, OSFiles, BetterArray, CustomTable, Passwords, Passwords, LLFormat, ApplicationState, DesignerTranslation, DesignerTranslation, HiddenNames
+'@depends DesignerPreparation, RibbonDev, OSFiles, Passwords, LLFormat, ApplicationState, DesignerTranslation
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const SHEET_FORMAT As String = "__formatter"
+Private Const SHEET_PASS As String = "__pass"
 Private Const DESTRADSSHEET As String = "DesignerTranslation"
 Private Const MAINSHEET As String = "Main"
 Private Const PROMPT_TITLE As String = "Designer"
-Private Const TAG_FORMATTER_IMPORTED As String = "TAG_FORMATTER_IMPORTED"
 
 Private trads As DesignerTranslation
 Private prep As DesignerPreparation
@@ -89,18 +89,9 @@ End Sub
 Public Sub clickImpTrans(ByRef control As IRibbonControl)
     Dim io As OSFiles
     Dim importBook As Workbook
-    Dim targetBook As Workbook
-    Dim sheetNames As BetterArray
-    Dim tableNames As BetterArray
-    Dim sheetName As Variant
-    Dim idx As Long
-    Dim targetSheet As Worksheet
-    Dim sourceSheet As Worksheet
-    Dim lo As ListObject
-    Dim targetTable As CustomTable
-    Dim sourceTable As CustomTable
     Dim appScope As ApplicationState
 
+    'The picker runs before the busy state, because the dialog needs the UI
     Set io = OSFiles.Create()
     io.LoadFile "*.xlsx"
     If Not io.HasValidFile() Then Exit Sub
@@ -109,33 +100,11 @@ Public Sub clickImpTrans(ByRef control As IRibbonControl)
     Set appScope = ApplicationState.Create(Application)
     appScope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
-    Set targetBook = ThisWorkbook
-    Set sheetNames = New BetterArray
-    sheetNames.Push "LinelistTranslation", "DesignerTranslation"
-
-    Set tableNames = New BetterArray
-    tableNames.Push "t_tradllshapes", "t_tradllmsg", "t_tradllforms", "t_tradllribbon", _
-                    "t_tradmsg", "t_tradrange", "t_tradshape"
-
-    Set importBook = Workbooks.Open(io.File())
-
-    For idx = sheetNames.LowerBound To sheetNames.UpperBound
-        sheetName = sheetNames.Item(idx)
-        On Error Resume Next
-        Set targetSheet = targetBook.Worksheets(CStr(sheetName))
-        Set sourceSheet = importBook.Worksheets(CStr(sheetName))
-        On Error GoTo 0
-
-        If (targetSheet Is Nothing) Or (sourceSheet Is Nothing) Then GoTo Cleanup
-
-        For Each lo In targetSheet.ListObjects
-            If tableNames.Includes(LCase$(lo.Name)) Then
-                Set targetTable = CustomTable.Create(lo)
-                Set sourceTable = CustomTable.Create(sourceSheet.ListObjects(lo.Name))
-                targetTable.Import sourceTable
-            End If
-        Next lo
-    Next idx
+    'The import body lives on DesignerPreparation, which the preparation
+    'sequence uses too. The workbook is opened here and closed here, so the
+    'class reads an open book and leaves it alone.
+    Set importBook = Workbooks.Open(io.File(), ReadOnly:=True)
+    ResolvePreparation().ImportTranslations importBook
 
     MsgBox "Done!", vbInformation + vbOKOnly, PROMPT_TITLE
 
@@ -168,7 +137,7 @@ Public Sub clickImpPass(ByRef control As IRibbonControl)
 
     Set importBook = Workbooks.Open(io.File(), ReadOnly:=False)
     Set importer = Passwords.Create(importBook.Worksheets(1))
-    Set target = Passwords.Create(ThisWorkbook.Worksheets("__pass"))
+    Set target = Passwords.Create(ThisWorkbook.Worksheets(SHEET_PASS))
     target.ImportFrom importer
 
     MsgBox "Done!", vbInformation + vbOKOnly, PROMPT_TITLE
@@ -203,9 +172,12 @@ Public Sub clickImpStyle(ByRef control As IRibbonControl)
     Set formatManager = LLFormat.Create(ThisWorkbook.Worksheets(SHEET_FORMAT))
     formatManager.Import importBook.Worksheets(1)
 
-    Dim store As HiddenNames
-    Set store = HiddenNames.Create(ThisWorkbook)
-    store.EnsureName TAG_FORMATTER_IMPORTED, "Yes", HiddenNameTypeString
+    'The designer now holds the live formatter. Loading a setup file clears
+    'this flag again, so the styles imported here belong to the setup that is
+    'loaded now.
+    Dim designerPrep As DesignerPreparation
+    Set designerPrep = ResolvePreparation()
+    designerPrep.FormatterImported = True
 
     MsgBox "Done!", vbInformation + vbOKOnly, PROMPT_TITLE
 

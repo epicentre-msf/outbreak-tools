@@ -77,6 +77,10 @@ Private Const TAG_LL_LANG_CODE As String = "RNG_LLLanguageCode"
 Private Const TAG_DICT_LANG As String = "RNG_DictionaryLanguage"
 Private Const TAG_LAST_OPENED As String = "RNG_LastOpenedDate"
 
+'The formatter flag has one home, here. The styles import sets it, loading a
+'setup file clears it, and the transfer reads it to pick the formatter source.
+Private Const TAG_FORMATTER_IMPORTED As String = "TAG_FORMATTER_IMPORTED"
+
 'Geo worksheet-level HiddenNames
 Private Const GEO_LANG_CODE As String = "RNG_GeoLangCode"
 Private Const GEO_NAME As String = "RNG_GeoName"
@@ -238,6 +242,42 @@ Public Function GetFlag(ByVal nameId As String, Optional ByVal defaultValue As B
     GetFlag = (StrComp(rawValue, FLAG_ON, vbTextCompare) = 0)
 End Function
 
+'@label:formatter-imported
+'@prop-title Whether the designer holds a formatter loaded through the ribbon
+'@details
+'Reads the workbook-level TAG_FORMATTER_IMPORTED flag. True means the
+'styles import button was pressed for the setup file that is loaded now,
+'so the generation ships the designer's __formatter sheet. False means
+'the setup file owns the formatter.
+'@return Boolean. True when the flag reads "Yes".
+'@export
+Public Property Get FormatterImported() As Boolean
+    Dim rawValue As String
+
+    EnsureHiddenStore
+    rawValue = this.store.ValueAsString(TAG_FORMATTER_IMPORTED, FLAG_OFF)
+    FormatterImported = (StrComp(rawValue, FLAG_ON, vbTextCompare) = 0)
+End Property
+
+'@label:formatter-imported-set
+'@prop-title Set the formatter flag
+'@details
+'Writes "Yes" or "No" into the workbook-level TAG_FORMATTER_IMPORTED flag,
+'creating the hidden name when the designer has none yet. The styles
+'import writes True; loading a setup file writes False, so the designer's
+'formatter wins only after an explicit styles import for the setup that
+'is loaded now.
+'@param imported Boolean. True to mark the designer's formatter as the live copy.
+'@export
+Public Property Let FormatterImported(ByVal imported As Boolean)
+    Dim storedValue As String
+
+    storedValue = IIf(imported, FLAG_ON, FLAG_OFF)
+    EnsureHiddenStore
+    this.store.EnsureName TAG_FORMATTER_IMPORTED, storedValue, HiddenNameTypeString
+    this.store.SetValue TAG_FORMATTER_IMPORTED, storedValue
+End Property
+
 '@label:host-workbook
 '@prop-title The configured host workbook
 '@details
@@ -289,17 +329,21 @@ End Property
 'imports matching ListObjects via CustomTable.Import. When source is
 'Nothing, prompts the user to select an xlsx file and opens it read-only;
 'the workbook opened here is also closed here. When source is provided,
-'reads from that open workbook and leaves it open — tests hand a fixture
-'workbook this way so the sequence runs without a dialog. This is the
-'same logic as the clickImpTrans ribbon callback, encapsulated here so
-'it runs as part of the preparation sequence.
+'reads from that open workbook and leaves it open — the clickImpTrans
+'ribbon callback opens the file itself and hands it over that way, and
+'tests hand a fixture workbook so the sequence runs without a dialog.
+'
+'This body is the only translations import in the project. The
+'preparation sequence and the ribbon button both come here, so the eight
+'table names are written down once.
 '
 'A sheet or table missing on either side is skipped through the resolve
 'helpers, which probe and clear their own errors. The cleanup label only
 'sees errors raised while the import itself is running, so a designer
 'that lacks one sheet prepares without a raise.
-'@param source Workbook. Open workbook holding the translation tables, or Nothing.
-Private Sub ImportTranslations(ByVal source As Workbook)
+'@param source Optional Workbook. Open workbook holding the translation tables, or Nothing.
+'@export
+Public Sub ImportTranslations(Optional ByVal source As Workbook = Nothing)
     Dim io As OSFiles
     Dim importBook As Workbook
     Dim openedHere As Boolean
@@ -332,9 +376,12 @@ Private Sub ImportTranslations(ByVal source As Workbook)
     Set sheetNames = New BetterArray
     sheetNames.Push SHEET_LL_TRANSLATION, SHEET_DES_TRANSLATION
 
+    'T_tradDrop is in the list. DesignerTranslation refuses to build without
+    'that table, and neither importer carried it, so the dropdown labels of
+    'the designer could never be refreshed from a translations workbook.
     Set tableNames = New BetterArray
     tableNames.Push "t_tradllshapes", "t_tradllmsg", "t_tradllforms", "t_tradllribbon", _
-                    "t_tradmsg", "t_tradrange", "t_tradshape"
+                    "t_tradmsg", "t_tradrange", "t_tradshape", "t_traddrop"
 
     For idx = sheetNames.LowerBound To sheetNames.UpperBound
         sheetName = CStr(sheetNames.Item(idx))

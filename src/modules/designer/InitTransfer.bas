@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Fills a new linelist workbook straight from the setup file and the designer, with no intermediate copy.")
-'@depends ProjectError, LLdictionary, LLChoices, LLExport, Analysis, LLGeo, LLFormat, LLTranslation, Passwords, HiddenNames, Checking
+'@depends ProjectError, LLdictionary, LLChoices, LLExport, Analysis, LLGeo, LLFormat, LLTranslation, Passwords, HiddenNames, Checking, DesignerPreparation
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 '@description
@@ -20,8 +20,14 @@ Option Explicit
 '
 'The geo sheet, the passwords, the five translation tables and the designer's
 'own hidden names come from the designer. The formatter comes from whichever
-'of the two holds the live copy: the designer when it was loaded through the
-'ribbon, the setup otherwise.
+'of the two holds the live copy: the designer when the styles import button
+'was pressed for the setup that is loaded now, the setup otherwise. Loading a
+'setup file clears that flag, so the designer's formatter has to be imported
+'again for each setup.
+'
+'Either way the exported format sheet carries the design name of the run, the
+'DESIGNTYPE value the designer's format sheet holds, which is the design
+'LinelistSpecs builds every sheet with.
 '
 'WHY THE SETUP TRANSLATION TABLE IS ITS OWN STEP
 '-------------------------------------------------------------------------------
@@ -61,8 +67,9 @@ Private Const SHEET_MAIN As String = "Main"
 Private Const SHEET_GEO As String = "Geo"
 Private Const SHEET_PASS As String = "__pass"
 
-'HiddenNames flags
-Private Const TAG_FORMATTER_IMPORTED As String = "TAG_FORMATTER_IMPORTED"
+'The design the build applies, read from the designer's format sheet.
+'LinelistSpecs.EnsureFormat reads the same range for the same reason.
+Private Const RANGE_DESIGN_TYPE As String = "DESIGNTYPE"
 
 'Named ranges on the Main sheet
 Private Const RNG_LL_NAME As String = "RNG_LLName"
@@ -109,8 +116,9 @@ Private transferChecks As Checking
 '   written after the setup's on purpose, so a name both workbooks carry comes
 '   out of the linelist holding the designer's answer.
 '3. The setup translation table lands on the LINELIST's translation sheet.
-'4. The formatter comes from the designer when it was loaded through the
-'   ribbon, and from the setup otherwise.
+'4. The formatter comes from the designer when the styles import button was
+'   pressed for the setup that is loaded now, and from the setup otherwise.
+'   Both branches name the design of the run on the exported sheet.
 '
 'The setup workbook is opened read-only and is always closed on the way out,
 'including when a step raises.
@@ -174,11 +182,13 @@ Public Sub TransferToLinelist(ByVal designerBook As Workbook, _
     'export just created.
     ImportSetupTranslationTable setupBook, targetBook
 
-    'The formatter lives on one of the two workbooks, never on both.
+    'The formatter lives on one of the two workbooks, never on both. Both
+    'branches carry the design name of the run, so the formatter sheet the
+    'linelist ships names the design the build applied.
     If FormatterAlreadyImported(designerBook) Then
-        ExportFormatterFromDesigner designerBook, targetBook
+        ExportFormatterFromDesigner designerBook, targetBook, DesignerDesignName(designerBook)
     Else
-        ExportFormatterFromSetup setupBook, targetBook
+        ExportFormatterFromSetup setupBook, targetBook, DesignerDesignName(designerBook)
     End If
 
 TransferCleanup:
@@ -371,15 +381,21 @@ Private Sub ExportHiddenNamesFromSetup(ByVal setupBook As Workbook, ByVal target
 End Sub
 
 '@sub-title Export the formatter from the setup to the linelist
-Private Sub ExportFormatterFromSetup(ByVal setupBook As Workbook, ByVal targetBook As Workbook)
+'@param setupBook Workbook. The setup workbook holding the format sheet.
+'@param targetBook Workbook. The linelist workbook receiving it.
+'@param designName String. The design of the run, empty when the designer names none.
+Private Sub ExportFormatterFromSetup(ByVal setupBook As Workbook, _
+                                     ByVal targetBook As Workbook, _
+                                     ByVal designName As String)
     Dim setupSheet As Worksheet
     Dim formatManager As LLFormat
 
     Set setupSheet = ResolveWorksheet(setupBook, SHEET_FORMATTER)
     If setupSheet Is Nothing Then Exit Sub
 
-    Set formatManager = LLFormat.Create(setupSheet)
+    Set formatManager = CreateFormatter(setupSheet, designName)
     formatManager.Export targetBook
+    WriteExportedDesignName targetBook, designName
 
     If WorksheetExists(targetBook, SHEET_FORMATTER) Then
         targetBook.Worksheets(SHEET_FORMATTER).Visible = xlSheetVeryHidden
@@ -511,15 +527,21 @@ Private Sub ExportTranslationsFromDesigner(ByVal designerBook As Workbook, ByVal
 End Sub
 
 '@sub-title Export the formatter from the designer to the linelist
-Private Sub ExportFormatterFromDesigner(ByVal designerBook As Workbook, ByVal targetBook As Workbook)
+'@param designerBook Workbook. The designer workbook holding the format sheet.
+'@param targetBook Workbook. The linelist workbook receiving it.
+'@param designName String. The design of the run, empty when the designer names none.
+Private Sub ExportFormatterFromDesigner(ByVal designerBook As Workbook, _
+                                        ByVal targetBook As Workbook, _
+                                        ByVal designName As String)
     Dim designerSheet As Worksheet
     Dim formatManager As LLFormat
 
     Set designerSheet = ResolveWorksheet(designerBook, SHEET_FORMATTER)
     If designerSheet Is Nothing Then Exit Sub
 
-    Set formatManager = LLFormat.Create(designerSheet)
+    Set formatManager = CreateFormatter(designerSheet, designName)
     formatManager.Export targetBook
+    WriteExportedDesignName targetBook, designName
 
     If WorksheetExists(targetBook, SHEET_FORMATTER) Then
         targetBook.Worksheets(SHEET_FORMATTER).Visible = xlSheetVeryHidden
@@ -611,13 +633,80 @@ End Sub
 '===============================================================================
 
 '@fun-title Whether the formatter was loaded through the designer ribbon
-'@return Boolean. True when TAG_FORMATTER_IMPORTED reads "Yes" on the designer.
+'@details
+'The flag has one home, DesignerPreparation. The styles import button sets
+'it and loading a setup file clears it, so it reads True only after an
+'explicit styles import for the setup that is loaded now.
+'@return Boolean. True when the designer holds the live formatter.
 Private Function FormatterAlreadyImported(ByVal designerBook As Workbook) As Boolean
-    Dim store As HiddenNames
+    Dim prep As DesignerPreparation
 
-    Set store = HiddenNames.Create(designerBook)
-    FormatterAlreadyImported = (store.ValueAsString(TAG_FORMATTER_IMPORTED) = "Yes")
+    Set prep = DesignerPreparation.Create(designerBook)
+    FormatterAlreadyImported = prep.FormatterImported
 End Function
+
+'@fun-title The design name of the run
+'@details
+'Read from the DESIGNTYPE named range of the designer's format sheet. That
+'is the value LinelistSpecs.EnsureFormat builds its LLFormat with, so it is
+'the design every sheet of the run is written in.
+'@return String. The design name, empty when the designer names none.
+Private Function DesignerDesignName(ByVal designerBook As Workbook) As String
+    Dim formatSheet As Worksheet
+    Dim designRange As Range
+
+    Set formatSheet = ResolveWorksheet(designerBook, SHEET_FORMATTER)
+    If formatSheet Is Nothing Then Exit Function
+
+    On Error Resume Next
+    Set designRange = formatSheet.Range(RANGE_DESIGN_TYPE)
+    On Error GoTo 0
+    If designRange Is Nothing Then Exit Function
+
+    DesignerDesignName = Trim$(CStr(designRange.Cells(1, 1).Value))
+End Function
+
+'@fun-title Build a formatter over a format sheet for the design of the run
+'@details
+'An empty design name leaves LLFormat on its own default. A name the format
+'table has no column for falls back to that default inside LLFormat.
+'@param formatSheet Worksheet. The sheet holding the format table.
+'@param designName String. The design of the run, or an empty string.
+'@return LLFormat. The formatter.
+Private Function CreateFormatter(ByVal formatSheet As Worksheet, _
+                                 ByVal designName As String) As LLFormat
+    If LenB(designName) = 0 Then
+        Set CreateFormatter = LLFormat.Create(formatSheet)
+    Else
+        Set CreateFormatter = LLFormat.Create(formatSheet, designName)
+    End If
+End Function
+
+'@sub-title Name the design of the run on the linelist's format sheet
+'@details
+'LLFormat.Export copies the DESIGNTYPE value of the source sheet when the
+'source has one, so a setup file carrying its own design name used to
+'overwrite the design the build applied. The name of the run is written
+'here, after the export, so the two agree.
+'@param targetBook Workbook. The linelist workbook.
+'@param designName String. The design of the run, or an empty string.
+Private Sub WriteExportedDesignName(ByVal targetBook As Workbook, _
+                                    ByVal designName As String)
+    Dim targetSheet As Worksheet
+    Dim designRange As Range
+
+    If LenB(designName) = 0 Then Exit Sub
+
+    Set targetSheet = ResolveWorksheet(targetBook, SHEET_FORMATTER)
+    If targetSheet Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    Set designRange = targetSheet.Range(RANGE_DESIGN_TYPE)
+    On Error GoTo 0
+    If designRange Is Nothing Then Exit Sub
+
+    designRange.Cells(1, 1).Value = designName
+End Sub
 
 '@fun-title Resolve a worksheet by name
 '@return Worksheet. The worksheet, or Nothing.

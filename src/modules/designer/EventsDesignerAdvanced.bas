@@ -141,6 +141,7 @@ End Sub
 Public Sub clickLoadFileDic()
     Dim io As OSFiles
     Dim entry As DesignerEntry
+    Dim prep As DesignerPreparation
     Dim appScope As ApplicationState
     Dim setupBook As Workbook
     Dim tradSheet As Worksheet
@@ -175,6 +176,12 @@ Public Sub clickLoadFileDic()
     'Write the setup path to the Main sheet
     entry.AddInfo io.File(), "setuppath"
     entry.AddInfo entry.TranslateMessage("MSG_ChemFich"), "edition"
+
+    'A new setup file brings its own __formatter sheet, so the designer's
+    'copy stops being the live one. The styles import button sets the flag
+    'again when the user wants the designer's formatter for this setup.
+    Set prep = DesignerPreparation.Create(ThisWorkbook)
+    prep.FormatterImported = False
 
     'Extract languages from the setup Translations worksheet HiddenNames
     'and update the setup languages dropdown for the designer
