@@ -1004,11 +1004,13 @@ End Sub
 '@sub-title Transfer all VBA code components to the output workbook
 '@details
 'Moves the VBA the generated linelist runs on, in five steps:
-'1. 29 class modules. ChoiceKeys, ImportMetadata, ImportReport and
+'1. 30 class modules. ChoiceKeys, ImportMetadata, ImportReport and
 '   CheckingOutput joined the list with the import work: LLExporter types
 '   ChoiceKeys, LLImporter types the first three, ImportChecking types
 '   CheckingOutput and F_ImportRep reads ImportReport, so a linelist without
-'   them fails project compilation.
+'   them fails project compilation. LLLog joined with the user log:
+'   EventLinelist holds one and the button and form modules write their
+'   outcome lines through it.
 '2. 9 standard modules. Five carry the linelist toolbar and its helpers, and
 '   four hold the code behind the user forms: FormLogicAdvanced,
 '   FormLogicExportMig, FormLogicExport and FormLogicEpiWeek. Those four are the
@@ -1038,7 +1040,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
 
     Set codesList = New BetterArray
 
-    'Transfer classes (29 classes)
+    'Transfer classes (30 classes)
     codesList.Push "BetterArray", "DataSheet", "LLExport", _
                    "LLChoices", _
                    "LLdictionary", "LLGeo", _
@@ -1059,6 +1061,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
                    "ExportButton", _
                    "HiddenNames", _
                    "EventLinelist", _
+                   "LLLog", _
                    "ApplicationState"
 
     For counter = codesList.LowerBound To codesList.UpperBound

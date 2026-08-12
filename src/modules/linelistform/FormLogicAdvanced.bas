@@ -3,7 +3,7 @@ Attribute VB_Name = "FormLogicAdvanced"
 '@Folder("Linelist Forms")
 '@ModuleDescription("Complete code-behind of F_Advanced -- imports, clears, reset and saved layouts")
 '@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
-'@depends LLImporter, ImportMetadata, ApplicationState, OSFiles, LLdictionary, ShowHide, ShowHideLayout, ShowHideStore, HiddenNames, Passwords, LLGeo, LLTranslation, TranslationObject
+'@depends LLImporter, ImportMetadata, ApplicationState, OSFiles, LLdictionary, ShowHide, ShowHideLayout, ShowHideStore, HiddenNames, Passwords, LLGeo, LLTranslation, TranslationObject, LLLog
 
 ' This module is the complete code-behind of the F_Advanced form and is
 ' copied into the form at deployment, so the control callbacks, the
@@ -128,6 +128,84 @@ Private Sub ResetEventCaches()
 End Sub
 
 
+' @description The user log the event service holds. A workbook whose log
+' cannot be built answers Nothing and every log line below stays quiet.
+Private Function UserLogOf() As LLLog
+    Dim linelistEvents As EventLinelist
+
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    Set UserLogOf = linelistEvents.UserLog()
+End Function
+
+
+' @description Write the success line of a finished walk. The write is
+' guarded so a log fault never takes down the walk it records.
+Private Sub LogSuccessLine(ByVal action As String, _
+                           Optional ByVal detail As String = vbNullString)
+    Dim logStore As LLLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.LogSuccess action, detail
+    On Error GoTo 0
+End Sub
+
+
+' @description Write the failure line of a walk that ended at its error label.
+Private Sub LogFailureLine(ByVal action As String, _
+                           Optional ByVal detail As String = vbNullString)
+    Dim logStore As LLLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.LogFailure action, detail
+    On Error GoTo 0
+End Sub
+
+
+' @description Write the warning line of a refused or cancelled walk.
+Private Sub LogWarningLine(ByVal action As String, _
+                           Optional ByVal detail As String = vbNullString)
+    Dim logStore As LLLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.LogWarning action, detail
+    On Error GoTo 0
+End Sub
+
+
+' @description Write the warning line of one sheet whose layout ended its
+' walk with refused writes, so a protected sheet or a position that is gone
+' shows up in the log with its count.
+Private Sub LogRefusedWritesLine(ByVal action As String, _
+                                 ByVal layout As ShowHideLayout, _
+                                 ByVal sheetName As String)
+    If layout Is Nothing Then Exit Sub
+    If layout.FailureCount = 0 Then Exit Sub
+
+    LogWarningLine action, sheetName & ": " & layout.FailureCount & " refused writes"
+End Sub
+
+
+' @description The file name at the end of a picked path, for the log detail.
+' Both separators are tried, so the helper answers the same on every host.
+Private Function FileNameOf(ByVal filePath As String) As String
+    Dim sepAt As Long
+
+    sepAt = InStrRev(filePath, "/")
+    If sepAt = 0 Then sepAt = InStrRev(filePath, "\")
+
+    FileNameOf = Mid$(filePath, sepAt + 1)
+End Function
+
+
 ' @description Import data from a migration workbook.
 ' Shows file picker, asks what to do with data already entered, checks language,
 ' imports data and metadata, shows report.
@@ -146,6 +224,7 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
     Dim pastingRule As Byte
     Dim pasteAtBottom As Boolean
     Dim sameLanguage As Boolean
+    Dim failDetail As String
 
     On Error GoTo ErrHand
 
@@ -211,6 +290,7 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
 
     ' The import rewrote the sheets the held managers were built over
     ResetEventCaches
+    LogSuccessLine "import-data", FileNameOf(filePath)
 
     ' Show result. MSG_FinishImportRep asks whether the user wants to see a
     ' report, and it used to be asked with an OK button, so there was no way to
@@ -234,6 +314,7 @@ RefusedImport:
     ' The file cannot be read at all. The reason is on the checking worksheet,
     ' because it is too long for a message box and it names what to do about it.
     On Error Resume Next
+    LogWarningLine "import-data", "file refused: " & FileNameOf(filePath)
     If Not impwb Is Nothing Then impwb.Close savechanges:=False
     Set impwb = Nothing
     If Not actsh Is Nothing Then actsh.Activate
@@ -246,6 +327,7 @@ RefusedImport:
 
 EndImport:
     On Error Resume Next
+    LogWarningLine "import-data", "cancelled"
     MsgBox trads.TranslatedValue("MSG_AbortImport"), _
            vbOKOnly, trads.TranslatedValue("MSG_Imports")
     If Not impwb Is Nothing Then impwb.Close savechanges:=False
@@ -255,7 +337,10 @@ EndImport:
     Exit Sub
 
 ErrHand:
+    ' Err is read before the Resume Next below clears it.
+    failDetail = Err.Description
     On Error Resume Next
+    LogFailureLine "import-data", failDetail
     MsgBox trads.TranslatedValue("MSG_ErrorImport"), _
            vbCritical + vbOKOnly, trads.TranslatedValue("MSG_Imports")
     If Not impwb Is Nothing Then impwb.Close savechanges:=False
@@ -366,6 +451,7 @@ Public Sub HandleImportGeobase(ByVal sourceWkb As Workbook, _
     Dim io As OSFiles
     Dim filePath As String
     Dim impwb As Workbook
+    Dim failDetail As String
 
     On Error GoTo ErrHand
 
@@ -395,13 +481,18 @@ Public Sub HandleImportGeobase(ByVal sourceWkb As Workbook, _
 
     ' The import rewrote the Geo sheet the held geo manager was built over
     ResetEventCaches
+    LogSuccessLine "import-geobase", _
+                   FileNameOf(filePath) & IIf(histoOnly, " (historic only)", vbNullString)
 
     MsgBox trads.TranslatedValue("MSG_FinishImportGeo"), _
            vbOKOnly, trads.TranslatedValue("MSG_Imports")
     Exit Sub
 
 ErrHand:
+    ' Err is read before the Resume Next below clears it.
+    failDetail = Err.Description
     On Error Resume Next
+    LogFailureLine "import-geobase", failDetail
     MsgBox trads.TranslatedValue("MSG_ErrImportGeo"), _
            vbCritical + vbOKOnly, trads.TranslatedValue("MSG_Imports")
     If Not impwb Is Nothing Then impwb.Close savechanges:=False
@@ -439,6 +530,7 @@ Public Sub HandleResetColumns(ByVal sourceWkb As Workbook, _
         If LayerContextOf(sh, dict, pass, entries, layout) Then
             entries.ResetToAuthored layout
             If Not store Is Nothing Then store.Save entries, layout
+            LogRefusedWritesLine "reset-columns", layout, sh.Name
         End If
     Next
 End Sub
@@ -477,9 +569,11 @@ Public Function HandleSaveShowHideLayout(ByVal sourceWkb As Workbook, _
         If LayerContextOf(sh, dict, pass, entries, layout) Then
             entries.Adopt layout
             store.Save entries, layout, layoutName
+            LogRefusedWritesLine "layout-save", layout, sh.Name
         End If
     Next
 
+    LogSuccessLine "layout-save", layoutName
     HandleSaveShowHideLayout = True
 End Function
 
@@ -521,10 +615,12 @@ Public Function HandleRestoreShowHideLayout(ByVal sourceWkb As Workbook, _
                 entries.Apply layout
                 store.Save entries, layout
                 total = total + matched
+                LogRefusedWritesLine "layout-restore", layout, sh.Name
             End If
         End If
     Next
 
+    LogSuccessLine "layout-restore", layoutName & ": " & total & " rows"
     HandleRestoreShowHideLayout = total
 End Function
 
@@ -641,6 +737,7 @@ Public Sub HandleClearData(ByVal sourceWkb As Workbook, _
     Dim proceed As Long
     Dim inputName As String
     Dim goodName As Boolean
+    Dim failDetail As String
 
     On Error GoTo ErrHand
 
@@ -691,10 +788,14 @@ Public Sub HandleClearData(ByVal sourceWkb As Workbook, _
 
     ' The clear emptied the tables the held managers were built over
     ResetEventCaches
+    LogSuccessLine "clear-data"
     Exit Sub
 
 ErrHand:
+    ' Err is read before the Resume Next below clears it.
+    failDetail = Err.Description
     On Error Resume Next
+    LogFailureLine "clear-data", failDetail
     MsgBox trads.TranslatedValue("MSG_ErrClearData"), _
            vbCritical + vbOKOnly, trads.TranslatedValue("MSG_Error")
     If Not appState Is Nothing Then appState.Restore

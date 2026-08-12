@@ -43,7 +43,7 @@ Option Explicit
 'string, so the lookup raised on every sheet it makes and both branches were
 'dead. The dispatch fixture carries no go-to caption on purpose: the toggle and
 'the header restore working there is what proves the reorder.
-'@depends EventLinelist, CustomTest, HiddenNames, LLTranslation, TranslationObject
+'@depends EventLinelist, CustomTest, HiddenNames, LLTranslation, TranslationObject, LLLog
 
 Private Assert As CustomTest
 Private FixtureWkb As Workbook
@@ -52,6 +52,13 @@ Private Const TESTOUTPUTSHEET As String = "testsOutputs"
 Private Const TESTMODULE As String = "EventLinelist"
 Private Const TRANS_SHEET_NAME As String = "LinelistTranslation"
 Private Const LISTAUTO_FLAG As String = "RNG_UpdateListAuto"
+
+'The log worksheet and the two columns the funnel tests read: the output
+'column carries the action and the outcome word, the detail column carries
+'the text behind the date.
+Private Const LOG_SHEET As String = "__log"
+Private Const LOG_OUTPUT_COLUMN As Long = 3
+Private Const LOG_DETAIL_COLUMN As Long = 5
 
 'What OnDoubleClick answers when the click asked for no geo picker.
 Private Const GEOSCOPENONE As Long = -1
@@ -299,6 +306,28 @@ Private Function SeedFilteredPair(ByVal sourceRows As Variant) As Worksheet
     store.EnsureName "filtered_sheet", "filtered1", HiddenNameTypeString
 
     Set SeedFilteredPair = filtsh
+End Function
+
+'@sub-title The first row whose cell in a column of the log sheet holds a text.
+'@details
+'A loop rather than Range.Find, which inherits LookIn and SearchOrder from
+'the last search of the Excel session. Answers 0 on a miss.
+'@param sh Worksheet. The log worksheet.
+'@param columnIndex Long. The column to read.
+'@param searched String. The text to look for.
+'@return Long. The first matching row, or 0.
+Private Function LogRowOfText(ByVal sh As Worksheet, ByVal columnIndex As Long, _
+                              ByVal searched As String) As Long
+    Dim rowIndex As Long
+    Dim lastRow As Long
+
+    lastRow = sh.Cells(sh.Rows.Count, LOG_OUTPUT_COLUMN).End(xlUp).Row
+    For rowIndex = 1 To lastRow
+        If InStr(1, CStr(sh.Cells(rowIndex, columnIndex).Value), searched, vbTextCompare) > 0 Then
+            LogRowOfText = rowIndex
+            Exit Function
+        End If
+    Next rowIndex
 End Function
 
 '@fun-title The row of one variable in a VarLabelTable answer.
@@ -1024,6 +1053,132 @@ Public Sub TestWarnStaysQuietWithoutATranslationSheet()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestWarnStaysQuietWithoutATranslationSheet", _
+                         Err.Number, Err.Description
+End Sub
+
+
+'@section The user log funnel
+'===============================================================================
+'Fail and Warn write their line on the log worksheet before the box shows,
+'so the whole button, ribbon and geo surface logs its refusals and failures
+'through the two methods it already reports through, and the workbook open
+'writes the first line of the session. The fixture carries no translation
+'sheet, so the boxes stay quiet and the suite drives the funnel headless.
+
+'@sub-title The log is built once, held, and its sheet is very hidden.
+'@TestMethod("EventLinelist")
+Public Sub TestUserLogIsHeldAcrossCalls()
+    CustomTestSetTitles Assert, TESTMODULE, "TestUserLogIsHeldAcrossCalls"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim firstRead As LLLog
+    Dim secondRead As LLLog
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+    Set firstRead = sut.UserLog()
+    Set secondRead = sut.UserLog()
+
+    Assert.IsNotNothing firstRead, "A workbook gives a log"
+    Assert.IsTrue firstRead Is secondRead, "The second read is the same log"
+    Assert.AreEqual CLng(xlSheetVeryHidden), _
+                    CLng(FixtureWkb.Worksheets(LOG_SHEET).Visible), _
+                    "The log sheet grew on the fixture and is very hidden"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestUserLogIsHeldAcrossCalls", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Fail writes its failure line even while the box stays quiet.
+'@TestMethod("EventLinelist")
+Public Sub TestFailWritesTheFailureLine()
+    CustomTestSetTitles Assert, TESTMODULE, "TestFailWritesTheFailureLine"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim logsh As Worksheet
+    Dim titleRow As Long
+    Dim entryRow As Long
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+    sut.Fail "MSG_ErrUpdate", "some detail"
+
+    Set logsh = FixtureWkb.Worksheets(LOG_SHEET)
+    titleRow = LogRowOfText(logsh, LOG_OUTPUT_COLUMN, "MSG_ErrUpdate")
+    entryRow = LogRowOfText(logsh, LOG_OUTPUT_COLUMN, "Error")
+
+    Assert.IsTrue (titleRow > 0), "The message code heads the block"
+    Assert.IsTrue (entryRow > titleRow), "The failure line sits under it"
+    Assert.AreEqual "some detail", _
+                    CStr(logsh.Cells(entryRow, LOG_DETAIL_COLUMN).Value), _
+                    "The detail rides beside the date"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestFailWritesTheFailureLine", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Warn writes its warning line even while the box stays quiet.
+'@TestMethod("EventLinelist")
+Public Sub TestWarnWritesTheWarningLine()
+    CustomTestSetTitles Assert, TESTMODULE, "TestWarnWritesTheWarningLine"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim logsh As Worksheet
+    Dim titleRow As Long
+    Dim entryRow As Long
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+    sut.Warn "MSG_NotModify"
+
+    Set logsh = FixtureWkb.Worksheets(LOG_SHEET)
+    titleRow = LogRowOfText(logsh, LOG_OUTPUT_COLUMN, "MSG_NotModify")
+    entryRow = LogRowOfText(logsh, LOG_OUTPUT_COLUMN, "Warning")
+
+    Assert.IsTrue (titleRow > 0), "The message code heads the block"
+    Assert.IsTrue (entryRow > titleRow), "The warning line sits under it"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestWarnWritesTheWarningLine", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title The workbook open writes the first info line of the session.
+'@details
+'OnWorkbookOpen turns application events back on, so the test re-enters the
+'busy state right after the call and the harness keeps the screen.
+'@TestMethod("EventLinelist")
+Public Sub TestWorkbookOpenWritesTheOpenLine()
+    CustomTestSetTitles Assert, TESTMODULE, "TestWorkbookOpenWritesTheOpenLine"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim logsh As Worksheet
+    Dim titleRow As Long
+    Dim entryRow As Long
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+    sut.OnWorkbookOpen
+    BusyApp
+
+    Set logsh = FixtureWkb.Worksheets(LOG_SHEET)
+    titleRow = LogRowOfText(logsh, LOG_OUTPUT_COLUMN, "open")
+    entryRow = LogRowOfText(logsh, LOG_OUTPUT_COLUMN, "Info")
+
+    Assert.IsTrue (titleRow > 0), "The open action heads the block"
+    Assert.IsTrue (entryRow > titleRow), "The info line sits under it"
+    Assert.AreEqual FixtureWkb.Name, _
+                    CStr(logsh.Cells(entryRow, LOG_DETAIL_COLUMN).Value), _
+                    "The detail names the workbook that opened"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestWorkbookOpenWritesTheOpenLine", _
                          Err.Number, Err.Description
 End Sub
 

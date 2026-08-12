@@ -87,6 +87,85 @@ Private Sub FailureOnSheet(ByVal msgCode As String, _
     linelistEvents.Fail msgCode, detail
 End Sub
 
+'The user log the event service holds. A workbook whose log cannot be
+'built answers Nothing and every log line below stays quiet.
+Private Function UserLogOf() As LLLog
+    Dim linelistEvents As EventLinelist
+
+    Set linelistEvents = LinelistService()
+    Set UserLogOf = linelistEvents.UserLog()
+End Function
+
+'Write the success line of a finished walk. The write is guarded so a log
+'fault never takes down the walk it records.
+Private Sub LogSuccessLine(ByVal action As String, _
+                           Optional ByVal detail As String = vbNullString)
+    Dim logStore As LLLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.LogSuccess action, detail
+    On Error GoTo 0
+End Sub
+
+'Write the failure line of a walk that swallows its error at its label.
+Private Sub LogFailureLine(ByVal action As String, _
+                           Optional ByVal detail As String = vbNullString)
+    Dim logStore As LLLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.LogFailure action, detail
+    On Error GoTo 0
+End Sub
+
+'Write the warning line of a walk that ended with refused writes.
+Private Sub LogWarningLine(ByVal action As String, _
+                           Optional ByVal detail As String = vbNullString)
+    Dim logStore As LLLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.LogWarning action, detail
+    On Error GoTo 0
+End Sub
+
+'The Err check of a swallowing handler label. The success path falls into
+'the label with Err at 0 and gets its success line; the error jump gets the
+'failure line. The caller reads Err into the two middle arguments before
+'any cleanup call, because a called procedure's On Error statements clear
+'Err.
+Private Sub LogOutcomeLine(ByVal action As String, ByVal errNumber As Long, _
+                           ByVal errDetail As String, _
+                           Optional ByVal detail As String = vbNullString)
+    If errNumber = 0 Then
+        LogSuccessLine action, detail
+    Else
+        LogFailureLine action, errDetail
+    End If
+End Sub
+
+'The show/hide line carries the writes Excel refused, read off the layout.
+'A count above zero is a warning naming the sheet and the count, which is
+'what surfaces a protected sheet or a position that is gone.
+Private Sub LogShowHideLine(ByVal action As String, _
+                            ByVal layout As ShowHideLayout, _
+                            ByVal sheetName As String)
+    If layout Is Nothing Then Exit Sub
+
+    If layout.FailureCount > 0 Then
+        LogWarningLine action, sheetName & ": " & layout.FailureCount & " refused writes"
+    Else
+        LogSuccessLine action, sheetName
+    End If
+End Sub
+
 'Resolve the ShowHideWorksheetLayer from a sheet tag
 Private Function ResolveShowHideLayer(ByVal shType As String) As Byte
     Select Case shType
@@ -315,8 +394,11 @@ Public Sub ClickShowHide()
     PopulateShowHideList frm
     frm.Show
 
-    'After form closes, save the choices
+    'After form closes, save the choices. The log line covers the whole form
+    'session: every option click landed on this layout, so its refused-write
+    'count is the count of the session.
     SaveShowHideState showHideEntries, showHideLayout
+    LogShowHideLine "showhide", showHideLayout, sh.Name
     Set activeShowHideForm = Nothing
 End Sub
 
@@ -386,8 +468,10 @@ Public Sub ClickShowHideSection()
     ApplyToSections secMap, touched, hideThem
     showHideEntries.Apply showHideLayout
     SaveShowHideState showHideEntries, showHideLayout
+    LogShowHideLine "showhide-section", showHideLayout, sh.Name
 
 ErrHand:
+    If Err.Number <> 0 Then LogFailureLine "showhide-section", Err.Description
     LinelistEventsManager.LLExitBusyState
     Set showHideEntries = Nothing
     Set showHideLayout = Nothing
@@ -615,6 +699,7 @@ Public Sub ClickOpenPrint()
     printsh.Activate
 
 ErrOpen:
+    LogOutcomeLine "open-print", Err.Number, Err.Description
     pass.Protect wb
 End Sub
 
@@ -649,6 +734,7 @@ Public Sub ClickOpenCRF()
     crfsh.Activate
 
 ErrOpen:
+    LogOutcomeLine "open-crf", Err.Number, Err.Description
     pass.Protect wb
 End Sub
 
@@ -692,6 +778,7 @@ Public Sub ClickClosePrint()
 
 
 ErrClose:
+    LogOutcomeLine "close-print", Err.Number, Err.Description
     pass.Protect wb
 End Sub
 
@@ -738,6 +825,7 @@ Public Sub ClickRotateAll()
     Next
 
 ErrHand:
+    LogOutcomeLine "rotate", Err.Number, Err.Description
     LinelistEventsManager.LLExitBusyState
 End Sub
 
@@ -793,7 +881,11 @@ Public Sub ClickRowHeight()
         LoRng.EntireRow.RowHeight = actualRowHeight
     On Error GoTo 0
 
+    'The success line sits above the label so a cancelled ask logs nothing.
+    LogSuccessLine "row-height", inputValue
+
 ErrHand:
+    If Err.Number <> 0 Then LogFailureLine "row-height", Err.Description
     LinelistEventsManager.LLExitBusyState
 End Sub
 
@@ -827,10 +919,12 @@ Public Sub ClickRemoveFilters()
         Lo.AutoFilter.ShowAllData
         pass.Protect "_active"
         LinelistEventsManager.LLExitBusyState
+        LogSuccessLine "remove-filters", sh.Name
     End If
     Exit Sub
 
 ErrHand:
+    LogFailureLine "remove-filters", Err.Description
     pass.Protect "_active"
     LinelistEventsManager.LLExitBusyState
 End Sub
@@ -867,6 +961,7 @@ Public Sub ClickAddRows()
     Set csTab = CustomTable.Create(Lo)
     nbRows = IIf(shType = "HList", 199, 10)
     csTab.AddRows nbRows:=nbRows
+    LogSuccessLine "add-rows", nbRows & " rows on " & sh.Name
 
 Cleanup:
     'Protect only HList
@@ -915,6 +1010,7 @@ Public Sub ClickResize()
     Set csTab = CustomTable.Create(Lo)
 
     csTab.RemoveRows totalCount:=nbBlank
+    LogSuccessLine "resize", sh.Name
 
 Cleanup:
     If shType = "HList" Then pass.Protect "_active"
@@ -1032,6 +1128,8 @@ Public Sub ClickExport()
         .Show
     End With
 
+    LogSuccessLine "export"
+
     Exit Sub
 
 errLoadExp:
@@ -1140,6 +1238,7 @@ Public Sub ClickCalculate()
     Next
 
 ErrHand:
+    LogOutcomeLine "calculate", Err.Number, Err.Description
     LinelistEventsManager.LLExitBusyState
 End Sub
 
@@ -1262,6 +1361,7 @@ Public Sub ClickOpenVarLab()
     Exit Sub
 
 ErrHand:
+    LogFailureLine "open-varlab", Err.Description
     LinelistEventsManager.LLExitBusyState
 End Sub
 
@@ -1333,10 +1433,12 @@ Public Sub ClickSortTable()
         On Error GoTo 0
         pass.Protect "_active"
         LinelistEventsManager.LLExitBusyState
+        LogSuccessLine "sort", headerName
     End If
     Exit Sub
 
 ErrHand:
+    LogFailureLine "sort", Err.Description
     LinelistEventsManager.LLExitBusyState
 End Sub
 
@@ -1417,6 +1519,7 @@ Public Sub ClickResetColumns()
     F_Advanced.HandleResetColumns wb, pass
 
 ErrHand:
+    LogOutcomeLine "reset-columns", Err.Number, Err.Description
     LinelistEventsManager.LLExitBusyState
 End Sub
 
@@ -1465,7 +1568,11 @@ Public Sub ClickShowHideMinimal()
         PopulateShowHideList activeShowHideForm
     End If
 
+    'The success line sits above the label so a declined confirm logs nothing.
+    LogShowHideLine "showhide-minimal", showHideLayout, sh.Name
+
 ErrHand:
+    If Err.Number <> 0 Then LogFailureLine "showhide-minimal", Err.Description
     LinelistEventsManager.LLExitBusyState
 End Sub
 
@@ -1564,7 +1671,11 @@ Public Sub ClickMatchLinelistShowHide()
         PopulateShowHideList activeShowHideForm
     End If
 
+    'The success line sits above the label so a declined confirm logs nothing.
+    LogShowHideLine "showhide-match", printLayout, printsh.Name
+
 ErrHand:
+    If Err.Number <> 0 Then LogFailureLine "showhide-match", Err.Description
     LinelistEventsManager.LLExitBusyState
 End Sub
 
@@ -1603,6 +1714,8 @@ Public Sub clickAutoFit()
         End If
     Next
 ErrHand:
+    'Err is read before the Resume Next below clears it.
+    LogOutcomeLine "autofit", Err.Number, Err.Description, sh.Name
     On Error Resume Next
     LinelistEventsManager.LLExitBusyState
 End Sub

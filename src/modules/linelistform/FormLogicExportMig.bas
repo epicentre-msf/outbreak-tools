@@ -3,7 +3,7 @@ Attribute VB_Name = "FormLogicExportMig"
 '@Folder("Linelist Forms")
 '@ModuleDescription("Complete code-behind of F_ExportMig -- migration, geo and other-linelist exports")
 '@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
-'@depends LLExporter, ApplicationState, OSFiles, TranslationObject, LLTranslation
+'@depends LLExporter, ApplicationState, OSFiles, TranslationObject, LLTranslation, LLLog
 
 ' This module is the complete code-behind of the F_ExportMig form and is
 ' copied into the form at deployment, so every control callback, the
@@ -53,6 +53,51 @@ Private Sub UserForm_Initialize()
     Me.Caption = tradform.TranslatedValue(Me.Name)
     tradform.TranslateForm Me
 End Sub
+
+
+' @description The user log the event service holds. A workbook whose log
+' cannot be built answers Nothing and every log line below stays quiet.
+Private Function UserLogOf() As LLLog
+    Dim linelistEvents As EventLinelist
+
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    Set UserLogOf = linelistEvents.UserLog()
+End Function
+
+
+' @description Write the success line of a finished export walk. The write
+' is guarded so a log fault never takes down the walk it records.
+Private Sub LogSuccessLine(ByVal action As String, _
+                           Optional ByVal detail As String = vbNullString)
+    Dim logStore As LLLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.LogSuccess action, detail
+    On Error GoTo 0
+End Sub
+
+
+' @description Write the failure line of a walk that ended at its error label.
+Private Sub LogFailureLine(ByVal action As String, _
+                           Optional ByVal detail As String = vbNullString)
+    Dim logStore As LLLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.LogFailure action, detail
+    On Error GoTo 0
+End Sub
+
+
+' @description The saved paths on one line, for the log detail.
+Private Function PathsOnOneLine(ByVal savedPaths As String) As String
+    PathsOnOneLine = Replace(savedPaths, vbNewLine, ", ")
+End Function
 
 
 '@section The other-linelist choice
@@ -157,6 +202,7 @@ Private Sub CMD_ExportMig_Click()
     Dim wantOther As Boolean
     Dim includeShowHide As Boolean
     Dim keepLabels As Boolean
+    Dim failDetail As String
 
     On Error GoTo ErrHand
 
@@ -186,7 +232,10 @@ Private Sub CMD_ExportMig_Click()
     Exit Sub
 
 ErrHand:
+    ' Err is read before the Resume Next below clears it.
+    failDetail = Err.Description
     On Error Resume Next
+    LogFailureLine "export-migration", failDetail
     MsgBox tradmess.TranslatedValue("MSG_ErrHandExport"), _
            vbOKOnly + vbCritical, tradmess.TranslatedValue("MSG_Error")
 End Sub
@@ -204,6 +253,7 @@ Private Sub CurrentLinelistWalk(ByVal wantData As Boolean, _
     Dim appState As ApplicationState
     Dim folderPath As String
     Dim savedPaths As String
+    Dim failDetail As String
 
     On Error GoTo ErrHand
 
@@ -224,6 +274,7 @@ Private Sub CurrentLinelistWalk(ByVal wantData As Boolean, _
         savedPaths = JoinPath(savedPaths, exporter.ExportGeo(folderPath, onlyHistoric:=True))
 
     appState.Restore
+    LogSuccessLine "export-migration", PathsOnOneLine(savedPaths)
 
     MsgBox savedPaths, vbOKOnly + vbInformation, _
            tradmess.TranslatedValue("MSG_FileSaved")
@@ -234,7 +285,10 @@ Private Sub CurrentLinelistWalk(ByVal wantData As Boolean, _
     Exit Sub
 
 ErrHand:
+    ' Err is read before the Resume Next below clears it.
+    failDetail = Err.Description
     On Error Resume Next
+    LogFailureLine "export-migration", failDetail
     MsgBox tradmess.TranslatedValue("MSG_ErrHandExport"), _
            vbOKOnly + vbCritical, tradmess.TranslatedValue("MSG_Error")
     If Not exporter Is Nothing Then exporter.CloseAll
@@ -251,6 +305,7 @@ Private Sub OtherLinelistWalk()
     Dim appState As ApplicationState
     Dim folderPath As String
     Dim savedPaths As String
+    Dim failDetail As String
 
     On Error GoTo ErrHand
 
@@ -294,6 +349,7 @@ Private Sub OtherLinelistWalk()
     exporter.CloseAll
 
     appState.Restore
+    LogSuccessLine "export-other", PathsOnOneLine(savedPaths)
 
     MsgBox savedPaths, vbOKOnly + vbInformation, _
            tradmess.TranslatedValue("MSG_FileSaved")
@@ -305,13 +361,17 @@ Private Sub OtherLinelistWalk()
 
 ErrOpen:
     On Error Resume Next
+    LogFailureLine "export-other", "open refused: " & otherLinelistPath
     If Not appState Is Nothing Then appState.Restore
     MsgBox tradmess.TranslatedValue("MSG_ErrOpenOther"), _
            vbOKOnly + vbCritical, tradmess.TranslatedValue("MSG_Error")
     Exit Sub
 
 ErrHand:
+    ' Err is read before the Resume Next below clears it.
+    failDetail = Err.Description
     On Error Resume Next
+    LogFailureLine "export-other", failDetail
     If Not exporter Is Nothing Then exporter.CloseAll
     If Not appState Is Nothing Then appState.Restore
     MsgBox tradmess.TranslatedValue("MSG_ErrHandExport"), _
@@ -348,6 +408,7 @@ Public Sub HandleAnalysisExport(ByVal sourceWkb As Workbook, _
     Dim appState As ApplicationState
     Dim folderPath As String
     Dim filePath As String
+    Dim failDetail As String
 
     On Error GoTo ErrHand
 
@@ -362,13 +423,17 @@ Public Sub HandleAnalysisExport(ByVal sourceWkb As Workbook, _
     filePath = exporter.ExportAnalysis(folderPath)
 
     appState.Restore
+    LogSuccessLine "export-analysis", PathsOnOneLine(filePath)
 
     MsgBox filePath, vbOKOnly + vbInformation, _
            trads.TranslatedValue("MSG_FileSaved")
     Exit Sub
 
 ErrHand:
+    ' Err is read before the Resume Next below clears it.
+    failDetail = Err.Description
     On Error Resume Next
+    LogFailureLine "export-analysis", failDetail
     MsgBox trads.TranslatedValue("MSG_ErrHandExport"), _
            vbOKOnly + vbCritical, trads.TranslatedValue("MSG_Error")
     If Not exporter Is Nothing Then exporter.CloseAll

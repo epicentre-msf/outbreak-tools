@@ -26,7 +26,7 @@ Option Explicit
 '(list auto update), selection change (geo dropdown refresh),
 'double-click (spatio-temporal geo form), filter table updates, list-auto
 'dropdown maintenance, and geo/spatial UDF delegation.
-'@depends BetterArray, HiddenNames, DropdownLists, LLGeo, LLSpatial, LLdictionary, LLVariables, LLTranslation, TranslationObject, Passwords, ProjectError
+'@depends BetterArray, HiddenNames, DropdownLists, LLGeo, LLSpatial, LLdictionary, LLVariables, LLTranslation, TranslationObject, Passwords, LLLog, ProjectError
 
 
 '@section State
@@ -50,6 +50,7 @@ Private Type TEventLinelist
     dict            As LLdictionary      'Cached dictionary helper
     vars            As LLVariables       'Cached variable lookup helper
     pass            As Passwords         'Cached password manager
+    logStore        As LLLog             'Cached user log
     triedTranslation As Boolean
     triedWkbNames    As Boolean
     triedDropdown    As Boolean
@@ -58,6 +59,7 @@ Private Type TEventLinelist
     triedDictionary  As Boolean
     triedVariables   As Boolean
     triedPasswords   As Boolean
+    triedLog         As Boolean
     lastEditKey      As String  'Sheet and address of the last single-cell selection or edit
     lastEditValue    As String  'What that cell held at that moment
     lastEditKnown    As Boolean 'The two fields above hold a real reading
@@ -130,6 +132,9 @@ End Sub
 
 
 '@sub-title React to workbook open notifications.
+'@details
+'The open is the first line of the session in the user log, so a reader of
+'the log sees where each working session started.
 '@export
 Public Sub OnWorkbookOpen()
     On Error Resume Next
@@ -138,6 +143,8 @@ Public Sub OnWorkbookOpen()
     Application.EnableEvents = True
     Application.FormatStaleValues = False
     On Error GoTo 0
+
+    LogEventLine checkingInfo, "open", this.hostBook.Name
 End Sub
 
 
@@ -364,6 +371,20 @@ Public Function PasswordManager() As Passwords
 End Function
 
 
+'@sub-title The user log of the workbook, built once and held.
+'@details
+'The dated record of the user actions, kept on the very hidden log
+'worksheet. Fail and Warn write their line through it, and the button and
+'form modules write their outcome lines through it. An old linelist grows
+'the log sheet on the first logged event.
+'@return LLLog. The held log, or Nothing when the build failed.
+'@export
+Public Function UserLog() As LLLog
+    EnsureLog
+    Set UserLog = this.logStore
+End Function
+
+
 '@sub-title The dictionary of the linelist, built once and held.
 '@details
 'The variable-labels button used to build a dictionary per click, and creating
@@ -465,14 +486,25 @@ End Sub
 'came up with vbCritical in one file and vbExclamation in another.
 
 '@sub-title Tell the user why a button refused to act.
+'@details
+'The refusal is also one warning line of the user log, written before the
+'box shows, with the message code as the action. Every refusal box of the
+'button, ribbon and geo modules comes through here, so the log covers them
+'all through this one edit.
 '@param msgCode String. Code of the message in the message translation table.
 '@export
 Public Sub Warn(ByVal msgCode As String)
+    LogEventLine checkingWarning, msgCode, vbNullString
     ShowMessage msgCode, vbOKOnly + vbExclamation, vbNullString, vbNullString
 End Sub
 
 
 '@sub-title Tell the user an operation failed.
+'@details
+'The failure is also one failure line of the user log, written before the
+'box shows, with the message code as the action and the detail beside the
+'date. Every failure box of the button, ribbon and geo modules comes
+'through here, so the log covers them all through this one edit.
 '@param msgCode String. Code of the message in the message translation table.
 '@param detail String. Optional. Follows the message, for an Err.Description.
 '@param fallback String. Optional. Shown when the workbook carries no usable
@@ -481,6 +513,7 @@ End Sub
 Public Sub Fail(ByVal msgCode As String, _
                 Optional ByVal detail As String = vbNullString, _
                 Optional ByVal fallback As String = vbNullString)
+    LogEventLine checkingError, msgCode, detail
     ShowMessage msgCode, vbOKOnly + vbCritical, detail, fallback
 End Sub
 
@@ -511,6 +544,37 @@ Private Sub ShowMessage(ByVal msgCode As String, _
     If LenB(detail) > 0 Then message = message & ": " & detail
 
     MsgBox message, boxStyle, title
+End Sub
+
+
+'@sub-title Write one line of the user log.
+'@details
+'A log write must never take down the box or the walk it records, so a
+'workbook whose log cannot be built stays quiet and a write that raises is
+'swallowed here.
+'@param scope Byte. CheckingScope value carrying the outcome.
+'@param action String. The action code, used as the bundle title.
+'@param detail String. Short free text beside the timestamp.
+Private Sub LogEventLine(ByVal scope As Byte, _
+                         ByVal action As String, _
+                         ByVal detail As String)
+    Dim heldLog As LLLog
+
+    Set heldLog = UserLog()
+    If heldLog Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    Select Case scope
+        Case checkingError
+            heldLog.LogFailure action, detail
+        Case checkingWarning
+            heldLog.LogWarning action, detail
+        Case checkingInfo
+            heldLog.LogInfo action, detail
+        Case Else
+            heldLog.LogSuccess action, detail
+    End Select
+    On Error GoTo 0
 End Sub
 
 
@@ -1674,6 +1738,32 @@ Private Sub EnsurePasswords()
     On Error GoTo 0
 End Sub
 
+'@sub-title Lazily initialise the user log.
+'@details
+'Growing the log sheet on an old linelist wants the workbook structure
+'unprotected, so the build unprotects around Create when the sheet is
+'missing and protects back after. The password manager is Nothing on a
+'workbook with no password worksheet, and such a workbook is unprotected
+'anyway.
+Private Sub EnsureLog()
+    Dim mustBuild As Boolean
+
+    If Not (this.logStore Is Nothing) Then Exit Sub
+    If this.triedLog Then Exit Sub
+    If this.hostBook Is Nothing Then Exit Sub
+
+    this.triedLog = True
+
+    mustBuild = (SheetOrNothing(LLLog.SheetName) Is Nothing)
+    If mustBuild Then EnsurePasswords
+
+    On Error Resume Next
+    If mustBuild And Not (this.pass Is Nothing) Then this.pass.UnProtect this.hostBook
+    Set this.logStore = LLLog.Create(this.hostBook)
+    If mustBuild And Not (this.pass Is Nothing) Then this.pass.Protect this.hostBook
+    On Error GoTo 0
+End Sub
+
 '@sub-title Lazily initialise the dictionary and variables helpers.
 Private Sub EnsureDictionary()
     If Not (this.dict Is Nothing) Then Exit Sub
@@ -1784,6 +1874,7 @@ Private Sub ResetInternalCaches()
     Set this.dict = Nothing
     Set this.vars = Nothing
     Set this.pass = Nothing
+    Set this.logStore = Nothing
 
     this.triedTranslation = False
     this.triedWkbNames = False
@@ -1793,6 +1884,7 @@ Private Sub ResetInternalCaches()
     this.triedDictionary = False
     this.triedVariables = False
     this.triedPasswords = False
+    this.triedLog = False
 
     this.lastEditKey = vbNullString
     this.lastEditValue = vbNullString
