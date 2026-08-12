@@ -12,7 +12,7 @@ Attribute VB_Description = "Prepares designer workbooks and ribbon settings"
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Prepares designer workbooks and persists ribbon settings through hidden names.")
-'@depends ProjectError, HiddenNames, Development, OSFiles, CustomTable, BetterArray, DropdownLists, DropdownLists
+'@depends ProjectError, HiddenNames, Development, OSFiles, CustomTable, BetterArray, DropdownLists
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -29,7 +29,7 @@ Option Explicit
 'T_Multi table on the GenerateMultiple worksheet, and registers hidden
 'sheets with the development manager. Also provides methods to read and
 'write ribbon checkbox flags persisted through workbook-level hidden names.
-'@depends HiddenNames, Development, OSFiles, CustomTable, BetterArray, DropdownLists, DropdownLists
+'@depends HiddenNames, Development, OSFiles, CustomTable, BetterArray, DropdownLists
 
 
 '@section State
@@ -40,6 +40,7 @@ Private Type TDesignerPreparation
     store As HiddenNames      'Workbook-level hidden names manager
     dropdowns As DropdownLists 'Dropdown manager bound to dropdown sheet
     dropSheet As Worksheet     'Worksheet hosting dropdown listobjects
+    sealed As Boolean          'True once the factory has finished setup
 End Type
 
 Private this As TDesignerPreparation
@@ -67,10 +68,10 @@ Private Const SHEET_MAIN As String = "Main"
 'Main worksheet named ranges for dropdown validation
 Private Const RNG_LANG_SETUP As String = "RNG_LangSetup"
 Private Const RNG_LL_FORM As String = "RNG_LLForm"
-Private Const RNG_LL_DESIGN As String = "RNG_LLDesign"
+Private Const RNG_DESIGN_LL As String = "RNG_DesignLL"
 
 'Workbook-level HiddenNames
-Private Const TAG_DES_LANG As String = "TAG_DES_LANG"
+'TAG_DES_LANG has one scope: DesignerTranslation writes it on the worksheet.
 Private Const TAG_LL_LANG_CODE As String = "RNG_LLLanguageCode"
 Private Const TAG_DICT_LANG As String = "RNG_DictionaryLanguage"
 Private Const TAG_LAST_OPENED As String = "RNG_LastOpenedDate"
@@ -98,13 +99,7 @@ Private Const DROP_DESIGN_VALUES As String = "__design_values"
 Private Const DROPDOWN_PREFIX As String = "dropdown_"
 
 'T_Multi table
-Private Const TABLE_MULTI As String = "T_MultGen"
-
-'Main worksheet named ranges for dropdown validation
-Private Const SHEET_MAIN As String = "Main"
-Private Const RNG_LANG_SETUP As String = "RNG_LangSetup"
-Private Const RNG_DESIGN_LL As String = "RNG_DesignLL"
-Private Const RNG_LL_FORM As String = "RNG_LLForm"
+Private Const TABLE_MULTI As String = "T_Multi"
 
 
 '@section Factory
@@ -124,8 +119,27 @@ Public Function Create(ByVal hostBook As Workbook) As DesignerPreparation
 
     Set instance = New DesignerPreparation
     instance.Configure hostBook
+    instance.Seal
     Set Create = instance
 End Function
+
+
+'@section Instance Sealing
+'===============================================================================
+
+'@label:seal
+'@sub-title Seal the instance against further setup writes
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup-only member against post-seal writes
+'@param memberName String. The member name for the error message.
+Private Sub GuardNotSealed(ByVal memberName As String)
+    If this.sealed Then _
+        RaiseError ProjectError.SomethingWentWrong, memberName & " is set at creation only"
+End Sub
 
 
 '@section Public API
@@ -134,21 +148,21 @@ End Function
 '@label:configure
 '@sub-title Bind the helper to the designer workbook
 '@details
-'Stores a reference to the host workbook and clears any previously
-'cached hidden names store and dropdown manager so they will be rebuilt
-'on next access. Raises an error when the workbook is Nothing.
+'Stores a reference to the host workbook. Called once by the factory,
+'which then seals the instance; a later call raises. Raises an error
+'when the workbook is Nothing.
 '@param hostBook Workbook. The designer workbook to bind to.
 '@throws ProjectError.ObjectNotInitialized When the workbook is Nothing.
+'@throws ProjectError.SomethingWentWrong When the instance is sealed.
 '@export
 Public Sub Configure(ByVal hostBook As Workbook)
+    GuardNotSealed "Configure"
+
     If hostBook Is Nothing Then
         RaiseError ProjectError.ObjectNotInitialized, "Host workbook is required."
     End If
 
     Set this.hostBook = hostBook
-    Set this.store = Nothing
-    Set this.dropdowns = Nothing
-    Set this.dropSheet = Nothing
 End Sub
 
 '@label:prepare
@@ -167,12 +181,20 @@ End Sub
 '5. Seeds Geo worksheet-level HiddenNames flags (geo language, name,
 '   update status).
 '6. Applies data validation to the T_Multi table on GenerateMultiple.
+'7. Applies dropdown validation to the Main named ranges (RNG_LangSetup,
+'   RNG_DesignLL, RNG_LLForm).
 'When devManager is provided, hidden sheets are also registered with
 'the manager for deployment.
+'When translationsSource is provided, the translation tables are read
+'from that open workbook. When it is Nothing, the user is prompted to
+'select the translations file. Tests hand a fixture workbook here so
+'the sequence runs without a dialog.
 '@param devManager Development. ByRef development manager instance, or Nothing.
+'@param translationsSource Optional Workbook. Open workbook holding the translation tables. Defaults to Nothing.
 '@export
-Public Sub Prepare(ByRef devManager As Development)
-    ImportTranslations
+Public Sub Prepare(ByRef devManager As Development, _
+                   Optional ByVal translationsSource As Workbook = Nothing)
+    ImportTranslations translationsSource
     EnsureDropdowns
     HideWorksheets devManager
     EnsureHiddenStore
@@ -260,35 +282,51 @@ End Property
 '===============================================================================
 
 '@label:import-translations
-'@sub-title Import translation tables from a user-selected workbook
+'@sub-title Import translation tables from a translations workbook
 '@details
-'Prompts the user to select an xlsx file, then iterates through
-'LinelistTranslation and DesignerTranslation sheets. For each sheet,
-'imports matching ListObjects via CustomTable.Import. This is the same
-'logic as the clickImpTrans ribbon callback, encapsulated here so it
-'runs as part of the preparation sequence.
-Private Sub ImportTranslations()
+'Iterates through LinelistTranslation and DesignerTranslation sheets and
+'imports matching ListObjects via CustomTable.Import. When source is
+'Nothing, prompts the user to select an xlsx file and opens it read-only;
+'the workbook opened here is also closed here. When source is provided,
+'reads from that open workbook and leaves it open — tests hand a fixture
+'workbook this way so the sequence runs without a dialog. This is the
+'same logic as the clickImpTrans ribbon callback, encapsulated here so
+'it runs as part of the preparation sequence.
+'
+'A sheet or table missing on either side is skipped through the resolve
+'helpers, which probe and clear their own errors. The cleanup label only
+'sees errors raised while the import itself is running, so a designer
+'that lacks one sheet prepares without a raise.
+'@param source Workbook. Open workbook holding the translation tables, or Nothing.
+Private Sub ImportTranslations(ByVal source As Workbook)
     Dim io As OSFiles
     Dim importBook As Workbook
+    Dim openedHere As Boolean
     Dim wb As Workbook
     Dim sheetNames As BetterArray
     Dim tableNames As BetterArray
     Dim idx As Long
-    Dim sheetName As Variant
+    Dim sheetName As String
     Dim targetSheet As Worksheet
     Dim sourceSheet As Worksheet
     Dim lo As ListObject
     Dim targetTable As CustomTable
     Dim sourceTable As CustomTable
 
-    Set io = OSFiles.Create()
-    io.LoadFile "*.xlsx"
-    If Not io.HasValidFile() Then Exit Sub
-
     Set wb = HostWorkbook
 
-    On Error GoTo ImportCleanup
-    Set importBook = Workbooks.Open(io.File(), ReadOnly:=True)
+    If source Is Nothing Then
+        Set io = OSFiles.Create()
+        io.LoadFile "*.xlsx"
+        If Not io.HasValidFile() Then Exit Sub
+
+        On Error GoTo ImportCleanup
+        Set importBook = Workbooks.Open(io.File(), ReadOnly:=True)
+        openedHere = True
+    Else
+        Set importBook = source
+        On Error GoTo ImportCleanup
+    End If
 
     Set sheetNames = New BetterArray
     sheetNames.Push SHEET_LL_TRANSLATION, SHEET_DES_TRANSLATION
@@ -298,22 +336,16 @@ Private Sub ImportTranslations()
                     "t_tradmsg", "t_tradrange", "t_tradshape"
 
     For idx = sheetNames.LowerBound To sheetNames.UpperBound
-        sheetName = sheetNames.Item(idx)
+        sheetName = CStr(sheetNames.Item(idx))
 
-        On Error Resume Next
-        Set targetSheet = wb.Worksheets(CStr(sheetName))
-        Set sourceSheet = importBook.Worksheets(CStr(sheetName))
-        On Error GoTo ImportCleanup
+        Set targetSheet = ResolveSheetIn(wb, sheetName)
+        Set sourceSheet = ResolveSheetIn(importBook, sheetName)
 
         If (Not targetSheet Is Nothing) And (Not sourceSheet Is Nothing) Then
             For Each lo In targetSheet.ListObjects
                 If tableNames.Includes(LCase$(lo.Name)) Then
                     Set targetTable = CustomTable.Create(lo)
-
-                    On Error Resume Next
-                    Set sourceTable = Nothing
-                    Set sourceTable = CustomTable.Create(sourceSheet.ListObjects(lo.Name))
-                    On Error GoTo ImportCleanup
+                    Set sourceTable = ResolveTableIn(sourceSheet, lo.Name)
 
                     If Not sourceTable Is Nothing Then
                         targetTable.Import sourceTable
@@ -327,7 +359,7 @@ Private Sub ImportTranslations()
     Next idx
 
 ImportCleanup:
-    If Not importBook Is Nothing Then importBook.Close saveChanges:=False
+    If openedHere And (Not importBook Is Nothing) Then importBook.Close saveChanges:=False
     If Err.Number <> 0 Then
         RaiseError ProjectError.SomethingWentWrong, _
                    "Unable to import translations: " & Err.Description
@@ -381,7 +413,6 @@ End Sub
 'current date.
 Private Sub EnsureWorkbookFlags()
     EnsureDefaultFlags
-    this.store.EnsureName TAG_DES_LANG, vbNullString, HiddenNameTypeString
     this.store.EnsureName TAG_LL_LANG_CODE, vbNullString, HiddenNameTypeString
     this.store.EnsureName TAG_DICT_LANG, vbNullString, HiddenNameTypeString
     this.store.EnsureName TAG_LAST_OPENED, Format$(Now, "yyyy-mm-dd"), HiddenNameTypeString
@@ -603,42 +634,6 @@ Private Sub ApplyMultiValidations()
                         alertType:="info"
 End Sub
 
-'@label:apply-main-validations
-'@sub-title Apply dropdown validation to named ranges on the Main worksheet
-'@details
-'Resolves the Main worksheet from the host workbook, then applies
-'dropdown validation to three named ranges: RNG_LangSetup (setup
-'languages), RNG_LLForm (interface languages), and RNG_LLDesign
-'(design values). Silently skips the worksheet or any named range
-'that does not exist.
-Private Sub ApplyMainValidations()
-    Dim sh As Worksheet
-    Dim drop As DropdownLists
-    Dim rng As Range
-
-    Set sh = ResolveWorksheet(SHEET_MAIN)
-    If sh Is Nothing Then Exit Sub
-
-    EnsureDropdownManager
-    Set drop = this.dropdowns
-
-    Set rng = ResolveNamedRange(sh, RNG_LANG_SETUP)
-    If Not rng Is Nothing Then
-        drop.SetValidation rng, DROP_SETUP_LANGUAGES, alertType:="info"
-    End If
-
-    Set rng = ResolveNamedRange(sh, RNG_LL_FORM)
-    If Not rng Is Nothing Then
-        drop.SetValidation rng, DROP_INTERFACE_LANGUAGES, alertType:="info"
-    End If
-
-    Set rng = ResolveNamedRange(sh, RNG_LL_DESIGN)
-    If Not rng Is Nothing Then
-        drop.SetValidation rng, DROP_DESIGN_VALUES, alertType:="info"
-    End If
-End Sub
-
-
 '@section Main Validations
 '===============================================================================
 
@@ -679,10 +674,7 @@ Private Sub ApplyRangeValidation(ByVal sh As Worksheet, ByVal rngName As String,
                                  ByVal drop As DropdownLists, ByVal dropName As String)
     Dim rng As Range
 
-    On Error Resume Next
-    Set rng = sh.Range(rngName)
-    On Error GoTo 0
-
+    Set rng = ResolveNamedRange(sh, rngName)
     If rng Is Nothing Then Exit Sub
 
     drop.SetValidation cellRng:=rng, listName:=dropName, alertType:="info"
@@ -722,8 +714,40 @@ End Sub
 '@param sheetName String. The worksheet name to resolve.
 '@return Worksheet. The resolved worksheet, or Nothing.
 Private Function ResolveWorksheet(ByVal sheetName As String) As Worksheet
+    Set ResolveWorksheet = ResolveSheetIn(HostWorkbook, sheetName)
+End Function
+
+'@label:resolve-sheet-in
+'@sub-title Resolve a worksheet by name from a given workbook
+'@details
+'Returns the worksheet with the given name from the supplied workbook,
+'or Nothing when the sheet does not exist. Probes and clears its own
+'error, so the caller's error state stays clean.
+'@param book Workbook. The workbook to resolve the sheet from.
+'@param sheetName String. The worksheet name to resolve.
+'@return Worksheet. The resolved worksheet, or Nothing.
+Private Function ResolveSheetIn(ByVal book As Workbook, ByVal sheetName As String) As Worksheet
     On Error Resume Next
-    Set ResolveWorksheet = HostWorkbook.Worksheets(sheetName)
+    Set ResolveSheetIn = book.Worksheets(sheetName)
+    On Error GoTo 0
+End Function
+
+'@label:resolve-table-in
+'@sub-title Resolve a ListObject by name into a CustomTable
+'@details
+'Returns a CustomTable over the named ListObject on the supplied
+'worksheet, or Nothing when the table does not exist or cannot be
+'wrapped. Probes and clears its own error, so the caller's error state
+'stays clean.
+'@param sh Worksheet. The worksheet holding the ListObject.
+'@param tableName String. The ListObject name to resolve.
+'@return CustomTable. The wrapped table, or Nothing.
+Private Function ResolveTableIn(ByVal sh As Worksheet, ByVal tableName As String) As CustomTable
+    Dim lo As ListObject
+
+    On Error Resume Next
+    Set lo = sh.ListObjects(tableName)
+    If Not lo Is Nothing Then Set ResolveTableIn = CustomTable.Create(lo)
     On Error GoTo 0
 End Function
 

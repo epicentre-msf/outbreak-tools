@@ -12,7 +12,7 @@ Attribute VB_Description = "Coordinates clearing and translation behaviours for 
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Coordinates clearing and translation behaviours for designer entry sheets.")
-'@depends ProjectError, DesignerTranslation, DesignerTranslation
+'@depends ProjectError, DesignerTranslation
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -20,11 +20,11 @@ Option Explicit
 '@class DesignerEntry
 '@description
 'Coordinates clearing, translation, and info read/write actions for a
-'designer entry worksheet. Lazily resolves an DesignerTranslation
+'designer entry worksheet. Lazily resolves a DesignerTranslation
 'translator (for applying language translations and translating message
-'codes) from the host worksheet and its parent workbook. The translator
-'can be replaced via setter injection for testing.
-'@depends DesignerTranslation, DesignerTranslation
+'codes) from the host worksheet and its parent workbook. A test injects
+'its translator through UseTranslator before the first resolve.
+'@depends DesignerTranslation
 
 
 '@section State
@@ -33,6 +33,7 @@ Option Explicit
 Private Type TDesignerEntry
     hostSheet As Worksheet      'Worksheet hosting designer inputs
     translator As DesignerTranslation 'Translation handler for the designer workbook
+    sealed As Boolean           'True once the factory has finished setup
 End Type
 
 Private this As TDesignerEntry
@@ -72,8 +73,27 @@ Public Function Create(ByVal hostSheet As Worksheet) As DesignerEntry
 
     Set instance = New DesignerEntry
     instance.Configure hostSheet
+    instance.Seal
     Set Create = instance
 End Function
+
+
+'@section Instance Sealing
+'===============================================================================
+
+'@label:seal
+'@sub-title Seal the instance against further setup writes
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup-only member against post-seal writes
+'@param memberName String. The member name for the error message.
+Private Sub GuardNotSealed(ByVal memberName As String)
+    If this.sealed Then _
+        RaiseError ProjectError.SomethingWentWrong, memberName & " is set at creation only"
+End Sub
 
 
 '@section Public API
@@ -82,13 +102,16 @@ End Function
 '@label:configure
 '@sub-title Bind the helper to the target worksheet
 '@details
-'Stores a reference to the host worksheet. Raises an error when the
-'worksheet is Nothing. Does not reset the translator so that a
-'previously injected test double is preserved.
+'Stores a reference to the host worksheet. Called once by the factory,
+'which then seals the instance; a later call raises. Raises an error
+'when the worksheet is Nothing.
 '@param hostSheet Worksheet. The worksheet hosting designer inputs.
 '@throws ProjectError.ObjectNotInitialized When the worksheet is Nothing.
+'@throws ProjectError.SomethingWentWrong When the instance is sealed.
 '@export
 Public Sub Configure(ByVal hostSheet As Worksheet)
+    GuardNotSealed "Configure"
+
     If hostSheet Is Nothing Then
         RaiseError ProjectError.ObjectNotInitialized, "Host sheet is required."
     End If
@@ -97,13 +120,26 @@ Public Sub Configure(ByVal hostSheet As Worksheet)
 End Sub
 
 '@label:use-translator
-'@sub-title Use a provided translations manager instead of creating one
+'@sub-title Inject the translations manager the entry will use
 '@details
-'Replaces the internally resolved DesignerTranslation translator with the
-'supplied instance. Primarily used in tests to inject a stub or mock.
+'Sets the DesignerTranslation translator the entry delegates to. A test
+'injects its own translator here right after Create. The setter guards
+'itself: it refuses Nothing, and it refuses to replace a translator that
+'is already held (injected earlier, or lazily resolved by a translate
+'call).
 '@param translator DesignerTranslation. The translations provider to use.
+'@throws ProjectError.ObjectNotInitialized When the translator is Nothing.
+'@throws ProjectError.SomethingWentWrong When a translator is already held.
 '@export
 Public Sub UseTranslator(ByVal translator As DesignerTranslation)
+    If translator Is Nothing Then
+        RaiseError ProjectError.ObjectNotInitialized, "Translator is required."
+    End If
+
+    If Not this.translator Is Nothing Then
+        RaiseError ProjectError.SomethingWentWrong, "A translator is already held."
+    End If
+
     Set this.translator = translator
 End Sub
 

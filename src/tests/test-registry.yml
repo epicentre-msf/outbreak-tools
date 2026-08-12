@@ -700,7 +700,7 @@ suites:
       - module: TestGeoFormCache
         covers: [GeoFormCache]
 
-  # --- designer (InitTransfer) ----------------------------------------------
+  # --- designer (DesignerPreparation, DesignerEntry, DesignerTranslation) ---
   # LinelistSpecs.Prepare calls InitTransfer.TransferToLinelist and its seven
   # manager builders, so the module has to be in the workbook. A module row is
   # resolved against src/modules/<the suite folder>/, so it needs a block
@@ -719,16 +719,28 @@ suites:
   # row opens nothing further. Its nine public names clash with nothing already
   # in the driver workbook.
   #
-  # DesignerTranslation has NO row here. LinelistSpecs held one in a field
-  # reached only through a property with no caller anywhere, and both went with
-  # the dead code, which took the class out of the compile closure. Nothing
-  # else registered names it. DesignerEntry and EventsDesignerCore still do,
-  # and they are unregistered.
+  # The three designer classes joined on 2026-08-12 with the block's first two
+  # suites. DesignerPreparation names HiddenNames, Development, BetterArray and
+  # Checking (all baked into the driver workbook) plus OSFiles, CustomTable and
+  # DropdownLists (under `general`). DesignerEntry names DesignerTranslation,
+  # which names TranslationObject, BetterArray, HiddenNames and CustomTable. So
+  # these rows open nothing further.
   #
-  # This block has no suite yet. src/tests/designer/ is unregistered.
+  # TestDesignerMulti is still out: it drives CustomTable directly and the
+  # EventsDesignerMulti module it should drive hard-wires ThisWorkbook and
+  # ActiveCell. It joins once the module takes parameters.
   - folder: designer
+    classes:
+      - name: DesignerTranslation
+      - name: DesignerEntry
+      - name: DesignerPreparation
     modules:
       - InitTransfer
+    tests:
+      - module: TestDesignerPreparation
+        covers: [DesignerPreparation]
+      - module: TestDesignerEntry
+        covers: [DesignerEntry]
 
   # --- linelist (LinelistSpecs, LLTranslation) -------------------------------
   # THIS IS THE FIRST TIME EITHER CLASS HAS BEEN COMPILED. The whole generation
@@ -1121,8 +1133,8 @@ suites:
 # src/tests/analyses/ and is registered there. src/tests/geo/ is fully
 # registered as of 2026-07-31, and so is src/tests/linelist/: TestCodeTransfer,
 # TestLinelist and TestLLDataEntry all joined folder: linelist that day, which
-# closes the generation path. The designer folder carries a class row and no
-# suite.
+# closes the generation path. The designer folder gained its three class rows
+# and its first two suites on 2026-08-12.
 #
 #   - folder: <subfolder>
 #     classes:

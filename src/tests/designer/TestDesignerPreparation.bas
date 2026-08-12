@@ -11,6 +11,7 @@ Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
 Private MainSheet As Worksheet
 Private TranslationSheet As Worksheet
+Private TranslationsSource As Workbook
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
@@ -46,7 +47,9 @@ Public Sub TestInitialize()
     Set MainSheet = EnsureWorksheet("Main", FixtureWorkbook)
     Set TranslationSheet = EnsureWorksheet("DesignerTranslation", FixtureWorkbook)
 
-    FixtureWorkbook.Names.Add Name:="RNG_MainLangCode", RefersTo:=TranslationSheet.Range("A1")
+    'The translations source is a fixture workbook handed to Prepare, so the
+    'import runs without the file picker.
+    Set TranslationsSource = NewWorkbook
 End Sub
 
 '@TestCleanup
@@ -57,8 +60,10 @@ Public Sub TestCleanup()
 
     On Error Resume Next
         DeleteWorkbook FixtureWorkbook
+        DeleteWorkbook TranslationsSource
     On Error GoTo 0
 
+    Set TranslationsSource = Nothing
     Set TranslationSheet = Nothing
     Set MainSheet = Nothing
     Set FixtureWorkbook = Nothing
@@ -76,7 +81,7 @@ Public Sub TestPrepareSeedsFlags()
 
     Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
-    subject.Prepare Nothing
+    subject.Prepare Nothing, TranslationsSource
 
     Assert.IsTrue subject.GetFlag("chkAlert"), "Alert flag should default to on."
     Assert.IsTrue subject.GetFlag("chkInstruct"), "Instruction flag should default to on."
@@ -107,7 +112,7 @@ Public Sub TestPrepareHidesInternalSheets()
     'Act
     Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
-    subject.Prepare Nothing
+    subject.Prepare Nothing, TranslationsSource
 
     'Assert: internal sheets should be VeryHidden
     Assert.AreEqual CLng(xlSheetVeryHidden), CLng(passSheet.Visible), "__pass should be VeryHidden."
@@ -131,7 +136,7 @@ Public Sub TestPrepareHidesTranslationSheets()
     'Act
     Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
-    subject.Prepare Nothing
+    subject.Prepare Nothing, TranslationsSource
 
     'Assert: translation sheets should be Hidden (not VeryHidden)
     Assert.AreEqual CLng(xlSheetHidden), CLng(llTransSheet.Visible), "LinelistTranslation should be Hidden."
@@ -150,7 +155,7 @@ Public Sub TestPrepareCreatesWorkbookFlags()
     'Act
     Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
-    subject.Prepare Nothing
+    subject.Prepare Nothing, TranslationsSource
 
     'Assert: workbook-level HiddenNames should exist
     Dim wkbNames As HiddenNames
@@ -161,7 +166,6 @@ Public Sub TestPrepareCreatesWorkbookFlags()
     Assert.IsTrue LenB(wkbNames.ValueAsString("RNG_LastOpenedDate")) > 0, "RNG_LastOpenedDate should be set."
 
     'Language flags should exist with empty defaults
-    Assert.AreEqual vbNullString, wkbNames.ValueAsString("TAG_DES_LANG"), "TAG_DES_LANG should default to empty."
     Assert.AreEqual vbNullString, wkbNames.ValueAsString("RNG_LLLanguageCode"), "RNG_LLLanguageCode should default to empty."
     Assert.AreEqual vbNullString, wkbNames.ValueAsString("RNG_DictionaryLanguage"), "RNG_DictionaryLanguage should default to empty."
     Exit Sub
@@ -182,7 +186,7 @@ Public Sub TestPrepareCreatesGeoFlags()
     'Act
     Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
-    subject.Prepare Nothing
+    subject.Prepare Nothing, TranslationsSource
 
     'Assert: Geo worksheet-level HiddenNames should exist
     Dim geoStore As HiddenNames
@@ -192,8 +196,14 @@ Public Sub TestPrepareCreatesGeoFlags()
     Assert.AreEqual vbNullString, geoStore.ValueAsString("RNG_GeoName"), "RNG_GeoName should default to empty."
     Assert.AreEqual vbNullString, geoStore.ValueAsString("RNG_MetaLang"), "RNG_MetaLang should default to empty."
     Assert.AreEqual "empty", geoStore.ValueAsString("RNG_GeoUpdated"), "RNG_GeoUpdated should default to empty."
-    Assert.AreEqual vbNullString, geoStore.ValueAsString("RNG_PastingGeoCol"), "RNG_PastingGeoCol should default to empty."
     Assert.AreEqual vbNullString, geoStore.ValueAsString("RNG_FormLoaded"), "RNG_FormLoaded should default to empty."
+
+    'RNG_PastingGeoCol stays a cell-based named range. It is a paste anchor.
+    Dim pastingRng As Range
+    On Error Resume Next
+    Set pastingRng = geoSheet.Range("RNG_PastingGeoCol")
+    On Error GoTo Fail
+    Assert.IsNotNothing pastingRng, "RNG_PastingGeoCol should exist as a cell-based range."
     Exit Sub
 
 Fail:
@@ -210,7 +220,7 @@ Public Sub TestPrepareSkipsGeoWhenSheetMissing()
     'Act: should not raise an error
     Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
-    subject.Prepare Nothing
+    subject.Prepare Nothing, TranslationsSource
 
     'Assert: workbook-level flags should still be created
     Assert.IsTrue subject.GetFlag("chkAlert"), "Preparation should succeed without Geo sheet."
@@ -231,7 +241,7 @@ Public Sub TestPrepareCreatesDropdownSheet()
     'Act
     Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
-    subject.Prepare Nothing
+    subject.Prepare Nothing, TranslationsSource
 
     'Assert: __dropdowns sheet should exist and be VeryHidden
     Assert.IsTrue WorksheetExists("__dropdowns", FixtureWorkbook), _
@@ -253,7 +263,7 @@ Public Sub TestPrepareRegistersAllDropdowns()
     'Act
     Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
-    subject.Prepare Nothing
+    subject.Prepare Nothing, TranslationsSource
 
     'Assert: all 4 dropdowns should be registered
     Dim drop As DropdownLists
@@ -278,15 +288,15 @@ Public Sub TestInterfaceLanguagesContainsExpectedValues()
     'Act
     Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
-    subject.Prepare Nothing
+    subject.Prepare Nothing, TranslationsSource
 
     'Assert: interface languages should contain the 5 expected values
     Dim values As BetterArray
     Set values = subject.Dropdowns.Values("__interface_languages")
 
     Assert.AreEqual 5&, values.Length, "Interface languages should have 5 entries."
-    Assert.AreEqual "English", CStr(values.Item(values.LowerBound + 1)), _
-                    "Second entry should be English."
+    Assert.AreEqual "ENG-English", CStr(values.Item(values.LowerBound + 1)), _
+                    "Second entry should be ENG-English."
     Exit Sub
 
 Fail:
@@ -301,7 +311,7 @@ Public Sub TestEpiweekStartContainsSevenDays()
     'Act
     Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
-    subject.Prepare Nothing
+    subject.Prepare Nothing, TranslationsSource
 
     'Assert: epiweek start should contain 1 through 7
     Dim values As BetterArray
@@ -324,7 +334,7 @@ Public Sub TestDesignValuesMatchesLLFormat()
     'Act
     Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
-    subject.Prepare Nothing
+    subject.Prepare Nothing, TranslationsSource
 
     'Assert: design values should match LLFormat constants
     Dim values As BetterArray
@@ -371,7 +381,7 @@ Public Sub TestDropdownUpdateReplacesValues()
     'Arrange: create dropdown sheet and register initial __setup_languages
     Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
-    subject.Prepare Nothing
+    subject.Prepare Nothing, TranslationsSource
 
     'Act: update the dropdown with new language values (mimics ExtractAndUpdateLanguages)
     Dim langValues As BetterArray
@@ -419,7 +429,7 @@ Public Sub TestPrepareAppliesMultiValidations()
     'Act
     Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
-    subject.Prepare Nothing
+    subject.Prepare Nothing, TranslationsSource
 
     'Assert: validation should be applied to the 3 expected columns
     Dim lo As ListObject
@@ -456,7 +466,7 @@ Public Sub TestPrepareSkipsMultiWhenSheetMissing()
     'Act: should not raise an error
     Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
-    subject.Prepare Nothing
+    subject.Prepare Nothing, TranslationsSource
 
     'Assert: dropdowns should still be created
     Assert.IsTrue subject.Dropdowns.Exists("__epiweek_start"), _
@@ -478,12 +488,12 @@ Public Sub TestPrepareAppliesMainValidations()
     'Arrange: create named ranges on the Main worksheet
     FixtureWorkbook.Names.Add Name:="RNG_LangSetup", RefersTo:=MainSheet.Range("H1")
     FixtureWorkbook.Names.Add Name:="RNG_LLForm", RefersTo:=MainSheet.Range("H2")
-    FixtureWorkbook.Names.Add Name:="RNG_LLDesign", RefersTo:=MainSheet.Range("H3")
+    FixtureWorkbook.Names.Add Name:="RNG_DesignLL", RefersTo:=MainSheet.Range("H3")
 
     'Act
     Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
-    subject.Prepare Nothing
+    subject.Prepare Nothing, TranslationsSource
 
     'Assert: all three ranges should have list validation
     Assert.AreEqual CLng(xlValidateList), CLng(MainSheet.Range("H1").Validation.Type), _
@@ -491,7 +501,7 @@ Public Sub TestPrepareAppliesMainValidations()
     Assert.AreEqual CLng(xlValidateList), CLng(MainSheet.Range("H2").Validation.Type), _
                     "RNG_LLForm should have list validation."
     Assert.AreEqual CLng(xlValidateList), CLng(MainSheet.Range("H3").Validation.Type), _
-                    "RNG_LLDesign should have list validation."
+                    "RNG_DesignLL should have list validation."
     Exit Sub
 
 Fail:
@@ -508,7 +518,7 @@ Public Sub TestPrepareSkipsMainValidationsWhenRangesMissing()
     'Act: should not raise an error
     Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
-    subject.Prepare Nothing
+    subject.Prepare Nothing, TranslationsSource
 
     'Assert: preparation should still succeed
     Assert.IsTrue subject.Dropdowns.Exists("__setup_languages"), _
@@ -517,6 +527,92 @@ Public Sub TestPrepareSkipsMainValidationsWhenRangesMissing()
 
 Fail:
     ReportTestFailure "TestPrepareSkipsMainValidationsWhenRangesMissing"
+End Sub
+
+
+'@section Translations Import Tests
+'===============================================================================
+'@TestMethod("DesignerPreparation.Import")
+Public Sub TestPrepareImportsTranslationTables()
+    CustomTestSetTitles Assert, "DesignerPreparation", "TestPrepareImportsTranslationTables"
+    On Error GoTo Fail
+
+    'Arrange: the same table on both sides, with the values on the source
+    AddTradMsgTable TranslationSheet, "placeholder", vbNullString
+    AddTradMsgTable EnsureWorksheet("DesignerTranslation", TranslationsSource), _
+                    "MSG_Test", "Hello"
+
+    'Act
+    Dim subject As DesignerPreparation
+    Set subject = DesignerPreparation.Create(FixtureWorkbook)
+    subject.Prepare Nothing, TranslationsSource
+
+    'Assert: the source values should land in the fixture table
+    Dim lo As ListObject
+    Set lo = TranslationSheet.ListObjects("T_tradMsg")
+
+    Assert.AreEqual "MSG_Test", CStr(lo.DataBodyRange.Cells(1, 1).Value), _
+                    "The import should bring the source tag."
+    Assert.AreEqual "Hello", CStr(lo.DataBodyRange.Cells(1, 2).Value), _
+                    "The import should bring the source value."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareImportsTranslationTables"
+End Sub
+
+'@TestMethod("DesignerPreparation.Import")
+Public Sub TestPrepareSkipsImportWhenSourceSheetMissing()
+    CustomTestSetTitles Assert, "DesignerPreparation", "TestPrepareSkipsImportWhenSourceSheetMissing"
+    On Error GoTo Fail
+
+    'Arrange: the fixture has the table, the source workbook has no
+    'translation sheet at all
+    AddTradMsgTable TranslationSheet, "MSG_Kept", "Still here"
+
+    'Act: should run through with no raise
+    Dim subject As DesignerPreparation
+    Set subject = DesignerPreparation.Create(FixtureWorkbook)
+    subject.Prepare Nothing, TranslationsSource
+
+    'Assert: the fixture table should keep its rows
+    Dim lo As ListObject
+    Set lo = TranslationSheet.ListObjects("T_tradMsg")
+
+    Assert.AreEqual "MSG_Kept", CStr(lo.DataBodyRange.Cells(1, 1).Value), _
+                    "A source with no translation sheet should leave the target alone."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareSkipsImportWhenSourceSheetMissing"
+End Sub
+
+
+'@section Sealing Tests
+'===============================================================================
+'@TestMethod("DesignerPreparation.Sealing")
+Public Sub TestConfigureIsSetOnce()
+    CustomTestSetTitles Assert, "DesignerPreparation", "TestConfigureIsSetOnce"
+    On Error GoTo Fail
+
+    'Arrange: Create configures and seals the instance
+    Dim subject As DesignerPreparation
+    Set subject = DesignerPreparation.Create(FixtureWorkbook)
+
+    'Act: a second Configure should raise
+    Dim raisedNumber As Long
+    On Error Resume Next
+    subject.Configure FixtureWorkbook
+    raisedNumber = Err.Number
+    On Error GoTo Fail
+
+    'Assert
+    Assert.IsTrue raisedNumber <> 0, "Configure should raise on a sealed instance."
+    Assert.IsNotNothing subject.HostWorkbook, "The first binding should survive the refused call."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestConfigureIsSetOnce"
 End Sub
 
 
@@ -553,6 +649,30 @@ Private Sub CreateMultiTable(ByVal sh As Worksheet)
         Source:=dataRange, _
         XlListObjectHasHeaders:=xlYes)
     lo.Name = "T_Multi"
+End Sub
+
+'@label:add-trad-msg-table
+'@sub-title Create a two-column T_tradMsg ListObject with one data row
+'@details
+'Writes tag/ENG headers and one data row in the first free columns of
+'the supplied worksheet, then converts the range to a ListObject named
+'T_tradMsg, the shape ImportTranslations looks for.
+'@param sh Worksheet. The worksheet to create the table on.
+'@param tagValue String. The value of the tag cell.
+'@param engValue String. The value of the ENG cell.
+Private Sub AddTradMsgTable(ByVal sh As Worksheet, ByVal tagValue As String, _
+                            ByVal engValue As String)
+    sh.Cells(1, 1).Value = "tag"
+    sh.Cells(1, 2).Value = "ENG"
+    sh.Cells(2, 1).Value = tagValue
+    sh.Cells(2, 2).Value = engValue
+
+    Dim lo As ListObject
+    Set lo = sh.ListObjects.Add( _
+        SourceType:=xlSrcRange, _
+        Source:=sh.Range(sh.Cells(1, 1), sh.Cells(2, 2)), _
+        XlListObjectHasHeaders:=xlYes)
+    lo.Name = "T_tradMsg"
 End Sub
 
 Private Sub ReportTestFailure(ByVal context As String)
