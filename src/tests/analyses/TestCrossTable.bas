@@ -1613,6 +1613,10 @@ End Sub
 '===============================================================================
 
 '@sub-title Verify a spatio-temporal build creates the geo input cells.
+'@details
+'The wrap is asserted here because the geo form used to write it across the
+'whole used range of the sheet on every validated place. The build owns it now,
+'so the cells carry it the moment the section exists.
 '@TestMethod("CrossTable")
 Public Sub TestSpatioTemporalCreatesTheGeoInputs()
     CustomTestSetTitles Assert, "CrossTable", "TestSpatioTemporalCreatesTheGeoInputs"
@@ -1636,6 +1640,8 @@ Public Sub TestSpatioTemporalCreatesTheGeoInputs()
                     "A geo count of three should give three input cells"
     Assert.IsTrue Not sh.Range("INPUTSPTGEO_USER_" & tabId).Locked, _
                   "The geo cells the user edits should be unlocked"
+    Assert.IsTrue sh.Range("INPUTSPTGEO_USER_" & tabId).WrapText, _
+                  "The geo cells the user edits should wrap from build time"
     Assert.AreEqual CLng(3), CLng(sh.Range("INPUTSPTGEO_NGEO_" & tabId).Value), _
                     "The geo count cell should carry the count"
 

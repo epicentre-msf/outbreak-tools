@@ -1532,6 +1532,14 @@ Private Function AddSpatioTemporalGeoInputs(ByVal sectionRng As Range, _
     Set rng = sh.Range(cellRng.Cells(1, 1), cellRng.Cells(nGeo, 1))
     rng.Name = "INPUTSPTGEO_USER_" & tabId
     rng.Locked = False
+
+    'The geo form writes a joined place into these cells, so the value is as
+    'long as the admin levels it carries. The wrap is set here, once, when the
+    'section is built. The form used to write it across the whole used range of
+    'the sheet on every validate, which is one of the slowest properties of the
+    'object model over an analysis sheet.
+    rng.WrapText = True
+
     rng.Offset(, 1).Name = "INPUTPREVADM_USER_" & tabId
 
     Set AddSpatioTemporalGeoInputs = cellRng.Offset(nGeo + 3)

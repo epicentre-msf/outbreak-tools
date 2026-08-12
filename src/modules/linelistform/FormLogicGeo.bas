@@ -20,11 +20,11 @@ Private tradform As TranslationObject
 Private tradmess As TranslationObject
 Private hfOrGeo As Byte
 
-'Get the sheet type tag (HiddenNames first, cell fallback for legacy sheets).
+'The sheet type tag. QuickValue reads the one stored name off the worksheet.
+'The full store walks every name of the sheet, and an HList sheet holds
+'hundreds of them for a tag this handler reads once per click.
 Private Function SheetTag(ByVal sh As Worksheet) As String
-    Dim shHn As HiddenNames
-    Set shHn = HiddenNames.Create(sh)
-    SheetTag = shHn.ValueAsString("sheet_type")
+    SheetTag = HiddenNames.QuickValue(sh, "sheet_type")
 End Function
 
 '@section Initialization
@@ -286,8 +286,14 @@ Private Sub CMD_Copier_Click()
 
         Me.TXT_Msg.Value = vbNullString
         Me.Hide
+
+        'The one recalculation of a validated place. It covers the facility
+        'branch and the level-unchanged path as well, which is why
+        'LLSpatial.MigrateSection leaves the recalculation to here.
+        'The input cells carry their wrap from build time
+        '(CrossTable.AddSpatioTemporalGeoInputs), so nothing writes a format
+        'across the used range here any more.
         sh.UsedRange.Calculate
-        sh.UsedRange.WrapText = True
         Exit Sub
     End Select
 

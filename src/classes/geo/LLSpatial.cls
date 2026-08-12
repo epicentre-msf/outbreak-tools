@@ -420,6 +420,14 @@ End Function
 'VarWriter as "<variable> -- control". This routine used to read it from a hidden
 'worksheet row that stopped being written on 2026-02-06, so it matched nothing
 'and every spatial table stayed at the one blank row the build gave it.
+'
+'HOW THE SHEET TAG IS READ
+'-------------------------------------------------------------------------------
+'The tag test runs through HiddenNames.QuickValue, which reads the one stored
+'name off the worksheet. The full store is built for the HList sheets alone,
+'because those are the sheets whose variable columns are read below. The walk
+'used to build a store per worksheet of the workbook, and every name of an
+'analysis sheet was walked to answer a tag that named it as no HList.
 '@throws Any error raised while walking a sheet, after the spatial sheet has been
 'recalculated. The caller is what puts Excel back the way it found it.
 '@export
@@ -438,8 +446,10 @@ Public Sub Update()
     On Error GoTo UpdateFailed
 
     For Each sh In wb.Worksheets
-        Set shHn = HiddenNames.Create(sh)
-        If shHn.ValueAsString(SHEET_TAG) = "HList" Then UpdateOneHList sh, wb, shHn
+        If HiddenNames.QuickValue(sh, SHEET_TAG) = "HList" Then
+            Set shHn = HiddenNames.Create(sh)
+            UpdateOneHList sh, wb, shHn
+        End If
     Next
 
     actsh.UsedRange.Calculate
@@ -902,8 +912,15 @@ End Function
 'The block is grown by two rows to reach the Total and Missing rows of its own
 'table, which RowsCategoriesRange trims by count at build time, and their
 'formulas move levels with the block. Every formula of the grown block moves
-'from the old concat column to the new one, the new level is recorded beside
-'the selector, and the sheet recalculates.
+'from the old concat column to the new one, and the new level is recorded beside
+'the selector.
+'
+'THE RECALCULATION IS THE CALLER'S
+'-------------------------------------------------------------------------------
+'The caller owns one recalculation of the sheet per validated place. It fires on
+'every validate and reaches here only when the level changed, so a recalculation
+'at the foot of this sub would leave the other paths dry and would run the same
+'used range twice on the path it does reach.
 '@param sh Worksheet. The spatio-temporal analysis sheet.
 '@param rngName String. The named range of the level selector.
 '@param tabId String. The identifier of the analysis table.
@@ -951,7 +968,6 @@ Public Sub MigrateSection(ByVal sh As Worksheet, ByVal rngName As String, _
     Next
 
     sh.Range(rngName).Offset(, 1).Value = actAdm
-    sh.UsedRange.Calculate
 End Sub
 
 '@label:header-formula-texts
