@@ -949,9 +949,9 @@ End Sub
 '@sub-title Check the two language selections before the build starts
 '@details
 'The two language codes reach the output workbook through
-'LLBuild.SyncDesignerLanguageNames and ExportDesignerHiddenNames, during
+'InitTransfer.SyncDesignerLanguageNames and ExportDesignerHiddenNames, during
 'specs.Prepare. This routine used to write them a second time, deriving the
-'interface code with a bare Split on "-" where the build service guards the
+'interface code with a bare Split on "-" where the transfer guards the
 'split with InStr. Both answer the same string for every input, including an
 'empty one, so the second write added nothing.
 '

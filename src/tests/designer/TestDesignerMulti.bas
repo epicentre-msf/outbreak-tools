@@ -4,7 +4,7 @@ Attribute VB_Description = "Unit tests for Multi group table operations"
 Option Explicit
 
 '@Folder("CustomTests.Designer")
-'@ModuleDescription("Validates Multi group table operations: add rows, remove rows, duplicate, import, export, the write-once row IDs on T_Multi, and the driver helpers that read a row into the Main entries.")
+'@ModuleDescription("Validates Multi group table operations: add rows, remove rows, duplicate, import, export, the write-once row IDs on T_Multi, the driver helpers that read a row into the Main entries, and the shared setup language extraction.")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As CustomTest
@@ -419,6 +419,83 @@ Public Sub TestWriteRowEntriesLandsRowValuesOnMain()
     Exit Sub
 Fail:
     CustomTestLogFailure Assert, "TestWriteRowEntriesLandsRowValuesOnMain", Err.Number, Err.Description
+End Sub
+
+
+'@section SetupLanguages Tests
+'===============================================================================
+'@TestMethod("DesignerMulti.SetupLanguages")
+Public Sub TestSetupLanguagesReadsHiddenNamesList()
+    CustomTestSetTitles Assert, "DesignerMulti", "TestSetupLanguagesReadsHiddenNamesList"
+    On Error GoTo Fail
+
+    'Arrange: the persisted language list of a setup Translations sheet.
+    'The list wins over anything a table on the sheet carries.
+    Dim tradSheet As Worksheet
+    Set tradSheet = EnsureWorksheet("Translations", FixtureWorkbook)
+
+    Dim store As HiddenNames
+    Set store = HiddenNames.Create(tradSheet)
+    store.EnsureName SetupTranslationsTable.LanguagesNameId, "ENG;FRA", HiddenNameTypeString
+    store.SetValue SetupTranslationsTable.LanguagesNameId, "ENG;FRA"
+
+    'Act
+    Dim langValues As BetterArray
+    Set langValues = EventsDesignerAdvanced.SetupLanguages(tradSheet)
+
+    'Assert
+    Assert.AreEqual CLng(2), langValues.Length, _
+                    "The persisted list should answer its two languages."
+    Assert.AreEqual "ENG", CStr(langValues.Item(1)), _
+                    "The first language should be the first list entry."
+    Assert.AreEqual "FRA", CStr(langValues.Item(2)), _
+                    "The second language should be the second list entry."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestSetupLanguagesReadsHiddenNamesList", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("DesignerMulti.SetupLanguages")
+Public Sub TestSetupLanguagesFallbackDropsTagColumns()
+    CustomTestSetTitles Assert, "DesignerMulti", "TestSetupLanguagesFallbackDropsTagColumns"
+    On Error GoTo Fail
+
+    'Arrange: no persisted list, so the fallback reads the header row of
+    'the first ListObject. The internal tag column is table machinery and
+    'used to land in the language dropdown.
+    Dim tradSheet As Worksheet
+    Set tradSheet = EnsureWorksheet("Translations", FixtureWorkbook)
+
+    tradSheet.Cells(1, 1).Value = "ENG"
+    tradSheet.Cells(1, 2).Value = "FRA"
+    tradSheet.Cells(1, 3).Value = "__TagInternal__"
+    tradSheet.Cells(2, 1).Value = "hello"
+    tradSheet.Cells(2, 2).Value = "bonjour"
+    tradSheet.Cells(2, 3).Value = "k1"
+
+    Dim lo As ListObject
+    Set lo = tradSheet.ListObjects.Add( _
+        SourceType:=xlSrcRange, _
+        Source:=tradSheet.Range(tradSheet.Cells(1, 1), tradSheet.Cells(2, 3)), _
+        XlListObjectHasHeaders:=xlYes)
+    lo.Name = "Tab_Translations"
+
+    'Act
+    Dim langValues As BetterArray
+    Set langValues = EventsDesignerAdvanced.SetupLanguages(tradSheet)
+
+    'Assert
+    Assert.AreEqual CLng(2), langValues.Length, _
+                    "The fallback should answer the two language headers."
+    Assert.AreEqual "ENG", CStr(langValues.Item(1)), _
+                    "The first header should be kept."
+    Assert.AreEqual "FRA", CStr(langValues.Item(2)), _
+                    "The second header should be kept."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestSetupLanguagesFallbackDropsTagColumns", Err.Number, Err.Description
 End Sub
 
 

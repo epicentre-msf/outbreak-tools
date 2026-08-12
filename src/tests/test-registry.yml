@@ -184,6 +184,13 @@ suites:
       # one, so neither of those two rows compiles without it. It carries no
       # suite of its own yet.
       - name: Buttons
+      # ProgressBar draws the generation progress bar over a named range. It
+      # names ProjectError alone, which lives in Checking and is baked into
+      # the workbook, so this row closes its own compile closure. It is here
+      # because the class lives in src/classes/general/;
+      # EventsDesignerMulti under `designer` names it, so that module row
+      # compiles through this one. It carries no suite of its own yet.
+      - name: ProgressBar
       # Do NOT add TranslationObject as a class. It is already baked into the
       # workbook, and importing it again makes Excel keep both copies under a
       # second name (TranslationObject1). Only its TEST module is registered.
@@ -726,26 +733,50 @@ suites:
   # which names TranslationObject, BetterArray, HiddenNames and CustomTable. So
   # these rows open nothing further.
   #
-  # TestDesignerMulti is still out: it drives CustomTable directly and the
-  # EventsDesignerMulti module it should drive hard-wires ThisWorkbook and
-  # ActiveCell. It joins once the module takes parameters.
+  # The folder registered whole on 2026-08-13: the four event modules and the
+  # three remaining suites joined. The module closure adds one class row,
+  # ProgressBar under `general`; everything else the four modules name is
+  # registered already (LinelistSpecs, Linelist, LLDataEntry, LLSheets,
+  # AnalysisOutput, DropdownLists, OSFiles, CustomTable, ApplicationState,
+  # LLFormat, LLGeo, SetupTranslationsTable, RibbonDev under `dev`) or baked
+  # into the driver workbook (Checking, CheckingOutput, BetterArray,
+  # HiddenNames, Passwords). The ribbon callbacks compile against
+  # IRibbonControl from the Office library, the same way the setup event
+  # modules do. The mastersetup modules also declare LangLabel and
+  # clickLangChange, and they stay unregistered; registering that folder
+  # later has to rename one side first (the Session 51 ambiguous-name
+  # lesson).
   - folder: designer
     # EventsDesignerAdvanced and EventsDesignerMulti read the setup language
     # key through SetupTranslationsTable.LanguagesNameId; the class is
     # registered under `setup`, so the closure is whole. The designer
     # BINARIES need the class in their Dev import table before the next code
-    # reimport.
+    # reimport, and ProgressBar with it.
     classes:
       - name: DesignerTranslation
       - name: DesignerEntry
       - name: DesignerPreparation
     modules:
       - InitTransfer
+      # GenerationReport writes the __check report; EventsDesignerCore holds
+      # the session's entry-and-translator pair; EventsDesignerAdvanced
+      # carries the build core (GenerateOne, ValidateEntries, SetupLanguages);
+      # EventsDesignerMulti drives T_Multi and the multi build loop.
+      - GenerationReport
+      - EventsDesignerCore
+      - EventsDesignerAdvanced
+      - EventsDesignerMulti
     tests:
       - module: TestDesignerPreparation
         covers: [DesignerPreparation]
       - module: TestDesignerEntry
         covers: [DesignerEntry]
+      - module: TestDesignerTranslation
+        covers: [DesignerTranslation]
+      - module: TestInitTransfer
+        covers: [InitTransfer]
+      - module: TestDesignerMulti
+        covers: [EventsDesignerMulti, EventsDesignerAdvanced]
 
   # --- linelist (LinelistSpecs, LLTranslation) -------------------------------
   # THIS IS THE FIRST TIME EITHER CLASS HAS BEEN COMPILED. The whole generation

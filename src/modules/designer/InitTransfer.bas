@@ -381,10 +381,12 @@ Private Sub ExportHiddenNamesFromSetup(ByVal setupBook As Workbook, ByVal target
 End Sub
 
 '@sub-title Export the formatter from the setup to the linelist
+'@details
+'Public so a suite drives the setup branch with fixture workbooks.
 '@param setupBook Workbook. The setup workbook holding the format sheet.
 '@param targetBook Workbook. The linelist workbook receiving it.
 '@param designName String. The design of the run, empty when the designer names none.
-Private Sub ExportFormatterFromSetup(ByVal setupBook As Workbook, _
+Public Sub ExportFormatterFromSetup(ByVal setupBook As Workbook, _
                                      ByVal targetBook As Workbook, _
                                      ByVal designName As String)
     Dim setupSheet As Worksheet
@@ -412,7 +414,10 @@ End Sub
 'The designer's translation sheet is not touched. It holds the four tables that
 'translate the linelist itself, it is maintained by hand through the designer's
 'own import button, and a generation only reads it.
-Private Sub ImportSetupTranslationTable(ByVal setupBook As Workbook, ByVal targetBook As Workbook)
+'
+'Public so a suite drives it with fixture workbooks and reads the entry it
+'files through HasCheckings and CheckingValues.
+Public Sub ImportSetupTranslationTable(ByVal setupBook As Workbook, ByVal targetBook As Workbook)
     Dim setupSheet As Worksheet
     Dim targetSheet As Worksheet
     Dim sourceTable As ListObject
@@ -527,10 +532,12 @@ Private Sub ExportTranslationsFromDesigner(ByVal designerBook As Workbook, ByVal
 End Sub
 
 '@sub-title Export the formatter from the designer to the linelist
+'@details
+'Public so a suite drives the designer branch with fixture workbooks.
 '@param designerBook Workbook. The designer workbook holding the format sheet.
 '@param targetBook Workbook. The linelist workbook receiving it.
 '@param designName String. The design of the run, empty when the designer names none.
-Private Sub ExportFormatterFromDesigner(ByVal designerBook As Workbook, _
+Public Sub ExportFormatterFromDesigner(ByVal designerBook As Workbook, _
                                         ByVal targetBook As Workbook, _
                                         ByVal designName As String)
     Dim designerSheet As Worksheet
@@ -559,7 +566,10 @@ End Sub
 'hidden names on the designer so they are current before the export. The
 'interface language is split on "-" to take the code prefix, so
 '"FRA-Francais" comes out as "FRA".
-Private Sub SyncDesignerLanguageNames(ByVal designerBook As Workbook)
+'
+'Public so a suite drives it with a fixture workbook and reads the two
+'hidden names back.
+Public Sub SyncDesignerLanguageNames(ByVal designerBook As Workbook)
     Dim store As HiddenNames
     Dim dictLang As String
     Dim llFormValue As String
@@ -649,9 +659,10 @@ End Function
 '@details
 'Read from the DESIGNTYPE named range of the designer's format sheet. That
 'is the value LinelistSpecs.EnsureFormat builds its LLFormat with, so it is
-'the design every sheet of the run is written in.
+'the design every sheet of the run is written in. Public so a suite drives
+'it with a fixture workbook.
 '@return String. The design name, empty when the designer names none.
-Private Function DesignerDesignName(ByVal designerBook As Workbook) As String
+Public Function DesignerDesignName(ByVal designerBook As Workbook) As String
     Dim formatSheet As Worksheet
     Dim designRange As Range
 
@@ -733,12 +744,14 @@ End Function
 'puts each header at row 1. The extension alone used to decide, and an .xlsm
 'or a renamed file read the tables at the wrong anchor in silence. When
 'neither probe matches, the hinted row is kept.
+'
+'Public so a suite drives the probe with fixture sheets.
 '@param setupSheet Worksheet. The setup sheet holding the table.
 '@param xlsbRow Long. The header row of the .xlsb layout.
 '@param startColumn Long. The column the table starts at.
 '@param firstHeader String. The table's first header, in lower case.
 '@return Long. The header row of the table.
-Private Function SetupStartRow(ByVal setupSheet As Worksheet, _
+Public Function SetupStartRow(ByVal setupSheet As Worksheet, _
                                ByVal xlsbRow As Long, _
                                ByVal startColumn As Long, _
                                ByVal firstHeader As String) As Long

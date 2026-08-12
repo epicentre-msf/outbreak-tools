@@ -462,6 +462,9 @@ Private Sub LoExists(sh As Worksheet, ByVal loNames As BetterArray)
     Dim lName As String
     For counter = loNames.LowerBound To loNames.UpperBound
         lName = loNames.Item(counter)
+        'A failed lookup under Resume Next leaves the previous table in Lo.
+        'Dropping the reference first lets every name in the list be checked.
+        Set Lo = Nothing
         On Error Resume Next
         Set Lo = sh.ListObjects(lName)
         On Error GoTo 0
