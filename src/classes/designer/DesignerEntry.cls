@@ -57,6 +57,14 @@ Private Const RNG_LL_FORM As String = "RNG_LLForm"
 Private Const RNG_DESIGN_LL As String = "RNG_DesignLL"
 Private Const RNG_WARNING As String = "RNG_Warning"
 
+'The two password ranges and the epiweek range LinelistSpecs.Value reads
+'at generation. The multi driver writes each T_Multi row through these
+'keys, so the row's passwords and epiweek reach the build the same way
+'the typed entries do.
+Private Const RNG_PWD_OPEN As String = "RNG_LLPwdOpen"
+Private Const RNG_PWD_DEBUG As String = "RNG_LLPassword"
+Private Const RNG_EPIWEEK As String = "RNG_DefaultEpiWeek"
+
 'Leading shape of the internal tag columns of a setup file. A tag column
 'header can reach the setup language dropdown through the fallback read,
 'and Validate refuses it as a language.
@@ -438,6 +446,12 @@ Private Function ResolveInfoRange(ByVal infoName As String) As Range
         rngName = RNG_DESIGN_LL
     Case "warning"
         rngName = RNG_WARNING
+    Case "llpassword"
+        rngName = RNG_PWD_OPEN
+    Case "debugpassword"
+        rngName = RNG_PWD_DEBUG
+    Case "epiweekstart"
+        rngName = RNG_EPIWEEK
     Case Else
         Exit Function
     End Select

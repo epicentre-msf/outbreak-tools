@@ -2,8 +2,8 @@ Attribute VB_Name = "EventsDesignerMulti"
 Option Explicit
 
 '@Folder("Designer")
-'@ModuleDescription("Ribbon callbacks for the Multi group on the designer workbook.")
-'@depends CustomTable, ApplicationState, OSFiles, DropdownLists, BetterArray, EventsDesignerAdvanced
+'@ModuleDescription("Ribbon callbacks for the Multi group on the designer workbook, and the driver that generates one linelist per row.")
+'@depends CustomTable, ApplicationState, OSFiles, DropdownLists, BetterArray, EventsDesignerAdvanced, EventsDesignerCore, DesignerEntry, GenerationReport, Checking, ProgressBar, Linelist
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Ribbon callbacks for the Multi group manage the T_Multi ListObject on
@@ -22,15 +22,24 @@ Option Explicit
 'A step that gets skipped is reported: the callbacks collect one line
 'per skipped step and show them in one message after the busy state is
 'restored.
+'
+'THE MULTI GENERATION
+'-------------------------------------------------------------------------------
+'clickGenerateMulti walks the table and runs the single-build core
+'(EventsDesignerAdvanced.GenerateOne) once per filled row. The row's
+'values land on Main through the shared DesignerEntry, so the build
+'reads them from the same ranges the single generation reads; the setup
+'workbook of a row is opened once, inside the build. Every row flushes
+'its checkings into the one generation report of the run, its outcome
+'lands in the result column, and a failed row leaves the loop running.
 
 Private Const SHEET_GENERATE_MULTIPLE As String = "GenerateMultiple"
 Private Const TABLE_MULTI As String = "T_Multi"
 Private Const PROMPT_TITLE As String = "Designer"
 
 'The twelve columns of T_Multi. The callbacks here write the three path
-'columns and wire the dictionary language dropdown; the build driver of
-'the multi generation reads the output file, the two passwords and
-'writes the result.
+'columns and wire the dictionary language dropdown; the driver reads the
+'row into the Main entries and writes result and output files back.
 Private Const COL_ID As String = "ID"
 Private Const COL_SETUPS As String = "setups"
 Private Const COL_GEOBASES As String = "geobases"
@@ -54,6 +63,16 @@ Private Const DROPDOWN_PREFIX As String = "dropdown_"
 Private Const LANG_SUFFIX As String = "_lang"
 
 Private Const MSG_PLACE_DATA As String = "Please place the cursor inside the table data area."
+
+'Progress bar over the rows. The two names live on the GenerateMultiple
+'sheet and are owner hand work on the mock; a missing name means no bar
+'and no raise, so this code lands before the hand work and wakes up
+'with it.
+Private Const RNG_PROGRESS_BAR As String = "RNG_ProgressBar"
+Private Const RNG_PROGRESS_STATUS As String = "RNG_ProgressStatus"
+
+'The result column value of a row that built and saved
+Private Const RESULT_BUILT As String = "OK"
 
 
 '@section Multi group callbacks
@@ -466,12 +485,363 @@ Cleanup:
     End If
 End Sub
 
-'@Description("Generate one linelist per row of the multi table. The driver that walks the rows arrives in a later update; this stub keeps the ribbon button wired.")
+'@Description("Generate one linelist per filled row of the T_Multi table.")
+'@details
+'The multi driver. One generation report serves the whole run and one
+'progress bar moves over the rows when the sheet carries its range. The
+'summary message closes the run; each row's own outcome is in the
+'result column.
 '@EntryPoint
 Public Sub clickGenerateMulti(ByRef control As IRibbonControl)
-    MsgBox "Multi generation is under construction.", _
+    Dim lo As ListObject
+    Dim appScope As ApplicationState
+    Dim entry As DesignerEntry
+    Dim bar As ProgressBar
+    Dim buildRows As Long
+    Dim builtCount As Long
+    Dim failedCount As Long
+
+    Set lo = ResolveMultiTable()
+    If lo Is Nothing Then
+        ReportMissingTable
+        Exit Sub
+    End If
+
+    buildRows = CountBuildRows(lo)
+    If buildRows = 0 Then
+        MsgBox "No row carries a setup file. Fill the " & Chr(34) & COL_SETUPS & _
+               Chr(34) & " column first.", vbInformation + vbOKOnly, PROMPT_TITLE
+        Exit Sub
+    End If
+
+    On Error GoTo Cleanup
+    Set appScope = ApplicationState.Create(Application)
+    appScope.ApplyBusyState suppressEvents:=True, busyCursor:=xlNorthWestArrow
+
+    Set entry = EventsDesignerCore.EntryManager()
+
+    'One report for the whole run; every row flushes into it
+    GenerationReport.InitReport ThisWorkbook
+
+    Set bar = ResolveProgressBar(lo.Parent, buildRows)
+
+    GenerateMultipleRows lo, entry, bar, builtCount, failedCount
+
+    If Not bar Is Nothing Then bar.Complete CStr(builtCount) & " built"
+    GenerationReport.FinaliseReport
+
+    appScope.Restore
+    Set appScope = Nothing
+    MsgBox CStr(builtCount) & " linelist(s) built, " & CStr(failedCount) & _
+           " failed. The " & Chr(34) & COL_RESULT & Chr(34) & _
+           " column carries each row's outcome.", _
            vbInformation + vbOKOnly, PROMPT_TITLE
+    Exit Sub
+
+Cleanup:
+    Dim errNumber As Long
+    Dim errDesc As String
+    errNumber = Err.Number
+    errDesc = Err.Description
+
+    On Error Resume Next
+    'Show whatever report was written before the error
+    GenerationReport.FinaliseReport
+    If Not appScope Is Nothing Then appScope.Restore
+    On Error GoTo 0
+
+    If errNumber <> 0 Then
+        Debug.Print "clickGenerateMulti: "; errNumber; errDesc
+        MsgBox "Unable to run the multi generation: " & errDesc, _
+               vbExclamation + vbOKOnly, PROMPT_TITLE
+    End If
 End Sub
+
+
+'@section Multi generation driver
+'===============================================================================
+
+'@Description("Walk the T_Multi rows and run one build per filled row.")
+'@details
+'A row builds when its setups cell is filled. The row's values land on
+'Main through the entry, the entry checks run, and the build follows;
+'every bundle flushes into the one report of the run. A row that is
+'refused or fails writes its fault into the result column and the loop
+'keeps running. A row with content and an empty setups cell reports
+'itself skipped in the result column; a fully empty row stays untouched.
+'The table and the entry arrive as parameters so a suite can drive the
+'loop with fixture objects.
+'@param lo ListObject. The T_Multi ListObject.
+'@param entry DesignerEntry. The entry manager over the Main worksheet.
+'@param bar ProgressBar. The bar over the rows. Nothing means no bar.
+'@param builtCount Long. Answers the number of rows built and saved.
+'@param failedCount Long. Answers the number of rows refused or failed.
+Public Sub GenerateMultipleRows(ByVal lo As ListObject, _
+                                ByVal entry As DesignerEntry, _
+                                ByVal bar As ProgressBar, _
+                                ByRef builtCount As Long, _
+                                ByRef failedCount As Long)
+    Dim rowIdx As Long
+    Dim processed As Long
+    Dim setupPath As String
+    Dim outcomeText As String
+
+    builtCount = 0
+    failedCount = 0
+
+    If lo.DataBodyRange Is Nothing Then Exit Sub
+
+    For rowIdx = 1 To lo.ListRows.Count
+        setupPath = CellText(lo, rowIdx, COL_SETUPS)
+
+        If LenB(setupPath) > 0 Then
+            processed = processed + 1
+            If Not bar Is Nothing Then bar.Update processed - 1, BaseName(setupPath)
+
+            FlushRowHeader lo, rowIdx, setupPath
+            WriteRowEntries lo, rowIdx, entry
+
+            If BuildRow(entry, outcomeText) Then
+                builtCount = builtCount + 1
+                WriteRowCell lo, rowIdx, COL_OUTPUT_FILES, outcomeText
+                WriteRowCell lo, rowIdx, COL_RESULT, RESULT_BUILT
+            Else
+                failedCount = failedCount + 1
+                WriteRowCell lo, rowIdx, COL_RESULT, outcomeText
+            End If
+
+            If Not bar Is Nothing Then bar.Update processed, BaseName(setupPath)
+        ElseIf RowHasContent(lo, rowIdx) Then
+            WriteRowCell lo, rowIdx, COL_RESULT, _
+                         "Skipped: the " & COL_SETUPS & " cell is empty."
+        End If
+    Next rowIdx
+End Sub
+
+'@Description("Write one row's values into the Main entries through the entry manager.")
+'@details
+'Every mapped column is written, blanks included, so a row starts from
+'its own values alone and behaves like a Main the user typed: an empty
+'geobase is the optional entry, an empty epiweek reads as week 1, an
+'empty required value is refused by the entry checks with the row's own
+'message. The output files cell may carry the full path the last run
+'wrote; OutputNameFromCell reduces it to the file name, which keeps a
+'re-run of the table stable.
+'@param lo ListObject. The T_Multi ListObject.
+'@param rowIdx Long. The ListRows position of the row.
+'@param entry DesignerEntry. The entry manager over the Main worksheet.
+Public Sub WriteRowEntries(ByVal lo As ListObject, _
+                           ByVal rowIdx As Long, _
+                           ByVal entry As DesignerEntry)
+    entry.AddInfo CellText(lo, rowIdx, COL_SETUPS), "setuppath"
+    entry.AddInfo CellText(lo, rowIdx, COL_GEOBASES), "geopath"
+    entry.AddInfo CellText(lo, rowIdx, COL_OUTPUT_FOLDERS), "lldir"
+    entry.AddInfo OutputNameFromCell(CellText(lo, rowIdx, COL_OUTPUT_FILES)), "llname"
+    entry.AddInfo CellText(lo, rowIdx, COL_PASSWORD), "llpassword"
+    entry.AddInfo CellText(lo, rowIdx, COL_DEBUG_PASSWORD), "debugpassword"
+    entry.AddInfo CellText(lo, rowIdx, COL_LANG_DICTIONARY), "setuplang"
+    entry.AddInfo CellText(lo, rowIdx, COL_LANG_INTERFACE), "lllang"
+    entry.AddInfo CellText(lo, rowIdx, COL_EPIWEEK_START), "epiweekstart"
+    entry.AddInfo CellText(lo, rowIdx, COL_DESIGN), "design"
+End Sub
+
+'@Description("Reduce an output files cell to the linelist file name.")
+'@details
+'A row that built gets the full written path in its output files cell,
+'and a re-run reads that cell back. The folder part and the .xlsb
+'extension go, so the name reaches the build the same on the first run
+'and on every re-run. Both path separators are handled; a table filled
+'on one platform stays readable on the other.
+'@param cellValue String. The output files cell text.
+'@return String. The bare file name.
+Public Function OutputNameFromCell(ByVal cellValue As String) As String
+    Dim nameText As String
+
+    nameText = BaseName(Trim$(cellValue))
+
+    If LCase$(Right$(nameText, 5)) = ".xlsb" Then
+        nameText = Left$(nameText, Len(nameText) - 5)
+    End If
+
+    OutputNameFromCell = nameText
+End Function
+
+'@Description("Count the rows whose setups cell is filled.")
+'@param lo ListObject. The T_Multi ListObject.
+'@return Long. The number of rows the driver will build.
+Public Function CountBuildRows(ByVal lo As ListObject) As Long
+    Dim rowIdx As Long
+
+    If lo.DataBodyRange Is Nothing Then Exit Function
+
+    For rowIdx = 1 To lo.ListRows.Count
+        If LenB(CellText(lo, rowIdx, COL_SETUPS)) > 0 Then
+            CountBuildRows = CountBuildRows + 1
+        End If
+    Next rowIdx
+End Function
+
+'@Description("Run the entry checks and one build; answer the outcome with no raise.")
+'@details
+'The one place a row's fault is caught, so the loop keeps running. A
+'refused row answers False with a pointer at the report, where the
+'checks landed; a failed row answers False with the error text, and the
+'incomplete output workbook is discarded quietly.
+'@param entry DesignerEntry. The entry manager, already loaded with the row.
+'@param outcomeText String. Answers the written path on success and the fault text otherwise.
+'@return Boolean. True when the row built and saved.
+Private Function BuildRow(ByVal entry As DesignerEntry, ByRef outcomeText As String) As Boolean
+    Dim ll As Linelist
+
+    On Error GoTo Fail
+
+    If Not EventsDesignerAdvanced.ValidateEntries(entry) Then
+        outcomeText = "Refused by the entry checks. Open the generation report."
+        Exit Function
+    End If
+
+    outcomeText = EventsDesignerAdvanced.GenerateOne(entry, ll)
+    BuildRow = True
+    Exit Function
+
+Fail:
+    outcomeText = "Failed: " & Err.Description
+
+    'The failed build leaves its output workbook open; the batch closes
+    'it quietly and moves to the next row.
+    On Error Resume Next
+    If Not ll Is Nothing Then ll.DiscardBuild
+    On Error GoTo 0
+End Function
+
+'@Description("Flush one report bundle naming the row before its build starts.")
+'@details
+'The bundles of every row land in the one report of the run, and this
+'line tells the reader which row the entries under it belong to.
+'@param lo ListObject. The T_Multi ListObject.
+'@param rowIdx Long. The ListRows position of the row.
+'@param setupPath String. The row's setup file path.
+Private Sub FlushRowHeader(ByVal lo As ListObject, _
+                           ByVal rowIdx As Long, _
+                           ByVal setupPath As String)
+    Dim rowChecks As Checking
+    Dim batch As BetterArray
+    Dim rowId As String
+
+    rowId = CellText(lo, rowIdx, COL_ID)
+    If LenB(rowId) = 0 Then rowId = "row " & CStr(rowIdx)
+
+    Set rowChecks = Checking.Create("Multi build " & rowId, setupPath)
+    rowChecks.Add rowId, "Build started for: " & setupPath, checkingInfo
+
+    Set batch = New BetterArray
+    batch.LowerBound = 1
+    batch.Push rowChecks
+    GenerationReport.FlushCheckings batch
+End Sub
+
+'@Description("Build the bar over the rows when the sheet carries the named ranges.")
+'@details
+'The bar range and the status cell are owner hand work on the mock. A
+'missing name means no bar and no raise; the generation runs the same.
+'A name that resolves outside the GenerateMultiple sheet is treated as
+'missing, so a later bar on Main keeps its own range.
+'@param multiSheet Worksheet. The GenerateMultiple worksheet.
+'@param maximum Long. The number of rows the run will build.
+'@return ProgressBar. The bar, or Nothing when the range is missing.
+Private Function ResolveProgressBar(ByVal multiSheet As Worksheet, _
+                                    ByVal maximum As Long) As ProgressBar
+    Dim barRange As Range
+    Dim statusRange As Range
+    Dim bar As ProgressBar
+
+    On Error Resume Next
+    Set barRange = multiSheet.Range(RNG_PROGRESS_BAR)
+    Set statusRange = multiSheet.Range(RNG_PROGRESS_STATUS)
+    On Error GoTo 0
+
+    If barRange Is Nothing Then Exit Function
+    If Not barRange.Worksheet Is multiSheet Then Exit Function
+
+    'A malformed hand-made range stops the bar alone; the generation runs on
+    On Error Resume Next
+    Set bar = ProgressBar.Create(barRange, maximum)
+    If Not statusRange Is Nothing Then bar.AttachStatusCell statusRange
+    On Error GoTo 0
+
+    Set ResolveProgressBar = bar
+End Function
+
+'@Description("Read one cell of a row by column header. A missing column reads as empty.")
+'@param lo ListObject. The T_Multi ListObject.
+'@param rowIdx Long. The ListRows position of the row.
+'@param colName String. The column header.
+'@return String. The trimmed cell text.
+Private Function CellText(ByVal lo As ListObject, _
+                          ByVal rowIdx As Long, _
+                          ByVal colName As String) As String
+    Dim col As ListColumn
+
+    On Error Resume Next
+    Set col = lo.ListColumns(colName)
+    On Error GoTo 0
+
+    If col Is Nothing Then Exit Function
+    CellText = Trim$(CStr(lo.ListRows(rowIdx).Range.Cells(1, col.Index).Value))
+End Function
+
+'@Description("Write one cell of a row by column header. A missing column skips the write.")
+'@param lo ListObject. The T_Multi ListObject.
+'@param rowIdx Long. The ListRows position of the row.
+'@param colName String. The column header.
+'@param cellValue String. The value to write.
+Private Sub WriteRowCell(ByVal lo As ListObject, _
+                         ByVal rowIdx As Long, _
+                         ByVal colName As String, _
+                         ByVal cellValue As String)
+    Dim col As ListColumn
+
+    On Error Resume Next
+    Set col = lo.ListColumns(colName)
+    On Error GoTo 0
+
+    If col Is Nothing Then Exit Sub
+    lo.ListRows(rowIdx).Range.Cells(1, col.Index).Value = cellValue
+End Sub
+
+'@Description("True when any mapped cell of the row apart from setups is filled.")
+'@param lo ListObject. The T_Multi ListObject.
+'@param rowIdx Long. The ListRows position of the row.
+'@return Boolean. True when the row carries content.
+Private Function RowHasContent(ByVal lo As ListObject, ByVal rowIdx As Long) As Boolean
+    Dim mappedCols As Variant
+    Dim idx As Long
+
+    mappedCols = Array(COL_GEOBASES, COL_OUTPUT_FOLDERS, COL_OUTPUT_FILES, _
+                       COL_PASSWORD, COL_DEBUG_PASSWORD, COL_LANG_DICTIONARY, _
+                       COL_LANG_INTERFACE, COL_EPIWEEK_START, COL_DESIGN)
+
+    For idx = LBound(mappedCols) To UBound(mappedCols)
+        If LenB(CellText(lo, rowIdx, CStr(mappedCols(idx)))) > 0 Then
+            RowHasContent = True
+            Exit Function
+        End If
+    Next idx
+End Function
+
+'@Description("The file name part of a path.")
+'@param filePath String. A file path or a bare name.
+'@return String. The text after the last path separator.
+Private Function BaseName(ByVal filePath As String) As String
+    Dim sepPos As Long
+    Dim altPos As Long
+
+    sepPos = InStrRev(filePath, "/")
+    altPos = InStrRev(filePath, "\")
+    If altPos > sepPos Then sepPos = altPos
+
+    BaseName = Mid$(filePath, sepPos + 1)
+End Function
 
 
 '@section Table and dropdown resolution

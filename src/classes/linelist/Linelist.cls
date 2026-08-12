@@ -593,10 +593,30 @@ Public Sub ErrorManage(Optional ByVal textMessage As String = vbNullString)
     If answer = vbYes Then
         outWkb.Application.Visible = True
     Else
-        outWkb.Close savechanges:=False
-        Set this.outWkb = Nothing
-        this.specs.ReleaseLLWorkbook
+        DiscardBuild
     End If
+End Sub
+
+'@label:discard-build
+'@sub-title Close the incomplete output workbook and drop the references to it
+'@details
+'Closes the output workbook of a build that stopped before SaveLL, with its
+'changes thrown away, and drops both cached references to it: the one this
+'instance holds and the one LinelistSpecs holds. The multi generation driver
+'calls it after a failed row, so the loop moves to the next row with no
+'workbook left open behind it; ErrorManage routes its close branch here. When
+'there is no output workbook the call exits quietly.
+'@export
+Public Sub DiscardBuild()
+    Dim outWkb As Workbook
+
+    Set outWkb = this.outWkb
+    If outWkb Is Nothing Then Set outWkb = this.specs.LLWorkbook
+    If outWkb Is Nothing Then Exit Sub
+
+    outWkb.Close savechanges:=False
+    Set this.outWkb = Nothing
+    this.specs.ReleaseLLWorkbook
 End Sub
 
 '@section Private - Workbook management

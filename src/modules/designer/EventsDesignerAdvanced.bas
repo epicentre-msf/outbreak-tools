@@ -340,12 +340,8 @@ End Sub
 Public Sub clickGenerate()
     Dim entry As DesignerEntry
     Dim appScope As ApplicationState
-    Dim specs As LinelistSpecs
     Dim ll As Linelist
-    Dim setupPath As String
-    Dim sheetLists As BetterArray
-    Dim counter As Long
-    Dim anaOut As AnalysisOutput
+    Dim savedPath As String
 
     On Error GoTo Cleanup
     Set appScope = ApplicationState.Create(Application)
@@ -359,16 +355,7 @@ Public Sub clickGenerate()
     'The entry checks are the report's first bundle. Every fault carries
     'the error scope, so a checking with any entry aborts the run with the
     'report sheet shown.
-    Dim entryChecks As Checking
-    Set entryChecks = entry.Validate()
-
-    If entryChecks.Length > 0 Then
-        Dim entryBatch As BetterArray
-        Set entryBatch = New BetterArray
-        entryBatch.LowerBound = 1
-        entryBatch.Push entryChecks
-        GenerationReport.FlushCheckings entryBatch
-
+    If Not ValidateEntries(entry) Then
         entry.AddInfo entry.TranslateMessage("MSG_NotReady"), "edition"
         GenerationReport.FinaliseReport
         appScope.Restore
@@ -377,12 +364,105 @@ Public Sub clickGenerate()
         Exit Sub
     End If
 
-    setupPath = entry.ValueOf("setuppath")
-
-    'Build the linelist: Prepare creates the output workbook and hands it to
-    'InitTransfer, which fills it from the setup file and from this designer.
     entry.AddInfo entry.TranslateMessage("MSG_ReadSetup"), "edition"
 
+    'The whole build: specifications, linelist, sheets, dropdowns, analyses,
+    'save. The phase checkings flush to the report as each phase completes.
+    savedPath = GenerateOne(entry, ll)
+
+    'Finalise the generation report (install filter handler)
+    GenerationReport.FinaliseReport
+
+    entry.AddInfo entry.TranslateMessage("MSG_LLCreated"), "edition"
+
+    appScope.Restore
+    MsgBox entry.TranslateMessage("MSG_LLCreated"), vbInformation + vbOKOnly, PROMPT_TITLE
+    Exit Sub
+
+Cleanup:
+    Dim errNumber As Long
+    Dim errDesc As String
+    errNumber = Err.Number
+    errDesc = Err.Description
+
+    On Error Resume Next
+    'Try to finalise whatever report was written before the error
+    GenerationReport.FinaliseReport
+    If Not appScope Is Nothing Then appScope.Restore
+    Application.Cursor = xlDefault
+    On Error GoTo 0
+
+    If errNumber <> 0 Then
+        Debug.Print "clickGenerate: "; errNumber; errDesc
+
+        'When the linelist object exists, offer the user to view the
+        'incomplete workbook or close it; otherwise show a simple error
+        If Not ll Is Nothing Then
+            ll.ErrorManage errDesc
+        Else
+            MsgBox "Generation failed: " & errDesc, _
+                   vbExclamation + vbOKOnly, PROMPT_TITLE
+        End If
+    End If
+End Sub
+
+
+'@Description("Run the entry checks and flush the faults as a report bundle.")
+'@details
+'Runs DesignerEntry.Validate over the Main entries and flushes a checking
+'that holds any fault as one bundle of the generation report. The report
+'has to be initialised by the caller. clickGenerate runs this once over
+'the typed entries; the multi driver runs it per row after the row's
+'values land on Main.
+'@param entry DesignerEntry. The entry manager over the Main worksheet.
+'@return Boolean. True when every entry passes and the build may start.
+Public Function ValidateEntries(ByVal entry As DesignerEntry) As Boolean
+    Dim entryChecks As Checking
+    Dim entryBatch As BetterArray
+
+    Set entryChecks = entry.Validate()
+
+    If entryChecks.Length = 0 Then
+        ValidateEntries = True
+        Exit Function
+    End If
+
+    Set entryBatch = New BetterArray
+    entryBatch.LowerBound = 1
+    entryBatch.Push entryChecks
+    GenerationReport.FlushCheckings entryBatch
+End Function
+
+'@Description("Run one whole build over the Main entries and return the written path.")
+'@details
+'The single-build core: specifications, linelist workbook, data entry
+'sheets, dropdowns, analyses, save. clickGenerate runs it once over the
+'entries the user typed; the multi driver writes one T_Multi row onto
+'Main and runs it per row. The setup workbook is opened once, inside
+'LinelistSpecs.Prepare.
+'
+'The phase checkings flush to the generation report as each phase
+'completes, so the report of a build that dies still carries the phases
+'that finished. The caller owns everything around the build: the entry
+'checks (ValidateEntries), the report lifecycle (InitReport and
+'FinaliseReport), the busy state and every dialog. A build fault raises
+'to the caller; builtLinelist is set as soon as the linelist exists, so
+'the caller's handler holds it for ErrorManage or DiscardBuild.
+'@param entry DesignerEntry. The entry manager over the Main worksheet.
+'@param builtLinelist Linelist. Answers the linelist of the build, set before any build step runs.
+'@return String. The full path of the written linelist file.
+Public Function GenerateOne(ByVal entry As DesignerEntry, ByRef builtLinelist As Linelist) As String
+    Dim specs As LinelistSpecs
+    Dim ll As Linelist
+    Dim setupPath As String
+    Dim sheetLists As BetterArray
+    Dim counter As Long
+    Dim anaOut As AnalysisOutput
+
+    setupPath = entry.ValueOf("setuppath")
+
+    'Prepare creates the output workbook and hands it to InitTransfer,
+    'which fills it from the setup file and from this designer.
     Set specs = LinelistSpecs.Create(ThisWorkbook)
     specs.Prepare setupPath
 
@@ -395,6 +475,7 @@ Public Sub clickGenerate()
 
     'Build the output linelist workbook (sheets, temp sheets, admin, code transfer)
     Set ll = Linelist.Create(specs)
+    Set builtLinelist = ll
     ll.Prepare
 
     'Flush Phase 1b: code transfer checkings. A component the output workbook
@@ -437,7 +518,8 @@ Public Sub clickGenerate()
         GenerationReport.FlushCheckings sheetChecks
     End If
 
-    'Flush Phase 2b: shared dropdown checkings (linelist-level, not per-sheet)
+    'Flush Phase 2b: shared dropdown checkings (linelist-level, held apart
+    'from the per-sheet bundles)
     Dim dropChecks As BetterArray
     Set dropChecks = New BetterArray
     dropChecks.LowerBound = 1
@@ -452,7 +534,7 @@ Public Sub clickGenerate()
 
     GenerationReport.FlushCheckings dropChecks
 
-    'Build the analyses in clickGenerate
+    'Build the analyses
     Set anaOut = AnalysisOutput.Create(specs.AnalysisObject.Wksh(), ll)
     ' All four analysis sheets. The call used to stop after the time series
     ' tables, so the generated linelist carried no time series chart, no
@@ -472,41 +554,10 @@ Public Sub clickGenerate()
     'Save the linelist as .xlsb with password protection
     ll.SaveLL
 
-    'Finalise the generation report (install filter handler)
-    GenerationReport.FinaliseReport
-
-    entry.AddInfo entry.TranslateMessage("MSG_LLCreated"), "edition"
-
-    appScope.Restore
-    MsgBox entry.TranslateMessage("MSG_LLCreated"), vbInformation + vbOKOnly, PROMPT_TITLE
-    Exit Sub
-
-Cleanup:
-    Dim errNumber As Long
-    Dim errDesc As String
-    errNumber = Err.Number
-    errDesc = Err.Description
-
-    On Error Resume Next
-    'Try to finalise whatever report was written before the error
-    GenerationReport.FinaliseReport
-    If Not appScope Is Nothing Then appScope.Restore
-    Application.Cursor = xlDefault
-    On Error GoTo 0
-
-    If errNumber <> 0 Then
-        Debug.Print "clickGenerate: "; errNumber; errDesc
-
-        'When the linelist object exists, offer the user to view the
-        'incomplete workbook or close it; otherwise show a simple error
-        If Not ll Is Nothing Then
-            ll.ErrorManage errDesc
-        Else
-            MsgBox "Generation failed: " & errDesc, _
-                   vbExclamation + vbOKOnly, PROMPT_TITLE
-        End If
-    End If
-End Sub
+    'The path SaveLL wrote, read from the same values it read
+    GenerateOne = specs.Value("lldir") & Application.PathSeparator & _
+                  specs.Value("llname") & ".xlsb"
+End Function
 
 
 '@section Internal helpers

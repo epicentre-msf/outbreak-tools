@@ -425,6 +425,64 @@ Fail:
 End Sub
 
 
+'@TestMethod("DesignerEntry.Info")
+Public Sub TestPasswordInfoNamesRoundTrip()
+    CustomTestSetTitles Assert, "DesignerEntry", "TestPasswordInfoNamesRoundTrip"
+    On Error GoTo Fail
+
+    'Arrange: the two password ranges LinelistSpecs reads at generation.
+    'The multi driver writes each row's passwords through these keys.
+    FixtureWorkbook.Names.Add Name:="RNG_LLPwdOpen", RefersTo:=EntrySheet.Range("H1")
+    FixtureWorkbook.Names.Add Name:="RNG_LLPassword", RefersTo:=EntrySheet.Range("H2")
+
+    Dim subject As DesignerEntry
+    Set subject = DesignerEntry.Create(EntrySheet)
+
+    'Act
+    subject.AddInfo "open-secret", "llpassword"
+    subject.AddInfo "debug-secret", "debugpassword"
+
+    'Assert: the values land on the ranges and read back by key
+    Assert.AreEqual "open-secret", CStr(EntrySheet.Range("H1").value), _
+                    "The llpassword key should write to RNG_LLPwdOpen."
+    Assert.AreEqual "debug-secret", CStr(EntrySheet.Range("H2").value), _
+                    "The debugpassword key should write to RNG_LLPassword."
+    Assert.AreEqual "open-secret", subject.ValueOf("llpassword"), _
+                    "ValueOf llpassword should read the written value back."
+    Assert.AreEqual "debug-secret", subject.ValueOf("debugpassword"), _
+                    "ValueOf debugpassword should read the written value back."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPasswordInfoNamesRoundTrip"
+End Sub
+
+'@TestMethod("DesignerEntry.Info")
+Public Sub TestEpiweekInfoNameRoundTrip()
+    CustomTestSetTitles Assert, "DesignerEntry", "TestEpiweekInfoNameRoundTrip"
+    On Error GoTo Fail
+
+    'Arrange: the epiweek range LinelistSpecs reads at generation
+    FixtureWorkbook.Names.Add Name:="RNG_DefaultEpiWeek", RefersTo:=EntrySheet.Range("H3")
+
+    Dim subject As DesignerEntry
+    Set subject = DesignerEntry.Create(EntrySheet)
+
+    'Act
+    subject.AddInfo "2", "epiweekstart"
+
+    'Assert
+    Assert.AreEqual "2", CStr(EntrySheet.Range("H3").value), _
+                    "The epiweekstart key should write to RNG_DefaultEpiWeek."
+    Assert.AreEqual "2", subject.ValueOf("epiweekstart"), _
+                    "ValueOf epiweekstart should read the written value back."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestEpiweekInfoNameRoundTrip"
+End Sub
+
+
 '@section Validate Tests
 '===============================================================================
 '@TestMethod("DesignerEntry.Validate")

@@ -4,7 +4,7 @@ Attribute VB_Description = "Unit tests for Multi group table operations"
 Option Explicit
 
 '@Folder("CustomTests.Designer")
-'@ModuleDescription("Validates Multi group table operations: add rows, remove rows, duplicate, import, export and the write-once row IDs on T_Multi.")
+'@ModuleDescription("Validates Multi group table operations: add rows, remove rows, duplicate, import, export, the write-once row IDs on T_Multi, and the driver helpers that read a row into the Main entries.")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As CustomTest
@@ -288,6 +288,137 @@ Public Sub TestEnsureRowIdsFillsOnlyBlankIds()
     Exit Sub
 Fail:
     CustomTestLogFailure Assert, "TestEnsureRowIdsFillsOnlyBlankIds", Err.Number, Err.Description
+End Sub
+
+
+'@section Multi driver Tests
+'===============================================================================
+'@TestMethod("DesignerMulti.Driver")
+Public Sub TestOutputNameFromCellKeepsABareName()
+    CustomTestSetTitles Assert, "DesignerMulti", "TestOutputNameFromCellKeepsABareName"
+    On Error GoTo Fail
+
+    Assert.AreEqual "my_linelist", _
+                    EventsDesignerMulti.OutputNameFromCell("my_linelist"), _
+                    "A bare name should come back unchanged."
+    Assert.AreEqual "my_linelist", _
+                    EventsDesignerMulti.OutputNameFromCell("  my_linelist  "), _
+                    "The name should come back trimmed."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestOutputNameFromCellKeepsABareName", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("DesignerMulti.Driver")
+Public Sub TestOutputNameFromCellStripsPathAndExtension()
+    CustomTestSetTitles Assert, "DesignerMulti", "TestOutputNameFromCellStripsPathAndExtension"
+    On Error GoTo Fail
+
+    'A row that built holds the full written path, and a re-run reads it
+    'back. The folder and the extension go so the name stays stable.
+    Assert.AreEqual "my_linelist", _
+                    EventsDesignerMulti.OutputNameFromCell("/out/folder/my_linelist.xlsb"), _
+                    "A slash path with the .xlsb extension should reduce to the name."
+    Assert.AreEqual "my_linelist", _
+                    EventsDesignerMulti.OutputNameFromCell("C:\out\my_linelist.xlsb"), _
+                    "A backslash path should reduce to the name too."
+    Assert.AreEqual "my_linelist", _
+                    EventsDesignerMulti.OutputNameFromCell("my_linelist.xlsb"), _
+                    "A bare name with the extension should lose the extension."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestOutputNameFromCellStripsPathAndExtension", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("DesignerMulti.Driver")
+Public Sub TestCountBuildRowsCountsFilledSetupCells()
+    CustomTestSetTitles Assert, "DesignerMulti", "TestCountBuildRowsCountsFilledSetupCells"
+    On Error GoTo Fail
+
+    'Arrange: three rows, two with a setup path
+    Dim lo As ListObject
+    Set lo = MultiSheet.ListObjects(TABLE_MULTI)
+    lo.ListRows.Add
+    lo.ListRows.Add
+
+    lo.ListRows(1).Range.Cells(1, 2).Value = "first_setup.xlsb"
+    lo.ListRows(3).Range.Cells(1, 2).Value = "third_setup.xlsb"
+
+    'Act and assert
+    Assert.AreEqual CLng(2), EventsDesignerMulti.CountBuildRows(lo), _
+                    "The driver should count the two rows whose setups cell is filled."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestCountBuildRowsCountsFilledSetupCells", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("DesignerMulti.Driver")
+Public Sub TestWriteRowEntriesLandsRowValuesOnMain()
+    CustomTestSetTitles Assert, "DesignerMulti", "TestWriteRowEntriesLandsRowValuesOnMain"
+    On Error GoTo Fail
+
+    'Arrange: a Main-shaped sheet carrying the entry ranges the build reads
+    Dim mainSheet As Worksheet
+    Set mainSheet = EnsureWorksheet("Main", FixtureWorkbook)
+    FixtureWorkbook.Names.Add Name:="RNG_PathDico", RefersTo:=mainSheet.Range("A1")
+    FixtureWorkbook.Names.Add Name:="RNG_PathGeo", RefersTo:=mainSheet.Range("A2")
+    FixtureWorkbook.Names.Add Name:="RNG_LLDir", RefersTo:=mainSheet.Range("A3")
+    FixtureWorkbook.Names.Add Name:="RNG_LLName", RefersTo:=mainSheet.Range("A4")
+    FixtureWorkbook.Names.Add Name:="RNG_LLPwdOpen", RefersTo:=mainSheet.Range("A5")
+    FixtureWorkbook.Names.Add Name:="RNG_LLPassword", RefersTo:=mainSheet.Range("A6")
+    FixtureWorkbook.Names.Add Name:="RNG_LangSetup", RefersTo:=mainSheet.Range("A7")
+    FixtureWorkbook.Names.Add Name:="RNG_LLForm", RefersTo:=mainSheet.Range("A8")
+    FixtureWorkbook.Names.Add Name:="RNG_DefaultEpiWeek", RefersTo:=mainSheet.Range("A9")
+    FixtureWorkbook.Names.Add Name:="RNG_DesignLL", RefersTo:=mainSheet.Range("A10")
+
+    'A filled row, with a full path in the output files cell as a re-run reads it
+    Dim lo As ListObject
+    Set lo = MultiSheet.ListObjects(TABLE_MULTI)
+    lo.ListRows(1).Range.Cells(1, 2).Value = "/setups/measles.xlsb"
+    lo.ListRows(1).Range.Cells(1, 3).Value = "/geo/geobase.xlsx"
+    lo.ListRows(1).Range.Cells(1, 4).Value = "/out"
+    lo.ListRows(1).Range.Cells(1, 5).Value = "/out/measles_ll.xlsb"
+    lo.ListRows(1).Range.Cells(1, 6).Value = "open-secret"
+    lo.ListRows(1).Range.Cells(1, 7).Value = "debug-secret"
+    lo.ListRows(1).Range.Cells(1, 8).Value = "ENG"
+    lo.ListRows(1).Range.Cells(1, 9).Value = "FRA - Francais"
+    lo.ListRows(1).Range.Cells(1, 10).Value = "2"
+    lo.ListRows(1).Range.Cells(1, 11).Value = "Standard"
+
+    Dim entry As DesignerEntry
+    Set entry = DesignerEntry.Create(mainSheet)
+
+    'Act
+    EventsDesignerMulti.WriteRowEntries lo, 1, entry
+
+    'Assert: the row's values read back through the entry keys
+    Assert.AreEqual "/setups/measles.xlsb", entry.ValueOf("setuppath"), _
+                    "The setups cell should land on the setup path entry."
+    Assert.AreEqual "/geo/geobase.xlsx", entry.ValueOf("geopath"), _
+                    "The geobases cell should land on the geo path entry."
+    Assert.AreEqual "/out", entry.ValueOf("lldir"), _
+                    "The output folders cell should land on the output folder entry."
+    Assert.AreEqual "measles_ll", entry.ValueOf("llname"), _
+                    "The output files cell should land as the bare file name."
+    Assert.AreEqual "open-secret", entry.ValueOf("llpassword"), _
+                    "The password cell should land on the open password entry."
+    Assert.AreEqual "debug-secret", entry.ValueOf("debugpassword"), _
+                    "The debugging password cell should land on the debug password entry."
+    Assert.AreEqual "ENG", entry.ValueOf("setuplang"), _
+                    "The dictionary language cell should land on the setup language entry."
+    Assert.AreEqual "FRA - Francais", entry.ValueOf("lllang"), _
+                    "The interface language cell should land on the linelist language entry."
+    Assert.AreEqual "2", entry.ValueOf("epiweekstart"), _
+                    "The epiweek cell should land on the epiweek entry."
+    Assert.AreEqual "Standard", entry.ValueOf("design"), _
+                    "The design cell should land on the design entry."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestWriteRowEntriesLandsRowValuesOnMain", Err.Number, Err.Description
 End Sub
 
 

@@ -213,6 +213,87 @@ ExpectError:
 End Sub
 
 
+'@TestMethod("Linelist")
+Public Sub TestDiscardBuildClosesTheOutputWorkbook()
+    CustomTestSetTitles Assert, TESTMODULE, "TestDiscardBuildClosesTheOutputWorkbook"
+    If Not FixtureReady("TestDiscardBuildClosesTheOutputWorkbook") Then Exit Sub
+    On Error GoTo TestFail
+
+    'Arrange: own specifications over the shared designer fixture, with a
+    'throwaway workbook standing in for the output. The shared Specs and
+    'OutWkb stay untouched, so the other tests keep their fixture.
+    Dim tempWkb As Workbook
+    Dim tempName As String
+    Set tempWkb = NewWorkbook()
+    tempName = tempWkb.Name
+
+    Dim ownSpecs As LinelistSpecs
+    Set ownSpecs = LinelistSpecs.Create(SpecsWkb)
+    ownSpecs.TestAssignLLWorkbook tempWkb
+
+    Dim sut As Linelist
+    Set sut = Linelist.Create(ownSpecs)
+
+    'Act
+    sut.DiscardBuild
+
+    'Closing a workbook hands the screen to whichever workbook Excel
+    'activates, and PrintResults raises 1004 when the driver workbook has
+    'lost it. Hand it back right after the close.
+    ThisWorkbook.Activate
+
+    'Assert: the workbook is closed and both references are dropped
+    Assert.IsTrue ownSpecs.LLWorkbook Is Nothing, _
+                  "DiscardBuild should release the specifications' workbook reference"
+
+    Dim stillOpen As Boolean
+    On Error Resume Next
+    stillOpen = LenB(Application.Workbooks(tempName).Name) > 0
+    On Error GoTo TestFail
+    Assert.IsFalse stillOpen, _
+                   "DiscardBuild should close the output workbook with its changes thrown away"
+
+    Exit Sub
+TestFail:
+    'An On Error statement clears Err, so the fault is captured first
+    Dim failNumber As Long
+    Dim failDesc As String
+    failNumber = Err.Number
+    failDesc = Err.Description
+
+    On Error Resume Next
+    If Not tempWkb Is Nothing Then tempWkb.Close savechanges:=False
+    ThisWorkbook.Activate
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestDiscardBuildClosesTheOutputWorkbook", failNumber, failDesc
+End Sub
+
+'@TestMethod("Linelist")
+Public Sub TestDiscardBuildWithNoWorkbookIsQuiet()
+    CustomTestSetTitles Assert, TESTMODULE, "TestDiscardBuildWithNoWorkbookIsQuiet"
+    If Not FixtureReady("TestDiscardBuildWithNoWorkbookIsQuiet") Then Exit Sub
+    On Error GoTo TestFail
+
+    'Own specifications with no output workbook: the state before Prepare,
+    'and the state after SaveLL already closed the file
+    Dim ownSpecs As LinelistSpecs
+    Set ownSpecs = LinelistSpecs.Create(SpecsWkb)
+
+    Dim sut As Linelist
+    Set sut = Linelist.Create(ownSpecs)
+
+    'Act: with no workbook the call exits quietly
+    sut.DiscardBuild
+
+    Assert.IsTrue ownSpecs.LLWorkbook Is Nothing, _
+                  "DiscardBuild should leave the empty reference as it is"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestDiscardBuildWithNoWorkbookIsQuiet", Err.Number, Err.Description
+End Sub
+
+
 '@section Collaborator tests
 '===============================================================================
 
