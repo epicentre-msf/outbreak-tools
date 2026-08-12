@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, LinelistSpecs, Linelist, LLDataEntry, LLSheets, AnalysisOutput, Checking, GenerationReport
+'@depends DesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, LinelistSpecs, Linelist, LLDataEntry, LLSheets, AnalysisOutput, Checking, GenerationReport, SetupTranslationsTable
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -18,11 +18,12 @@ Private Const PROMPT_TITLE As String = "Designer"
 
 Private Const SHEET_TRANSLATIONS As String = "Translations"
 
-'HiddenName storing semicolon-separated language list on the Translations sheet
-Private Const SETUP_LANGUAGES_TAG As String = "__SetupTranslationsLanguages__"
-
 'Dropdown name used by DesignerPreparation for setup languages
 Private Const DROP_SETUP_LANGUAGES As String = "__setup_languages"
+
+'Leading shape of the internal tag columns of a setup translations table.
+'The fallback header read drops these before the dropdown update.
+Private Const INTERNAL_TAG_LEAD As String = "__"
 
 
 '@section Dev group callbacks
@@ -177,7 +178,7 @@ Public Sub clickLoadFileDic()
 
     'Extract languages from the setup Translations worksheet HiddenNames
     'and update the setup languages dropdown for the designer
-    ExtractAndUpdateLanguages tradSheet
+    ExtractAndUpdateLanguages tradSheet, entry
 
 Cleanup:
     Dim errNumber As Long
@@ -523,24 +524,29 @@ Private Function BuildOneSheet(ByVal llshs As LLSheets, ByVal ll As Linelist, By
 End Function
 
 '@Description("Extract languages from setup Translations sheet and update the setup languages dropdown.")
-Private Sub ExtractAndUpdateLanguages(ByVal tradSheet As Worksheet)
+Private Sub ExtractAndUpdateLanguages(ByVal tradSheet As Worksheet, ByVal entry As DesignerEntry)
     Dim setupStore As HiddenNames
+    Dim languagesTag As String
     Dim langString As String
     Dim languages() As String
     Dim langValues As BetterArray
     Dim idx As Long
     Dim drop As DropdownLists
 
+    'The HiddenName key belongs to SetupTranslationsTable, the class that
+    'writes the language list on the setup's Translations sheet.
+    languagesTag = SetupTranslationsTable.LanguagesNameId
+
     'Read the persisted language list from the setup's Translations worksheet
     Set setupStore = HiddenNames.Create(tradSheet)
 
-    If Not setupStore.HasName(SETUP_LANGUAGES_TAG) Then
+    If Not setupStore.HasName(languagesTag) Then
         'Fallback: read column headers from the first ListObject on the sheet
-        ExtractLanguagesFromHeaders tradSheet
+        ExtractLanguagesFromHeaders tradSheet, entry
         Exit Sub
     End If
 
-    langString = setupStore.ValueAsString(SETUP_LANGUAGES_TAG)
+    langString = setupStore.ValueAsString(languagesTag)
     If LenB(langString) = 0 Then Exit Sub
 
     'Split semicolons-separated string into individual language names
@@ -561,18 +567,19 @@ Private Sub ExtractAndUpdateLanguages(ByVal tradSheet As Worksheet)
     Set drop = DropdownLists.Create(ThisWorkbook.Worksheets(SHEET_DROPDOWNS))
     drop.Update langValues, DROP_SETUP_LANGUAGES
 
-    'Auto-set the first language into RNG_LangSetup on the Main sheet
-    On Error Resume Next
-    ThisWorkbook.Worksheets(SHEET_MAIN).Range("RNG_LangSetup").Value = _
-        langValues.Item(langValues.LowerBound)
-    On Error GoTo 0
-
+    'Auto-select the first setup language (owner decision). The write goes
+    'through the entry so the range resolution lives in one place, and
+    'Validate is the net under a value the user never touches.
+    entry.AddInfo langValues.Item(langValues.LowerBound), "setuplang"
 End Sub
 
 '@Description("Fallback: extract languages from the header row of the first ListObject on the Translations sheet.")
-Private Sub ExtractLanguagesFromHeaders(ByVal tradSheet As Worksheet)
+Private Sub ExtractLanguagesFromHeaders(ByVal tradSheet As Worksheet, ByVal entry As DesignerEntry)
     Dim lo As ListObject
+    Dim headerValues As BetterArray
     Dim langValues As BetterArray
+    Dim headerText As String
+    Dim idx As Long
     Dim drop As DropdownLists
 
     If tradSheet.ListObjects.Count = 0 Then Exit Sub
@@ -581,10 +588,25 @@ Private Sub ExtractLanguagesFromHeaders(ByVal tradSheet As Worksheet)
     If lo.HeaderRowRange Is Nothing Then Exit Sub
 
     'Read all header values as potential languages
+    Set headerValues = New BetterArray
+    headerValues.LowerBound = 1
+    headerValues.FromExcelRange lo.HeaderRowRange, _
+                                DetectLastRow:=False, DetectLastColumn:=False
+
+    'The languages are the header row minus the internal tag columns. A
+    'header with the leading __ shape (__TagInternal__) is machinery of the
+    'setup table, and it used to land in the dropdown, where the auto-write
+    'below could put it in RNG_LangSetup.
     Set langValues = New BetterArray
     langValues.LowerBound = 1
-    langValues.FromExcelRange lo.HeaderRowRange, _
-                              DetectLastRow:=False, DetectLastColumn:=False
+    For idx = headerValues.LowerBound To headerValues.UpperBound
+        headerText = Trim$(CStr(headerValues.Item(idx)))
+        If LenB(headerText) > 0 Then
+            If Left$(headerText, Len(INTERNAL_TAG_LEAD)) <> INTERNAL_TAG_LEAD Then
+                langValues.Push headerText
+            End If
+        End If
+    Next idx
 
     If langValues.Length = 0 Then Exit Sub
 
@@ -592,10 +614,8 @@ Private Sub ExtractLanguagesFromHeaders(ByVal tradSheet As Worksheet)
     Set drop = DropdownLists.Create(ThisWorkbook.Worksheets(SHEET_DROPDOWNS))
     drop.Update langValues, DROP_SETUP_LANGUAGES
 
-    'Auto-set the first language into RNG_LangSetup on the Main sheet
-    On Error Resume Next
-    ThisWorkbook.Worksheets(SHEET_MAIN).Range("RNG_LangSetup").Value = _
-        langValues.Item(langValues.LowerBound)
-    On Error GoTo 0
-
+    'Auto-select the first setup language (owner decision). The write goes
+    'through the entry so the range resolution lives in one place, and
+    'Validate is the net under a value the user never touches.
+    entry.AddInfo langValues.Item(langValues.LowerBound), "setuplang"
 End Sub

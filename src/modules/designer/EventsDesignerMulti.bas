@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the Multi group on the designer workbook.")
-'@depends CustomTable, ApplicationState, OSFiles, HiddenNames, DropdownLists, DropdownLists, BetterArray
+'@depends CustomTable, ApplicationState, OSFiles, HiddenNames, DropdownLists, BetterArray, SetupTranslationsTable
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Ribbon callbacks for the Multi group manage the T_Multi ListObject on
@@ -21,9 +21,9 @@ Private Const COL_GEOBASES As String = "geobases"
 Private Const COL_OUTPUT_FOLDERS As String = "output folders"
 Private Const COL_LANG_DICTIONARY As String = "language of the dictionary"
 
-'Setup language extraction
+'Setup language extraction. The HiddenName key of the language list comes
+'from SetupTranslationsTable.LanguagesNameId, the class that writes it.
 Private Const SHEET_TRANSLATIONS As String = "Translations"
-Private Const SETUP_LANGUAGES_TAG As String = "__SetupTranslationsLanguages__"
 Private Const ID_HEADER As String = "ID"
 Private Const ID_PREFIX As String = "Operation-"
 
@@ -581,6 +581,7 @@ End Sub
 '@return BetterArray. Language names (1-based), or empty when none found.
 Private Function ExtractLanguagesForRow(ByVal tradSheet As Worksheet) As BetterArray
     Dim store As HiddenNames
+    Dim languagesTag As String
     Dim langString As String
     Dim languages() As String
     Dim result As BetterArray
@@ -589,11 +590,13 @@ Private Function ExtractLanguagesForRow(ByVal tradSheet As Worksheet) As BetterA
     Set result = New BetterArray
     result.LowerBound = 1
 
+    languagesTag = SetupTranslationsTable.LanguagesNameId
+
     'Try HiddenNames first (same pattern as EventsDesignerAdvanced.ExtractAndUpdateLanguages)
     Set store = HiddenNames.Create(tradSheet)
 
-    If store.HasName(SETUP_LANGUAGES_TAG) Then
-        langString = store.ValueAsString(SETUP_LANGUAGES_TAG)
+    If store.HasName(languagesTag) Then
+        langString = store.ValueAsString(languagesTag)
         If LenB(langString) > 0 Then
             languages = Split(langString, ";")
             For idx = LBound(languages) To UBound(languages)

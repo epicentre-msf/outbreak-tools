@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Incremental generation report: harvests Checking objects and flushes them to the designer __check worksheet.")
-'@depends CheckingOutput, Checking, HiddenNames, BetterArray, LinelistSpecs, LLdictionary, LLChoices, LLExport, Passwords, LLFormat
+'@depends CheckingOutput, Checking, HiddenNames, BetterArray, LinelistSpecs, LLdictionary, LLChoices, LLExport, Passwords, LLFormat, InitTransfer
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, UseMeaningfulName
 
 '@description
@@ -107,6 +107,12 @@ Public Function HarvestSpecsCheckings(ByVal specs As LinelistSpecs) As BetterArr
     'data and nothing said.
     If specs.HasCheckings Then
         result.Push specs.CheckingValues
+    End If
+
+    'The transfer. A setup whose translations table is missing is filed
+    'here: the linelist then keeps the designer's own translation rows.
+    If InitTransfer.HasCheckings() Then
+        result.Push InitTransfer.CheckingValues()
     End If
 
     Set HarvestSpecsCheckings = result

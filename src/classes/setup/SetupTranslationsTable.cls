@@ -231,6 +231,20 @@ Public Sub SetDisplayPrompts(ByVal state As Boolean)
     this.displayPrompts = state
 End Sub
 
+'@label:languages-name-id
+'@prop-title The HiddenName key of the persisted language list.
+'@details
+'Name of the worksheet-level HiddenName this class writes the semicolon
+'separated language list under on its Translations sheet. The designer reads
+'the list back through this key when a setup file is loaded, so the key lives
+'here, on the class that writes it. The answer is a constant, so the property
+'works on the predeclared instance.
+'@return String. The HiddenName identifier.
+'@export
+Public Property Get LanguagesNameId() As String
+    LanguagesNameId = LANGUAGES_NAME_ID
+End Property
+
 '@label:resolve-scope
 '@sub-title Guarded access to the application scope.
 Private Function ResolveScope() As ApplicationState

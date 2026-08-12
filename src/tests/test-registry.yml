@@ -730,6 +730,11 @@ suites:
   # EventsDesignerMulti module it should drive hard-wires ThisWorkbook and
   # ActiveCell. It joins once the module takes parameters.
   - folder: designer
+    # EventsDesignerAdvanced and EventsDesignerMulti read the setup language
+    # key through SetupTranslationsTable.LanguagesNameId; the class is
+    # registered under `setup`, so the closure is whole. The designer
+    # BINARIES need the class in their Dev import table before the next code
+    # reimport.
     classes:
       - name: DesignerTranslation
       - name: DesignerEntry

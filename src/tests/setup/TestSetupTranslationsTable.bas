@@ -107,6 +107,21 @@ ExpectError:
 End Sub
 
 '@TestMethod("SetupTranslationsTable")
+Public Sub TestLanguagesNameIdAnswersTheHiddenNameKey()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestLanguagesNameIdAnswersTheHiddenNameKey"
+    On Error GoTo Fail
+
+    'The designer reads the language list of a loaded setup through this
+    'key, so the answer is pinned, and it comes off the predeclared instance
+    Assert.AreEqual LANGUAGES_NAME_ID, SetupTranslationsTable.LanguagesNameId, _
+                    "LanguagesNameId should answer the persisted language list key"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestLanguagesNameIdAnswersTheHiddenNameKey", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
 Public Sub TestEnsureLanguagesAddsUniqueColumns()
     CustomTestSetTitles Assert, "SetupTranslationsTable", "TestEnsureLanguagesAddsUniqueColumns"
     On Error GoTo Fail

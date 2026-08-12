@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Fills a new linelist workbook straight from the setup file and the designer, with no intermediate copy.")
-'@depends ProjectError, LLdictionary, LLChoices, LLExport, Analysis, LLGeo, LLFormat, LLTranslation, Passwords, HiddenNames
+'@depends ProjectError, LLdictionary, LLChoices, LLExport, Analysis, LLGeo, LLFormat, LLTranslation, Passwords, HiddenNames, Checking
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 '@description
@@ -82,9 +82,18 @@ Private Const SETUP_CHOICES_START_COLUMN As Long = 1
 Private Const SETUP_EXPORT_START_ROW As Long = 4
 Private Const SETUP_EXPORT_START_COLUMN As Long = 1
 
+'First header of each setup table, the content probe SetupStartRow anchors on
+Private Const SETUP_DICT_FIRST_HEADER As String = "variable name"
+Private Const SETUP_CHOICES_FIRST_HEADER As String = "list name"
+Private Const SETUP_EXPORT_FIRST_HEADER As String = "export number"
+
 'Anchor positions for exported data (row 1, col 1 in exported sheets)
 Private Const EXPORTED_START_ROW As Long = 1
 Private Const EXPORTED_START_COLUMN As Long = 1
+
+'Report entries filed while the transfer runs. TransferToLinelist resets the
+'record, and GenerationReport harvests it after LinelistSpecs.Prepare.
+Private transferChecks As Checking
 
 
 '@section Public API
@@ -129,6 +138,10 @@ Public Sub TransferToLinelist(ByVal designerBook As Workbook, _
     End If
 
     ValidateFilePath setupPath
+
+    'A fresh record per run, so the report of one generation carries the
+    'entries of that generation alone
+    Set transferChecks = Nothing
 
     On Error Resume Next
     Set setupBook = Workbooks.Open(setupPath, ReadOnly:=True)
@@ -291,8 +304,7 @@ End Function
 
 '@sub-title Export the dictionary from the setup to the linelist
 '@details
-'The data start row depends on the setup file format: .xlsb files carry
-'metadata rows above the data (row 5), .xlsx files start at row 1. The
+'The data start row is decided by content through SetupStartRow. The
 'exported sheet is set very hidden.
 Private Sub ExportDictionaryFromSetup(ByVal setupBook As Workbook, ByVal targetBook As Workbook)
     Dim setupSheet As Worksheet
@@ -302,7 +314,9 @@ Private Sub ExportDictionaryFromSetup(ByVal setupBook As Workbook, ByVal targetB
     If setupSheet Is Nothing Then Exit Sub
 
     Set dictManager = LLdictionary.Create(setupSheet, _
-                      SetupStartRow(setupBook, SETUP_DICT_START_ROW), SETUP_DICT_START_COLUMN)
+                      SetupStartRow(setupSheet, SETUP_DICT_START_ROW, _
+                                    SETUP_DICT_START_COLUMN, SETUP_DICT_FIRST_HEADER), _
+                      SETUP_DICT_START_COLUMN)
     dictManager.Export targetBook, Hide:=xlSheetVeryHidden
 End Sub
 
@@ -315,7 +329,9 @@ Private Sub ExportChoicesFromSetup(ByVal setupBook As Workbook, ByVal targetBook
     If setupSheet Is Nothing Then Exit Sub
 
     Set choicesManager = LLChoices.Create(setupSheet, _
-                         SetupStartRow(setupBook, SETUP_CHOICES_START_ROW), SETUP_CHOICES_START_COLUMN)
+                         SetupStartRow(setupSheet, SETUP_CHOICES_START_ROW, _
+                                       SETUP_CHOICES_START_COLUMN, SETUP_CHOICES_FIRST_HEADER), _
+                         SETUP_CHOICES_START_COLUMN)
     choicesManager.Export targetBook, Hide:=xlSheetVeryHidden
 End Sub
 
@@ -328,7 +344,9 @@ Private Sub ExportExportsFromSetup(ByVal setupBook As Workbook, ByVal targetBook
     If setupSheet Is Nothing Then Exit Sub
 
     Set exportsManager = LLExport.Create(setupSheet, _
-                         SetupStartRow(setupBook, SETUP_EXPORT_START_ROW), SETUP_EXPORT_START_COLUMN)
+                         SetupStartRow(setupSheet, SETUP_EXPORT_START_ROW, _
+                                       SETUP_EXPORT_START_COLUMN, SETUP_EXPORT_FIRST_HEADER), _
+                         SETUP_EXPORT_START_COLUMN)
     exportsManager.ExportSpecs targetBook, Hide:=xlSheetVeryHidden
 End Sub
 
@@ -384,9 +402,25 @@ Private Sub ImportSetupTranslationTable(ByVal setupBook As Workbook, ByVal targe
     Dim sourceTable As ListObject
     Dim translations As LLTranslation
 
+    'A setup without its translation table leaves the linelist translated
+    'from the designer's own rows. The build carries on, and the report says
+    'so; the skip used to be silent.
     Set setupSheet = ResolveWorksheet(setupBook, SHEET_TRANSLATIONS)
-    If setupSheet Is Nothing Then Exit Sub
-    If setupSheet.ListObjects.Count = 0 Then Exit Sub
+    If setupSheet Is Nothing Then
+        LogCheck "setup translations", _
+                 "The setup file has no Translations sheet. The dictionary, " & _
+                 "the choices and the analyses keep the designer's own " & _
+                 "translation rows.", checkingWarning
+        Exit Sub
+    End If
+
+    If setupSheet.ListObjects.Count = 0 Then
+        LogCheck "setup translations", _
+                 "The setup's Translations sheet has no table. The " & _
+                 "dictionary, the choices and the analyses keep the " & _
+                 "designer's own translation rows.", checkingWarning
+        Exit Sub
+    End If
 
     Set targetSheet = ResolveWorksheet(targetBook, SHEET_LL_TRANSLATION)
     If targetSheet Is Nothing Then Exit Sub
@@ -412,13 +446,24 @@ Private Sub ExportGeoFromDesigner(ByVal designerBook As Workbook, ByVal targetBo
     Dim geoManager As LLGeo
     Dim geoStore As HiddenNames
     Dim dictLang As String
+    Dim llFormValue As String
     Dim langCode As String
 
     Set designerSheet = ResolveWorksheet(designerBook, SHEET_GEO)
     If designerSheet Is Nothing Then Exit Sub
 
     dictLang = ReadMainRange(designerBook, RNG_LANG_SETUP)
-    langCode = Split(ReadMainRange(designerBook, RNG_LL_FORM), "-")(0)
+
+    'The code is the part before the dash of "FRA - Francais". The guard is
+    'the one SyncDesignerLanguageNames carries: an unset RNG_LLForm used to
+    'reach Split, and indexing the empty answer raised subscript out of range.
+    llFormValue = ReadMainRange(designerBook, RNG_LL_FORM)
+    If InStr(1, llFormValue, "-", vbBinaryCompare) > 0 Then
+        langCode = Split(llFormValue, "-")(0)
+    Else
+        langCode = llFormValue
+    End If
+
     Set geoStore = HiddenNames.Create(designerSheet)
 
     If LenB(dictLang) > 0 Then
@@ -528,6 +573,40 @@ Private Sub ExportDesignerHiddenNames(ByVal designerBook As Workbook, ByVal targ
 End Sub
 
 
+'@section Checkings
+'===============================================================================
+'@description What the transfer reports into the generation report.
+'GenerationReport.HarvestSpecsCheckings collects these after
+'LinelistSpecs.Prepare, alongside the entries of the domain managers.
+
+'@fun-title Whether the transfer filed report entries
+'@return Boolean. True once one entry has been filed.
+Public Function HasCheckings() As Boolean
+    If transferChecks Is Nothing Then Exit Function
+    HasCheckings = (transferChecks.Length() > 0)
+End Function
+
+'@fun-title The entries filed while the linelist was filled
+'@return Checking. The entries, or Nothing when none were filed.
+Public Function CheckingValues() As Checking
+    If Not HasCheckings() Then Exit Function
+    Set CheckingValues = transferChecks
+End Function
+
+'@sub-title File one report entry
+'@param keyName String. The entry key.
+'@param message String. The message text.
+'@param scope Byte. The checking scope.
+Private Sub LogCheck(ByVal keyName As String, ByVal message As String, ByVal scope As Byte)
+    If transferChecks Is Nothing Then
+        Set transferChecks = Checking.Create(MODULE_NAME, _
+                             "Entries filed while the linelist was filled")
+    End If
+
+    transferChecks.Add keyName, message, scope
+End Sub
+
+
 '@section Internal helpers
 '===============================================================================
 
@@ -557,15 +636,60 @@ End Function
 
 '@fun-title The data start row for a setup table
 '@details
-'Setup workbooks saved as .xlsb carry metadata rows above the data tables, so
-'the dictionary starts at row 5 and the choices and exports at row 4. In .xlsx
-'format the data always starts at row 1.
-Private Function SetupStartRow(ByVal wb As Workbook, ByVal xlsbRow As Long) As Long
-    If LCase$(Right$(wb.Name, 5)) = ".xlsb" Then
-        SetupStartRow = xlsbRow
+'The anchor row is decided by the sheet content: of the two candidate rows,
+'the one whose first cell carries the table's first header wins. The file
+'extension gives the probe order as a hint. Setup workbooks saved as .xlsb
+'carry metadata rows above the data tables, so the dictionary header sits at
+'row 5 and the choices and exports headers at row 4; an exported .xlsx setup
+'puts each header at row 1. The extension alone used to decide, and an .xlsm
+'or a renamed file read the tables at the wrong anchor in silence. When
+'neither probe matches, the hinted row is kept.
+'@param setupSheet Worksheet. The setup sheet holding the table.
+'@param xlsbRow Long. The header row of the .xlsb layout.
+'@param startColumn Long. The column the table starts at.
+'@param firstHeader String. The table's first header, in lower case.
+'@return Long. The header row of the table.
+Private Function SetupStartRow(ByVal setupSheet As Worksheet, _
+                               ByVal xlsbRow As Long, _
+                               ByVal startColumn As Long, _
+                               ByVal firstHeader As String) As Long
+    Dim hintRow As Long
+    Dim otherRow As Long
+
+    If LCase$(Right$(setupSheet.Parent.Name, 5)) = ".xlsb" Then
+        hintRow = xlsbRow
+        otherRow = 1
     Else
-        SetupStartRow = 1
+        hintRow = 1
+        otherRow = xlsbRow
     End If
+
+    If RowStartsTable(setupSheet, hintRow, startColumn, firstHeader) Then
+        SetupStartRow = hintRow
+    ElseIf RowStartsTable(setupSheet, otherRow, startColumn, firstHeader) Then
+        SetupStartRow = otherRow
+    Else
+        SetupStartRow = hintRow
+    End If
+End Function
+
+'@fun-title Whether a row opens with the expected table header
+'@param setupSheet Worksheet. The setup sheet holding the table.
+'@param rowIndex Long. The row to probe.
+'@param startColumn Long. The column the table starts at.
+'@param firstHeader String. The table's first header, in lower case.
+'@return Boolean. True when the probed cell carries the header.
+Private Function RowStartsTable(ByVal setupSheet As Worksheet, _
+                                ByVal rowIndex As Long, _
+                                ByVal startColumn As Long, _
+                                ByVal firstHeader As String) As Boolean
+    Dim cellText As String
+
+    On Error Resume Next
+    cellText = CStr(setupSheet.Cells(rowIndex, startColumn).Value)
+    On Error GoTo 0
+
+    RowStartsTable = (LCase$(Trim$(cellText)) = firstHeader)
 End Function
 
 '@fun-title Read a named range from the Main worksheet
