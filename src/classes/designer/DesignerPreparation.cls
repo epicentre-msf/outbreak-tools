@@ -329,7 +329,7 @@ End Property
 'imports matching ListObjects via CustomTable.Import. When source is
 'Nothing, prompts the user to select an xlsx file and opens it read-only;
 'the workbook opened here is also closed here. When source is provided,
-'reads from that open workbook and leaves it open — the clickImpTrans
+'reads from that open workbook and leaves it open -- the clickImpTrans
 'ribbon callback opens the file itself and hands it over that way, and
 'tests hand a fixture workbook so the sequence runs without a dialog.
 '

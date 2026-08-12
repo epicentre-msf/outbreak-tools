@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, RibbonDev, OSFiles, Passwords, LLFormat, ApplicationState, DesignerTranslation
+'@depends DesignerPreparation, DesignerEntry, RibbonDev, OSFiles, Passwords, LLFormat, ApplicationState, DesignerTranslation
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const SHEET_FORMAT As String = "__formatter"
@@ -12,8 +12,45 @@ Private Const DESTRADSSHEET As String = "DesignerTranslation"
 Private Const MAINSHEET As String = "Main"
 Private Const PROMPT_TITLE As String = "Designer"
 
+'The designer holds one entry-and-translator pair for the whole session.
+'Every callback used to build its own DesignerEntry, and the entry lazily
+'built a DesignerTranslation, which reads four translation tables -- per
+'press. The pair is dropped when the language changes and when an import
+'rewrites the tables.
+'
+'triedTranslation is the flag the linelist event surface needed for the same
+'reason: a build that fails leaves the field Nothing, and the guard "the
+'field is Nothing" then reads as "never tried", so every press rebuilt and
+'re-failed the same object. The flag says the attempt was made.
 Private trads As DesignerTranslation
 Private prep As DesignerPreparation
+Private entry As DesignerEntry
+Private triedTranslation As Boolean
+
+'@section Shared designer services
+'===============================================================================
+
+'@Description("The one DesignerEntry over the Main worksheet, with the shared translator.")
+Public Function EntryManager() As DesignerEntry
+    If entry Is Nothing Then
+        Set entry = DesignerEntry.Create(ThisWorkbook.Worksheets(MAINSHEET))
+
+        'The entry resolves a translator of its own on first use. Handing it
+        'the held one keeps the pair to a single DesignerTranslation.
+        EnsureTranslation
+        If Not trads Is Nothing Then entry.UseTranslator trads
+    End If
+
+    Set EntryManager = entry
+End Function
+
+'@Description("Drop the held entry and translator so the next caller builds them again.")
+Public Sub ResetDesignerCaches()
+    Set entry = Nothing
+    Set trads = Nothing
+    triedTranslation = False
+End Sub
+
 
 '@section Ribbon lifecycle
 '===============================================================================
@@ -33,18 +70,19 @@ Fallback:
 End Sub
 
 Private Sub EnsureTranslation()
+    Dim sh As Worksheet
+
+    If triedTranslation Then Exit Sub
+    triedTranslation = True
 
     On Error Resume Next
-    Dim sh As Worksheet
     Set sh = ThisWorkbook.Worksheets(DESTRADSSHEET)
     On Error GoTo 0
 
     If sh Is Nothing Then Exit Sub
 
     On Error Resume Next
-    If trads Is Nothing Then
-        Set trads = DesignerTranslation.Create(sh)
-    End If
+    Set trads = DesignerTranslation.Create(sh)
     On Error GoTo 0
 End Sub
 
@@ -71,6 +109,10 @@ Public Sub clickLangChange(ByRef control As IRibbonControl, ByRef langId As Stri
     If trads Is Nothing Then GoTo Cleanup
     trads.TranslateDesigner targetSheet, langId
     InvalidateRibbon
+
+    'The designer speaks another language now, so the pair is dropped and the
+    'next callback reads the rows of the new language.
+    ResetDesignerCaches
 
 Cleanup:
     If Not appScope Is Nothing Then appScope.Restore
@@ -105,6 +147,9 @@ Public Sub clickImpTrans(ByRef control As IRibbonControl)
     'class reads an open book and leaves it alone.
     Set importBook = Workbooks.Open(io.File(), ReadOnly:=True)
     ResolvePreparation().ImportTranslations importBook
+
+    'The translation tables were rewritten under the held translator.
+    ResetDesignerCaches
 
     MsgBox "Done!", vbInformation + vbOKOnly, PROMPT_TITLE
 

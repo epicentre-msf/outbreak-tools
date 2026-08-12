@@ -3,13 +3,17 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, LinelistSpecs, Linelist, LLDataEntry, LLSheets, AnalysisOutput, Checking, GenerationReport, SetupTranslationsTable
+'@depends DesignerPreparation, DesignerEntry, EventsDesignerCore, RibbonDev, LLGeo, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, LinelistSpecs, Linelist, LLDataEntry, LLSheets, AnalysisOutput, Checking, GenerationReport, SetupTranslationsTable
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
 'warning at workbook opening on the designer. They only execute in
 'response to explicit user actions (onAction), never at ribbon load
 'time (getLabel, getPressed, getVisible).
+'
+'The DesignerEntry every callback works through is the shared one,
+'EventsDesignerCore.EntryManager(). It carries the held translator with it,
+'so a press reads no translation table.
 
 Private Const SHEET_GEO As String = "Geo"
 Private Const SHEET_MAIN As String = "Main"
@@ -41,6 +45,9 @@ Public Sub clickDesignerInitialize(ByRef control As IRibbonControl)
 
     Set prep = DesignerPreparation.Create(ThisWorkbook)
     prep.Prepare RibbonDev.EnsureDevelopment()
+
+    'Preparation re-imports the translation tables, so the held pair is stale.
+    EventsDesignerCore.ResetDesignerCaches
 
     appScope.Restore
     MsgBox "Done!", vbInformation + vbOKOnly, PROMPT_TITLE
@@ -111,7 +118,7 @@ Public Sub clickClearEnt(ByRef control As IRibbonControl)
     Set appScope = ApplicationState.Create(Application)
     appScope.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
 
-    Set entry = DesignerEntry.Create(ThisWorkbook.Worksheets(SHEET_MAIN))
+    Set entry = EventsDesignerCore.EntryManager()
     entry.Clear
 
 Cleanup:
@@ -156,7 +163,7 @@ Public Sub clickLoadFileDic()
     Set appScope = ApplicationState.Create(Application)
     appScope.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
 
-    Set entry = DesignerEntry.Create(ThisWorkbook.Worksheets(SHEET_MAIN))
+    Set entry = EventsDesignerCore.EntryManager()
 
     'Open the selected setup workbook read-only
     Set setupBook = Workbooks.Open(io.File(), ReadOnly:=True)
@@ -226,7 +233,7 @@ Public Sub clickLoadGeoFile()
     Set appScope = ApplicationState.Create(Application)
     appScope.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
 
-    Set entry = DesignerEntry.Create(ThisWorkbook.Worksheets(SHEET_MAIN))
+    Set entry = EventsDesignerCore.EntryManager()
     entry.AddInfo io.File(), "geopath"
 
 Cleanup:
@@ -264,7 +271,7 @@ Public Sub clickLinelistDir()
     Set appScope = ApplicationState.Create(Application)
     appScope.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
 
-    Set entry = DesignerEntry.Create(ThisWorkbook.Worksheets(SHEET_MAIN))
+    Set entry = EventsDesignerCore.EntryManager()
     entry.AddInfo io.Folder(), "lldir"
 
 Cleanup:
@@ -302,7 +309,7 @@ Public Sub clickLoadTemplate()
     Set appScope = ApplicationState.Create(Application)
     appScope.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
 
-    Set entry = DesignerEntry.Create(ThisWorkbook.Worksheets(SHEET_MAIN))
+    Set entry = EventsDesignerCore.EntryManager()
     entry.AddInfo io.File(), "temppath"
     entry.AddInfo entry.TranslateMessage("MSG_ChemFich"), "edition"
 
@@ -344,7 +351,7 @@ Public Sub clickGenerate()
     Set appScope = ApplicationState.Create(Application)
     appScope.ApplyBusyState suppressEvents:=True, busyCursor:=xlNorthWestArrow
 
-    Set entry = DesignerEntry.Create(ThisWorkbook.Worksheets(SHEET_MAIN))
+    Set entry = EventsDesignerCore.EntryManager()
 
     'Initialise the generation report on the designer __check sheet
     GenerationReport.InitReport ThisWorkbook
