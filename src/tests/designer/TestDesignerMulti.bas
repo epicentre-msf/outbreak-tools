@@ -4,7 +4,7 @@ Attribute VB_Description = "Unit tests for Multi group table operations"
 Option Explicit
 
 '@Folder("CustomTests.Designer")
-'@ModuleDescription("Validates Multi group table operations: add rows, remove rows, duplicate, import, and export on T_Multi.")
+'@ModuleDescription("Validates Multi group table operations: add rows, remove rows, duplicate, import, export and the write-once row IDs on T_Multi.")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As CustomTest
@@ -105,7 +105,7 @@ Public Sub TestRemoveRowsClearsEmptyRows()
     Set lo = MultiSheet.ListObjects(TABLE_MULTI)
 
     'Fill the first row so it is not empty
-    lo.ListRows(1).Range.Cells(1, 1).Value = "test_value"
+    lo.ListRows(1).Range.Cells(1, 2).Value = "test_value"
     Dim filledRowCount As Long
     filledRowCount = 1
 
@@ -137,9 +137,9 @@ Public Sub TestDuplicateRowCopiesValues()
     Dim lo As ListObject
     Set lo = MultiSheet.ListObjects(TABLE_MULTI)
 
-    lo.ListRows(1).Range.Cells(1, 1).Value = "setup_path.xlsb"
-    lo.ListRows(1).Range.Cells(1, 2).Value = "geo_path.xlsx"
-    lo.ListRows(1).Range.Cells(1, 3).Value = "C:\output"
+    lo.ListRows(1).Range.Cells(1, 2).Value = "setup_path.xlsb"
+    lo.ListRows(1).Range.Cells(1, 3).Value = "geo_path.xlsx"
+    lo.ListRows(1).Range.Cells(1, 4).Value = "C:\output"
 
     Dim originalCount As Long
     originalCount = lo.ListRows.Count
@@ -151,11 +151,11 @@ Public Sub TestDuplicateRowCopiesValues()
     'Assert
     Assert.AreEqual originalCount + 1, lo.ListRows.Count, _
                     "Duplicate should add one row."
-    Assert.AreEqual "setup_path.xlsb", CStr(lo.ListRows(2).Range.Cells(1, 1).Value), _
+    Assert.AreEqual "setup_path.xlsb", CStr(lo.ListRows(2).Range.Cells(1, 2).Value), _
                     "Duplicated row should have same setups value."
-    Assert.AreEqual "geo_path.xlsx", CStr(lo.ListRows(2).Range.Cells(1, 2).Value), _
+    Assert.AreEqual "geo_path.xlsx", CStr(lo.ListRows(2).Range.Cells(1, 3).Value), _
                     "Duplicated row should have same geobases value."
-    Assert.AreEqual "C:\output", CStr(lo.ListRows(2).Range.Cells(1, 3).Value), _
+    Assert.AreEqual "C:\output", CStr(lo.ListRows(2).Range.Cells(1, 4).Value), _
                     "Duplicated row should have same output folders value."
 
     Exit Sub
@@ -179,8 +179,8 @@ Public Sub TestImportReplacesTableData()
 
     Dim sourceLo As ListObject
     Set sourceLo = sourceSheet.ListObjects("T_Multi_Source")
-    sourceLo.ListRows(1).Range.Cells(1, 1).Value = "imported_setup.xlsb"
-    sourceLo.ListRows(1).Range.Cells(1, 2).Value = "imported_geo.xlsx"
+    sourceLo.ListRows(1).Range.Cells(1, 2).Value = "imported_setup.xlsb"
+    sourceLo.ListRows(1).Range.Cells(1, 3).Value = "imported_geo.xlsx"
 
     Dim sourceTable As CustomTable
     Set sourceTable = CustomTable.Create(sourceLo)
@@ -188,7 +188,7 @@ Public Sub TestImportReplacesTableData()
     'Target table
     Dim targetLo As ListObject
     Set targetLo = MultiSheet.ListObjects(TABLE_MULTI)
-    targetLo.ListRows(1).Range.Cells(1, 1).Value = "old_setup.xlsb"
+    targetLo.ListRows(1).Range.Cells(1, 2).Value = "old_setup.xlsb"
 
     Dim targetTable As CustomTable
     Set targetTable = CustomTable.Create(targetLo)
@@ -198,10 +198,10 @@ Public Sub TestImportReplacesTableData()
 
     'Assert
     Assert.AreEqual "imported_setup.xlsb", _
-                    CStr(targetLo.ListRows(1).Range.Cells(1, 1).Value), _
+                    CStr(targetLo.ListRows(1).Range.Cells(1, 2).Value), _
                     "Import should replace setups value with source data."
     Assert.AreEqual "imported_geo.xlsx", _
-                    CStr(targetLo.ListRows(1).Range.Cells(1, 2).Value), _
+                    CStr(targetLo.ListRows(1).Range.Cells(1, 3).Value), _
                     "Import should replace geobases value with source data."
 
     Exit Sub
@@ -220,8 +220,8 @@ Public Sub TestExportWritesToWorksheet()
     'Arrange: fill T_Multi with data
     Dim lo As ListObject
     Set lo = MultiSheet.ListObjects(TABLE_MULTI)
-    lo.ListRows(1).Range.Cells(1, 1).Value = "export_setup.xlsb"
-    lo.ListRows(1).Range.Cells(1, 2).Value = "export_geo.xlsx"
+    lo.ListRows(1).Range.Cells(1, 2).Value = "export_setup.xlsb"
+    lo.ListRows(1).Range.Cells(1, 3).Value = "export_geo.xlsx"
 
     Dim table As CustomTable
     Set table = CustomTable.Create(lo)
@@ -240,10 +240,12 @@ Public Sub TestExportWritesToWorksheet()
     Set exportLo = exportSheet.ListObjects(1)
     Assert.AreEqual lo.ListColumns.Count, exportLo.ListColumns.Count, _
                     "Exported table should have the same number of columns."
-    Assert.AreEqual "setups", exportLo.ListColumns(1).Name, _
-                    "First column header should be 'setups'."
+    Assert.AreEqual "ID", exportLo.ListColumns(1).Name, _
+                    "First column header should be 'ID'."
+    Assert.AreEqual "setups", exportLo.ListColumns(2).Name, _
+                    "Second column header should be 'setups'."
     Assert.AreEqual "export_setup.xlsb", _
-                    CStr(exportLo.ListRows(1).Range.Cells(1, 1).Value), _
+                    CStr(exportLo.ListRows(1).Range.Cells(1, 2).Value), _
                     "Exported data should match source data."
 
     Exit Sub
@@ -252,17 +254,55 @@ Fail:
 End Sub
 
 
+'@section EnsureRowIds Tests
+'===============================================================================
+'@TestMethod("DesignerMulti.EnsureRowIds")
+Public Sub TestEnsureRowIdsFillsOnlyBlankIds()
+    CustomTestSetTitles Assert, "DesignerMulti", "TestEnsureRowIdsFillsOnlyBlankIds"
+    On Error GoTo Fail
+
+    'Arrange: three rows, two with IDs written and a blank one between them
+    Dim lo As ListObject
+    Set lo = MultiSheet.ListObjects(TABLE_MULTI)
+    lo.ListRows.Add
+    lo.ListRows.Add
+
+    lo.ListRows(1).Range.Cells(1, 1).Value = "Operation- 1"
+    lo.ListRows(2).Range.Cells(1, 1).Value = vbNullString
+    lo.ListRows(3).Range.Cells(1, 1).Value = "Operation- 7"
+
+    'Act
+    Dim hasIdColumn As Boolean
+    hasIdColumn = EventsDesignerMulti.EnsureRowIds(lo)
+
+    'Assert: an ID is written once, so the two written IDs stay and the
+    'blank cell gets the number after the largest one
+    Assert.IsTrue hasIdColumn, "EnsureRowIds should find the ID column."
+    Assert.AreEqual "Operation- 1", CStr(lo.ListRows(1).Range.Cells(1, 1).Value), _
+                    "A written ID should keep its value."
+    Assert.AreEqual "Operation- 8", CStr(lo.ListRows(2).Range.Cells(1, 1).Value), _
+                    "A blank ID should get the next free number."
+    Assert.AreEqual "Operation- 7", CStr(lo.ListRows(3).Range.Cells(1, 1).Value), _
+                    "A written ID should keep its value after the fill."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestEnsureRowIdsFillsOnlyBlankIds", Err.Number, Err.Description
+End Sub
+
+
 '@section Test helpers
 '===============================================================================
 
-'@sub-title Create a T_Multi ListObject with the expected headers
+'@sub-title Create a T_Multi ListObject with the settled headers
 '@details
-'Writes the T_Multi header row and one empty data row on the supplied
-'worksheet, then converts the range to a ListObject named T_Multi.
+'Writes the T_Multi header row (the ID column first, then the eleven
+'columns) and one empty data row on the supplied worksheet, then
+'converts the range to a ListObject named T_Multi.
 '@param sh Worksheet. The worksheet to create the table on.
 Private Sub CreateMultiTable(ByVal sh As Worksheet)
     Dim headers As Variant
-    headers = Array("setups", "geobases", "output folders", "output files", _
+    headers = Array("ID", "setups", "geobases", "output folders", "output files", _
                     "output file password", "output file debugging password", _
                     "language of the dictionary", "language of the interface", _
                     "epiweek start", "design", "result")

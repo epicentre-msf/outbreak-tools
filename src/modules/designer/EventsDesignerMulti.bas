@@ -3,34 +3,57 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the Multi group on the designer workbook.")
-'@depends CustomTable, ApplicationState, OSFiles, HiddenNames, DropdownLists, BetterArray, SetupTranslationsTable
+'@depends CustomTable, ApplicationState, OSFiles, DropdownLists, BetterArray, EventsDesignerAdvanced
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Ribbon callbacks for the Multi group manage the T_Multi ListObject on
 'the GenerateMultiple worksheet. Each callback follows the established
 'pattern: show dialogs before entering busy state, wrap work in
 'On Error GoTo Cleanup, and restore application state on exit.
+'
+'THE ID RULE
+'-------------------------------------------------------------------------------
+'An ID is written once. Adding rows, duplicating a row, resizing and
+'importing all fill only the blank ID cells with the next free numbers,
+'through EnsureRowIds. The per-row language dropdown is named after the
+'row ID (<id>_lang), so a rewritten ID would detach its row from the
+'dropdown the validation points at.
+'
+'A step that gets skipped is reported: the callbacks collect one line
+'per skipped step and show them in one message after the busy state is
+'restored.
 
 Private Const SHEET_GENERATE_MULTIPLE As String = "GenerateMultiple"
 Private Const TABLE_MULTI As String = "T_Multi"
 Private Const PROMPT_TITLE As String = "Designer"
 
-'Column names on T_Multi
+'The twelve columns of T_Multi. The callbacks here write the three path
+'columns and wire the dictionary language dropdown; the build driver of
+'the multi generation reads the output file, the two passwords and
+'writes the result.
+Private Const COL_ID As String = "ID"
 Private Const COL_SETUPS As String = "setups"
 Private Const COL_GEOBASES As String = "geobases"
 Private Const COL_OUTPUT_FOLDERS As String = "output folders"
+Private Const COL_OUTPUT_FILES As String = "output files"
+Private Const COL_PASSWORD As String = "output file password"
+Private Const COL_DEBUG_PASSWORD As String = "output file debugging password"
 Private Const COL_LANG_DICTIONARY As String = "language of the dictionary"
+Private Const COL_LANG_INTERFACE As String = "language of the interface"
+Private Const COL_EPIWEEK_START As String = "epiweek start"
+Private Const COL_DESIGN As String = "design"
+Private Const COL_RESULT As String = "result"
 
-'Setup language extraction. The HiddenName key of the language list comes
-'from SetupTranslationsTable.LanguagesNameId, the class that writes it.
+'Setup language extraction
 Private Const SHEET_TRANSLATIONS As String = "Translations"
-Private Const ID_HEADER As String = "ID"
 Private Const ID_PREFIX As String = "Operation-"
 
 'Dropdown-based language validation
 Private Const SHEET_DROPDOWNS As String = "__dropdowns"
 Private Const DROPDOWN_PREFIX As String = "dropdown_"
 Private Const LANG_SUFFIX As String = "_lang"
+
+Private Const MSG_PLACE_DATA As String = "Please place the cursor inside the table data area."
 
 
 '@section Multi group callbacks
@@ -43,9 +66,26 @@ Public Sub clickFolderMulti(ByRef control As IRibbonControl)
     Dim colName As String
     Dim io As OSFiles
     Dim appScope As ApplicationState
+    Dim skipped As BetterArray
+    Dim startRow As Long
 
     Set lo = ResolveMultiTable()
-    If lo Is Nothing Then Exit Sub
+    If lo Is Nothing Then
+        ReportMissingTable
+        Exit Sub
+    End If
+
+    'The write lands at the cursor row, so the cursor has to sit on a
+    'data cell. A cursor on the header row used to write the first file
+    'path over the header text.
+    If lo.DataBodyRange Is Nothing Then
+        MsgBox MSG_PLACE_DATA, vbInformation + vbOKOnly, PROMPT_TITLE
+        Exit Sub
+    End If
+    If Intersect(Application.ActiveCell, lo.DataBodyRange) Is Nothing Then
+        MsgBox MSG_PLACE_DATA, vbInformation + vbOKOnly, PROMPT_TITLE
+        Exit Sub
+    End If
 
     colName = ActiveCellColumnName(lo)
 
@@ -76,17 +116,22 @@ Public Sub clickFolderMulti(ByRef control As IRibbonControl)
         If Not io.HasValidFolder() Then Exit Sub
     End Select
 
+    startRow = Application.ActiveCell.Row
+
     On Error GoTo Cleanup
     Set appScope = ApplicationState.Create(Application)
     appScope.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
 
+    Set skipped = New BetterArray
+    skipped.LowerBound = 1
+
     Select Case LCase$(colName)
     Case LCase$(COL_SETUPS)
-        LoadSetupFiles lo, io
+        LoadSetupFiles lo, CollectFiles(io), startRow, ResolveDropdownManager(), skipped
     Case LCase$(COL_GEOBASES)
-        LoadGeobaseFiles lo, io
+        LoadGeobaseFiles lo, CollectFiles(io), startRow, skipped
     Case LCase$(COL_OUTPUT_FOLDERS)
-        LoadOutputFolder lo, io
+        LoadOutputFolder lo, io.Folder(), startRow, skipped
     End Select
 
 Cleanup:
@@ -97,17 +142,18 @@ Cleanup:
 
     On Error Resume Next
     If Not appScope Is Nothing Then appScope.Restore
-    Application.Cursor = xlDefault
     On Error GoTo 0
 
     If errNumber <> 0 Then
         Debug.Print "clickFolderMulti: "; errNumber; errDesc
         MsgBox "Unable to load files: " & errDesc, _
                vbExclamation + vbOKOnly, PROMPT_TITLE
+    ElseIf Not skipped Is Nothing Then
+        ShowSkipped skipped
     End If
 End Sub
 
-'@Description("Duplicate the active row in T_Multi with the same values.")
+'@Description("Duplicate the active row in T_Multi with the same values and a fresh ID.")
 '@EntryPoint
 Public Sub clickDupMulti(ByRef control As IRibbonControl)
     Dim lo As ListObject
@@ -115,15 +161,19 @@ Public Sub clickDupMulti(ByRef control As IRibbonControl)
     Dim relPos As Long
     Dim sourceRow As Range
     Dim destRow As Range
+    Dim idCol As ListColumn
+    Dim idMissing As Boolean
 
     Set lo = ResolveMultiTable()
-    If lo Is Nothing Then Exit Sub
+    If lo Is Nothing Then
+        ReportMissingTable
+        Exit Sub
+    End If
 
     'Verify the active cell is inside the table data body
     If lo.DataBodyRange Is Nothing Then Exit Sub
     If Intersect(Application.ActiveCell, lo.DataBodyRange) Is Nothing Then
-        MsgBox "Please place the cursor inside the table data area.", _
-               vbInformation + vbOKOnly, PROMPT_TITLE
+        MsgBox MSG_PLACE_DATA, vbInformation + vbOKOnly, PROMPT_TITLE
         Exit Sub
     End If
 
@@ -146,6 +196,20 @@ Public Sub clickDupMulti(ByRef control As IRibbonControl)
     Set destRow = lo.ListRows(relPos + 1).Range
     destRow.Value = sourceRow.Value
 
+    'The copy carried the source row's ID, and two rows sharing an ID
+    'share the <id>_lang dropdown. The new row starts blank and gets the
+    'next free number.
+    On Error Resume Next
+    Set idCol = lo.ListColumns(COL_ID)
+    On Error GoTo Cleanup
+
+    If idCol Is Nothing Then
+        idMissing = True
+    Else
+        destRow.Cells(1, idCol.Index).Value = vbNullString
+        EnsureRowIds lo
+    End If
+
 Cleanup:
     Dim errNumber As Long
     Dim errDesc As String
@@ -154,32 +218,40 @@ Cleanup:
 
     On Error Resume Next
     If Not appScope Is Nothing Then appScope.Restore
-    Application.Cursor = xlDefault
     On Error GoTo 0
 
     If errNumber <> 0 Then
         Debug.Print "clickDupMulti: "; errNumber; errDesc
         MsgBox "Unable to duplicate row: " & errDesc, _
                vbExclamation + vbOKOnly, PROMPT_TITLE
+    ElseIf idMissing Then
+        MsgBox MissingIdMessage(), vbInformation + vbOKOnly, PROMPT_TITLE
     End If
 End Sub
 
-'@Description("Add rows to the T_Multi table.")
+'@Description("Add rows to the T_Multi table. New rows get the next free IDs.")
 '@EntryPoint
 Public Sub clickAddRowsMulti(ByRef control As IRibbonControl)
     Dim lo As ListObject
     Dim table As CustomTable
     Dim appScope As ApplicationState
+    Dim hasIdColumn As Boolean
+
+    hasIdColumn = True
 
     Set lo = ResolveMultiTable()
-    If lo Is Nothing Then Exit Sub
+    If lo Is Nothing Then
+        ReportMissingTable
+        Exit Sub
+    End If
 
     On Error GoTo Cleanup
     Set appScope = ApplicationState.Create(Application)
     appScope.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
 
-    Set table = CustomTable.Create(lo, ID_HEADER, ID_PREFIX)
-    table.AddRows nbRows:=10, insertShift:=False, includeIds:=True
+    Set table = CustomTable.Create(lo)
+    table.AddRows nbRows:=10, insertShift:=False, includeIds:=False
+    hasIdColumn = EnsureRowIds(lo)
 
 Cleanup:
     Dim errNumber As Long
@@ -189,32 +261,40 @@ Cleanup:
 
     On Error Resume Next
     If Not appScope Is Nothing Then appScope.Restore
-    Application.Cursor = xlDefault
     On Error GoTo 0
 
     If errNumber <> 0 Then
         Debug.Print "clickAddRowsMulti: "; errNumber; errDesc
         MsgBox "Unable to add rows: " & errDesc, _
                vbExclamation + vbOKOnly, PROMPT_TITLE
+    ElseIf Not hasIdColumn Then
+        MsgBox MissingIdMessage(), vbInformation + vbOKOnly, PROMPT_TITLE
     End If
 End Sub
 
-'@Description("Resize the T_Multi table by removing empty rows.")
+'@Description("Resize the T_Multi table by removing empty rows. Kept rows keep their IDs.")
 '@EntryPoint
 Public Sub clickResizeMulti(ByRef control As IRibbonControl)
     Dim lo As ListObject
     Dim table As CustomTable
     Dim appScope As ApplicationState
+    Dim hasIdColumn As Boolean
+
+    hasIdColumn = True
 
     Set lo = ResolveMultiTable()
-    If lo Is Nothing Then Exit Sub
+    If lo Is Nothing Then
+        ReportMissingTable
+        Exit Sub
+    End If
 
     On Error GoTo Cleanup
     Set appScope = ApplicationState.Create(Application)
     appScope.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
 
-    Set table = CustomTable.Create(lo, ID_HEADER, ID_PREFIX)
+    Set table = CustomTable.Create(lo)
     table.RemoveRows totalCount:=0, includeIds:=False, forceShift:=False
+    hasIdColumn = EnsureRowIds(lo)
 
 Cleanup:
     Dim errNumber As Long
@@ -224,17 +304,18 @@ Cleanup:
 
     On Error Resume Next
     If Not appScope Is Nothing Then appScope.Restore
-    Application.Cursor = xlDefault
     On Error GoTo 0
 
     If errNumber <> 0 Then
         Debug.Print "clickResizeMulti: "; errNumber; errDesc
         MsgBox "Unable to resize table: " & errDesc, _
                vbExclamation + vbOKOnly, PROMPT_TITLE
+    ElseIf Not hasIdColumn Then
+        MsgBox MissingIdMessage(), vbInformation + vbOKOnly, PROMPT_TITLE
     End If
 End Sub
 
-'@Description("Import T_Multi data from another workbook.")
+'@Description("Import T_Multi data from another workbook. Blank IDs get the next free numbers.")
 '@EntryPoint
 Public Sub clickImpMulti(ByRef control As IRibbonControl)
     Dim io As OSFiles
@@ -244,6 +325,9 @@ Public Sub clickImpMulti(ByRef control As IRibbonControl)
     Dim targetLo As ListObject
     Dim sourceTable As CustomTable
     Dim targetTable As CustomTable
+    Dim hasIdColumn As Boolean
+
+    hasIdColumn = True
 
     'Show file picker before entering busy state
     Set io = OSFiles.Create()
@@ -280,12 +364,14 @@ Public Sub clickImpMulti(ByRef control As IRibbonControl)
     If targetLo Is Nothing Then
         importBook.Close saveChanges:=False
         Set importBook = Nothing
+        ReportMissingTable
         GoTo Cleanup
     End If
 
-    Set sourceTable = CustomTable.Create(sourceLo, ID_HEADER, ID_PREFIX)
-    Set targetTable = CustomTable.Create(targetLo, ID_HEADER, ID_PREFIX)
+    Set sourceTable = CustomTable.Create(sourceLo)
+    Set targetTable = CustomTable.Create(targetLo)
     targetTable.Import sourceTable
+    hasIdColumn = EnsureRowIds(targetLo)
 
 Cleanup:
     Dim errNumber As Long
@@ -298,13 +384,14 @@ Cleanup:
         importBook.Close saveChanges:=False
     End If
     If Not appScope Is Nothing Then appScope.Restore
-    Application.Cursor = xlDefault
     On Error GoTo 0
 
     If errNumber <> 0 Then
         Debug.Print "clickImpMulti: "; errNumber; errDesc
         MsgBox "Unable to import table: " & errDesc, _
                vbExclamation + vbOKOnly, PROMPT_TITLE
+    ElseIf Not hasIdColumn Then
+        MsgBox MissingIdMessage(), vbInformation + vbOKOnly, PROMPT_TITLE
     End If
 End Sub
 
@@ -330,9 +417,12 @@ Public Sub clickExportMulti(ByRef control As IRibbonControl)
     appScope.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
 
     Set lo = ResolveMultiTable()
-    If lo Is Nothing Then GoTo Cleanup
+    If lo Is Nothing Then
+        ReportMissingTable
+        GoTo Cleanup
+    End If
 
-    Set table = CustomTable.Create(lo, ID_HEADER, ID_PREFIX)
+    Set table = CustomTable.Create(lo)
 
     'Create a new workbook and export the table
     Set exportBook = Workbooks.Add
@@ -367,7 +457,6 @@ Cleanup:
         exportBook.Close saveChanges:=False
     End If
     If Not appScope Is Nothing Then appScope.Restore
-    Application.Cursor = xlDefault
     On Error GoTo 0
 
     If errNumber <> 0 Then
@@ -385,16 +474,19 @@ Public Sub clickGenerateMulti(ByRef control As IRibbonControl)
 End Sub
 
 
-'@section Internal helpers
+'@section Table and dropdown resolution
 '===============================================================================
 
 '@Description("Resolve the T_Multi ListObject from the GenerateMultiple worksheet.")
+'@param targetBook Optional Workbook. The workbook to resolve on. Defaults to this workbook.
 '@return ListObject. The T_Multi ListObject, or Nothing when not found.
-Private Function ResolveMultiTable() As ListObject
+Public Function ResolveMultiTable(Optional ByVal targetBook As Workbook = Nothing) As ListObject
     Dim sh As Worksheet
 
+    If targetBook Is Nothing Then Set targetBook = ThisWorkbook
+
     On Error Resume Next
-    Set sh = ThisWorkbook.Worksheets(SHEET_GENERATE_MULTIPLE)
+    Set sh = targetBook.Worksheets(SHEET_GENERATE_MULTIPLE)
     On Error GoTo 0
 
     If sh Is Nothing Then Exit Function
@@ -402,6 +494,88 @@ Private Function ResolveMultiTable() As ListObject
     On Error Resume Next
     Set ResolveMultiTable = sh.ListObjects(TABLE_MULTI)
     On Error GoTo 0
+End Function
+
+'@Description("Resolve the DropdownLists manager on the __dropdowns worksheet.")
+'@param targetBook Optional Workbook. The workbook to resolve on. Defaults to this workbook.
+'@return DropdownLists. The dropdown manager, or Nothing when the sheet is missing.
+Public Function ResolveDropdownManager(Optional ByVal targetBook As Workbook = Nothing) As DropdownLists
+    Dim dropSheet As Worksheet
+
+    If targetBook Is Nothing Then Set targetBook = ThisWorkbook
+
+    On Error Resume Next
+    Set dropSheet = targetBook.Worksheets(SHEET_DROPDOWNS)
+    On Error GoTo 0
+
+    If dropSheet Is Nothing Then Exit Function
+
+    Set ResolveDropdownManager = DropdownLists.Create(dropSheet, DROPDOWN_PREFIX)
+End Function
+
+'@Description("Fill only the blank ID cells with the next free numbers.")
+'@details
+'An ID is written once. This scans the ID column for the largest number
+'already written, then gives every blank cell the next numbers, so a row
+'keeps the dropdown named after its ID for its whole life.
+'@param lo ListObject. The T_Multi ListObject.
+'@return Boolean. True when the ID column exists.
+Public Function EnsureRowIds(ByVal lo As ListObject) As Boolean
+    Dim idCol As ListColumn
+    Dim idRange As Range
+    Dim rowIdx As Long
+    Dim nextNumber As Long
+    Dim numberPart As Long
+    Dim cellText As String
+
+    On Error Resume Next
+    Set idCol = lo.ListColumns(COL_ID)
+    On Error GoTo 0
+
+    If idCol Is Nothing Then Exit Function
+    EnsureRowIds = True
+
+    Set idRange = idCol.DataBodyRange
+    If idRange Is Nothing Then Exit Function
+
+    'Find the largest number already written
+    For rowIdx = 1 To idRange.Rows.Count
+        cellText = Trim$(CStr(idRange.Cells(rowIdx, 1).Value))
+        If LenB(cellText) > 0 Then
+            numberPart = TrailingNumber(cellText)
+            If numberPart > nextNumber Then nextNumber = numberPart
+        End If
+    Next rowIdx
+
+    'Fill the blank cells. The ID shape matches the one CustomTable
+    'writes: the prefix, one space, the number.
+    For rowIdx = 1 To idRange.Rows.Count
+        cellText = Trim$(CStr(idRange.Cells(rowIdx, 1).Value))
+        If LenB(cellText) = 0 Then
+            nextNumber = nextNumber + 1
+            idRange.Cells(rowIdx, 1).Value = ID_PREFIX & " " & CStr(nextNumber)
+        End If
+    Next rowIdx
+End Function
+
+'@Description("Read the number at the end of an ID value.")
+'@param idText String. The ID cell text.
+'@return Long. The trailing number, or 0 when the text ends without digits.
+Private Function TrailingNumber(ByVal idText As String) As Long
+    Dim charIdx As Long
+    Dim oneChar As String
+    Dim digits As String
+
+    For charIdx = Len(idText) To 1 Step -1
+        oneChar = Mid$(idText, charIdx, 1)
+        If oneChar Like "[0-9]" Then
+            digits = oneChar & digits
+        Else
+            Exit For
+        End If
+    Next charIdx
+
+    If LenB(digits) > 0 Then TrailingNumber = CLng(digits)
 End Function
 
 '@Description("Return the T_Multi column header matching the active cell position.")
@@ -418,72 +592,63 @@ Private Function ActiveCellColumnName(ByVal lo As ListObject) As String
     ActiveCellColumnName = lo.ListColumns(colOffset).Name
 End Function
 
-'@Description("Resolve the DropdownLists manager on the __dropdowns worksheet.")
-'@return DropdownLists. The dropdown manager, or Nothing when the sheet is missing.
-Private Function ResolveDropdownManager() As DropdownLists
-    Dim dropSheet As Worksheet
-
-    On Error Resume Next
-    Set dropSheet = ThisWorkbook.Worksheets(SHEET_DROPDOWNS)
-    On Error GoTo 0
-
-    If dropSheet Is Nothing Then Exit Function
-
-    Set ResolveDropdownManager = DropdownLists.Create(dropSheet, DROPDOWN_PREFIX)
-End Function
-
 
 '@section Folder multi helpers -- file loading by column type
 '===============================================================================
 
-'@Description("Load selected setup files into the setups column and apply per-row language validation.")
+'@Description("Write setup paths into the setups column and wire one language dropdown per row.")
 '@param lo ListObject. The T_Multi ListObject.
-'@param io OSFiles. The file picker with selected files.
-Private Sub LoadSetupFiles(ByVal lo As ListObject, ByVal io As OSFiles)
-    Dim filePaths As BetterArray
+'@param filePaths BetterArray. Setup file paths (1-based).
+'@param startRow Long. Worksheet row number the first path lands on.
+'@param drop DropdownLists. The dropdown manager of the host workbook.
+'@param skipped BetterArray. Collects one line per skipped step.
+Public Sub LoadSetupFiles(ByVal lo As ListObject, _
+                          ByVal filePaths As BetterArray, _
+                          ByVal startRow As Long, _
+                          ByVal drop As DropdownLists, _
+                          ByVal skipped As BetterArray)
     Dim setupBook As Workbook
     Dim tradSheet As Worksheet
     Dim langValues As BetterArray
     Dim langCol As ListColumn
     Dim idCol As ListColumn
-    Dim startRow As Long
     Dim currentRow As Long
     Dim filePath As String
-    Dim drop As DropdownLists
     Dim dropName As String
     Dim rowId As String
     Dim langCell As Range
     Dim idx As Long
 
-    'Collect file paths into a BetterArray
-    Set filePaths = New BetterArray
-    filePaths.LowerBound = 1
-    io.ResetFilesIterator
-    Do While io.HasNextFile()
-        filePaths.Push io.NextFile()
-    Loop
-
+    If filePaths Is Nothing Then Exit Sub
     If filePaths.Length = 0 Then Exit Sub
 
-    startRow = Application.ActiveCell.Row
+    WriteFilesToColumn lo, COL_SETUPS, startRow, filePaths, skipped
 
-    'Write all file paths into the setups column, extending the table as needed
-    WriteFilesToColumn lo, COL_SETUPS, startRow, filePaths
+    'The write may have extended the table; the new rows take their IDs
+    'here so each row's dropdown has its name.
+    If Not EnsureRowIds(lo) Then
+        skipped.Push MissingIdMessage()
+        Exit Sub
+    End If
 
-    'Resolve the language column and ID column
     On Error Resume Next
     Set langCol = lo.ListColumns(COL_LANG_DICTIONARY)
-    Set idCol = lo.ListColumns(ID_HEADER)
+    Set idCol = lo.ListColumns(COL_ID)
     On Error GoTo 0
 
-    If langCol Is Nothing Then Exit Sub
-    If idCol Is Nothing Then Exit Sub
+    If langCol Is Nothing Then
+        skipped.Push MissingColumnMessage(COL_LANG_DICTIONARY) & _
+                     " The language dropdowns were skipped."
+        Exit Sub
+    End If
 
-    'Create the dropdown manager on the __dropdowns sheet
-    Set drop = ResolveDropdownManager()
-    If drop Is Nothing Then Exit Sub
+    If drop Is Nothing Then
+        skipped.Push "The " & SHEET_DROPDOWNS & _
+                     " sheet is missing. The language dropdowns were skipped."
+        Exit Sub
+    End If
 
-    'For each setup file, extract languages and create a per-row dropdown
+    'For each setup file, extract languages and wire a per-row dropdown
     currentRow = startRow
     For idx = filePaths.LowerBound To filePaths.UpperBound
         filePath = CStr(filePaths.Item(idx))
@@ -495,22 +660,24 @@ Private Sub LoadSetupFiles(ByVal lo As ListObject, ByVal io As OSFiles)
         On Error GoTo 0
 
         If setupBook Is Nothing Then
-            currentRow = currentRow + 1
-            GoTo ContinueSetup
-        End If
+            skipped.Push "This setup file failed to open: " & filePath
+        Else
+            'Resolve the Translations worksheet
+            Set tradSheet = Nothing
+            On Error Resume Next
+            Set tradSheet = setupBook.Worksheets(SHEET_TRANSLATIONS)
+            On Error GoTo 0
 
-        'Resolve the Translations worksheet
-        Set tradSheet = Nothing
-        On Error Resume Next
-        Set tradSheet = setupBook.Worksheets(SHEET_TRANSLATIONS)
-        On Error GoTo 0
-
-        If Not tradSheet Is Nothing Then
-            Set langValues = ExtractLanguagesForRow(tradSheet)
-            If langValues.Length > 0 Then
-                'Read the row ID to build a unique dropdown name
-                rowId = CStr(lo.Parent.Cells(currentRow, idCol.Range.Column).Value)
-                If LenB(rowId) > 0 Then
+            If tradSheet Is Nothing Then
+                skipped.Push "This setup file has no " & SHEET_TRANSLATIONS & _
+                             " sheet: " & filePath
+            Else
+                Set langValues = EventsDesignerAdvanced.SetupLanguages(tradSheet)
+                If langValues.Length = 0 Then
+                    skipped.Push "No language was found in: " & filePath
+                Else
+                    'The dropdown is named after the row ID
+                    rowId = CStr(lo.Parent.Cells(currentRow, idCol.Range.Column).Value)
                     dropName = rowId & LANG_SUFFIX
 
                     'Add or update the dropdown with extracted languages
@@ -525,135 +692,65 @@ Private Sub LoadSetupFiles(ByVal lo As ListObject, ByVal io As OSFiles)
                     drop.SetValidation langCell, dropName
                 End If
             End If
+
+            setupBook.Close saveChanges:=False
+            Set setupBook = Nothing
         End If
 
-        setupBook.Close saveChanges:=False
-        Set setupBook = Nothing
-
         currentRow = currentRow + 1
-ContinueSetup:
     Next idx
 End Sub
 
-'@Description("Load selected geobase files into the geobases column.")
+'@Description("Write geobase paths into the geobases column.")
 '@param lo ListObject. The T_Multi ListObject.
-'@param io OSFiles. The file picker with selected files.
-Private Sub LoadGeobaseFiles(ByVal lo As ListObject, ByVal io As OSFiles)
-    Dim filePaths As BetterArray
-    Dim startRow As Long
-
-    Set filePaths = New BetterArray
-    filePaths.LowerBound = 1
-    io.ResetFilesIterator
-    Do While io.HasNextFile()
-        filePaths.Push io.NextFile()
-    Loop
-
+'@param filePaths BetterArray. Geobase file paths (1-based).
+'@param startRow Long. Worksheet row number the first path lands on.
+'@param skipped BetterArray. Collects one line per skipped step.
+Public Sub LoadGeobaseFiles(ByVal lo As ListObject, _
+                            ByVal filePaths As BetterArray, _
+                            ByVal startRow As Long, _
+                            ByVal skipped As BetterArray)
+    If filePaths Is Nothing Then Exit Sub
     If filePaths.Length = 0 Then Exit Sub
 
-    startRow = Application.ActiveCell.Row
-    WriteFilesToColumn lo, COL_GEOBASES, startRow, filePaths
+    WriteFilesToColumn lo, COL_GEOBASES, startRow, filePaths, skipped
+    If Not EnsureRowIds(lo) Then skipped.Push MissingIdMessage()
 End Sub
 
-'@Description("Write a folder path into the output folders column at the active cell row.")
+'@Description("Write a folder path into the output folders column at the given row.")
 '@param lo ListObject. The T_Multi ListObject.
-'@param io OSFiles. The folder picker with selected folder.
-Private Sub LoadOutputFolder(ByVal lo As ListObject, ByVal io As OSFiles)
+'@param folderPath String. The selected folder path.
+'@param startRow Long. Worksheet row number to write on.
+'@param skipped BetterArray. Collects one line per skipped step.
+Public Sub LoadOutputFolder(ByVal lo As ListObject, _
+                            ByVal folderPath As String, _
+                            ByVal startRow As Long, _
+                            ByVal skipped As BetterArray)
     Dim col As ListColumn
-    Dim targetCell As Range
 
     On Error Resume Next
     Set col = lo.ListColumns(COL_OUTPUT_FOLDERS)
     On Error GoTo 0
 
-    If col Is Nothing Then Exit Sub
+    If col Is Nothing Then
+        skipped.Push MissingColumnMessage(COL_OUTPUT_FOLDERS)
+        Exit Sub
+    End If
 
-    Set targetCell = lo.Parent.Cells(Application.ActiveCell.Row, col.Range.Column)
-    targetCell.Value = io.Folder()
+    lo.Parent.Cells(startRow, col.Range.Column).Value = folderPath
 End Sub
-
-
-'@section Language extraction helpers
-'===============================================================================
-
-'@Description("Extract language names from a setup Translations sheet as a BetterArray.")
-'@param tradSheet Worksheet. The Translations worksheet of a setup workbook.
-'@return BetterArray. Language names (1-based), or empty when none found.
-Private Function ExtractLanguagesForRow(ByVal tradSheet As Worksheet) As BetterArray
-    Dim store As HiddenNames
-    Dim languagesTag As String
-    Dim langString As String
-    Dim languages() As String
-    Dim result As BetterArray
-    Dim idx As Long
-
-    Set result = New BetterArray
-    result.LowerBound = 1
-
-    languagesTag = SetupTranslationsTable.LanguagesNameId
-
-    'Try HiddenNames first (same pattern as EventsDesignerAdvanced.ExtractAndUpdateLanguages)
-    Set store = HiddenNames.Create(tradSheet)
-
-    If store.HasName(languagesTag) Then
-        langString = store.ValueAsString(languagesTag)
-        If LenB(langString) > 0 Then
-            languages = Split(langString, ";")
-            For idx = LBound(languages) To UBound(languages)
-                If LenB(Trim$(languages(idx))) > 0 Then
-                    result.Push Trim$(languages(idx))
-                End If
-            Next idx
-            Set ExtractLanguagesForRow = result
-            Exit Function
-        End If
-    End If
-
-    'Fallback: read column headers from the first ListObject
-    If tradSheet.ListObjects.Count = 0 Then
-        Set ExtractLanguagesForRow = result
-        Exit Function
-    End If
-
-    Dim lo As ListObject
-    Set lo = tradSheet.ListObjects(1)
-    If lo.HeaderRowRange Is Nothing Then
-        Set ExtractLanguagesForRow = result
-        Exit Function
-    End If
-
-    Dim headerValues As Variant
-    headerValues = lo.HeaderRowRange.Value
-
-    If Not IsArray(headerValues) Then
-        Dim singleVal As String
-        singleVal = Trim$(CStr(headerValues))
-        If LenB(singleVal) > 0 Then result.Push singleVal
-        Set ExtractLanguagesForRow = result
-        Exit Function
-    End If
-
-    Dim colIdx As Long
-    For colIdx = LBound(headerValues, 2) To UBound(headerValues, 2)
-        Dim headerVal As String
-        headerVal = Trim$(CStr(headerValues(1, colIdx)))
-        If LenB(headerVal) > 0 Then
-            result.Push headerVal
-        End If
-    Next colIdx
-
-    Set ExtractLanguagesForRow = result
-End Function
 
 '@Description("Write file paths into a column, adding rows to the table as needed.")
 '@param lo ListObject. The T_Multi ListObject.
 '@param colName String. Column header to write into.
 '@param startRow Long. Worksheet row number to start writing from.
 '@param filePaths BetterArray. File paths to write (1-based).
+'@param skipped BetterArray. Collects one line per skipped step.
 Private Sub WriteFilesToColumn(ByVal lo As ListObject, _
                                ByVal colName As String, _
                                ByVal startRow As Long, _
-                               ByVal filePaths As BetterArray)
+                               ByVal filePaths As BetterArray, _
+                               ByVal skipped As BetterArray)
     Dim col As ListColumn
     Dim currentRow As Long
     Dim lastDataRow As Long
@@ -663,7 +760,10 @@ Private Sub WriteFilesToColumn(ByVal lo As ListObject, _
     Set col = lo.ListColumns(colName)
     On Error GoTo 0
 
-    If col Is Nothing Then Exit Sub
+    If col Is Nothing Then
+        skipped.Push MissingColumnMessage(colName)
+        Exit Sub
+    End If
 
     currentRow = startRow
 
@@ -678,3 +778,62 @@ Private Sub WriteFilesToColumn(ByVal lo As ListObject, _
         currentRow = currentRow + 1
     Next idx
 End Sub
+
+
+'@section Message helpers
+'===============================================================================
+
+'@Description("Collect the selected file paths into a BetterArray (1-based).")
+'@param io OSFiles. The file picker with selected files.
+'@return BetterArray. The selected file paths.
+Private Function CollectFiles(ByVal io As OSFiles) As BetterArray
+    Dim filePaths As BetterArray
+
+    Set filePaths = New BetterArray
+    filePaths.LowerBound = 1
+
+    io.ResetFilesIterator
+    Do While io.HasNextFile()
+        filePaths.Push io.NextFile()
+    Loop
+
+    Set CollectFiles = filePaths
+End Function
+
+'@Description("Show the collected skip lines in one message.")
+'@param skipped BetterArray. The skip lines pushed by the helpers.
+Private Sub ShowSkipped(ByVal skipped As BetterArray)
+    Dim message As String
+    Dim idx As Long
+
+    If skipped.Length = 0 Then Exit Sub
+
+    For idx = skipped.LowerBound To skipped.UpperBound
+        message = message & CStr(skipped.Item(idx)) & vbNewLine
+    Next idx
+
+    MsgBox "Some steps were skipped:" & vbNewLine & message, _
+           vbExclamation + vbOKOnly, PROMPT_TITLE
+End Sub
+
+'@Description("Tell the user the multi table is missing.")
+Private Sub ReportMissingTable()
+    MsgBox "The " & TABLE_MULTI & " table was not found on the " & _
+           SHEET_GENERATE_MULTIPLE & " sheet.", _
+           vbExclamation + vbOKOnly, PROMPT_TITLE
+End Sub
+
+'@Description("Build the message for a missing column.")
+'@param colName String. The missing column header.
+'@return String. The message line.
+Private Function MissingColumnMessage(ByVal colName As String) As String
+    MissingColumnMessage = "The column " & Chr(34) & colName & Chr(34) & _
+                           " is missing on " & TABLE_MULTI & "."
+End Function
+
+'@Description("Build the message for a missing ID column.")
+'@return String. The message line.
+Private Function MissingIdMessage() As String
+    MissingIdMessage = "The " & TABLE_MULTI & " table has no " & COL_ID & _
+                       " column, so the rows got no ID."
+End Function

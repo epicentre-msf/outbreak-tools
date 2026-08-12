@@ -537,15 +537,29 @@ Private Function BuildOneSheet(ByVal llshs As LLSheets, ByVal ll As Linelist, By
     Set BuildOneSheet = listBld
 End Function
 
-'@Description("Extract languages from setup Translations sheet and update the setup languages dropdown.")
-Private Sub ExtractAndUpdateLanguages(ByVal tradSheet As Worksheet, ByVal entry As DesignerEntry)
+'@Description("Read the language names of a setup Translations sheet.")
+'@details
+'The one shared language extraction: the Multi group reads a setup's
+'languages per row through this routine too. The persisted HiddenNames
+'list of the sheet wins; the fallback reads the header row of the first
+'ListObject and drops the internal tag columns (__TagInternal__ is
+'machinery of the setup table, and it used to land in the dropdown).
+'@param tradSheet Worksheet. The Translations worksheet of a setup workbook.
+'@return BetterArray. Language names (1-based). Empty when the sheet carries none.
+Public Function SetupLanguages(ByVal tradSheet As Worksheet) As BetterArray
     Dim setupStore As HiddenNames
     Dim languagesTag As String
     Dim langString As String
     Dim languages() As String
     Dim langValues As BetterArray
+    Dim headerValues As BetterArray
+    Dim headerText As String
+    Dim lo As ListObject
     Dim idx As Long
-    Dim drop As DropdownLists
+
+    Set langValues = New BetterArray
+    langValues.LowerBound = 1
+    Set SetupLanguages = langValues
 
     'The HiddenName key belongs to SetupTranslationsTable, the class that
     'writes the language list on the setup's Translations sheet.
@@ -554,65 +568,32 @@ Private Sub ExtractAndUpdateLanguages(ByVal tradSheet As Worksheet, ByVal entry 
     'Read the persisted language list from the setup's Translations worksheet
     Set setupStore = HiddenNames.Create(tradSheet)
 
-    If Not setupStore.HasName(languagesTag) Then
-        'Fallback: read column headers from the first ListObject on the sheet
-        ExtractLanguagesFromHeaders tradSheet, entry
-        Exit Sub
+    If setupStore.HasName(languagesTag) Then
+        langString = setupStore.ValueAsString(languagesTag)
+        If LenB(langString) > 0 Then
+            'Split the semicolon-separated string into language names
+            languages = Split(langString, ";")
+            For idx = LBound(languages) To UBound(languages)
+                If LenB(Trim$(languages(idx))) > 0 Then
+                    langValues.Push Trim$(languages(idx))
+                End If
+            Next idx
+            If langValues.Length > 0 Then Exit Function
+        End If
     End If
 
-    langString = setupStore.ValueAsString(languagesTag)
-    If LenB(langString) = 0 Then Exit Sub
-
-    'Split semicolons-separated string into individual language names
-    languages = Split(langString, ";")
-
-    'Build BetterArray of language values (1-based)
-    Set langValues = New BetterArray
-    langValues.LowerBound = 1
-    For idx = LBound(languages) To UBound(languages)
-        If LenB(Trim$(languages(idx))) > 0 Then
-            langValues.Push Trim$(languages(idx))
-        End If
-    Next idx
-
-    If langValues.Length = 0 Then Exit Sub
-
-    'Update the setup languages dropdown directly
-    Set drop = DropdownLists.Create(ThisWorkbook.Worksheets(SHEET_DROPDOWNS))
-    drop.Update langValues, DROP_SETUP_LANGUAGES
-
-    'Auto-select the first setup language (owner decision). The write goes
-    'through the entry so the range resolution lives in one place, and
-    'Validate is the net under a value the user never touches.
-    entry.AddInfo langValues.Item(langValues.LowerBound), "setuplang"
-End Sub
-
-'@Description("Fallback: extract languages from the header row of the first ListObject on the Translations sheet.")
-Private Sub ExtractLanguagesFromHeaders(ByVal tradSheet As Worksheet, ByVal entry As DesignerEntry)
-    Dim lo As ListObject
-    Dim headerValues As BetterArray
-    Dim langValues As BetterArray
-    Dim headerText As String
-    Dim idx As Long
-    Dim drop As DropdownLists
-
-    If tradSheet.ListObjects.Count = 0 Then Exit Sub
+    'Fallback: read the header row of the first ListObject on the sheet
+    If tradSheet.ListObjects.Count = 0 Then Exit Function
 
     Set lo = tradSheet.ListObjects(1)
-    If lo.HeaderRowRange Is Nothing Then Exit Sub
+    If lo.HeaderRowRange Is Nothing Then Exit Function
 
-    'Read all header values as potential languages
     Set headerValues = New BetterArray
     headerValues.LowerBound = 1
     headerValues.FromExcelRange lo.HeaderRowRange, _
                                 DetectLastRow:=False, DetectLastColumn:=False
 
-    'The languages are the header row minus the internal tag columns. A
-    'header with the leading __ shape (__TagInternal__) is machinery of the
-    'setup table, and it used to land in the dropdown, where the auto-write
-    'below could put it in RNG_LangSetup.
-    Set langValues = New BetterArray
-    langValues.LowerBound = 1
+    'The languages are the header row minus the internal tag columns
     For idx = headerValues.LowerBound To headerValues.UpperBound
         headerText = Trim$(CStr(headerValues.Item(idx)))
         If LenB(headerText) > 0 Then
@@ -621,7 +602,14 @@ Private Sub ExtractLanguagesFromHeaders(ByVal tradSheet As Worksheet, ByVal entr
             End If
         End If
     Next idx
+End Function
 
+'@Description("Update the setup languages dropdown from a setup Translations sheet and auto-select the first language.")
+Private Sub ExtractAndUpdateLanguages(ByVal tradSheet As Worksheet, ByVal entry As DesignerEntry)
+    Dim langValues As BetterArray
+    Dim drop As DropdownLists
+
+    Set langValues = SetupLanguages(tradSheet)
     If langValues.Length = 0 Then Exit Sub
 
     'Update the setup languages dropdown directly
