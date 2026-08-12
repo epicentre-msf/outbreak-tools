@@ -26,7 +26,7 @@ Option Explicit
 '(list auto update), selection change (geo dropdown refresh),
 'double-click (spatio-temporal geo form), filter table updates, list-auto
 'dropdown maintenance, and geo/spatial UDF delegation.
-'@depends BetterArray, HiddenNames, DropdownLists, LLGeo, LLSpatial, LLdictionary, LLVariables, LLTranslation, TranslationObject, Passwords, LLLog, ProjectError
+'@depends BetterArray, HiddenNames, DropdownLists, LLGeo, LLSpatial, LLdictionary, LLVariables, LLTranslation, TranslationObject, Passwords, LLLog, FilteredData, ProjectError
 
 
 '@section State
@@ -84,6 +84,11 @@ Private Const PIVOTSHEETNAME    As String = "RNG_CustomPivot"
 
 ' The message code every box title is read from.
 Private Const MSGTITLE          As String = "MSG_Error"
+
+' The message code a failed filter refresh is reported under. FilteredData
+' logs its failure line under the same code, so the log reads as one action
+' wherever the refresh started.
+Private Const MSGERRUPDATE      As String = "MSG_ErrUpdate"
 
 ' What OnDoubleClick answers when the click asked for no geo picker. Every
 ' other answer it gives is a GeoScope value, and those start at 0, so a caller
@@ -267,44 +272,52 @@ End Function
 
 '@sub-title Update filter tables used by analysis sheets.
 '@details
-'Every filtered table is rewritten from its source table. A row is kept when
-'its source row is visible and holds at least one value. The old shape copied
-'the whole data body across, then walked every row from the bottom reading
-'EntireRow.Hidden and CountA and deleted the rejects -- two COM crossings per
-'row and an Application.Union that degrades as it grows, on tables that
-'ClickAddRows pads with 199 blank rows at a time. The recalculation at the
-'foot is one pass: the sheet pass covers the UsedRange and column passes that
-'used to follow it.
+'FilteredData does the walk and the rewrite: every filtered table is written
+'from the visible rows of its source table that hold a value. The class is the
+'measured home of that work, and the filtered export runs the same code, so one
+'algorithm answers both callers.
+'
+'A sheet the sync could not place is skipped and named. The walk finishes the
+'remaining sheets and the box at the foot lists each skipped sheet with its
+'reason, which is what a user needs to repair the workbook.
+'
+'FilteredData writes the failure line of the run to the user log, so the box
+'here goes straight through ShowMessage and the log keeps one line per failed
+'refresh.
+'
+'The recalculation at the foot is one pass: the sheet pass covers the UsedRange
+'and column passes that used to follow it.
 '@param calculate Optional Boolean. When True (default), recalculates the active sheet.
 '@export
 Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
-    Dim sh As Worksheet
-    Dim filtsh As Worksheet
-    Dim lo As ListObject
-    Dim shHn As HiddenNames
+    Dim filterSync As FilteredData
+    Dim failures As BetterArray
+    Dim detail As String
+    Dim counter As Long
+
+    If this.hostBook Is Nothing Then Exit Sub
 
     On Error GoTo ErrUpdate
 
-    For Each sh In this.hostBook.Worksheets
-        If SheetTag(sh) = "HList" Then
-
-            Set lo = sh.ListObjects(1)
-
-            If Not lo.DataBodyRange Is Nothing Then
-                Set shHn = SheetStore(sh)
-                Set filtsh = this.hostBook.Worksheets(shHn.ValueAsString("filtered_sheet"))
-
-                RewriteFilteredTable lo, filtsh
-            End If
-        End If
-    Next
+    Set filterSync = FilteredData.Create(this.hostBook)
+    filterSync.Sync
 
     If calculate Then ActiveSheet.Calculate
+
+    Set failures = filterSync.FailedSheets
+    If failures.Length = 0 Then Exit Sub
+
+    For counter = failures.LowerBound To failures.UpperBound
+        If LenB(detail) > 0 Then detail = detail & "; "
+        detail = detail & failures.Item(counter)
+    Next counter
+
+    ShowMessage MSGERRUPDATE, vbOKOnly + vbCritical, detail, vbNullString
 
     Exit Sub
 
 ErrUpdate:
-    Fail "MSG_ErrUpdate", Err.Description
+    Fail MSGERRUPDATE, Err.Description
 End Sub
 
 
@@ -1477,143 +1490,15 @@ Private Function GetUniqueBA(ByRef inputTable As BetterArray) As BetterArray
 End Function
 
 
-'@section Private -- Filtered table copy
-'===============================================================================
-
-'@sub-title Rewrite one filtered table from the visible rows of its source.
-'@details
-'A row is kept when it is visible and holds at least one value. Visibility is
-'read off the source rows in one SpecialCells call. The read spans the whole
-'row on purpose: a column hidden by show/hide keeps its values in the filtered
-'table, and a row leaves when a filter or the user hides it. The values travel
-'through memory -- one read of the whole block, the blank test on the array,
-'and one write of the kept rows. The two tables sit at the same address on
-'their two sheets, which is the layout the builder writes.
-'@param sourceTable ListObject. The data entry table the rows come from.
-'@param filtsh Worksheet. The sheet holding the filtered table.
-Private Sub RewriteFilteredTable(ByVal sourceTable As ListObject, _
-                                 ByVal filtsh As Worksheet)
-    Dim bodyRng As Range
-    Dim visibleCells As Range
-    Dim visibleArea As Range
-    Dim filtLo As ListObject
-    Dim sourceValues As Variant
-    Dim singleValue As Variant
-    Dim keptValues() As Variant
-    Dim keepRow() As Boolean
-    Dim rowCount As Long
-    Dim columnCount As Long
-    Dim rowIdx As Long
-    Dim colIdx As Long
-    Dim keptCount As Long
-    Dim firstRow As Long
-    Dim keptIdx As Long
-
-    Set bodyRng = sourceTable.DataBodyRange
-    rowCount = bodyRng.Rows.Count
-    columnCount = bodyRng.Columns.Count
-
-    sourceValues = bodyRng.Value
-    If (rowCount = 1) And (columnCount = 1) Then
-        'A single cell answers a scalar, and the walk below wants a block.
-        singleValue = sourceValues
-        ReDim sourceValues(1 To 1, 1 To 1)
-        sourceValues(1, 1) = singleValue
-    End If
-
-    'SpecialCells raises 1004 when every row is hidden, and an empty answer is
-    'what that state means. The suppression covers that one call.
-    ReDim keepRow(1 To rowCount)
-    On Error Resume Next
-    Set visibleCells = bodyRng.EntireRow.SpecialCells(xlCellTypeVisible)
-    On Error GoTo 0
-
-    If Not visibleCells Is Nothing Then
-        For Each visibleArea In visibleCells.Areas
-            firstRow = visibleArea.Row - bodyRng.Row + 1
-            For rowIdx = firstRow To firstRow + visibleArea.Rows.Count - 1
-                If (rowIdx >= 1) And (rowIdx <= rowCount) Then keepRow(rowIdx) = True
-            Next rowIdx
-        Next visibleArea
-    End If
-
-    For rowIdx = 1 To rowCount
-        If keepRow(rowIdx) Then
-            If RowHoldsAValue(sourceValues, rowIdx, columnCount) Then
-                keptCount = keptCount + 1
-            Else
-                keepRow(rowIdx) = False
-            End If
-        End If
-    Next rowIdx
-
-    If keptCount > 0 Then
-        ReDim keptValues(1 To keptCount, 1 To columnCount)
-        For rowIdx = 1 To rowCount
-            If keepRow(rowIdx) Then
-                keptIdx = keptIdx + 1
-                For colIdx = 1 To columnCount
-                    keptValues(keptIdx, colIdx) = sourceValues(rowIdx, colIdx)
-                Next colIdx
-            End If
-        Next rowIdx
-    End If
-
-    Set filtLo = filtsh.ListObjects(1)
-
-    'A table already down to its header row has nothing to delete.
-    On Error Resume Next
-    filtLo.DataBodyRange.Delete
-    On Error GoTo 0
-
-    If keptCount > 0 Then
-        filtLo.Resize filtsh.Range(sourceTable.HeaderRowRange.Resize(keptCount + 1).Address)
-        filtLo.DataBodyRange.Value = keptValues
-    End If
-End Sub
-
-
-'@sub-title Say whether one row of a value block holds anything.
-'@details
-'Mirrors what CountA answered on the old copied row: an empty cell and an
-'empty string count as nothing, and every other value -- a zero, a date, an
-'error -- counts as data.
-'@param blockValues Variant. The value block, 1-based on both sides.
-'@param rowIdx Long. The row to read.
-'@param columnCount Long. The width of the block.
-'@return Boolean. True when at least one cell of the row holds a value.
-Private Function RowHoldsAValue(ByRef blockValues As Variant, _
-                                ByVal rowIdx As Long, _
-                                ByVal columnCount As Long) As Boolean
-    Dim colIdx As Long
-    Dim cellValue As Variant
-
-    For colIdx = 1 To columnCount
-        cellValue = blockValues(rowIdx, colIdx)
-        If Not IsEmpty(cellValue) Then
-            If VarType(cellValue) = vbString Then
-                If LenB(cellValue) > 0 Then
-                    RowHoldsAValue = True
-                    Exit Function
-                End If
-            Else
-                RowHoldsAValue = True
-                Exit Function
-            End If
-        End If
-    Next colIdx
-End Function
-
-
 '@section Private -- Sheet metadata helpers
 '===============================================================================
 
 '@sub-title Get the sheet type tag from worksheet-level HiddenNames.
 '@details
 'The quick read is what this wants. It used to build a whole HiddenNames store
-'for one value, and UpdateFilterTables and UpdateAllListAuto both call it once
-'per worksheet of the workbook, so every sheet in the loop paid a full walk of
-'its own Names collection.
+'for one value, and UpdateAllListAuto calls it once per worksheet of the
+'workbook, so every sheet in the loop paid a full walk of its own Names
+'collection.
 '@param sh Worksheet. The worksheet to query.
 '@return String. The sheet type tag (HList, VList, Uni-Bi-Analysis, etc.).
 Private Function SheetTag(ByRef sh As Worksheet) As String

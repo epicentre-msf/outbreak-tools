@@ -7,15 +7,16 @@ Attribute VB_Description = "Unit tests for FilteredData"
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument
 
 '@description
-'Validates the FilteredData class, which copies every HList table into its
-'filtered companion sheet ahead of a filtered export. Tests cover the
-'factory, the copy itself, the removal of hidden rows and empty rows from
-'the companion, the contiguous-run delete, and the failure surface: a sheet
-'with a missing filtered_sheet name or a missing companion is skipped and
-'recorded in FailedSheets while the walk continues, and a run that skipped a
-'sheet writes one failure line to the user log of the workbook. Each test
-'builds its own fixture workbook with a small three-column table and tears
-'it down, so the order the tests run in decides nothing.
+'Validates the FilteredData class, which writes every HList table into its
+'filtered companion sheet ahead of a filtered export and on every linelist
+'filter refresh. Tests cover the factory, the copy itself, the hidden rows and
+'empty rows the companion leaves out, a whole block of hidden rows, and the
+'failure surface: a sheet with a missing filtered_sheet name or a missing
+'companion is skipped and recorded in FailedSheets while the walk continues,
+'and a run that skipped a sheet writes one failure line to the user log of the
+'workbook. Each test builds its own fixture workbook with a small
+'three-column table and tears it down, so the order the tests run in decides
+'nothing.
 '@depends FilteredData, HiddenNames, LLLog, TestHelpersLite, CustomTest
 
 Option Explicit
@@ -365,11 +366,12 @@ TestFail:
     CustomTestLogFailure Assert, "SyncDeletesEmptyRows", Err.Number, Err.Description
 End Sub
 
-'@sub-title Verify a contiguous run of hidden rows leaves in one piece.
+'@sub-title Verify a whole block of hidden rows stays out of the companion.
 '@details
-'Hides data rows 2 to 4 of five, one contiguous run, the shape a filter
-'leaves behind. Asserts the companion keeps the first and last row, which
-'pins the run walk over its boundary arithmetic.
+'Hides data rows 2 to 4 of five, the shape a filter leaves behind. Asserts the
+'companion keeps the first and last row, which pins the visible-area walk over
+'its row arithmetic: SpecialCells answers two areas here and each has to land
+'on the right row of the value block.
 '@TestMethod("FilteredData")
 Public Sub SyncDeletesAContiguousRun()
     CustomTestSetTitles Assert, "FilteredData", "SyncDeletesAContiguousRun"

@@ -1065,12 +1065,13 @@ suites:
       # TestHelpersLite.
       - module: TestExportButton
         covers: [ExportButton]
-      # TestFilteredData drives the filtered-companion sync ExportButton runs
-      # ahead of a filtered export: the copy, the hidden-row and empty-row
-      # removal, the contiguous-run delete, the skip-and-record failure
-      # surface and the failure line of the user log. The fixture is a fresh
-      # workbook per test. It reaches no fixture module; its helper calls are
-      # unqualified, so they resolve to TestHelpersLite.
+      # TestFilteredData drives the filtered-companion sync two callers run:
+      # ExportButton ahead of a filtered export, and
+      # EventLinelist.UpdateFilterTables on every filter refresh. It covers the
+      # copy, the hidden rows and empty rows the companion leaves out, the
+      # skip-and-record failure surface and the failure line of the user log.
+      # The fixture is a fresh workbook per test. It reaches no fixture module;
+      # its helper calls are unqualified, so they resolve to TestHelpersLite.
       - module: TestFilteredData
         covers: [FilteredData]
       - module: TestImportMetadata

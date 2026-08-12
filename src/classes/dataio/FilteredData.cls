@@ -19,26 +19,35 @@ Option Explicit
 '@class FilteredData
 '@description
 'Copies every HList table of the source workbook into its filtered companion
-'sheet, so a filtered export reads what the user can see on the screen. The
-'companion keeps the rows that are visible and filled: a row leaves the copy
-'when its source row is hidden or when the copied row is empty.
+'sheet, so a filtered export and the analysis formulas read what the user can
+'see on the screen. The companion keeps the rows that are visible and filled:
+'a row stays out of the copy when its source row is hidden or when the row
+'holds no value at all.
 '
 'Sync walks every worksheet, rewrites each companion, and answers the number
 'of sheets it brought over. A sheet that fails is skipped and recorded, and
 'the walk continues, so one broken sheet leaves the others synced.
 'FailedSheets names each skipped sheet with the reason. A run that skipped a
 'sheet also writes one failure line to the user log of the workbook. The
-'caller reads FailedSheets and decides what a failure aborts; ExportButton
-'aborts the export.
+'caller reads FailedSheets and decides what a failure costs: ExportButton
+'aborts the export, and the linelist filter refresh shows one box.
 '
-'THE DELETE WORKS RUN BY RUN
+'THE WHOLE ROW TEST RUNS IN MEMORY
 '-------------------------------------------------------------------------------
-'Hidden and empty rows sit in contiguous runs, and each run leaves the
-'companion with one delete. A per-row delete range grows one area per row,
-'and Excel slows sharply past a few hundred areas, so on a large table the
-'run shape is what keeps the sync usable.
+'Each companion is written once. The source block is read in one crossing,
+'visibility comes off one SpecialCells call over the source rows, the blank
+'test runs on the array, and the kept rows go down in one write. A shape that
+'copies the whole block over and then deletes the rejects pays two crossings
+'per row, on tables that ClickAddRows pads 199 blank rows at a time.
+'
+'THE SHEET TAG IS READ THE CHEAP WAY
+'-------------------------------------------------------------------------------
+'The walk reads sheet_type through HiddenNames.QuickValue, which reads one
+'name, and the full store is built for the HList sheets alone. A full store
+'costs a walk of a sheet's whole Names collection, and the linelist filter
+'refresh runs far more often than an export.
 '@depends HiddenNames, LLLog, BetterArray
-'@version 1.0 (2026-08-12)
+'@version 1.1 (2026-08-12)
 
 
 '@section Constants
@@ -138,16 +147,14 @@ End Property
 '@sub-title Rewrite every filtered companion from its live table
 '@details
 'Walks the worksheets of the source workbook. Each sheet whose sheet_type is
-'HList has its table copied into the filtered companion, and the hidden and
-'empty rows are then deleted from the copy. A sheet whose table holds no data
-'rows is left as it is. A sheet that raises is recorded in FailedSheets with
-'the reason and the walk continues.
+'HList has its visible filled rows written into the filtered companion. A
+'sheet whose table holds no data rows is left as it is. A sheet that raises is
+'recorded in FailedSheets with the reason and the walk continues.
 '@return Long. The number of sheets whose companion was rewritten.
 '@export
 Public Function Sync() As Long
 
     Dim sh As Worksheet
-    Dim store As HiddenNames
     Dim syncedCount As Long
 
     Set this.failedSheets = New BetterArray
@@ -157,9 +164,8 @@ Public Function Sync() As Long
     On Error GoTo SheetFail
 
     For Each sh In this.sourceWkb.Worksheets
-        Set store = HiddenNames.Create(sh)
-        If store.ValueAsString(SHEET_TYPE_KEY) = HLIST_TAG Then
-            If SyncSheet(sh, store) Then syncedCount = syncedCount + 1
+        If HiddenNames.QuickValue(sh, SHEET_TYPE_KEY) = HLIST_TAG Then
+            If SyncSheet(sh) Then syncedCount = syncedCount + 1
         End If
 NextSheet:
     Next sh
@@ -175,85 +181,165 @@ SheetFail:
 End Function
 
 '@label:sync-sheet
-'@sub-title Copy one HList table into its filtered companion
+'@sub-title Rewrite one filtered companion from its HList table
 '@details
-'Reads the companion name off the store, clears the companion table, sizes
-'it to the live table, copies the values across, and deletes the hidden and
-'empty rows from the copy. Raises when the filtered_sheet name is missing,
-'and lets any worksheet failure travel up to the per-sheet handler in Sync.
+'Reads the companion name off the sheet store and hands the table and the
+'companion sheet to the rewrite. Raises when the filtered_sheet name is
+'missing, and lets any worksheet failure travel up to the per-sheet handler
+'in Sync.
 '@param sh Worksheet. The HList sheet to copy.
-'@param store HiddenNames. The store of that sheet, already built by Sync.
 '@return Boolean. True when the companion was rewritten.
 '@throws ProjectError.ElementNotFound When the filtered_sheet name is missing.
-Private Function SyncSheet(ByVal sh As Worksheet, _
-                           ByVal store As HiddenNames) As Boolean
+Private Function SyncSheet(ByVal sh As Worksheet) As Boolean
 
     Dim lo As ListObject
-    Dim loRng As Range
+    Dim store As HiddenNames
     Dim filtsh As Worksheet
-    Dim filtLo As ListObject
-    Dim destRng As Range
     Dim filteredName As String
 
     Set lo = sh.ListObjects(1)
     If lo.DataBodyRange Is Nothing Then Exit Function
 
+    Set store = HiddenNames.Create(sh)
     filteredName = store.ValueAsString(FILTERED_SHEET_KEY)
     If LenB(filteredName) = 0 Then
         ThrowError ElementNotFound, "the filtered_sheet name is missing"
     End If
 
-    Set loRng = lo.DataBodyRange
     Set filtsh = this.sourceWkb.Worksheets(filteredName)
-    Set filtLo = filtsh.ListObjects(1)
 
-    If Not filtLo.DataBodyRange Is Nothing Then filtLo.DataBodyRange.Delete
-
-    filtLo.Resize filtsh.Range(lo.Range.Address)
-    Set destRng = filtsh.Range(loRng.Address)
-
-    'Copy values to the companion, then take the hidden and empty rows off
-    destRng.Value = loRng.Value
-    DeleteFilteredRows loRng, filtLo.HeaderRowRange
+    RewriteCompanion lo, filtsh
 
     SyncSheet = True
 End Function
 
-'@label:delete-filtered-rows
-'@sub-title Delete the hidden and empty rows from the companion copy
+'@label:rewrite-companion
+'@sub-title Write the visible filled rows of one table into its companion
 '@details
-'Walks the rows bottom-up, so a delete leaves the rows above it in place. A
-'row is marked when its source row is hidden or when its copy is empty.
-'Marked rows are gathered into contiguous runs and each run is deleted
-'whole, one delete per run, which keeps the area count at the run count.
-'The hidden state is read on the source sheet and the emptiness on the copy.
-'@param sourceRng Range. The data body of the live table.
-'@param headerRng Range. The header row of the companion table.
-Private Sub DeleteFilteredRows(ByVal sourceRng As Range, _
-                               ByVal headerRng As Range)
+'A row is kept when it is visible and holds at least one value. Visibility is
+'read off the source rows in one SpecialCells call. The read spans the whole
+'row on purpose: a column hidden by show/hide keeps its values in the
+'companion, and a row leaves when a filter or the user hides it. The values
+'travel through memory -- one read of the whole block, the blank test on the
+'array, and one write of the kept rows. The two tables sit at the same address
+'on their two sheets, which is the layout the builder writes.
+'@param sourceTable ListObject. The data entry table the rows come from.
+'@param filtsh Worksheet. The sheet holding the filtered companion table.
+Private Sub RewriteCompanion(ByVal sourceTable As ListObject, _
+                             ByVal filtsh As Worksheet)
 
-    Dim rowCounter As Long
-    Dim runLength As Long
-    Dim wsFunc As WorksheetFunction
+    Dim bodyRng As Range
+    Dim visibleCells As Range
+    Dim visibleArea As Range
+    Dim filtLo As ListObject
+    Dim sourceValues As Variant
+    Dim singleValue As Variant
+    Dim keptValues() As Variant
+    Dim keepRow() As Boolean
+    Dim rowCount As Long
+    Dim columnCount As Long
+    Dim rowIdx As Long
+    Dim colIdx As Long
+    Dim keptCount As Long
+    Dim firstRow As Long
+    Dim keptIdx As Long
 
-    Set wsFunc = Application.WorksheetFunction
+    Set bodyRng = sourceTable.DataBodyRange
+    rowCount = bodyRng.Rows.Count
+    columnCount = bodyRng.Columns.Count
 
-    runLength = 0
-    For rowCounter = sourceRng.Rows.Count To 1 Step -1
-        If sourceRng.Cells(rowCounter, 1).EntireRow.Hidden Or _
-           wsFunc.CountA(headerRng.Offset(rowCounter)) = 0 Then
-            runLength = runLength + 1
-        Else
-            If runLength > 0 Then
-                headerRng.Offset(rowCounter + 1).Resize(runLength).Delete
-                runLength = 0
+    sourceValues = bodyRng.Value
+    If (rowCount = 1) And (columnCount = 1) Then
+        'A single cell answers a scalar, and the walk below wants a block.
+        singleValue = sourceValues
+        ReDim sourceValues(1 To 1, 1 To 1)
+        sourceValues(1, 1) = singleValue
+    End If
+
+    'SpecialCells raises 1004 when every row is hidden, and an empty answer is
+    'what that state means. The suppression covers that one call.
+    ReDim keepRow(1 To rowCount)
+    On Error Resume Next
+    Set visibleCells = bodyRng.EntireRow.SpecialCells(xlCellTypeVisible)
+    On Error GoTo 0
+
+    If Not visibleCells Is Nothing Then
+        For Each visibleArea In visibleCells.Areas
+            firstRow = visibleArea.Row - bodyRng.Row + 1
+            For rowIdx = firstRow To firstRow + visibleArea.Rows.Count - 1
+                If (rowIdx >= 1) And (rowIdx <= rowCount) Then keepRow(rowIdx) = True
+            Next rowIdx
+        Next visibleArea
+    End If
+
+    For rowIdx = 1 To rowCount
+        If keepRow(rowIdx) Then
+            If RowHoldsAValue(sourceValues, rowIdx, columnCount) Then
+                keptCount = keptCount + 1
+            Else
+                keepRow(rowIdx) = False
             End If
         End If
-    Next rowCounter
+    Next rowIdx
 
-    'A run that reaches the first data row closes here
-    If runLength > 0 Then headerRng.Offset(1).Resize(runLength).Delete
+    If keptCount > 0 Then
+        ReDim keptValues(1 To keptCount, 1 To columnCount)
+        For rowIdx = 1 To rowCount
+            If keepRow(rowIdx) Then
+                keptIdx = keptIdx + 1
+                For colIdx = 1 To columnCount
+                    keptValues(keptIdx, colIdx) = sourceValues(rowIdx, colIdx)
+                Next colIdx
+            End If
+        Next rowIdx
+    End If
+
+    Set filtLo = filtsh.ListObjects(1)
+
+    'A table already down to its header row has nothing to delete.
+    On Error Resume Next
+    filtLo.DataBodyRange.Delete
+    On Error GoTo 0
+
+    If keptCount > 0 Then
+        filtLo.Resize filtsh.Range( _
+            sourceTable.HeaderRowRange.Resize(keptCount + 1).Address)
+        filtLo.DataBodyRange.Value = keptValues
+    End If
 End Sub
+
+'@label:row-holds-a-value
+'@sub-title Say whether one row of a value block holds anything
+'@details
+'An empty cell and an empty string count as nothing, and every other value --
+'a zero, a date, an error -- counts as data. This is what CountA answers on a
+'worksheet row, read off the array instead.
+'@param blockValues Variant. The value block, 1-based on both sides.
+'@param rowIdx Long. The row to read.
+'@param columnCount Long. The width of the block.
+'@return Boolean. True when at least one cell of the row holds a value.
+Private Function RowHoldsAValue(ByRef blockValues As Variant, _
+                                ByVal rowIdx As Long, _
+                                ByVal columnCount As Long) As Boolean
+
+    Dim colIdx As Long
+    Dim cellValue As Variant
+
+    For colIdx = 1 To columnCount
+        cellValue = blockValues(rowIdx, colIdx)
+        If Not IsEmpty(cellValue) Then
+            If VarType(cellValue) = vbString Then
+                If LenB(cellValue) > 0 Then
+                    RowHoldsAValue = True
+                    Exit Function
+                End If
+            Else
+                RowHoldsAValue = True
+                Exit Function
+            End If
+        End If
+    Next colIdx
+End Function
 
 
 '@section Private Helpers

@@ -308,6 +308,32 @@ Private Function SeedFilteredPair(ByVal sourceRows As Variant) As Worksheet
     Set SeedFilteredPair = filtsh
 End Function
 
+'@sub-title Build an HList sheet whose filtered companion cannot be found.
+'@details
+'The sheet carries a table and the HList tag with no filtered_sheet name, so
+'the refresh cannot place its companion. This is the sheet the walk has to
+'skip and name while the healthy pair still syncs.
+'@param sheetName String. The name of the sheet to add.
+'@return Worksheet. The seeded sheet.
+Private Function SeedBrokenHListSheet(ByVal sheetName As String) As Worksheet
+    Dim sh As Worksheet
+    Dim store As HiddenNames
+
+    Set sh = FixtureWkb.Worksheets.Add
+    sh.Name = sheetName
+
+    sh.Cells(8, 2).Value = "var1"
+    sh.Cells(9, 2).Value = "kept"
+    sh.ListObjects.Add SourceType:=xlSrcRange, _
+                       Source:=sh.Range(sh.Cells(8, 2), sh.Cells(9, 2)), _
+                       XlListObjectHasHeaders:=xlYes
+
+    Set store = HiddenNames.Create(sh)
+    store.EnsureName "sheet_type", "HList", HiddenNameTypeString
+
+    Set SeedBrokenHListSheet = sh
+End Function
+
 '@sub-title The first row whose cell in a column of the log sheet holds a text.
 '@details
 'A loop rather than Range.Find, which inherits LookIn and SearchOrder from
@@ -1423,5 +1449,45 @@ Public Sub TestFilterTablesClearStaleRowsWhenEverythingIsHidden()
 TestFail:
     CustomTestLogFailure Assert, _
                          "TestFilterTablesClearStaleRowsWhenEverythingIsHidden", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A sheet the refresh cannot place is skipped, named and logged.
+'@details
+'The refresh used to stop at the first broken sheet and say nothing about
+'which one it was. It skips that sheet now, finishes the healthy pair, and the
+'failure line of the run names the sheet in the user log. The box stays quiet
+'because the fixture carries no translation sheet, which is what lets this run
+'headless.
+'@TestMethod("EventLinelist")
+Public Sub TestFilterTablesSkipAndNameABrokenSheet()
+    CustomTestSetTitles Assert, TESTMODULE, "TestFilterTablesSkipAndNameABrokenSheet"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim filtsh As Worksheet
+    Dim logsh As Worksheet
+    Dim bodyRng As Range
+
+    Set filtsh = SeedFilteredPair(Array(Array("a", 1), Array("b", 2)))
+    SeedBrokenHListSheet "hlist_broken"
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+    sut.UpdateFilterTables calculate:=False
+
+    Set bodyRng = filtsh.ListObjects(1).DataBodyRange
+    Assert.AreEqual 2&, bodyRng.Rows.Count, _
+                    "The healthy pair still syncs past a broken sheet"
+
+    Set logsh = FixtureWkb.Worksheets(LOG_SHEET)
+    Assert.IsTrue (LogRowOfText(logsh, LOG_OUTPUT_COLUMN, "MSG_ErrUpdate") > 0), _
+                  "The refresh failure heads a block of the user log"
+    Assert.IsTrue (LogRowOfText(logsh, LOG_DETAIL_COLUMN, "hlist_broken") > 0), _
+                  "The failure line names the sheet that was skipped"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, _
+                         "TestFilterTablesSkipAndNameABrokenSheet", _
                          Err.Number, Err.Description
 End Sub
