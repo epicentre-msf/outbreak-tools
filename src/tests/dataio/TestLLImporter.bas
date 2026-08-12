@@ -14,12 +14,13 @@ Option Explicit
 'epiweek value goes into a real hidden name store, and the report is read back
 'off a real worksheet.
 '
-'TWO WORKBOOKS PER MODULE
+'THREE WORKBOOKS PER MODULE
 '-------------------------------------------------------------------------------
-'FixtureWorkbook stands in for the linelist being imported into and
-'ImportWorkbook for the file being read. Both are built once in
-'ModuleInitialize. Every test that writes into the linelist puts the sheet it
-'touches back first, so the order the tests run in decides nothing.
+'FixtureWorkbook stands in for the linelist being imported into,
+'ImportWorkbook for the file being read, and GeobaseWorkbook for the geobase
+'file the geo import reads. All three are built once in ModuleInitialize.
+'Every test that writes into the linelist puts the sheet it touches back
+'first, so the order the tests run in decides nothing.
 '
 'THE FIXTURE FAILS QUIETLY AND EVERY TEST SAYS SO
 '-------------------------------------------------------------------------------
@@ -44,12 +45,25 @@ Option Explicit
 '  Choices             list_correct_order with a fourth value, and the dropdown
 '  hlist2D-sheet1      the three columns, a fourth the linelist lacks, two rows
 '  ghost-sheet         a worksheet the linelist has none of
+'
+'WHAT THE GEOBASE FIXTURE CARRIES
+'-------------------------------------------------------------------------------
+'The linelist takes its Geo worksheet from GeoTestFixture, which fills T_NAMES
+'with Province, District, Commune, Village and Health Facility in an EN column.
+'GeobaseWorkbook holds the three sheets LLGeo.Import reads by name -- ADM1,
+'ADM2 and NAMES -- and its NAMES sheet gives admin1 and admin2 labels of their
+'own, so an import moves the five workbook-scoped level labels.
+'
+'Each geo test seeds the Geo worksheet again, which drops the level labels and
+'the translated flag and puts Province back. That is what lets both tests read
+'the same before-and-after pair whatever order they run in.
 '@depends LLImporter, ImportMetadata, ImportReport, ChoiceKeys, LLChoices
-'@depends DropdownLists, HiddenNames, Passwords, CustomTest
+'@depends DropdownLists, HiddenNames, Passwords, CustomTest, LLGeo, GeoTestFixture
 
 Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
 Private ImportWorkbook As Workbook
+Private GeobaseWorkbook As Workbook
 Private SetupError As Long
 Private SetupMessage As String
 
@@ -65,6 +79,31 @@ Private Const DROPDOWN_SHEET As String = "Custom dropdown"
 Private Const HLIST_SHEET As String = "hlist2D-sheet1"
 Private Const GHOST_SHEET As String = "ghost-sheet"
 Private Const HLIST_TABLE As String = "table1"
+
+'The geobase worksheet of the linelist and the two tables the geo tests read
+Private Const GEO_SHEET As String = "Geo"
+Private Const GEO_ADM1_TABLE As String = "T_ADM1"
+Private Const GEO_ADM2_TABLE As String = "T_ADM2"
+
+'The workbook-scoped hidden name holding the admin1 label
+Private Const ADM1_LEVEL_NAME As String = "RNG_ADM1NAME"
+
+'The admin1 label of the fixture geobase, and the one the file brings
+Private Const ADM1_LABEL_BEFORE As String = "Province"
+Private Const ADM1_LABEL_IN_FILE As String = "Region"
+Private Const ADM2_LABEL_IN_FILE As String = "Zone"
+
+'The first admin1 value of the file, and how many rows each of its two admin
+'sheets carries
+Private Const ADM1_FIRST_VALUE As String = "Alpha"
+Private Const GEOBASE_ADM1_ROWS As Long = 2
+Private Const GEOBASE_ADM2_ROWS As Long = 4
+
+'The one geo-controlled variable of the dictionary fixture. UpdateDict writes
+'the level label over its main label, and the cell goes back after each geo
+'test.
+Private Const HF_VARIABLE As String = "hf_h2"
+Private Const HF_VARIABLE_LABEL As String = "HF on hlist2D"
 
 Private Const LANGUAGE_NAME As String = "RNG_DictionaryLanguage"
 Private Const LANGUAGE_VALUE As String = "English"
@@ -120,6 +159,9 @@ Public Sub ModuleInitialize()
         Set ImportWorkbook = NewWorkbook()
         BuildImportFixture
 
+        Set GeobaseWorkbook = NewWorkbook()
+        BuildGeobaseFixture
+
         SetupError = Err.Number
         SetupMessage = Err.Description
     On Error GoTo 0
@@ -127,7 +169,7 @@ End Sub
 
 '@sub-title Print the results and drop the fixture workbooks.
 '@details
-'The two fixture workbooks go first. PrintResults writes validation and named
+'The three fixture workbooks go first. PrintResults writes validation and named
 'ranges onto the output sheet of ThisWorkbook, and those writes want ThisWorkbook
 'to be the active book.
 '
@@ -137,10 +179,12 @@ End Sub
 Public Sub ModuleCleanup()
 
     On Error Resume Next
+        If Not GeobaseWorkbook Is Nothing Then DeleteWorkbook GeobaseWorkbook
         If Not ImportWorkbook Is Nothing Then DeleteWorkbook ImportWorkbook
         If Not FixtureWorkbook Is Nothing Then DeleteWorkbook FixtureWorkbook
     On Error GoTo 0
 
+    Set GeobaseWorkbook = Nothing
     Set ImportWorkbook = Nothing
     Set FixtureWorkbook = Nothing
 
@@ -767,6 +811,110 @@ TestFail:
 End Sub
 
 
+'@section The geobase
+'===============================================================================
+
+'@sub-title A geobase import lands the rows and the new level labels.
+'@details
+'ImportGeobase had no test of its own, and the stale level captions reported
+'from the field came through this path. What the import owes the linelist is
+'both halves of the geobase: the rows of the admin tables, and the five
+'workbook-scoped level labels every reader of the class asks for.
+'
+'The admin1 value is read out of the data body by position. The import ends in
+'a Translate, so by the time the assertion runs the header of that column
+'carries the level label of the file.
+'@TestMethod("LLImporter")
+Public Sub TestImportGeobaseLandsTheRowsAndTheLabels()
+    CustomTestSetTitles Assert, TESTMODULE, "TestImportGeobaseLandsTheRowsAndTheLabels"
+    If Not FixtureReady("TestImportGeobaseLandsTheRowsAndTheLabels") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim geoSheet As Worksheet
+    Dim landed As LLGeo
+    Dim store As HiddenNames
+
+    Set geoSheet = SeedLinelistGeobase()
+
+    FixtureImporter().ImportGeobase GeobaseWorkbook
+    ResetGeoVariableLabel
+
+    Assert.AreEqual GEOBASE_ADM1_ROWS, _
+                    geoSheet.ListObjects(GEO_ADM1_TABLE).ListRows.Count, _
+                    "The admin1 table holds the rows of the file"
+    Assert.AreEqual GEOBASE_ADM2_ROWS, _
+                    geoSheet.ListObjects(GEO_ADM2_TABLE).ListRows.Count, _
+                    "And so does the admin2 table"
+    Assert.AreEqual ADM1_FIRST_VALUE, _
+                    CStr(geoSheet.ListObjects(GEO_ADM1_TABLE).DataBodyRange.Cells(1, 1).Value), _
+                    "The first admin1 value of the file is the first row of the table"
+
+    Set store = HiddenNames.Create(FixtureWorkbook)
+    Assert.AreEqual ADM1_LABEL_IN_FILE, store.ValueAsString(ADM1_LEVEL_NAME), _
+                    "The admin1 label of the file reaches the workbook store"
+
+    Set landed = LLGeo.Create(geoSheet)
+    Assert.AreEqual ADM1_LABEL_IN_FILE, landed.GeoNames("adm1_name"), _
+                    "A manager built after the import reads the admin1 label of the file"
+    Assert.AreEqual ADM2_LABEL_IN_FILE, landed.GeoNames("adm2_name"), _
+                    "And the admin2 label with it"
+
+    Exit Sub
+TestFail:
+    On Error Resume Next
+    ResetGeoVariableLabel
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestImportGeobaseLandsTheRowsAndTheLabels", Err.Number, Err.Description
+End Sub
+
+'@sub-title A manager read before the import still answers the old label.
+'@details
+'This is the contract every caller of a geobase import owes, and it is the half
+'of the wiring no headless run can reach: HandleImportGeobase is private to a
+'form module that carries no registry row, and it follows the import with
+'ResetEventCaches on both its paths.
+'
+'LLGeo reads the five level labels once per instance, and the import runs
+'through an instance of its own. A manager held from before the import
+'therefore keeps the label of the geobase that has gone, and only a caller that
+'drops it reads the new one.
+'@TestMethod("LLImporter")
+Public Sub TestAManagerHeldAcrossTheImportKeepsItsOldLabel()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAManagerHeldAcrossTheImportKeepsItsOldLabel"
+    If Not FixtureReady("TestAManagerHeldAcrossTheImportKeepsItsOldLabel") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim geoSheet As Worksheet
+    Dim held As LLGeo
+    Dim beforeImport As String
+
+    Set geoSheet = SeedLinelistGeobase()
+
+    'The read is what loads the label cache of the held manager, which is the
+    'state the import then moves the store under.
+    Set held = LLGeo.Create(geoSheet)
+    held.Translate rawNames:=False
+    beforeImport = held.GeoNames("adm1_name")
+
+    FixtureImporter().ImportGeobase GeobaseWorkbook
+    ResetGeoVariableLabel
+
+    Assert.AreEqual ADM1_LABEL_BEFORE, beforeImport, _
+                    "The manager cached the label the geobase carried at the start"
+    Assert.AreEqual ADM1_LABEL_BEFORE, held.GeoNames("adm1_name"), _
+                    "It still answers that label once the import has moved the store"
+    Assert.AreEqual ADM1_LABEL_IN_FILE, LLGeo.Create(geoSheet).GeoNames("adm1_name"), _
+                    "A manager built after the import answers the label of the file"
+
+    Exit Sub
+TestFail:
+    On Error Resume Next
+    ResetGeoVariableLabel
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestAManagerHeldAcrossTheImportKeepsItsOldLabel", Err.Number, Err.Description
+End Sub
+
+
 '@section Comparing the two files
 '===============================================================================
 
@@ -989,8 +1137,10 @@ Private Function FixtureReady(ByVal testName As String) As Boolean
     If SetupError = 0 Then
         If Not FixtureWorkbook Is Nothing Then
             If Not ImportWorkbook Is Nothing Then
-                FixtureReady = True
-                Exit Function
+                If Not GeobaseWorkbook Is Nothing Then
+                    FixtureReady = True
+                    Exit Function
+                End If
             End If
         End If
     End If
@@ -1286,4 +1436,86 @@ Private Sub BuildGhostSheet()
     Set sh = EnsureWorksheet(GHOST_SHEET, ImportWorkbook, clearSheet:=True)
     WriteRow sh.Cells(1, 1), "some_variable", "another_variable"
     WriteRow sh.Cells(2, 1), "a", "b"
+End Sub
+
+
+'@section Fixture helpers - the geobase
+'===============================================================================
+
+'@fun-title Build the geobase worksheet of the linelist again.
+'@details
+'PrepareGeoFixture clears the worksheet, which drops the sheet-scoped
+'translated flag with it, and it drops the five workbook-scoped level labels by
+'hand. Both geo tests start from Province whatever ran before them.
+'
+'LLGeo.Create refuses a worksheet missing one of its nine tables, so the
+'fixture is built whole, and it carries data because the class reads T_NAMES to
+'resolve the labels.
+'@return Worksheet. The geobase worksheet of the linelist fixture.
+Private Function SeedLinelistGeobase() As Worksheet
+    Set SeedLinelistGeobase = GeoTestFixture.PrepareGeoFixture(GEO_SHEET, _
+                                                               FixtureWorkbook, _
+                                                               withData:=True)
+End Function
+
+'@sub-title Write the three worksheets the geobase file carries.
+'@details
+'LLGeo.Import reads a source worksheet only when its name is one of the table
+'names it knows, and it matches the columns of that sheet to the columns of the
+'table by header. The headers are the raw level names, because Import reverts
+'the geobase headers before it copies anything in.
+'
+'The file names its own admin1 and admin2 levels, which is what makes the two
+'tests able to tell the labels of the file apart from the labels of the
+'fixture. It carries no METADATA sheet, so the language code of the linelist
+'stays EN and the NAMES column read is the EN one.
+Private Sub BuildGeobaseFixture()
+    Dim sh As Worksheet
+
+    Set sh = EnsureWorksheet("ADM1", GeobaseWorkbook, clearSheet:=True)
+    WriteRow sh.Cells(1, 1), "adm1_name"
+    WriteRow sh.Cells(2, 1), ADM1_FIRST_VALUE
+    WriteRow sh.Cells(3, 1), "Beta"
+
+    Set sh = EnsureWorksheet("ADM2", GeobaseWorkbook, clearSheet:=True)
+    WriteRow sh.Cells(1, 1), "adm1_name", "adm2_name"
+    WriteRow sh.Cells(2, 1), ADM1_FIRST_VALUE, "Alpha North"
+    WriteRow sh.Cells(3, 1), ADM1_FIRST_VALUE, "Alpha South"
+    WriteRow sh.Cells(4, 1), "Beta", "Beta North"
+    WriteRow sh.Cells(5, 1), "Beta", "Beta South"
+
+    Set sh = EnsureWorksheet("NAMES", GeobaseWorkbook, clearSheet:=True)
+    WriteRow sh.Cells(1, 1), "level", "EN"
+    WriteRow sh.Cells(2, 1), "adm1_name", ADM1_LABEL_IN_FILE
+    WriteRow sh.Cells(3, 1), "adm2_name", ADM2_LABEL_IN_FILE
+    WriteRow sh.Cells(4, 1), "adm3_name", "Commune"
+    WriteRow sh.Cells(5, 1), "adm4_name", "Village"
+    WriteRow sh.Cells(6, 1), "hf_name", "Health Post"
+End Sub
+
+'@sub-title Put the dictionary label a geobase import overwrites back.
+'@details
+'ImportGeobase ends in LLGeo.UpdateDict, which writes the level label of the
+'geobase over the main label of every geo-controlled variable of the
+'dictionary. The fixture carries one, hf_h2, and the dictionary is shared with
+'every other test of this module, so the cell goes back the way ResetHListSheet
+'puts the data table back.
+Private Sub ResetGeoVariableLabel()
+    Dim sh As Worksheet
+    Dim nameColumn As Long
+    Dim labelColumn As Long
+    Dim lastRow As Long
+    Dim counter As Long
+
+    Set sh = FixtureWorkbook.Worksheets(DICTIONARY_SHEET)
+    nameColumn = DictionaryTestFixture.DictionaryHeaderIndex("Variable Name") + 1
+    labelColumn = DictionaryTestFixture.DictionaryHeaderIndex("Main Label") + 1
+    lastRow = DictionaryTestFixture.DictionaryFixtureRowCount() + 1
+
+    For counter = 2 To lastRow
+        If CStr(sh.Cells(counter, nameColumn).Value) = HF_VARIABLE Then
+            sh.Cells(counter, labelColumn).Value = HF_VARIABLE_LABEL
+            Exit For
+        End If
+    Next counter
 End Sub

@@ -1090,6 +1090,12 @@ suites:
         covers: [ImportReport]
       - module: TestLLExporter
         covers: [LLExporter]
+      # TestLLImporter reaches DictionaryTestFixture, PasswordsTestFixture and,
+      # since the geobase pair joined on 2026-08-12, GeoTestFixture -- all three
+      # under helpers. That pair drives ImportGeobase over a geobase workbook of
+      # its own and pins the contract every caller of an import owes: a manager
+      # read before the import keeps the level label it cached, so the import
+      # has to be followed by a cache drop.
       - module: TestLLImporter
         covers: [LLImporter]
 
