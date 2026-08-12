@@ -11,7 +11,7 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>SpatialTables</h1>
-<p>Creates the spatial analysis ListObjects on the &quot;spatial_tables__&quot; worksheet
+<p>Creates the spatial analysis ListObjects on the &quot;__spatial_tables&quot; worksheet
 at build time. Add takes one cross-table and builds, for each of its row
 variables, either four administrative tables (adm1 to adm4) or one health
 facility table. Entries filed along the way leave through HasCheckings and
@@ -58,7 +58,7 @@ width off the table itself.</p>
 <pre><code class="language-vb">Public Function Create(ByVal tabl As CrossTable) As SpatialTables
 </code></pre>
 <p>Factory method on the predeclared instance. Validates that the cross-table is
-given and that the &quot;spatial_tables__&quot; worksheet exists in the same workbook,
+given and that the &quot;__spatial_tables&quot; worksheet exists in the same workbook,
 then hands the resolved worksheet to the instance so it is looked up once.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -113,7 +113,7 @@ spatial table creation in Add.</p>
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>sh</code>: Worksheet. The &quot;spatial_tables__&quot; worksheet.</li>
+<li><code>sh</code>: Worksheet. The &quot;__spatial_tables&quot; worksheet.</li>
 </ul>
 <hr />
 </div>

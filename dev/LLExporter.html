@@ -293,6 +293,25 @@ as a linelist here.</p>
 </ul>
 <p><strong>Returns:</strong> String. The first missing sheet name, or an empty string when all five are there.</p>
 <hr />
+<h3 id="int-internalsheetof">InternalSheetOf <a class="anchor-link" href="#int-internalsheetof">#</a></h3>
+<p><em>internal-sheet-of</em></p>
+<p><strong>An internal worksheet of a workbook under either of its names</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function InternalSheetOf(ByVal wkb As Workbook, _
+                                 ByVal newName As String, _
+                                 ByVal oldName As String) As Worksheet
+</code></pre>
+<p>A linelist generated before the internal-sheet rename carries the old
+trailing name, so the new name is looked for first and the old one answers
+when it is absent.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>wkb</code>: Workbook. The workbook to look through.</li>
+<li><code>newName</code>: String. The name the sheet carries today.</li>
+<li><code>oldName</code>: String. The name an older linelist gave it.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The worksheet, or Nothing when the workbook has neither name.</p>
+<hr />
 <h2 id="int-public-accessors">Public Accessors</h2>
 <h3 id="int-sourceworkbook">SourceWorkbook <a class="anchor-link" href="#int-sourceworkbook">#</a></h3>
 <p><em>source-workbook</em></p>
@@ -524,7 +543,7 @@ copied into a block of the right height instead.</p>
 <p>When fullExport is True, copies the entire dictionary. When False,
 filters on the export column name to include only rows assigned to that
 export. The variables the export excludes are dropped from the block in
-memory. Writes the result to the temp__ sheet and adds a blue font tag
+memory. Writes the result to the __temp sheet and adds a blue font tag
 to mark the dictionary as prepared.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -544,7 +563,7 @@ to mark the dictionary as prepared.</p>
 <ul>
 <li><code>nbExp</code>: Long. Number of export columns.</li>
 </ul>
-<p><strong>Returns:</strong> LLdictionary. Dictionary built from the temp__ sheet.</p>
+<p><strong>Returns:</strong> LLdictionary. Dictionary built from the __temp sheet.</p>
 <hr />
 <h3 id="int-sortexportdictionary">SortExportDictionary <a class="anchor-link" href="#int-sortexportdictionary">#</a></h3>
 <p><em>sort-export-dictionary</em></p>
@@ -700,7 +719,7 @@ other side never has to tell an absent option from a false one.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddShowHide(ByVal outwb As Workbook)
 </code></pre>
-<p>Builds a show_hide__ sheet in the output workbook and asks ShowHideStore to
+<p>Builds a __show_hide sheet in the output workbook and asks ShowHideStore to
 provision its table. Every data sheet contributes each layer it has: HList and
 CRF for a data entry sheet, Printed for its companion, VList for an info sheet.
 The choices the user made are read out of the source workbook first, so the

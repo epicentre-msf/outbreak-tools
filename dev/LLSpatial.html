@@ -85,7 +85,7 @@ This class leaves it alone.</p>
 <pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet) As LLSpatial
 </code></pre>
 <p>Factory method that checks the supplied worksheet is given and is named
-&quot;spatial_tables__&quot;, then returns a new instance. Called on the predeclared
+&quot;__spatial_tables&quot;, then returns a new instance. Called on the predeclared
 instance.</p>
 <p>The listofgeovars table is left out of the check on purpose: the worksheet and
 the table have different lifecycles, and a linelist that carries the sheet with
@@ -99,7 +99,7 @@ run. See the class description.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When the worksheet is Nothing.</li>
-<li>ProjectError.InvalidArgument When the worksheet name is not &quot;spatial_tables__&quot;.</li>
+<li>ProjectError.InvalidArgument When the worksheet name is not &quot;__spatial_tables&quot;.</li>
 </ul>
 <hr />
 </div>
@@ -734,7 +734,7 @@ the caller one shape.</p>
 <pre><code class="language-vb">Private Sub CheckRequirements(ByVal sh As Worksheet)
 </code></pre>
 <p>Guards the factory by checking the worksheet is given and its name matches the
-expected &quot;spatial_tables__&quot; constant.</p>
+expected &quot;__spatial_tables&quot; constant.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The worksheet to validate.</li>
@@ -742,7 +742,7 @@ expected &quot;spatial_tables__&quot; constant.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When the worksheet is Nothing.</li>
-<li>ProjectError.InvalidArgument When the worksheet name does not match &quot;spatial_tables__&quot;.</li>
+<li>ProjectError.InvalidArgument When the worksheet name does not match &quot;__spatial_tables&quot;.</li>
 </ul>
 <hr />
 <h2 id="int-error-handling">Error Handling</h2>

@@ -173,7 +173,7 @@ ResolveWksh with scope 3.</p>
 <pre><code class="language-vb">Public Property Get Dropdown(Optional ByVal scope As Byte = 1) As DropdownLists
 </code></pre>
 <p>Returns the DropdownLists instance backed by the appropriate list sheet.
-Scope 1 uses the temporary dropdown_lists__ sheet with the &quot;dropdown_&quot; header
+Scope 1 uses the temporary _<em>dropdown_lists sheet with the &quot;dropdown</em>&quot; header
 prefix; scope 2 uses the custom choice sheet with no prefix.</p>
 <p>Each scope is built once and kept. DropdownLists accumulates its report entries
 in instance state, and this property used to hand back a fresh object every

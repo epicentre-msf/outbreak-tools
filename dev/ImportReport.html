@@ -12,7 +12,7 @@
   <main>
 <h1>ImportReport</h1>
 <p>The store an import report is kept in. It owns four ListObjects on the
-import_rep__ worksheet. ProvisionTables builds the tables, SaveSheets and
+__import_rep worksheet. ProvisionTables builds the tables, SaveSheets and
 SaveVariables write the entries, Clear empties them, HasEntries says whether
 anything was recorded, and SheetNames and VariableEntries read the entries
 back. The class knows nothing about forms.</p>
@@ -82,7 +82,7 @@ generation makes it: the form reads the tables and nobody opens the sheet.</p>
 <pre><code class="language-vb">Public Sub ProvisionTables()
 </code></pre>
 <p>Public because Create calls it on the instance it just made, after sealing.
-Never activates or selects the sheet: import_rep__ is very hidden and
+Never activates or selects the sheet: __import_rep is very hidden and
 activating a very hidden sheet raises.</p>
 <hr />
 </div>

@@ -229,7 +229,7 @@ VList for an info sheet.</p>
 into memory and never reached a sheet, so nothing was ever hidden; and a blank
 width cell was read as a width of zero and written to the sheet, which is how
 Excel hides a column, so entries vanished for the opposite reason.</p>
-<p>Skips when the file carries no show_hide__ sheet, and when its <code>show_hide</code> tag
+<p>Skips when the file carries no show/hide sheet, and when its <code>show_hide</code> tag
 asks for no update.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -490,7 +490,7 @@ store as well, so they survive the next time it is opened.</p>
 <pre><code class="language-vb">Private Function OwnShowHideStore() As ShowHideStore
 </code></pre>
 <p><strong>Returns:</strong> ShowHideStore. The store, or Nothing when the workbook has no
-show_hide__ worksheet.</p>
+__show_hide worksheet.</p>
 <hr />
 <h3 id="int-companionsheet">CompanionSheet <a class="anchor-link" href="#int-companionsheet">#</a></h3>
 <p><em>companion-sheet</em></p>
@@ -644,7 +644,7 @@ dropdown worksheet.</p>
 <pre><code class="language-vb">Private Sub SaveReport()
 </code></pre>
 <p>The four lists used to live in memory alone and die with this object at the end
-of the import, while the four ListObjects they belong on sat on import_rep__
+of the import, while the four ListObjects they belong on sat on __import_rep
 with nothing writing to them. They are written now, so F_ImportRep can be
 opened again days later from the advanced form.</p>
 <p>A workbook that will not take the store - anything other than a generated
@@ -707,6 +707,21 @@ this and its entries belong to the same import.</p>
 <li><code>sheetName</code>: String. The sheet name to check.</li>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the name matches a reserved sheet.</p>
+<hr />
+<h3 id="int-showhidesheetof">ShowHideSheetOf <a class="anchor-link" href="#int-showhidesheetof">#</a></h3>
+<p><em>show-hide-sheet-of</em></p>
+<p><strong>The show/hide worksheet of a workbook, or Nothing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ShowHideSheetOf(ByVal wb As Workbook) As Worksheet
+</code></pre>
+<p>A file written before the internal-sheet rename carries the old trailing
+name, so the new name is looked for first and the old one answers when it
+is absent.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>wb</code>: Workbook. The workbook to look through.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The show/hide worksheet, or Nothing when the workbook has none.</p>
 <hr />
 <h3 id="int-importvlistsheet">ImportVListSheet <a class="anchor-link" href="#int-importvlistsheet">#</a></h3>
 <p><em>import-vlist-sheet</em></p>

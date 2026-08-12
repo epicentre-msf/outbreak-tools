@@ -64,7 +64,7 @@ HList sheet writes <code>hlist</code> rows - so replacing a whole layer would dr
 other sheets' rows on every save. Variable names are unique across the
 workbook, which is what makes the key safe. A row whose variable left the
 dictionary lingers; Load skips it.</p>
-<p><strong>Depends on:</strong> <a href="ShowHide.html">ShowHide</a>, <a href="ShowHideLayout.html">ShowHideLayout</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, The worksheet a linelist keeps its show/hide table on, The table this class writes, and the name an older build wrote, The per-sheet tables the first show/hide design tiled across the same, worksheet. Both designs answer to ListObjects(1), so they cannot share a sheet., How many saved layouts one store holds at most</p>
+<p><strong>Depends on:</strong> <a href="ShowHide.html">ShowHide</a>, <a href="ShowHideLayout.html">ShowHideLayout</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, The worksheet a linelist keeps its show/hide table on, and the name a, linelist generated before the internal-sheet rename gave it, The table this class writes, and the name an older build wrote, The per-sheet tables the first show/hide design tiled across the same, worksheet. Both designs answer to ListObjects(1), so they cannot share a sheet., How many saved layouts one store holds at most</p>
 <p><strong>Version:</strong> 1.1 (2026-08-11)</p>
 </div>
 </details>
@@ -80,13 +80,13 @@ dictionary lingers; Load skips it.</p>
 <p>Three ways in: two that provision, one that reads what is there.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>wkb</code>: Workbook. The workbook holding the show_hide__ worksheet.</li>
+<li><code>wkb</code>: Workbook. The workbook holding the __show_hide worksheet.</li>
 </ul>
 <p><strong>Returns:</strong> ShowHideStore. A store ready to save and load.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When the workbook is Nothing.</li>
-<li>ProjectError.ElementNotFound When the workbook has no show_hide__
+<li>ProjectError.ElementNotFound When the workbook has no __show_hide
 worksheet.</li>
 </ul>
 <hr />
