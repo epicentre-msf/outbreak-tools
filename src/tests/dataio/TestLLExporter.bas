@@ -128,6 +128,15 @@ Public Sub ModuleCleanup()
 
     Set FixtureWorkbook = Nothing
 
+    'Four tests write workbooks into FILES_FOLDER through BuildTempFolder, which
+    'makes it with MkDir, and each one kills its own file. The folder itself is
+    'this module's to remove, and here is the one place every test has finished.
+    'The path is built by hand because BuildTempFolder creates the folder it
+    'answers. RmDir fails quietly when the folder is absent or holds a file.
+    On Error Resume Next
+        RmDir ThisWorkbook.Path & Application.PathSeparator & FILES_FOLDER
+    On Error GoTo 0
+
     If Not Assert Is Nothing Then
         Assert.PrintResults TEST_OUTPUT_SHEET
     End If
