@@ -37,6 +37,9 @@ Option Explicit
 '                                correct completed/pending colours and writes
 '                                a formatted "current / max" string to the
 '                                first cell of the bar range.
+'     7. Repaint seam         -- Verifying that the forceRepaint flag on
+'                                Update and StepBy leaves ScreenUpdating
+'                                False after the render.
 '
 ' @depends ProgressBar, CustomTest, TestHelpersLite
 ' =============================================================================
@@ -626,4 +629,46 @@ Public Sub TestRenderWritesFormattedValueToFirstCell()
 
 TestFail:
     CustomTestLogFailure Assert, "TestRenderWritesFormattedValueToFirstCell", Err.Number, Err.Description
+End Sub
+
+'@section Tests - Repaint seam
+'===============================================================================
+
+' @sub-title TestForceRepaintLeavesScreenUpdatingFalse
+' @details
+'   Verifies the forceRepaint seam on Update and StepBy. The seam serves a
+'   driver that holds the application busy for a whole generation: each
+'   forced tick repaints the screen inside itself and hands ScreenUpdating
+'   back turned off, so the driver's captured ApplicationState stays the
+'   single owner of the real restore. The test drives Update with the flag
+'   from a ScreenUpdating False start and StepBy with the flag from a
+'   ScreenUpdating True start, and asserts that ScreenUpdating is False
+'   after both calls and that the values still land.
+'@TestMethod("ProgressBar")
+Public Sub TestForceRepaintLeavesScreenUpdatingFalse()
+    CustomTestSetTitles Assert, "ProgressBar", "TestForceRepaintLeavesScreenUpdatingFalse"
+    On Error GoTo TestFail
+
+    Dim sut As ProgressBar
+    Set sut = ProgressBar.Create(FixtureSheet.Range("A1:E1"), 10)
+
+    Application.ScreenUpdating = False
+    sut.Update 3, "step three", forceRepaint:=True
+
+    Assert.IsTrue (Application.ScreenUpdating = False), _
+                   "Update with forceRepaint should leave ScreenUpdating False"
+    Assert.AreEqual CLng(3), sut.Value, _
+                     "Update with forceRepaint should still set the value"
+
+    Application.ScreenUpdating = True
+    sut.StepBy 1, "step four", forceRepaint:=True
+
+    Assert.IsTrue (Application.ScreenUpdating = False), _
+                   "StepBy with forceRepaint should leave ScreenUpdating False"
+    Assert.AreEqual CLng(4), sut.Value, _
+                     "StepBy with forceRepaint should still increment the value"
+    Exit Sub
+
+TestFail:
+    CustomTestLogFailure Assert, "TestForceRepaintLeavesScreenUpdatingFalse", Err.Number, Err.Description
 End Sub

@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, DesignerEntry, EventsDesignerCore, RibbonDev, LLGeo, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, LinelistSpecs, Linelist, LLDataEntry, LLSheets, AnalysisOutput, Checking, GenerationReport, SetupTranslationsTable
+'@depends DesignerPreparation, DesignerEntry, EventsDesignerCore, RibbonDev, LLGeo, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, LinelistSpecs, Linelist, LLDataEntry, LLSheets, AnalysisOutput, Checking, GenerationReport, SetupTranslationsTable, ProgressBar
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -28,6 +28,18 @@ Private Const DROP_SETUP_LANGUAGES As String = "__setup_languages"
 'Leading shape of the internal tag columns of a setup translations table.
 'The fallback header read drops these before the dropdown update.
 Private Const INTERNAL_TAG_LEAD As String = "__"
+
+'Progress over the milestones of one build. The bar range is owner hand
+'work on the Main sheet of the mock; a missing name means no bar and no
+'raise, so this code lands before the hand work and wakes up with it.
+'The status cell is the edition cell the entry already writes.
+Private Const RNG_PROGRESS_BAR As String = "RNG_ProgressBar"
+Private Const RNG_EDITION As String = "RNG_Edition"
+
+'The fixed milestones of one build: entry checks, transfer, linelist
+'prepare, the two dropdown flushes, analyses, save. Each data entry
+'sheet built adds one step, and Complete is the finalise message.
+Private Const FIXED_STEPS As Long = 7
 
 
 '@section Dev group callbacks
@@ -341,6 +353,7 @@ Public Sub clickGenerate()
     Dim entry As DesignerEntry
     Dim appScope As ApplicationState
     Dim ll As Linelist
+    Dim bar As ProgressBar
     Dim savedPath As String
 
     On Error GoTo Cleanup
@@ -366,14 +379,24 @@ Public Sub clickGenerate()
 
     entry.AddInfo entry.TranslateMessage("MSG_ReadSetup"), "edition"
 
+    'The bar over the milestones. During the build it owns the edition
+    'cell; the first tick is the entry checks that just passed. The
+    'maximum starts at the fixed steps and grows by the sheet count once
+    'the build knows it.
+    Set bar = ResolveMainProgressBar(entry)
+    If Not bar Is Nothing Then
+        bar.Update 1, entry.TranslateMessage("MSG_ReadSetup"), forceRepaint:=True
+    End If
+
     'The whole build: specifications, linelist, sheets, dropdowns, analyses,
     'save. The phase checkings flush to the report as each phase completes.
-    savedPath = GenerateOne(entry, ll)
+    savedPath = GenerateOne(entry, ll, bar)
 
     'Finalise the generation report (install filter handler)
     GenerationReport.FinaliseReport
 
     entry.AddInfo entry.TranslateMessage("MSG_LLCreated"), "edition"
+    If Not bar Is Nothing Then bar.Complete entry.TranslateMessage("MSG_LLCreated")
 
     appScope.Restore
     MsgBox entry.TranslateMessage("MSG_LLCreated"), vbInformation + vbOKOnly, PROMPT_TITLE
@@ -386,6 +409,9 @@ Cleanup:
     errDesc = Err.Description
 
     On Error Resume Next
+    'A half-drawn bar never survives the run; the error rides the
+    'edition cell through the bar's status write.
+    If Not bar Is Nothing Then bar.Reset errDesc
     'Try to finalise whatever report was written before the error
     GenerationReport.FinaliseReport
     If Not appScope Is Nothing Then appScope.Restore
@@ -448,10 +474,22 @@ End Function
 'FinaliseReport), the busy state and every dialog. A build fault raises
 'to the caller; builtLinelist is set as soon as the linelist exists, so
 'the caller's handler holds it for ErrorManage or DiscardBuild.
+'
+'The build ticks at its milestones: transfer, linelist prepare, one
+'tick per data entry sheet, the two dropdown flushes, analyses, save.
+'The bar hangs off those ticks and repaints itself under the caller's
+'busy state; the status target takes the same texts as plain writes,
+'which is how a multi row's result cell reads "sheet 3 of 15" while
+'the row builds. Both arrive as Nothing when unused.
 '@param entry DesignerEntry. The entry manager over the Main worksheet.
 '@param builtLinelist Linelist. Answers the linelist of the build, set before any build step runs.
+'@param bar ProgressBar. The bar over the milestones. Nothing means no bar.
+'@param statusTarget Range. One cell taking the milestone texts. Nothing means no writes.
 '@return String. The full path of the written linelist file.
-Public Function GenerateOne(ByVal entry As DesignerEntry, ByRef builtLinelist As Linelist) As String
+Public Function GenerateOne(ByVal entry As DesignerEntry, _
+                            ByRef builtLinelist As Linelist, _
+                            Optional ByVal bar As ProgressBar = Nothing, _
+                            Optional ByVal statusTarget As Range = Nothing) As String
     Dim specs As LinelistSpecs
     Dim ll As Linelist
     Dim setupPath As String
@@ -468,6 +506,8 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, ByRef builtLinelist As
 
     'Flush Phase 1: specification checkings (dictionary, choices, exports, etc.)
     GenerationReport.FlushCheckings GenerationReport.HarvestSpecsCheckings(specs)
+
+    TickProgress bar, statusTarget, "transfer"
 
     'After the preparation step of the specifications, internal specifications
     'object shift focus from the designer to the linelist workbook as they
@@ -489,9 +529,15 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, ByRef builtLinelist As
         GenerationReport.FlushCheckings codeChecks
     End If
 
+    TickProgress bar, statusTarget, "linelist"
+
     'Build data entry worksheets (sections, variables, formatting). The sheet
     'name list is the one Linelist.Prepare already walked the dictionary for.
     Set sheetLists = ll.SheetNames
+
+    'The maximum was provisional until here: the fixed steps plus one
+    'step per sheet the loop below will build.
+    If Not bar Is Nothing Then bar.Maximum = FIXED_STEPS + sheetLists.Length
 
     If sheetLists.Length > 0 Then
         Dim listBld As LLDataEntry
@@ -506,6 +552,13 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, ByRef builtLinelist As
         Set llSheetInfo = ll.SheetInfoManager
 
         For counter = sheetLists.LowerBound To sheetLists.UpperBound
+            'The tick leads the sheet it names, so the bar reads the
+            'sheet under construction while the build runs.
+            TickProgress bar, statusTarget, _
+                         CStr(sheetLists.Item(counter)), _
+                         "sheet " & CStr(counter - sheetLists.LowerBound + 1) & _
+                         " of " & CStr(sheetLists.Length) & " - " & _
+                         CStr(sheetLists.Item(counter))
             Set listBld = BuildOneSheet(llSheetInfo, ll, sheetLists.Item(counter))
             If Not listBld Is Nothing Then
                 If listBld.HasCheckings Then
@@ -527,14 +580,17 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, ByRef builtLinelist As
     Dim dropStd As DropdownLists
     Set dropStd = ll.Dropdown(1)
     If dropStd.HasCheckings Then dropChecks.Push dropStd.CheckingValues
+    TickProgress bar, statusTarget, "dropdowns"
 
     Dim dropCust As DropdownLists
     Set dropCust = ll.Dropdown(2)
     If dropCust.HasCheckings Then dropChecks.Push dropCust.CheckingValues
+    TickProgress bar, statusTarget, "dropdowns"
 
     GenerationReport.FlushCheckings dropChecks
 
     'Build the analyses
+    TickProgress bar, statusTarget, "analyses"
     Set anaOut = AnalysisOutput.Create(specs.AnalysisObject.Wksh(), ll)
     ' All four analysis sheets. The call used to stop after the time series
     ' tables, so the generated linelist carried no time series chart, no
@@ -552,11 +608,75 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, ByRef builtLinelist As
     End If
 
     'Save the linelist as .xlsb with password protection
+    TickProgress bar, statusTarget, "save"
     ll.SaveLL
 
     'The path SaveLL wrote, read from the same values it read
     GenerateOne = specs.Value("lldir") & Application.PathSeparator & _
                   specs.Value("llname") & ".xlsb"
+End Function
+
+'@Description("Move the progress displays one milestone forward.")
+'@details
+'One tick, two observers: the bar steps with its own repaint, and the
+'status target takes the text as a plain write. When the tick has a bar
+'the bar's repaint shows the target's write too; a target alone repaints
+'here, since the busy state keeps every write invisible without it.
+'@param bar ProgressBar. The bar over the milestones. Nothing means no bar.
+'@param statusTarget Range. One cell taking the milestone text. Nothing means no write.
+'@param statusText String. The milestone text.
+'@param targetText String. Text for the status target when it differs from the bar's. Defaults to statusText.
+Private Sub TickProgress(ByVal bar As ProgressBar, _
+                         ByVal statusTarget As Range, _
+                         ByVal statusText As String, _
+                         Optional ByVal targetText As String = vbNullString)
+    If Not statusTarget Is Nothing Then
+        If LenB(targetText) = 0 Then targetText = statusText
+        statusTarget.Value = targetText
+    End If
+
+    If Not bar Is Nothing Then
+        bar.StepBy 1, statusText, forceRepaint:=True
+    ElseIf Not statusTarget Is Nothing Then
+        Application.ScreenUpdating = True
+        DoEvents
+        Application.ScreenUpdating = False
+    End If
+End Sub
+
+'@Description("Build the bar over the milestones when the Main sheet carries its range.")
+'@details
+'The bar range is owner hand work on the mock. A missing name means no
+'bar and no raise; the generation runs the same. A name that resolves
+'outside the Main sheet is treated as missing, so the multi bar on the
+'GenerateMultiple sheet keeps its own range. The edition cell rides
+'along as the status cell, which is how the milestone texts land where
+'the entry writes its start and end messages.
+'@param entry DesignerEntry. The entry manager over the Main worksheet.
+'@return ProgressBar. The bar, or Nothing when the range is missing.
+Private Function ResolveMainProgressBar(ByVal entry As DesignerEntry) As ProgressBar
+    Dim mainSheet As Worksheet
+    Dim barRange As Range
+    Dim statusRange As Range
+    Dim bar As ProgressBar
+
+    Set mainSheet = entry.HostSheet
+
+    On Error Resume Next
+    Set barRange = mainSheet.Range(RNG_PROGRESS_BAR)
+    Set statusRange = mainSheet.Range(RNG_EDITION)
+    On Error GoTo 0
+
+    If barRange Is Nothing Then Exit Function
+    If Not barRange.Worksheet Is mainSheet Then Exit Function
+
+    'A malformed hand-made range stops the bar alone; the generation runs on
+    On Error Resume Next
+    Set bar = ProgressBar.Create(barRange, FIXED_STEPS)
+    If Not statusRange Is Nothing Then bar.AttachStatusCell statusRange
+    On Error GoTo 0
+
+    Set ResolveMainProgressBar = bar
 End Function
 
 

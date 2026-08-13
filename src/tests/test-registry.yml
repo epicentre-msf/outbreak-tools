@@ -189,7 +189,7 @@ suites:
       # the workbook, so this row closes its own compile closure. It is here
       # because the class lives in src/classes/general/;
       # EventsDesignerMulti under `designer` names it, so that module row
-      # compiles through this one. It carries no suite of its own yet.
+      # compiles through this one.
       - name: ProgressBar
       # Do NOT add TranslationObject as a class. It is already baked into the
       # workbook, and importing it again makes Excel keep both copies under a
@@ -245,6 +245,11 @@ suites:
       # PasswordsTestFixture stays registered because five other suites use it.
       - module: TestPasswords
         covers: [Passwords]
+      # TestProgressBar drives the bar over a hidden fixture sheet. The seam
+      # test toggles Application.ScreenUpdating through the forced renders
+      # and pins that every forced tick hands it back turned off.
+      - module: TestProgressBar
+        covers: [ProgressBar]
 
   # --- dictionary (LLExport, LLSheets) ---------------------------------------
   # LLExport names LLdictionary, LLVariables, DataSheet, CustomTable, Passwords,

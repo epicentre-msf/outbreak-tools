@@ -596,12 +596,17 @@ Public Sub GenerateMultipleRows(ByVal lo As ListObject, _
 
         If LenB(setupPath) > 0 Then
             processed = processed + 1
-            If Not bar Is Nothing Then bar.Update processed - 1, BaseName(setupPath)
+            If Not bar Is Nothing Then
+                bar.Update processed - 1, RowStatus(bar, processed, setupPath), _
+                           forceRepaint:=True
+            End If
 
             FlushRowHeader lo, rowIdx, setupPath
             WriteRowEntries lo, rowIdx, entry
 
-            If BuildRow(entry, outcomeText) Then
+            'The result cell shows the row's milestones while the row
+            'builds and ends as the row's outcome below.
+            If BuildRow(entry, outcomeText, RowCellRange(lo, rowIdx, COL_RESULT)) Then
                 builtCount = builtCount + 1
                 WriteRowCell lo, rowIdx, COL_OUTPUT_FILES, outcomeText
                 WriteRowCell lo, rowIdx, COL_RESULT, RESULT_BUILT
@@ -610,13 +615,28 @@ Public Sub GenerateMultipleRows(ByVal lo As ListObject, _
                 WriteRowCell lo, rowIdx, COL_RESULT, outcomeText
             End If
 
-            If Not bar Is Nothing Then bar.Update processed, BaseName(setupPath)
+            If Not bar Is Nothing Then
+                bar.Update processed, RowStatus(bar, processed, setupPath), _
+                           forceRepaint:=True
+            End If
         ElseIf RowHasContent(lo, rowIdx) Then
             WriteRowCell lo, rowIdx, COL_RESULT, _
                          "Skipped: the " & COL_SETUPS & " cell is empty."
         End If
     Next rowIdx
 End Sub
+
+'@Description("The global bar's status text for one row.")
+'@param bar ProgressBar. The bar over the rows; its maximum is the row count.
+'@param rowNumber Long. The position of the row among the rows the run builds.
+'@param setupPath String. The row's setup file path.
+'@return String. The status line, "linelist i of n - <setup file name>".
+Private Function RowStatus(ByVal bar As ProgressBar, _
+                           ByVal rowNumber As Long, _
+                           ByVal setupPath As String) As String
+    RowStatus = "linelist " & CStr(rowNumber) & " of " & CStr(bar.Maximum) & _
+                " - " & BaseName(setupPath)
+End Function
 
 '@Description("Write one row's values into the Main entries through the entry manager.")
 '@details
@@ -686,11 +706,16 @@ End Function
 'The one place a row's fault is caught, so the loop keeps running. A
 'refused row answers False with a pointer at the report, where the
 'checks landed; a failed row answers False with the error text, and the
-'incomplete output workbook is discarded quietly.
+'incomplete output workbook is discarded quietly. The status target is
+'the row's result cell: the build writes its milestones into it, and
+'the caller overwrites it with the row's outcome.
 '@param entry DesignerEntry. The entry manager, already loaded with the row.
 '@param outcomeText String. Answers the written path on success and the fault text otherwise.
+'@param statusTarget Range. One cell taking the build's milestone texts. Nothing means no writes.
 '@return Boolean. True when the row built and saved.
-Private Function BuildRow(ByVal entry As DesignerEntry, ByRef outcomeText As String) As Boolean
+Private Function BuildRow(ByVal entry As DesignerEntry, _
+                          ByRef outcomeText As String, _
+                          Optional ByVal statusTarget As Range = Nothing) As Boolean
     Dim ll As Linelist
 
     On Error GoTo Fail
@@ -700,7 +725,7 @@ Private Function BuildRow(ByVal entry As DesignerEntry, ByRef outcomeText As Str
         Exit Function
     End If
 
-    outcomeText = EventsDesignerAdvanced.GenerateOne(entry, ll)
+    outcomeText = EventsDesignerAdvanced.GenerateOne(entry, ll, Nothing, statusTarget)
     BuildRow = True
     Exit Function
 
@@ -780,6 +805,21 @@ End Function
 Private Function CellText(ByVal lo As ListObject, _
                           ByVal rowIdx As Long, _
                           ByVal colName As String) As String
+    Dim cell As Range
+
+    Set cell = RowCellRange(lo, rowIdx, colName)
+    If cell Is Nothing Then Exit Function
+    CellText = Trim$(CStr(cell.Value))
+End Function
+
+'@Description("The cell of a row by column header. A missing column answers Nothing.")
+'@param lo ListObject. The T_Multi ListObject.
+'@param rowIdx Long. The ListRows position of the row.
+'@param colName String. The column header.
+'@return Range. The one cell, or Nothing.
+Private Function RowCellRange(ByVal lo As ListObject, _
+                              ByVal rowIdx As Long, _
+                              ByVal colName As String) As Range
     Dim col As ListColumn
 
     On Error Resume Next
@@ -787,7 +827,7 @@ Private Function CellText(ByVal lo As ListObject, _
     On Error GoTo 0
 
     If col Is Nothing Then Exit Function
-    CellText = Trim$(CStr(lo.ListRows(rowIdx).Range.Cells(1, col.Index).Value))
+    Set RowCellRange = lo.ListRows(rowIdx).Range.Cells(1, col.Index)
 End Function
 
 '@Description("Write one cell of a row by column header. A missing column skips the write.")
@@ -799,14 +839,11 @@ Private Sub WriteRowCell(ByVal lo As ListObject, _
                          ByVal rowIdx As Long, _
                          ByVal colName As String, _
                          ByVal cellValue As String)
-    Dim col As ListColumn
+    Dim cell As Range
 
-    On Error Resume Next
-    Set col = lo.ListColumns(colName)
-    On Error GoTo 0
-
-    If col Is Nothing Then Exit Sub
-    lo.ListRows(rowIdx).Range.Cells(1, col.Index).Value = cellValue
+    Set cell = RowCellRange(lo, rowIdx, colName)
+    If cell Is Nothing Then Exit Sub
+    cell.Value = cellValue
 End Sub
 
 '@Description("True when any mapped cell of the row apart from setups is filled.")
