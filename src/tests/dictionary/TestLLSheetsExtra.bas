@@ -172,14 +172,18 @@ Public Sub TestDataBoundsForBothLayouts()
     Assert.AreEqual 4, vTop, "Vertical layout top row should be 4"
     Assert.AreEqual 5, vLeft, "Vertical layout left column should be 5"
     Assert.AreEqual 5, vRight, "Vertical layout right column equals left column"
-    Assert.AreEqual vTop + IIf(vCount > 0, vCount - 1, 0), vBottom, _
-                     "Vertical bottom should match top + count - 1"
+    Assert.IsTrue vBottom >= vTop + IIf(vCount > 0, vCount - 1, 0), _
+                  "Vertical bottom covers at least top + count - 1"
 
     Assert.AreEqual 8, hTop, "Horizontal layout top row should be 8"
     Assert.AreEqual 1, hLeft, "Horizontal layout left column should be 1"
     Assert.AreEqual 8 + 201, hBottom, "Horizontal layout bottom should be top + 201 rows"
-    Assert.AreEqual hLeft + IIf(hCount > 0, hCount - 1, 0), hRight, _
-                     "Horizontal right should match left + count - 1"
+    'The count is a floor now, not the answer. A dictionary whose column
+    'indexes skip a number writes variables past left + count - 1, and the
+    'bound has to reach them. TestHorizontalRightReachesTheLastWrittenColumn
+    'states the rest.
+    Assert.IsTrue hRight >= hLeft + IIf(hCount > 0, hCount - 1, 0), _
+                  "Horizontal right covers at least left + count - 1"
     Exit Sub
 
 Fail:
@@ -232,6 +236,195 @@ ExpectError:
     BoundRaisesInvalidArgument = (Err.Number = ProjectError.InvalidArgument)
     Err.Clear
 End Function
+
+'@section The bounds reach every written variable
+'===============================================================================
+
+'@sub-title The horizontal right bound reaches the last column a variable is written to
+'@details
+'VarWriter puts a variable in the WORKSHEET COLUMN its dictionary row names
+'in "column index". The bound used to be left + count - 1, which is the same
+'number only while the indexes run 1, 2, 3 with no gap. The stock fixture
+'already breaks that: its hlist sheet carries more indexes than variables, so
+'the last variables were written outside the data table, where the filter,
+'the export and every reader that walks the table cannot see them.
+'@TestMethod("LLSheetsExtra")
+Public Sub TestHorizontalRightReachesTheLastWrittenColumn()
+    CustomTestSetTitles Assert, "LLSheets", "TestHorizontalRightReachesTheLastWrittenColumn"
+    On Error GoTo Fail
+
+    Dim rightBound As Long
+    Dim lastWritten As Long
+
+    'The index column is created by Prepare (DEFAULTCREATEDCOLUMNS), and
+    'Prepare also inserts rows, so the caches built before it are dropped.
+    Dictionary.Prepare
+    Sheets.InvalidateCaches
+
+    lastWritten = LargestIndexOf("hlist2D-sheet1")
+    rightBound = Sheets.DataBounds("hlist2D-sheet1", SheetBound.ColEnd)
+
+    Assert.IsTrue lastWritten > 0, "The fixture carries column indexes to read"
+    Assert.AreEqual lastWritten, rightBound, _
+                     "The right bound is the last column a variable is written to"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestHorizontalRightReachesTheLastWrittenColumn", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A gap in the indexes moves the horizontal right bound with it
+'@details
+'The shape a setup takes as soon as variables are removed or reordered: the
+'indexes stop being contiguous. Pushing one variable far to the right must
+'carry the bound with it, because that is where its column is written.
+'@TestMethod("LLSheetsExtra")
+Public Sub TestAGapInTheIndexesStillCoversEveryVariable()
+    CustomTestSetTitles Assert, "LLSheets", "TestAGapInTheIndexesStillCoversEveryVariable"
+    On Error GoTo Fail
+
+    Dim beyond As Long
+    Dim rightBound As Long
+
+    'The index column is created by Prepare (DEFAULTCREATEDCOLUMNS), and
+    'Prepare also inserts rows, so the caches built before it are dropped.
+    Dictionary.Prepare
+    Sheets.InvalidateCaches
+
+    beyond = LargestIndexOf("hlist2D-sheet1") + 7
+    WriteFarthestIndex "hlist2D-sheet1", beyond
+    Sheets.InvalidateCaches
+
+    rightBound = Sheets.DataBounds("hlist2D-sheet1", SheetBound.ColEnd)
+    Assert.AreEqual beyond, rightBound, _
+                     "The bound follows the variable written farthest right"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestAGapInTheIndexesStillCoversEveryVariable", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title The vertical bottom bound reaches the last row a variable is written to
+'@details
+'A VList sheet reads the same number as a WORKSHEET ROW
+'(VarWriter.VarRange), so the bottom bound carries the same rule as the
+'right bound of an HList sheet.
+'@TestMethod("LLSheetsExtra")
+Public Sub TestVerticalBottomReachesTheLastWrittenRow()
+    CustomTestSetTitles Assert, "LLSheets", "TestVerticalBottomReachesTheLastWrittenRow"
+    On Error GoTo Fail
+
+    Dim bottomBound As Long
+    Dim countedBottom As Long
+    Dim lastWritten As Long
+
+    'The index column is created by Prepare (DEFAULTCREATEDCOLUMNS), and
+    'Prepare also inserts rows, so the caches built before it are dropped.
+    Dictionary.Prepare
+    Sheets.InvalidateCaches
+
+    lastWritten = LargestIndexOf("vlist1D-sheet1")
+    countedBottom = 4 + IIf(Sheets.NumberOfVars("vlist1D-sheet1") > 0, _
+                            Sheets.NumberOfVars("vlist1D-sheet1") - 1, 0)
+    bottomBound = Sheets.DataBounds("vlist1D-sheet1", SheetBound.RowEnd)
+
+    If lastWritten > countedBottom Then
+        Assert.AreEqual lastWritten, bottomBound, _
+                         "The bottom bound is the last row a variable is written to"
+    Else
+        Assert.AreEqual countedBottom, bottomBound, _
+                         "With no index past the count, the count decides the bottom"
+    End If
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestVerticalBottomReachesTheLastWrittenRow", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Without an index column the count decides the bound, as it always did
+'@details
+'A dictionary carrying no "column index" column is not a fault: every bound
+'falls back to the variable count, which is the behaviour of every caller
+'that came before the index was read.
+'@TestMethod("LLSheetsExtra")
+Public Sub TestBoundsFallBackToTheCountWithoutIndexes()
+    CustomTestSetTitles Assert, "LLSheets", "TestBoundsFallBackToTheCountWithoutIndexes"
+    On Error GoTo Fail
+
+    Dim rightBound As Long
+    Dim counted As Long
+
+    Dictionary.Prepare
+    Dictionary.RemoveColumn "column index"
+    Sheets.InvalidateCaches
+
+    counted = Sheets.NumberOfVars("hlist2D-sheet1")
+    rightBound = Sheets.DataBounds("hlist2D-sheet1", SheetBound.ColEnd)
+
+    Assert.AreEqual 1 + IIf(counted > 0, counted - 1, 0), rightBound, _
+                     "Without indexes the right bound is left + count - 1"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestBoundsFallBackToTheCountWithoutIndexes", _
+                         Err.Number, Err.Description
+End Sub
+
+'@fun-title The largest column index the rows of one sheet carry
+'@param sheetName String. The sheet to read.
+'@return Long. The largest index, or 0 when the fixture holds none.
+Private Function LargestIndexOf(ByVal sheetName As String) As Long
+    Dim sh As Worksheet
+    Dim sheetColumn As Long
+    Dim indexColumn As Long
+    Dim lastRow As Long
+    Dim counter As Long
+    Dim cellValue As Variant
+
+    Set sh = ThisWorkbook.Worksheets(DICT_SHEET)
+    sheetColumn = Dictionary.Data.ColumnIndex("sheet name", matchCase:=False)
+    indexColumn = Dictionary.Data.ColumnIndex("column index", matchCase:=False)
+    lastRow = sh.Cells(sh.Rows.Count, sheetColumn).End(xlUp).Row
+
+    For counter = 2 To lastRow
+        If StrComp(CStr(sh.Cells(counter, sheetColumn).Value), sheetName, vbTextCompare) = 0 Then
+            cellValue = sh.Cells(counter, indexColumn).Value
+            If IsNumeric(cellValue) Then
+                If CLng(cellValue) > LargestIndexOf Then LargestIndexOf = CLng(cellValue)
+            End If
+        End If
+    Next
+End Function
+
+'@sub-title Push the last variable of one sheet to a column of your choosing
+'@param sheetName String. The sheet to edit.
+'@param newIndex Long. The index to write into its last row.
+Private Sub WriteFarthestIndex(ByVal sheetName As String, ByVal newIndex As Long)
+    Dim sh As Worksheet
+    Dim sheetColumn As Long
+    Dim indexColumn As Long
+    Dim lastRow As Long
+    Dim counter As Long
+    Dim targetRow As Long
+
+    Set sh = ThisWorkbook.Worksheets(DICT_SHEET)
+    sheetColumn = Dictionary.Data.ColumnIndex("sheet name", matchCase:=False)
+    indexColumn = Dictionary.Data.ColumnIndex("column index", matchCase:=False)
+    lastRow = sh.Cells(sh.Rows.Count, sheetColumn).End(xlUp).Row
+
+    For counter = 2 To lastRow
+        If StrComp(CStr(sh.Cells(counter, sheetColumn).Value), sheetName, vbTextCompare) = 0 Then
+            targetRow = counter
+        End If
+    Next
+
+    If targetRow > 0 Then sh.Cells(targetRow, indexColumn).Value = newIndex
+End Sub
 
 '@sub-title Verify that ContainsControl raises when the control column is removed
 '@details

@@ -77,6 +77,7 @@ Private Type TLLSheets
     cachedNames() As String
     cachedRows() As Long
     cachedCounts() As Long
+    cachedFarIndexes() As Long
     cachedSlots As Long
     sealed As Boolean
 End Type
@@ -89,6 +90,7 @@ Private Const COL_SHEET_TYPE As String = "sheet type"
 Private Const COL_TABLE_NAME As String = "table name"
 Private Const COL_CONTROL As String = "control"
 Private Const COL_VARIABLE_NAME As String = "variable name"
+Private Const COL_COLUMN_INDEX As String = "column index"
 Private Const SHEETTYPE_HORIZONTAL As String = "hlist2D"
 Private Const SHEETTYPE_VERTICAL As String = "vlist1D"
 Private Const SHEET_HORIZONTAL_DATA_ROWS As Long = 201
@@ -313,6 +315,7 @@ Private Function BoundValue(ByVal sheetName As String, _
                 varCount = NumberOfVars(sheetName)
                 offset = IIf(varCount > 0, varCount - 1, 0)
                 BoundValue = SHEET_START_ROW_VERTICAL + offset
+                BoundValue = FarthestOf(BoundValue, sheetName)
             End If
 
         Case LLSheetBoundRight
@@ -320,6 +323,7 @@ Private Function BoundValue(ByVal sheetName As String, _
                 varCount = NumberOfVars(sheetName)
                 offset = IIf(varCount > 0, varCount - 1, 0)
                 BoundValue = SHEET_START_COL_HORIZONTAL + offset
+                BoundValue = FarthestOf(BoundValue, sheetName)
             Else
                 BoundValue = SHEET_START_COL_VERTICAL
             End If
@@ -650,6 +654,7 @@ Private Function ResolveSheetRow(ByVal sheetName As String) As Long
         'and search the worksheet again.
         this.cachedRows(slot) = 0
         this.cachedCounts(slot) = -1
+        this.cachedFarIndexes(slot) = -1
     End If
 
     Set found = FindSheetCell(sheetName)
@@ -676,6 +681,80 @@ Private Function RowStillHolds(ByVal rowNum As Long, ByVal sheetName As String) 
     RowStillHolds = (StrComp(CellText(this.sheetRng.Cells(offsetRow, 1).Value), sheetName, vbTextCompare) = 0)
 End Function
 
+'@label:farthest-of
+'@sub-title Take the farther of a counted bound and the last written index
+'@details
+'VarWriter places a variable at the "column index" its own dictionary row
+'carries: for an HList sheet that number is the WORKSHEET COLUMN, for a
+'VList sheet the WORKSHEET ROW (VarWriter.VarRange). Counting the variables
+'and adding the count to the start only agrees with that when the indexes
+'run 1, 2, 3 with no gap. A dictionary whose indexes skip a number - the
+'shape a setup takes as soon as variables are removed or reordered - writes
+'variables past the counted edge, and the data table was then built short of
+'them: the columns were on the sheet, outside the ListObject, invisible to
+'the filter, the export and every reader that walks the table.
+'
+'So the counted bound becomes a floor. A dictionary with no index column, or
+'one holding nothing numeric, answers with the count as before.
+'@param countedBound Long. The bound the variable count gives.
+'@param sheetName String. The sheet being measured.
+'@return Long. The farther of the two.
+Private Function FarthestOf(ByVal countedBound As Long, _
+                            ByVal sheetName As String) As Long
+    Dim farIndex As Long
+
+    FarthestOf = countedBound
+    farIndex = LastVariableIndex(sheetName)
+    If farIndex > countedBound Then FarthestOf = farIndex
+End Function
+
+'@label:last-variable-index
+'@sub-title The largest column index the sheet's variables carry
+'@details
+'Held per sheet name beside the count, and dropped by the same
+'invalidations. A dictionary missing the index column answers 0, which
+'leaves every bound where the count put it.
+'@param sheetName String. Sheet identifier.
+'@return Long. The largest index, or 0 when there is none to read.
+Private Function LastVariableIndex(ByVal sheetName As String) As Long
+    Dim slot As Long
+
+    slot = CacheSlot(sheetName)
+    If this.cachedFarIndexes(slot) < 0 Then
+        this.cachedFarIndexes(slot) = MaxColumnIndex(sheetName)
+    End If
+
+    LastVariableIndex = this.cachedFarIndexes(slot)
+End Function
+
+'@label:max-column-index
+'@sub-title Read the index column of one sheet and take its largest number
+'@param sheetName String. Sheet identifier.
+'@return Long. The largest numeric index, or 0.
+Private Function MaxColumnIndex(ByVal sheetName As String) As Long
+    Dim indexes As BetterArray
+    Dim counter As Long
+    Dim cellValue As Variant
+    Dim indexValue As Long
+
+    'A dictionary that carries no index column is not a fault here: the
+    'count then decides the bound, which is what happened before.
+    On Error Resume Next
+        Set indexes = this.dict.Data.FilterData(COL_SHEET_NAME, sheetName, _
+                                                COL_COLUMN_INDEX, matchCase:=False)
+    On Error GoTo 0
+
+    If indexes Is Nothing Then Exit Function
+
+    For counter = indexes.LowerBound To indexes.UpperBound
+        cellValue = indexes.Item(counter)
+        If IsNumeric(cellValue) Then
+            indexValue = CLng(cellValue)
+            If indexValue > MaxColumnIndex Then MaxColumnIndex = indexValue
+        End If
+    Next
+End Function
+
 '@label:cache-slot
 '@sub-title Find or create the cache slot of one sheet name
 '@details
@@ -698,10 +777,12 @@ Private Function CacheSlot(ByVal sheetName As String) As Long
     ReDim Preserve this.cachedNames(1 To this.cachedSlots)
     ReDim Preserve this.cachedRows(1 To this.cachedSlots)
     ReDim Preserve this.cachedCounts(1 To this.cachedSlots)
+    ReDim Preserve this.cachedFarIndexes(1 To this.cachedSlots)
 
     this.cachedNames(this.cachedSlots) = sheetName
     this.cachedRows(this.cachedSlots) = 0
     this.cachedCounts(this.cachedSlots) = -1
+    this.cachedFarIndexes(this.cachedSlots) = -1
 
     CacheSlot = this.cachedSlots
 End Function
@@ -784,6 +865,7 @@ Private Sub ResetCaches()
     Erase this.cachedNames
     Erase this.cachedRows
     Erase this.cachedCounts
+    Erase this.cachedFarIndexes
     Set this.variables = Nothing
     Set this.hostWksh = Nothing
     Set this.sheetRng = Nothing
