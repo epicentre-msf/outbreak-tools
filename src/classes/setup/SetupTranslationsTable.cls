@@ -1929,7 +1929,11 @@ End Sub
 '@details The group rules go on first and the red catch-all goes on last.
 '         FormatConditions.Add appends, so the rule added last holds the lowest
 '         priority and shows through only where no group rule claimed the cell.
-Private Sub ApplyLangColumnFormatting(ByVal langRng As Range)
+'@param langRng Range. The language column to format.
+'@param painted ByRef Long. How many groups the pass has coloured so far, carried
+'       across every column so no two groups share a colour. See
+'       HighlightDuplicateGroups.
+Private Sub ApplyLangColumnFormatting(ByVal langRng As Range, ByRef painted As Long)
 
     If langRng Is Nothing Then Exit Sub
 
@@ -1945,7 +1949,7 @@ Private Sub ApplyLangColumnFormatting(ByVal langRng As Range)
 
     End With
 
-    HighlightDuplicateGroups langRng
+    HighlightDuplicateGroups langRng, painted
 
     'Formatting conditions
     langRng.FormatConditions.AddUniqueValues
@@ -1968,13 +1972,24 @@ End Sub
 '         pass MAX_RULE_FORMULA_LENGTH, and a formula Excel refuses. So red no
 '         longer reads as "duplicate". It reads as "duplicate this could not
 '         group", and a sheet with red on it is still telling the truth.
-Private Sub HighlightDuplicateGroups(ByVal langRng As Range)
+'
+'         THE COUNTER IS THE CALLER'S, NOT THIS ROUTINE'S
+'         It used to start at zero on every column, so the first group of every
+'         language drew the same colour. An untranslated row carries the source
+'         spelling in both columns, so those same-coloured cells landed on the
+'         same rows and the sheet read as though whole rows were highlighted.
+'         Duplicates are counted within one column and always were; what crossed
+'         the columns was the colour. Carrying the count across the pass gives
+'         every group on the sheet a colour of its own, and the palette is then
+'         spent sheet-wide rather than per column.
+'@param langRng Range. The language column to paint.
+'@param painted ByRef Long. Groups coloured so far in this pass, advanced here.
+Private Sub HighlightDuplicateGroups(ByVal langRng As Range, ByRef painted As Long)
     Dim groupLabels() As String
     Dim groupCounts() As Long
     Dim groupCount As Long
     Dim groupIndex As Long
     Dim anchor As String
-    Dim painted As Long
 
     groupCount = CollectDuplicateGroups(langRng, groupLabels, groupCounts)
     If groupCount = 0 Then Exit Sub
@@ -2348,6 +2363,7 @@ Private Sub ApplyFormatting()
     Dim unlockRange As Range
     Dim unlockOffset As Long
     Dim unlockWidth As Long
+    Dim paintedGroups As Long
 
 
     Set dataRange = this.table.DataBodyRange
@@ -2386,8 +2402,10 @@ Private Sub ApplyFormatting()
 
     If columnRange Is Nothing Then Exit Sub
 
+    'One counter for the whole pass, so the first duplicate group of the second
+    'language does not draw the colour the first language already used.
     Do While Not columnRange Is Nothing And Not Intersect(columnRange, dataRange) Is Nothing
-        ApplyLangColumnFormatting columnRange
+        ApplyLangColumnFormatting columnRange, paintedGroups
         Set columnRange = columnRange.Offset(0, 1)
         If columnRange.Column > dataRange.Columns(dataRange.Columns.Count).Column Then Exit Do
     Loop

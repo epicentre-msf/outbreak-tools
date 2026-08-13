@@ -1173,6 +1173,111 @@ Fail:
 End Sub
 
 '@TestMethod("SetupTranslationsTable")
+'@sub-title Every duplicate rule stays inside the one language column it was given.
+'@details A duplicate is a duplicate WITHIN a language. The same label standing in
+'         English and in an untranslated French cell is one label seen twice, not a
+'         duplicate, and highlighting both paints the row.
+'
+'         ApplyFormatting adds its rules one column at a time, so the intent was
+'         always per column. What this pins is what the rules are left applying to
+'         afterwards: two adjacent columns carrying the same rule, the same fill and
+'         the same label are what Excel coalesces into one rule over both columns,
+'         and a duplicate-values rule over two columns compares across them.
+Public Sub TestDuplicateRulesStayInsideOneColumn()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestDuplicateRulesStayInsideOneColumn"
+    On Error GoTo Fail
+
+    Dim idx As Long
+    Dim ruleRange As Range
+    Dim widest As Long
+    Dim ruleCount As Long
+
+    'Two English labels translated to one French word is a duplicate inside
+    'French and no duplicate at all inside English. UpdateFromRegistry
+    'deduplicates the label column, so the language column is where a duplicate
+    'can stand.
+    Subject.UpdateFromRegistry RegistrySheet, "French"
+    FillLanguageColumn "French", Array("Salut", "Salut")
+
+    RunUpdateThatAddsARow
+
+    ruleCount = TranslationsTable.Range.FormatConditions.Count
+    Assert.IsTrue ruleCount > 0, "The update must leave the duplicate rules on the table"
+
+    For idx = 1 To ruleCount
+        Set ruleRange = TranslationsTable.Range.FormatConditions(idx).AppliesTo
+        If Not ruleRange Is Nothing Then
+            If ruleRange.Columns.Count > widest Then widest = ruleRange.Columns.Count
+        End If
+    Next idx
+
+    Assert.LogSuccesses "TestDuplicateRulesStayInsideOneColumn: rules=" & CStr(ruleCount) & _
+                        " widest=" & CStr(widest)
+
+    Assert.AreEqual CLng(1), CLng(widest), _
+                    "No duplicate rule may apply to more than one language column"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDuplicateRulesStayInsideOneColumn", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+'@sub-title Two language columns never draw a duplicate group in the same colour.
+'@details The palette counter used to start at zero on every column, so the first
+'         duplicate group of every language drew the same colour. Untranslated
+'         columns carry the same spelling, so those same-coloured cells landed on
+'         the same rows and the sheet read as though whole rows were highlighted.
+'
+'         The label column is deduplicated by every update, so it can hold no
+'         duplicate group at all. Two further languages are what puts two groups
+'         on the sheet at once.
+Public Sub TestDuplicateGroupColoursDifferBetweenColumns()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestDuplicateGroupColoursDifferBetweenColumns"
+    On Error GoTo Fail
+
+    Dim frenchColors As BetterArray
+    Dim spanishColors As BetterArray
+    Dim frenchIndex As Long
+    Dim spanishIndex As Long
+    Dim sharedCount As Long
+
+    Subject.UpdateFromRegistry RegistrySheet, "French;Spanish"
+
+    'Both languages left untranslated, so both carry the same duplicated spelling
+    'on the same rows. That is the sheet the row-wide colour showed up on.
+    FillLanguageColumn "French", Array("Hello", "Hello")
+    FillLanguageColumn "Spanish", Array("Hello", "Hello")
+
+    RunUpdateThatAddsARow
+
+    Set frenchColors = GroupRuleColors("French")
+    Set spanishColors = GroupRuleColors("Spanish")
+
+    Assert.IsTrue frenchColors.Length > 0, "French holds a duplicate group, so it must carry a group rule"
+    Assert.IsTrue spanishColors.Length > 0, "Spanish holds a duplicate group, so it must carry a group rule"
+
+    For frenchIndex = frenchColors.LowerBound To frenchColors.UpperBound
+        For spanishIndex = spanishColors.LowerBound To spanishColors.UpperBound
+            If CLng(frenchColors.Item(frenchIndex)) = CLng(spanishColors.Item(spanishIndex)) Then
+                sharedCount = sharedCount + 1
+            End If
+        Next spanishIndex
+    Next frenchIndex
+
+    Assert.LogSuccesses "TestDuplicateGroupColoursDifferBetweenColumns: french=" & _
+                        CStr(frenchColors.Length) & " spanish=" & CStr(spanishColors.Length) & _
+                        " shared=" & CStr(sharedCount)
+
+    Assert.AreEqual CLng(0), CLng(sharedCount), _
+                    "A duplicate group in one language must not draw the colour another language used"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDuplicateGroupColoursDifferBetweenColumns", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
 Public Sub TestFormulaChunksUnchangedAfterRewrite()
     CustomTestSetTitles Assert, "SetupTranslationsTable", "TestFormulaChunksUnchangedAfterRewrite"
     On Error GoTo Fail
