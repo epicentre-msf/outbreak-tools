@@ -9,6 +9,14 @@
 #             workbook to rebuild via OBTBuildCodeTables). Required on the first
 #             run and after any registry change; omit to reuse the tables the
 #             workbook already holds.
+#
+# File access (macOS): Excel is sandboxed, and VBA file reads on ungranted
+# paths prompt one dialog per file. The headless suites handle this themselves
+# through Application.GrantAccessToMultipleFiles -- IN Excel's process, which
+# is the only place a persistent grant can be made. The first run on a machine
+# shows one consolidated dialog; every later run is silent. (An AppleScript
+# `choose folder` sent from OUTSIDE Excel does not stick -- the panel does not
+# run in Excel's sandbox context -- which is why no such step lives here.)
 #   --keep    never delete the per-run working copy, even on success
 #             (for inspecting a green run).
 #   --home    root of the untracked working area holding the driver workbook

@@ -790,6 +790,32 @@ suites:
       - module: TestGenerationLog
         covers: [GenerationLog]
 
+  # --- headless (HeadlessBuild) ---------------------------------------------
+  # The headless workflow: fill a setup from another setup, then build a
+  # linelist, both with no designer and no dialog. HeadlessBuild takes every
+  # path as a parameter and answers a string outcome, because its callers are
+  # a suite today and an R package later, and neither can read a dialog.
+  #
+  # The setup import is INJECTED into the target workbook rather than called
+  # from here: SetupImport resolves its destination as ThisWorkbook, so a call
+  # from the driver would import the source into the driver. The injected
+  # module is scripts/headless/vba/OBTSetupImportHeadless.bas, read off disk at
+  # run time and never registered.
+  - folder: headless
+    modules:
+      - HeadlessBuild
+    tests:
+      - module: TestHeadlessSetupFill
+        covers: [HeadlessBuild]
+      # The generation, end to end and with no designer machinery. It is the
+      # only suite that runs Linelist.Prepare to completion, because the code
+      # transfer needs a source project carrying the ten forms and the driver
+      # workbook carries none. Its forms come from .test-runner/forms/merged,
+      # written by scripts/headless/merge-form-code.R -- run that script before
+      # the harness or the suite reports the folder as missing.
+      - module: TestHeadlessLinelistBuild
+        covers: [HeadlessBuild]
+
   # --- linelist (LinelistSpecs, LLTranslation) -------------------------------
   # THIS IS THE FIRST TIME EITHER CLASS HAS BEEN COMPILED. The whole generation
   # path sat in the expansion backlog below, so LinelistSpecs, Linelist,

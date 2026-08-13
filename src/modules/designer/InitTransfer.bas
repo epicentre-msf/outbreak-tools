@@ -498,10 +498,32 @@ Private Sub ExportGeoFromDesigner(ByVal designerBook As Workbook, ByVal targetBo
         geoStore.SetValue "RNG_GeoLangCode", langCode
     End If
 
+    'A designer whose Geo sheet cannot build a geobase manager still ships a
+    'linelist: the sheet is copied as it is and the fault is filed with the
+    'error scope. The linelist NEEDS the worksheet whatever its state, because
+    'Linelist.Prepare anchors every worksheet insert on Geo. The headless flow
+    'is where this happens -- a designer built by hand carries the full geo
+    'machinery, a mock or a stripped one may not.
+    On Error GoTo GeoUnusable
     Set geoManager = LLGeo.Create(designerSheet)
     geoManager.ExportToWkb targetBook, _
                            ReadMainRange(designerBook, RNG_LL_NAME), _
                            ReadMainRange(designerBook, RNG_PATH_DICO)
+    Exit Sub
+
+GeoUnusable:
+    Dim geoFault As String
+    geoFault = Err.Description
+
+    On Error Resume Next
+        Err.Clear
+        designerSheet.Copy After:=targetBook.Worksheets(targetBook.Worksheets.Count)
+    On Error GoTo 0
+
+    LogCheck "geo-unusable", _
+             "The designer's Geo worksheet could not be read as a geobase (" & _
+             geoFault & "). The sheet was copied as it is, and the linelist " & _
+             "carries no working geographic data.", checkingError
 End Sub
 
 '@sub-title Export the passwords from the designer to the linelist

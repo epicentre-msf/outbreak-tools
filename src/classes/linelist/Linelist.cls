@@ -407,7 +407,7 @@ Public Sub Prepare()
     Dim dictSheets As BetterArray
     Dim extraSheets As BetterArray
     Dim counter As Long
-    Dim geoAnchor As Worksheet
+    Dim anchorSheet As Worksheet
     Dim codeTrans As CodeTransfer
     Dim codeChecks As Checking
     Dim ownChecks As Checking
@@ -420,7 +420,14 @@ Public Sub Prepare()
     End If
 
     Set this.tempRepos = this.specs.OutputTemporaryRepos
-    Set geoAnchor = GeoAnchor()
+
+    'The local is NOT named after the function it calls. A local named
+    'geoAnchor made `Set geoAnchor = GeoAnchor()` read its own empty self --
+    'VBA resolves the name to the local, and the parentheses index it rather
+    'than calling the function -- so the statement raised 91 without the
+    'function ever being entered. It compiled, the scans passed it, and it sat
+    'on the first line of Prepare that a generation must cross.
+    Set anchorSheet = GeoAnchor()
 
     InitialiseWorkbookNames
     InitialiseTranslationNames
@@ -432,7 +439,7 @@ Public Sub Prepare()
 
     For counter = dictSheets.LowerBound To dictSheets.UpperBound
         AddOutputSheet CStr(dictSheets.Item(counter)), xlSheetVisible, _
-                       beforeSheet:=geoAnchor
+                       beforeSheet:=anchorSheet
     Next
 
     'Analysis and custom sheets, before Geo. Each one is inserted immediately
@@ -447,7 +454,7 @@ Public Sub Prepare()
 
     For counter = extraSheets.LowerBound To extraSheets.UpperBound
         AddOutputSheet CStr(extraSheets.Item(counter)), xlSheetVisible, _
-                       beforeSheet:=geoAnchor
+                       beforeSheet:=anchorSheet
     Next
 
     'The six temporary sheets, before Geo. The linelist runtime reads all six,
@@ -462,7 +469,7 @@ Public Sub Prepare()
 
     For counter = extraSheets.LowerBound To extraSheets.UpperBound
         AddOutputSheet CStr(extraSheets.Item(counter)), xlSheetVeryHidden, _
-                       beforeSheet:=geoAnchor
+                       beforeSheet:=anchorSheet
     Next
 
     PrepareTemporarySheets
@@ -490,7 +497,7 @@ Public Sub Prepare()
     'Admin sheet (non-template only)
     If Not this.specs.HasTemplate() Then
         AddOutputSheet trans.TranslatedValue("LLSHEET_Admin"), xlSheetVisible, _
-                       beforeSheet:=geoAnchor
+                       beforeSheet:=anchorSheet
         PrepareAdmin
     End If
 
@@ -1167,6 +1174,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
         End If
     Next
 End Sub
+
 
 '@section Checkings
 '===============================================================================

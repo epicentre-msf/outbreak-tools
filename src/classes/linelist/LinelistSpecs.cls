@@ -386,6 +386,13 @@ Private Sub ImportGeobase(ByVal geoObj As LLGeo)
         Exit Sub
     End If
 
+    'A geobase path with no geo manager to take it: the degraded-geo build.
+    If geoObj Is Nothing Then
+        LogCheck "A geobase was given (" & geoPath & ") but the linelist has " & _
+                 "no usable geo sheet, so it was not imported.", checkingError
+        Exit Sub
+    End If
+
     On Error Resume Next
         Set geoWkb = Workbooks.Open(fileName:=geoPath, ReadOnly:=True)
         openError = Err.Description
@@ -1370,6 +1377,7 @@ Public Sub Prepare(ByVal setupPath As String)
     Dim defaultSheet As Worksheet
     Dim prevAlert As Boolean
     Dim errNumber As Long
+    Dim errSource As String
     Dim errDescription As String
 
     If LenB(Trim$(setupPath)) = 0 Then
@@ -1422,7 +1430,22 @@ Public Sub Prepare(ByVal setupPath As String)
     Set this.choices = InitTransfer.LinelistChoices(outWkb)
     Set this.exports = InitTransfer.LinelistExports(outWkb)
     Set this.ana = InitTransfer.LinelistAnalysis(outWkb)
-    Set this.geo = InitTransfer.LinelistGeo(outWkb)
+
+    'The one manager a build survives without. A Geo sheet the transfer copied
+    'raw -- the degraded export of a designer with no usable geobase -- raises
+    'here, and the build goes on with no geo manager: the dictionary skips its
+    'geo lines and says so, and the geobase import refuses a path it has
+    'nowhere to put.
+    On Error Resume Next
+        Set this.geo = InitTransfer.LinelistGeo(outWkb)
+        If Err.Number <> 0 Then
+            LogCheck "The Geo worksheet of the linelist is not a geobase (" & _
+                     Err.Description & "), so the build ran without one.", _
+                     checkingError
+            Err.Clear
+        End If
+    On Error GoTo CleanFail
+
     Set this.passwords = InitTransfer.LinelistPasswords(outWkb)
     Set this.translations = InitTransfer.LinelistTranslations(outWkb)
 
@@ -1495,6 +1518,15 @@ CleanUpAfterFail:
     'the most likely failure of the direct import path, and its identity was
     'destroyed. The old window also swallowed the whole native VBA range, where
     'Excel's own 1004 collides with ErrorUnexpectedState.
+    'The original source rides inside the description, because a re-raise that
+    'names only this class erases the one word that says WHERE the failure was.
+    'A description VBA already replaced with the generic "Method ... failed"
+    'keeps at least that source, so a caller reading the outcome string of a
+    'headless run knows which class refused rather than only which method died.
+    If LenB(errSource) > 0 And errSource <> CLASSNAME Then
+        errDescription = "[" & errSource & "] " & errDescription
+    End If
+
     Select Case errNumber
         Case ProjectError.InvalidArgument, ProjectError.ObjectNotInitialized, _
              ProjectError.ErrorUnexpectedState To ProjectError.SomethingWentWrong
@@ -1506,6 +1538,7 @@ CleanUpAfterFail:
 
 CleanFail:
     errNumber = Err.Number
+    errSource = Err.Source
     errDescription = Err.Description
     Resume CleanUpAfterFail
 End Sub
