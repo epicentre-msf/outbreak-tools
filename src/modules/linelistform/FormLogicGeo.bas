@@ -7,7 +7,6 @@ Attribute VB_Description = "Form callbacks for F_Geo — delegates to GeoModule"
 
 Option Explicit
 
-Private Const LLSHEET As String = "LinelistTranslation"
 Private Const SEP As String = " | "
 Private Const NACHAR As String = " | N/A"
 Private Const NACHARREV As String = "N/A | "
@@ -35,16 +34,23 @@ End Function
 '              build walks its five tables, which is a price per open with no
 '              guard.
 Private Sub InitializeTrads()
+    Dim linelistEvents As EventLinelist
     Dim lltrads As LLTranslation
-    Dim wb As Workbook
 
-    Set wb = ThisWorkbook
+    If Not (tradform Is Nothing Or tradmess Is Nothing) Then Exit Sub
 
-    If tradform Is Nothing Or tradmess Is Nothing Then
-        Set lltrads = LLTranslation.Create(wb.Worksheets(LLSHEET))
-        Set tradform = lltrads.TransObject(TranslationOfForms)
-        Set tradmess = lltrads.TransObject()
-    End If
+    ' The helper is the one EventLinelist holds, the way GeoOf below takes the
+    ' geobase manager from it. This module used to build its own, and
+    ' LLTranslation.Create validates all five translation tables per build.
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    If Not linelistEvents Is Nothing Then Set lltrads = linelistEvents.Translation()
+
+    If lltrads Is Nothing Then _
+        Err.Raise ProjectError.ObjectNotInitialized, "FormLogicGeo", _
+                  "This linelist carries no usable translation sheet"
+
+    Set tradform = lltrads.TransObject(TranslationOfForms)
+    Set tradmess = lltrads.TransObject()
 End Sub
 
 ' @description The one geobase manager of the workbook. EventLinelist builds it

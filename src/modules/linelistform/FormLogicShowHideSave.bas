@@ -7,18 +7,27 @@ Attribute VB_Description = "Form code-behind for F_ShowHideSave"
 
 Option Explicit
 
-Private Const LLSHEET As String = "LinelistTranslation"
 
 Private tradform As TranslationObject
 Private tradmess As TranslationObject
 
 
+'The translation helper is the one EventLinelist holds. This module used to
+'build its own, and LLTranslation.Create validates all five translation tables
+'per build.
 Private Sub InitializeTrads()
+    Dim linelistEvents As EventLinelist
     Dim lltrads As LLTranslation
 
     If Not tradmess Is Nothing Then Exit Sub
 
-    Set lltrads = LLTranslation.Create(ThisWorkbook.Worksheets(LLSHEET))
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    If Not linelistEvents Is Nothing Then Set lltrads = linelistEvents.Translation()
+
+    If lltrads Is Nothing Then _
+        Err.Raise ProjectError.ObjectNotInitialized, "FormLogicShowHideSave", _
+                  "This linelist carries no usable translation sheet"
+
     Set tradform = lltrads.TransObject(TranslationOfForms)
     Set tradmess = lltrads.TransObject()
 End Sub

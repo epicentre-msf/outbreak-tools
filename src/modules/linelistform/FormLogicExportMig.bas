@@ -18,7 +18,6 @@ Attribute VB_Name = "FormLogicExportMig"
 
 Option Explicit
 
-Private Const LLSHEET As String = "LinelistTranslation"
 
 Private tradform As TranslationObject
 Private tradmess As TranslationObject
@@ -37,13 +36,23 @@ Private otherLinelistPassword As String
 ' @description Build the two translation objects when they are missing. Every
 ' entry point rebuilds what it reads when the state is gone.
 Private Sub InitializeTrads()
+    Dim linelistEvents As EventLinelist
     Dim lltrads As LLTranslation
 
-    If tradform Is Nothing Or tradmess Is Nothing Then
-        Set lltrads = LLTranslation.Create(ThisWorkbook.Worksheets(LLSHEET))
-        Set tradform = lltrads.TransObject(TranslationOfForms)
-        Set tradmess = lltrads.TransObject()
-    End If
+    If Not (tradform Is Nothing Or tradmess Is Nothing) Then Exit Sub
+
+    ' The helper is the one EventLinelist holds. This module used to build its
+    ' own, and LLTranslation.Create validates all five translation tables per
+    ' build.
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    If Not linelistEvents Is Nothing Then Set lltrads = linelistEvents.Translation()
+
+    If lltrads Is Nothing Then _
+        Err.Raise ProjectError.ObjectNotInitialized, "FormLogicExportMig", _
+                  "This linelist carries no usable translation sheet"
+
+    Set tradform = lltrads.TransObject(TranslationOfForms)
+    Set tradmess = lltrads.TransObject()
 End Sub
 
 ' @description Translate the form.

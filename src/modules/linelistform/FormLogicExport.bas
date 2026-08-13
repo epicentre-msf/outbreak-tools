@@ -19,8 +19,6 @@ Attribute VB_Name = "FormLogicExport"
 
 Option Explicit
 
-Private Const LLSHEET As String = "LinelistTranslation"
-Private Const PASSWORDSHEET As String = "__pass"
 Private Const NAMETAG As String = "CMDExport"
 Private Const BUTTON_WIDTH As Single = 160
 Private Const BUTTON_LEFT As Single = 20
@@ -38,16 +36,33 @@ Private exportButtons As Collection
 '@section Initialization and control callbacks
 '===============================================================================
 
-'Initialize the translation objects and the passwords
+'Initialize the translation objects and the passwords.
+'
+'The translation helper and the protection keys are the ones EventLinelist
+'holds. This module used to build both on every open, and LLTranslation.Create
+'validates all five translation tables per build.
+'
+'Both are raised on rather than left Nothing. The key handlers below call
+'straight into the manager, so a Nothing here surfaces as error 91 three clicks
+'later, where building the manager used to say which sheet was missing.
 Private Sub InitializeTrads()
+    Dim linelistEvents As EventLinelist
     Dim lltrads As LLTranslation
-    Dim wb As Workbook
 
-    Set wb = ThisWorkbook
-    Set lltrads = LLTranslation.Create(wb.Worksheets(LLSHEET))
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    If Not linelistEvents Is Nothing Then Set lltrads = linelistEvents.Translation()
+
+    If lltrads Is Nothing Then _
+        Err.Raise ProjectError.ObjectNotInitialized, "FormLogicExport", _
+                  "This linelist carries no usable translation sheet"
+
     Set tradform = lltrads.TransObject(TranslationOfForms)
     Set tradmess = lltrads.TransObject()
-    Set pass = Passwords.Create(wb.Worksheets(PASSWORDSHEET))
+
+    Set pass = linelistEvents.PasswordManager()
+    If pass Is Nothing Then _
+        Err.Raise ProjectError.ObjectNotInitialized, "FormLogicExport", _
+                  "This linelist carries no usable protection keys"
 End Sub
 
 'Generate a new private key for the exports

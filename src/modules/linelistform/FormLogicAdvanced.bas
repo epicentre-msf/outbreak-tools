@@ -19,7 +19,6 @@ Attribute VB_Name = "FormLogicAdvanced"
 Option Explicit
 
 Private Const DICTIONARY_SHEET As String = "Dictionary"
-Private Const LLSHEET As String = "LinelistTranslation"
 Private Const PRINT_PREFIX As String = "print_"
 Private Const CRF_PREFIX As String = "crf_"
 
@@ -36,12 +35,24 @@ Private currwb As Workbook
 '@section Initialization and control callbacks
 '===============================================================================
 
-'Initialize the two translation objects
+'Initialize the two translation objects.
+'
+'The translation helper is the one EventLinelist holds. This module used to
+'build its own on every open, and LLTranslation.Create validates all five
+'translation tables per build.
 Private Sub InitializeTrads()
+    Dim linelistEvents As EventLinelist
     Dim lltrads As LLTranslation
 
     Set currwb = ThisWorkbook
-    Set lltrads = LLTranslation.Create(currwb.Worksheets(LLSHEET))
+
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    If Not linelistEvents Is Nothing Then Set lltrads = linelistEvents.Translation()
+
+    If lltrads Is Nothing Then _
+        Err.Raise ProjectError.ObjectNotInitialized, "FormLogicAdvanced", _
+                  "This linelist carries no usable translation sheet"
+
     Set tradform = lltrads.TransObject(TranslationOfForms)
     Set tradmess = lltrads.TransObject()
 End Sub
