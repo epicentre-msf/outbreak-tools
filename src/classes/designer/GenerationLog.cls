@@ -1,0 +1,450 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "GenerationLog"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = False
+Attribute VB_Description = "Owns the record of one generation run and writes it to the __check worksheet"
+
+
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@PredeclaredId
+'@Folder("Designer")
+'@ModuleDescription("Owns the record of one generation run and writes it to the __check worksheet")
+
+Option Explicit
+
+'@class GenerationLog
+'@description
+'The single owner of a generation run's record. Start opens the run on
+'the designer __check worksheet; Collect and Harvest take Checking
+'bundles, stamp every entry with the flush time, keep the entries in an
+'in-memory record and flush the bundle to the worksheet through
+'CheckingOutput, which appends across renders. Finish writes the closing
+'bundle (outcome and elapsed seconds, plus the sheet and variable counts
+'when the driver knows them), installs the filter handler and shows the
+'worksheet. ExportText writes the whole record to a text file, one line
+'per entry, so the run stays readable outside the workbook.
+'
+'THE RUN WINDOW
+'-------------------------------------------------------------------------------
+'Entries land between Start and Finish. A bundle collected outside that
+'window is ignored, the behaviour every driver leans on: the build core
+'runs the same with or without an open log. The in-memory record stays
+'alive after Finish, which is what a later text re-export reads. Start
+'resets the worksheet, the render marker and the record, so a re-run
+'begins clean.
+'@depends CheckingOutput, Checking, HiddenNames, BetterArray, LinelistSpecs
+
+
+'@section State
+'===============================================================================
+
+Private Type TGenerationLog
+    designerBook As Workbook
+    writer As CheckingOutput
+    record As BetterArray
+    startedAt As Date
+    sealed As Boolean
+End Type
+
+Private this As TGenerationLog
+
+'@section Constants
+'===============================================================================
+
+Private Const CLASS_NAME As String = "GenerationLog"
+Private Const SHEET_CHECKING As String = "__check"
+Private Const WRITER_NAME As String = "Generation Report"
+Private Const HEADER_TITLE As String = "Generation run"
+Private Const CLOSING_TITLE As String = "Generation outcome"
+Private Const EXPORT_SUFFIX As String = "-generation.txt"
+
+'Render marker CheckingOutput keeps on its worksheet (ROW_MARKER_NAME
+'there). Start drops it so a cleared sheet is formatted as a first
+'render on every run.
+Private Const ROW_MARKER_NAME As String = "CheckingOutputStartingRow"
+
+
+'@section Factory
+'===============================================================================
+
+'@label:create
+'@sub-title Create a log bound to the designer workbook
+'@details
+'The workbook is where the __check worksheet lives. The run itself opens
+'later, through Start.
+'@param designerBook Workbook. The designer workbook.
+'@return GenerationLog. A ready instance.
+'@throws ProjectError.ElementNotFound When designerBook is Nothing.
+'@export
+Public Function Create(ByVal designerBook As Workbook) As GenerationLog
+    If designerBook Is Nothing Then
+        ThrowError ProjectError.ElementNotFound, _
+            "Unable to create the log, please provide a valid workbook"
+    End If
+
+    Dim newLog As GenerationLog
+    Set newLog = New GenerationLog
+
+    Set newLog.DesignerBook = designerBook
+    newLog.Seal
+    Set Create = newLog
+End Function
+
+'@label:seal
+'@sub-title Seal the instance against further setup writes
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against post-seal mutation
+'@param propName String. The name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
+
+
+'@section PublicAccessors
+'===============================================================================
+
+'@label:designer-book
+'@prop-title The designer workbook the run writes on
+'@return Workbook. The workbook given at creation.
+Public Property Get DesignerBook() As Workbook
+    Set DesignerBook = this.designerBook
+End Property
+
+'@label:designer-book-set
+'@prop-title Assign the designer workbook
+'@param designerBook Workbook. The workbook to store.
+Public Property Set DesignerBook(ByVal designerBook As Workbook)
+    GuardNotSealed "DesignerBook"
+    Set this.designerBook = designerBook
+End Property
+
+'@label:record-length
+'@prop-title The number of entries in the in-memory record
+'@details
+'Counts every stamped entry the run has collected, the header and
+'closing bundles included. Answers 0 before the first Start.
+'@return Long. The entry count.
+Public Property Get RecordLength() As Long
+    If this.record Is Nothing Then Exit Property
+    RecordLength = this.record.Length
+End Property
+
+'@label:record-line
+'@prop-title One record entry as its text line
+'@details
+'The line shape is the one the text export writes:
+'hh:mm:ss  [scope]  bundle-title  entry-label.
+'@param index Long. The 1-based position of the entry.
+'@return String. The formatted line.
+'@throws ProjectError.ObjectNotInitialized When the run has never started.
+'@throws ProjectError.InvalidArgument When index is outside the record.
+Public Property Get RecordLine(ByVal index As Long) As String
+    Dim entry As Variant
+
+    If this.record Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, _
+            "The record is empty, start the log first"
+    End If
+    If index < this.record.LowerBound Or index > this.record.UpperBound Then
+        ThrowError ProjectError.InvalidArgument, _
+            "The record holds no entry at position " & CStr(index)
+    End If
+
+    'BetterArray.Push rebases a stored array to the outer lower bound,
+    'so the fields are read from the entry's own base.
+    Dim fieldBase As Long
+    entry = this.record.Item(index)
+    fieldBase = LBound(entry)
+    RecordLine = CStr(entry(fieldBase)) & "  [" & CStr(entry(fieldBase + 4)) & "]  " & _
+                 CStr(entry(fieldBase + 1)) & "  " & CStr(entry(fieldBase + 3))
+End Property
+
+
+'@section Run lifecycle
+'===============================================================================
+
+'@label:start
+'@sub-title Open the run on the __check worksheet
+'@details
+'Resolves the __check worksheet, creating it very hidden when absent,
+'clears it and drops the render marker of the previous run so the writer
+'formats a first render. Opens a fresh writer, resets the in-memory
+'record, starts the wall clock and stamps the run header as the first
+'bundle: the start time, plus the setup path and the linelist name when
+'the caller knows them.
+'@param setupPath Optional String. The setup file path of the run.
+'@param linelistName Optional String. The output linelist name of the run.
+Public Sub Start(Optional ByVal setupPath As String = vbNullString, _
+                 Optional ByVal linelistName As String = vbNullString)
+    Dim sh As Worksheet
+    Dim store As HiddenNames
+    Dim header As Checking
+
+    Set sh = ResolveCheckingSheet()
+    sh.Cells.Clear
+
+    'The marker survives a Cells.Clear. Keeping it makes the writer resume
+    'on the cleared sheet and skip the first-render formatting.
+    Set store = HiddenNames.Create(sh)
+    If store.HasName(ROW_MARKER_NAME) Then store.RemoveName ROW_MARKER_NAME
+
+    Set this.writer = CheckingOutput.Create(sh, WRITER_NAME)
+    Set this.record = New BetterArray
+    this.record.LowerBound = 1
+    this.startedAt = Now
+
+    Set header = Checking.Create(HEADER_TITLE)
+    header.Add "started", Format$(this.startedAt, "yyyy-mm-dd hh:nn:ss"), checkingInfo
+    If LenB(setupPath) > 0 Then header.Add "setup file", setupPath, checkingInfo
+    If LenB(linelistName) > 0 Then header.Add "linelist name", linelistName, checkingInfo
+    Collect header
+End Sub
+
+'@label:collect
+'@sub-title Take one Checking bundle into the run
+'@details
+'Stamps every entry of the bundle with the flush time, appends the
+'entries to the in-memory record and flushes the bundle to the worksheet.
+'A Nothing or empty bundle is skipped, and so is any bundle arriving
+'outside the run window (before Start or after Finish).
+'@param checks Checking. The bundle to take.
+Public Sub Collect(ByVal checks As Checking)
+    Dim stampText As String
+    Dim keys As BetterArray
+    Dim keyIndex As Long
+    Dim keyName As String
+    Dim batch As BetterArray
+
+    If this.writer Is Nothing Then Exit Sub
+    If checks Is Nothing Then Exit Sub
+    If checks.Length = 0 Then Exit Sub
+
+    'The flush time is the honest stamp: Checking entries carry no clock,
+    'and the drivers flush at their milestones.
+    stampText = Format$(Now, "hh:nn:ss")
+
+    Set keys = checks.ListOfKeys
+    For keyIndex = keys.LowerBound To keys.UpperBound
+        keyName = CStr(keys.Item(keyIndex))
+        this.record.Push Array(stampText, checks.Heading, keyName, _
+                               checks.ValueOf(keyName, checkingLabel), _
+                               ScopeText(checks, keyName))
+    Next keyIndex
+
+    Set batch = New BetterArray
+    batch.LowerBound = 1
+    batch.Push checks
+    this.writer.PrintOutput batch
+End Sub
+
+'@label:harvest
+'@sub-title Collect the bundles of the specification collaborators
+'@details
+'Pulls the checkings of the dictionary, the choices, the exports, the
+'analysis, the passwords, the format and the specifications themselves,
+'in that order. The pull runs after LinelistSpecs.Prepare, when the
+'collaborators have filed their entries.
+'@param specs LinelistSpecs. The specifications after Prepare.
+'@throws ProjectError.InvalidArgument When specs is Nothing.
+Public Sub Harvest(ByVal specs As LinelistSpecs)
+    If specs Is Nothing Then
+        ThrowError ProjectError.InvalidArgument, _
+            "Harvest needs the specifications of the run"
+    End If
+    If this.writer Is Nothing Then Exit Sub
+
+    If specs.Dictionary.HasCheckings Then Collect specs.Dictionary.CheckingValues
+    If specs.Choices.HasCheckings Then Collect specs.Choices.CheckingValues
+    If specs.ExportObject.HasCheckings Then Collect specs.ExportObject.CheckingValues
+    If specs.AnalysisObject.HasCheckings Then Collect specs.AnalysisObject.CheckingValues
+    If specs.Password.HasCheckings Then Collect specs.Password.CheckingValues
+    If specs.DesignFormat.HasCheckings Then Collect specs.DesignFormat.CheckingValues
+
+    'The specifications themselves. A geobase the user asked for that would
+    'not open is filed here, and it used to leave the linelist with no
+    'geographic data and nothing said.
+    If specs.HasCheckings Then Collect specs.CheckingValues
+End Sub
+
+'@label:finish
+'@sub-title Close the run and show the worksheet
+'@details
+'Writes the closing bundle (the outcome, the elapsed seconds, and the
+'sheet and variable counts when the driver passes them), installs the
+'worksheet filter handler, makes the worksheet visible and brings it to
+'the front, then releases the writer. A workbook that refuses the code
+'injection the filter needs gets a warning entry in the closing bundle
+'and the run still closes whole. The record stays alive for the text
+'export. A log that never started, or already finished, ignores the
+'call.
+'@param outcome String. The outcome text of the run.
+'@param sheetCount Optional Long. Data entry sheets built. A value below 0 skips the entry.
+'@param variableCount Optional Long. Variables written. A value below 0 skips the entry.
+Public Sub Finish(ByVal outcome As String, _
+                  Optional ByVal sheetCount As Long = -1, _
+                  Optional ByVal variableCount As Long = -1)
+    Dim closing As Checking
+    Dim filterFault As Boolean
+
+    If this.writer Is Nothing Then Exit Sub
+
+    'The filter handler makes the sheet interactive. The install runs
+    'before the closing bundle so a refusal can speak inside it: the
+    'report of a finished run has to close whole even on a workbook
+    'that refuses the code injection the handler needs.
+    On Error Resume Next
+    this.writer.EnsureWorksheetChangeHandler
+    filterFault = Err.Number <> 0
+    On Error GoTo 0
+
+    Set closing = Checking.Create(CLOSING_TITLE)
+    closing.Add "outcome", outcome, checkingInfo
+    If sheetCount >= 0 Then _
+        closing.Add "sheets", CStr(sheetCount) & " data entry sheet(s) built", checkingInfo
+    If variableCount >= 0 Then _
+        closing.Add "variables", CStr(variableCount) & " variable(s) written", checkingInfo
+    If filterFault Then _
+        closing.Add "filter", "The severity filter could not be installed on the report sheet", checkingWarning
+    closing.Add "elapsed", CStr(DateDiff("s", this.startedAt, Now)) & " seconds", checkingInfo
+    Collect closing
+
+    'Show the report so the user can read it. The sheet is created very
+    'hidden, and Activate raises on a hidden sheet, so the visibility
+    'write comes first.
+    On Error Resume Next
+    this.writer.Wksh.Visible = xlSheetVisible
+    this.writer.Wksh.Activate
+    On Error GoTo 0
+
+    Set this.writer = Nothing
+End Sub
+
+'@label:export-text
+'@sub-title Write the whole record to a text file
+'@details
+'One line per entry, in the order the run collected them:
+'hh:mm:ss  [scope]  bundle-title  entry-label. The file lands in the
+'given folder as <baseName>-generation.txt, which puts it beside the
+'generated linelist when the caller passes the output folder and the
+'linelist name.
+'@param folderPath String. The folder taking the file.
+'@param baseName String. The file name without its suffix.
+'@return String. The full path of the written file.
+'@throws ProjectError.ObjectNotInitialized When the run has never started.
+Public Function ExportText(ByVal folderPath As String, ByVal baseName As String) As String
+    Dim filePath As String
+    Dim fileNumber As Long
+    Dim index As Long
+
+    If this.record Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, _
+            "The record is empty, start the log first"
+    End If
+
+    filePath = folderPath
+    If Right$(filePath, 1) <> Application.PathSeparator Then
+        filePath = filePath & Application.PathSeparator
+    End If
+    filePath = filePath & baseName & EXPORT_SUFFIX
+
+    fileNumber = FreeFile
+
+    'The handler closes the file on a mid-write fault; a locked or
+    'missing folder raises to the caller with the file released.
+    On Error GoTo CloseFile
+    Open filePath For Output As #fileNumber
+    For index = this.record.LowerBound To this.record.UpperBound
+        Print #fileNumber, RecordLine(index)
+    Next index
+    Close #fileNumber
+    On Error GoTo 0
+
+    ExportText = filePath
+    Exit Function
+
+CloseFile:
+    Dim errNumber As Long
+    Dim errDesc As String
+    errNumber = Err.Number
+    errDesc = Err.Description
+
+    On Error Resume Next
+    Close #fileNumber
+    On Error GoTo 0
+
+    ThrowError errNumber, errDesc
+End Function
+
+
+'@section Internal helpers
+'===============================================================================
+
+'@label:resolve-checking-sheet
+'@sub-title Resolve the __check worksheet, creating it when absent
+'@details
+'A created worksheet lands very hidden at the end of the workbook.
+'Finish makes it visible once the run closes.
+'@return Worksheet. The resolved or newly created worksheet.
+Private Function ResolveCheckingSheet() As Worksheet
+    Dim sh As Worksheet
+    Dim wb As Workbook
+
+    Set wb = this.designerBook
+
+    On Error Resume Next
+    Set sh = wb.Worksheets(SHEET_CHECKING)
+    On Error GoTo 0
+
+    If sh Is Nothing Then
+        Set sh = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+        sh.Name = SHEET_CHECKING
+        sh.Visible = xlSheetVeryHidden
+    End If
+
+    Set ResolveCheckingSheet = sh
+End Function
+
+'@label:scope-text
+'@sub-title The plain scope word of one entry
+'@details
+'Reads the type descriptor of the entry and strips the icon characters,
+'leaving Error, Warning, Info, Note or Success for the record and the
+'text lines.
+'@param checks Checking. The bundle holding the entry.
+'@param keyName String. The entry key.
+'@return String. The plain scope word.
+Private Function ScopeText(ByVal checks As Checking, ByVal keyName As String) As String
+    Dim cleaned As String
+
+    cleaned = checks.ValueOf(keyName, checkingType)
+    cleaned = Replace(cleaned, ChrW(10060), vbNullString)
+    cleaned = Replace(cleaned, ChrW(9888), vbNullString)
+    cleaned = Replace(cleaned, ChrW(8505), vbNullString)
+    cleaned = Replace(cleaned, ChrW(9998), vbNullString)
+    cleaned = Replace(cleaned, ChrW(10004), vbNullString)
+
+    ScopeText = Trim$(cleaned)
+End Function
+
+
+'@section ErrorHandling
+'===============================================================================
+
+'@label:throw-error
+'@sub-title Raise a ProjectError-coded runtime error
+'@param errNumb Long. ProjectError enumeration value.
+'@param errorMessage String. Human-readable description.
+'@throws ProjectError.<varies> Always raises the specified error.
+Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
+    Err.Raise errNumb, CLASS_NAME, errorMessage
+End Sub

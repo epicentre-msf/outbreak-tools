@@ -364,7 +364,7 @@ End Property
 '@prop-title The diagnostic log of the transfers
 '@details
 'Answers the internal Checking object holding every entry filed by this
-'instance, and Nothing while none has been filed. GenerationReport reads it
+'instance, and Nothing while none has been filed. The GenerationLog takes it
 'through Linelist.
 '@return Object. A Checking instance, or Nothing.
 '@export

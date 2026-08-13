@@ -1564,9 +1564,9 @@ End Sub
 
 '@section Checkings
 '===============================================================================
-'@description What this class reports into the generation report.
-'GenerationReport.HarvestSpecsCheckings collects these after Prepare, alongside
-'the entries of the dictionary, the choices, the exports, the analysis, the
+'@description What this class reports into the generation log.
+'GenerationLog.Harvest collects these after Prepare, alongside the
+'entries of the dictionary, the choices, the exports, the analysis, the
 'passwords and the format.
 
 '@label:checks

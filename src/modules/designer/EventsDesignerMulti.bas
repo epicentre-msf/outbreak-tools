@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the Multi group on the designer workbook, and the driver that generates one linelist per row.")
-'@depends CustomTable, ApplicationState, OSFiles, DropdownLists, BetterArray, EventsDesignerAdvanced, EventsDesignerCore, DesignerEntry, GenerationReport, Checking, ProgressBar, Linelist
+'@depends CustomTable, ApplicationState, OSFiles, DropdownLists, BetterArray, EventsDesignerAdvanced, EventsDesignerCore, DesignerEntry, GenerationLog, Checking, ProgressBar, Linelist
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Ribbon callbacks for the Multi group manage the T_Multi ListObject on
@@ -520,15 +520,17 @@ Public Sub clickGenerateMulti(ByRef control As IRibbonControl)
 
     Set entry = EventsDesignerCore.EntryManager()
 
-    'One report for the whole run; every row flushes into it
-    GenerationReport.InitReport ThisWorkbook
+    'One run log for the whole run; every row flushes into it. The log
+    'opens bare: each row names itself in its own header bundle.
+    EventsDesignerAdvanced.StartRunLog
 
     Set bar = ResolveProgressBar(lo.Parent, buildRows)
 
     GenerateMultipleRows lo, entry, bar, builtCount, failedCount
 
     If Not bar Is Nothing Then bar.Complete CStr(builtCount) & " built"
-    GenerationReport.FinaliseReport
+    EventsDesignerAdvanced.FinishRunLog CStr(builtCount) & " linelist(s) built, " & _
+                                        CStr(failedCount) & " failed"
 
     appScope.Restore
     Set appScope = Nothing
@@ -545,8 +547,8 @@ Cleanup:
     errDesc = Err.Description
 
     On Error Resume Next
-    'Show whatever report was written before the error
-    GenerationReport.FinaliseReport
+    'Show whatever was logged before the error
+    EventsDesignerAdvanced.FinishRunLog "Failed: " & errDesc
     If Not appScope Is Nothing Then appScope.Restore
     On Error GoTo 0
 
@@ -739,10 +741,10 @@ Fail:
     On Error GoTo 0
 End Function
 
-'@Description("Flush one report bundle naming the row before its build starts.")
+'@Description("Flush one log bundle naming the row before its build starts.")
 '@details
-'The bundles of every row land in the one report of the run, and this
-'line tells the reader which row the entries under it belong to.
+'The bundles of every row land in the one run log, and this line tells
+'the reader which row the entries under it belong to.
 '@param lo ListObject. The T_Multi ListObject.
 '@param rowIdx Long. The ListRows position of the row.
 '@param setupPath String. The row's setup file path.
@@ -750,7 +752,6 @@ Private Sub FlushRowHeader(ByVal lo As ListObject, _
                            ByVal rowIdx As Long, _
                            ByVal setupPath As String)
     Dim rowChecks As Checking
-    Dim batch As BetterArray
     Dim rowId As String
 
     rowId = CellText(lo, rowIdx, COL_ID)
@@ -759,10 +760,7 @@ Private Sub FlushRowHeader(ByVal lo As ListObject, _
     Set rowChecks = Checking.Create("Multi build " & rowId, setupPath)
     rowChecks.Add rowId, "Build started for: " & setupPath, checkingInfo
 
-    Set batch = New BetterArray
-    batch.LowerBound = 1
-    batch.Push rowChecks
-    GenerationReport.FlushCheckings batch
+    EventsDesignerAdvanced.CollectIntoLog rowChecks
 End Sub
 
 '@Description("Build the bar over the rows when the sheet carries the named ranges.")

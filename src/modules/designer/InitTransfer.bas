@@ -99,7 +99,8 @@ Private Const EXPORTED_START_ROW As Long = 1
 Private Const EXPORTED_START_COLUMN As Long = 1
 
 'Report entries filed while the transfer runs. TransferToLinelist resets the
-'record, and GenerationReport harvests it after LinelistSpecs.Prepare.
+'record, and the build driver pulls it into the GenerationLog after
+'LinelistSpecs.Prepare.
 Private transferChecks As Checking
 
 
@@ -607,8 +608,8 @@ End Sub
 
 '@section Checkings
 '===============================================================================
-'@description What the transfer reports into the generation report.
-'GenerationReport.HarvestSpecsCheckings collects these after
+'@description What the transfer reports into the generation log.
+'The build driver pulls these into the GenerationLog after
 'LinelistSpecs.Prepare, alongside the entries of the domain managers.
 
 '@fun-title Whether the transfer filed report entries

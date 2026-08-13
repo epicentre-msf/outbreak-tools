@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, DesignerEntry, EventsDesignerCore, RibbonDev, LLGeo, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, LinelistSpecs, Linelist, LLDataEntry, LLSheets, AnalysisOutput, Checking, GenerationReport, SetupTranslationsTable, ProgressBar
+'@depends DesignerPreparation, DesignerEntry, EventsDesignerCore, RibbonDev, LLGeo, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, LinelistSpecs, Linelist, LLDataEntry, LLSheets, AnalysisOutput, Checking, GenerationLog, InitTransfer, SetupTranslationsTable, ProgressBar
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -40,6 +40,52 @@ Private Const RNG_EDITION As String = "RNG_Edition"
 'prepare, the two dropdown flushes, analyses, save. Each data entry
 'sheet built adds one step, and Complete is the finalise message.
 Private Const FIXED_STEPS As Long = 7
+
+'The log of the current or last generation run. Both drivers open it
+'through StartRunLog and every flush goes through CollectIntoLog, so
+'one run holds one record. The reference outlives Finish on purpose:
+'the record is what a later text re-export reads while the designer
+'stays open.
+Private heldLog As GenerationLog
+
+
+'@section Run log services
+'===============================================================================
+
+'@Description("Open the log of a new generation run on the designer __check sheet.")
+'@details
+'Both drivers call this once at the start of a run. The single build
+'passes the setup path and the linelist name for the run header; the
+'multi driver opens the log bare, since every row names itself in its
+'own header bundle.
+'@param setupPath String. The setup file path of the run. Empty skips the header entry.
+'@param linelistName String. The output linelist name. Empty skips the header entry.
+'@return GenerationLog. The opened log.
+Public Function StartRunLog(Optional ByVal setupPath As String = vbNullString, _
+                            Optional ByVal linelistName As String = vbNullString) As GenerationLog
+    Set heldLog = GenerationLog.Create(ThisWorkbook)
+    heldLog.Start setupPath, linelistName
+    Set StartRunLog = heldLog
+End Function
+
+'@Description("The log of the current or last run. Nothing before the first run.")
+Public Function RunLog() As GenerationLog
+    Set RunLog = heldLog
+End Function
+
+'@Description("Take one bundle into the run log. Without an open run the bundle is dropped.")
+'@param checks Checking. The bundle to take.
+Public Sub CollectIntoLog(ByVal checks As Checking)
+    If heldLog Is Nothing Then Exit Sub
+    heldLog.Collect checks
+End Sub
+
+'@Description("Close the run log with the outcome text. Without an open run the call is ignored.")
+'@param outcome String. The outcome text of the run.
+Public Sub FinishRunLog(ByVal outcome As String)
+    If heldLog Is Nothing Then Exit Sub
+    heldLog.Finish outcome
+End Sub
 
 
 '@section Dev group callbacks
@@ -362,15 +408,16 @@ Public Sub clickGenerate()
 
     Set entry = EventsDesignerCore.EntryManager()
 
-    'Initialise the generation report on the designer __check sheet
-    GenerationReport.InitReport ThisWorkbook
+    'Open the run log on the designer __check sheet. The header carries
+    'the setup path and the linelist name the user typed.
+    StartRunLog entry.ValueOf("setuppath"), entry.ValueOf("llname")
 
-    'The entry checks are the report's first bundle. Every fault carries
-    'the error scope, so a checking with any entry aborts the run with the
-    'report sheet shown.
+    'The entry checks are the log's first bundle after the header. Every
+    'fault carries the error scope, so a checking with any entry aborts
+    'the run with the report sheet shown.
     If Not ValidateEntries(entry) Then
         entry.AddInfo entry.TranslateMessage("MSG_NotReady"), "edition"
-        GenerationReport.FinaliseReport
+        FinishRunLog entry.TranslateMessage("MSG_NotReady")
         appScope.Restore
         MsgBox entry.TranslateMessage("MSG_NotReady"), _
                vbExclamation + vbOKOnly, PROMPT_TITLE
@@ -389,11 +436,12 @@ Public Sub clickGenerate()
     End If
 
     'The whole build: specifications, linelist, sheets, dropdowns, analyses,
-    'save. The phase checkings flush to the report as each phase completes.
+    'save. The phase checkings flush to the log as each phase completes.
     savedPath = GenerateOne(entry, ll, bar)
 
-    'Finalise the generation report (install filter handler)
-    GenerationReport.FinaliseReport
+    'Close the log and write the text record beside the generated linelist
+    FinishRunLog entry.TranslateMessage("MSG_LLCreated")
+    heldLog.ExportText entry.ValueOf("lldir"), entry.ValueOf("llname")
 
     entry.AddInfo entry.TranslateMessage("MSG_LLCreated"), "edition"
     If Not bar Is Nothing Then bar.Complete entry.TranslateMessage("MSG_LLCreated")
@@ -412,8 +460,8 @@ Cleanup:
     'A half-drawn bar never survives the run; the error rides the
     'edition cell through the bar's status write.
     If Not bar Is Nothing Then bar.Reset errDesc
-    'Try to finalise whatever report was written before the error
-    GenerationReport.FinaliseReport
+    'Close the log over whatever was written before the error
+    FinishRunLog "Failed: " & errDesc
     If Not appScope Is Nothing Then appScope.Restore
     Application.Cursor = xlDefault
     On Error GoTo 0
@@ -433,18 +481,17 @@ Cleanup:
 End Sub
 
 
-'@Description("Run the entry checks and flush the faults as a report bundle.")
+'@Description("Run the entry checks and flush the faults as a log bundle.")
 '@details
-'Runs DesignerEntry.Validate over the Main entries and flushes a checking
-'that holds any fault as one bundle of the generation report. The report
-'has to be initialised by the caller. clickGenerate runs this once over
-'the typed entries; the multi driver runs it per row after the row's
-'values land on Main.
+'Runs DesignerEntry.Validate over the Main entries and takes a checking
+'that holds any fault into the run log as one bundle. The log has to be
+'opened by the caller. clickGenerate runs this once over the typed
+'entries; the multi driver runs it per row after the row's values land
+'on Main.
 '@param entry DesignerEntry. The entry manager over the Main worksheet.
 '@return Boolean. True when every entry passes and the build may start.
 Public Function ValidateEntries(ByVal entry As DesignerEntry) As Boolean
     Dim entryChecks As Checking
-    Dim entryBatch As BetterArray
 
     Set entryChecks = entry.Validate()
 
@@ -453,10 +500,7 @@ Public Function ValidateEntries(ByVal entry As DesignerEntry) As Boolean
         Exit Function
     End If
 
-    Set entryBatch = New BetterArray
-    entryBatch.LowerBound = 1
-    entryBatch.Push entryChecks
-    GenerationReport.FlushCheckings entryBatch
+    CollectIntoLog entryChecks
 End Function
 
 '@Description("Run one whole build over the Main entries and return the written path.")
@@ -467,11 +511,11 @@ End Function
 'Main and runs it per row. The setup workbook is opened once, inside
 'LinelistSpecs.Prepare.
 '
-'The phase checkings flush to the generation report as each phase
-'completes, so the report of a build that dies still carries the phases
-'that finished. The caller owns everything around the build: the entry
-'checks (ValidateEntries), the report lifecycle (InitReport and
-'FinaliseReport), the busy state and every dialog. A build fault raises
+'The phase checkings flush to the run log as each phase completes, so
+'the report of a build that dies still carries the phases that
+'finished. The caller owns everything around the build: the entry
+'checks (ValidateEntries), the log lifecycle (StartRunLog and
+'FinishRunLog), the busy state and every dialog. A build fault raises
 'to the caller; builtLinelist is set as soon as the linelist exists, so
 'the caller's handler holds it for ErrorManage or DiscardBuild.
 '
@@ -504,8 +548,13 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, _
     Set specs = LinelistSpecs.Create(ThisWorkbook)
     specs.Prepare setupPath
 
-    'Flush Phase 1: specification checkings (dictionary, choices, exports, etc.)
-    GenerationReport.FlushCheckings GenerationReport.HarvestSpecsCheckings(specs)
+    'Flush Phase 1: specification checkings (dictionary, choices, exports,
+    'etc.), then the transfer record. A setup whose translations table is
+    'missing is filed there: the linelist then keeps the designer's own
+    'translation rows. The class never calls the module, so the pull of
+    'the transfer record lives here with the driver.
+    If Not heldLog Is Nothing Then heldLog.Harvest specs
+    If InitTransfer.HasCheckings() Then CollectIntoLog InitTransfer.CheckingValues()
 
     TickProgress bar, statusTarget, "transfer"
 
@@ -521,13 +570,7 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, _
     'Flush Phase 1b: code transfer checkings. A component the output workbook
     'already carried was replaced by the designer's copy, and this is where the
     'report names it.
-    If ll.HasCheckings Then
-        Dim codeChecks As BetterArray
-        Set codeChecks = New BetterArray
-        codeChecks.LowerBound = 1
-        codeChecks.Push ll.CheckingValues
-        GenerationReport.FlushCheckings codeChecks
-    End If
+    If ll.HasCheckings Then CollectIntoLog ll.CheckingValues
 
     TickProgress bar, statusTarget, "linelist"
 
@@ -541,10 +584,7 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, _
 
     If sheetLists.Length > 0 Then
         Dim listBld As LLDataEntry
-        Dim sheetChecks As BetterArray
         Dim llSheetInfo As LLSheets
-        Set sheetChecks = New BetterArray
-        sheetChecks.LowerBound = 1
 
         'The shared LLSheets the linelist holds. This loop and TransferAllCode
         'each created their own over the same dictionary, so every row
@@ -560,34 +600,25 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, _
                          " of " & CStr(sheetLists.Length) & " - " & _
                          CStr(sheetLists.Item(counter))
             Set listBld = BuildOneSheet(llSheetInfo, ll, sheetLists.Item(counter))
+
+            'Flush Phase 2: the sheet's build checkings, one bundle per
+            'sheet, so the report grows with the build.
             If Not listBld Is Nothing Then
-                If listBld.HasCheckings Then
-                    sheetChecks.Push listBld.CheckingValues
-                End If
+                If listBld.HasCheckings Then CollectIntoLog listBld.CheckingValues
             End If
         Next
-
-        'Flush Phase 2: per-sheet build checkings
-        GenerationReport.FlushCheckings sheetChecks
     End If
 
-    'Flush Phase 2b: shared dropdown checkings (linelist-level, held apart
-    'from the per-sheet bundles)
-    Dim dropChecks As BetterArray
-    Set dropChecks = New BetterArray
-    dropChecks.LowerBound = 1
-
+    'Flush Phase 2b: shared dropdown checkings, one bundle per store
     Dim dropStd As DropdownLists
     Set dropStd = ll.Dropdown(1)
-    If dropStd.HasCheckings Then dropChecks.Push dropStd.CheckingValues
+    If dropStd.HasCheckings Then CollectIntoLog dropStd.CheckingValues
     TickProgress bar, statusTarget, "dropdowns"
 
     Dim dropCust As DropdownLists
     Set dropCust = ll.Dropdown(2)
-    If dropCust.HasCheckings Then dropChecks.Push dropCust.CheckingValues
+    If dropCust.HasCheckings Then CollectIntoLog dropCust.CheckingValues
     TickProgress bar, statusTarget, "dropdowns"
-
-    GenerationReport.FlushCheckings dropChecks
 
     'Build the analyses
     TickProgress bar, statusTarget, "analyses"
@@ -599,13 +630,7 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, _
     anaOut.WriteAnalysis AnalysisBuildStageAll
 
     'Flush Phase 3: analysis checkings
-    If anaOut.HasCheckings Then
-        Dim anaChecks As BetterArray
-        Set anaChecks = New BetterArray
-        anaChecks.LowerBound = 1
-        anaChecks.Push anaOut.CheckingValues
-        GenerationReport.FlushCheckings anaChecks
-    End If
+    If anaOut.HasCheckings Then CollectIntoLog anaOut.CheckingValues
 
     'Save the linelist as .xlsb with password protection
     TickProgress bar, statusTarget, "save"
