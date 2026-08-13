@@ -25,13 +25,15 @@ Option Explicit
 'Supports plain text, formula-aware translation (quoted chunks only),
 'range bulk-translation, and user-form caption translation.
 'The table is read once into memory and every value is matched against that
-'copy. The copy is kept until the table changes shape or Refresh is called, so
-'a run that translates a thousand strings reads the worksheet twice.
+'copy through a keyed index. The copy is kept until the table changes shape or
+'Refresh is called, so a run that translates a thousand strings reads the
+'worksheet twice and looks each string up without walking the copy.
 '@depends BetterArray, Checking
 '@version 1.0 (2026-02-09)
 
 
 Private Const CLASSNAME As String = "TranslationObject"
+Private Const KEY_CASE_SEPARATOR As String = "|"
 
 Private Type TTranslationObject
     transLo As ListObject
@@ -40,6 +42,7 @@ Private Type TTranslationObject
     sealed As Boolean
     lookupTags() As String
     lookupValues() As String
+    lookupIndex As Collection
     lookupCount As Long
     lookupSignature As String
     lookupLoaded As Boolean
@@ -478,6 +481,7 @@ Private Sub RefreshLookup()
     this.lookupCount = 0
     this.lookupLoaded = True
     this.lookupSignature = signature
+    Set this.lookupIndex = New Collection
 
     If this.transLo Is Nothing Then Exit Sub
 
@@ -497,27 +501,89 @@ Private Sub RefreshLookup()
     For idx = 1 To rowCount
         this.lookupTags(idx) = TextOf(bodyBlock(idx, 1))
         this.lookupValues(idx) = TextOf(bodyBlock(idx, languageColumn))
+        RegisterLookupKey this.lookupTags(idx), idx
     Next idx
 
     this.lookupCount = rowCount
 End Sub
 
+'@label:register-lookup-key
+'@sub-title Record the row a tag sits on, keeping the first row when a tag repeats
+'@details
+'Collection.Add raises 457 on a key it already holds, so the first row a tag
+'appears on is the row that stays. That is the row the scan this index replaced
+'answered with, because the scan stopped at its first match.
+'@param token String. The tag read out of the first column.
+'@param rowIndex Long. The one-based row it sits on.
+Private Sub RegisterLookupKey(ByVal token As String, ByVal rowIndex As Long)
+    If LenB(token) = 0 Then Exit Sub
+
+    On Error Resume Next
+        this.lookupIndex.Add rowIndex, LookupKey(token)
+    On Error GoTo 0
+End Sub
+
+'@label:lookup-key
+'@sub-title Build the index key for a tag, one key per spelling
+'@details
+'A Collection matches its own keys without regard to case, and this lookup is
+'case sensitive, so the key carries the capitalisation as a separate part and
+'"Hello" never answers for "hello". The leading character keeps a numeric tag
+'legal as a key. Same construction as SetupTranslationsTable.LabelKey.
+'@param token String. The tag to key.
+'@return String. The key.
+Private Function LookupKey(ByVal token As String) As String
+    LookupKey = "k" & token & KEY_CASE_SEPARATOR & CaseSignature(token)
+End Function
+
+'@label:case-signature
+'@sub-title Spell a tag's capitalisation out in digits
+'@details
+'Digits carry no case of their own, so a Collection holds this part of the key
+'exactly as written. A character reads 1 when it differs from its own lower
+'case, which is the whole of what a case-insensitive comparison throws away.
+'@param token String. The tag to describe.
+'@return String. One digit per character.
+Private Function CaseSignature(ByVal token As String) As String
+    Dim idx As Long
+    Dim tokenLength As Long
+    Dim character As String
+    Dim digits() As String
+
+    tokenLength = Len(token)
+    If tokenLength = 0 Then Exit Function
+
+    ReDim digits(1 To tokenLength)
+
+    For idx = 1 To tokenLength
+        character = Mid$(token, idx, 1)
+        If character = LCase$(character) Then
+            digits(idx) = "0"
+        Else
+            digits(idx) = "1"
+        End If
+    Next idx
+
+    CaseSignature = Join(digits, vbNullString)
+End Function
+
 '@label:lookup-row
 '@sub-title Find the row of a tag in the copy held in memory
+'@details
+'Answered by the keyed index built with the copy. It used to walk the copy from
+'the top on every call, and translating the setup asks this once per cell of
+'every translated column, so the walk cost rows times cells and was the whole of
+'why translating a setup took as long as it did.
 '@param token String. The tag to look up.
 '@return Long. The one-based row, or 0 when the tag is not there.
 Private Function LookupRow(ByVal token As String) As Long
-    Dim idx As Long
-
     If LenB(token) = 0 Then Exit Function
+    If this.lookupIndex Is Nothing Then Exit Function
 
-    'exact and case sensitive, as the worksheet search was
-    For idx = 1 To this.lookupCount
-        If StrComp(this.lookupTags(idx), token, vbBinaryCompare) = 0 Then
-            LookupRow = idx
-            Exit Function
-        End If
-    Next idx
+    'A key the index does not hold raises 5, and that is the answer "not there".
+    On Error Resume Next
+        LookupRow = this.lookupIndex(LookupKey(token))
+    On Error GoTo 0
 End Function
 
 '@label:translate-text
