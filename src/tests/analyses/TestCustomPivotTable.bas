@@ -339,23 +339,26 @@ End Sub
 
 'WHICH FAILING PIVOT MAY BE TESTED HERE, AND WHICH MAY NEVER BE.
 '===============================================================================
-'PivotTableWizard answers a SourceData naming no ListObject with a MODAL
+'PivotTableWizard answered a SourceData naming no ListObject with a MODAL
 'DIALOG. `On Error` is blind to it, the headless run hangs on the dialog, and
 'the harness writes a 0-byte test-results.csv, which reads exactly like an
-'infinite loop. It cost one run on 2026-07-31. NEVER let a test reach
-'PivotTableWizard with a source that may be missing.
+'infinite loop. It cost one run on 2026-07-31. `Add` builds through
+'PivotCaches.Create now, and what THAT does with a missing source has never
+'been measured, so the rule stands unchanged: NEVER let a test reach pivot
+'creation with a source that may be missing.
 '
-'`Add` resolves the table name against the workbook first now and skips the
-'wizard when nothing holds it, so the two tests below drive an unknown source
-'with the wizard out of the picture. That is the only shape of unknown-source
-'test this module may carry: it stays green only while the resolution in `Add`
-'stands in front of the wizard.
+'`Add` resolves the table name against the workbook first and builds nothing
+'when no worksheet holds it, so the two tests below drive an unknown source
+'with the creation call out of the picture. That is the only shape of
+'unknown-source test this module may carry: it stays green only while the
+'resolution in `Add` stands in front of the creation call.
 '
 'The PivotFailed handler is still untested. The duplicate-source case stays
-'outside it too, because Excel accepts a second pivot over the same table (see
-'the test below). What the handler is left guarding is an error Excel raises,
-'which nothing in the fixture can provoke. The happy path asserts HasCheckings
-'is False, so a handler firing when it should stay quiet would still be caught.
+'outside it too, because UniquePivotName renames the clash away before
+'CreatePivotTable sees it (see the test below). What the handler is left
+'guarding is an error Excel raises, which nothing in the fixture can provoke.
+'The happy path asserts HasCheckings is False, so a handler firing when it
+'should stay quiet would still be caught.
 
 '@TestMethod("CustomPivotTable")
 Public Sub TestAddRecordsACheckingForAnUnknownSource()
@@ -433,17 +436,29 @@ Public Sub TestAddingTheSameTableTwiceLetsTheLaterBlockWin()
     On Error GoTo TestFail
 
     Dim sut As CustomPivotTable
+    Dim numbered As PivotTable
 
     Set sut = CustomPivotTable.Create(PivotSheet)
     sut.Add "patients", DATA_TABLE_NAME, "Pivot Table"
     sut.Add "patients again", DATA_TABLE_NAME, "Pivot Table"
 
-    'Excel ACCEPTS a second pivot over the same source: it renames the
-    'PivotTable itself and builds the block. So a rebuild over a populated sheet
-    'stacks a second block for that table and the stored title follows the newer
-    'one. Pinned here because it reads like a failure case and it is a success.
+    'A second pivot over the same source is a success, not a failure: a rebuild
+    'over a populated sheet stacks a second block for that table and the stored
+    'title follows the newer one. Pinned here because it reads like a failure
+    'case. UniquePivotName is what keeps it one -- CreatePivotTable raises on a
+    'name already in use, so the later block takes a numbered spelling.
     Assert.IsTrue Not sut.HasCheckings, _
                   "A second pivot over the same table should not be treated as a failure"
+
+    Assert.AreEqual "2", CStr(PivotSheet.PivotTables.Count), _
+                    "Both blocks for the same table should carry their own pivot table"
+
+    On Error Resume Next
+    Set numbered = PivotSheet.PivotTables("PivotTable_" & DATA_TABLE_NAME & "_1")
+    On Error GoTo 0
+
+    Assert.IsTrue Not numbered Is Nothing, _
+                  "The later block should take a numbered pivot table name"
 
     Assert.AreEqual "Pivot Table 2 - patients again", _
                     PivotNames().ValueAsString("pivot_title_" & DATA_TABLE_NAME), _
@@ -549,6 +564,143 @@ Public Sub TestFormatRunsCosmeticPassOnce()
 TestFail:
     CustomTestLogFailure Assert, "TestFormatRunsCosmeticPassOnce", Err.Number, Err.Description
 End Sub
+
+'@section Probe: the second pivot block
+'===============================================================================
+'The build reports that the first pivot table is created and later ones are
+'not. Nothing above asserts how many PivotTables the sheet ends up holding --
+'the two-Add tests read titles and the cursor, both of which advance whether or
+'not the wizard landed. These drive the sequence BuildHList actually runs
+'(Add, Format, Add, Format) and count what is on the sheet, plus the two sheet
+'states the pivot sheet is in during a real generation and never in this
+'fixture: very hidden, and protected.
+
+'@TestMethod("CustomPivotTable")
+Public Sub TestSecondPivotLandsWhenFormatRunsBetweenAdds()
+    CustomTestSetTitles Assert, TESTMODULE, "TestSecondPivotLandsWhenFormatRunsBetweenAdds"
+    On Error GoTo TestFail
+
+    Dim sut As CustomPivotTable
+    Dim design As LLFormat
+    Dim first As PivotTable
+    Dim second As PivotTable
+
+    Set sut = CustomPivotTable.Create(PivotSheet)
+    Set design = BuildDesign()
+
+    'The order BuildHList runs: one Add and one Format per data entry sheet.
+    sut.Add "patients", DATA_TABLE_NAME, "Pivot Table"
+    sut.Format design
+    sut.Add "contacts", SECOND_TABLE_NAME, "Pivot Table"
+    sut.Format design
+
+    Assert.AreEqual "2", CStr(PivotSheet.PivotTables.Count), _
+                    "Two Adds with a Format between them should leave two pivot tables"
+
+    On Error Resume Next
+    Set first = PivotSheet.PivotTables("PivotTable_" & DATA_TABLE_NAME)
+    Set second = PivotSheet.PivotTables("PivotTable_" & SECOND_TABLE_NAME)
+    On Error GoTo 0
+
+    Assert.IsTrue Not first Is Nothing, _
+                  "The first block's pivot table should survive the second Add"
+
+    Assert.IsTrue Not second Is Nothing, _
+                  "The second block should carry its own named pivot table"
+
+    Assert.IsTrue Not sut.HasCheckings, _
+                  "Neither block should record a checking"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSecondPivotLandsWhenFormatRunsBetweenAdds", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("CustomPivotTable")
+Public Sub TestTwoPivotsLandWithNoFormatBetween()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTwoPivotsLandWithNoFormatBetween"
+    On Error GoTo TestFail
+
+    Dim sut As CustomPivotTable
+
+    Set sut = CustomPivotTable.Create(PivotSheet)
+    sut.Add "patients", DATA_TABLE_NAME, "Pivot Table"
+    sut.Add "contacts", SECOND_TABLE_NAME, "Pivot Table"
+
+    'The control for the test above. If this one counts two and that one counts
+    'one, Format is what stops the second block.
+    Assert.AreEqual "2", CStr(PivotSheet.PivotTables.Count), _
+                    "Two Adds should leave two pivot tables"
+
+    Assert.IsTrue Not sut.HasCheckings, _
+                  "Neither block should record a checking"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTwoPivotsLandWithNoFormatBetween", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("CustomPivotTable")
+Public Sub TestAddLandsOnAVeryHiddenSheet()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAddLandsOnAVeryHiddenSheet"
+    On Error GoTo TestFail
+
+    Dim sut As CustomPivotTable
+
+    'What the pivot sheet is until Format gives it its visibility, so every
+    'block a generation adds is added to a sheet in this state.
+    PivotSheet.Visible = xlSheetVeryHidden
+
+    Set sut = CustomPivotTable.Create(PivotSheet)
+    sut.Add "patients", DATA_TABLE_NAME, "Pivot Table"
+    sut.Add "contacts", SECOND_TABLE_NAME, "Pivot Table"
+
+    Assert.AreEqual "2", CStr(PivotSheet.PivotTables.Count), _
+                    "A very hidden sheet should still take its pivot tables"
+
+    Assert.IsTrue Not sut.HasCheckings, _
+                  "A very hidden sheet should record no checking"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAddLandsOnAVeryHiddenSheet", Err.Number, Err.Description
+End Sub
+
+'A protected pivot sheet is deliberately NOT probed here. PivotTableWizard may
+'answer protection with a modal dialog, which hangs a headless run, and the
+'sheet is not protected while BuildHList runs anyway -- `pass.Protect sh`
+'covers the data entry sheet only.
+
+'@TestMethod("CustomPivotTable")
+Public Sub TestAddLandsWhenSourcesSitOnSeparateSheets()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAddLandsWhenSourcesSitOnSeparateSheets"
+    On Error GoTo TestFail
+
+    Dim sut As CustomPivotTable
+    Dim otherSh As Worksheet
+    Const THIRD_TABLE_NAME As String = "ThirdDataTable"
+
+    'In a generation each source table sits on its own data entry sheet. The
+    'fixture keeps both on one sheet, so that difference is covered here.
+    Set otherSh = FixtureWkb.Worksheets.Add
+    otherSh.Name = "OtherDataSheet"
+    SeedTable otherSh, 1, THIRD_TABLE_NAME
+
+    Set sut = CustomPivotTable.Create(PivotSheet)
+    sut.Add "patients", DATA_TABLE_NAME, "Pivot Table"
+    sut.Add "contacts", THIRD_TABLE_NAME, "Pivot Table"
+
+    Assert.AreEqual "2", CStr(PivotSheet.PivotTables.Count), _
+                    "Sources on separate sheets should both take a pivot table"
+
+    Assert.IsTrue Not sut.HasCheckings, _
+                  "Sources on separate sheets should record no checking"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAddLandsWhenSourcesSitOnSeparateSheets", Err.Number, Err.Description
+End Sub
+
 
 '@TestMethod("CustomPivotTable")
 Public Sub TestFormatRejectsNothingDesign()

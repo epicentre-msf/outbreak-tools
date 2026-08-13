@@ -149,17 +149,27 @@ End Property
 '@sub-title Create a pivot table from a ListObject source and add a titled block
 '@details
 'Reads the current position from the worksheet-level HiddenNames, creates a
-'PivotTable via PivotTableWizard, writes a styled title, stores the title text
-'under pivot_title_<tableName>, and advances the position for the next block.
+'PivotTable, writes a styled title, stores the title text under
+'pivot_title_<tableName>, and advances the position for the next block.
+'
+'The pivot is built through PivotCaches.Create, NOT through
+'Worksheet.PivotTableWizard. The wizard does not stack: handed a worksheet that
+'already carries a PivotTable, it retargets that one at the destination it was
+'given rather than creating another. Every block after the first therefore
+'moved the first block's pivot down to its own row and left the sheet holding
+'one pivot table, with nothing raised and nothing recorded. The title, the
+'cursor and pivot_title_<tableName> all advanced normally, which is what made
+'it look like a build that had worked.
 '
 'The source table is resolved against every worksheet of the workbook before
-'the wizard is called. A name that resolves to nothing is recorded as a
-'checking and the wizard is skipped: PivotTableWizard answers such a name with
-'a modal dialog, which On Error cannot see. That dialog freezes Excel in front
-'of the user in the middle of a build and hangs a headless run. An error the
-'wizard does raise is recorded the same way, so one bad table leaves the rest
-'of the build alone. The position advances in both cases, so the next block
-'cannot land on top of whatever the failed attempt left behind.
+'the pivot is built. A name that resolves to nothing is recorded as a checking
+'and nothing is built: the wizard answered such a name with a modal dialog,
+'which On Error cannot see, and that dialog froze Excel in front of the user in
+'the middle of a build and hung a headless run. See SourceTableExists for why
+'the guard outlived the wizard. An error the creation call does raise is
+'recorded the same way, so one bad table leaves the rest of the build alone.
+'The position advances in both cases, so the next block cannot land on top of
+'whatever the failed attempt left behind.
 '@param title String. Display label for the pivot block (typically the sheet name).
 '@param tableName String. Name of the source ListObject providing pivot data.
 '@param pivotName String. Localised prefix for the title. Defaults to "Pivot Table".
@@ -198,10 +208,10 @@ Public Sub Add(ByVal title As String, _
     'cannot find and a dialog is out of reach of the handler below.
     If SourceTableExists(tableName) Then
         On Error GoTo PivotFailed
-        sh.PivotTableWizard SourceType:=xlDatabase, _
-                             SourceData:=tableName, _
-                             tableName:=PIVOT_PREFIX & tableName, _
-                             TableDestination:=outputCell
+        sh.Parent.PivotCaches.Create(SourceType:=xlDatabase, _
+                                     SourceData:=tableName) _
+            .CreatePivotTable TableDestination:=outputCell, _
+                              tableName:=UniquePivotName(PIVOT_PREFIX & tableName)
         On Error GoTo 0
         pivotAdded = True
     Else
@@ -341,11 +351,15 @@ End Function
 '@label:source-table-exists
 '@sub-title Whether the workbook defines the source ListObject
 '@details
-'PivotTableWizard shows a modal dialog for a SourceData naming no ListObject.
-'In production that is a frozen Excel in the middle of a generation, and in a
-'headless run it hangs the harness and leaves a zero-byte results file under a
-'healthy import log. On Error reaches none of it, so the name is resolved here
-'before the wizard is called.
+'PivotTableWizard showed a modal dialog for a SourceData naming no ListObject.
+'In production that was a frozen Excel in the middle of a generation, and in a
+'headless run it hung the harness and left a zero-byte results file under a
+'healthy import log. On Error reached none of it, so the name is resolved here
+'before the pivot is built.
+'
+'The wizard is gone -- Add builds through PivotCaches.Create now -- but this
+'guard stays. What that call does with a name no ListObject holds has never
+'been measured, and the cost of finding out the hard way is a hung run.
 '
 'The source table of a pivot sits on the data entry sheet it was built from, so
 'the walk covers every worksheet of the pivot sheet's workbook. It runs once
@@ -365,6 +379,51 @@ Private Function SourceTableExists(ByVal tableName As String) As Boolean
                 Exit Function
             End If
         Next candidateTable
+    Next candidateSheet
+End Function
+
+'@label:unique-pivot-name
+'@sub-title A PivotTable name no pivot in the workbook already holds
+'@details
+'CreatePivotTable raises on a name that is taken, and asking for the same
+'source table twice is a real case: a rebuild over a populated pivot sheet does
+'it. The wizard this replaced renamed such a clash away on its own. This does
+'the same explicitly, so the first block for a table keeps the plain
+'PivotTable_<tableName> that TestAddCreatesPivotTable and any reader expect,
+'and a later block for the same table takes a numbered spelling.
+'@param baseName String. The name the block would like.
+'@return String. baseName, or baseName with a numeric suffix.
+Private Function UniquePivotName(ByVal baseName As String) As String
+    Dim candidate As String
+    Dim suffix As Long
+
+    candidate = baseName
+    Do While PivotNameTaken(candidate)
+        suffix = suffix + 1
+        candidate = baseName & "_" & suffix
+    Loop
+
+    UniquePivotName = candidate
+End Function
+
+'@label:pivot-name-taken
+'@sub-title Whether some worksheet of the workbook holds a pivot of that name
+'@details
+'PivotTable names are unique across the workbook, not the worksheet, so the
+'walk covers every sheet the way SourceTableExists does.
+'@param pivotName String. The candidate name.
+'@return Boolean. True when a pivot table of that name already exists.
+Private Function PivotNameTaken(ByVal pivotName As String) As Boolean
+    Dim candidateSheet As Worksheet
+    Dim candidatePivot As PivotTable
+
+    For Each candidateSheet In this.sh.Parent.Worksheets
+        For Each candidatePivot In candidateSheet.PivotTables
+            If StrComp(candidatePivot.Name, pivotName, vbTextCompare) = 0 Then
+                PivotNameTaken = True
+                Exit Function
+            End If
+        Next candidatePivot
     Next candidateSheet
 End Function
 
