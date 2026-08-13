@@ -104,6 +104,7 @@ Private Type TLLDataEntry
     internalChecks As Checking
     checkCounter As Long
     hasChecks As Boolean
+    sectionBuilder As SectionBuilder
     sealed As Boolean
 End Type
 
@@ -498,7 +499,8 @@ Private Sub BuildHList()
 
     pass.Protect sh
 
-    LogInfo "HList sheet " & this.sheetName & " built (table: " & tableName & ")"
+    LogInfo "HList sheet " & this.sheetName & " built (table: " & tableName & _
+            ", " & BuiltCountsText() & ")"
     Exit Sub
 
 BuildFailed:
@@ -577,7 +579,8 @@ Private Sub BuildVList()
 
     pass.Protect sh
 
-    LogInfo "VList sheet " & this.sheetName & " built (table: " & tableName & ")"
+    LogInfo "VList sheet " & this.sheetName & " built (table: " & tableName & _
+            ", " & BuiltCountsText() & ")"
     Exit Sub
 
 BuildFailed:
@@ -672,6 +675,10 @@ Private Sub BuildSections(ByVal sh As Worksheet, ByVal printSh As Worksheet)
     End If
 
     secBuilder.Build this.sheetName, SectionStartRow()
+
+    'One section builder serves the whole sheet, so the field is what lets
+    'the caller read the counts and the per-variable record after the build.
+    Set this.sectionBuilder = secBuilder
 
     'Harvest per-variable checkings from the section builder
     If secBuilder.HasCheckings Then HarvestCollaboratorCheckings secBuilder.CheckingValues
@@ -933,6 +940,58 @@ Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As Checking)
     this.internalChecks.Append collaboratorChecks
     this.hasChecks = True
 End Sub
+
+'@label:built-counts-text
+'@sub-title The section and variable counts of the finished sheet
+'@details
+'Read off the section builder the sheet was laid out with. A sheet whose
+'sections were never built answers zeros, which is what the counts are.
+'@return String. The counts as one phrase for the report line.
+Private Function BuiltCountsText() As String
+    BuiltCountsText = CStr(SectionsPlaced()) & " section(s), " & _
+                      CStr(VariablesWritten()) & " variable(s)"
+End Function
+
+'@label:has-milestones
+'@prop-title Whether any variable of this sheet was written
+'@return Boolean. True once a variable of this sheet reached the worksheet.
+'@export
+Public Property Get HasMilestones() As Boolean
+    If this.sectionBuilder Is Nothing Then Exit Property
+    HasMilestones = this.sectionBuilder.HasMilestones
+End Property
+
+'@label:milestone-values
+'@prop-title The per-variable record of this sheet
+'@details
+'Handed up from the section builder as the writer holds it. The build
+'driver takes it into the run log record-only, so it reaches the text
+'file and leaves the __check worksheet to the sheet-level entries and
+'the problems.
+'@return Checking. The milestone entries, or Nothing.
+'@export
+Public Property Get MilestoneValues() As Checking
+    If this.sectionBuilder Is Nothing Then Exit Property
+    Set MilestoneValues = this.sectionBuilder.MilestoneValues
+End Property
+
+'@label:variables-written
+'@prop-title How many variables this sheet build put on the worksheet
+'@return Long. The number of variables written.
+'@export
+Public Property Get VariablesWritten() As Long
+    If this.sectionBuilder Is Nothing Then Exit Property
+    VariablesWritten = this.sectionBuilder.VariablesWritten
+End Property
+
+'@label:sections-placed
+'@prop-title How many sections this sheet build laid out
+'@return Long. The number of sections placed.
+'@export
+Public Property Get SectionsPlaced() As Long
+    If this.sectionBuilder Is Nothing Then Exit Property
+    SectionsPlaced = this.sectionBuilder.SectionsPlaced
+End Property
 
 '@label:has-checkings
 '@prop-title Whether this build has anything to report

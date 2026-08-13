@@ -54,6 +54,7 @@ Option Explicit
 
 Private Type TLLExport
     expData As DataSheet
+    collaboratorsMerged As Boolean          'True once the data sheet's entries were taken
     exportSheet As Worksheet
     dictInt As LLdictionary
     variables As LLVariables
@@ -64,6 +65,7 @@ Private Type TLLExport
     specHeaders As Variant
     specBlock As Variant
     specLoaded As Boolean
+    exportTableAdapter As CustomTable       'The last table adapter ExportTable built
     sealed As Boolean
 End Type
 
@@ -166,7 +168,44 @@ End Property
 
 '@label:HasCheckings
 '@prop-title Whether informational checkings were captured
+'@label:harvest-collaborator-checkings
+'@sub-title Fold what a collaborator filed into these entries
+'@details
+'`DataSheet` and `CustomTable` each keep a store of their own, and nobody
+'read either of them before this line.
+'@param collaboratorChecks Checking. What the collaborator filed.
+Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As Checking)
+    If collaboratorChecks Is Nothing Then Exit Sub
+    If collaboratorChecks.Length() <= 0 Then Exit Sub
+
+    If this.checks Is Nothing Then Set this.checks = Checking.Create(CHECKING_CONTEXT)
+    this.checks.Append collaboratorChecks
+    this.hasChecks = True
+End Sub
+
+'@label:merge-collaborator-checkings
+'@sub-title Take the collaborators' entries before the report is read
+'@details
+'The data sheet lives as long as this object does; the table adapter is the
+'last one `ExportTable` built. Both are folded in when the report is asked
+'for, and the flag keeps the fold to once because the caller reads
+'`HasCheckings` and then `CheckingValues`.
+Private Sub MergeCollaboratorCheckings()
+    If this.collaboratorsMerged Then Exit Sub
+    this.collaboratorsMerged = True
+
+    If Not (this.expData Is Nothing) Then
+        If this.expData.HasCheckings Then HarvestCollaboratorCheckings this.expData.CheckingValues
+    End If
+
+    If Not (this.exportTableAdapter Is Nothing) Then
+        If this.exportTableAdapter.HasCheckings Then _
+            HarvestCollaboratorCheckings this.exportTableAdapter.CheckingValues
+    End If
+End Sub
+
 Public Property Get HasCheckings() As Boolean
+    MergeCollaboratorCheckings
     HasCheckings = this.hasChecks
 End Property
 
@@ -1202,8 +1241,16 @@ Private Function ExportTable() As CustomTable
         ThrowError ProjectError.ElementNotFound, "No table found on export worksheet"
     End If
 
+    'The adapter of the previous call is done with, so whatever it filed is
+    'taken now. Reading it at report time alone would keep the last one only.
+    If Not (this.exportTableAdapter Is Nothing) Then
+        If this.exportTableAdapter.HasCheckings Then _
+            HarvestCollaboratorCheckings this.exportTableAdapter.CheckingValues
+    End If
+
     Set lo = sheetTables(1)
-    Set ExportTable = CustomTable.Create(lo, COL_EXPORT_NUMBER)
+    Set this.exportTableAdapter = CustomTable.Create(lo, COL_EXPORT_NUMBER)
+    Set ExportTable = this.exportTableAdapter
 End Function
 
 '@section Specification Reads

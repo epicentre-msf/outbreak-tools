@@ -915,3 +915,64 @@ Public Sub TestTheHListBuildFilesAReportEntry()
 TestFail:
     CustomTestLogFailure Assert, "TestTheHListBuildFilesAReportEntry", Err.Number, Err.Description
 End Sub
+
+
+'@section What the build counted
+'===============================================================================
+'@description
+'The line a finished sheet files carries what the sheet holds, and the driver
+'adds the counts up over the run for the closing bundle of the report.
+
+'@TestMethod("LLDataEntry")
+Public Sub TestTheSheetEntryCarriesItsCounts()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheSheetEntryCarriesItsCounts"
+    If Not FixtureReady("TestTheSheetEntryCarriesItsCounts") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim entries As Checking
+    Dim keys As BetterArray
+    Dim idx As Long
+    Dim joined As String
+
+    Set entries = VListBuilder.CheckingValues
+    Set keys = entries.ListOfKeys()
+
+    For idx = keys.LowerBound To keys.UpperBound
+        joined = joined & entries.ValueOf(CStr(keys.Item(idx)), checkingLabel) & " | "
+    Next idx
+
+    Assert.IsTrue InStr(1, joined, "VList sheet " & VLIST_SHEET & " built") > 0, _
+                  "The finished sheet files its line, and the entries read " & joined
+    Assert.IsTrue InStr(1, joined, "section(s), ") > 0, _
+                  "The line carries the section count, and the entries read " & joined
+    Assert.IsTrue InStr(1, joined, CStr(VListBuilder.VariablesWritten) & " variable(s)") > 0, _
+                  "The line carries the variable count, and the entries read " & joined
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheSheetEntryCarriesItsCounts", Err.Number, Err.Description
+End Sub
+
+
+'@TestMethod("LLDataEntry")
+Public Sub TestTheBuildHandsOnThePerVariableRecord()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheBuildHandsOnThePerVariableRecord"
+    If Not FixtureReady("TestTheBuildHandsOnThePerVariableRecord") Then Exit Sub
+    On Error GoTo TestFail
+
+    'The driver takes this store record-only, so it reaches the run's text
+    'file and stays off the __check worksheet.
+    Assert.IsTrue HListBuilder.HasMilestones, _
+                  "A sheet that wrote variables hands on their record"
+    Assert.IsTrue HListBuilder.VariablesWritten > 0, _
+                  "A built sheet counts the variables it wrote"
+    Assert.AreEqual CLng(HListBuilder.VariablesWritten), _
+                    CLng(HListBuilder.MilestoneValues.Length), _
+                    "One written variable is one entry of the record"
+    Assert.IsTrue HListBuilder.SectionsPlaced > 0, _
+                  "A built sheet counts the sections it placed"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheBuildHandsOnThePerVariableRecord", Err.Number, Err.Description
+End Sub

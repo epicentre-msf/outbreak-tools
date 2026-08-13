@@ -48,6 +48,12 @@ Private Const FIXED_STEPS As Long = 7
 'stays open.
 Private heldLog As GenerationLog
 
+'What the run has built so far. GenerateOne adds to them per sheet, so a
+'multi run counts every row of the batch, and FinishRunLog hands them to
+'the closing bundle. StartRunLog puts them back to zero.
+Private builtSheets As Long
+Private builtVariables As Long
+
 
 '@section Run log services
 '===============================================================================
@@ -65,6 +71,8 @@ Public Function StartRunLog(Optional ByVal setupPath As String = vbNullString, _
                             Optional ByVal linelistName As String = vbNullString) As GenerationLog
     Set heldLog = GenerationLog.Create(ThisWorkbook)
     heldLog.Start setupPath, linelistName
+    builtSheets = 0
+    builtVariables = 0
     Set StartRunLog = heldLog
 End Function
 
@@ -74,17 +82,27 @@ Public Function RunLog() As GenerationLog
 End Function
 
 '@Description("Take one bundle into the run log. Without an open run the bundle is dropped.")
+'@details
+'recordOnly keeps a bundle out of the __check worksheet and puts it in
+'the run's record alone, which is what the text file is written from.
+'The per-variable milestones travel that way: they are a few hundred
+'entries and every worksheet row costs an EntireColumn.AutoFit.
 '@param checks Checking. The bundle to take.
-Public Sub CollectIntoLog(ByVal checks As Checking)
+'@param recordOnly Optional Boolean. True keeps the bundle off the worksheet.
+Public Sub CollectIntoLog(ByVal checks As Checking, _
+                          Optional ByVal recordOnly As Boolean = False)
     If heldLog Is Nothing Then Exit Sub
-    heldLog.Collect checks
+    heldLog.Collect checks, recordOnly
 End Sub
 
 '@Description("Close the run log with the outcome text. Without an open run the call is ignored.")
+'@details
+'The counts the run added up ride into the closing bundle beside the
+'outcome, so the last lines of the report say how much was built.
 '@param outcome String. The outcome text of the run.
 Public Sub FinishRunLog(ByVal outcome As String)
     If heldLog Is Nothing Then Exit Sub
-    heldLog.Finish outcome
+    heldLog.Finish outcome, builtSheets, builtVariables
 End Sub
 
 
@@ -602,9 +620,15 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, _
             Set listBld = BuildOneSheet(llSheetInfo, ll, sheetLists.Item(counter))
 
             'Flush Phase 2: the sheet's build checkings, one bundle per
-            'sheet, so the report grows with the build.
+            'sheet, so the report grows with the build. The per-variable
+            'record follows it record-only, which keeps a few hundred
+            'entries out of the worksheet and in the text file.
             If Not listBld Is Nothing Then
                 If listBld.HasCheckings Then CollectIntoLog listBld.CheckingValues
+                If listBld.HasMilestones Then CollectIntoLog listBld.MilestoneValues, True
+
+                builtSheets = builtSheets + 1
+                builtVariables = builtVariables + listBld.VariablesWritten
             End If
         Next
     End If

@@ -57,6 +57,7 @@ Private Type TDictionary
     preparedValue As Boolean           'True once the dictionary was seen prepared
     checkCounter As Long
     internalChecks As Checking
+    collaboratorsMerged As Boolean     'True once the data sheet's entries were taken
 End Type
 
 Private this As TDictionary
@@ -839,6 +840,7 @@ Public Sub ManageRows(Optional ByVal del As Boolean = False)
     Else
         table.AddRows
     End If
+    If table.HasCheckings Then HarvestCollaboratorCheckings table.CheckingValues
 
     ClearPreparedCache
 End Sub
@@ -861,6 +863,7 @@ Public Sub InsertRows(ByVal targetCell As Range, _
 
     Set table = CustomTable.Create(listObj)
     table.InsertRowsAt targetCell:=targetCell, insertShift:=insertShift
+    If table.HasCheckings Then HarvestCollaboratorCheckings table.CheckingValues
 
     ClearPreparedCache
 End Sub
@@ -881,6 +884,7 @@ Public Sub DeleteRows(ByVal targetCell As Range, _
     table.DeleteRowsAt targetCell:=targetCell, _
                         includeIds:=includeIds, _
                         forceShift:=forceShift
+    If table.HasCheckings Then HarvestCollaboratorCheckings table.CheckingValues
 
     ClearPreparedCache
 End Sub
@@ -2127,10 +2131,47 @@ Private Sub LogInfo(ByVal label As String, Optional ByVal scope As Byte = checki
     this.hasChecks = True
 End Sub
 
+'@label:harvest-collaborator-checkings
+'@sub-title Fold what a collaborator filed into this dictionary's entries
+'@details
+'`DataSheet` and `CustomTable` each keep a store of their own, and until
+'this line nobody read either of them. An import that aborted, or a column
+'name a table could not find, was filed and then dropped.
+'@param collaboratorChecks Checking. What the collaborator filed.
+Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As Checking)
+    If collaboratorChecks Is Nothing Then Exit Sub
+    If collaboratorChecks.Length() <= 0 Then Exit Sub
+
+    If this.internalChecks Is Nothing Then
+        Set this.internalChecks = Checking.Create(Wksh().Name)
+    End If
+
+    this.internalChecks.Append collaboratorChecks
+    this.hasChecks = True
+End Sub
+
+'@label:merge-collaborator-checkings
+'@sub-title Take the data sheet's entries before the report is read
+'@details
+'The data sheet lives as long as the dictionary does, so its entries are
+'folded in when the report is asked for. The flag keeps the fold to once:
+'the caller reads `HasCheckings` and then `CheckingValues`, and appending
+'twice would double every line.
+Private Sub MergeCollaboratorCheckings()
+    If this.collaboratorsMerged Then Exit Sub
+    this.collaboratorsMerged = True
+
+    If this.dictDataSheet Is Nothing Then Exit Sub
+    If Not this.dictDataSheet.HasCheckings Then Exit Sub
+
+    HarvestCollaboratorCheckings this.dictDataSheet.CheckingValues
+End Sub
+
 '@label:has-checkings
 '@prop-title True once something was logged
 '@return Boolean
 Public Property Get HasCheckings() As Boolean
+    MergeCollaboratorCheckings
     HasCheckings = this.hasChecks
 End Property
 

@@ -37,6 +37,13 @@ Private HListSheet As Worksheet
 Private PrintSheet As Worksheet
 Private DropStub As DropdownLists
 Private CustDropStub As DropdownLists
+
+'The two builders that laid the sheets out. They are held because what a
+'build counted and recorded is read off the builder, and the sheets are
+'built once for the whole module.
+Private VListBuilder As SectionBuilder
+Private HListBuilder As SectionBuilder
+
 Private SetupError As Long
 Private SetupMessage As String
 
@@ -105,6 +112,8 @@ Public Sub ModuleCleanup()
     Set PrintSheet = Nothing
     Set DropStub = Nothing
     Set CustDropStub = Nothing
+    Set VListBuilder = Nothing
+    Set HListBuilder = Nothing
     Set FixtureWorkbook = Nothing
     Set Assert = Nothing
 End Sub
@@ -352,6 +361,100 @@ TestFail:
 End Sub
 
 
+'@section What the build counted and recorded
+'===============================================================================
+'@description
+'The build files one entry per section it lays out, and hands on the
+'writer's per-variable record without merging it. The two travel to
+'different places: the section entries reach the __check worksheet with
+'the problems, the per-variable record reaches the run log's text file
+'alone.
+
+'@TestMethod("SectionBuilder")
+Public Sub TestTheBuildFiledOneEntryPerSection()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheBuildFiledOneEntryPerSection"
+    If Not FixtureReady("TestTheBuildFiledOneEntryPerSection") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim map As SectionMap
+
+    'The map holds one block per section the build laid out, so it is what
+    'the count is measured against.
+    Set map = SectionMap.Create(TargetSheet)
+
+    Assert.IsTrue map.Count > 0, "The fixture sheet holds sections to place"
+    Assert.AreEqual map.Count, VListBuilder.SectionsPlaced, _
+                    "One section placed is one section counted"
+    Assert.IsTrue VListBuilder.HasCheckings, _
+                  "A build that placed a section should have something to report"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheBuildFiledOneEntryPerSection", Err.Number, Err.Description
+End Sub
+
+
+'@TestMethod("SectionBuilder")
+Public Sub TestTheSectionEntryNamesItsSheet()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheSectionEntryNamesItsSheet"
+    If Not FixtureReady("TestTheSectionEntryNamesItsSheet") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim entryKey As String
+
+    entryKey = VLIST_SHEET & "!Controls"
+
+    Assert.IsTrue VListBuilder.CheckingValues.KeyExists(entryKey), _
+                  "The entry of a placed section is keyed by sheet and section"
+    Assert.AreEqual "section Controls placed on " & VLIST_SHEET, _
+                    VListBuilder.CheckingValues.ValueOf(entryKey, checkingLabel), _
+                    "The entry says which section was placed on which sheet"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheSectionEntryNamesItsSheet", Err.Number, Err.Description
+End Sub
+
+
+'@TestMethod("SectionBuilder")
+Public Sub TestTheBuildCountsTheVariablesItWrote()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheBuildCountsTheVariablesItWrote"
+    If Not FixtureReady("TestTheBuildCountsTheVariablesItWrote") Then Exit Sub
+    On Error GoTo TestFail
+
+    Assert.IsTrue VListBuilder.VariablesWritten > 0, _
+                  "The VList build wrote variables and should count them"
+    Assert.IsTrue HListBuilder.VariablesWritten > 0, _
+                  "The HList build wrote variables and should count them"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheBuildCountsTheVariablesItWrote", Err.Number, Err.Description
+End Sub
+
+
+'@TestMethod("SectionBuilder")
+Public Sub TestTheMilestoneRecordIsTheWritersOwn()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheMilestoneRecordIsTheWritersOwn"
+    If Not FixtureReady("TestTheMilestoneRecordIsTheWritersOwn") Then Exit Sub
+    On Error GoTo TestFail
+
+    'The record is handed on rather than merged, so there is one entry per
+    'variable written and no copy of it inside the section entries.
+    Assert.IsTrue VListBuilder.HasMilestones, _
+                  "A build that wrote variables carries their record"
+    Assert.AreEqual CLng(VListBuilder.VariablesWritten), _
+                    CLng(VListBuilder.MilestoneValues.Length), _
+                    "One written variable is one entry of the record"
+    Assert.IsTrue VListBuilder.CheckingValues.Length < VListBuilder.MilestoneValues.Length, _
+                  "The per-variable record stays out of the entries the worksheet takes"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheMilestoneRecordIsTheWritersOwn", Err.Number, Err.Description
+End Sub
+
+
 '@section What the build left in the section map
 '===============================================================================
 '@description
@@ -532,25 +635,22 @@ End Sub
 
 '@sub-title Build the VList sheet and the HList sheet, once each.
 Private Sub BuildBothSheets()
-    Dim vlistBuilder As SectionBuilder
-    Dim hlistBuilder As SectionBuilder
-
-    Set vlistBuilder = SectionBuilder.Create( _
+    Set VListBuilder = SectionBuilder.Create( _
         layer:=SectionBuilderModeVList, _
         specs:=Specs, _
         wksh:=TargetSheet, _
         dropdownObj:=DropStub, _
         customDropdownObj:=CustDropStub)
-    vlistBuilder.Build VLIST_SHEET, FindSheetStartRow(VLIST_SHEET)
+    VListBuilder.Build VLIST_SHEET, FindSheetStartRow(VLIST_SHEET)
 
-    Set hlistBuilder = SectionBuilder.Create( _
+    Set HListBuilder = SectionBuilder.Create( _
         layer:=SectionBuilderModeHList, _
         specs:=Specs, _
         wksh:=HListSheet, _
         printWksh:=PrintSheet, _
         dropdownObj:=DropStub, _
         customDropdownObj:=CustDropStub)
-    hlistBuilder.Build HLIST_SHEET, FindSheetStartRow(HLIST_SHEET)
+    HListBuilder.Build HLIST_SHEET, FindSheetStartRow(HLIST_SHEET)
 End Sub
 
 '@fun-title Report a fixture that could not be built, once per test.

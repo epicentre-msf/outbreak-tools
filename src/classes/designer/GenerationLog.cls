@@ -217,8 +217,20 @@ End Sub
 'entries to the in-memory record and flushes the bundle to the worksheet.
 'A Nothing or empty bundle is skipped, and so is any bundle arriving
 'outside the run window (before Start or after Finish).
+'
+'THE RECORD-ONLY PATH
+'-------------------------------------------------------------------------------
+'recordOnly keeps a bundle out of the worksheet and puts it in the
+'in-memory record alone, so it reaches the text file and nothing else.
+'It carries the detail bundles: one entry per variable written is a few
+'hundred entries on a normal linelist, and CheckingOutput ends every
+'row it writes with an EntireColumn.AutoFit. The worksheet keeps the
+'sheet, section and analysis milestones plus every fault, which is what
+'a reader opens it for.
 '@param checks Checking. The bundle to take.
-Public Sub Collect(ByVal checks As Checking)
+'@param recordOnly Optional Boolean. True keeps the bundle off the worksheet.
+Public Sub Collect(ByVal checks As Checking, _
+                   Optional ByVal recordOnly As Boolean = False)
     Dim stampText As String
     Dim keys As BetterArray
     Dim keyIndex As Long
@@ -240,6 +252,8 @@ Public Sub Collect(ByVal checks As Checking)
                                checks.ValueOf(keyName, checkingLabel), _
                                ScopeText(checks, keyName))
     Next keyIndex
+
+    If recordOnly Then Exit Sub
 
     Set batch = New BetterArray
     batch.LowerBound = 1

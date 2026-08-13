@@ -199,6 +199,41 @@ Fail:
 End Sub
 
 
+'@TestMethod("GenerationLog.Record")
+Public Sub TestARecordOnlyBundleStaysOffTheWorksheet()
+    CustomTestSetTitles Assert, "GenerationLog", "TestARecordOnlyBundleStaysOffTheWorksheet"
+    On Error GoTo Fail
+
+    'Arrange: a bare run, whose header holds one entry
+    Dim runLog As GenerationLog
+    Set runLog = GenerationLog.Create(FixtureWorkbook)
+    runLog.Start
+
+    'Act: one bundle each way
+    runLog.Collect MakeBundle("sheet bundle", 1)
+    runLog.Collect MakeBundle("detail bundle", 3), recordOnly:=True
+
+    'Assert: both bundles are in the record, which is what the text file reads
+    Assert.AreEqual CLng(5), runLog.RecordLength, _
+                    "A record-only bundle should still reach the in-memory record."
+    Assert.IsTrue InStr(1, runLog.RecordLine(3), "detail bundle") > 0, _
+                  "The record-only entries should follow the flushed bundle in order."
+
+    'Assert: only the flushed bundle reached the worksheet. This is what keeps
+    'an EntireColumn.AutoFit from running behind every variable of a build.
+    Dim sh As Worksheet
+    Set sh = FixtureWorkbook.Worksheets(SHEET_CHECKING)
+    Assert.IsNotNothing sh.Cells.Find(What:="sheet bundle", LookIn:=xlValues, LookAt:=xlPart), _
+                        "A flushed bundle should land on the worksheet."
+    Assert.IsNothing sh.Cells.Find(What:="detail bundle", LookIn:=xlValues, LookAt:=xlPart), _
+                     "A record-only bundle should stay off the worksheet."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestARecordOnlyBundleStaysOffTheWorksheet", Err.Number, Err.Description
+End Sub
+
+
 '@section Finish Tests
 '===============================================================================
 '@TestMethod("GenerationLog.Finish")

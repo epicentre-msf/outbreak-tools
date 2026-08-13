@@ -339,8 +339,39 @@ Public Property Get ExcelFormula(ByVal formObject As Formulas, _
 
     Set cond = FormulaCondition.Create(this.condVars, this.condTests)
     ExcelFormula = formObject.ParsedAnalysisFormula(cond, tablePrefix:=prefix)
+
+    'A condition that refuses a variable, a table or an empty list says so
+    'in a store of its own. Nobody read it, so a table whose condition was
+    'dropped reached the delivered file with the report clean.
+    HarvestConditionCheckings cond
+
     this.formulaBuilt = True
 End Property
+
+'@label:harvest-condition-checkings
+'@sub-title Take what the condition reported into the owner report
+'@details
+'The keys are rewritten under this builder's own shape, because
+'`FormulaCondition` counts from 0 and one owner report holds the entries
+'of many conditions.
+'@param cond FormulaCondition. The condition just built.
+Private Sub HarvestConditionCheckings(ByVal cond As FormulaCondition)
+    Dim sourceKeys As BetterArray
+    Dim counter As Long
+    Dim sourceKey As String
+
+    If cond Is Nothing Then Exit Sub
+    If Not cond.HasCheckings Then Exit Sub
+    If this.checks Is Nothing Then Exit Sub
+
+    Set sourceKeys = cond.CheckingValues.ListOfKeys()
+    If sourceKeys Is Nothing Then Exit Sub
+
+    For counter = sourceKeys.LowerBound To sourceKeys.UpperBound
+        sourceKey = CStr(sourceKeys.Item(counter))
+        LogInfo cond.CheckingValues.ValueOf(sourceKey, checkingLabel), checkingError
+    Next counter
+End Sub
 
 '@section Writing Formulas
 '===============================================================================

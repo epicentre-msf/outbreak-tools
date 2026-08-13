@@ -170,6 +170,7 @@ Public Sub InsertRows(ByVal targetCell As Range, _
     targetTable.InsertRowsAt targetCell:=targetCell, _
                              insertShift:=insertShift, _
                              includeIds:=shouldIncludeIds
+    If targetTable.HasCheckings Then HarvestCollaboratorCheckings targetTable.CheckingValues
 End Sub
 
 '@label:deleterows
@@ -202,6 +203,7 @@ Public Sub DeleteRows(ByVal targetCell As Range, _
     targetTable.DeleteRowsAt targetCell:=targetCell, _
                              includeIds:=shouldIncludeIds, _
                              forceShift:=forceShift
+    If targetTable.HasCheckings Then HarvestCollaboratorCheckings targetTable.CheckingValues
 End Sub
 
 '@label:removerows
@@ -293,6 +295,7 @@ Public Sub ManageRows(Optional ByVal del As Boolean = False)
             'column is written once.
             tabl.AddRows insertShift:=True
         End If
+        If tabl.HasCheckings Then HarvestCollaboratorCheckings tabl.CheckingValues
 
 NextTable:
         Set lo = Nothing
@@ -444,6 +447,7 @@ Private Sub Clean(Optional ByVal keepTables As Collection = Nothing)
             GetTableSettings hostLo.Name, prefName, idCol, minimumCount
             Set hostTab = CustomTable.Create(hostLo, idCol, prefName)
             hostTab.Clean
+            If hostTab.HasCheckings Then HarvestCollaboratorCheckings hostTab.CheckingValues
         End If
     Next
 End Sub
@@ -505,6 +509,11 @@ Public Sub Import(ByVal sourcesheet As Worksheet)
 
         hostTab.Import srcTab, insertShift:=True, strictColumnSearch:=True
         LogDroppedColumns hostTab, hostLo.Name
+
+        'An import that aborted says so in the adapter's own store, and the
+        'analysis report used to read clean over it.
+        If srcTab.HasCheckings Then HarvestCollaboratorCheckings srcTab.CheckingValues
+        If hostTab.HasCheckings Then HarvestCollaboratorCheckings hostTab.CheckingValues
     Next
 
     'Look for unfound (missing listObject)
@@ -573,6 +582,7 @@ Public Sub Sort()
 
             'Resize the listObject after sorting, which renumbers the ids
             csTab.RemoveRows totalCount:=rowCount, forceShift:=True
+            If csTab.HasCheckings Then HarvestCollaboratorCheckings csTab.CheckingValues
         End If
 
         Set Lo = Nothing
@@ -711,6 +721,8 @@ Public Sub Translate(ByVal TransObject As TranslationObject)
             Set colRng = csTab.DataRange("Summary function", strictSearch:=True)
             If Not colRng Is Nothing Then TransObject.TranslateRange colRng, containsFormula:=True
         End If
+
+        If csTab.HasCheckings Then HarvestCollaboratorCheckings csTab.CheckingValues
     Next lo
 
     LogInfo "Translation completed", checkingNote
@@ -798,6 +810,24 @@ Private Sub LogInfo(ByVal label As String, Optional ByVal scope As Byte = checki
 
     this.internalChecks.Add CStr(this.checkCounter), label, scope
     this.checkCounter = this.checkCounter + 1
+End Sub
+
+'@label:harvest-collaborator-checkings
+'@sub-title Fold what a table adapter filed into this trace
+'@details
+'`CustomTable` keeps a store of its own, and nobody read it before this
+'line. An import that aborted, or a column name the adapter could not
+'find, was filed and then dropped.
+'@param collaboratorChecks Checking. What the adapter filed.
+Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As Checking)
+    If collaboratorChecks Is Nothing Then Exit Sub
+    If collaboratorChecks.Length() <= 0 Then Exit Sub
+
+    If this.internalChecks Is Nothing Then
+        Set this.internalChecks = Checking.Create(CLASSNAME & " " & Wksh().Name & " trace")
+    End If
+
+    this.internalChecks.Append collaboratorChecks
 End Sub
 
 '@label:log-dropped-columns

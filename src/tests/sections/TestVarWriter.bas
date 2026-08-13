@@ -671,6 +671,90 @@ TestFail:
 End Sub
 
 
+'@section Milestone tests
+'===============================================================================
+
+'@TestMethod("VarWriter")
+Public Sub TestAWrittenVariableFilesOneMilestone()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAWrittenVariableFilesOneMilestone"
+    If Not FixtureReady("TestAWrittenVariableFilesOneMilestone") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sut As VarWriter
+
+    Set sut = NewVListWriter()
+
+    Assert.IsFalse sut.HasMilestones, _
+                   "A writer that has written nothing should carry no milestone"
+
+    sut.WriteVariable "exp_var_v1"
+
+    Assert.IsTrue sut.HasMilestones, "A written variable should file a milestone"
+    Assert.AreEqual CLng(1), CLng(sut.MilestoneValues.Length), _
+                    "One written variable is one milestone entry"
+    Assert.AreEqual CLng(1), sut.VariablesWritten, _
+                    "One written variable is a count of one"
+    Assert.AreEqual "exp_var_v1 on " & TargetSheet.Name, _
+                    sut.MilestoneValues.ValueOf("exp_var_v1", checkingLabel), _
+                    "The milestone is keyed by the variable and labelled with its sheet"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAWrittenVariableFilesOneMilestone", Err.Number, Err.Description
+End Sub
+
+
+'@TestMethod("VarWriter")
+Public Sub TestMilestonesStayOutOfTheCheckings()
+    CustomTestSetTitles Assert, TESTMODULE, "TestMilestonesStayOutOfTheCheckings"
+    If Not FixtureReady("TestMilestonesStayOutOfTheCheckings") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sut As VarWriter
+
+    'The two stores travel to different places: the problems reach the
+    '__check worksheet, the milestones reach the text record alone. A
+    'milestone leaking into the problems is what puts an EntireColumn.AutoFit
+    'behind every variable of the build.
+    Set sut = NewVListWriter()
+    sut.WriteVariable "exp_var_v1"
+
+    Assert.IsFalse sut.HasCheckings, _
+                   "A variable that wrote cleanly should file no problem entry"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestMilestonesStayOutOfTheCheckings", Err.Number, Err.Description
+End Sub
+
+
+'@TestMethod("VarWriter")
+Public Sub TestAVariableWithoutAColumnIndexIsLeftOutOfTheCount()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAVariableWithoutAColumnIndexIsLeftOutOfTheCount"
+    If Not FixtureReady("TestAVariableWithoutAColumnIndexIsLeftOutOfTheCount") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sut As VarWriter
+
+    Set sut = NewVListWriter()
+
+    'A name the dictionary does not carry resolves to no cell, so the writer
+    'files the problem and leaves the sheet alone.
+    sut.WriteVariable "no_such_variable_at_all"
+
+    Assert.AreEqual CLng(0), sut.VariablesWritten, _
+                    "A variable that was never written should not be counted"
+    Assert.IsFalse sut.HasMilestones, _
+                   "A variable that was never written should file no milestone"
+    Assert.IsTrue sut.HasCheckings, _
+                  "A variable that could not be placed should be filed as a problem"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAVariableWithoutAColumnIndexIsLeftOutOfTheCount", Err.Number, Err.Description
+End Sub
+
+
 '@section Conditional formatting tests
 '===============================================================================
 

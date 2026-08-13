@@ -51,6 +51,7 @@ Option Explicit
 
 Private Type TChoice
     choiceDataSheet As DataSheet
+    collaboratorsMerged As Boolean         'True once the data sheet's entries were taken
     hasChecks As Boolean
     choiceName As String
     sealed As Boolean
@@ -681,6 +682,7 @@ Public Sub ManageRows(Optional ByVal del As Boolean = False)
     Else
         tabl.AddRows
     End If
+    If tabl.HasCheckings Then HarvestCollaboratorCheckings tabl.CheckingValues
 End Sub
 
 '@label:add-rows
@@ -708,6 +710,7 @@ Public Sub InsertRows(ByVal targetCell As Range, _
 
     Set tabl = CustomTable.Create(tableList)
     tabl.InsertRowsAt targetCell:=targetCell, insertShift:=insertShift
+    If tabl.HasCheckings Then HarvestCollaboratorCheckings tabl.CheckingValues
 End Sub
 
 '@label:delete-rows
@@ -729,6 +732,7 @@ Public Sub DeleteRows(ByVal targetCell As Range, _
     tabl.DeleteRowsAt targetCell:=targetCell, _
                       includeIds:=includeIds, _
                       forceShift:=forceShift
+    If tabl.HasCheckings Then HarvestCollaboratorCheckings tabl.CheckingValues
 End Sub
 
 '@label:remove-rows
@@ -1132,7 +1136,43 @@ End Sub
 '@prop-title Whether the choice object has logged diagnostic messages
 '@return Boolean. True when diagnostic entries exist.
 '@export
+'@label:harvest-collaborator-checkings
+'@sub-title Fold what a collaborator filed into these entries
+'@details
+'`DataSheet` and `CustomTable` each keep a store of their own, and nobody
+'read either of them before this line.
+'@param collaboratorChecks Checking. What the collaborator filed.
+Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As Checking)
+    Dim checkName As String
+
+    If collaboratorChecks Is Nothing Then Exit Sub
+    If collaboratorChecks.Length() <= 0 Then Exit Sub
+
+    checkName = "Choices " & Name() & " object informations"
+    If this.internalChecks Is Nothing Then Set this.internalChecks = Checking.Create(checkName)
+
+    this.internalChecks.Append collaboratorChecks
+    this.hasChecks = True
+End Sub
+
+'@label:merge-collaborator-checkings
+'@sub-title Take the data sheet's entries before the report is read
+'@details
+'The data sheet lives as long as this object does, so its entries are
+'folded in when the report is asked for. The flag keeps the fold to once,
+'because the caller reads `HasCheckings` and then `CheckingValues`.
+Private Sub MergeCollaboratorCheckings()
+    If this.collaboratorsMerged Then Exit Sub
+    this.collaboratorsMerged = True
+
+    If this.choiceDataSheet Is Nothing Then Exit Sub
+    If Not this.choiceDataSheet.HasCheckings Then Exit Sub
+
+    HarvestCollaboratorCheckings this.choiceDataSheet.CheckingValues
+End Sub
+
 Public Property Get HasCheckings() As Boolean
+    MergeCollaboratorCheckings
     HasCheckings = this.hasChecks
 End Property
 

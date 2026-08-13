@@ -320,6 +320,49 @@ TestFail:
     CustomTestLogFailure Assert, "TestABuildClosesTheCriteriaSet", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify a condition that refuses a variable reaches the owner report.
+'@details
+'`FormulaCondition` files its validation failures into a store of its own, and
+'until the builder pulled them nobody read that store: a table whose condition
+'was dropped reached the delivered file with the analysis phase reading clean.
+'@TestMethod("FormulaBuilder")
+Public Sub TestARefusedConditionReachesTheOwnerReport()
+    CustomTestSetTitles Assert, "FormulaBuilder", "TestARefusedConditionReachesTheOwnerReport"
+    On Error GoTo TestFail
+
+    Dim builder As FormulaBuilder
+    Dim checks As Checking
+    Dim formObject As Formulas
+    Dim built As String
+
+    Set builder = NewBuilder(checks)
+    Set formObject = Formulas.Create(dict, fData, COUNT_CALL_FUNCTION)
+
+    'A name the dictionary does not carry: the condition refuses it and says so.
+    'ExcelFormula is a Property Get, so the answer is assigned. Calling it as a
+    'statement is a compile error, and a compile error reaches the VBE as a
+    'modal that stops the whole headless run.
+    builder.AddCondition "no_such_variable_at_all", "= $A$3"
+    built = builder.ExcelFormula(formObject)
+
+    Assert.IsTrue checks.Length() > 0, _
+                  "A condition that refused its variable should reach the owner report"
+    Assert.IsTrue InStr(1, Messages(checks), "Validation failed") > 0, _
+                  "The owner report should carry what the condition refused, and it holds " & _
+                  Messages(checks)
+
+    'The formula still comes back. ParsedCustomFormula builds the COUNTIFS from
+    'the criterion text and reads no dictionary, so a name the dictionary does
+    'not carry reaches the cell as a table column that is not there. The entry
+    'above is the only warning the build gives, which is why it is pulled.
+    Assert.IsTrue InStr(1, built, "no_such_variable_at_all") > 0, _
+                  "The formula is built over the refused name, and it reads " & built
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestARefusedConditionReachesTheOwnerReport", Err.Number, Err.Description
+End Sub
+
 '@sub-title Verify no formula comes back when there is no summary function.
 '@TestMethod("FormulaBuilder")
 Public Sub TestNoSummaryFunctionGivesNoFormula()

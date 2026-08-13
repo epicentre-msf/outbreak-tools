@@ -299,6 +299,25 @@ Private Sub LogInfo(ByVal label As String)
     this.hasChecks = True
 End Sub
 
+'@label:harvest-collaborator-checkings
+'@sub-title Fold what a table adapter filed into this trace
+'@details
+'`CustomTable` keeps a store of its own, and nobody read it before this
+'line. An import that aborted, or headers the export could not find, was
+'filed and then dropped.
+'@param collaboratorChecks Checking. What the adapter filed.
+Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As Checking)
+    If collaboratorChecks Is Nothing Then Exit Sub
+    If collaboratorChecks.Length() <= 0 Then Exit Sub
+
+    If this.checks Is Nothing Then
+        Set this.checks = Checking.Create("LLFormat trace")
+    End If
+
+    this.checks.Append collaboratorChecks
+    this.hasChecks = True
+End Sub
+
 '@label:format-table
 '@sub-title Retrieve the first ListObject on the format worksheet
 '@return ListObject. The format table.
@@ -1677,6 +1696,11 @@ Public Sub Import(ByVal inpsh As Worksheet)
 
     targetTab.Import inputTab, strictColumnSearch:=True, formatHeaders:=designList
 
+    'An import that aborted is filed in the adapter's own store, and the
+    'format phase used to read clean over it.
+    If inputTab.HasCheckings Then HarvestCollaboratorCheckings inputTab.CheckingValues
+    If targetTab.HasCheckings Then HarvestCollaboratorCheckings targetTab.CheckingValues
+
     ResetCaches
 End Sub
 
@@ -1724,6 +1748,7 @@ Public Sub Export(ByVal toWkb As Workbook)
     Set sourceTable = FormatTable()
     Set exportTable = CustomTable.Create(sourceTable)
     exportTable.Export targetSheet, addListObject:=True
+    If exportTable.HasCheckings Then HarvestCollaboratorCheckings exportTable.CheckingValues
 
     Set targetTable = ResolveFormatTable(targetSheet, sourceTable.Name)
     If targetTable Is Nothing Then

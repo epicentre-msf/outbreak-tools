@@ -81,6 +81,8 @@ Private Type TSectionBuilder
     crfIndexes As Variant
     lastDataRow As Long
     hasChecks As Boolean
+    sectionsPlaced As Long
+    writer As VarWriter
     sealed As Boolean
 End Type
 
@@ -298,6 +300,10 @@ Public Sub Build(ByVal sheetName As String, ByVal startRow As Long)
         dropdownObj:=this.dropdown, _
         customDropdownObj:=this.customDropdown)
 
+    'One writer serves the whole sheet, so the field is what lets the
+    'caller read the variable count and the milestone record after Build.
+    Set this.writer = writer
+
     currentRow = startRow
 
     ' Iterate through sections for this sheet
@@ -320,6 +326,9 @@ Public Sub Build(ByVal sheetName As String, ByVal startRow As Long)
 
         ' Leave the boundaries of the section behind on the sheet
         RecordSection currentSection, sectionStartRow, sectionEndRow
+
+        ' The section is laid out, so the milestone is true
+        LogSectionPlaced currentSection, sheetName
 
         ' Move to next section
         currentRow = sectionEndRow + 1
@@ -876,6 +885,42 @@ Private Sub HarvestWriterCheckings(ByVal writer As VarWriter)
     this.hasChecks = True
 End Sub
 
+'@label:log-section-placed
+'@sub-title File the milestone of one section laid out
+'@details
+'A sheet holds a few sections, so these entries go to the worksheet with
+'the problems. The per-variable entries are the ones held back, and they
+'travel through `MilestoneValues`.
+'@param sectionName String. The section title.
+'@param sheetName String. The dictionary sheet the section belongs to.
+Private Sub LogSectionPlaced(ByVal sectionName As String, ByVal sheetName As String)
+    Dim keyRoot As String
+    Dim candidate As String
+    Dim suffix As Long
+    Dim title As String
+
+    If internalChecks Is Nothing Then Set internalChecks = Checking.Create("Sections")
+
+    'A run of dictionary rows with no section title is still a section the
+    'build laid out, and the map records it. Reading "section  placed" makes
+    'the report look broken, so the empty title is named.
+    title = sectionName
+    If LenB(Trim$(title)) = 0 Then title = "(untitled)"
+
+    keyRoot = sheetName & "!" & title
+    candidate = keyRoot
+    Do While internalChecks.KeyExists(candidate)
+        suffix = suffix + 1
+        candidate = keyRoot & " #" & CStr(suffix)
+    Loop
+
+    internalChecks.Add candidate, _
+                       "section " & title & " placed on " & sheetName, _
+                       checkingInfo
+    this.sectionsPlaced = this.sectionsPlaced + 1
+    this.hasChecks = True
+End Sub
+
 Public Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
@@ -883,4 +928,42 @@ End Property
 Public Property Get CheckingValues() As Checking
     If Not HasCheckings Then Exit Property
     Set CheckingValues = internalChecks
+End Property
+
+'@label:has-milestones
+'@prop-title Whether the writer filed any per-variable milestone
+'@return Boolean. True once a variable of this sheet was written.
+'@export
+Public Property Get HasMilestones() As Boolean
+    If this.writer Is Nothing Then Exit Property
+    HasMilestones = this.writer.HasMilestones
+End Property
+
+'@label:milestone-values
+'@prop-title The writer's per-variable record
+'@details
+'Handed on as the writer holds it. One writer serves the whole sheet, so
+'no merge is owed here, and the store stays out of the __check worksheet.
+'@return Checking. The milestone entries, or Nothing.
+'@export
+Public Property Get MilestoneValues() As Checking
+    If this.writer Is Nothing Then Exit Property
+    Set MilestoneValues = this.writer.MilestoneValues
+End Property
+
+'@label:variables-written
+'@prop-title How many variables the writer put on the sheet
+'@return Long. The number of variables written.
+'@export
+Public Property Get VariablesWritten() As Long
+    If this.writer Is Nothing Then Exit Property
+    VariablesWritten = this.writer.VariablesWritten
+End Property
+
+'@label:sections-placed
+'@prop-title How many sections were laid out on the sheet
+'@return Long. The number of sections placed.
+'@export
+Public Property Get SectionsPlaced() As Long
+    SectionsPlaced = this.sectionsPlaced
 End Property

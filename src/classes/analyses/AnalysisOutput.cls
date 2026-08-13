@@ -92,6 +92,8 @@ Private Type TAnaOutput
     outNames(1 To 4) As HiddenNames                 'One metadata reader per scope
     appScope As ApplicationState                    'Busy state held for the length of one build
     hasChecks As Boolean
+    tablesWritten As Long                           'Analysis tables put on a sheet
+    graphsWritten As Long                           'Charts put on a sheet
     sealed As Boolean
 End Type
 
@@ -903,6 +905,11 @@ Private Sub WriteTable(ByVal loName As String, _
         ' analysis phase clean while a table carried a cell Excel had refused.
         If tabform.HasCheckings Then HarvestCollaboratorCheckings tabform.CheckingValues
 
+        ' The table and its formulas are on the sheet, so the milestone is
+        ' true. A step after this one that fails is named by TableError.
+        LogMilestone "table " & tabId & " written on " & outsh.Name
+        this.tablesWritten = this.tablesWritten + 1
+
         ' Mark the sheet as having at least one table. The name is written once
         ' per sheet; asking the worksheet per row cost a name scan and a
         ' RefersTo read on every table.
@@ -947,6 +954,9 @@ Private Sub WriteTable(ByVal loName As String, _
                         valuesTitle:=specs.Value("label"), _
                         hardCodeLabels:=False, heightFactor:=grHeight, _
                         plotTitle:=vbNullString
+
+            LogMilestone "chart of table " & tabId & " written on " & outsh.Name
+            this.graphsWritten = this.graphsWritten + 1
         End If
 
         ' Time series and spatio-temporal section tracking
@@ -1222,6 +1232,10 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
         design.ApplyFormat cellRng, scope:=LinelistHiddenCell
         graphsList.Push goToGraphLabel & ": " & plotTitle
 
+        LogMilestone "time series chart " & CStr(graphCounter) & _
+                     " written on " & outsh.Name
+        this.graphsWritten = this.graphsWritten + 1
+
         On Error GoTo 0
         GoTo NextGraph
 
@@ -1346,6 +1360,11 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String, _
         cellRng.Value = plotTitle
         design.ApplyFormat cellRng, scope:=LinelistHiddenCell
         graphsList.Push goToGraphLabel & ": " & plotTitle
+
+        LogMilestone "spatio-temporal chart of table " & tabId & _
+                     " written on " & outsh.Name
+        this.graphsWritten = this.graphsWritten + 1
+
         Set cellRng = cellRng.Offset(GRAPHROWSTEP)
 
         GoTo ContinueLoop
@@ -1592,6 +1611,34 @@ Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As Checking)
     internalChecks.Append collaboratorChecks
     this.hasChecks = True
 End Sub
+
+'@label:log-milestone
+'@sub-title File one entry for a table or a chart put on a sheet
+'@details
+'A linelist carries tens of analysis tables and charts, so these entries
+'go to the __check worksheet with the problems. They are what shows the
+'analysis phase did work, where a clean phase used to look the same
+'whether it built forty tables or none.
+'@param label String. The message for the report.
+Private Sub LogMilestone(ByVal label As String)
+    LogInfo label, checkingInfo
+End Sub
+
+'@label:tables-written
+'@prop-title How many analysis tables this build put on a sheet
+'@return Long. The number of tables written.
+'@export
+Public Property Get TablesWritten() As Long
+    TablesWritten = this.tablesWritten
+End Property
+
+'@label:graphs-written
+'@prop-title How many charts this build put on a sheet
+'@return Long. The number of charts written.
+'@export
+Public Property Get GraphsWritten() As Long
+    GraphsWritten = this.graphsWritten
+End Property
 
 '@label:has-checkings
 '@prop-title Whether anything was reported during the build

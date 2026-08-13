@@ -371,6 +371,29 @@ Private Function RunTimeSeriesBuild(ByVal dataRows As Variant) As AnalysisOutput
     Set RunTimeSeriesBuild = sut
 End Function
 
+'@sub-title The report entries of one build, joined for a failure message.
+'@param sut AnalysisOutput. The instance that ran.
+'@return String. Every label the build filed, joined.
+Private Function MilestoneLabels(ByVal sut As AnalysisOutput) As String
+    Dim entries As Checking
+    Dim keys As BetterArray
+    Dim idx As Long
+    Dim joined As String
+
+    If sut Is Nothing Then Exit Function
+    If Not sut.HasCheckings Then Exit Function
+
+    Set entries = sut.CheckingValues
+    Set keys = entries.ListOfKeys()
+    If keys Is Nothing Then Exit Function
+
+    For idx = keys.LowerBound To keys.UpperBound
+        joined = joined & "[" & entries.ValueOf(CStr(keys.Item(idx)), checkingLabel) & "]"
+    Next idx
+
+    MilestoneLabels = joined
+End Function
+
 '@sub-title How many entries the navigation dropdown of one section carries.
 '@param sectionId String. The table identifier of the row that opens the section.
 '@return Long. The entry count, or 0 when no such dropdown was built.
@@ -459,6 +482,57 @@ Public Sub TestEachSectionListsEveryTableItHolds()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestEachSectionListsEveryTableItHolds", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Every table drawn files its own milestone entry.
+'@details
+'A clean analysis phase used to read the same whether it built forty tables or
+'none. One entry per table drawn is what tells the two apart, and the count is
+'the same number the section dropdowns list.
+'@TestMethod("AnalysisOutput")
+Public Sub TestEachDrawnTableFilesItsMilestone()
+    Dim sut As AnalysisOutput
+
+    CustomTestSetTitles Assert, "AnalysisOutput", "TestEachDrawnTableFilesItsMilestone"
+    If Not FixtureReady("TestEachDrawnTableFilesItsMilestone") Then Exit Sub
+    On Error GoTo TestFail
+
+    Set sut = RunTimeSeriesBuild(TwoWholeSections())
+
+    Assert.AreEqual CLng(6), sut.TablesWritten, _
+                    "The two sections hold six tables between them, and each " & _
+                    "drawn table files its own entry"
+    Assert.IsTrue sut.HasCheckings, _
+                  "A build that drew tables has something to report"
+    Assert.IsTrue InStr(1, MilestoneLabels(sut), "table TS_tab1 written on ") > 0, _
+                  "The entry names the table and the sheet it landed on, and the " & _
+                  "report holds " & MilestoneLabels(sut)
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestEachDrawnTableFilesItsMilestone", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A table the build could not draw is left out of the count.
+'@TestMethod("AnalysisOutput")
+Public Sub TestARejectedTableIsLeftOutOfTheCount()
+    Dim sut As AnalysisOutput
+
+    CustomTestSetTitles Assert, "AnalysisOutput", "TestARejectedTableIsLeftOutOfTheCount"
+    If Not FixtureReady("TestARejectedTableIsLeftOutOfTheCount") Then Exit Sub
+    On Error GoTo TestFail
+
+    'The same six rows, with the anchor of the second section malformed.
+    Set sut = RunTimeSeriesBuild(SecondSectionWithABadAnchor())
+
+    Assert.AreEqual CLng(5), sut.TablesWritten, _
+                    "Five of the six rows were drawn, so five is the count"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestARejectedTableIsLeftOutOfTheCount", _
                          Err.Number, Err.Description
 End Sub
 

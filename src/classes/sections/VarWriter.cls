@@ -95,6 +95,7 @@ Private Type TVarWriter
     printAnchorSet As Boolean
     scratchCell As Range
     hasChecks As Boolean
+    variablesWritten As Long
     sealed As Boolean
 End Type
 
@@ -111,6 +112,12 @@ Private Const VLIST_ANCHOR_INDEX As Long = 4
 
 'Checking support
 Private internalChecks As Checking
+
+'The milestone record of the sheet: one entry per variable written. It is
+'held apart from internalChecks because the two travel to different places.
+'internalChecks carries the problems and reaches the __check worksheet;
+'this one reaches the run log's in-memory record and the text file alone.
+Private milestoneChecks As Checking
 
 '@section Instantiation
 '===============================================================================
@@ -706,6 +713,10 @@ Public Sub WriteVariable(ByVal varName As String)
         WritePrintSheet
         WriteCRFSheet
     End If
+
+    ' The variable is on the sheet, so the milestone is true
+    LogMilestone
+    this.variablesWritten = this.variablesWritten + 1
 End Sub
 
 '@section Sheet Dispatch
@@ -2012,11 +2023,21 @@ End Sub
 '@section Checkings
 '===============================================================================
 '@description
-'What this class files is a problem: a variable it could not place, a formula
-'the parser rejected, a validation bound that would not convert, a dropdown
-'manager it was not given. The per-variable "written" entry that used to be
-'filed here is gone -- a 500-variable linelist produced 500 report rows saying
-'nothing, and each of them cloned the whole key array.
+'What `internalChecks` files is a problem: a variable it could not place, a
+'formula the parser rejected, a validation bound that would not convert, a
+'dropdown manager it was not given. That store reaches the __check worksheet
+'through `SectionBuilder` and `LLDataEntry`.
+'
+'THE MILESTONE STORE IS SEPARATE
+'-------------------------------------------------------------------------------
+'`milestoneChecks` holds one entry per variable written, keyed by the variable
+'name, and it travels to the run log's in-memory record and the text file
+'alone. The two stores are kept apart because of what the worksheet costs:
+'`CheckingOutput` ends every row it writes with an `EntireColumn.AutoFit`, so
+'a 500-variable linelist put 500 autofits into the build when these entries
+'went to the worksheet. That is why an earlier per-variable entry filed into
+'`internalChecks` was removed; the record keeps the trace and the worksheet
+'keeps the problems.
 '
 'KEYS ARE UNIQUE ACROSS A BUILD
 '-------------------------------------------------------------------------------
@@ -2077,6 +2098,24 @@ Private Sub EnsureChecking()
     End If
 End Sub
 
+'@label:log-milestone
+'@sub-title File the milestone of the variable just written
+'@details
+'Keyed by the variable name, which the dictionary keeps unique inside one
+'sheet, and the store is per sheet because the writer is. A name that
+'repeats all the same is numbered rather than raising, since
+'`Checking.Add` refuses a duplicate key and a milestone must never stop a
+'build.
+Private Sub LogMilestone()
+    If milestoneChecks Is Nothing Then
+        Set milestoneChecks = Checking.Create("Variables written", this.wksh.Name)
+    End If
+
+    milestoneChecks.Add UniqueKeyIn(milestoneChecks, this.varName), _
+                        this.varName & " on " & this.wksh.Name, _
+                        checkingInfo
+End Sub
+
 '@label:entry-key-root
 '@sub-title The key an entry of the current variable starts from
 '@return String. Worksheet name, then the variable name.
@@ -2093,16 +2132,28 @@ End Function
 '@param keyRoot String. The key to start from.
 '@return String. A key that is free.
 Private Function UniqueKey(ByVal keyRoot As String) As String
+    UniqueKey = UniqueKeyIn(internalChecks, keyRoot)
+End Function
+
+'@label:unique-key-in
+'@sub-title Answer a key one given store does not hold yet
+'@details
+'The writer keeps two stores -- the problems and the milestones -- and each
+'needs its own free key.
+'@param store Checking. The store the key has to be free in.
+'@param keyRoot String. The key to start from.
+'@return String. A key that is free.
+Private Function UniqueKeyIn(ByVal store As Checking, ByVal keyRoot As String) As String
     Dim candidate As String
     Dim suffix As Long
 
     candidate = keyRoot
-    Do While internalChecks.KeyExists(candidate)
+    Do While store.KeyExists(candidate)
         suffix = suffix + 1
         candidate = keyRoot & " #" & CStr(suffix)
     Loop
 
-    UniqueKey = candidate
+    UniqueKeyIn = candidate
 End Function
 
 '@label:scope-of
@@ -2140,4 +2191,36 @@ End Property
 Public Property Get CheckingValues() As Checking
     If Not HasCheckings Then Exit Property
     Set CheckingValues = internalChecks
+End Property
+
+'@label:has-milestones
+'@prop-title Whether any variable of this sheet was written
+'@return Boolean. True once one milestone entry has been filed.
+'@export
+Public Property Get HasMilestones() As Boolean
+    HasMilestones = Not (milestoneChecks Is Nothing)
+End Property
+
+'@label:milestone-values
+'@prop-title The per-variable record of this sheet
+'@details
+'The store travels up through `SectionBuilder` and `LLDataEntry` to the
+'build driver, which takes it into the run log record-only. It never
+'reaches the __check worksheet.
+'@return Checking. The milestone entries, or Nothing.
+'@export
+Public Property Get MilestoneValues() As Checking
+    Set MilestoneValues = milestoneChecks
+End Property
+
+'@label:variables-written
+'@prop-title How many variables this writer put on the sheet
+'@details
+'Counts the variables that reached the worksheet. A variable the
+'dictionary gives no column index is filed as a problem and left out of
+'the count.
+'@return Long. The number of variables written.
+'@export
+Public Property Get VariablesWritten() As Long
+    VariablesWritten = this.variablesWritten
 End Property
