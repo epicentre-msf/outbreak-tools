@@ -307,20 +307,24 @@ Public Function BuildLinelistFromSetup(ByVal designerPath As String, _
 
     ResetRunState
 
-    'Before the first Dir$, and folders rather than files: one dialog covers
-    'the source tree, the forms, the workbooks and the output in a single
-    'grant, and a machine already granted sees no dialog at all.
+    'The scratch folder is created before the grant, and it is deliberately NOT
+    'named in it.
     '
-    'The scratch folder is granted BY NAME and CREATED FIRST, and both halves
-    'of that matter. CodeTransfer exports every component to <lldir>/OBTApp_ and
-    'imports it back, so the run touches two files per component in there -- and
-    'a sandbox grant covers a path that EXISTS when the grant is asked for.
-    'Handing over a folder that is not on disk yet grants nothing, and the run
-    'then stops on one dialog per component with nobody to answer it.
+    'CodeTransfer exports every component to <lldir>/OBTApp_ and imports it back,
+    'so a run touches two files per component in there and it has to be reachable.
+    'It already is: outputFolder is its parent, a folder grant covers its whole
+    'tree, and a directory bookmark covers what is created inside it later too.
+    '
+    'Naming it anyway made things WORSE, which is why this reads the way it does.
+    'GrantAccessToMultipleFiles shows ONE dialog listing the WHOLE array whenever
+    'any single member is not yet bookmarked. Adding a folder that had never been
+    'granted turned a silent call into a prompt for all six paths, on a machine
+    'where the other five had been granted for weeks. The folder is still created
+    'here, because TemporaryRepos does not make it until the build is well past
+    'the last moment a dialog could be answered.
     EnsureFolder JoinPath(outputFolder, SCRATCH_FOLDER)
 
     accessGranted = EnsureFileAccess(Array(sourceRoot, formsFolder, outputFolder, _
-                                           JoinPath(outputFolder, SCRATCH_FOLDER), _
                                            designerPath, setupPath))
     AddToReport "file access: " & IIf(accessGranted, "granted", _
                 "not confirmed (expect prompts on macOS)")

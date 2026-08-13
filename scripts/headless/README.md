@@ -202,9 +202,16 @@ dialog per component with nobody there to answer it. `TemporaryRepos` does
 create the folder, but not until the build is well past the one moment a dialog
 could still be answered.
 
-So `BuildLinelistFromSetup` creates `<outputFolder>/OBTApp_` itself and names it
-in the grant, alongside the source tree, the forms, the workbooks and the output
-folder. One dialog covers all of them.
+So `BuildLinelistFromSetup` creates `<outputFolder>/OBTApp_` itself, before the
+grant is asked for.
+
+It does **not** name it in the grant, and that is the point.
+`GrantAccessToMultipleFiles` shows one dialog listing the **whole array**
+whenever any single member is not yet bookmarked, so adding a folder that had
+never been granted turned a silent call into a prompt for every path in it, on a
+machine where the others had been granted for weeks. `outputFolder` is the
+scratch folder's parent and is already in the array; a folder grant covers its
+whole tree, including what is created inside it afterwards.
 
 Two dead ends, so nobody walks them again:
 
