@@ -1400,6 +1400,13 @@ Public Sub Prepare(ByVal setupPath As String)
         Set outWkb = Workbooks.Open(templatePath)
         tempPath = this.tempRepos.CreateFilePath("__temp.xlsb")
         outWkb.SaveAs fileName:=tempPath, fileFormat:=xlExcel12
+        'The template ships an empty placeholder worksheet of its own -- Sheet1
+        'on an English Excel, Feuille1 on a French one -- and it used to travel
+        'all the way into the delivered linelist. It is taken here for the same
+        'reason as the branch below: every exporter is still to run, so the
+        'sheet that is empty NOW is the one the template shipped, and no
+        'exported sheet can be mistaken for it later.
+        Set defaultSheet = EmptyFirstSheet(outWkb)
     Else
         Set outWkb = Workbooks.Add
         'The reference to the empty worksheet Workbooks.Add made is taken here,
@@ -1417,10 +1424,22 @@ Public Sub Prepare(ByVal setupPath As String)
     'Drop the empty worksheet now that the transfer has put real ones in the
     'workbook. Excel refuses to remove the last worksheet of a workbook, so this
     'has to come after the transfer rather than straight after Workbooks.Add.
+    'A refusal is reported rather than raised: an extra empty sheet is a blemish
+    'on the delivered file, and losing the whole generation over it is worse.
     If Not defaultSheet Is Nothing Then
         prevAlert = Application.DisplayAlerts
         Application.DisplayAlerts = False
-        defaultSheet.Delete
+
+        On Error Resume Next
+            defaultSheet.Delete
+            If Err.Number <> 0 Then
+                LogCheck "The empty starting worksheet could not be removed (" & _
+                         Err.Description & "), so the linelist carries it.", _
+                         checkingWarning
+                Err.Clear
+            End If
+        On Error GoTo CleanFail
+
         Application.DisplayAlerts = prevAlert
         Set defaultSheet = Nothing
     End If
@@ -1594,6 +1613,42 @@ Public Sub ErrorManage(Optional ByVal textMessage As String = vbNullString)
 
     MsgBox messageBody, vbExclamation + vbOKOnly, "Linelist Specifications"
 End Sub
+
+'@label:empty-first-sheet
+'@fun-title The first worksheet of a workbook, when it carries nothing
+'@details
+'The placeholder Excel puts in a new workbook, and the one a template ships.
+'Its name is localised -- Sheet1, Feuille1, Hoja1 -- so the name is no test at
+'all and the CONTENT is what is read: a worksheet holding no value, no table,
+'no shape and no pivot is a placeholder whatever it is called.
+'
+'It is only ever called before the first exporter writes, so "empty now" and
+'"empty because nothing has been put there yet" are the same thing. Called
+'later it would happily answer a real worksheet that has not been filled in.
+'@param outWkb Workbook. The output workbook, freshly opened.
+'@return Worksheet. The placeholder, or Nothing when the first sheet holds something.
+Private Function EmptyFirstSheet(ByVal outWkb As Workbook) As Worksheet
+    Dim firstSheet As Worksheet
+    Dim usedCells As Range
+
+    If outWkb Is Nothing Then Exit Function
+    If outWkb.Worksheets.Count = 0 Then Exit Function
+
+    Set firstSheet = outWkb.Worksheets(1)
+
+    If firstSheet.ListObjects.Count > 0 Then Exit Function
+    If firstSheet.Shapes.Count > 0 Then Exit Function
+    If firstSheet.PivotTables.Count > 0 Then Exit Function
+
+    'UsedRange on an untouched worksheet answers A1, so the single-cell case is
+    'the one that has to be looked into rather than counted.
+    Set usedCells = firstSheet.UsedRange
+    If usedCells.Cells.Count > 1 Then Exit Function
+    If LenB(CStr(usedCells.Cells(1, 1).Formula)) > 0 Then Exit Function
+
+    Set EmptyFirstSheet = firstSheet
+End Function
+
 
 '@section Checkings
 '===============================================================================

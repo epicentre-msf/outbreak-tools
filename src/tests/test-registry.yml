@@ -801,6 +801,14 @@ suites:
   # from the driver would import the source into the driver. The injected
   # module is scripts/headless/vba/OBTSetupImportHeadless.bas, read off disk at
   # run time and never registered.
+  #
+  # HeadlessBuild names DesignerPreparation, under `designer` below. It calls
+  # EnsureGeoFlags on the designer copy before the generation, because a
+  # designer that never went through DesignerPreparation.Prepare carries none of
+  # the hidden names LLGeo requires and every geo variable then stays one column
+  # instead of the twelve it expands into. A NARROWED registry probe over this
+  # folder has to keep the designer row for that reason: without it the driver
+  # workbook does not compile.
   - folder: headless
     modules:
       - HeadlessBuild

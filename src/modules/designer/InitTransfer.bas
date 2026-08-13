@@ -515,15 +515,35 @@ GeoUnusable:
     Dim geoFault As String
     geoFault = Err.Description
 
+    'THE COPY ONLY HAPPENS WHEN THERE IS NOTHING THERE YET.
+    'This handler covers LLGeo.Create AND ExportToWkb, and those two fail very
+    'differently. Create fails before anything is written, and then the raw copy
+    'below is the whole point: Linelist.Prepare anchors every worksheet insert
+    'on Geo, so the linelist needs that worksheet whatever state it is in.
+    '
+    'ExportToWkb fails HALFWAY, with the geo worksheet and its nine tables
+    'already written. Copying on top of that gave the linelist a SECOND geo
+    'worksheet -- Excel names it "Geo (2)" -- carrying a second copy of every
+    'table under an auto-renamed name, T_ADM1 beside T_ADM124. Two geobases,
+    'one of them unreachable by name, is worse than one that is short of its
+    'last few defined names.
     On Error Resume Next
         Err.Clear
-        designerSheet.Copy After:=targetBook.Worksheets(targetBook.Worksheets.Count)
+        If Not WorksheetExists(targetBook, designerSheet.Name) Then
+            designerSheet.Copy After:=targetBook.Worksheets(targetBook.Worksheets.Count)
+            LogCheck "geo-unusable", _
+                     "The designer's Geo worksheet could not be read as a geobase (" & _
+                     geoFault & "). The sheet was copied as it is, and the linelist " & _
+                     "carries no working geographic data.", checkingError
+        Else
+            LogCheck "geo-partial", _
+                     "The geobase export stopped part way (" & geoFault & "). The " & _
+                     "linelist carries the geo worksheet and its tables as far as " & _
+                     "the export got, and no second copy was made. Whatever the " & _
+                     "export had still to write is missing.", checkingError
+        End If
+        Err.Clear
     On Error GoTo 0
-
-    LogCheck "geo-unusable", _
-             "The designer's Geo worksheet could not be read as a geobase (" & _
-             geoFault & "). The sheet was copied as it is, and the linelist " & _
-             "carries no working geographic data.", checkingError
 End Sub
 
 '@sub-title Export the passwords from the designer to the linelist

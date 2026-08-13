@@ -488,7 +488,19 @@ End Sub
 'at runtime and the paste needs a cell to land in.
 '
 'Exits with no work when the host workbook has no Geo worksheet.
-Private Sub EnsureGeoFlags()
+'
+'PUBLIC BECAUSE A HEADLESS BUILD NEEDS IT ON ITS OWN
+'-------------------------------------------------------------------------------
+'Prepare is the ordinary caller and it opens a file dialog on its first step, so
+'a headless run cannot reach this through it. Every name below is what
+'LLGeo.CheckRequirements asks for, and a designer that has never been prepared
+'with the current code carries none of them: LLGeo.Create then fails, the
+'dictionary logs "geolines not append", and every geo variable stays one column
+'instead of the twelve it expands into. Calling this first is what a build does
+'to make the geo sheet readable, and it is idempotent -- every write is an
+'EnsureName, so a designer that already carries them is left alone.
+'@export
+Public Sub EnsureGeoFlags()
     Dim geoSheet As Worksheet
     Dim geoStore As HiddenNames
     Dim levelStore As HiddenNames
@@ -604,12 +616,18 @@ End Function
 'constants).
 Private Sub RegisterAllDropdowns()
     RegisterDropdown DROP_SETUP_LANGUAGES, Array(vbNullString, vbNullString)
+    'The prefix of each entry is not decoration. InitTransfer splits the picked
+    'value on the dash and writes the prefix as RNG_LLLanguageCode, and that is
+    'the COLUMN NAME the four LinelistTranslation tables are keyed on: MSG_ID,
+    'ENG, FRA, SPA, POR, ARA. Spanish read "ESP-" here and the column is SPA, so
+    'picking Spanish resolved no column and every message in the generated
+    'linelist came out as its own tag, with nothing said anywhere.
     RegisterDropdown DROP_INTERFACE_LANGUAGES, _
         Array("ARA-" & ChrW$(1593) & ChrW$(1585) & ChrW$(1576) & ChrW$(1609), _
               "ENG-English", _
               "FRA-Fran" & ChrW$(231) & "ais", _
               "POR-Portugu" & ChrW$(233) & "s", _
-              "ESP-Espa" & ChrW$(241) & "ol")
+              "SPA-Espa" & ChrW$(241) & "ol")
     RegisterDropdown DROP_EPIWEEK_START, Array("1", "2", "3", "4", "5", "6", "7")
     RegisterDropdown DROP_DESIGN_VALUES, Array("design 1", "design 2", "user defined")
 End Sub

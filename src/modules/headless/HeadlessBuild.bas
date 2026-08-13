@@ -67,7 +67,7 @@ Option Explicit
 'workbook that had to run.
 '@depends BetterArray, Checking, ApplicationState, LinelistSpecs, Linelist
 '@depends LLDataEntry, LLSheets, AnalysisOutput, DropdownLists, GenerationLog
-'@depends InitTransfer, EventsDesignerAdvanced
+'@depends InitTransfer, EventsDesignerAdvanced, DesignerPreparation
 
 'The module injected into the target setup, and the entry point it carries.
 Private Const INJECTED_MODULE As String = "OBTSetupImportHeadless"
@@ -95,9 +95,20 @@ Private Const RNG_LL_FORM As String = "RNG_LLForm"
 Private Const RNG_LL_PWD_OPEN As String = "RNG_LLPwdOpen"
 
 'The source folders holding the components Linelist.TransferAllCode moves, and
-'nothing else. Ten of the twenty-four folders under src/ carry all 55 of them;
-'msetup, mastersetup, setup, designer, dev, rubberduck, stale, formulas and
-'sections carry none.
+'nothing else. Nine of the folders under src/ carry all of them; msetup,
+'mastersetup, setup, designer, dev, rubberduck, stale and formulas carry none.
+'
+'`sections` is on the list for ONE class. SectionMap is the only thing the
+'transfer takes out of it, and EventsLinelistButtons types SectionMap, so a
+'linelist built without the folder loses its project compile.
+'
+'`linelistform` is NOT on the list, and that is deliberate. Its ten FormLogic
+'modules are the code BEHIND the forms: every one of them uses Me and declares
+'control event handlers, neither of which compiles in a standard module.
+'merge-form-code.R writes each module into the code module of the form it
+'belongs to, so the .frm files imported below already carry that code where it
+'is legal. Importing the .bas files as well put four of them in the delivered
+'linelist as standard modules, and that alone cost the file its compile.
 '
 'The narrow list is not an optimisation. Excel for Mac is SANDBOXED: reading a
 'folder it has no security-scoped grant for pops a dialog, and a dialog in a
@@ -112,13 +123,24 @@ Private Const RNG_LL_PWD_OPEN As String = "RNG_LLPwdOpen"
 Private Const CLASSES_FOLDER As String = "src/classes"
 Private Const MODULES_FOLDER As String = "src/modules"
 Private Const TRANSFER_CLASS_FOLDERS As String = _
-    "analyses|dataio|dictionary|general|geo|graphs|linelist|showhide"
-Private Const TRANSFER_MODULE_FOLDERS As String = "linelist|linelistform"
+    "analyses|dataio|dictionary|general|geo|graphs|linelist|sections|showhide"
+Private Const TRANSFER_MODULE_FOLDERS As String = "linelist"
 
 'What VBComponents calls a worksheet or workbook component. Naming the VBIDE
 'constant would put the library in the compile, and an identifier from an
 'unreferenced library costs the WHOLE project its compile.
 Private Const COMPONENT_DOCUMENT As Long = 100
+
+'The scratch folder TemporaryRepos makes under the output folder, and the one
+'CodeTransfer writes every exported component into. The name is repeated from
+'TemporaryRepos.DEFAULT_FOLDER_NAME because that constant is Private there, and
+'this module needs it BEFORE any class has run to ask for the sandbox grant.
+Private Const SCRATCH_FOLDER As String = "OBTApp_"
+
+'The designer worksheet holding the five translation tables, and the one whose
+'column headers name the language codes a linelist can be written in.
+Private Const SHEET_LL_TRANSLATION As String = "LinelistTranslation"
+Private Const TABLE_LL_MESSAGES As String = "T_TradLLMsg"
 
 'What the run last did, read back through the properties below. A caller that
 'has the outcome string still has no way to say how much was built, and "OK"
@@ -288,7 +310,17 @@ Public Function BuildLinelistFromSetup(ByVal designerPath As String, _
     'Before the first Dir$, and folders rather than files: one dialog covers
     'the source tree, the forms, the workbooks and the output in a single
     'grant, and a machine already granted sees no dialog at all.
+    '
+    'The scratch folder is granted BY NAME and CREATED FIRST, and both halves
+    'of that matter. CodeTransfer exports every component to <lldir>/OBTApp_ and
+    'imports it back, so the run touches two files per component in there -- and
+    'a sandbox grant covers a path that EXISTS when the grant is asked for.
+    'Handing over a folder that is not on disk yet grants nothing, and the run
+    'then stops on one dialog per component with nobody to answer it.
+    EnsureFolder JoinPath(outputFolder, SCRATCH_FOLDER)
+
     accessGranted = EnsureFileAccess(Array(sourceRoot, formsFolder, outputFolder, _
+                                           JoinPath(outputFolder, SCRATCH_FOLDER), _
                                            designerPath, setupPath))
     AddToReport "file access: " & IIf(accessGranted, "granted", _
                 "not confirmed (expect prompts on macOS)")
@@ -319,15 +351,21 @@ Public Function BuildLinelistFromSetup(ByVal designerPath As String, _
     Set appScope = ApplicationState.Create(Application)
     appScope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
-    'The languages, before any entry is written. Loading a setup by hand fills
-    'them on Main; the headless path has no load step, so the ones the caller
-    'left empty are read off the setup itself, the way clickLoadFileDic reads
-    'them. An empty language is a translation column nothing can resolve.
+    'The setup language, before any entry is written. Loading a setup by hand
+    'fills it on Main; the headless path has no load step, so it is read off the
+    'setup itself, the way clickLoadFileDic reads it. An empty language is a
+    'translation column nothing can resolve.
     ResolveLanguages setupPath
 
     Set designerBook = Application.Workbooks.Open(fileName:=workingPath, ReadOnly:=False)
 
     RefreshSourceCode designerBook, sourceRoot, formsFolder
+
+    'The linelist language needs the designer open: it is settled against the
+    'translation table's own column headers rather than against the setup.
+    ResolveInterfaceLanguage designerBook
+
+    PrepareDesignerGeo designerBook
     WriteDesignerEntries designerBook, setupPath, outputFolder, outputName
 
     RunGeneration designerBook, setupPath, outputFolder, outputName
@@ -700,6 +738,44 @@ Private Sub ImportFolder(ByVal target As Workbook, _
     Next
 End Sub
 
+'@Description("Seed the hidden names the designer's Geo worksheet must carry.")
+'@details
+'LLGeo.CheckRequirements asks the Geo worksheet for RNG_GeoName,
+'RNG_GeoUpdated, RNG_GeoLangCode and RNG_MetaLang, for the five level labels at
+'workbook scope, and for the RNG_PastingGeoCol cell. A designer that has never
+'been through DesignerPreparation.Prepare with the current code carries none of
+'them, and the consequences are quiet and total: LLGeo.Create fails, the
+'dictionary files "Geo object should be of type LLGeo, geolines not append",
+'AppendGeoLines never runs, and every geo variable stays ONE column instead of
+'expanding into the twelve it owns -- four admin levels, four p-codes and four
+'concatenations. The delivered linelist then has no geography at all and says so
+'only in the run log.
+'
+'This is the seeding half of Prepare and nothing else. Prepare's first step
+'opens a file dialog to import translations, so a headless run cannot go through
+'it; EnsureGeoFlags is Public for exactly this call. Every write is an
+'EnsureName, so a designer already carrying the names is left as it is.
+'
+'A failure is reported rather than raised. A build with no geography is a real
+'linelist and a caller may want it; a build that dies here delivers nothing.
+'@param designerBook Workbook. The designer copy.
+Private Sub PrepareDesignerGeo(ByVal designerBook As Workbook)
+    Dim prep As DesignerPreparation
+
+    On Error Resume Next
+        Set prep = DesignerPreparation.Create(designerBook)
+        If Not prep Is Nothing Then prep.EnsureGeoFlags
+
+        If Err.Number <> 0 Then
+            AddToReport "the designer's Geo worksheet could not be seeded (" & _
+                        Err.Description & "), so the build carries no geography"
+            Err.Clear
+        Else
+            AddToReport "geo hidden names seeded on the designer copy"
+        End If
+    On Error GoTo 0
+End Sub
+
 '@Description("Write the build entries onto the designer's Main worksheet.")
 '@details
 'Three entries have to land, because nothing else says where the linelist goes
@@ -734,9 +810,10 @@ Private Sub WriteDesignerEntries(ByVal designerBook As Workbook, _
     WriteEntry mainSheet, RNG_PATH_GEO, optGeo
     WriteEntry mainSheet, RNG_LL_PWD_OPEN, optPassword
 
-    'The two languages are left as the copied designer holds them when the
-    'caller names neither, because the designer's own pair is a valid answer
-    'and an empty one is not.
+    'Each language is left as the copied designer holds it when nothing better
+    'was settled on, because the designer's own entry is a valid answer and an
+    'empty one is not. ResolveInterfaceLanguage has already checked the linelist
+    'one against the translation table's columns by the time this runs.
     If LenB(optSetupLang) > 0 Then WriteEntry mainSheet, RNG_LANG_SETUP, optSetupLang
     If LenB(optLinelistLang) > 0 Then WriteEntry mainSheet, RNG_LL_FORM, optLinelistLang
 
@@ -848,13 +925,25 @@ Private Sub ReadOptions(ByVal options As String)
     Next
 End Sub
 
-'@Description("Fill the languages the caller left empty from the setup itself.")
+'@Description("Fill the setup language the caller left empty from the setup itself.")
 '@details
 'What ExtractAndUpdateLanguages does when a setup is loaded by hand: the
 'first language of the setup's Translations sheet is the auto-selected one
-'(owner decision), and both entries take it here when the options named
-'neither. The read goes through EventsDesignerAdvanced.SetupLanguages, the
-'one shared language extraction, so the two paths cannot drift.
+'(owner decision). The read goes through EventsDesignerAdvanced.SetupLanguages,
+'the one shared language extraction, so the two paths cannot drift.
+'
+'ONLY THE SETUP LANGUAGE IS RESOLVED HERE
+'-------------------------------------------------------------------------------
+'This used to fill the linelist language from the same value, and the two are
+'not the same vocabulary. RNG_LangSetup takes a COLUMN NAME of the setup's own
+'translation table -- "English" -- and RNG_LLForm takes a CODE-Name entry off
+'the interface dropdown, "ENG-English", whose prefix is the column the four
+'LinelistTranslation tables are keyed on. Writing "English" into RNG_LLForm made
+'RNG_LLLanguageCode read "English", no such column existed, and every lookup
+'fell back to the tag: sheets came out named LLSHEET_Analysis and every button
+'and message in the delivered linelist read as its own tag. The linelist
+'language is resolved in ResolveInterfaceLanguage instead, against the codes the
+'designer actually carries.
 '@param setupPath String. The setup workbook to read.
 Private Sub ResolveLanguages(ByVal setupPath As String)
     Dim setupWkb As Workbook
@@ -862,7 +951,7 @@ Private Sub ResolveLanguages(ByVal setupPath As String)
     Dim languages As BetterArray
     Dim firstLanguage As String
 
-    If LenB(optSetupLang) > 0 And LenB(optLinelistLang) > 0 Then Exit Sub
+    If LenB(optSetupLang) > 0 Then Exit Sub
 
     On Error Resume Next
         Set setupWkb = Application.Workbooks.Open(fileName:=setupPath, ReadOnly:=True)
@@ -882,14 +971,150 @@ Private Sub ResolveLanguages(ByVal setupPath As String)
     On Error GoTo 0
 
     If LenB(firstLanguage) = 0 Then
-        AddToReport "no language found in the setup, the designer's own entries stand"
+        AddToReport "no language found in the setup, the designer's own entry stands"
         Exit Sub
     End If
 
-    If LenB(optSetupLang) = 0 Then optSetupLang = firstLanguage
-    If LenB(optLinelistLang) = 0 Then optLinelistLang = firstLanguage
-    AddToReport "languages resolved from the setup: " & optSetupLang & " / " & optLinelistLang
+    optSetupLang = firstLanguage
+    AddToReport "setup language resolved from the setup: " & optSetupLang
 End Sub
+
+'@Description("Settle the linelist interface language against the codes the designer carries.")
+'@details
+'RNG_LLForm is a CODE-Name entry -- "ENG-English" -- and only the prefix
+'matters: InitTransfer splits it on the dash and writes the prefix as
+'RNG_LLLanguageCode, which is the COLUMN the four LinelistTranslation tables
+'are keyed on. A value whose prefix names no column translates nothing at all,
+'silently, and the delivered linelist reads as a wall of tags.
+'
+'So the codes are read off the designer's own T_TradLLMsg headers rather than
+'assumed, and three candidates are tried in order: what the caller asked for,
+'what the copied designer already holds, and the first code the table offers.
+'The first one that names a real column wins, and the choice is reported either
+'way -- a build that quietly picked a different language than the caller named
+'is exactly the outcome this routine exists to make visible.
+'@param designerBook Workbook. The designer copy.
+Private Sub ResolveInterfaceLanguage(ByVal designerBook As Workbook)
+    Dim codes As BetterArray
+    Dim wanted As String
+    Dim resolved As String
+
+    Set codes = TranslationLanguageCodes(designerBook)
+
+    If codes.Length = 0 Then
+        AddToReport "the designer carries no " & TABLE_LL_MESSAGES & " headers, " & _
+                    "so the linelist language was left as the designer holds it"
+        Exit Sub
+    End If
+
+    'What the caller named, then what the designer already holds.
+    resolved = MatchingLanguageCode(codes, optLinelistLang)
+
+    If LenB(resolved) = 0 Then
+        wanted = ReadMainEntry(designerBook, RNG_LL_FORM)
+        resolved = MatchingLanguageCode(codes, wanted)
+
+        If LenB(resolved) > 0 Then
+            optLinelistLang = wanted
+            AddToReport "linelist language: the designer's own entry stands (" & wanted & ")"
+            Exit Sub
+        End If
+    Else
+        AddToReport "linelist language: " & optLinelistLang & " (code " & resolved & ")"
+        Exit Sub
+    End If
+
+    'Neither answered a column of the table. The first code it offers is a
+    'linelist somebody can read, which a wall of tags is not.
+    resolved = CStr(codes.Item(codes.LowerBound))
+    AddToReport "linelist language: neither the option (" & optLinelistLang & _
+                ") nor the designer entry (" & wanted & ") names a column of " & _
+                TABLE_LL_MESSAGES & ", so the build fell back to " & resolved
+    optLinelistLang = resolved
+End Sub
+
+'@Description("The language codes the designer's linelist message table is keyed on.")
+'@details
+'The header row of T_TradLLMsg, minus its first column, which carries the tag
+'itself. Those headers ARE the languages a linelist can be written in, and
+'reading them beats a list written down here that would go stale the first time
+'a language was added to the designer.
+'@param designerBook Workbook. The designer copy.
+'@return BetterArray. The codes, empty when the sheet or the table is missing.
+Private Function TranslationLanguageCodes(ByVal designerBook As Workbook) As BetterArray
+    Dim tradSheet As Worksheet
+    Dim headerRow As Range
+    Dim result As BetterArray
+    Dim counter As Long
+    Dim headerText As String
+
+    Set result = New BetterArray
+    result.LowerBound = 1
+    Set TranslationLanguageCodes = result
+
+    On Error Resume Next
+        Set tradSheet = designerBook.Worksheets(SHEET_LL_TRANSLATION)
+        If Not tradSheet Is Nothing Then
+            Set headerRow = tradSheet.ListObjects(TABLE_LL_MESSAGES).HeaderRowRange
+        End If
+        Err.Clear
+    On Error GoTo 0
+
+    If headerRow Is Nothing Then Exit Function
+
+    For counter = 2 To headerRow.Cells.Count
+        headerText = Trim$(CStr(headerRow.Cells(1, counter).Value))
+        If LenB(headerText) > 0 Then result.Push headerText
+    Next
+End Function
+
+'@Description("The code one language entry resolves to, when it names a real column.")
+'@details
+'An entry is matched on the part before the dash, which is what InitTransfer
+'takes; an entry carrying no dash is matched whole, so a caller may hand over
+'either "ENG-English" or a bare "ENG". The comparison is case-insensitive
+'because the value comes off a worksheet cell somebody typed into.
+'@param codes BetterArray. The codes the table offers.
+'@param entryValue String. The language entry to judge.
+'@return String. The matching code, empty when there is none.
+Private Function MatchingLanguageCode(ByVal codes As BetterArray, _
+                                      ByVal entryValue As String) As String
+    Dim wantedCode As String
+    Dim counter As Long
+    Dim oneCode As String
+
+    wantedCode = Trim$(entryValue)
+    If LenB(wantedCode) = 0 Then Exit Function
+
+    If InStr(1, wantedCode, "-", vbBinaryCompare) > 0 Then
+        wantedCode = Trim$(Split(wantedCode, "-")(0))
+    End If
+
+    For counter = codes.LowerBound To codes.UpperBound
+        oneCode = CStr(codes.Item(counter))
+        If StrComp(oneCode, wantedCode, vbTextCompare) = 0 Then
+            MatchingLanguageCode = oneCode
+            Exit Function
+        End If
+    Next
+End Function
+
+'@Description("Read one named entry off the designer's Main worksheet.")
+'@param designerBook Workbook. The designer copy.
+'@param rangeName String. The named range carrying the entry.
+'@return String. The value, empty when the name does not resolve.
+Private Function ReadMainEntry(ByVal designerBook As Workbook, _
+                               ByVal rangeName As String) As String
+    Dim target As Range
+
+    On Error Resume Next
+        Set target = designerBook.Worksheets(SHEET_MAIN).Range(rangeName)
+        Err.Clear
+    On Error GoTo 0
+
+    If target Is Nothing Then Exit Function
+    ReadMainEntry = Trim$(CStr(target.Cells(1, 1).Value))
+End Function
 
 '@Description("Clear what the previous run recorded.")
 Private Sub ResetRunState()
@@ -1005,6 +1230,26 @@ Private Function MatchingNames(ByVal folderPath As String, _
 
     Set MatchingNames = result
 End Function
+
+'@Description("Create a folder when it is not on disk yet.")
+'@details
+'Called before the sandbox grant is asked for, and that is the whole point: a
+'security-scoped grant is given for a path that EXISTS, so asking for one over
+'a folder no class has created yet grants nothing and every later write into it
+'raises a dialog. TemporaryRepos.EnsureReady would make it, but not until the
+'build is well past the one moment a dialog can still be answered.
+'
+'A failure is swallowed: TemporaryRepos creates the folder itself later, and
+'the only thing lost is the grant.
+'@param folderPath String. The folder to create.
+Private Sub EnsureFolder(ByVal folderPath As String)
+    If IsFolder(folderPath) Then Exit Sub
+
+    On Error Resume Next
+        MkDir folderPath
+        Err.Clear
+    On Error GoTo 0
+End Sub
 
 '@Description("Delete one file when it is there.")
 '@param filePath String. The file to drop.

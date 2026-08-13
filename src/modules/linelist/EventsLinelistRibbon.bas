@@ -1,11 +1,28 @@
 Attribute VB_Name = "EventsLinelistRibbon"
 Attribute VB_Description = "Events associated with the Ribbon Menu in the linelist"
 Option Explicit
-Option Private Module
 
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed
 '@Folder("Linelist Events")
 '@ModuleDescription("Events associated with the Ribbon Menu in the linelist")
+
+'@description
+'NO Option Private Module HERE, AND THAT IS DELIBERATE.
+'
+'Every procedure below is named as a callback by a string in customUI.xml, and
+'the ribbon resolves those by NAME rather than by a compiled reference.
+'Option Private Module takes a module's Public members out of exactly that kind
+'of lookup, and this module was the ONLY ribbon module in the project carrying
+'it -- SetupRibbon, EventsDesignerCore, EventsDesignerAdvanced,
+'EventsDesignerMulti, EventsMasterSetupRibbon and RibbonDev all go without, and
+'so did the old stub baked into the ribbon template back when the tab worked.
+'
+'It was removed while chasing a report that a ribbon button ran the wrong
+'callback. That report is NOT proven to come from here -- the delivered project
+'also failed to compile at the time, which accounts for it on its own -- so
+'treat this as one candidate removed rather than a fault fixed. What is certain
+'is that the odd one out was this module, and the cost of matching its six
+'siblings is that the callbacks now show up in the macro list.
 
 Private tradrib As TranslationObject   'Translation of ribbon labels
 

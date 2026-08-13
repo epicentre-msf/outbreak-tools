@@ -85,8 +85,8 @@ Three files land in `outputFolder`:
 |---|---|
 | `temppath` | the ribbon template. **Empty means the buttons build** — action buttons on the sheets, an Admin sheet, no ribbon |
 | `geopath` | the geobase to import. Empty is valid and common |
-| `setuplang` | the language of the setup file |
-| `lllang` | the language the linelist is written in |
+| `setuplang` | the language of the setup file — a **column name** of the setup's own translation table, e.g. `English` |
+| `lllang` | the language the linelist is written in — a **code**, or a `CODE-Name` entry, e.g. `ENG` or `ENG-English` |
 | `llpassword` | the open password of the saved file. Empty opens on a double-click |
 
 An unknown key is **reported**, not ignored: a misspelled key reads exactly like
@@ -96,6 +96,33 @@ What the run did is read back through six properties — `LastReport`,
 `LastSheetCount`, `LastVariableCount`, `LastComponentCount`, `LastLinelistPath`,
 `LastLogPath`. A caller holding `"OK"` still knows nothing about the size of what
 was built, and an empty linelist reports `"OK"` as readily as a full one.
+
+### The two languages are two different vocabularies
+
+`setuplang` and `lllang` look interchangeable and are not, and getting them
+confused is silent.
+
+`setuplang` lands in `RNG_LangSetup`. It is a **column name of the setup's own
+translation table** — `English` — and it translates the dictionary, the choices
+and the analyses.
+
+`lllang` lands in `RNG_LLForm`, and only its **code prefix** survives:
+`InitTransfer` splits the value on the dash and writes the prefix as
+`RNG_LLLanguageCode`. That code is the column name the four `LinelistTranslation`
+tables are keyed on, and those columns are `ENG`, `FRA`, `SPA`, `POR`, `ARA`. So
+`ENG-English` and a bare `ENG` both work, and `English` does not.
+
+A code that names no column translates **nothing**, with nothing said: the
+lookup falls back to returning the tag it was given, so the delivered linelist
+comes out with worksheets called `LLSHEET_Analysis` and every button and message
+reading as its own tag. `HeadlessBuild.ResolveInterfaceLanguage` is what stops
+that now — it reads the codes off the designer's own `T_TradLLMsg` header row and
+tries the caller's option, then the designer's own entry, then the first code the
+table offers, reporting which one it settled on in the run narrative.
+
+Leave both empty and the setup language is read off the setup, the way loading a
+setup by hand fills it, and the linelist language stays whatever the designer
+holds.
 
 ### Why a designer file is still copied
 
@@ -108,8 +135,8 @@ and `__check` the run log. Those are data, and no sensible amount of code builds
 them from nothing.
 
 So a designer file is copied and its **code is thrown away**. Every non-document
-component is removed from the copy, then 84 are imported: the `.cls` files of ten
-source folders, the `.bas` files of two, and the eleven merged `.frm`.
+component is removed from the copy, then the source is imported: the `.cls` files
+of nine source folders, the `.bas` files of one, and the ten merged `.frm`.
 `Linelist.TransferAllCode` then exports from the copy, so the delivered linelist
 carries the source in the repository.
 
@@ -122,12 +149,24 @@ run.
 
 | imported | skipped |
 |---|---|
-| `src/classes/{analyses,dataio,dictionary,general,geo,graphs,linelist,showhide}` | `msetup`, `mastersetup`, `setup`, `designer`, `dev`, `rubberduck`, `stale`, `formulas`, `sections` |
-| `src/modules/{linelist,linelistform}` | `designer`, `dev`, `mastersetup`, `setup`, `headless` |
+| `src/classes/{analyses,dataio,dictionary,general,geo,graphs,linelist,sections,showhide}` | `msetup`, `mastersetup`, `setup`, `designer`, `dev`, `rubberduck`, `stale`, `formulas` |
+| `src/modules/{linelist}` | `linelistform`, `designer`, `dev`, `mastersetup`, `setup`, `headless` |
 
-Ten folders hold all 55 components the transfer moves. The rest hold none — the
+Those folders hold every component the transfer moves. The rest hold none — the
 mastersetup disease classes have never been part of a linelist, and `formulas`
-and `sections` run inside the *driver*, never inside the generated file.
+runs inside the *driver*, never inside the generated file.
+
+`sections` is imported for **one class**. `SectionMap` is the only thing the
+transfer takes out of it, and `EventsLinelistButtons` types `SectionMap`, so a
+linelist built without the folder loses its project compile.
+
+`src/modules/linelistform` is **not** imported, and that is the point. Its ten
+`FormLogic*` modules are the code *behind the forms*: every one of them uses `Me`
+and declares control event handlers, neither of which compiles in a standard
+module. `merge-form-code.R` writes each one into the code module of the form it
+belongs to, so the `.frm` files already carry that code where it is legal.
+Importing the `.bas` files as well put four of them into the delivered linelist as
+standard modules, and that alone cost the file its compile.
 
 The narrow list is not tidiness. **Excel for Mac is sandboxed**: reading a folder
 it has no security-scoped grant for pops a dialog, and a dialog in a headless run
@@ -152,6 +191,20 @@ The run asks for it itself. Every headless entry point calls
 **before its first file read**, passing the repo root. The first run on a
 machine shows one consolidated dialog; click Grant and the run proceeds. The
 grant persists, so every later run is silent.
+
+### The scratch folder has to exist before the grant is asked for
+
+`CodeTransfer` exports every component of the transfer to `<lldir>/OBTApp_` and
+imports it straight back, so a build touches two files in there per component.
+A security-scoped grant is given for a path that **exists** — handing over a
+folder that is not on disk yet grants nothing, and the run then stops on one
+dialog per component with nobody there to answer it. `TemporaryRepos` does
+create the folder, but not until the build is well past the one moment a dialog
+could still be answered.
+
+So `BuildLinelistFromSetup` creates `<outputFolder>/OBTApp_` itself and names it
+in the grant, alongside the source tree, the forms, the workbooks and the output
+folder. One dialog covers all of them.
 
 Two dead ends, so nobody walks them again:
 

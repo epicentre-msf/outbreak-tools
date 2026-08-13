@@ -1058,30 +1058,38 @@ End Sub
 '@sub-title Transfer all VBA code components to the output workbook
 '@details
 'Moves the VBA the generated linelist runs on, in five steps:
-'1. 30 class modules. ChoiceKeys, ImportMetadata, ImportReport and
+'1. 36 class modules. ChoiceKeys, ImportMetadata, ImportReport and
 '   CheckingOutput joined the list with the import work: LLExporter types
 '   ChoiceKeys, LLImporter types the first three, ImportChecking types
 '   CheckingOutput and F_ImportRep reads ImportReport, so a linelist without
 '   them fails project compilation. LLLog joined with the user log:
 '   EventLinelist holds one and the button and form modules write their
-'   outcome lines through it.
-'2. 9 standard modules. Five carry the linelist toolbar and its helpers, and
-'   four hold the code behind the user forms: FormLogicAdvanced,
-'   FormLogicExportMig, FormLogicExport and FormLogicEpiWeek. Those four are the
-'   only ones of the nine linelistform modules that export a Public procedure,
-'   and EventsLinelistButtons calls three of them, so a linelist without them
-'   fails project compilation on the first line of VBA that runs in it.
-'   ImportChecking is the fifth of the first group and FormLogicAdvanced calls
-'   it.
+'   outcome lines through it. SectionMap, GeoFormCache and AnalysisRanges
+'   joined last: EventsLinelistButtons types SectionMap, GeoModule and the
+'   F_Geo code-behind call GeoFormCache statically, and GeoModule names
+'   AnalysisRanges. None of the three is reached by a bare procedure call, so
+'   the call scan reported the set closed while a generated linelist could not
+'   compile.
+'2. 5 standard modules, carrying the linelist toolbar and its helpers.
+'   NO FormLogic MODULE IS TRANSFERRED. Every one of them uses Me and declares
+'   control event handlers, which only compile inside a form, and the merged
+'   .frm files already carry that code in the code module where it belongs.
+'   The two calls into it are written qualified -- F_Export.SetupExportForm and
+'   F_ExportMig.HandleAnalysisExport -- so they run the form's copy and need no
+'   standard module at all. Transferring the four of them was what cost a
+'   delivered linelist its compile.
 '3. The ribbon module. A template workbook already carries EventsLinelistRibbon,
 '   so its code text is overwritten; otherwise the module is imported.
-'4. 9 user forms.
+'4. 10 user forms.
 '5. The workbook code module, then EventLinelistSheet into the code module of
 '   every hlist2D data-entry worksheet.
 '
-'scripts/devtools/transferred-code-scan.R checks that every procedure the
-'transferred modules call is defined inside the transferred set. Run it after
-'any change to the three lists below.
+'Two free scans check the three lists below, and they read different things.
+'scripts/devtools/transferred-code-scan.R reads CALLS: a transferred module
+'invoking a Public procedure defined outside the set.
+'scripts/devtools/linelist-components-scan.R reads NAMES: a type, a predeclared
+'class or an enum the set mentions and does not carry. Run both after any
+'change here.
 '@param codeTransfer CodeTransfer. The code transfer engine.
 '@param sheetNames BetterArray. The dictionary's unique sheet names, walked once
 'by Prepare and passed down.
@@ -1094,42 +1102,37 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
 
     Set codesList = New BetterArray
 
-    'Transfer classes (33 classes)
-    codesList.Push "BetterArray", "DataSheet", "LLExport", _
-                   "LLChoices", _
-                   "LLdictionary", "LLGeo", _
-                   "Passwords", _
-                   "Checking", _
-                   "LLSheets", "LLTranslation", _
-                   "OSFiles", _
-                   "TranslationObject", "LLVariables", _
-                   "LLSpatial", _
-                   "DropdownLists", _
-                   "ShowHide", "ShowHideLayout", "ShowHideStore", _
-                   "CustomTable", _
-                   "LLExporter", _
-                    "LLImporter", _
-                   "ChoiceKeys", "ImportMetadata", "ImportReport", _
-                   "CheckingOutput", _
-                   "Graphs", "AnaTabIds", _
-                   "ExportButton", "FilteredData", _
-                   "HiddenNames", _
-                   "EventLinelist", _
+    'Transfer classes (36 classes).
+    '
+    'TWO Push CALLS, AND IT HAS TO STAY THAT WAY
+    'A VBA logical line takes at most 25 line-continuation characters, and one
+    'Push per class was already at 23. Push APPENDS, so splitting the list costs
+    'nothing and buys the room a single statement had almost run out of. Add to
+    'whichever call has space; start a third before either reaches twenty.
+    codesList.Push "BetterArray", "DataSheet", "LLExport", "LLChoices", _
+                   "LLdictionary", "LLGeo", "LLSpatial", "LLSheets", _
+                   "LLVariables", "LLTranslation", "LLExporter", "LLImporter", _
                    "LLLog", _
-                   "ApplicationState"
+                   "Passwords", "Checking", "CheckingOutput", "OSFiles", _
+                   "TranslationObject", "HiddenNames", "ApplicationState"
+
+    codesList.Push "DropdownLists", "CustomTable", _
+                   "ShowHide", "ShowHideLayout", "ShowHideStore", "SectionMap", _
+                   "ChoiceKeys", "ImportMetadata", "ImportReport", _
+                   "Graphs", "AnaTabIds", "AnalysisRanges", _
+                   "ExportButton", "FilteredData", _
+                   "GeoFormCache", "EventLinelist"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
         codeTransfer.TransferClass codeName
     Next
 
-    'Transfer modules (9 modules, plus the ribbon just below)
+    'Transfer modules (5 modules, plus the ribbon just below)
     codesList.Clear
     codesList.Push "CustomLinelistFunctions", _
                    "GeoModule", "LinelistEventsManager", _
-                   "EventsLinelistButtons", "ImportChecking", _
-                   "FormLogicAdvanced", "FormLogicExportMig", _
-                   "FormLogicExport", "FormLogicEpiWeek"
+                   "EventsLinelistButtons", "ImportChecking"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
