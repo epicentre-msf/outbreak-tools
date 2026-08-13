@@ -17,6 +17,10 @@ Private Const CRFPREFIX As String = "crf_"
 'of the key, so it is copied here exactly rather than rebuilt.
 Private Const CONTROL_SUFFIX As String = " -- control"
 
+'Pivot title, variable name and main label -- one per header label the
+'F_ShowVarLabels form carries above its list.
+Private Const VARLAB_COLUMNS As Long = 3
+
 'The pair the show/hide form is open on: which variables the sheet offers, and
 'the sheet itself. Both are rebuilt each time the form opens.
 '
@@ -393,6 +397,39 @@ Private Sub PopulateShowHideList(ByVal frm As Object)
     For counter = 1 To showHideEntries.EntryCount
         listCtrl.AddItem showHideEntries.HeaderText(counter)
     Next
+End Sub
+
+'Put the pivot title, variable name and label rows into the three-column list.
+'
+'VarLabelTable answers a BetterArray of one-dimensional rows, and BetterArray
+'reports that shape as JAGGED, so `Items` gives back an array OF ARRAYS. A
+'jagged array is not something a ListBox can take: `List = table.Items` left
+'the form showing nothing at all, which is what it had been doing. The rows go
+'in one cell at a time, the way FormLogicImportRep.FillTwoColumnList already
+'does it for the same reason.
+Private Sub FillVarLabelList(ByVal listCtrl As Object, ByVal labelRows As BetterArray)
+
+    Dim entry As Variant
+    Dim counter As Long
+    Dim rowIndex As Long
+    Dim firstColumn As Long
+
+    listCtrl.Clear
+    If labelRows Is Nothing Then Exit Sub
+
+    'The form carries a header label per column, so the count is fixed at three.
+    listCtrl.ColumnCount = VARLAB_COLUMNS
+
+    For counter = labelRows.LowerBound To labelRows.UpperBound
+        entry = labelRows.Item(counter)
+        If IsArray(entry) Then
+            firstColumn = LBound(entry)
+            listCtrl.AddItem CStr(entry(firstColumn))
+            listCtrl.List(rowIndex, 1) = CStr(entry(firstColumn + 1))
+            listCtrl.List(rowIndex, 2) = CStr(entry(firstColumn + 2))
+            rowIndex = rowIndex + 1
+        End If
+    Next counter
 End Sub
 
 '@Description("Callback for click on show/hide in a linelist worksheet on a button")
@@ -1439,8 +1476,7 @@ Public Sub ClickOpenVarLab()
     Set linelistEvents = LinelistService()
     Set varLabTab = linelistEvents.VarLabelTable()
 
-    'Affect the table to the list
-    F_ShowVarLabels.LST_CustomTabList.List = varLabTab.Items
+    FillVarLabelList F_ShowVarLabels.LST_CustomTabList, varLabTab
     LinelistEventsManager.LLExitBusyState
 
     'This will open the form with variable name and variable labels for
