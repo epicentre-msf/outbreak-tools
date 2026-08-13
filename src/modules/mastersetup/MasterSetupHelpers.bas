@@ -326,18 +326,18 @@ Handler:
 End Sub
 
 Public Sub UnProtectMasterSetupSheet(ByVal targetSheet As Worksheet, ByVal sheetTag As String)
-    Dim passwords As Passwords
+    Dim passManager As Passwords
 
     If targetSheet Is Nothing Then Exit Sub
 
-    Set passwords = ResolveMasterPasswords()
-    If passwords Is Nothing Then Exit Sub
+    Set passManager = ResolveMasterPasswords()
+    If passManager Is Nothing Then Exit Sub
 
-    passwords.UnProtect targetSheet.Name
+    passManager.UnProtect targetSheet.Name
 End Sub
 
 Public Sub ProtectMasterSetupSheet(ByVal targetSheet As Worksheet, ByVal sheetTag As String)
-    Dim passwords As Passwords
+    Dim passManager As Passwords
     Dim allowDelete As Boolean
     Dim normalized As String
 
@@ -351,10 +351,10 @@ Public Sub ProtectMasterSetupSheet(ByVal targetSheet As Worksheet, ByVal sheetTa
             allowDelete = False
     End Select
 
-    Set passwords = ResolveMasterPasswords()
-    If passwords Is Nothing Then Exit Sub
+    Set passManager = ResolveMasterPasswords()
+    If passManager Is Nothing Then Exit Sub
 
-    passwords.Protect targetSheet.Name, allowDeletingRows:=allowDelete
+    passManager.Protect targetSheet.Name, allowDeletingRows:=allowDelete
 End Sub
 
 Public Sub SortMasterVariablesTables(ByVal targetSheet As Worksheet)
@@ -412,13 +412,13 @@ Public Function IsMasterDiseaseSheet(ByVal targetSheet As Worksheet) As Boolean
                                     DISEASE_MARKER_VALUE, vbTextCompare) = 0)
 End Function
 
-Public Function ResolveRibbonTranslations(Optional ByVal workbook As Workbook) As TranslationObject
+Public Function ResolveRibbonTranslations(Optional ByVal targetBook As Workbook) As TranslationObject
     Dim tagSheet As Worksheet
     Dim table As ListObject
     Dim languageTag As String
     Dim targetBook As Workbook
 
-    Set targetBook = ResolveMasterSetupWorkbook(workbook)
+    Set targetBook = ResolveMasterSetupWorkbook(targetBook)
 
     On Error Resume Next
         Set tagSheet = targetBook.Worksheets(RIBBON_TRANSLATION_SHEET)
@@ -431,11 +431,11 @@ Public Function ResolveRibbonTranslations(Optional ByVal workbook As Workbook) A
     Set ResolveRibbonTranslations = Translation.Create(table, languageTag)
 End Function
 
-Public Function ResolveRibbonLanguageTag(Optional ByVal workbook As Workbook) As String
+Public Function ResolveRibbonLanguageTag(Optional ByVal targetBook As Workbook) As String
     Dim tagSheet As Worksheet
     Dim targetBook As Workbook
 
-    Set targetBook = ResolveMasterSetupWorkbook(workbook)
+    Set targetBook = ResolveMasterSetupWorkbook(targetBook)
 
     On Error Resume Next
         Set tagSheet = targetBook.Worksheets(RIBBON_TRANSLATION_SHEET)
@@ -460,12 +460,12 @@ Public Function TranslateValue(ByVal translations As TranslationObject, _
     End If
 End Function
 
-Public Function ResolveNextDiseaseIndex(Optional ByVal workbook As Workbook) As Long
+Public Function ResolveNextDiseaseIndex(Optional ByVal targetBook As Workbook) As Long
     Dim targetBook As Workbook
     Dim sh As Worksheet
     Dim count As Long
 
-    Set targetBook = ResolveMasterSetupWorkbook(workbook)
+    Set targetBook = ResolveMasterSetupWorkbook(targetBook)
 
     For Each sh In targetBook.Worksheets
         If IsMasterDiseaseSheet(sh) Then count = count + 1

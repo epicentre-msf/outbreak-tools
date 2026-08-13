@@ -561,9 +561,9 @@ End Function
 '@param indexValue String. A delimited index built by BuildIndex.
 '@param name String. The name to look for.
 '@return Boolean. True when the name is in the index.
-Private Function IndexHolds(ByVal indexValue As String, ByVal name As String) As Boolean
-    If LenB(name) = 0 Then Exit Function
-    IndexHolds = (InStr(1, indexValue, INDEX_SEPARATOR & name & INDEX_SEPARATOR, vbTextCompare) > 0)
+Private Function IndexHolds(ByVal indexValue As String, ByVal nameValue As String) As Boolean
+    If LenB(nameValue) = 0 Then Exit Function
+    IndexHolds = (InStr(1, indexValue, INDEX_SEPARATOR & nameValue & INDEX_SEPARATOR, vbTextCompare) > 0)
 End Function
 
 '@label:count-names
@@ -603,10 +603,10 @@ End Function
 '@param counts Collection. Counts keyed by name.
 '@param name String. The name to read.
 '@return Long. The number of rows holding that name.
-Private Function NameCount(ByVal counts As Collection, ByVal name As String) As Long
-    If LenB(name) = 0 Then Exit Function
+Private Function NameCount(ByVal counts As Collection, ByVal nameValue As String) As Long
+    If LenB(nameValue) = 0 Then Exit Function
     On Error Resume Next
-        NameCount = counts.Item("k" & name)
+        NameCount = counts.Item("k" & nameValue)
     On Error GoTo 0
 End Function
 
@@ -1514,7 +1514,7 @@ Private Sub CheckTable(ByVal partName As String, _
     Const TAB_SPATIOTEMP As String = "Tab_SpatioTemporal_Analysis"
     Const TAB_TIME_SERIES_GRAPHS As String = "Tab_Graph_TimeSeries"
 
-    Dim listObject As ListObject
+    Dim listTable As ListObject
     Dim listName As String
     Dim headerRange As Range
     Dim specsRange As Range
@@ -1542,17 +1542,17 @@ Private Sub CheckTable(ByVal partName As String, _
     checkingCounter = 0
 
     On Error Resume Next
-        Set listObject = analysisSheet.ListObjects(listName)
+        Set listTable = analysisSheet.ListObjects(listName)
     On Error GoTo 0
-    If listObject Is Nothing Then Exit Sub
+    If listTable Is Nothing Then Exit Sub
 
     Set check = Checking.Create("Analysis incoherences", _
                                 partName & "--Where?--Details")
 
-    Set headerRange = listObject.HeaderRowRange
+    Set headerRange = listTable.HeaderRowRange
 
-    For rowIndex = 1 To listObject.ListRows.Count
-        Set specsRange = listObject.ListRows(rowIndex).Range
+    For rowIndex = 1 To listTable.ListRows.Count
+        Set specsRange = listTable.ListRows(rowIndex).Range
         blankCount = workFun.CountBlank(specsRange)
         columnCount = specsRange.Columns.Count
 

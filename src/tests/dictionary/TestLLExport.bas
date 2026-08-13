@@ -742,14 +742,14 @@ Public Sub TestExportFileNameLogsWhenInactive()
     CustomTestSetTitles Assert, "LLExport", "TestExportFileNameLogsWhenInactive"
     On Error GoTo Fail
 
-    Dim name As String
+    Dim nameValue As String
 
     Manager.AddRows
     ExportSheet.ListObjects(1).DataBodyRange.Cells(2, ColumnIndexOf("status")).Value = "inactive"
 
-    name = Manager.ExportFileName(2, LLdictionary.Create(DictionarySheet, 1, 1), PasswordsSubject)
+    nameValue = Manager.ExportFileName(2, LLdictionary.Create(DictionarySheet, 1, 1), PasswordsSubject)
     Assert.IsTrue Manager.HasCheckings, "Inactive export should log information"
-    Assert.IsTrue LenB(name) > 0, "Should still return a filename"
+    Assert.IsTrue LenB(nameValue) > 0, "Should still return a filename"
     Exit Sub
 
 Fail:
@@ -765,10 +765,10 @@ Public Sub TestExportAllOverridesScope()
     CustomTestSetTitles Assert, "LLExport", "TestExportAllOverridesScope"
     On Error GoTo Fail
 
-    Dim name As String
+    Dim nameValue As String
 
-    name = Manager.ExportFileName(1, LLdictionary.Create(DictionarySheet, 1, 1), PasswordsSubject, exportAll:=True)
-    Assert.IsTrue InStr(1, name, "export_all", vbTextCompare) > 0, "ExportAll should override scope - fileName : " & name
+    nameValue = Manager.ExportFileName(1, LLdictionary.Create(DictionarySheet, 1, 1), PasswordsSubject, exportAll:=True)
+    Assert.IsTrue InStr(1, nameValue, "export_all", vbTextCompare) > 0, "ExportAll should override scope - fileName : " & nameValue
     Exit Sub
 
 Fail:

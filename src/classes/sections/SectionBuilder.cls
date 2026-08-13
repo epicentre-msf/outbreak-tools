@@ -72,7 +72,7 @@ Private Type TSectionBuilder
     customDropdown As DropdownLists
     cachedDict As LLdictionary
     cachedFormat As LLFormat
-    sectionMap As SectionMap
+    secMap As SectionMap
     sectionNames As Variant
     subSectionNames As Variant
     sheetNames As Variant
@@ -491,8 +491,8 @@ End Function
 'keeping the tail of the old map.
 '@depends SectionMap
 Private Sub OpenSectionMap()
-    Set this.sectionMap = SectionMap.Create(this.wksh)
-    this.sectionMap.Clear
+    Set this.secMap = SectionMap.Create(this.wksh)
+    this.secMap.Clear
 End Sub
 
 '@label:record-section
@@ -511,13 +511,13 @@ Private Sub RecordSection(ByVal sectionName As String, _
     Dim startPos As Long
     Dim endPos As Long
 
-    If this.sectionMap Is Nothing Then Exit Sub
+    If this.secMap Is Nothing Then Exit Sub
 
     startPos = NumberAt(this.columnIndexes, startRow)
     endPos = NumberAt(this.columnIndexes, endRow)
     If (startPos <= 0) Or (endPos < startPos) Then Exit Sub
 
-    this.sectionMap.Add sectionName, startPos, endPos
+    this.secMap.Add sectionName, startPos, endPos
 End Sub
 
 

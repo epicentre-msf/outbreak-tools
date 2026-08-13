@@ -104,14 +104,14 @@ End Sub
 '===============================================================================
 
 '@sub-title Populate a workbook with dictionary, choices, translations, and metadata.
-Public Function BuildDiseaseWorkbook(ByVal diseaseSheet As Worksheet, _
+Public Function BuildDiseaseWorkbook(ByVal diseaseWksh As Worksheet, _
                                      ByVal translationTable As ListObject, _
                                      ByVal ribbonTranslations As TranslationObject, _
                                      ByVal diseaseName As String, _
                                      ByVal languageTag As String, _
                                      Optional ByVal diseaseCode As String = vbNullString) As Workbook
 
-    Dim workbook As Workbook
+    Dim targetBook As Workbook
     Dim metadataSheet As Worksheet
     Dim dictionarySheet As Worksheet
     Dim choicesSheet As Worksheet
@@ -120,16 +120,16 @@ Public Function BuildDiseaseWorkbook(ByVal diseaseSheet As Worksheet, _
     Dim headerCache As IDiseaseTranslationCache
     Dim guardStarted As Boolean
 
-    ValidateDiseaseInputs diseaseSheet, diseaseName, languageTag
+    ValidateDiseaseInputs diseaseWksh, diseaseName, languageTag
 
     BeginGuard guardStarted
 
     EnsureFreshWorkbook
-    Set workbook = this.Manager.EnsureWorkbook(Application)
+    Set targetBook = this.Manager.EnsureWorkbook(Application)
 
-    PrepareSheets workbook, metadataSheet, dictionarySheet, choicesSheet, translationsSheet
+    PrepareSheets targetBook, metadataSheet, dictionarySheet, choicesSheet, translationsSheet
 
-    Set diseaseTable = ResolveDiseaseTable(diseaseSheet)
+    Set diseaseTable = ResolveDiseaseTable(diseaseWksh)
 
     Set headerCache = DiseaseTranslationCache.Create(ribbonTranslations)
 
@@ -140,26 +140,26 @@ Public Function BuildDiseaseWorkbook(ByVal diseaseSheet As Worksheet, _
 
     ApplySheetCosmetics metadataSheet, dictionarySheet, choicesSheet, translationsSheet
 
-    Set BuildDiseaseWorkbook = workbook
+    Set BuildDiseaseWorkbook = targetBook
 
     RestoreGuard guardStarted
 End Function
 
 '@sub-title Export the disease workbook to disk and return the saved file path.
 Public Function ExportDisease(ByVal exportFolder As String, _
-                              ByVal diseaseSheet As Worksheet, _
+                              ByVal diseaseWksh As Worksheet, _
                               ByVal translationTable As ListObject, _
                               ByVal ribbonTranslations As TranslationObject, _
                               ByVal diseaseName As String, _
                               ByVal languageTag As String, _
                               Optional ByVal diseaseCode As String = vbNullString) As String
 
-    Dim workbook As Workbook
+    Dim targetBook As Workbook
     Dim filePath As String
 
     ValidateFolder exportFolder
 
-    Set workbook = BuildDiseaseWorkbook(diseaseSheet, translationTable, ribbonTranslations, _
+    Set targetBook = BuildDiseaseWorkbook(diseaseWksh, translationTable, ribbonTranslations, _
                                         diseaseName, languageTag, diseaseCode)
 
     filePath = BuildDiseaseFilePath(exportFolder, diseaseName)
@@ -176,12 +176,12 @@ End Function
 Public Function BuildMigrationWorkbook(ByVal sourceWorkbook As Workbook, _
                                        ByVal diseaseNames As BetterArray) As Workbook
 
-    Dim workbook As Workbook
+    Dim targetBook As Workbook
     Dim guardStarted As Boolean
     Dim translationsTable As ListObject
     Dim choicesTable As ListObject
     Dim variablesTable As ListObject
-    Dim diseaseSheet As Worksheet
+    Dim diseaseWksh As Worksheet
     Dim diseaseList As BetterArray
 
     ValidateMigrationInputs sourceWorkbook, diseaseNames
@@ -189,25 +189,25 @@ Public Function BuildMigrationWorkbook(ByVal sourceWorkbook As Workbook, _
     BeginGuard guardStarted
 
     EnsureFreshWorkbook
-    Set workbook = this.Manager.EnsureWorkbook(Application)
-    PrepareMigrationSheets workbook
+    Set targetBook = this.Manager.EnsureWorkbook(Application)
+    PrepareMigrationSheets targetBook
 
     Set translationsTable = ResolveListObject(sourceWorkbook, TRANSLATIONS_SHEET)
     Set choicesTable = ResolveListObject(sourceWorkbook, CHOICES_SHEET)
     Set variablesTable = ResolveListObject(sourceWorkbook, VARIABLES_SHEET)
 
-    PopulateTranslations workbook.Worksheets(TRANSLATIONS_SHEET), translationsTable
-    PopulateTranslations workbook.Worksheets(CHOICES_SHEET), choicesTable
-    PopulateTranslations workbook.Worksheets(VARIABLES_SHEET), variablesTable
+    PopulateTranslations targetBook.Worksheets(TRANSLATIONS_SHEET), translationsTable
+    PopulateTranslations targetBook.Worksheets(CHOICES_SHEET), choicesTable
+    PopulateTranslations targetBook.Worksheets(VARIABLES_SHEET), variablesTable
 
     Set diseaseList = diseaseNames.Clone()
-    For Each diseaseSheet In ResolveSheets(sourceWorkbook, diseaseList)
-        PopulateMigrationDisease workbook.Worksheets(DISEASES_SHEET), diseaseSheet
-    Next diseaseSheet
+    For Each diseaseWksh In ResolveSheets(sourceWorkbook, diseaseList)
+        PopulateMigrationDisease targetBook.Worksheets(DISEASES_SHEET), diseaseWksh
+    Next diseaseWksh
 
-    ApplyMigrationFormatting workbook
+    ApplyMigrationFormatting targetBook
 
-    Set BuildMigrationWorkbook = workbook
+    Set BuildMigrationWorkbook = targetBook
 
     RestoreGuard guardStarted
 End Function
@@ -217,12 +217,12 @@ Public Function ExportForMigration(ByVal exportFolder As String, _
                                    ByVal sourceWorkbook As Workbook, _
                                    ByVal diseaseNames As BetterArray) As String
 
-    Dim workbook As Workbook
+    Dim targetBook As Workbook
     Dim filePath As String
 
     ValidateFolder exportFolder
 
-    Set workbook = BuildMigrationWorkbook(sourceWorkbook, diseaseNames)
+    Set targetBook = BuildMigrationWorkbook(sourceWorkbook, diseaseNames)
 
     filePath = BuildMigrationFilePath(exportFolder)
     this.Manager.SaveAs filePath
@@ -255,11 +255,11 @@ Private Sub RestoreGuard(ByVal guardStarted As Boolean)
 End Sub
 
 '@sub-title Validate disease export inputs.
-Private Sub ValidateDiseaseInputs(ByVal diseaseSheet As Worksheet, _
+Private Sub ValidateDiseaseInputs(ByVal diseaseWksh As Worksheet, _
                                   ByVal diseaseName As String, _
                                   ByVal languageTag As String)
 
-    If diseaseSheet Is Nothing Then
+    If diseaseWksh Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Disease worksheet cannot be Nothing"
     End If
 
@@ -297,16 +297,16 @@ Private Sub ValidateFolder(ByVal exportFolder As String)
 End Sub
 
 '@sub-title Prepare disease export worksheets.
-Private Sub PrepareSheets(ByVal workbook As Workbook, _
+Private Sub PrepareSheets(ByVal targetBook As Workbook, _
                           ByRef metadataSheet As Worksheet, _
                           ByRef dictionarySheet As Worksheet, _
                           ByRef choicesSheet As Worksheet, _
                           ByRef translationsSheet As Worksheet)
 
-    Set metadataSheet = EnsureWorksheet(workbook, METADATA_SHEET, workbook.Worksheets(1))
-    Set dictionarySheet = EnsureWorksheet(workbook, DICTIONARY_SHEET)
-    Set choicesSheet = EnsureWorksheet(workbook, CHOICES_SHEET)
-    Set translationsSheet = EnsureWorksheet(workbook, TRANSLATIONS_SHEET)
+    Set metadataSheet = EnsureWorksheet(targetBook, METADATA_SHEET, targetBook.Worksheets(1))
+    Set dictionarySheet = EnsureWorksheet(targetBook, DICTIONARY_SHEET)
+    Set choicesSheet = EnsureWorksheet(targetBook, CHOICES_SHEET)
+    Set translationsSheet = EnsureWorksheet(targetBook, TRANSLATIONS_SHEET)
 
     ClearSheet metadataSheet
     ClearSheet dictionarySheet
@@ -315,25 +315,25 @@ Private Sub PrepareSheets(ByVal workbook As Workbook, _
 End Sub
 
 '@sub-title Prepare migration workbook worksheets.
-Private Sub PrepareMigrationSheets(ByVal workbook As Workbook)
-    ClearSheet EnsureWorksheet(workbook, DISEASES_SHEET, workbook.Worksheets(1))
-    ClearSheet EnsureWorksheet(workbook, TRANSLATIONS_SHEET)
-    ClearSheet EnsureWorksheet(workbook, CHOICES_SHEET)
-    ClearSheet EnsureWorksheet(workbook, VARIABLES_SHEET)
+Private Sub PrepareMigrationSheets(ByVal targetBook As Workbook)
+    ClearSheet EnsureWorksheet(targetBook, DISEASES_SHEET, targetBook.Worksheets(1))
+    ClearSheet EnsureWorksheet(targetBook, TRANSLATIONS_SHEET)
+    ClearSheet EnsureWorksheet(targetBook, CHOICES_SHEET)
+    ClearSheet EnsureWorksheet(targetBook, VARIABLES_SHEET)
 End Sub
 
 '@sub-title Retrieve the disease table from the worksheet.
-Private Function ResolveDiseaseTable(ByVal diseaseSheet As Worksheet) As ListObject
-    If diseaseSheet.ListObjects.Count = 0 Then
+Private Function ResolveDiseaseTable(ByVal diseaseWksh As Worksheet) As ListObject
+    If diseaseWksh.ListObjects.Count = 0 Then
         ThrowError ProjectError.ElementNotFound, "Disease worksheet must contain a ListObject"
     End If
-    Set ResolveDiseaseTable = diseaseSheet.ListObjects(1)
+    Set ResolveDiseaseTable = diseaseWksh.ListObjects(1)
 End Function
 
 '@sub-title Retrieve a ListObject from a named worksheet.
-Private Function ResolveListObject(ByVal workbook As Workbook, ByVal sheetName As String) As ListObject
+Private Function ResolveListObject(ByVal targetBook As Workbook, ByVal sheetName As String) As ListObject
     Dim sheet As Worksheet
-    Set sheet = workbook.Worksheets(sheetName)
+    Set sheet = targetBook.Worksheets(sheetName)
     If sheet.ListObjects.Count = 0 Then
         ThrowError ProjectError.ElementNotFound, "Worksheet '" & sheetName & "' is missing its ListObject"
     End If
@@ -341,7 +341,7 @@ Private Function ResolveListObject(ByVal workbook As Workbook, ByVal sheetName A
 End Function
 
 '@sub-title Enumerate worksheets from provided disease names.
-Private Function ResolveSheets(ByVal workbook As Workbook, ByVal diseaseNames As BetterArray) As Collection
+Private Function ResolveSheets(ByVal targetBook As Workbook, ByVal diseaseNames As BetterArray) As Collection
     Dim results As New Collection
     Dim index As Long
     Dim diseaseName As String
@@ -349,7 +349,7 @@ Private Function ResolveSheets(ByVal workbook As Workbook, ByVal diseaseNames As
 
     For index = diseaseNames.LowerBound To diseaseNames.UpperBound
         diseaseName = CStr(diseaseNames.Item(index))
-        Set sheet = FindWorksheet(workbook, diseaseName)
+        Set sheet = FindWorksheet(targetBook, diseaseName)
         If sheet Is Nothing Then
             ThrowError ProjectError.ElementNotFound, "Disease worksheet '" & diseaseName & "' does not exist"
         End If
@@ -510,10 +510,10 @@ Private Function ContainsKey(ByVal keys As BetterArray, ByVal key As String) As 
 End Function
 
 '@sub-title Locate a worksheet by name without relying on implicit errors.
-Private Function FindWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Worksheet
+Private Function FindWorksheet(ByVal targetBook As Workbook, ByVal sheetName As String) As Worksheet
     Dim sheet As Worksheet
 
-    For Each sheet In workbook.Worksheets
+    For Each sheet In targetBook.Worksheets
         If StrComp(sheet.Name, sheetName, vbTextCompare) = 0 Then
             Set FindWorksheet = sheet
             Exit Function
@@ -544,14 +544,14 @@ Private Sub PopulateTranslations(ByVal targetSheet As Worksheet, ByVal sourceTab
 End Sub
 
 '@sub-title Populate a migration worksheet with disease data.
-Private Sub PopulateMigrationDisease(ByVal targetSheet As Worksheet, ByVal diseaseSheet As Worksheet)
+Private Sub PopulateMigrationDisease(ByVal targetSheet As Worksheet, ByVal diseaseWksh As Worksheet)
     Dim diseaseTable As ListObject
     Dim sourceRange As Range
     Dim values As Variant
     Dim columnOffset As Long
     Dim lastColumn As Long
 
-    Set diseaseTable = ResolveDiseaseTable(diseaseSheet)
+    Set diseaseTable = ResolveDiseaseTable(diseaseWksh)
 
     Set sourceRange = diseaseTable.Range
     If sourceRange Is Nothing Then Exit Sub
@@ -564,9 +564,9 @@ Private Sub PopulateMigrationDisease(ByVal targetSheet As Worksheet, ByVal disea
     targetSheet.Cells(1, lastColumn + 1).Value = "Language"
     targetSheet.Cells(1, lastColumn + 2).Value = "Tag"
 
-    targetSheet.Cells(2, lastColumn).Value = diseaseSheet.Name
-    targetSheet.Cells(2, lastColumn + 1).Value = diseaseSheet.Cells(2, 2).Value
-    targetSheet.Cells(2, lastColumn + 2).Value = diseaseSheet.Cells(2, 3).Value
+    targetSheet.Cells(2, lastColumn).Value = diseaseWksh.Name
+    targetSheet.Cells(2, lastColumn + 1).Value = diseaseWksh.Cells(2, 2).Value
+    targetSheet.Cells(2, lastColumn + 2).Value = diseaseWksh.Cells(2, 3).Value
 
     targetSheet.Range(targetSheet.Cells(3, lastColumn), _
                       targetSheet.Cells(2 + UBound(values, 1), lastColumn + UBound(values, 2) - 1)).Value = values
@@ -585,11 +585,11 @@ Private Sub ApplySheetCosmetics(ByVal metadataSheet As Worksheet, _
 End Sub
 
 '@sub-title Apply formatting to migration workbook sheets.
-Private Sub ApplyMigrationFormatting(ByVal workbook As Workbook)
-    AutoFitSheet workbook.Worksheets(DISEASES_SHEET)
-    AutoFitSheet workbook.Worksheets(TRANSLATIONS_SHEET)
-    AutoFitSheet workbook.Worksheets(CHOICES_SHEET)
-    AutoFitSheet workbook.Worksheets(VARIABLES_SHEET)
+Private Sub ApplyMigrationFormatting(ByVal targetBook As Workbook)
+    AutoFitSheet targetBook.Worksheets(DISEASES_SHEET)
+    AutoFitSheet targetBook.Worksheets(TRANSLATIONS_SHEET)
+    AutoFitSheet targetBook.Worksheets(CHOICES_SHEET)
+    AutoFitSheet targetBook.Worksheets(VARIABLES_SHEET)
 End Sub
 
 '@sub-title Auto fit worksheet columns and style header row.
@@ -602,20 +602,20 @@ Private Sub AutoFitSheet(ByVal sheet As Worksheet)
 End Sub
 
 '@sub-title Ensure a worksheet exists and optionally rename the provided template.
-Private Function EnsureWorksheet(ByVal workbook As Workbook, _
+Private Function EnsureWorksheet(ByVal targetBook As Workbook, _
                                  ByVal sheetName As String, _
                                  Optional ByVal template As Worksheet = Nothing) As Worksheet
 
     Dim sheet As Worksheet
 
-    Set sheet = FindWorksheet(workbook, sheetName)
+    Set sheet = FindWorksheet(targetBook, sheetName)
 
     If sheet Is Nothing Then
         If Not template Is Nothing Then
             template.Name = sheetName
             Set sheet = template
         Else
-            Set sheet = workbook.Worksheets.Add(After:=workbook.Worksheets(workbook.Worksheets.Count))
+            Set sheet = targetBook.Worksheets.Add(After:=targetBook.Worksheets(targetBook.Worksheets.Count))
             sheet.Name = sheetName
         End If
     End If
@@ -738,12 +738,12 @@ Private Sub IDiseaseExporter_Initialise(ByVal workbookManager As IDiseaseExportW
     Initialise workbookManager, appGuard
 End Sub
 
-Private Function IDiseaseExporter_BuildDiseaseWorkbook(ByVal diseaseSheet As Worksheet, ByVal translationTable As ListObject, ByVal ribbonTranslations As TranslationObject, ByVal diseaseName As String, ByVal languageTag As String, Optional ByVal diseaseCode As String = vbNullString) As Workbook
-    Set IDiseaseExporter_BuildDiseaseWorkbook = BuildDiseaseWorkbook(diseaseSheet, translationTable, ribbonTranslations, diseaseName, languageTag, diseaseCode)
+Private Function IDiseaseExporter_BuildDiseaseWorkbook(ByVal diseaseWksh As Worksheet, ByVal translationTable As ListObject, ByVal ribbonTranslations As TranslationObject, ByVal diseaseName As String, ByVal languageTag As String, Optional ByVal diseaseCode As String = vbNullString) As Workbook
+    Set IDiseaseExporter_BuildDiseaseWorkbook = BuildDiseaseWorkbook(diseaseWksh, translationTable, ribbonTranslations, diseaseName, languageTag, diseaseCode)
 End Function
 
-Private Function IDiseaseExporter_ExportDisease(ByVal exportFolder As String, ByVal diseaseSheet As Worksheet, ByVal translationTable As ListObject, ByVal ribbonTranslations As TranslationObject, ByVal diseaseName As String, ByVal languageTag As String, Optional ByVal diseaseCode As String = vbNullString) As String
-    IDiseaseExporter_ExportDisease = ExportDisease(exportFolder, diseaseSheet, translationTable, ribbonTranslations, diseaseName, languageTag, diseaseCode)
+Private Function IDiseaseExporter_ExportDisease(ByVal exportFolder As String, ByVal diseaseWksh As Worksheet, ByVal translationTable As ListObject, ByVal ribbonTranslations As TranslationObject, ByVal diseaseName As String, ByVal languageTag As String, Optional ByVal diseaseCode As String = vbNullString) As String
+    IDiseaseExporter_ExportDisease = ExportDisease(exportFolder, diseaseWksh, translationTable, ribbonTranslations, diseaseName, languageTag, diseaseCode)
 End Function
 
 Private Function IDiseaseExporter_BuildMigrationWorkbook(ByVal sourceWorkbook As Workbook, ByVal diseaseNames As BetterArray) As Workbook

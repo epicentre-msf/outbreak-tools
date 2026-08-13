@@ -23,20 +23,20 @@ Implements IDiseaseWorksheetManager
 '@param workbook Workbook hosting the worksheet collection.
 '@param sheetName String worksheet name to delete.
 '@return Boolean True when the worksheet existed and has been removed.
-Public Function RemoveWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
+Public Function RemoveWorksheet(ByVal targetBook As Workbook, ByVal sheetName As String) As Boolean
     Dim guard As IDiseaseApplicationState
     Dim targetSheet As Worksheet
     Dim errMessage As String
 
-    ValidateWorkbook workbook
+    ValidateWorkbook targetBook
     ValidateSheetName sheetName
 
-    Set targetSheet = FindWorksheet(workbook, sheetName)
+    Set targetSheet = FindWorksheet(targetBook, sheetName)
     If targetSheet Is Nothing Then Exit Function
 
     On Error GoTo Fail
 
-    Set guard = CreateGuard(workbook.Application)
+    Set guard = CreateGuard(targetBook.Application)
     targetSheet.Delete
     RemoveWorksheet = True
 
@@ -61,18 +61,18 @@ End Function
 '@param workbook Workbook hosting the worksheet collection.
 '@param sheetName String worksheet name to locate.
 '@return Boolean True when the worksheet exists.
-Public Function WorksheetExists(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
-    ValidateWorkbook workbook
+Public Function WorksheetExists(ByVal targetBook As Workbook, ByVal sheetName As String) As Boolean
+    ValidateWorkbook targetBook
     ValidateSheetName sheetName
-    WorksheetExists = Not FindWorksheet(workbook, sheetName) Is Nothing
+    WorksheetExists = Not FindWorksheet(targetBook, sheetName) Is Nothing
 End Function
 
 '@section Internal Helpers
 '===============================================================================
 
 '@sub-title Ensure the workbook reference is valid.
-Private Sub ValidateWorkbook(ByVal workbook As Workbook)
-    If workbook Is Nothing Then
+Private Sub ValidateWorkbook(ByVal targetBook As Workbook)
+    If targetBook Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Workbook reference cannot be Nothing"
     End If
 End Sub
@@ -85,10 +85,10 @@ Private Sub ValidateSheetName(ByVal sheetName As String)
 End Sub
 
 '@sub-title Locate the worksheet by name using case-insensitive comparison.
-Private Function FindWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Worksheet
+Private Function FindWorksheet(ByVal targetBook As Workbook, ByVal sheetName As String) As Worksheet
     Dim candidate As Worksheet
 
-    For Each candidate In workbook.Worksheets
+    For Each candidate In targetBook.Worksheets
         If StrComp(candidate.Name, sheetName, vbTextCompare) = 0 Then
             Set FindWorksheet = candidate
             Exit Function
@@ -116,10 +116,10 @@ End Sub
 '@section Interface
 '===============================================================================
 
-Private Function IDiseaseWorksheetManager_RemoveWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
-    IDiseaseWorksheetManager_RemoveWorksheet = RemoveWorksheet(workbook, sheetName)
+Private Function IDiseaseWorksheetManager_RemoveWorksheet(ByVal targetBook As Workbook, ByVal sheetName As String) As Boolean
+    IDiseaseWorksheetManager_RemoveWorksheet = RemoveWorksheet(targetBook, sheetName)
 End Function
 
-Private Function IDiseaseWorksheetManager_WorksheetExists(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
-    IDiseaseWorksheetManager_WorksheetExists = WorksheetExists(workbook, sheetName)
+Private Function IDiseaseWorksheetManager_WorksheetExists(ByVal targetBook As Workbook, ByVal sheetName As String) As Boolean
+    IDiseaseWorksheetManager_WorksheetExists = WorksheetExists(targetBook, sheetName)
 End Function

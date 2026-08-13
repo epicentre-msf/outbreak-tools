@@ -611,12 +611,12 @@ End Sub
 Private Sub ApplyFormat(ByVal gr As Graphs, ByRef values As Variant, _
                         ByVal scope As Byte, ByVal graphId As String)
     Dim rowIndex As Long
-    Dim graphScope As Byte
+    Dim scopeValue As Byte
 
     rowIndex = FormatRowIndex(values, scope, graphId)
     If rowIndex = 0 Then Exit Sub
 
-    graphScope = Switch( _
+    scopeValue = Switch( _
         (scope = AnalysisScopeTimeSeries Or scope = AnalysisScopeSpatioTemporal), _
             GraphScopeTimeSeries, _
         scope = AnalysisScopeSpatial, GraphScopeSpatial, _
@@ -625,7 +625,7 @@ Private Sub ApplyFormat(ByVal gr As Graphs, ByRef values As Variant, _
     gr.Format valuesTitle:=CStr(values(rowIndex, RegistryValuesTitle)), _
               catTitle:=CStr(values(rowIndex, RegistryCatTitle)), _
               plotTitle:=CStr(values(rowIndex, RegistryPlotTitle)), _
-              scope:=graphScope, _
+              scope:=scopeValue, _
               heightFactor:=ReadLong(values(rowIndex, RegistryHeightFactor), 1), _
               hardCodeLabels:=ReadBoolean(values(rowIndex, RegistryHardCodeLabels))
 End Sub

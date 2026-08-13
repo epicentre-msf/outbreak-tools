@@ -961,16 +961,16 @@ End Sub
 '@label:status-column-of
 '@sub-title Return the flag column of a table that carries one.
 Private Function StatusColumnOf(ByVal lo As ListObject) As Range
-  Dim listColumn As ListColumn
+  Dim listCol As ListColumn
 
   If lo Is Nothing Then Exit Function
 
   On Error Resume Next
-    Set listColumn = lo.ListColumns(HEADER_STATUS)
+    Set listCol = lo.ListColumns(HEADER_STATUS)
   On Error GoTo 0
 
-  If listColumn Is Nothing Then Exit Function
-  Set StatusColumnOf = listColumn.DataBodyRange
+  If listCol Is Nothing Then Exit Function
+  Set StatusColumnOf = listCol.DataBodyRange
 End Function
 
 '@section InMemoryIndex
@@ -1098,17 +1098,17 @@ End Function
 Private Function RegistryColumnPosition(ByVal lo As ListObject, _
                                         ByVal headerName As String, _
                                         ByVal fallbackColumn As Long) As Long
-  Dim listColumn As ListColumn
+  Dim listCol As ListColumn
 
   RegistryColumnPosition = fallbackColumn
   If lo Is Nothing Then Exit Function
 
-  For Each listColumn In lo.ListColumns
-    If StrComp(Trim$(listColumn.Name), headerName, vbTextCompare) = 0 Then
-      RegistryColumnPosition = listColumn.Index
+  For Each listCol In lo.ListColumns
+    If StrComp(Trim$(listCol.Name), headerName, vbTextCompare) = 0 Then
+      RegistryColumnPosition = listCol.Index
       Exit Function
     End If
-  Next listColumn
+  Next listCol
 End Function
 
 '@label:column-data

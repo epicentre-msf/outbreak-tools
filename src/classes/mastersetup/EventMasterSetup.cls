@@ -294,8 +294,8 @@ Private Function ResolveWorksheet(ByVal sheetName As String) As Worksheet
     On Error GoTo 0
 End Function
 
-Private Sub ValidateWorkbook(ByVal workbook As Workbook)
-    If workbook Is Nothing Then
+Private Sub ValidateWorkbook(ByVal targetBook As Workbook)
+    If targetBook Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Host workbook reference is required."
     End If
 End Sub

@@ -23,7 +23,7 @@ Option Explicit
 Private Type TMasterSetupVariables
     table As ListObject              'Underlying variables table
     wrapper As CustomTable          'Cached CustomTable wrapper for row management
-    hiddenNames As HiddenNames      'Worksheet-level hidden name manager
+    nameStore As HiddenNames      'Worksheet-level hidden name manager
     colOrder As Long                 'Cached column index for "Variable Order"
     colSection As Long               'Cached column index for "Variable Section"
     colName As Long                  'Cached column index for "Variable Name"
@@ -74,14 +74,14 @@ Private Const VARIABLE_NAME_RANGE As String = "__Col__Variables"
 '@sub-title Create a configured variables table manager instance.
 '@param listObject ListObject representing the Master Setup Variables worksheet table.
 '@return MasterSetupVariables ready to manage the associated ListObject.
-Public Function Create(ByVal listObject As ListObject) As MasterSetupVariables
+Public Function Create(ByVal listTable As ListObject) As MasterSetupVariables
 
-    ValidateListObject listObject
-    EnsureRequiredColumns listObject
+    ValidateListObject listTable
+    EnsureRequiredColumns listTable
 
     Dim instance As MasterSetupVariables
     Set instance = New MasterSetupVariables
-    instance.AssignListObject listObject
+    instance.AssignListObject listTable
     Set Create = instance
 End Function
 
@@ -356,10 +356,10 @@ End Function
 
 '@section Internal helpers
 '===============================================================================
-Public Sub AssignListObject(ByVal listObject As ListObject)
-    Set this.table = listObject
+Public Sub AssignListObject(ByVal listTable As ListObject)
+    Set this.table = listTable
     Set this.wrapper = Nothing
-    Set this.hiddenNames = Nothing
+    Set this.nameStore = Nothing
     this.initialised = False
     ResetColumnCache
     LoadColumnMetadata
@@ -476,7 +476,7 @@ End Sub
 
 Private Sub ApplyDuplicateFormatting()
     Dim nameRange As Range
-    Dim formatCondition As FormatCondition
+    Dim condition As FormatCondition
 
     Set nameRange = ColumnRange(HEADER_NAME)
     If nameRange Is Nothing Then Exit Sub
@@ -486,30 +486,30 @@ Private Sub ApplyDuplicateFormatting()
     On Error GoTo 0
 
     On Error Resume Next
-        Set formatCondition = nameRange.FormatConditions.AddUniqueValues
+        Set condition = nameRange.FormatConditions.AddUniqueValues
     On Error GoTo 0
 
-    If formatCondition Is Nothing Then Exit Sub
+    If condition Is Nothing Then Exit Sub
 
-    formatCondition.DupeUnique = xlDuplicate
-    formatCondition.Interior.Color = DUPLICATE_FILL_COLOR
-    formatCondition.Font.Color = DUPLICATE_FONT_COLOR
+    condition.DupeUnique = xlDuplicate
+    condition.Interior.Color = DUPLICATE_FILL_COLOR
+    condition.Font.Color = DUPLICATE_FONT_COLOR
 End Sub
 
 Private Function ColumnRange(ByVal headerName As String, Optional ByVal includeHeaders As Boolean = False) As Range
     Dim colIndex As Long
-    Dim listColumn As ListColumn
+    Dim listCol As ListColumn
 
     colIndex = ColumnIndex(headerName)
     If colIndex <= 0 Then Exit Function
 
-    Set listColumn = this.table.ListColumns(colIndex)
-    If listColumn Is Nothing Then Exit Function
+    Set listCol = this.table.ListColumns(colIndex)
+    If listCol Is Nothing Then Exit Function
 
     If includeHeaders Then
-        Set ColumnRange = listColumn.Range
+        Set ColumnRange = listCol.Range
     Else
-        Set ColumnRange = listColumn.DataBodyRange
+        Set ColumnRange = listCol.DataBodyRange
     End If
 End Function
 
@@ -655,11 +655,11 @@ End Function
 Private Function HiddenNameStore() As HiddenNames
     If this.table Is Nothing Then Exit Function
 
-    If this.hiddenNames Is Nothing Then
-        Set this.hiddenNames = HiddenNames.Create(HostSheet)
+    If this.nameStore Is Nothing Then
+        Set this.nameStore = HiddenNames.Create(HostSheet)
     End If
 
-    Set HiddenNameStore = this.hiddenNames
+    Set HiddenNameStore = this.nameStore
 End Function
 
 Private Function WorkbookHiddenNameStore() As HiddenNames
@@ -757,14 +757,14 @@ Private Sub TranslateColumn(ByVal trads As TranslationObject, ByVal headerName A
     trads.TranslateRange targetRange
 End Sub
 
-Private Sub EnsureRequiredColumns(ByVal listObject As ListObject)
+Private Sub EnsureRequiredColumns(ByVal listTable As ListObject)
     Dim required As Variant
     Dim header As Variant
     Dim store As HiddenNames
 
     required = RequiredHeaders()
 
-    If listObject Is Nothing Then Exit Sub
+    If listTable Is Nothing Then Exit Sub
 
     If this.initialised Then
         Set store = HiddenNameStore()
@@ -772,10 +772,10 @@ Private Sub EnsureRequiredColumns(ByVal listObject As ListObject)
 
     If this.initialised And Not store Is Nothing Then
         For Each header In required
-            EnsureColumnAtStoredIndex listObject, CStr(header), store
+            EnsureColumnAtStoredIndex listTable, CStr(header), store
         Next header
     Else
-        EnsureColumnExistsSimple listObject, vbNullString
+        EnsureColumnExistsSimple listTable, vbNullString
     End If
 End Sub
 
@@ -784,7 +784,7 @@ Private Function RequiredHeaders() As Variant
                             HEADER_DEFAULT_CHOICE, HEADER_CHOICES, HEADER_DEFAULT_STATUS, HEADER_COMMENTS)
 End Function
 
-Private Sub EnsureColumnExistsSimple(ByVal listObject As ListObject, ByVal headerName As String)
+Private Sub EnsureColumnExistsSimple(ByVal listTable As ListObject, ByVal headerName As String)
     Dim required As Variant
     Dim desiredCount As Long
     Dim currentCount As Long
@@ -792,7 +792,7 @@ Private Sub EnsureColumnExistsSimple(ByVal listObject As ListObject, ByVal heade
     Dim idx As Long
     Dim baseIndex As Long
 
-    If listObject Is Nothing Then Exit Sub
+    If listTable Is Nothing Then Exit Sub
 
     required = RequiredHeaders()
     If Not IsArray(required) Then Exit Sub
@@ -800,34 +800,34 @@ Private Sub EnsureColumnExistsSimple(ByVal listObject As ListObject, ByVal heade
     desiredCount = UBound(required) - LBound(required) + 1
 
     ' Remove any columns that are not part of the required schema.
-    For idx = listObject.ListColumns.Count To 1 Step -1
-        If Not IsRequiredHeader(listObject.ListColumns(idx).Name, required) Then
-            listObject.ListColumns(idx).Delete
+    For idx = listTable.ListColumns.Count To 1 Step -1
+        If Not IsRequiredHeader(listTable.ListColumns(idx).Name, required) Then
+            listTable.ListColumns(idx).Delete
         End If
     Next idx
 
-    currentCount = listObject.ListColumns.Count
+    currentCount = listTable.ListColumns.Count
 
     ' Trim any excess columns (for example, duplicate required headers).
     If currentCount > desiredCount Then
         For idx = currentCount To desiredCount + 1 Step -1
-            listObject.ListColumns(idx).Delete
+            listTable.ListColumns(idx).Delete
         Next idx
     End If
 
     ' Add missing columns so the table matches the required count.
-    currentCount = listObject.ListColumns.Count
+    currentCount = listTable.ListColumns.Count
     If currentCount < desiredCount Then
         For idx = currentCount + 1 To desiredCount
-            listObject.ListColumns.Add
+            listTable.ListColumns.Add
         Next idx
     End If
 
-    If Not listObject.ShowHeaders Then
-        listObject.ShowHeaders = True
+    If Not listTable.ShowHeaders Then
+        listTable.ShowHeaders = True
     End If
 
-    Set headerRow = listObject.HeaderRowRange
+    Set headerRow = listTable.HeaderRowRange
     If headerRow Is Nothing Then Exit Sub
 
     baseIndex = LBound(required)
@@ -848,7 +848,7 @@ Private Function IsRequiredHeader(ByVal candidate As String, ByVal required As V
     Next header
 End Function
 
-Private Sub EnsureColumnAtStoredIndex(ByVal listObject As ListObject, _
+Private Sub EnsureColumnAtStoredIndex(ByVal listTable As ListObject, _
                                       ByVal headerName As String, _
                                       ByVal store As HiddenNames)
     Dim targetIndex As Long
@@ -860,17 +860,17 @@ Private Sub EnsureColumnAtStoredIndex(ByVal listObject As ListObject, _
     targetIndex = store.ValueAsLong(hiddenName, 0)
 
     If targetIndex <= 0 Then
-        EnsureColumnExistsSimple listObject, headerName
+        EnsureColumnExistsSimple listTable, headerName
         Exit Sub
     End If
 
-    If targetIndex > listObject.ListColumns.Count Then
-        Set current = listObject.ListColumns.Add(Position:=targetIndex)
+    If targetIndex > listTable.ListColumns.Count Then
+        Set current = listTable.ListColumns.Add(Position:=targetIndex)
         current.Name = headerName
         Exit Sub
     End If
 
-    For Each column In listObject.ListColumns
+    For Each column In listTable.ListColumns
         If column.Index = targetIndex Then
             Set current = column
             Exit For
@@ -878,7 +878,7 @@ Private Sub EnsureColumnAtStoredIndex(ByVal listObject As ListObject, _
     Next column
 
     If current Is Nothing Then
-        Set current = listObject.ListColumns.Add(Position:=targetIndex)
+        Set current = listTable.ListColumns.Add(Position:=targetIndex)
     End If
 
     current.Name = headerName
@@ -903,8 +903,8 @@ Private Sub ValidateReady()
     End If
 End Sub
 
-Private Sub ValidateListObject(ByVal listObject As ListObject)
-    If listObject Is Nothing Then
+Private Sub ValidateListObject(ByVal listTable As ListObject)
+    If listTable Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "A valid ListObject reference is required."
     End If
 End Sub

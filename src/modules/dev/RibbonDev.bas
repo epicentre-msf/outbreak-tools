@@ -36,7 +36,7 @@ End Function
 
 '@EntryPoint
 '@Description("Select root code folder and populate Dev named ranges")
-Public Sub clickDevFolder(ByRef control As IRibbonControl)
+Public Sub clickDevFolder(ByRef ribbonControl As IRibbonControl)
     On Error GoTo Handler
 
     Dim sh As Worksheet
@@ -74,7 +74,7 @@ End Sub
 
 '@EntryPoint
 '@Description("Import modules and classes declared on the Dev tables")
-Public Sub clickDevImport(ByRef control As IRibbonControl)
+Public Sub clickDevImport(ByRef ribbonControl As IRibbonControl)
     Dim manager As Development
 
     Set manager = EnsureDevelopment()
@@ -94,7 +94,7 @@ End Sub
 
 '@EntryPoint
 '@Description("Export modules and classes declared on the Dev tables")
-Public Sub clickDevExport(ByRef control As IRibbonControl)
+Public Sub clickDevExport(ByRef ribbonControl As IRibbonControl)
     Dim manager As Development
 
     Set manager = EnsureDevelopment()
@@ -114,13 +114,13 @@ End Sub
 
 '@EntryPoint
 '@Description("Open the VBA editor window")
-Public Sub clickDevVBE(ByRef control As IRibbonControl)
+Public Sub clickDevVBE(ByRef ribbonControl As IRibbonControl)
     Application.VBE.MainWindow.Visible = True
 End Sub
 
 '@EntryPoint
 '@Description("Deploy workbook protections and hide Dev artefacts")
-Public Sub clickDevDeploy(ByRef control As IRibbonControl)
+Public Sub clickDevDeploy(ByRef ribbonControl As IRibbonControl)
     Dim manager As Development
     
     Set manager = EnsureDevelopment()
@@ -148,19 +148,19 @@ End Sub
 
 '@EntryPoint
 '@Description("Add default rows to each registered development table")
-Public Sub clickDevAddRows(ByRef control As IRibbonControl)
+Public Sub clickDevAddRows(ByRef ribbonControl As IRibbonControl)
     UpdateTables addRows:=True
 End Sub
 
 '@EntryPoint
 '@Description("Resize development tables by trimming data rows")
-Public Sub clickDevResize(ByRef control As IRibbonControl)
+Public Sub clickDevResize(ByRef ribbonControl As IRibbonControl)
     UpdateTables addRows:=False
 End Sub
 
 '@EntryPoint
 '@Description("Copy module code into mapped forms")
-Public Sub clickDevAddFormsCodes(ByRef control As IRibbonControl)
+Public Sub clickDevAddFormsCodes(ByRef ribbonControl As IRibbonControl)
     Dim manager As Development
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
@@ -178,7 +178,7 @@ End Sub
 
 '@EntryPoint
 '@Description("Create a new forms mapping table")
-Public Sub clickDevAddFormTable(ByRef control As IRibbonControl)
+Public Sub clickDevAddFormTable(ByRef ribbonControl As IRibbonControl)
     Dim manager As Development
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
@@ -198,7 +198,7 @@ End Sub
 
 '@EntryPoint
 '@Description("Create a new classes table (general or tests)")
-Public Sub clickDevAddClassTable(ByRef control As IRibbonControl)
+Public Sub clickDevAddClassTable(ByRef ribbonControl As IRibbonControl)
     Dim manager As Development
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
@@ -221,7 +221,7 @@ End Sub
 
 '@EntryPoint
 '@Description("Create a new modules table (general or tests)")
-Public Sub clickDevAddModulesTable(ByRef control As IRibbonControl)
+Public Sub clickDevAddModulesTable(ByRef ribbonControl As IRibbonControl)
     Dim manager As Development
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
@@ -242,8 +242,8 @@ Handler:
     Err.Clear
 End Sub
 
-Public Sub DevGroupVisible(control As IRibbonControl, ByRef returnedVal)
-    If (control.Id = "customGroupDev") Then
+Public Sub DevGroupVisible(ribbonControl As IRibbonControl, ByRef returnedVal)
+    If (ribbonControl.Id = "customGroupDev") Then
         Dim manager As Development        
         Set manager = EnsureDevelopment()
         If manager Is Nothing Then Exit Sub

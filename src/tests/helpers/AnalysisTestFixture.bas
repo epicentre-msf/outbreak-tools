@@ -290,7 +290,7 @@ Private Function AddAnalysisTable(ByVal hostSheet As Worksheet, _
     Dim columnCount As Long
     Dim bottomRow As Long
     Dim tableRange As Range
-    Dim listObject As ListObject
+    Dim listTable As ListObject
     Dim hasData As Boolean
 
     headerMatrix = RowsToMatrix(Array(headers))
@@ -319,10 +319,10 @@ Private Function AddAnalysisTable(ByVal hostSheet As Worksheet, _
         hostSheet.ListObjects(tableName).Delete
     On Error GoTo 0
 
-    Set listObject = hostSheet.ListObjects.Add(SourceType:=xlSrcRange, _
+    Set listTable = hostSheet.ListObjects.Add(SourceType:=xlSrcRange, _
                                                Source:=tableRange, _
                                                XlListObjectHasHeaders:=xlYes)
-    listObject.Name = tableName
+    listTable.Name = tableName
 
     AddAnalysisTable = bottomRow + 8
 End Function

@@ -104,7 +104,7 @@ Private Type TLLDataEntry
     internalChecks As Checking
     checkCounter As Long
     hasChecks As Boolean
-    sectionBuilder As SectionBuilder
+    builder As SectionBuilder
     sealed As Boolean
 End Type
 
@@ -678,7 +678,7 @@ Private Sub BuildSections(ByVal sh As Worksheet, ByVal printSh As Worksheet)
 
     'One section builder serves the whole sheet, so the field is what lets
     'the caller read the counts and the per-variable record after the build.
-    Set this.sectionBuilder = secBuilder
+    Set this.builder = secBuilder
 
     'Harvest per-variable checkings from the section builder
     If secBuilder.HasCheckings Then HarvestCollaboratorCheckings secBuilder.CheckingValues
@@ -957,8 +957,8 @@ End Function
 '@return Boolean. True once a variable of this sheet reached the worksheet.
 '@export
 Public Property Get HasMilestones() As Boolean
-    If this.sectionBuilder Is Nothing Then Exit Property
-    HasMilestones = this.sectionBuilder.HasMilestones
+    If this.builder Is Nothing Then Exit Property
+    HasMilestones = this.builder.HasMilestones
 End Property
 
 '@label:milestone-values
@@ -971,8 +971,8 @@ End Property
 '@return Checking. The milestone entries, or Nothing.
 '@export
 Public Property Get MilestoneValues() As Checking
-    If this.sectionBuilder Is Nothing Then Exit Property
-    Set MilestoneValues = this.sectionBuilder.MilestoneValues
+    If this.builder Is Nothing Then Exit Property
+    Set MilestoneValues = this.builder.MilestoneValues
 End Property
 
 '@label:variables-written
@@ -980,8 +980,8 @@ End Property
 '@return Long. The number of variables written.
 '@export
 Public Property Get VariablesWritten() As Long
-    If this.sectionBuilder Is Nothing Then Exit Property
-    VariablesWritten = this.sectionBuilder.VariablesWritten
+    If this.builder Is Nothing Then Exit Property
+    VariablesWritten = this.builder.VariablesWritten
 End Property
 
 '@label:sections-placed
@@ -989,8 +989,8 @@ End Property
 '@return Long. The number of sections placed.
 '@export
 Public Property Get SectionsPlaced() As Long
-    If this.sectionBuilder Is Nothing Then Exit Property
-    SectionsPlaced = this.sectionBuilder.SectionsPlaced
+    If this.builder Is Nothing Then Exit Property
+    SectionsPlaced = this.builder.SectionsPlaced
 End Property
 
 '@label:has-checkings

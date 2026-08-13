@@ -18,7 +18,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 '@sub-title Execute all tests found in a module
 '@details Runs lifecycle procedures and invokes every `@TestMethod` within the target module. Harness coordination is the responsibility of the test module.
 '@param moduleName String name of the module to execute.
-Public Sub clickRibbonTests(ByRef Control As IRibbonControl) 
+Public Sub clickRibbonTests(ByRef ribbonControl As IRibbonControl) 
 
     Dim loRng As Range
     Dim counter As Long

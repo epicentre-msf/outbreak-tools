@@ -114,18 +114,18 @@ End Sub
 Public Sub TestCreateCheck()
     CustomTestSetTitles Assert, "DropdownLists", "TestCreateCheck"
 
-    Dim workbook As Workbook
+    Dim targetBook As Workbook
     Dim sheet As Worksheet
     Dim temporaryDropdown As DropdownLists
 
     On Error GoTo Fail
 
-    Set workbook = ThisWorkbook
-    Set sheet = workbook.Worksheets(DROPTESTONE)
+    Set targetBook = ThisWorkbook
+    Set sheet = targetBook.Worksheets(DROPTESTONE)
     Set dropOne = DropdownLists.Create(sheet, hPrefix:=vbNullString)
     Assert.IsTrue (Not dropOne Is Nothing), "Unable to create the first dropdown list object"
 
-    Set sheet = workbook.Worksheets(DROPTESTTWO)
+    Set sheet = targetBook.Worksheets(DROPTESTTWO)
     Set dropTwo = DropdownLists.Create(sheet, hPrefix:="dropdown_")
     Assert.IsTrue (Not dropTwo Is Nothing), "Unable to create the second dropdown list object"
 
@@ -243,7 +243,7 @@ End Sub
 Public Sub TestAddExisting()
     CustomTestSetTitles Assert, "DropdownLists", "TestAddExisting"
 
-    Dim checking As Checking
+    Dim checksObject As Checking
     Dim valuesList As BetterArray
 
     On Error GoTo Fail
@@ -256,8 +256,8 @@ Public Sub TestAddExisting()
     Assert.IsTrue dropOne.HasCheckings, "Adding existing dropdown does not raise an internal error"
 
     If dropOne.HasCheckings Then
-        Set checking = dropOne.CheckingValues
-        Assert.IsTrue (checking.Length = 1), "Raised error not added to dropdownlist checking"
+        Set checksObject = dropOne.CheckingValues
+        Assert.IsTrue (checksObject.Length = 1), "Raised error not added to dropdownlist checking"
     End If
 
     Exit Sub

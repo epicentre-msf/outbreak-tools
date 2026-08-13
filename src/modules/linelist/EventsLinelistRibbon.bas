@@ -50,20 +50,20 @@ End Sub
 
 '@Description("Callback for adminTab getLabel")
 '@EntryPoint
-Public Sub getLLLang(ByRef Control As IRibbonControl, ByRef returnedVal)
+Public Sub getLLLang(ByRef ribbonControl As IRibbonControl, ByRef returnedVal)
     Attribute getLLLang.VB_Description = "Callback for adminTab getLabel"
 
     Dim codeId As String
     InitializeTrads
     If tradrib Is Nothing Then Exit Sub
 
-    codeId = Control.ID
+    codeId = ribbonControl.ID
     returnedVal = tradrib.TranslatedValue(codeId)
 End Sub
 
 '@Description("Callback for btnAdvanced onAction")
 '@EntryPoint
-Public Sub clickRibbonAdvanced(ByRef Control As IRibbonControl)
+Public Sub clickRibbonAdvanced(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonAdvanced.VB_Description = "Callback for btnAdvanced onAction"
 
     'Call the clickAdvanced from buttons
@@ -72,7 +72,7 @@ End Sub
 
 '@Description("Callback for btnExport onAction")
 '@EntryPoint
-Public Sub clickRibbonExport(ByRef Control As IRibbonControl)
+Public Sub clickRibbonExport(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonExport.VB_Description = "Callback for btnExport onAction"
     'call the clickExport from buttons
     ClickExport
@@ -80,14 +80,14 @@ End Sub
 
 '@Description("Callback for btnShowHideVar onAction")
 '@EntryPoint
-Public Sub clickRibbonShowHideVar(ByRef Control As IRibbonControl)
+Public Sub clickRibbonShowHideVar(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonShowHideVar.VB_Description = "Callback for btnShowHideVar onAction"
     ClickShowHide
 End Sub
 
 '@Description("Callback for btnShowHideSec onAction")
 '@EntryPoint
-Public Sub clickRibbonShowHideSec(ByRef Control As IRibbonControl)
+Public Sub clickRibbonShowHideSec(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonShowHideSec.VB_Description = "Callback for btnShowHideSec onAction"
     'Toggle the sections the current selection touches
     ClickShowHideSection
@@ -95,119 +95,119 @@ End Sub
 
 '@Description("Callback for btnAddRows onAction")
 '@EntryPoint
-Public Sub clickRibbonAddRows(ByRef Control As IRibbonControl)
+Public Sub clickRibbonAddRows(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonAddRows.VB_Description = "Callback for btnAddRows onAction"
     ClickAddRows
 End Sub
 
 '@Description("Callback for btnResize onAction")
 '@EntryPoint
-Public Sub clickRibbonResize(ByRef Control As IRibbonControl)
+Public Sub clickRibbonResize(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonResize.VB_Description = "Callback for btnResize onAction"
     ClickResize
 End Sub
 
 '@Description("Callback for btnRemFilt onAction")
 '@EntryPoint
-Public Sub clickRibbonRemoveFilter(ByRef Control As IRibbonControl)
+Public Sub clickRibbonRemoveFilter(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonRemoveFilter.VB_Description = "Callback for btnRemFilt onAction"
     ClickRemoveFilters
 End Sub
 
 '@Description("Callback for btnOpenPrint onAction")
 '@EntryPoint
-Public Sub clickRibbonOpenPrint(ByRef Control As IRibbonControl)
+Public Sub clickRibbonOpenPrint(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonOpenPrint.VB_Description = "Callback for btnOpenPrint onAction"
     ClickOpenPrint
 End Sub
 
 '@Description("Callback for btnOpenForm onAction")
 '@EntryPoint
-Public Sub clickRibbonOpenCRF(ByRef Control As IRibbonControl)
+Public Sub clickRibbonOpenCRF(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonOpenCRF.VB_Description = "Callback for btnOpenForm onAction"
     ClickOpenCRF
 End Sub
 
 '@Description("Callback for btnClosePrint onAction")
 '@EntryPoint
-Public Sub clickRibbonClosePrint(ByRef Control As IRibbonControl)
+Public Sub clickRibbonClosePrint(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonClosePrint.VB_Description = "Callback for btnClosePrint onAction"
     ClickCloseSheet
 End Sub
 
 '@Description("Callback for btnRotateHead onAction")
 '@EntryPoint
-Public Sub clickRibbonRotateAll(ByRef Control As IRibbonControl)
+Public Sub clickRibbonRotateAll(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonRotateAll.VB_Description = "Callback for btnRotateHead onAction"
     ClickRotateAll
 End Sub
 
 '@Description("Callback for btnRowHeight onAction")
 '@EntryPoint
-Public Sub clickRibbonRowHeight(ByRef Control As IRibbonControl)
+Public Sub clickRibbonRowHeight(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonRowHeight.VB_Description = "Callback for btnRowHeight onAction"
     ClickRowHeight
 End Sub
 
 '@Description("Callback for btnCalc onAction")
 '@EntryPoint
-Public Sub clickRibbonCalculate(ByRef Control As IRibbonControl)
+Public Sub clickRibbonCalculate(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonCalculate.VB_Description = "Callback for btnCalc onAction"
     ClickCalculate
 End Sub
 
 '@Description("Callback for btnGeo onAction")
 '@EntryPoint
-Public Sub clickRibbonGeo(ByRef Control As IRibbonControl)
+Public Sub clickRibbonGeo(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonGeo.VB_Description = "Callback for btnGeo onAction"
     ClickGeoApp
 End Sub
 
 '@Description("Callback for btnPrintLL onAction")
 '@EntryPoint
-Public Sub clickRibbonPrintLL(ByRef Control As IRibbonControl)
+Public Sub clickRibbonPrintLL(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonPrintLL.VB_Description = "Callback for btnPrintLL onAction"
     ClickPrintLL
 End Sub
 
 '@Description("Callback for btnOpenLab onAction")
 '@EntryPoint
-Public Sub clickRibbonOpenVarLab(ByRef Control As IRibbonControl)
+Public Sub clickRibbonOpenVarLab(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonOpenVarLab.VB_Description = "Callback for btnOpenLab onAction"
     ClickOpenVarLab
 End Sub
 
 '@Description("Callback for btnSortTab on Action")
 '@EntryPoint
-Public Sub clickRibbonSortTable(ByRef Control As IRibbonControl)
+Public Sub clickRibbonSortTable(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonSortTable.VB_Description = "Callback for btnSortTab on Action"
     ClickSortTable
 End Sub
 
 '@Description("Callback for btnExpAna on Action")
 '@EntryPoint
-Public Sub clickRibbonExportAnalysis(ByRef Control As IRibbonControl)
+Public Sub clickRibbonExportAnalysis(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonExportAnalysis.VB_Description = "Callback for btnExpAna on Action"
     ClickExportAnalysis
 End Sub
 
 '@Description("Callback for btnImport On Action")
 '@EntryPoint
-Public Sub clickRibbonImport(ByRef Control As IRibbonControl)
+Public Sub clickRibbonImport(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonImport.VB_Description = "Callback for btnImport On Action"
     ClickImportData
 End Sub
 
 '@Description("Callback for btnImportGeo On Action")
 '@EntryPoint
-Public Sub clickRibbonImportGeobase(ByRef Control As IRibbonControl)
+Public Sub clickRibbonImportGeobase(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonImportGeobase.VB_Description = "Callback for btnImport On Action"
     ClickImportGeobase
 End Sub
 
 '@Description("Callback for btnAutoFit On Action")
 '@EntryPoint
-Public Sub clickRibbonAutoFit(ByRef Control As IRibbonControl)
+Public Sub clickRibbonAutoFit(ByRef ribbonControl As IRibbonControl)
     Attribute clickRibbonAutoFit.VB_Description = "Callback for btnAutoFit On Action"
     clickAutoFit
 End Sub
@@ -215,7 +215,7 @@ End Sub
 
 '@Description("Callback for btnSetEpiWeek On Action")
 '@EntryPoint
-Public Sub clickRibbonSetEpiWeek(ByRef Control As IRibbonControl)
+Public Sub clickRibbonSetEpiWeek(ByRef ribbonControl As IRibbonControl)
  Attribute clickRibbonSetEpiWeek.VB_Description = "Callback for btnSetEpiWeek On Action"
     F_EpiWeek.ShowDefaultEpiWeek
 End Sub

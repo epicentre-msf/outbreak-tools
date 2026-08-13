@@ -335,7 +335,7 @@ Public Sub TestSetListObjectHeaderCreatesWorkbookName()
 
     Dim names As HiddenNames
     Dim lo As ListObject
-    Dim workbook As Workbook
+    Dim targetBook As Workbook
     Dim createdName As Name
     Dim expectedRefersTo As String
 
@@ -347,14 +347,14 @@ Public Sub TestSetListObjectHeaderCreatesWorkbookName()
 
     names.SetListObjectHeader WORKBOOK_HEADER_NAME, lo, "alpha"
 
-    Set workbook = testSh.Parent
-    Set createdName = workbook.Names(WORKBOOK_HEADER_NAME)
+    Set targetBook = testSh.Parent
+    Set createdName = targetBook.Names(WORKBOOK_HEADER_NAME)
     Assert.IsTrue Not createdName Is Nothing, "Workbook name should exist after SetListObjectHeader."
     Assert.AreEqual expectedRefersTo, createdName.RefersTo, "Workbook name should reference the table header."
 
     names.SetListObjectHeader WORKBOOK_HEADER_NAME, lo, "beta"
     expectedRefersTo = "=" & lo.Name & "[beta]"
-    Assert.AreEqual expectedRefersTo, workbook.Names(WORKBOOK_HEADER_NAME).RefersTo, _
+    Assert.AreEqual expectedRefersTo, targetBook.Names(WORKBOOK_HEADER_NAME).RefersTo, _
                      "SetListObjectHeader should overwrite existing workbook names."
 
     DeleteWorkbookName WORKBOOK_HEADER_NAME

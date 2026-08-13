@@ -74,7 +74,7 @@ Private Const VERTICAL_HEADER_HEIGHT As Double = 100
 Private Type TShowHideLayout
     sh As Worksheet
     layer As Byte
-    axis As Byte
+    axisValue As Byte
     pass As Passwords
     baseTableName As String
     lockDepth As Long
@@ -103,7 +103,7 @@ Private this As TShowHideLayout
 '@export
 Public Function Create(ByVal sh As Worksheet, _
                        ByVal layer As Byte, _
-                       Optional ByVal passwords As Passwords, _
+                       Optional ByVal passManager As Passwords, _
                        Optional ByVal baseTableName As String = vbNullString) As ShowHideLayout
 
     Dim instance As ShowHideLayout
@@ -119,7 +119,7 @@ Public Function Create(ByVal sh As Worksheet, _
     End If
 
     Set instance = New ShowHideLayout
-    instance.Bind sh, layer, passwords, baseTableName
+    instance.Bind sh, layer, passManager, baseTableName
     Set Create = instance
 End Function
 
@@ -134,12 +134,12 @@ End Function
 '@export
 Public Sub Bind(ByVal sh As Worksheet, _
                 ByVal layer As Byte, _
-                ByVal passwords As Passwords, _
+                ByVal passManager As Passwords, _
                 ByVal baseTableName As String)
     Set this.sh = sh
     this.layer = layer
-    this.axis = AxisOf(layer)
-    Set this.pass = passwords
+    this.axisValue = AxisOf(layer)
+    Set this.pass = passManager
     this.baseTableName = Trim$(baseTableName)
     this.lockDepth = 0
     this.failures = 0
@@ -168,7 +168,7 @@ End Property
 '@prop-title Whether this layer hides rows or columns
 '@export
 Public Property Get Axis() As Byte
-    Axis = this.axis
+    Axis = this.axisValue
 End Property
 
 '@label:supports-orientation
@@ -208,7 +208,7 @@ Public Function IsHidden(ByVal position As Long) As Boolean
     If position < 1 Then Exit Function
 
     On Error Resume Next
-    If this.axis = ShowHideAxisRow Then
+    If this.axisValue = ShowHideAxisRow Then
         answer = this.sh.Rows(position).Hidden
     Else
         answer = this.sh.Columns(position).Hidden
@@ -228,7 +228,7 @@ Public Sub SetHidden(ByVal position As Long, ByVal hidden As Boolean)
 
     UnprotectSheet
     On Error Resume Next
-    If this.axis = ShowHideAxisRow Then
+    If this.axisValue = ShowHideAxisRow Then
         this.sh.Rows(position).Hidden = hidden
     Else
         this.sh.Columns(position).Hidden = hidden
@@ -255,7 +255,7 @@ Public Function Size(ByVal position As Long) As Double
     If position < 1 Then Exit Function
 
     On Error Resume Next
-    If this.axis = ShowHideAxisRow Then
+    If this.axisValue = ShowHideAxisRow Then
         answer = this.sh.Rows(position).RowHeight
     Else
         answer = this.sh.Columns(position).ColumnWidth
@@ -280,7 +280,7 @@ Public Sub SetSize(ByVal position As Long, ByVal newSize As Double)
 
     UnprotectSheet
     On Error Resume Next
-    If this.axis = ShowHideAxisRow Then
+    If this.axisValue = ShowHideAxisRow Then
         this.sh.Rows(position).RowHeight = newSize
     Else
         this.sh.Columns(position).ColumnWidth = newSize

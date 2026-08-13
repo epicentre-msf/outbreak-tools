@@ -60,21 +60,21 @@ Public Sub TestRemoveWorksheetDeletesSheetOnce()
 
     Dim originalCount As Long
     Dim removed As Boolean
-    Dim workbook As Workbook
+    Dim targetBook As Workbook
     Dim originalAlerts As Boolean
 
     On Error GoTo Fail
 
-    Set workbook = ThisWorkbook
-    originalAlerts = workbook.Application.DisplayAlerts
-    originalCount = workbook.Worksheets.Count
+    Set targetBook = ThisWorkbook
+    originalAlerts = targetBook.Application.DisplayAlerts
+    originalCount = targetBook.Worksheets.Count
 
-    removed = Manager.RemoveWorksheet(workbook, TEMP_SHEET_NAME)
+    removed = Manager.RemoveWorksheet(targetBook, TEMP_SHEET_NAME)
 
     Assert.IsTrue removed, "RemoveWorksheet should return True when sheet exists"
-    Assert.IsFalse WorksheetExists(TEMP_SHEET_NAME, workbook), "Worksheet should be removed"
-    Assert.AreEqual originalCount - 1, workbook.Worksheets.Count, "Worksheet count should decrease by one"
-    Assert.AreEqual originalAlerts, workbook.Application.DisplayAlerts, "DisplayAlerts should be restored"
+    Assert.IsFalse WorksheetExists(TEMP_SHEET_NAME, targetBook), "Worksheet should be removed"
+    Assert.AreEqual originalCount - 1, targetBook.Worksheets.Count, "Worksheet count should decrease by one"
+    Assert.AreEqual originalAlerts, targetBook.Application.DisplayAlerts, "DisplayAlerts should be restored"
 
     Exit Sub
 
@@ -86,15 +86,15 @@ End Sub
 Public Sub TestRemoveWorksheetReturnsFalseWhenMissing()
     CustomTestSetTitles Assert, "DiseaseWorksheetManager", "TestRemoveWorksheetReturnsFalseWhenMissing"
 
-    Dim workbook As Workbook
+    Dim targetBook As Workbook
     Dim removed As Boolean
 
     On Error GoTo Fail
 
-    Set workbook = ThisWorkbook
+    Set targetBook = ThisWorkbook
     DeleteWorksheet TEMP_SHEET_NAME
 
-    removed = Manager.RemoveWorksheet(workbook, TEMP_SHEET_NAME)
+    removed = Manager.RemoveWorksheet(targetBook, TEMP_SHEET_NAME)
     Assert.IsFalse removed, "RemoveWorksheet should return False when sheet is missing"
 
     Exit Sub

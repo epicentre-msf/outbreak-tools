@@ -345,13 +345,13 @@ End Property
 Private Function ListNameRange() As Range
     Dim headers As Variant
     Dim firstColumn As Long
-    Dim listColumn As Long
+    Dim listCol As Long
 
     headers = HeaderValues(firstColumn)
-    listColumn = ColumnAt(headers, LISTNAMECODE, firstColumn)
-    If listColumn = 0 Then Exit Function
+    listCol = ColumnAt(headers, LISTNAMECODE, firstColumn)
+    If listCol = 0 Then Exit Function
 
-    Set ListNameRange = BodyBlock(ChoiceData, listColumn, listColumn)
+    Set ListNameRange = BodyBlock(ChoiceData, listCol, listCol)
 End Function
 
 '@label:find-choice-cell
@@ -408,7 +408,7 @@ Public Sub Sort()
 
     Dim headers As Variant
     Dim firstColumn As Long
-    Dim listColumn As Long
+    Dim listCol As Long
     Dim orderColumn As Long
     Dim dataObject As DataSheet
     Dim sh As Worksheet
@@ -422,7 +422,7 @@ Public Sub Sort()
         Exit Sub
     End If
 
-    listColumn = ColumnAt(headers, LISTNAMECODE, firstColumn)
+    listCol = ColumnAt(headers, LISTNAMECODE, firstColumn)
     orderColumn = ColumnAt(headers, ORDERINLISTCODE, firstColumn)
 
     Set dataObject = ChoiceData
@@ -433,7 +433,7 @@ Public Sub Sort()
 
     With sh
         .Range(.Cells(firstRow, firstColumn), .Cells(lastRow, lastColumn)).Sort _
-            key1:=.Range(.Cells(firstRow + 1, listColumn), .Cells(lastRow, listColumn)), _
+            key1:=.Range(.Cells(firstRow + 1, listCol), .Cells(lastRow, listCol)), _
             Order1:=xlAscending, _
             key2:=.Range(.Cells(firstRow + 1, orderColumn), .Cells(lastRow, orderColumn)), _
             order2:=xlAscending, _
@@ -463,7 +463,7 @@ Public Sub AddChoice(ByVal choiceName As String, _
 
     Dim headers As Variant
     Dim firstColumn As Long
-    Dim listColumn As Long
+    Dim listCol As Long
     Dim labelColumn As Long
     Dim orderColumn As Long
     Dim shortLabelColumn As Long
@@ -507,7 +507,7 @@ Public Sub AddChoice(ByVal choiceName As String, _
         Exit Sub
     End If
 
-    listColumn = ColumnAt(headers, LISTNAMECODE, firstColumn)
+    listCol = ColumnAt(headers, LISTNAMECODE, firstColumn)
     labelColumn = ColumnAt(headers, ChoiceLabelIn(headers, firstColumn), firstColumn)
     orderColumn = ColumnAt(headers, ORDERINLISTCODE, firstColumn)
     If hasShortLabel Then shortLabelColumn = ColumnAt(headers, LABELSHORTCODE, firstColumn)
@@ -532,7 +532,7 @@ Public Sub AddChoice(ByVal choiceName As String, _
         orderBlock(counter, 1) = counter
     Next
 
-    choicewksh.Cells(appendRow, listColumn).Resize(nbCategories, 1).Value = listBlock
+    choicewksh.Cells(appendRow, listCol).Resize(nbCategories, 1).Value = listBlock
     choicewksh.Cells(appendRow, orderColumn).Resize(nbCategories, 1).Value = orderBlock
 End Sub
 
@@ -549,7 +549,7 @@ End Sub
 'not own on its own. That is unchanged.
 '@param choiceName String. The choice to remove.
 '@param listColumn Long. Worksheet column holding the list names.
-Private Sub RemoveOneChoice(ByVal choiceName As String, ByVal listColumn As Long)
+Private Sub RemoveOneChoice(ByVal choiceName As String, ByVal listCol As Long)
 
     Dim dataObject As DataSheet
     Dim sh As Worksheet
@@ -562,7 +562,7 @@ Private Sub RemoveOneChoice(ByVal choiceName As String, ByVal listColumn As Long
     Set dataObject = ChoiceData
     Set sh = dataObject.Wksh
     firstRow = dataObject.DataStartRow() + 1
-    listValues = ColumnValues(BodyBlock(dataObject, listColumn, listColumn))
+    listValues = ColumnValues(BodyBlock(dataObject, listCol, listCol))
 
     For counter = 1 To UBound(listValues)
         If StrComp(CellText(listValues(counter)), choiceName, vbBinaryCompare) = 0 Then
@@ -578,8 +578,8 @@ Private Sub RemoveOneChoice(ByVal choiceName As String, ByVal listColumn As Long
         Exit Sub
     End If
 
-    sh.Range(sh.Cells(firstRow + firstMatch - 1, listColumn), _
-             sh.Cells(firstRow + lastMatch - 1, listColumn)).EntireRow.Delete
+    sh.Range(sh.Cells(firstRow + firstMatch - 1, listCol), _
+             sh.Cells(firstRow + lastMatch - 1, listCol)).EntireRow.Delete
 End Sub
 
 '@label:remove-choice
@@ -596,7 +596,7 @@ Public Sub RemoveChoice(ByVal choiceNames As String, Optional ByVal sep As Strin
     Dim counter As Long
     Dim headers As Variant
     Dim firstColumn As Long
-    Dim listColumn As Long
+    Dim listCol As Long
 
     headers = HeaderValues(firstColumn)
     If Not HasAllChoiceColumns(headers, firstColumn) Then
@@ -604,7 +604,7 @@ Public Sub RemoveChoice(ByVal choiceNames As String, Optional ByVal sep As Strin
         Exit Sub
     End If
 
-    listColumn = ColumnAt(headers, LISTNAMECODE, firstColumn)
+    listCol = ColumnAt(headers, LISTNAMECODE, firstColumn)
 
     'Sorting groups every list name into one unbroken run, which is what
     'lets each name go in a single row delete. Deleting rows never moves a
@@ -615,7 +615,7 @@ Public Sub RemoveChoice(ByVal choiceNames As String, Optional ByVal sep As Strin
     namesData.Items = Split(choiceNames, sep)
 
     For counter = namesData.LowerBound To namesData.UpperBound
-        RemoveOneChoice CStr(namesData.Item(counter)), listColumn
+        RemoveOneChoice CStr(namesData.Item(counter)), listCol
     Next
 End Sub
 
@@ -808,7 +808,7 @@ Public Property Get AllChoices() As BetterArray
     Dim lstChoi As BetterArray
     Dim headers As Variant
     Dim firstColumn As Long
-    Dim listColumn As Long
+    Dim listCol As Long
     Dim listValues As Variant
     Dim seen() As String
     Dim currentKey As String
@@ -830,8 +830,8 @@ Public Property Get AllChoices() As BetterArray
         Exit Property
     End If
 
-    listColumn = ColumnAt(headers, LISTNAMECODE, firstColumn)
-    listValues = ColumnValues(BodyBlock(ChoiceData, listColumn, listColumn))
+    listCol = ColumnAt(headers, LISTNAMECODE, firstColumn)
+    listValues = ColumnValues(BodyBlock(ChoiceData, listCol, listCol))
     nbRows = UBound(listValues)
     ReDim seen(1 To nbRows)
 

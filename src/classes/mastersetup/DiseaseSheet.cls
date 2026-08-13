@@ -483,10 +483,10 @@ Private Function FindWorksheet(ByVal wb As Workbook, ByVal sheetName As String) 
     Next sh
 End Function
 
-Private Sub EnsureNameDeleted(ByVal workbook As Workbook, ByVal nameValue As String)
+Private Sub EnsureNameDeleted(ByVal targetBook As Workbook, ByVal nameValue As String)
     Dim namedRange As Name
 
-    For Each namedRange In workbook.Names
+    For Each namedRange In targetBook.Names
         If StrComp(namedRange.Name, nameValue, vbTextCompare) = 0 Then
             namedRange.Delete
             Exit For
@@ -494,9 +494,9 @@ Private Sub EnsureNameDeleted(ByVal workbook As Workbook, ByVal nameValue As Str
     Next namedRange
 End Sub
 
-Private Sub AssignName(ByVal workbook As Workbook, ByVal target As Range, ByVal nameValue As String)
-    EnsureNameDeleted workbook, nameValue
-    workbook.Names.Add Name:=nameValue, RefersTo:=target
+Private Sub AssignName(ByVal targetBook As Workbook, ByVal target As Range, ByVal nameValue As String)
+    EnsureNameDeleted targetBook, nameValue
+    targetBook.Names.Add Name:=nameValue, RefersTo:=target
 End Sub
 
 Private Function Translate(ByVal key As String, ByVal fallback As String) As String

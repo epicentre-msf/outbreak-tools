@@ -1601,21 +1601,21 @@ End Sub
 
 Private Sub PrepareRegistryFixture()
     Dim registrySheet As Worksheet
-    Dim dataSheet As Worksheet
+    Dim dataWksh As Worksheet
     Dim matrix As Variant
     Dim registryRange As Range
     Dim registryTable As ListObject
     Dim store As HiddenNames
 
-    Set dataSheet = EnsureWorksheet(REGISTRY_SOURCE_SHEET)
-    dataSheet.Cells.Clear
-    dataSheet.Range("A1").Value = SOURCE_TRANSLATION_VALUE
-    dataSheet.Range("A2").Value = SOURCE_TRANSLATION_VALUE & " updated"
+    Set dataWksh = EnsureWorksheet(REGISTRY_SOURCE_SHEET)
+    dataWksh.Cells.Clear
+    dataWksh.Range("A1").Value = SOURCE_TRANSLATION_VALUE
+    dataWksh.Range("A2").Value = SOURCE_TRANSLATION_VALUE & " updated"
 
     On Error Resume Next
         ThisWorkbook.Names(REGISTRY_RANGE_NAME).Delete
     On Error GoTo 0
-    ThisWorkbook.Names.Add Name:=REGISTRY_RANGE_NAME, RefersTo:=dataSheet.Range("A1:A2")
+    ThisWorkbook.Names.Add Name:=REGISTRY_RANGE_NAME, RefersTo:=dataWksh.Range("A1:A2")
 
     Set registrySheet = EnsureWorksheet(REGISTRY_SHEET_NAME)
     registrySheet.Cells.Clear

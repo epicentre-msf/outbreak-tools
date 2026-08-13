@@ -318,7 +318,7 @@ End Function
 '@param currentRow Long. ByRef row counter advanced during writing.
 '@param writtenTitles Collection. ByRef collection tracking emitted titles.
 '@param sep Optional String. Separator for text fragments. Defaults to "--".
-Private Sub WriteChecking(ByVal checking As Checking, _
+Private Sub WriteChecking(ByVal checksObject As Checking, _
                           ByRef currentRow As Long, _
                           ByRef writtenTitles As Collection, _
                           Optional ByVal sep As String = DEFAULT_SEPARATOR)
@@ -334,8 +334,8 @@ Private Sub WriteChecking(ByVal checking As Checking, _
     Dim keyType As String
     Dim fullLabel As String
 
-    title = checking.Heading
-    subtitle = checking.Heading(subtitle:=True)
+    title = checksObject.Heading
+    subtitle = checksObject.Heading(subtitle:=True)
 
     If Not TitleAlreadyWritten(title, writtenTitles) Then
         WriteRow rowIndex:=currentRow, textValue:=title, formatTag:="level 1", sep:=sep, parentTitle:=title
@@ -350,12 +350,12 @@ Private Sub WriteChecking(ByVal checking As Checking, _
         currentRow = currentRow + 2
     End If
 
-    Set keys = checking.ListOfKeys
+    Set keys = checksObject.ListOfKeys
     For keyIndex = keys.lowerBound To keys.upperBound
         keyName = CStr(keys.Item(keyIndex))
-        keyColour = checking.ValueOf(keyName, checkingColor)
-        keyLabel = checking.ValueOf(keyName, checkingLabel)
-        keyType = checking.ValueOf(keyName, checkingType)
+        keyColour = checksObject.ValueOf(keyName, checkingColor)
+        keyLabel = checksObject.ValueOf(keyName, checkingLabel)
+        keyType = checksObject.ValueOf(keyName, checkingType)
         fullLabel = keyType & sep & keyLabel
         WriteRow rowIndex:=currentRow, textValue:=fullLabel, formatTag:=keyColour, sep:=sep, parentTitle:=title
         currentRow = currentRow + 1

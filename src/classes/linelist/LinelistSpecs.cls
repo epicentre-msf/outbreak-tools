@@ -75,11 +75,11 @@ Private Type TLinelistSpecs
     choices As LLChoices
     translations As LLTranslation
     geo As LLGeo
-    exports As LLExport
+    exportSpecs As LLExport
     ana As Analysis
-    passwords As Passwords
+    passManager As Passwords
     format As LLFormat
-    formulaData As FormulaData
+    formulaSpecs As FormulaData
     variables As LLVariables
     'Translation scope cache: direct fields for each TranslationScope value (0-4)
     transMessages As TranslationObject
@@ -224,11 +224,11 @@ Private Sub ResetObjectCaches()
     Set this.choices = Nothing
     Set this.translations = Nothing
     Set this.geo = Nothing
-    Set this.exports = Nothing
+    Set this.exportSpecs = Nothing
     Set this.ana = Nothing
-    Set this.passwords = Nothing
+    Set this.passManager = Nothing
     Set this.format = Nothing
-    Set this.formulaData = Nothing
+    Set this.formulaSpecs = Nothing
     Set this.variables = Nothing
     Set this.outputWkb = Nothing
     Set this.tempRepos = Nothing
@@ -691,20 +691,20 @@ End Sub
 'Built over the designer's password worksheet. Prepare replaces it with the
 'copy on the linelist.
 Private Sub EnsurePasswords()
-    If this.passwords Is Nothing Then
+    If this.passManager Is Nothing Then
         Dim passwordSheet As Worksheet
         Set passwordSheet = ResolveSheet(DESIGNER_SHEET_PASSWORDS)
-        Set this.passwords = Passwords.Create(passwordSheet)
+        Set this.passManager = Passwords.Create(passwordSheet)
     End If
 End Sub
 
 '@label:ensure-formula-data
 '@sub-title Load the formula data collaborator on first read
 Private Sub EnsureFormulaData()
-    If this.formulaData Is Nothing Then
+    If this.formulaSpecs Is Nothing Then
         Dim formulaSheet As Worksheet
         Set formulaSheet = ResolveSheet(DESIGNER_SHEET_FORMULAS)
-        Set this.formulaData = FormulaData.Create(formulaSheet)
+        Set this.formulaSpecs = FormulaData.Create(formulaSheet)
     End If
 End Sub
 
@@ -1075,8 +1075,8 @@ End Property
 '@throws ProjectError.ErrorUnexpectedState When Prepare has not run.
 '@export
 Public Property Get ExportObject() As LLExport
-    If this.exports Is Nothing Then RequirePrepared "ExportObject"
-    Set ExportObject = this.exports
+    If this.exportSpecs Is Nothing Then RequirePrepared "ExportObject"
+    Set ExportObject = this.exportSpecs
 End Property
 
 '@label:password
@@ -1088,7 +1088,7 @@ End Property
 '@export
 Public Property Get Password() As Passwords
     EnsurePasswords
-    Set Password = this.passwords
+    Set Password = this.passManager
 End Property
 
 '@label:geo-object
@@ -1112,7 +1112,7 @@ End Property
 '@export
 Public Property Get FormulaDataObject() As FormulaData
     EnsureFormulaData
-    Set FormulaDataObject = this.formulaData
+    Set FormulaDataObject = this.formulaSpecs
 End Property
 
 '@label:has-template
@@ -1152,43 +1152,43 @@ End Property
 '@return TranslationObject. The scoped translation object.
 '@throws ProjectError.ElementNotFound When the scope is not available.
 '@export
-Public Property Get TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As TranslationObject
+Public Property Get TransObject(Optional ByVal scopeValue As Byte = TranslationOfMessages) As TranslationObject
     EnsureTranslations
 
-    Select Case translationScope
+    Select Case scopeValue
         Case TranslationOfMessages
             If this.transMessages Is Nothing Then
-                Set this.transMessages = ResolveTranslationScope(translationScope)
+                Set this.transMessages = ResolveTranslationScope(scopeValue)
             End If
             Set TransObject = this.transMessages
 
         Case TranslationOfDictionary
             If this.transDictionary Is Nothing Then
-                Set this.transDictionary = ResolveTranslationScope(translationScope)
+                Set this.transDictionary = ResolveTranslationScope(scopeValue)
             End If
             Set TransObject = this.transDictionary
 
         Case TranslationOfShapes
             If this.transShapes Is Nothing Then
-                Set this.transShapes = ResolveTranslationScope(translationScope)
+                Set this.transShapes = ResolveTranslationScope(scopeValue)
             End If
             Set TransObject = this.transShapes
 
         Case TranslationOfForms
             If this.transForms Is Nothing Then
-                Set this.transForms = ResolveTranslationScope(translationScope)
+                Set this.transForms = ResolveTranslationScope(scopeValue)
             End If
             Set TransObject = this.transForms
 
         Case TranslationOfRibbon
             If this.transRibbon Is Nothing Then
-                Set this.transRibbon = ResolveTranslationScope(translationScope)
+                Set this.transRibbon = ResolveTranslationScope(scopeValue)
             End If
             Set TransObject = this.transRibbon
 
         Case Else
             ThrowError ProjectError.ElementNotFound, _
-                      "Translation scope '" & CStr(translationScope) & "' is not available in the specifications workbook"
+                      "Translation scope '" & CStr(scopeValue) & "' is not available in the specifications workbook"
     End Select
 End Property
 
@@ -1197,13 +1197,13 @@ End Property
 '@param translationScope Byte. The translation scope to resolve.
 '@return TranslationObject. The resolved translation object.
 '@throws ProjectError.ElementNotFound When the scope returns Nothing.
-Private Function ResolveTranslationScope(ByVal translationScope As Byte) As TranslationObject
+Private Function ResolveTranslationScope(ByVal scopeValue As Byte) As TranslationObject
     Dim resolved As TranslationObject
 
-    Set resolved = this.translations.TransObject(translationScope)
+    Set resolved = this.translations.TransObject(scopeValue)
     If resolved Is Nothing Then
         ThrowError ProjectError.ElementNotFound, _
-                  "Translation scope '" & CStr(translationScope) & "' is not available in the specifications workbook"
+                  "Translation scope '" & CStr(scopeValue) & "' is not available in the specifications workbook"
     End If
 
     Set ResolveTranslationScope = resolved
@@ -1447,7 +1447,7 @@ Public Sub Prepare(ByVal setupPath As String)
     'Build the domain managers on the linelist workbook
     Set this.dictionary = InitTransfer.LinelistDictionary(outWkb)
     Set this.choices = InitTransfer.LinelistChoices(outWkb)
-    Set this.exports = InitTransfer.LinelistExports(outWkb)
+    Set this.exportSpecs = InitTransfer.LinelistExports(outWkb)
     Set this.ana = InitTransfer.LinelistAnalysis(outWkb)
 
     'The one manager a build survives without. A Geo sheet the transfer copied
@@ -1465,7 +1465,7 @@ Public Sub Prepare(ByVal setupPath As String)
         End If
     On Error GoTo CleanFail
 
-    Set this.passwords = InitTransfer.LinelistPasswords(outWkb)
+    Set this.passManager = InitTransfer.LinelistPasswords(outWkb)
     Set this.translations = InitTransfer.LinelistTranslations(outWkb)
 
     'A missing worksheet is the one case that answers Nothing rather than
@@ -1483,10 +1483,10 @@ Public Sub Prepare(ByVal setupPath As String)
 
     Set dict = this.dictionary
     Set choicesObj = this.choices
-    Set exportsObj = this.exports
+    Set exportsObj = this.exportSpecs
     Set analysisObj = this.ana
     Set geoObj = this.geo
-    Set pass = this.passwords
+    Set pass = this.passManager
 
     Set dictTrads = TransObject(TranslationOfDictionary)
     Set msgTrads = TransObject()
@@ -1742,7 +1742,7 @@ End Sub
 '@sub-title Inject a formula-data collaborator for testing
 '@param data FormulaData. The formula data to expose through FormulaDataObject().
 Public Sub TestAssignFormulaData(ByVal data As FormulaData)
-    Set this.formulaData = data
+    Set this.formulaSpecs = data
 End Sub
 
 '@label:test-assign-choices

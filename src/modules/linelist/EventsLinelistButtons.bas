@@ -12,11 +12,23 @@ Private Const PASSSHEET As String = "__pass"
 Private Const EXPORTSHEET As String = "Exports"
 Private Const PRINTPREFIX As String = "print_"
 Private Const CRFPREFIX As String = "crf_"
+'The suffix a sheet's hidden name store puts on a variable name to key its
+'dictionary control. Spelled the same way in LLSpatial, and the spacing is part
+'of the key, so it is copied here exactly rather than rebuilt.
+Private Const CONTROL_SUFFIX As String = " -- control"
 
 'The pair the show/hide form is open on: which variables the sheet offers, and
 'the sheet itself. Both are rebuilt each time the form opens.
+'
+'activeLayout, NOT showHideLayout. VBA is not case sensitive, so a module-level
+'`showHideLayout` and the class `ShowHideLayout` are one identifier, and the
+'variable wins everywhere in this module. LayoutFor below then reads
+'`ShowHideLayout.Create` as a call on the variable, which is Nothing until
+'LayoutFor returns -- so every press of the show/hide button raised 91, "Object
+'variable or With block variable not set", on a line that named the class.
+'scripts/devtools/name-shadowing-scan.R exists to catch the next one.
 Private showHideEntries As ShowHide
-Private showHideLayout As ShowHideLayout
+Private activeLayout As ShowHideLayout
 Private activeShowHideForm As Object
 Private tradsform As TranslationObject   'Translation of forms
 Private tradsmess As TranslationObject   'Translation of messages
@@ -270,6 +282,39 @@ Private Function EntriesFor(ByVal sh As Worksheet, _
 End Function
 
 'The sheet half of the pair
+'The dictionary control of the column the cursor is in, in lower case.
+'
+'The variable NAMES of an HList sheet live on the row the table's _START anchor
+'is on, and every one of them has a `<name> -- control` entry in the sheet's
+'hidden name store. That pair is how LLSpatial reads a column's control, and it
+'is the only reading that survives a change to the header layout.
+'
+'ClickGeoApp used to read Cells(startRow - 5, column) instead. With _START on
+'row 8 and the first data row on row 9, that lands on row 4 -- four rows above
+'the names -- so the answer was whatever happened to be there and never "geo1".
+'The geo form refused every column, including the adm1 column it was standing
+'on.
+Private Function ColumnControl(ByVal sh As Worksheet, _
+                               ByVal tabName As String, _
+                               ByVal targetColumn As Long) As String
+    Dim anchor As Range
+    Dim shHn As HiddenNames
+    Dim varName As String
+
+    On Error Resume Next
+        Set anchor = sh.Range(tabName & "_START")
+    On Error GoTo 0
+    If anchor Is Nothing Then Exit Function
+
+    varName = Trim$(CStr(sh.Cells(anchor.Row, targetColumn).Value))
+    If LenB(varName) = 0 Then Exit Function
+
+    Set shHn = SheetStoreOf(sh)
+    If shHn Is Nothing Then Exit Function
+
+    ColumnControl = LCase$(shHn.ValueAsString(varName & CONTROL_SUFFIX))
+End Function
+
 Private Function LayoutFor(ByVal sh As Worksheet, ByVal layer As Byte) As ShowHideLayout
     Set LayoutFor = ShowHideLayout.Create(sh, layer, pass, BaseTableNameOf(sh))
 End Function
@@ -280,13 +325,13 @@ Private Function OpenShowHideFor(ByVal sh As Worksheet) As Boolean
     Dim layer As Byte
 
     Set showHideEntries = Nothing
-    Set showHideLayout = Nothing
+    Set activeLayout = Nothing
 
     layer = ResolveShowHideLayer(SheetTag(sh))
     If layer = 0 Then Exit Function
 
     Set showHideEntries = EntriesFor(sh, layer, DictionaryObject())
-    Set showHideLayout = LayoutFor(sh, layer)
+    Set activeLayout = LayoutFor(sh, layer)
 
     OpenShowHideFor = True
 End Function
@@ -375,10 +420,10 @@ Public Sub ClickShowHide()
     'Read the choices of the last session and put the sheet in step with them.
     'With nothing saved yet, the sheet is the record: read it into the entries, so
     'a column the user hid by hand shows as hidden in the form.
-    If LoadShowHideState(showHideEntries, showHideLayout) > 0 Then
-        showHideEntries.Apply showHideLayout
+    If LoadShowHideState(showHideEntries, activeLayout) > 0 Then
+        showHideEntries.Apply activeLayout
     Else
-        showHideEntries.Adopt showHideLayout
+        showHideEntries.Adopt activeLayout
     End If
 
     'A CRF holds one variable per row and reads its labels straight, so it takes
@@ -397,8 +442,8 @@ Public Sub ClickShowHide()
     'After form closes, save the choices. The log line covers the whole form
     'session: every option click landed on this layout, so its refused-write
     'count is the count of the session.
-    SaveShowHideState showHideEntries, showHideLayout
-    LogShowHideLine "showhide", showHideLayout, sh.Name
+    SaveShowHideState showHideEntries, activeLayout
+    LogShowHideLine "showhide", activeLayout, sh.Name
     Set activeShowHideForm = Nothing
 End Sub
 
@@ -446,15 +491,15 @@ Public Sub ClickShowHideSection()
     If layer = 0 Then Exit Sub
 
     Set showHideEntries = EntriesFor(sh, layer, DictionaryObject())
-    Set showHideLayout = LayoutFor(sh, layer)
+    Set activeLayout = LayoutFor(sh, layer)
 
     'The same reconciliation ClickShowHide does. With nothing saved yet the
     'sheet is the record, so a column the user hid by hand is read as hidden
     'and the toggle below agrees with what the user can see.
-    If LoadShowHideState(showHideEntries, showHideLayout) > 0 Then
-        showHideEntries.Apply showHideLayout
+    If LoadShowHideState(showHideEntries, activeLayout) > 0 Then
+        showHideEntries.Apply activeLayout
     Else
-        showHideEntries.Adopt showHideLayout
+        showHideEntries.Adopt activeLayout
     End If
 
     'One press hides, the next shows. Every section the selection touches has
@@ -466,15 +511,15 @@ Public Sub ClickShowHideSection()
     On Error GoTo ErrHand
     LinelistEventsManager.LLEnterBusyState
     ApplyToSections secMap, touched, hideThem
-    showHideEntries.Apply showHideLayout
-    SaveShowHideState showHideEntries, showHideLayout
-    LogShowHideLine "showhide-section", showHideLayout, sh.Name
+    showHideEntries.Apply activeLayout
+    SaveShowHideState showHideEntries, activeLayout
+    LogShowHideLine "showhide-section", activeLayout, sh.Name
 
 ErrHand:
     If Err.Number <> 0 Then LogFailureLine "showhide-section", Err.Description
     LinelistEventsManager.LLExitBusyState
     Set showHideEntries = Nothing
-    Set showHideLayout = Nothing
+    Set activeLayout = Nothing
 End Sub
 
 'The span of positions the user has selected, in the axis the sheet hides on:
@@ -579,8 +624,8 @@ Public Sub ClickListShowHide(ByVal Index As Long)
         activeShowHideForm.OPT_Hide.Enabled = canChange
     Else
         isVertical = False
-        If Not showHideLayout Is Nothing Then
-            isVertical = showHideLayout.IsVertical(showHideEntries.PositionIndex(entryIdx))
+        If Not activeLayout Is Nothing Then
+            isVertical = activeLayout.IsVertical(showHideEntries.PositionIndex(entryIdx))
         End If
 
         If showHideEntries.IsHidden(entryIdx) Then
@@ -607,7 +652,7 @@ Public Sub ClickOptionsShowHide(ByVal Index As Long)
     Dim posIdx As Long
 
     If showHideEntries Is Nothing Then Exit Sub
-    If showHideLayout Is Nothing Then Exit Sub
+    If activeLayout Is Nothing Then Exit Sub
     If activeShowHideForm Is Nothing Then Exit Sub
 
     entryIdx = Index + 1
@@ -620,21 +665,21 @@ Public Sub ClickOptionsShowHide(ByVal Index As Long)
     posIdx = showHideEntries.PositionIndex(entryIdx)
     If posIdx = 0 Then Exit Sub
 
-    showHideLayout.BeginBatch
-    showHideLayout.SetHidden posIdx, shouldHide
+    activeLayout.BeginBatch
+    activeLayout.SetHidden posIdx, shouldHide
 
     'The header direction belongs to the two show buttons of the printed form.
     'Choosing Hide leaves the direction as it was, so showing the column again
     'brings back the header the user had.
-    If showHideLayout.SupportsOrientation And Not shouldHide Then
+    If activeLayout.SupportsOrientation And Not shouldHide Then
         wantsVertical = False
         On Error Resume Next
         wantsVertical = activeShowHideForm.OPT_PrintShowVerti.Value
         On Error GoTo 0
-        showHideLayout.SetOrientation posIdx, wantsVertical
+        activeLayout.SetOrientation posIdx, wantsVertical
     End If
 
-    showHideLayout.EndBatch
+    activeLayout.EndBatch
 End Sub
 
 '@Description("Callback for click on column width in show/hide")
@@ -647,7 +692,7 @@ Public Sub ClickColWidth(ByVal Index As Long)
     Dim inputValue As String
 
     If showHideEntries Is Nothing Then Exit Sub
-    If showHideLayout Is Nothing Then Exit Sub
+    If activeLayout Is Nothing Then Exit Sub
 
     entryIdx = Index + 1
     If entryIdx < 1 Or entryIdx > showHideEntries.EntryCount Then Exit Sub
@@ -666,7 +711,7 @@ Public Sub ClickColWidth(ByVal Index As Long)
                   vbOKCancel, vbNullString) = vbCancel Then Exit Sub
     Loop
 
-    showHideLayout.SetSize posIdx, CDbl(inputValue)
+    activeLayout.SetSize posIdx, CDbl(inputValue)
 End Sub
 
 
@@ -707,13 +752,11 @@ End Sub
 '@Description("Callback for click on the CRF Button")
 '@EntryPoint
 Public Sub ClickOpenCRF()
-    Attribute ClickOpenPrint.VB_Description = "Callback for click on the CRF Button"
+    Attribute ClickOpenCRF.VB_Description = "Callback for click on the CRF Button"
 
     Dim sh As Worksheet
     Dim crfsh As Worksheet
     Dim shType As String
-
-    On Error GoTo ErrOpen
 
     Set sh = ActiveSheet
     shType = SheetTag(sh)
@@ -725,11 +768,28 @@ Public Sub ClickOpenCRF()
         Exit Sub
     End If
 
-    Set crfsh = wb.Worksheets(CRFPREFIX & sh.Name)
+    'The CRF companion may simply not have been built. LLDataEntry.Build makes
+    'the print_ companion and nothing else -- no AddOutputSheet call in this
+    'project passes sheetScope:=3 -- so on a linelist generated today this sheet
+    'is always absent. It used to be looked up inside the handler below, which
+    'turned the missing sheet into error 9, wrote a log line nobody reads and
+    'returned as though the button had worked. Saying so is the whole fix here;
+    'building the sheet is a separate piece of work.
+    On Error Resume Next
+        Set crfsh = wb.Worksheets(CRFPREFIX & sh.Name)
+    On Error GoTo 0
+
+    If crfsh Is Nothing Then
+        LogWarningLine "open-crf", "no worksheet named " & CRFPREFIX & sh.Name
+        WarningOnSheet "MSG_DataSheet"
+        Exit Sub
+    End If
+
+    On Error GoTo ErrOpen
 
     'UnProtect current workbook
     pass.UnProtect wb
-    'Unhide the linelist Print
+    'Unhide the CRF companion
     crfsh.Visible = xlSheetVisible
     crfsh.Activate
 
@@ -1162,8 +1222,15 @@ Public Sub ClickGeoApp()
 
         If ActiveCell.Row >= startRow Then
 
-            hfOrGeo = ActiveSheet.Cells(startRow - 5, targetColumn).Value
+            hfOrGeo = ColumnControl(sh, tabName, targetColumn)
             Select Case hfOrGeo
+            'geo1 ONLY, and that is not a narrow reading of the button. The form
+            'writes its answer back by splitting the picked place on a separator
+            'and pouring the four parts out from the cell it was opened on:
+            'FormLogicGeo clears Range(cellRng, cellRng.Offset(, 3)) first. Open
+            'it on adm2 and that clears adm2 through adm5 -- the fourth being
+            'pcode_adm1 -- and writes all four admin names one column to the
+            'right. The anchor has to be adm1, so the other three levels refuse.
             Case "geo1"
                 LoadGeo GeoScopeAdmin
             Case "hf"
@@ -1254,12 +1321,23 @@ Public Sub ClickPrintLL()
         Exit Sub
     End If
 
+    InitializeTrads
+
     'On HListSheet, open the print sheet
     If shType = "HList" Then ClickOpenPrint
 
     Set sh = ActiveSheet
-    
-    On Error Resume Next
+
+    'Everything from here on is guarded. It used to run under On Error Resume
+    'Next as far as the End With, and the PrintPreview at the bottom sat outside
+    'any handler at all -- so a preview that failed raised VBA's own dialog on a
+    'workbook whose user has no VBE, with PrintCommunication left False and the
+    'sheet left unprotected. A print sheet with no ListObject took the same path
+    'through the PrintArea line.
+    On Error GoTo ErrPrint
+
+    pass.UnProtect sh.Name
+
     Application.PrintCommunication = False
     'Avoid printing rows and column number'
     With sh.PageSetup
@@ -1295,9 +1373,27 @@ Public Sub ClickPrintLL()
         .PrintErrors = xlPrintErrorsBlank
     End With
     Application.PrintCommunication = True
-    On Error GoTo 0
-    
+
     sh.PrintPreview
+
+    LogSuccessLine "print-preview", sh.Name
+    pass.Protect sh.Name
+    Exit Sub
+
+ErrPrint:
+    'PrintCommunication is an APPLICATION setting. Left False it silently drops
+    'every later page-setup write in this Excel session, including ones made by
+    'the user by hand, so it is restored before anything else is attempted.
+    Application.PrintCommunication = True
+    LogFailureLine "print-preview", Err.Description
+    'MSG_Error, not a print-specific code. A dedicated MSG_PrintFailed row is
+    'owed to the five translation workbooks; until it is there, naming it would
+    'put the literal tag "MSG_PrintFailed" on screen, since a lookup that misses
+    'answers with the tag it was handed. The description carries the reason.
+    FailureOnSheet "MSG_Error", Err.Description
+    On Error Resume Next
+        pass.Protect sh.Name
+    On Error GoTo 0
 End Sub
 
 '@Description("Show the Export for Migration form")
@@ -1544,7 +1640,7 @@ Public Sub ClickShowHideMinimal()
 
     'Toggle every entry the user owns, then put the sheet in step
     showHideEntries.SetAllOptionalHidden Not showOptional
-    showHideEntries.Apply showHideLayout
+    showHideEntries.Apply activeLayout
 
     'Toggle the flag
     If showOptional Then
@@ -1553,14 +1649,14 @@ Public Sub ClickShowHideMinimal()
         wkbNames.SetValue RNGSHOWALLOPTIONALS, "yes"
     End If
 
-    SaveShowHideState showHideEntries, showHideLayout
+    SaveShowHideState showHideEntries, activeLayout
 
     If Not activeShowHideForm Is Nothing Then
         PopulateShowHideList activeShowHideForm
     End If
 
     'The success line sits above the label so a declined confirm logs nothing.
-    LogShowHideLine "showhide-minimal", showHideLayout, sh.Name
+    LogShowHideLine "showhide-minimal", activeLayout, sh.Name
 
 ErrHand:
     If Err.Number <> 0 Then LogFailureLine "showhide-minimal", Err.Description
@@ -1582,10 +1678,10 @@ Public Sub ClickShowHideLayouts()
     'the choices from before a restore.
     If showHideEntries Is Nothing Then Exit Sub
 
-    If LoadShowHideState(showHideEntries, showHideLayout) > 0 Then
-        showHideEntries.Apply showHideLayout
+    If LoadShowHideState(showHideEntries, activeLayout) > 0 Then
+        showHideEntries.Apply activeLayout
     Else
-        showHideEntries.Adopt showHideLayout
+        showHideEntries.Adopt activeLayout
     End If
 
     If Not activeShowHideForm Is Nothing Then
@@ -1657,7 +1753,7 @@ Public Sub ClickMatchLinelistShowHide()
 
     'Sync the module state so the open form reads the list that was just saved
     Set showHideEntries = printEntries
-    Set showHideLayout = printLayout
+    Set activeLayout = printLayout
     If Not activeShowHideForm Is Nothing Then
         PopulateShowHideList activeShowHideForm
     End If
@@ -1681,23 +1777,32 @@ Public Sub clickAutoFit()
     Dim LoRng As Range
     Dim counter As Long
 
-    On Error GoTo ErrHand
-
     Set sh = ActiveSheet
     shType = SheetTag(sh)
 
-    If shType <> "HList" Then
-        WarningOnSheet "MSG_DataSheet"
+    InitializeTrads
+
+    'The print sheet holds a ListObject of its own and the same columns, and it
+    'is the sheet whose widths a user actually wants to settle before printing.
+    'It used to be refused here, so autofit worked on the data sheet alone.
+    If shType <> "HList" And shType <> "HList Print" Then
+        WarningOnSheet "MSG_PrintOrDataSheet"
         Exit Sub
     End If
 
+    On Error GoTo ErrHand
+
+    'Column widths are a protected property, so the sheet has to come out of
+    'protection first. The data sheet was never protected against this, which is
+    'why the missing unprotect only ever showed up on the print sheet.
+    pass.UnProtect sh.Name
     LinelistEventsManager.LLEnterBusyState
     'Table data entry on linelist
     Set Lo = sh.ListObjects(1)
 
     For counter = 1 To Lo.ListColumns.Count
         Set LoRng = Lo.ListColumns(counter).Range
-        
+
         If (Not LoRng.EntireColumn.Hidden) Then
             'Autofit the column after wrapping the text
             LoRng.WrapText = True

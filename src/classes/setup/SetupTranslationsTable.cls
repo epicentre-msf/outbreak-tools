@@ -835,7 +835,7 @@ End Sub
 '@label:process-formula-range
 '@sub-title Extract quoted portions of formulas and add them as chunks.
 Private Sub ProcessFormulaRange(ByVal sourceRange As Range, ByVal rngTag As String)
-    Dim formulas As Variant
+    Dim formulaValues As Variant
     Dim rowIndex As Long
     Dim colIndex As Long
     Dim readRange As Range
@@ -844,16 +844,16 @@ Private Sub ProcessFormulaRange(ByVal sourceRange As Range, ByVal rngTag As Stri
     Set readRange = EffectiveSourceRange(sourceRange)
     If readRange Is Nothing Then Exit Sub
 
-    formulas = readRange.Formula
-    If IsArray(formulas) Then
-        For rowIndex = LBound(formulas, 1) To UBound(formulas, 1)
-            For colIndex = LBound(formulas, 2) To UBound(formulas, 2)
-                Set tokens = ExtractFormulaChunks(SafeText(formulas(rowIndex, colIndex)))
+    formulaValues = readRange.Formula
+    If IsArray(formulaValues) Then
+        For rowIndex = LBound(formulaValues, 1) To UBound(formulaValues, 1)
+            For colIndex = LBound(formulaValues, 2) To UBound(formulaValues, 2)
+                Set tokens = ExtractFormulaChunks(SafeText(formulaValues(rowIndex, colIndex)))
                 AddTokens tokens, rngTag
             Next colIndex
         Next rowIndex
     Else
-        Set tokens = ExtractFormulaChunks(SafeText(formulas))
+        Set tokens = ExtractFormulaChunks(SafeText(formulaValues))
         AddTokens tokens, rngTag
     End If
 End Sub

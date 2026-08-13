@@ -64,8 +64,8 @@ Private Type TEventSetup
     dictionary          As LLdictionary     'Cached dictionary reference
     choices             As LLChoices        'Cached choices helper
     ana                 As Analysis         'Cached analysis helper
-    exports             As LLExport         'Cached exports manager
-    passwords           As Passwords        'Cached password helper (lazily created once)
+    exportSpecs             As LLExport         'Cached exports manager
+    passManager           As Passwords        'Cached password helper (lazily created once)
     choicesTable        As CustomTable      'Cached Choices table wrapper
     buttonsOnTranslations As Boolean        'Answer the ribbon buttons were last given
     buttonsAnswered     As Boolean          'Whether that answer has been given once
@@ -431,7 +431,7 @@ Public Sub ManageRows(ByVal sheetName As String, Optional ByVal del As Boolean =
                 Set dictPass = BeginSheetUpdate(SHEET_DICTIONARY)
                 unlockedDict = SHEET_DICTIONARY
             End If
-            this.exports.ManageRows del, this.dictionary
+            this.exportSpecs.ManageRows del, this.dictionary
         Case Else
             GoTo CleanExit
     End Select
@@ -514,7 +514,7 @@ Public Sub InsertRows(ByVal sheetName As String, _
                 Set dictPass = BeginSheetUpdate(SHEET_DICTIONARY)
                 unlockedDict = SHEET_DICTIONARY
             End If
-            this.exports.InsertRows targetCell, this.dictionary, insertShift
+            this.exportSpecs.InsertRows targetCell, this.dictionary, insertShift
         Case Else
             GoTo CleanExit
     End Select
@@ -597,7 +597,7 @@ Public Sub DeleteRows(ByVal sheetName As String, _
                 unlockedDict = SHEET_DICTIONARY
                 Set dictRef = this.dictionary
             End If
-            this.exports.DeleteRows targetCell, dictRef, forceShift
+            this.exportSpecs.DeleteRows targetCell, dictRef, forceShift
         Case Else
             GoTo CleanExit
     End Select
@@ -674,7 +674,7 @@ Public Sub SortTables(ByVal sheetName As String)
                 unlockedDict = SHEET_DICTIONARY
                 Set dictRef = this.dictionary
             End If
-            this.exports.Sort dictRef
+            this.exportSpecs.Sort dictRef
         Case Else
             GoTo CleanExit
     End Select
@@ -763,7 +763,7 @@ Public Sub ApplySetupTranslation(ByVal translator As TranslationObject)
     If EnsureExports() Then
         unlockedSheet = SHEET_EXPORTS
         UnprotectSetupSheet unlockedSheet
-        this.exports.Translate translator
+        this.exportSpecs.Translate translator
         ProtectSetupSheet unlockedSheet
         unlockedSheet = vbNullString
     End If
@@ -807,8 +807,8 @@ Private Sub ResetInternalCaches()
     Set this.dictionary = Nothing
     Set this.choices = Nothing
     Set this.ana = Nothing
-    Set this.exports = Nothing
-    Set this.passwords = Nothing
+    Set this.exportSpecs = Nothing
+    Set this.passManager = Nothing
     Set this.choicesTable = Nothing
 
     this.buttonsOnTranslations = False
@@ -974,7 +974,7 @@ End Function
 'cached. Returns True when the exports helper is available.
 '@return Boolean. True when the exports helper is available.
 Private Function EnsureExports() As Boolean
-    If Not (this.exports Is Nothing) Then
+    If Not (this.exportSpecs Is Nothing) Then
         EnsureExports = True
         Exit Function
     End If
@@ -985,10 +985,10 @@ Private Function EnsureExports() As Boolean
     If exportSheet Is Nothing Then Exit Function
 
     On Error Resume Next
-        Set this.exports = LLExport.Create(exportSheet, EXPORT_START_ROW, EXPORT_START_COLUMN)
+        Set this.exportSpecs = LLExport.Create(exportSheet, EXPORT_START_ROW, EXPORT_START_COLUMN)
     On Error GoTo 0
 
-    EnsureExports = Not (this.exports Is Nothing)
+    EnsureExports = Not (this.exportSpecs Is Nothing)
 End Function
 
 '@label:ensure-analysis-table
@@ -1105,10 +1105,10 @@ End Function
 'during BeginSheetUpdate / EndSheetUpdate cycles.
 '@return Passwords. The cached password helper, or Nothing when unavailable.
 Private Function CachedPasswordManager() As Passwords
-    If this.passwords Is Nothing Then
-        Set this.passwords = PasswordManager()
+    If this.passManager Is Nothing Then
+        Set this.passManager = PasswordManager()
     End If
-    Set CachedPasswordManager = this.passwords
+    Set CachedPasswordManager = this.passManager
 End Function
 
 '@label:unprotect-setup-sheet

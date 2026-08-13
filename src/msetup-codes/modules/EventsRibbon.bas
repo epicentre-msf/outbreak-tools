@@ -75,7 +75,7 @@ End Sub
 
 '@EntryPoint
 '@Description("Callback for btnAdd onAction")
-Sub clickAddRows(Control As IRibbonControl)
+Sub clickAddRows(ribbonControl As IRibbonControl)
 Attribute clickAddRows.VB_Description = "Callback for btnAdd onAction"
 
     Dim drop As IDropdownLists
@@ -94,7 +94,7 @@ End Sub
 
 '@EntryPoint
 '@Description("Callback for btnRes onAction")
-Sub clickResize(Control As IRibbonControl)
+Sub clickResize(ribbonControl As IRibbonControl)
 Attribute clickResize.VB_Description = "Callback for btnRes onAction"
 
     Dim drop As IDropdownLists
@@ -117,7 +117,7 @@ End Sub
 
 '@Description("Callback for btnFilt onAction: clear all the filters in the current sheet")
 '@EntryPoint
-Public Sub clickFilters(ByRef Control As IRibbonControl)
+Public Sub clickFilters(ByRef ribbonControl As IRibbonControl)
 Attribute clickFilters.VB_Description = "Callback for btnFilt onAction: clear all the filters in the current sheet"
 
     Dim pass As IPasswords
@@ -147,7 +147,7 @@ End Sub
 
 '@Description("Callback for editLang onChange: Add a language to translation table")
 '@EntryPoint
-Public Sub clickAddLang(ByRef Control As IRibbonControl, ByRef Text As String)
+Public Sub clickAddLang(ByRef ribbonControl As IRibbonControl, ByRef Text As String)
 Attribute clickAddLang.VB_Description = "Callback for editLang onChange: Add a language to translation table"
 
     Dim pass As IPasswords
@@ -192,7 +192,7 @@ End Sub
 
 '@Description("Callback for btnTransUp onAction: Update columns to be translated")
 '@EntryPoint
-Public Sub clickUpdateTranslate(ByRef Control As IRibbonControl)
+Public Sub clickUpdateTranslate(ByRef ribbonControl As IRibbonControl)
 Attribute clickUpdateTranslate.VB_Description = "Callback for btnTransUp onAction: Update columns to be translated"
     'remove update columns and add new columns to watch
     
@@ -267,7 +267,7 @@ End Sub
 
 '@Description("Callback for btnTransAdd onAction: Import all words to be translated")
 '@EntryPoint
-Public Sub clickAddTrans(ByRef Control As IRibbonControl)
+Public Sub clickAddTrans(ByRef ribbonControl As IRibbonControl)
 Attribute clickAddTrans.VB_Description = "Callback for btnTransAdd onAction: Import all words to be translated"
 
     Dim pass As IPasswords
@@ -323,14 +323,14 @@ End Sub
 
 '@Description("Callback for btnAddSheet onAction: Add a new disease Worksheet")
 '@EntryPoint
-Public Sub clickAddSheet(Control As IRibbonControl)
+Public Sub clickAddSheet(ribbonControl As IRibbonControl)
 Attribute clickAddSheet.VB_Description = "Callback for btnAddSheet onAction: Add a new disease Worksheet"
     ManageDiseases.AddDisease
 End Sub
 
 '@Description("Callback for btnRemSheet onAction: Remove current disease worksheet")
 '@EntryPoint
-Public Sub clickRemSheet(Control As IRibbonControl)
+Public Sub clickRemSheet(ribbonControl As IRibbonControl)
 Attribute clickRemSheet.VB_Description = "Callback for btnRemSheet onAction: Remove current disease worksheet"
     ManageDiseases.RemoveDisease
 End Sub
@@ -338,7 +338,7 @@ End Sub
 
 '@Description("Callback for btnClear onAction: Clear all data in the current disease worksheet")
 '@EntryPoint
-Public Sub clickClearSheet(Control As IRibbonControl)
+Public Sub clickClearSheet(ribbonControl As IRibbonControl)
 Attribute clickClearSheet.VB_Description = "Callback for btnClear onAction: Clear all data in the current disease worksheet"
     ManageDiseases.ClearDiseaseSheet
 End Sub
@@ -347,7 +347,7 @@ End Sub
 
 '@Description("Callback for btnExp onAction: Export the current disease file for setup import")
 '@EntryPoint
-Public Sub clickExpSheet(Control As IRibbonControl)
+Public Sub clickExpSheet(ribbonControl As IRibbonControl)
 Attribute clickExpSheet.VB_Description = "Callback for btnExp onAction: Export the current disease file for setup import"
     Exports.ExportToSetup
 End Sub
@@ -355,14 +355,14 @@ End Sub
 
 '@Description("Callback for btnComp onAction: Compare two diseases")
 '@EntryPoint
-Public Sub clickComp(Control As IRibbonControl)
+Public Sub clickComp(ribbonControl As IRibbonControl)
 Attribute clickComp.VB_Description = "Callback for btnComp onAction: Compare two diseases"
     Misc.Compare
 End Sub
 
 '@Description("Callback for btnImp onAction: Import flat disease file")
 '@EntryPoint
-Public Sub clickImp(Control As IRibbonControl)
+Public Sub clickImp(ribbonControl As IRibbonControl)
 Attribute clickImp.VB_Description = "Callback for btnImp onAction: Import flat disease file"
     Exports.ImportFlatFile
 End Sub
@@ -370,7 +370,7 @@ End Sub
 
 '@EntryPoint
 '@Description("Callback for btnExpMig onAction: Export the current file for Migration")
-Public Sub clickExp(Control As IRibbonControl)
+Public Sub clickExp(ribbonControl As IRibbonControl)
 Attribute clickExp.VB_Description = "Callback for btnExpMig onAction: Export the current file for Migration"
     Exports.ExportForMigration
 End Sub
@@ -392,7 +392,7 @@ End Sub
 '@Description("Callback for getLabel (Depending on the language)")
 '@EntryPoint
 '@Ignore VariableTypeNotDeclared
-Public Sub LangLabel(Control As IRibbonControl, ByRef returnedVal)
+Public Sub LangLabel(ribbonControl As IRibbonControl, ByRef returnedVal)
 Attribute LangLabel.VB_Description = "Callback for getLabel (Depending on the language)"
 
     Dim trads As ITranslationObject
@@ -407,14 +407,14 @@ Attribute LangLabel.VB_Description = "Callback for getLabel (Depending on the la
     Set Lo = tradsh.ListObjects(TRADTABLE)
     fileLang = tradsh.Range(RNG_FileLang).Value
     Set trads = Translation.Create(Lo, fileLang)
-    codeId = Control.ID
+    codeId = ribbonControl.ID
 
     returnedVal = trads.TranslatedValue(codeId)
 End Sub
 
 '@Description("Callback for langDrop onAction: Change the language of the designer")
 '@EntryPoint
-Public Sub clickLangChange(Control As IRibbonControl, langId As String, Index As Integer)
+Public Sub clickLangChange(ribbonControl As IRibbonControl, langId As String, Index As Integer)
 Attribute clickLangChange.VB_Description = "Callback for langDrop onAction: Change the language of the designer"
 
     'langId is the language code

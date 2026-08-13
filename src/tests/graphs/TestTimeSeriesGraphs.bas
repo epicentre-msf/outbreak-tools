@@ -288,10 +288,10 @@ End Function
 '@sub-title The first series name of the first graph, or an empty string.
 '@param graphs TimeSeriesGraphs. The builder to read.
 '@return String. The data range name of series 1 of graph 1.
-Private Function FirstSeriesName(ByVal graphs As TimeSeriesGraphs) As String
-    If graphs.Count = 0 Then Exit Function
-    If graphs.Series(1).Count = 0 Then Exit Function
-    FirstSeriesName = graphs.Series(1).RangeName(1)
+Private Function FirstSeriesName(ByVal tsGraphs As TimeSeriesGraphs) As String
+    If tsGraphs.Count = 0 Then Exit Function
+    If tsGraphs.Series(1).Count = 0 Then Exit Function
+    FirstSeriesName = tsGraphs.Series(1).RangeName(1)
 End Function
 
 '@section Module lifecycle
@@ -373,17 +373,17 @@ Public Sub TestCreateRejectsNothingLoTable()
     CustomTestSetTitles Assert, "TimeSeriesGraphs", "TestCreateRejectsNothingLoTable"
     On Error GoTo TestFail
 
-    Dim graphs As TimeSeriesGraphs
+    Dim tsGraphs As TimeSeriesGraphs
     Dim outSh As Worksheet
 
     Set outSh = BuildOutputSheet(withCategories:=False)
 
     On Error Resume Next
-    Set graphs = TimeSeriesGraphs.Create(Nothing, outSh, LinelistData())
+    Set tsGraphs = TimeSeriesGraphs.Create(Nothing, outSh, LinelistData())
     Err.Clear
     On Error GoTo TestFail
 
-    Assert.IsTrue (graphs Is Nothing), "Create refuses a Nothing collection"
+    Assert.IsTrue (tsGraphs Is Nothing), "Create refuses a Nothing collection"
 
     Exit Sub
 TestFail:
@@ -397,16 +397,16 @@ Public Sub TestCreateRejectsNothingSheet()
     On Error GoTo TestFail
 
     Dim loTable As BetterArray
-    Dim graphs As TimeSeriesGraphs
+    Dim tsGraphs As TimeSeriesGraphs
 
     Set loTable = StandardFixture(CATEGORY_CHOICE, "values")
 
     On Error Resume Next
-    Set graphs = TimeSeriesGraphs.Create(loTable, Nothing, LinelistData())
+    Set tsGraphs = TimeSeriesGraphs.Create(loTable, Nothing, LinelistData())
     Err.Clear
     On Error GoTo TestFail
 
-    Assert.IsTrue (graphs Is Nothing), "Create refuses a Nothing worksheet"
+    Assert.IsTrue (tsGraphs Is Nothing), "Create refuses a Nothing worksheet"
 
     Exit Sub
 TestFail:
@@ -421,17 +421,17 @@ Public Sub TestCreateRejectsNothingLData()
 
     Dim loTable As BetterArray
     Dim outSh As Worksheet
-    Dim graphs As TimeSeriesGraphs
+    Dim tsGraphs As TimeSeriesGraphs
 
     Set loTable = StandardFixture(CATEGORY_CHOICE, "values")
     Set outSh = BuildOutputSheet(withCategories:=True)
 
     On Error Resume Next
-    Set graphs = TimeSeriesGraphs.Create(loTable, outSh, Nothing)
+    Set tsGraphs = TimeSeriesGraphs.Create(loTable, outSh, Nothing)
     Err.Clear
     On Error GoTo TestFail
 
-    Assert.IsTrue (graphs Is Nothing), "Create refuses Nothing linelist specifications"
+    Assert.IsTrue (tsGraphs Is Nothing), "Create refuses Nothing linelist specifications"
 
     Exit Sub
 TestFail:
@@ -447,7 +447,7 @@ Public Sub TestCreateRejectsWrongCount()
     Dim loTable As BetterArray
     Dim shortList As BetterArray
     Dim outSh As Worksheet
-    Dim graphs As TimeSeriesGraphs
+    Dim tsGraphs As TimeSeriesGraphs
     Dim errNumber As Long
 
     Set loTable = StandardFixture(CATEGORY_CHOICE, "values")
@@ -458,12 +458,12 @@ Public Sub TestCreateRejectsWrongCount()
     shortList.Push loTable.Item(1)
 
     On Error Resume Next
-    Set graphs = TimeSeriesGraphs.Create(shortList, outSh, LinelistData())
+    Set tsGraphs = TimeSeriesGraphs.Create(shortList, outSh, LinelistData())
     errNumber = Err.Number
     Err.Clear
     On Error GoTo TestFail
 
-    Assert.IsTrue (graphs Is Nothing), "Create refuses one ListObject"
+    Assert.IsTrue (tsGraphs Is Nothing), "Create refuses one ListObject"
     Assert.AreEqual CLng(ProjectError.InvalidArgument), errNumber, _
                     "A collection of the wrong size raises InvalidArgument"
 
@@ -485,17 +485,17 @@ Public Sub TestTheSetupTableNamesAreWhatIdentifiesEachTable()
 
     Dim loTable As BetterArray
     Dim outSh As Worksheet
-    Dim graphs As TimeSeriesGraphs
+    Dim tsGraphs As TimeSeriesGraphs
 
     ' The fixture writes no caption above any of the three headers.
     Set loTable = StandardFixture(CATEGORY_CHOICE, "values")
     Set outSh = BuildOutputSheet(withCategories:=True)
 
-    Set graphs = TimeSeriesGraphs.Create(loTable, outSh, LinelistData())
+    Set tsGraphs = TimeSeriesGraphs.Create(loTable, outSh, LinelistData())
 
-    Assert.IsTrue (Not graphs Is Nothing), _
+    Assert.IsTrue (Not tsGraphs Is Nothing), _
                   "The three tables are accepted on their names alone"
-    Assert.AreEqual outSh.Name, graphs.Wksh.Name, _
+    Assert.AreEqual outSh.Name, tsGraphs.Wksh.Name, _
                     "Wksh answers the output worksheet"
 
     Exit Sub
@@ -513,7 +513,7 @@ Public Sub TestCreateRejectsTablesInTheWrongOrder()
     Dim loTable As BetterArray
     Dim swapped As BetterArray
     Dim outSh As Worksheet
-    Dim graphs As TimeSeriesGraphs
+    Dim tsGraphs As TimeSeriesGraphs
     Dim errNumber As Long
 
     Set loTable = StandardFixture(CATEGORY_CHOICE, "values")
@@ -524,12 +524,12 @@ Public Sub TestCreateRejectsTablesInTheWrongOrder()
     swapped.Push loTable.Item(2), loTable.Item(1), loTable.Item(3)
 
     On Error Resume Next
-    Set graphs = TimeSeriesGraphs.Create(swapped, outSh, LinelistData())
+    Set tsGraphs = TimeSeriesGraphs.Create(swapped, outSh, LinelistData())
     errNumber = Err.Number
     Err.Clear
     On Error GoTo TestFail
 
-    Assert.IsTrue (graphs Is Nothing), "The time series table cannot stand in for the graph table"
+    Assert.IsTrue (tsGraphs Is Nothing), "The time series table cannot stand in for the graph table"
     Assert.AreEqual CLng(ProjectError.ErrorUnexpectedState), errNumber, _
                     "The wrong order raises ErrorUnexpectedState"
 
@@ -548,15 +548,15 @@ Public Sub TestCategoryChoiceResolvesToValuesCol()
     CustomTestSetTitles Assert, "TimeSeriesGraphs", "TestCategoryChoiceResolvesToValuesCol"
     On Error GoTo TestFail
 
-    Dim graphs As TimeSeriesGraphs
+    Dim tsGraphs As TimeSeriesGraphs
 
-    Set graphs = StandardGraphs(CATEGORY_CHOICE, "values")
+    Set tsGraphs = StandardGraphs(CATEGORY_CHOICE, "values")
 
-    Assert.AreEqual 1&, graphs.Count, "One graph identifier gives one graph"
-    Assert.AreEqual 1&, graphs.Series(1).Count, "And that graph carries one series"
-    Assert.AreEqual "VALUES_COL_1_" & TS_TABLE_ID, FirstSeriesName(graphs), _
+    Assert.AreEqual 1&, tsGraphs.Count, "One graph identifier gives one graph"
+    Assert.AreEqual 1&, tsGraphs.Series(1).Count, "And that graph carries one series"
+    Assert.AreEqual "VALUES_COL_1_" & TS_TABLE_ID, FirstSeriesName(tsGraphs), _
                     "A category choice plots the values of its own column"
-    Assert.AreEqual "A graph title", graphs.Title(1), _
+    Assert.AreEqual "A graph title", tsGraphs.Title(1), _
                     "The graph carries the title of its row in the titles table"
 
     Exit Sub
@@ -680,15 +680,15 @@ Public Sub TestMissingColumnCategoriesIsReportedAndSkipped()
 
     Dim loTable As BetterArray
     Dim outSh As Worksheet
-    Dim graphs As TimeSeriesGraphs
+    Dim tsGraphs As TimeSeriesGraphs
 
     Set loTable = StandardFixture(CATEGORY_CHOICE, "values")
     Set outSh = BuildOutputSheet(withCategories:=False)
-    Set graphs = TimeSeriesGraphs.Create(loTable, outSh, LinelistData())
+    Set tsGraphs = TimeSeriesGraphs.Create(loTable, outSh, LinelistData())
 
-    Assert.AreEqual 0&, graphs.Count, _
+    Assert.AreEqual 0&, tsGraphs.Count, _
                     "A graph whose only series cannot be resolved is left out"
-    Assert.IsTrue graphs.HasCheckings, "The missing column categories are reported"
+    Assert.IsTrue tsGraphs.HasCheckings, "The missing column categories are reported"
 
     Exit Sub
 TestFail:
@@ -704,16 +704,16 @@ Public Sub TestUnknownSeriesIdIsReportedAndSkipped()
 
     Dim loTable As BetterArray
     Dim outSh As Worksheet
-    Dim graphs As TimeSeriesGraphs
+    Dim tsGraphs As TimeSeriesGraphs
 
     Set loTable = BuildFixture(GRAPH_ID, CATEGORY_CHOICE, "values", _
                                "A series nothing defines", GRAPH_ID)
     Set outSh = BuildOutputSheet(withCategories:=True)
-    Set graphs = TimeSeriesGraphs.Create(loTable, outSh, LinelistData())
+    Set tsGraphs = TimeSeriesGraphs.Create(loTable, outSh, LinelistData())
 
-    Assert.AreEqual 0&, graphs.Count, "A graph with no resolvable series is left out"
-    Assert.IsTrue graphs.HasCheckings, "The unknown series identifier is reported"
-    Assert.IsTrue (Not graphs.CheckingValues Is Nothing), _
+    Assert.AreEqual 0&, tsGraphs.Count, "A graph with no resolvable series is left out"
+    Assert.IsTrue tsGraphs.HasCheckings, "The unknown series identifier is reported"
+    Assert.IsTrue (Not tsGraphs.CheckingValues Is Nothing), _
                   "The report is handed over when there is one"
 
     Exit Sub
@@ -736,15 +736,15 @@ Public Sub TestABlankGraphIdColumnBuildsNoGraph()
 
     Dim loTable As BetterArray
     Dim outSh As Worksheet
-    Dim graphs As TimeSeriesGraphs
+    Dim tsGraphs As TimeSeriesGraphs
 
     Set loTable = BuildFixture(vbNullString, CATEGORY_CHOICE, "values", _
                                SERIES_ID, GRAPH_ID)
     Set outSh = BuildOutputSheet(withCategories:=True)
-    Set graphs = TimeSeriesGraphs.Create(loTable, outSh, LinelistData())
+    Set tsGraphs = TimeSeriesGraphs.Create(loTable, outSh, LinelistData())
 
-    Assert.AreEqual 0&, graphs.Count, "A blank identifier column gives no graph"
-    Assert.IsTrue graphs.HasCheckings, "The empty setup table is reported"
+    Assert.AreEqual 0&, tsGraphs.Count, "A blank identifier column gives no graph"
+    Assert.IsTrue tsGraphs.HasCheckings, "The empty setup table is reported"
 
     Exit Sub
 TestFail:
@@ -762,15 +762,15 @@ Public Sub TestGraphTitleIsMatchedWithoutRegardToCase()
 
     Dim loTable As BetterArray
     Dim outSh As Worksheet
-    Dim graphs As TimeSeriesGraphs
+    Dim tsGraphs As TimeSeriesGraphs
 
     Set loTable = BuildFixture(GRAPH_ID, CATEGORY_CHOICE, "values", _
                                SERIES_ID, LCase$(GRAPH_ID))
     Set outSh = BuildOutputSheet(withCategories:=True)
-    Set graphs = TimeSeriesGraphs.Create(loTable, outSh, LinelistData())
+    Set tsGraphs = TimeSeriesGraphs.Create(loTable, outSh, LinelistData())
 
-    Assert.AreEqual 1&, graphs.Count, "The graph is built"
-    Assert.AreEqual "A graph title", graphs.Title(1), _
+    Assert.AreEqual 1&, tsGraphs.Count, "The graph is built"
+    Assert.AreEqual "A graph title", tsGraphs.Title(1), _
                     "The title row is found when only its case differs"
 
     Exit Sub
@@ -787,16 +787,16 @@ Public Sub TestAGraphWithNoTitleRowIsReported()
 
     Dim loTable As BetterArray
     Dim outSh As Worksheet
-    Dim graphs As TimeSeriesGraphs
+    Dim tsGraphs As TimeSeriesGraphs
 
     Set loTable = BuildFixture(GRAPH_ID, CATEGORY_CHOICE, "values", _
                                SERIES_ID, "Another graph")
     Set outSh = BuildOutputSheet(withCategories:=True)
-    Set graphs = TimeSeriesGraphs.Create(loTable, outSh, LinelistData())
+    Set tsGraphs = TimeSeriesGraphs.Create(loTable, outSh, LinelistData())
 
-    Assert.AreEqual 1&, graphs.Count, "The graph is still drawn"
-    Assert.AreEqual vbNullString, graphs.Title(1), "And it carries no title"
-    Assert.IsTrue graphs.HasCheckings, "The missing title row is reported"
+    Assert.AreEqual 1&, tsGraphs.Count, "The graph is still drawn"
+    Assert.AreEqual vbNullString, tsGraphs.Title(1), "And it carries no title"
+    Assert.IsTrue tsGraphs.HasCheckings, "The missing title row is reported"
 
     Exit Sub
 TestFail:
@@ -809,14 +809,14 @@ Public Sub TestReadingPastTheLastGraphRaises()
     CustomTestSetTitles Assert, "TimeSeriesGraphs", "TestReadingPastTheLastGraphRaises"
     On Error GoTo TestFail
 
-    Dim graphs As TimeSeriesGraphs
+    Dim tsGraphs As TimeSeriesGraphs
     Dim graphTitle As String
     Dim errNumber As Long
 
-    Set graphs = StandardGraphs(CATEGORY_CHOICE, "values")
+    Set tsGraphs = StandardGraphs(CATEGORY_CHOICE, "values")
 
     On Error Resume Next
-    graphTitle = graphs.Title(2)
+    graphTitle = tsGraphs.Title(2)
     errNumber = Err.Number
     Err.Clear
     On Error GoTo TestFail
@@ -844,26 +844,26 @@ Public Sub TestTheCheckingKeysCarryTheWorksheetName()
     CustomTestSetTitles Assert, "TimeSeriesGraphs", "TestTheCheckingKeysCarryTheWorksheetName"
     On Error GoTo TestFail
 
-    Dim graphs As TimeSeriesGraphs
+    Dim tsGraphs As TimeSeriesGraphs
     Dim report As Checking
     Dim errNumber As Long
 
-    Set graphs = StandardGraphs(CATEGORY_CHOICE, "values")
+    Set tsGraphs = StandardGraphs(CATEGORY_CHOICE, "values")
 
     ' The fixture graph resolves, and its title row is present, so nothing is
     ' filed. A graph with no title row is what files an entry.
-    Set graphs = Nothing
-    Set graphs = TimeSeriesGraphs.Create( _
+    Set tsGraphs = Nothing
+    Set tsGraphs = TimeSeriesGraphs.Create( _
         BuildFixture(GRAPH_ID, CATEGORY_CHOICE, "values", SERIES_ID, "Another graph"), _
         BuildOutputSheet(withCategories:=True), LinelistData())
 
-    Assert.AreEqual 1&, graphs.Count, "The graph is built"
-    Assert.IsTrue graphs.HasCheckings, "And the missing title row is filed"
+    Assert.AreEqual 1&, tsGraphs.Count, "The graph is built"
+    Assert.IsTrue tsGraphs.HasCheckings, "And the missing title row is filed"
 
     Set report = Checking.Create("Analysis output")
 
     On Error Resume Next
-    report.Append graphs.CheckingValues
+    report.Append tsGraphs.CheckingValues
     errNumber = Err.Number
     Err.Clear
     On Error GoTo TestFail

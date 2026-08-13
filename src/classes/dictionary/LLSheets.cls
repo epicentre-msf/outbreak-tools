@@ -346,7 +346,7 @@ End Function
 '@throws ProjectError.ElementNotFound When the sheet or the control column is missing.
 '@export
 Public Function ContainsControl(ByVal sheetName As String, _
-                                 Optional ByVal Control As String = "list_auto", _
+                                 Optional ByVal ribbonControl As String = "list_auto", _
                                  Optional ByVal colName As String = COL_CONTROL) As Boolean
     Dim values As BetterArray
 
@@ -354,7 +354,7 @@ Public Function ContainsControl(ByVal sheetName As String, _
     EnsureControlColumnExists colName
 
     Set values = this.dict.Data.FilterData(COL_SHEET_NAME, sheetName, colName, matchCase:=False)
-    ContainsControl = values.Includes(Control)
+    ContainsControl = values.Includes(ribbonControl)
 End Function
 
 '@label:VariableAddress

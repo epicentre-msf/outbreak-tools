@@ -447,8 +447,8 @@ End Function
 'The first ListObject is what EventLinelist itself reads, so this reads the
 'same one.
 '@return ListObject. The data entry table.
-Private Function HListTable() As ListObject
-    Set HListTable = HListSheet().ListObjects(1)
+Private Function HListLo() As ListObject
+    Set HListLo = HListSheet().ListObjects(1)
 End Function
 
 '@fun-title The hidden names of one built sheet.
@@ -465,7 +465,7 @@ Private Function HeaderColumnOf(ByVal varName As String) As Long
     Dim hRng As Range
     Dim idx As Long
 
-    Set hRng = HListTable().HeaderRowRange
+    Set hRng = HListLo().HeaderRowRange
 
     For idx = 1 To hRng.Columns.Count
         If CStr(hRng.Cells(1, idx).Value) = varName Then
@@ -480,7 +480,7 @@ End Function
 '@param rowOffset Long. Rows below the header row.
 '@return Range. The cell.
 Private Function HListCell(ByVal varName As String, ByVal rowOffset As Long) As Range
-    Set HListCell = HListSheet().Cells(HListTable().HeaderRowRange.Row + rowOffset, _
+    Set HListCell = HListSheet().Cells(HListLo().HeaderRowRange.Row + rowOffset, _
                                        HeaderColumnOf(varName))
 End Function
 
@@ -584,7 +584,7 @@ Private Function FirstSectionName() As String
     Dim idx As Long
     Dim cellValue As String
 
-    Set sectionRng = HListTable().HeaderRowRange.Offset(-3)
+    Set sectionRng = HListLo().HeaderRowRange.Offset(-3)
 
     For idx = 1 To sectionRng.Columns.Count
         cellValue = CStr(sectionRng.Cells(1, idx).Value)

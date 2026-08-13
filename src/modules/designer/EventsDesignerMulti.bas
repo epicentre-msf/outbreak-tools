@@ -80,7 +80,7 @@ Private Const RESULT_BUILT As String = "OK"
 
 '@Description("Load files or folder into the active T_Multi column (setups, geobases, output folders).")
 '@EntryPoint
-Public Sub clickFolderMulti(ByRef control As IRibbonControl)
+Public Sub clickFolderMulti(ByRef ribbonControl As IRibbonControl)
     Dim lo As ListObject
     Dim colName As String
     Dim io As OSFiles
@@ -174,7 +174,7 @@ End Sub
 
 '@Description("Duplicate the active row in T_Multi with the same values and a fresh ID.")
 '@EntryPoint
-Public Sub clickDupMulti(ByRef control As IRibbonControl)
+Public Sub clickDupMulti(ByRef ribbonControl As IRibbonControl)
     Dim lo As ListObject
     Dim appScope As ApplicationState
     Dim relPos As Long
@@ -250,7 +250,7 @@ End Sub
 
 '@Description("Add rows to the T_Multi table. New rows get the next free IDs.")
 '@EntryPoint
-Public Sub clickAddRowsMulti(ByRef control As IRibbonControl)
+Public Sub clickAddRowsMulti(ByRef ribbonControl As IRibbonControl)
     Dim lo As ListObject
     Dim table As CustomTable
     Dim appScope As ApplicationState
@@ -293,7 +293,7 @@ End Sub
 
 '@Description("Resize the T_Multi table by removing empty rows. Kept rows keep their IDs.")
 '@EntryPoint
-Public Sub clickResizeMulti(ByRef control As IRibbonControl)
+Public Sub clickResizeMulti(ByRef ribbonControl As IRibbonControl)
     Dim lo As ListObject
     Dim table As CustomTable
     Dim appScope As ApplicationState
@@ -336,7 +336,7 @@ End Sub
 
 '@Description("Import T_Multi data from another workbook. Blank IDs get the next free numbers.")
 '@EntryPoint
-Public Sub clickImpMulti(ByRef control As IRibbonControl)
+Public Sub clickImpMulti(ByRef ribbonControl As IRibbonControl)
     Dim io As OSFiles
     Dim appScope As ApplicationState
     Dim importBook As Workbook
@@ -416,7 +416,7 @@ End Sub
 
 '@Description("Export the T_Multi table to a new workbook in a user-selected folder.")
 '@EntryPoint
-Public Sub clickExportMulti(ByRef control As IRibbonControl)
+Public Sub clickExportMulti(ByRef ribbonControl As IRibbonControl)
     Dim io As OSFiles
     Dim appScope As ApplicationState
     Dim lo As ListObject
@@ -492,7 +492,7 @@ End Sub
 'summary message closes the run; each row's own outcome is in the
 'result column.
 '@EntryPoint
-Public Sub clickGenerateMulti(ByRef control As IRibbonControl)
+Public Sub clickGenerateMulti(ByRef ribbonControl As IRibbonControl)
     Dim lo As ListObject
     Dim appScope As ApplicationState
     Dim entry As DesignerEntry

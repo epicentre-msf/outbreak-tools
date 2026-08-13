@@ -21,7 +21,7 @@ Private Const TRADSHEETNAME As String = "Translations"
 '===============================================================================
 '@Description("Resize the listObjects in the current sheet")
 '@EntryPoint
-Public Sub clickResize(ByRef control As IRibbonControl)
+Public Sub clickResize(ByRef ribbonControl As IRibbonControl)
     Dim svc As EventSetup
     Dim sheetName As String
 
@@ -38,7 +38,7 @@ End Sub
 
 '@Description("add rows to listObject")
 '@EntryPoint
-Public Sub clickAddRows(ByRef control As Office.IRibbonControl)
+Public Sub clickAddRows(ByRef ribbonControl As Office.IRibbonControl)
     Dim svc As EventSetup
     Dim sheetName As String
 
@@ -55,7 +55,7 @@ End Sub
 
 '@Description("Clear all the filters in the current sheet")
 '@EntryPoint
-Public Sub clickFilters(ByRef control As IRibbonControl)
+Public Sub clickFilters(ByRef ribbonControl As IRibbonControl)
     Dim svc As EventSetup
     Dim targetSheet As Worksheet
     Dim lo As ListObject
@@ -100,7 +100,7 @@ End Sub
 
 '@Description("Sort setup tables depending on active sheet")
 '@EntryPoint
-Public Sub clickSortTables(ByRef control As IRibbonControl)
+Public Sub clickSortTables(ByRef ribbonControl As IRibbonControl)
     Dim svc As EventSetup
     Dim sheetName As String
 
@@ -119,7 +119,7 @@ End Sub
 
 '@Description("Insert a list row at the active position")
 '@EntryPoint
-Public Sub clickInsertRow(ByRef control As IRibbonControl)
+Public Sub clickInsertRow(ByRef ribbonControl As IRibbonControl)
     Dim svc As EventSetup
     Dim sheetName As String
     Dim targetCell As Range
@@ -142,7 +142,7 @@ End Sub
 
 '@Description("Delete the current list row when the active cell belongs to a table")
 '@EntryPoint
-Public Sub clickDelLoRows(ByRef control As IRibbonControl)
+Public Sub clickDelLoRows(ByRef ribbonControl As IRibbonControl)
     Dim svc As EventSetup
     Dim sheetName As String
     Dim targetCell As Range
@@ -169,7 +169,7 @@ End Sub
 
 '@Description("Delete the current list column when the active cell belongs to a table")
 '@EntryPoint
-Public Sub clickDelLoColumn(ByRef control As IRibbonControl)
+Public Sub clickDelLoColumn(ByRef ribbonControl As IRibbonControl)
     Dim sheetName As String
     Dim targetCell As Range
 
@@ -198,7 +198,7 @@ End Sub
 '@section Translation Management: callbacks for group CustomGroupTrans
 '===============================================================================
 
-Public Sub clickResetTag(ByRef control As IRibbonControl)
+Public Sub clickResetTag(ByRef ribbonControl As IRibbonControl)
    Dim prep As SetupPreparation
 
    On Error GoTo Handler
@@ -219,7 +219,7 @@ End Sub
 
 '@Description("Callback for editLang onChange: add translation language columns")
 '@EntryPoint
-Public Sub clickAddLang(ByRef control As IRibbonControl, ByRef text As String)
+Public Sub clickAddLang(ByRef ribbonControl As IRibbonControl, ByRef text As String)
     Dim svc As EventSetup
     Dim languages As String
     Dim answer As VbMsgBoxResult
@@ -273,7 +273,7 @@ End Sub
 
 '@Description("Callback for btnTransAdd onAction: update translations from registry")
 '@EntryPoint
-Public Sub clickAddTrans(ByRef control As IRibbonControl)
+Public Sub clickAddTrans(ByRef ribbonControl As IRibbonControl)
     Dim svc As EventSetup
     Dim answer As VbMsgBoxResult
     Dim translationsTable As ListObject
@@ -334,7 +334,7 @@ End Sub
 
 '@Description("Callback for btnTransChange onAction: translate the setup to a selected language")
 '@EntryPoint
-Public Sub clickTransSetup(ByRef control As IRibbonControl)
+Public Sub clickTransSetup(ByRef ribbonControl As IRibbonControl)
     Dim svc As EventSetup
     Dim translationsTable As ListObject
     Dim manager As SetupTranslationsTable
@@ -452,7 +452,7 @@ End Function
 
 '@Description("Callback for btnExport onAction: export the current setup to a workbook")
 '@EntryPoint
-Public Sub clickExport(ByRef control As IRibbonControl)
+Public Sub clickExport(ByRef ribbonControl As IRibbonControl)
     Dim svc As EventSetup
     Dim service As SetupImport
     Dim exportPath As String
@@ -495,7 +495,7 @@ End Sub
 
 '@Description("Callback for btnImp onAction: import setup content from another setup workbook")
 '@EntryPoint
-Public Sub clickImport(ByRef control As IRibbonControl)
+Public Sub clickImport(ByRef ribbonControl As IRibbonControl)
     SetupHelpers.PrepareImportsForm cleanSetup:=False
     [Imports].Show
 End Sub
@@ -503,14 +503,14 @@ End Sub
 
 '@Description("Callback for btnImp onAction: import setup content from another setup workbook")
 '@EntryPoint
-Public Sub clickClearSetup(ByRef control As IRibbonControl)
+Public Sub clickClearSetup(ByRef ribbonControl As IRibbonControl)
     SetupHelpers.PrepareImportsForm cleanSetup:=True
     [Imports].Show
 End Sub
 
 '@Description("Callback for btnImpExp onAction: import setup elements from a workbook using table mode")
 '@EntryPoint
-Public Sub clickImportFile(ByRef control As IRibbonControl)
+Public Sub clickImportFile(ByRef ribbonControl As IRibbonControl)
     Dim importPath As String
     Dim service As SetupImport
     Dim pass As Passwords
@@ -549,7 +549,7 @@ Handler:
     Resume Cleanup
 End Sub
 
-Public Sub clickCheck(ByRef control As IRibbonControl)
+Public Sub clickCheck(ByRef ribbonControl As IRibbonControl)
     On Error GoTo Cleanup
 
     EventsManager.EnterBusyState
@@ -561,7 +561,7 @@ End Sub
 
 '@section Formatter
 '===============================================================================
-Public Sub clickEditStyle(ByRef control As IRibbonControl)
+Public Sub clickEditStyle(ByRef ribbonControl As IRibbonControl)
     Const FORMATSHEET As String = "__formatter"
 
     Dim pass As Passwords
@@ -597,10 +597,10 @@ End Sub
 
 '@section Visibility of some buttons
 '===============================================================================
-Public Sub SetupButtonVisible(control As IRibbonControl, ByRef returnedVal)
-    If (control.Id = "btnDelLoRow") Or (control.Id = "btnSort") Then
+Public Sub SetupButtonVisible(ribbonControl As IRibbonControl, ByRef returnedVal)
+    If (ribbonControl.Id = "btnDelLoRow") Or (ribbonControl.Id = "btnSort") Then
         returnedVal = CBool((ActiveSheet.Name <> TRADSHEETNAME))
-    ElseIf (control.Id = "btnDelLoCol") Then
+    ElseIf (ribbonControl.Id = "btnDelLoCol") Then
         returnedVal = CBool((ActiveSheet.Name = TRADSHEETNAME))
     Else
         returnedVal = True
@@ -612,7 +612,7 @@ End Sub
 '===============================================================================
 '@EntryPoint
 '@Description("Initialise development environment - logic provided by consuming workbook")
-Public Sub clickDevInitialize(ByRef control As IRibbonControl)
+Public Sub clickDevInitialize(ByRef ribbonControl As IRibbonControl)
    Dim prep As SetupPreparation
 
    On Error GoTo Cleanup

@@ -873,13 +873,13 @@ Public Sub TestDeactivateClearsTheListAutoFlagWithoutATranslationSheet()
     On Error GoTo TestFail
 
     Dim sut As EventLinelist
-    Dim dataSheet As Worksheet
+    Dim dataWksh As Worksheet
 
-    Set dataSheet = FixtureWkb.Worksheets(1)
+    Set dataWksh = FixtureWkb.Worksheets(1)
     SetWorkbookName FixtureWkb, LISTAUTO_FLAG, "yes"
 
     Set sut = EventLinelist.Create(FixtureWkb)
-    sut.OnSheetDeactivate dataSheet
+    sut.OnSheetDeactivate dataWksh
 
     Assert.AreEqual "no", WorkbookNameValue(FixtureWkb, LISTAUTO_FLAG), _
                     "The flag is cleared even though the workbook has no translation worksheet"
@@ -898,13 +898,13 @@ Public Sub TestDeactivateLeavesTheFlagWhenItIsNotYes()
     On Error GoTo TestFail
 
     Dim sut As EventLinelist
-    Dim dataSheet As Worksheet
+    Dim dataWksh As Worksheet
 
-    Set dataSheet = FixtureWkb.Worksheets(1)
+    Set dataWksh = FixtureWkb.Worksheets(1)
     SetWorkbookName FixtureWkb, LISTAUTO_FLAG, "no"
 
     Set sut = EventLinelist.Create(FixtureWkb)
-    sut.OnSheetDeactivate dataSheet
+    sut.OnSheetDeactivate dataWksh
 
     Assert.AreEqual "no", WorkbookNameValue(FixtureWkb, LISTAUTO_FLAG), _
                     "A flag reading no is left where it stands"

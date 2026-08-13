@@ -36,7 +36,7 @@ End Sub
 '@param languageTag String language captured in metadata.
 '@param diseaseCode Optional String disease tag/code for metadata.
 '@return Workbook populated with export worksheets. Caller owns lifecycle.
-Public Function BuildDiseaseWorkbook(ByVal diseaseSheet As Worksheet, _
+Public Function BuildDiseaseWorkbook(ByVal diseaseWksh As Worksheet, _
                                      ByVal translationTable As ListObject, _
                                      ByVal ribbonTranslations As TranslationObject, _
                                      ByVal diseaseName As String, _
@@ -54,7 +54,7 @@ End Function
 '@param diseaseCode Optional String disease tag/code for metadata.
 '@return String file path of the saved workbook.
 Public Function ExportDisease(ByVal exportFolder As String, _
-                              ByVal diseaseSheet As Worksheet, _
+                              ByVal diseaseWksh As Worksheet, _
                               ByVal translationTable As ListObject, _
                               ByVal ribbonTranslations As TranslationObject, _
                               ByVal diseaseName As String, _

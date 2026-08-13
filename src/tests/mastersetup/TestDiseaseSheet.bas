@@ -79,7 +79,7 @@ End Sub
 Public Sub TestBuildCreatesWorksheet()
     CustomTestSetTitles Assert, "DiseaseSheetBuilder", "TestBuildCreatesWorksheet"
 
-    Dim diseaseSheet As Worksheet
+    Dim diseaseWksh As Worksheet
     Dim table As ListObject
     Dim sheetStore As HiddenNames
     Dim workbookStore As HiddenNames
@@ -97,15 +97,15 @@ Public Sub TestBuildCreatesWorksheet()
     statusHeader = Translate("varStatus", "Status")
     choicesValueHeader = Translate("choiceVal", "Choice Values")
 
-    Set diseaseSheet = Builder.Build("Zeta")
+    Set diseaseWksh = Builder.Build("Zeta")
 
-    Assert.AreEqual "ENG", diseaseSheet.Cells(2, 2).Value, "Language cell should default to the first dropdown entry."
-    Assert.AreEqual MARKER_NAME_PREFIX, diseaseSheet.Cells(2, 4).Value, "Marker cell should identify disease worksheets."
-    Assert.IsTrue InStr(1, diseaseSheet.Cells(2, 2).Validation.Formula1, LANGUAGES_LIST, vbTextCompare) > 0, _
+    Assert.AreEqual "ENG", diseaseWksh.Cells(2, 2).Value, "Language cell should default to the first dropdown entry."
+    Assert.AreEqual MARKER_NAME_PREFIX, diseaseWksh.Cells(2, 4).Value, "Marker cell should identify disease worksheets."
+    Assert.IsTrue InStr(1, diseaseWksh.Cells(2, 2).Validation.Formula1, LANGUAGES_LIST, vbTextCompare) > 0, _
                  "Language cell should use the languages dropdown."
     
    
-    Set table = diseaseSheet.ListObjects("disTab_001")
+    Set table = diseaseWksh.ListObjects("disTab_001")
 
   
     
@@ -134,7 +134,7 @@ Public Sub TestBuildCreatesWorksheet()
     
     
 
-    Set sheetStore = HiddenNames.Create(diseaseSheet)
+    Set sheetStore = HiddenNames.Create(diseaseWksh)
     Assert.AreEqual "disease", sheetStore.ValueAsString(SHEET_TAG_NAME), "Sheet tag metadata should be stored."
     Assert.AreEqual "Zeta", sheetStore.ValueAsString(NAME_DISNAME), "Disease name metadata should match the worksheet name."
     Assert.AreEqual "ENG", sheetStore.ValueAsString(NAME_DISLANG), "Language metadata should match the selected language."
@@ -159,7 +159,7 @@ End Sub
 Public Sub TestBuildRespectsProvidedLanguage()
     CustomTestSetTitles Assert, "DiseaseSheetBuilder", "TestBuildRespectsProvidedLanguage"
 
-    Dim diseaseSheet As Worksheet
+    Dim diseaseWksh As Worksheet
     Dim firstSheet As Worksheet
     Dim workbookStore As HiddenNames
     Dim diseases As BetterArray
@@ -167,10 +167,10 @@ Public Sub TestBuildRespectsProvidedLanguage()
     On Error GoTo Fail
 
     Set firstSheet = Builder.Build("Alpha")
-    Set diseaseSheet = Builder.Build("Eta", "FRA")
+    Set diseaseWksh = Builder.Build("Eta", "FRA")
 
-    Assert.AreEqual "FRA", diseaseSheet.Cells(2, 2).Value, "Provided language should be preserved"
-    Assert.AreEqual "disTab_002", diseaseSheet.ListObjects(1).Name, "Sequential builds should increment the table suffix."
+    Assert.AreEqual "FRA", diseaseWksh.Cells(2, 2).Value, "Provided language should be preserved"
+    Assert.AreEqual "disTab_002", diseaseWksh.ListObjects(1).Name, "Sequential builds should increment the table suffix."
 
     Set workbookStore = HiddenNames.Create(ThisWorkbook)
     Assert.AreEqual "Eta", workbookStore.ValueAsString(MARKER_NAME_PREFIX & "002"), _
@@ -190,7 +190,7 @@ End Sub
 Public Sub TestBuildRejectsInvalidInputs()
     CustomTestSetTitles Assert, "DiseaseSheetBuilder", "TestBuildRejectsInvalidInputs"
 
-    Dim diseaseSheet As Worksheet
+    Dim diseaseWksh As Worksheet
 
     On Error GoTo Fail
 
@@ -200,8 +200,8 @@ Public Sub TestBuildRejectsInvalidInputs()
     Assert.AreEqual ProjectError.InvalidArgument, BuildExpectingError("Variables"), _
                  "Reserved disease names should be rejected."
 
-    Set diseaseSheet = Builder.Build("Beta")
-    Assert.IsTrue Not diseaseSheet Is Nothing, "Control build should succeed for unique names."
+    Set diseaseWksh = Builder.Build("Beta")
+    Assert.IsTrue Not diseaseWksh Is Nothing, "Control build should succeed for unique names."
 
     Assert.AreEqual ProjectError.InvalidArgument, BuildExpectingError("Beta"), _
                  "Duplicate disease names should not be allowed."

@@ -201,15 +201,15 @@ Public Sub TestSyncGeoFromSpecsPropagatesDropdown()
     CustomTestSetTitles Assert, "EventSetup", "Specs spatial type change propagates geo dropdown to analysis table"
     On Error GoTo Fail
 
-    Dim analysis As Worksheet
-    Set analysis = FixtureWorkbook.Worksheets(SHEET_ANALYSIS)
+    Dim analysisWksh As Worksheet
+    Set analysisWksh = FixtureWorkbook.Worksheets(SHEET_ANALYSIS)
 
     'Ensure geo/hf dropdowns are available
     Subject.UpdateAnalysisDropdowns True
 
     'Find the specs table spatial type cell for "Section A"
     Dim specsTable As ListObject
-    Set specsTable = analysis.ListObjects(LIST_SPATIO_TEMPORAL_SPECS)
+    Set specsTable = analysisWksh.ListObjects(LIST_SPATIO_TEMPORAL_SPECS)
     Dim spatialTypeCol As Long
     spatialTypeCol = specsTable.ListColumns("spatial type").Index
     Dim spatialTypeCell As Range
@@ -219,11 +219,11 @@ Public Sub TestSyncGeoFromSpecsPropagatesDropdown()
     spatialTypeCell.Value = "hf"
 
     'Simulate OnSheetChange event
-    Subject.OnSheetChange analysis, spatialTypeCell
+    Subject.OnSheetChange analysisWksh, spatialTypeCell
 
     'Check that the geo cell in the analysis table was cleared
     Dim spatioTable As ListObject
-    Set spatioTable = analysis.ListObjects(LIST_SPATIO_TEMPORAL)
+    Set spatioTable = analysisWksh.ListObjects(LIST_SPATIO_TEMPORAL)
     Dim geoCol As Long
     geoCol = spatioTable.ListColumns("geo").Index
     Dim geoCell As Range
@@ -270,20 +270,20 @@ Public Sub TestRecalculateAnalysisEvaluatesFormulas()
     CustomTestSetTitles Assert, "EventSetup", "RecalculateAnalysis evaluates analysis tables"
     On Error GoTo Fail
 
-    Dim analysis As Worksheet
-    Set analysis = FixtureWorkbook.Worksheets(SHEET_ANALYSIS)
+    Dim analysisWksh As Worksheet
+    Set analysisWksh = FixtureWorkbook.Worksheets(SHEET_ANALYSIS)
 
-    analysis.Range("B4").Formula = "=1+1"
-    analysis.Range("D7").Formula = "=2+2"
-    analysis.Range("C14").Formula = "=3+3"
-    analysis.Range("B18").Formula = "=4+4"
+    analysisWksh.Range("B4").Formula = "=1+1"
+    analysisWksh.Range("D7").Formula = "=2+2"
+    analysisWksh.Range("C14").Formula = "=3+3"
+    analysisWksh.Range("B18").Formula = "=4+4"
 
     Subject.RecalculateAnalysis
 
-    Assert.AreEqual CDbl(2), CDbl(analysis.Range("B4").Value), "Time-series table should be recalculated"
-    Assert.AreEqual CDbl(4), CDbl(analysis.Range("D7").Value), "Graph table should be recalculated"
-    Assert.AreEqual CDbl(6), CDbl(analysis.Range("C14").Value), "Spatio-temporal table should be recalculated"
-    Assert.AreEqual CDbl(8), CDbl(analysis.Range("B18").Value), "Spatio-temporal spec table should be recalculated"
+    Assert.AreEqual CDbl(2), CDbl(analysisWksh.Range("B4").Value), "Time-series table should be recalculated"
+    Assert.AreEqual CDbl(4), CDbl(analysisWksh.Range("D7").Value), "Graph table should be recalculated"
+    Assert.AreEqual CDbl(6), CDbl(analysisWksh.Range("C14").Value), "Spatio-temporal table should be recalculated"
+    Assert.AreEqual CDbl(8), CDbl(analysisWksh.Range("B18").Value), "Spatio-temporal spec table should be recalculated"
     Exit Sub
 
 Fail:
@@ -945,65 +945,65 @@ Private Sub PrepareChoicesSheet()
 End Sub
 
 Private Sub PrepareAnalysisSheet()
-    Dim analysis As Worksheet
+    Dim analysisWksh As Worksheet
     Dim tsRange As Range
     Dim graphRange As Range
     Dim spatioRange As Range
     Dim lo As ListObject
 
-    Set analysis = EnsureWorksheet(SHEET_ANALYSIS, FixtureWorkbook)
-    analysis.Cells.Clear
-    analysis.Cells(1, 1).Value = "Add or remove rows of all tables"
+    Set analysisWksh = EnsureWorksheet(SHEET_ANALYSIS, FixtureWorkbook)
+    analysisWksh.Cells.Clear
+    analysisWksh.Cells(1, 1).Value = "Add or remove rows of all tables"
 
     'Time series table
-    WriteMatrix analysis.Range("A3"), RowsToMatrix(Array(Array("Title", "Series ID", "summary label", "add total")))
-    WriteMatrix analysis.Range("A4"), RowsToMatrix(Array(Array("Series A", "SERIES_A", "Summary A", "no")))
-    Set tsRange = analysis.Range("A3:D4")
+    WriteMatrix analysisWksh.Range("A3"), RowsToMatrix(Array(Array("Title", "Series ID", "summary label", "add total")))
+    WriteMatrix analysisWksh.Range("A4"), RowsToMatrix(Array(Array("Series A", "SERIES_A", "Summary A", "no")))
+    Set tsRange = analysisWksh.Range("A3:D4")
     On Error Resume Next
-        analysis.ListObjects(LIST_TS_DATA).Delete
+        analysisWksh.ListObjects(LIST_TS_DATA).Delete
     On Error GoTo 0
-    Set lo = analysis.ListObjects.Add(SourceType:=xlSrcRange, Source:=tsRange, XlListObjectHasHeaders:=xlYes)
+    Set lo = analysisWksh.ListObjects.Add(SourceType:=xlSrcRange, Source:=tsRange, XlListObjectHasHeaders:=xlYes)
     lo.Name = LIST_TS_DATA
 
     'Graph table
-    WriteMatrix analysis.Range("A6"), RowsToMatrix(Array(Array("series title", "column", "Graph ID", "Graph order", "choice", "values or percentages")))
-    WriteMatrix analysis.Range("A7"), RowsToMatrix(Array(Array("Series A", "column_choice", "GRAPH_5", 5, "test", "values")))
-    Set graphRange = analysis.Range("A6:F7")
+    WriteMatrix analysisWksh.Range("A6"), RowsToMatrix(Array(Array("series title", "column", "Graph ID", "Graph order", "choice", "values or percentages")))
+    WriteMatrix analysisWksh.Range("A7"), RowsToMatrix(Array(Array("Series A", "column_choice", "GRAPH_5", 5, "test", "values")))
+    Set graphRange = analysisWksh.Range("A6:F7")
     On Error Resume Next
-        analysis.ListObjects(LIST_GRAPH_TS).Delete
+        analysisWksh.ListObjects(LIST_GRAPH_TS).Delete
     On Error GoTo 0
-    Set lo = analysis.ListObjects.Add(SourceType:=xlSrcRange, Source:=graphRange, XlListObjectHasHeaders:=xlYes)
+    Set lo = analysisWksh.ListObjects.Add(SourceType:=xlSrcRange, Source:=graphRange, XlListObjectHasHeaders:=xlYes)
     lo.Name = LIST_GRAPH_TS
 
     'Graph label table
     Dim graphLabRange As Range
-    WriteMatrix analysis.Range("A9"), RowsToMatrix(Array(Array("graph title", "Graph ID")))
-    WriteMatrix analysis.Range("A10"), RowsToMatrix(Array(Array("Graph A", "GRAPH_5")))
-    Set graphLabRange = analysis.Range("A9:B10")
+    WriteMatrix analysisWksh.Range("A9"), RowsToMatrix(Array(Array("graph title", "Graph ID")))
+    WriteMatrix analysisWksh.Range("A10"), RowsToMatrix(Array(Array("Graph A", "GRAPH_5")))
+    Set graphLabRange = analysisWksh.Range("A9:B10")
     On Error Resume Next
-        analysis.ListObjects(LIST_LAB_GRAPH_TS).Delete
+        analysisWksh.ListObjects(LIST_LAB_GRAPH_TS).Delete
     On Error GoTo 0
-    Set lo = analysis.ListObjects.Add(SourceType:=xlSrcRange, Source:=graphLabRange, XlListObjectHasHeaders:=xlYes)
+    Set lo = analysisWksh.ListObjects.Add(SourceType:=xlSrcRange, Source:=graphLabRange, XlListObjectHasHeaders:=xlYes)
     lo.Name = LIST_LAB_GRAPH_TS
 
     'Spatio temporal table
-    WriteMatrix analysis.Range("A13"), RowsToMatrix(Array(Array("section", "spatial type", "geo")))
-    WriteMatrix analysis.Range("A14"), RowsToMatrix(Array(Array("Section A", "geo", vbNullString)))
-    Set spatioRange = analysis.Range("A13:C14")
+    WriteMatrix analysisWksh.Range("A13"), RowsToMatrix(Array(Array("section", "spatial type", "geo")))
+    WriteMatrix analysisWksh.Range("A14"), RowsToMatrix(Array(Array("Section A", "geo", vbNullString)))
+    Set spatioRange = analysisWksh.Range("A13:C14")
     On Error Resume Next
-        analysis.ListObjects(LIST_SPATIO_TEMPORAL).Delete
+        analysisWksh.ListObjects(LIST_SPATIO_TEMPORAL).Delete
     On Error GoTo 0
-    Set lo = analysis.ListObjects.Add(SourceType:=xlSrcRange, Source:=spatioRange, XlListObjectHasHeaders:=xlYes)
+    Set lo = analysisWksh.ListObjects.Add(SourceType:=xlSrcRange, Source:=spatioRange, XlListObjectHasHeaders:=xlYes)
     lo.Name = LIST_SPATIO_TEMPORAL
 
     'Spatio temporal specs table
-    WriteMatrix analysis.Range("A17"), RowsToMatrix(Array(Array("Section", "N geo max", "spatial type")))
-    WriteMatrix analysis.Range("A18"), RowsToMatrix(Array(Array("Section A", "5", "geo")))
-    Set spatioRange = analysis.Range("A17:C18")
+    WriteMatrix analysisWksh.Range("A17"), RowsToMatrix(Array(Array("Section", "N geo max", "spatial type")))
+    WriteMatrix analysisWksh.Range("A18"), RowsToMatrix(Array(Array("Section A", "5", "geo")))
+    Set spatioRange = analysisWksh.Range("A17:C18")
     On Error Resume Next
-        analysis.ListObjects(LIST_SPATIO_TEMPORAL_SPECS).Delete
+        analysisWksh.ListObjects(LIST_SPATIO_TEMPORAL_SPECS).Delete
     On Error GoTo 0
-    Set lo = analysis.ListObjects.Add(SourceType:=xlSrcRange, Source:=spatioRange, XlListObjectHasHeaders:=xlYes)
+    Set lo = analysisWksh.ListObjects.Add(SourceType:=xlSrcRange, Source:=spatioRange, XlListObjectHasHeaders:=xlYes)
     lo.Name = LIST_SPATIO_TEMPORAL_SPECS
 End Sub
 

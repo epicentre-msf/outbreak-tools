@@ -111,7 +111,7 @@ End Sub
 
 '@Description("Initialise the designer workbook: import translations, hide sheets, seed flags.")
 '@EntryPoint
-Public Sub clickDesignerInitialize(ByRef control As IRibbonControl)
+Public Sub clickDesignerInitialize(ByRef ribbonControl As IRibbonControl)
     Dim prep As DesignerPreparation
     Dim appScope As ApplicationState
 
@@ -153,7 +153,7 @@ End Sub
 
 '@Description("Clear all geobase data from the Geo worksheet.")
 '@EntryPoint
-Public Sub clickDelGeo(ByRef control As IRibbonControl)
+Public Sub clickDelGeo(ByRef ribbonControl As IRibbonControl)
     Dim geoSheet As Worksheet
     Dim geo As LLGeo
     Dim appScope As ApplicationState
@@ -186,7 +186,7 @@ End Sub
 
 '@Description("Clear all entry input ranges on the Main sheet.")
 '@EntryPoint
-Public Sub clickClearEnt(ByRef control As IRibbonControl)
+Public Sub clickClearEnt(ByRef ribbonControl As IRibbonControl)
     Dim entry As DesignerEntry
     Dim appScope As ApplicationState
 

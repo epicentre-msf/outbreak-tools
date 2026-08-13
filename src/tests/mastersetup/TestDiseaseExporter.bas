@@ -76,24 +76,24 @@ End Sub
 Public Sub TestBuildDiseaseWorkbookCopiesDictionaryAndChoices()
     CustomTestSetTitles Assert, "DiseaseExporter", "TestBuildDiseaseWorkbookCopiesDictionaryAndChoices"
 
-    Dim diseaseSheet As Worksheet
+    Dim diseaseWksh As Worksheet
     Dim translationTable As ListObject
     Dim ribbonTranslations As TranslationObject
-    Dim workbook As Workbook
+    Dim targetBook As Workbook
     Dim dictionaryValues As Variant
     Dim choicesValues As Variant
 
     On Error GoTo Fail
 
-    Set diseaseSheet = PrepareDiseaseWorksheet("Alpha", "ENG", "ALPHA_CODE")
+    Set diseaseWksh = PrepareDiseaseWorksheet("Alpha", "ENG", "ALPHA_CODE")
     Set translationTable = PrepareTranslationTable()
     Set ribbonTranslations = PrepareRibbonTranslations()
 
-    Set workbook = Exporter.BuildDiseaseWorkbook(diseaseSheet, translationTable, ribbonTranslations, _
-                                                diseaseSheet.Name, diseaseSheet.Cells(2, 2).Value, "ALPHA_CODE")
+    Set targetBook = Exporter.BuildDiseaseWorkbook(diseaseWksh, translationTable, ribbonTranslations, _
+                                                diseaseWksh.Name, diseaseWksh.Cells(2, 2).Value, "ALPHA_CODE")
 
-    dictionaryValues = workbook.Worksheets("Dictionary").Range("A2").Resize(2, 6).Value
-    choicesValues = workbook.Worksheets("Choices").Range("A2").Resize(4, 4).Value
+    dictionaryValues = targetBook.Worksheets("Dictionary").Range("A2").Resize(2, 6).Value
+    choicesValues = targetBook.Worksheets("Choices").Range("A2").Resize(4, 4).Value
 
     Assert.AreEqual 1, dictionaryValues(1, 1), "First variable order should be copied"
     Assert.AreEqual "core", dictionaryValues(1, 6), "Status column should be copied"
@@ -115,7 +115,7 @@ Public Sub TestBuildMigrationWorkbookAggregatesDiseases()
     CustomTestSetTitles Assert, "DiseaseExporter", "TestBuildMigrationWorkbookAggregatesDiseases"
 
     Dim diseaseNames As BetterArray
-    Dim workbook As Workbook
+    Dim targetBook As Workbook
     Dim diseasesSheet As Worksheet
     Dim translationsSheet As Worksheet
     Dim diseaseMeta As Variant
@@ -130,9 +130,9 @@ Public Sub TestBuildMigrationWorkbookAggregatesDiseases()
     diseaseNames.Push "Beta"
     diseaseNames.Push "Gamma"
 
-    Set workbook = Exporter.BuildMigrationWorkbook(sourceWorkbook, diseaseNames)
-    Set diseasesSheet = workbook.Worksheets("Diseases")
-    Set translationsSheet = workbook.Worksheets("Translations")
+    Set targetBook = Exporter.BuildMigrationWorkbook(sourceWorkbook, diseaseNames)
+    Set diseasesSheet = targetBook.Worksheets("Diseases")
+    Set translationsSheet = targetBook.Worksheets("Translations")
 
     diseaseMeta = diseasesSheet.Range("A1").Resize(2, 6).Value
     translationValues = translationsSheet.Range("A1").Resize(3, 2).Value

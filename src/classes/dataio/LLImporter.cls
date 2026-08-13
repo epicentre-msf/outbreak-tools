@@ -1060,7 +1060,7 @@ Private Sub CompareOneChoiceList(ByVal currVars As LLVariables, _
                                  ByVal drop As DropdownLists, _
                                  ByVal varName As String)
 
-    Dim control As String
+    Dim controlValue As String
     Dim currList As String
     Dim impList As String
     Dim currCats As BetterArray
@@ -1071,10 +1071,10 @@ Private Sub CompareOneChoiceList(ByVal currVars As LLVariables, _
 
     If impChoi Is Nothing Then Exit Sub
 
-    control = LCase$(Trim$(currVars.ControlType(varName)))
-    If control <> "choice_manual" Then
-        If control <> "choice_multiple" Then
-            If control <> "choice_custom" Then Exit Sub
+    controlValue = LCase$(Trim$(currVars.ControlType(varName)))
+    If controlValue <> "choice_manual" Then
+        If controlValue <> "choice_multiple" Then
+            If controlValue <> "choice_custom" Then Exit Sub
         End If
     End If
 
@@ -1085,7 +1085,7 @@ Private Sub CompareOneChoiceList(ByVal currVars As LLVariables, _
 
     Set keys = ChoiceKeys.Create()
 
-    If control = "choice_custom" Then
+    If controlValue = "choice_custom" Then
         ' The values of a custom dropdown live on the dropdown worksheet in this
         ' linelist and on the Choices worksheet in the file.
         If drop Is Nothing Then Exit Sub

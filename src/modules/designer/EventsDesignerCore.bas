@@ -57,16 +57,16 @@ End Sub
 
 '@Description("Return the translated label for a control; fallback to the control id.")
 '@EntryPoint
-Public Sub LangLabel(ByRef control As IRibbonControl, ByRef returnedVal)
+Public Sub LangLabel(ByRef ribbonControl As IRibbonControl, ByRef returnedVal)
 
     On Error GoTo Fallback
     EnsureTranslation
     If trads Is Nothing Then GoTo Fallback
-    returnedVal = trads.TranslatedValue(control.Id)
+    returnedVal = trads.TranslatedValue(ribbonControl.Id)
     Exit Sub
 
 Fallback:
-    returnedVal = control.Id
+    returnedVal = ribbonControl.Id
 End Sub
 
 Private Sub EnsureTranslation()
@@ -95,7 +95,7 @@ End Sub
 
 '@Description("Switch designer language and re-run translations.")
 '@EntryPoint
-Public Sub clickLangChange(ByRef control As IRibbonControl, ByRef langId As String, ByRef Index As Integer)
+Public Sub clickLangChange(ByRef ribbonControl As IRibbonControl, ByRef langId As String, ByRef Index As Integer)
     Dim targetSheet As Worksheet
     Dim appScope As ApplicationState
 
@@ -128,7 +128,7 @@ End Sub
 '===============================================================================
 '@Description("Import translations tables from an external workbook.")
 '@EntryPoint
-Public Sub clickImpTrans(ByRef control As IRibbonControl)
+Public Sub clickImpTrans(ByRef ribbonControl As IRibbonControl)
     Dim io As OSFiles
     Dim importBook As Workbook
     Dim appScope As ApplicationState
@@ -165,7 +165,7 @@ End Sub
 
 '@Description("Import passwords from an external workbook.")
 '@EntryPoint
-Public Sub clickImpPass(ByRef control As IRibbonControl)
+Public Sub clickImpPass(ByRef ribbonControl As IRibbonControl)
     Dim io As OSFiles
     Dim importBook As Workbook
     Dim importer As Passwords
@@ -199,7 +199,7 @@ End Sub
 
 '@Description("Import linelist format from a workbook.")
 '@EntryPoint
-Public Sub clickImpStyle(ByRef control As IRibbonControl)
+Public Sub clickImpStyle(ByRef ribbonControl As IRibbonControl)
     Dim io As OSFiles
     Dim importBook As Workbook
     Dim formatManager As LLFormat
@@ -241,7 +241,7 @@ End Sub
 '===============================================================================
 '@Description("Open a linelist workbook selected by the user.")
 '@EntryPoint
-Public Sub clickOpen(ByRef control As IRibbonControl)
+Public Sub clickOpen(ByRef ribbonControl As IRibbonControl)
     Dim io As OSFiles
 
     Set io = OSFiles.Create()
@@ -259,7 +259,7 @@ End Sub
 
 '@Description("Initialise checkbox state for alerts from persisted hidden names.")
 '@EntryPoint
-Public Sub initMainAlert(ByRef control As IRibbonControl, ByRef returnedVal)
+Public Sub initMainAlert(ByRef ribbonControl As IRibbonControl, ByRef returnedVal)
 
     'getPressed fires at ribbon load; a raise here drops the whole tab,
     'so any failure falls back to the checked default.
@@ -273,7 +273,7 @@ End Sub
 
 '@Description("Persist alert checkbox state.")
 '@EntryPoint
-Public Sub clickMainAlert(ByRef control As IRibbonControl, ByVal pressed As Boolean)
+Public Sub clickMainAlert(ByRef ribbonControl As IRibbonControl, ByVal pressed As Boolean)
 
     On Error GoTo Handler
     ResolvePreparation().SetFlag "chkAlert", pressed
@@ -288,7 +288,7 @@ End Sub
 
 '@Description("Initialise checkbox state for instructions from persisted hidden names.")
 '@EntryPoint
-Public Sub initMainInstruct(ByRef control As IRibbonControl, ByRef returnedVal)
+Public Sub initMainInstruct(ByRef ribbonControl As IRibbonControl, ByRef returnedVal)
 
     'getPressed fires at ribbon load; a raise here drops the whole tab,
     'so any failure falls back to the checked default.
@@ -302,7 +302,7 @@ End Sub
 
 '@Description("Persist instruction checkbox state.")
 '@EntryPoint
-Public Sub clickMainInstruct(ByRef control As IRibbonControl, ByVal pressed As Boolean)
+Public Sub clickMainInstruct(ByRef ribbonControl As IRibbonControl, ByVal pressed As Boolean)
 
     On Error GoTo Handler
     ResolvePreparation().SetFlag "chkInstruct", pressed

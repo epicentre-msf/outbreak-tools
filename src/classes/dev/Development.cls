@@ -1355,11 +1355,11 @@ End Sub
 'and non-empty, passes its value to the Passwords handler via
 'NewDebugingPassword. Silently exits when no default password is configured.
 '@param passwords Passwords. The password handler to configure.
-Private Sub ApplyDefaultPassword(ByVal passwords As Passwords)
+Private Sub ApplyDefaultPassword(ByVal passManager As Passwords)
     Dim defaultCell As Range
     Dim defaultValue As String
 
-    If passwords Is Nothing Then Exit Sub
+    If passManager Is Nothing Then Exit Sub
     If this.devSheet Is Nothing Then Exit Sub
 
     On Error Resume Next
@@ -1372,7 +1372,7 @@ Private Sub ApplyDefaultPassword(ByVal passwords As Passwords)
     If LenB(defaultValue) = 0 Then Exit Sub
 
     On Error Resume Next
-        passwords.NewDebugingPassword defaultValue
+        passManager.NewDebugingPassword defaultValue
     On Error GoTo 0
 End Sub
 

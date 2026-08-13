@@ -75,7 +75,7 @@ End Sub
 Public Sub TestAddExportImportRemove()
     CustomTestSetTitles Assert, "DiseaseIntegration", "TestAddExportImportRemove"
 
-    Dim diseaseSheet As Worksheet
+    Dim diseaseWksh As Worksheet
     Dim diseaseTable As ListObject
     Dim exportBook As Workbook
     Dim logger As IDiseaseLogger
@@ -86,13 +86,13 @@ Public Sub TestAddExportImportRemove()
 
     On Error GoTo Fail
 
-    Set diseaseSheet = Builder.Build("Alpha", 1)
-    Set diseaseTable = diseaseSheet.ListObjects(1)
+    Set diseaseWksh = Builder.Build("Alpha", 1)
+    Set diseaseTable = diseaseWksh.ListObjects(1)
 
     PopulateDiseaseTable diseaseTable
 
-    Set exportBook = Exporter.BuildDiseaseWorkbook(diseaseSheet, TranslationTable, RibbonTranslations, _
-                                                   "Alpha", diseaseSheet.Cells(2, 2).Value, diseaseSheet.Cells(2, 3).Value)
+    Set exportBook = Exporter.BuildDiseaseWorkbook(diseaseWksh, TranslationTable, RibbonTranslations, _
+                                                   "Alpha", diseaseWksh.Cells(2, 2).Value, diseaseWksh.Cells(2, 3).Value)
 
     Assert.AreEqual "Alpha", exportBook.Worksheets("Metadata").Cells(3, 2).Value, "Metadata should reference disease name"
     Assert.AreEqual "LabelA", exportBook.Worksheets("Dictionary").Cells(2, 4).Value, "Dictionary should capture existing variables"
@@ -240,10 +240,10 @@ Private Function WorksheetExists(ByVal sheetName As String) As Boolean
     WorksheetExists = Not FindWorksheet(ThisWorkbook, sheetName) Is Nothing
 End Function
 
-Private Function FindWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Worksheet
+Private Function FindWorksheet(ByVal targetBook As Workbook, ByVal sheetName As String) As Worksheet
     Dim sheet As Worksheet
 
-    For Each sheet In workbook.Worksheets
+    For Each sheet In targetBook.Worksheets
         If StrComp(sheet.Name, sheetName, vbTextCompare) = 0 Then
             Set FindWorksheet = sheet
             Exit Function

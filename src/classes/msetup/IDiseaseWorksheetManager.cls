@@ -23,7 +23,7 @@ Option Explicit
 '@param workbook Workbook hosting the worksheet collection.
 '@param sheetName String worksheet name to locate.
 '@return Boolean True when the worksheet exists.
-Public Function WorksheetExists(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
+Public Function WorksheetExists(ByVal targetBook As Workbook, ByVal sheetName As String) As Boolean
 End Function
 
 '@section Commands
@@ -33,5 +33,5 @@ End Function
 '@param workbook Workbook hosting the worksheet.
 '@param sheetName String worksheet name to delete.
 '@return Boolean True when the worksheet was removed.
-Public Function RemoveWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
+Public Function RemoveWorksheet(ByVal targetBook As Workbook, ByVal sheetName As String) As Boolean
 End Function

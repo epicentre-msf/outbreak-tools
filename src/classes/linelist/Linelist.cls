@@ -1093,7 +1093,7 @@ End Sub
 '@param codeTransfer CodeTransfer. The code transfer engine.
 '@param sheetNames BetterArray. The dictionary's unique sheet names, walked once
 'by Prepare and passed down.
-Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
+Private Sub TransferAllCode(ByVal transfer As CodeTransfer, _
                             ByVal sheetNames As BetterArray)
     Dim codesList As BetterArray
     Dim counter As Long
@@ -1125,7 +1125,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
-        codeTransfer.TransferClass codeName
+        transfer.TransferClass codeName
     Next
 
     'Transfer modules (5 modules, plus the ribbon just below)
@@ -1136,16 +1136,16 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
-        codeTransfer.TransferModule codeName
+        transfer.TransferModule codeName
     Next
 
     'Transfer or copy ribbon module depending on template status
     If this.specs.HasTemplate() Then
         'Template already contains EventsLinelistRibbon; overwrite its code
-        codeTransfer.CopyModuleText "EventsLinelistRibbon"
+        transfer.CopyModuleText "EventsLinelistRibbon"
     Else
         'Non-template: import EventsLinelistRibbon as a new module
-        codeTransfer.TransferModule "EventsLinelistRibbon"
+        transfer.TransferModule "EventsLinelistRibbon"
     End If
 
     'Transfer forms (10 forms)
@@ -1157,11 +1157,11 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
-        codeTransfer.TransferForm codeName
+        transfer.TransferForm codeName
     Next
 
     'Transfer workbook code
-    codeTransfer.TransferWorkbookCode WORKBOOK_MODULE_NAME
+    transfer.TransferWorkbookCode WORKBOOK_MODULE_NAME
 
     'Inject the worksheet event handlers into each HList worksheet's code
     'module. The dictionary identifies HList sheets by type "hlist2D". The
@@ -1173,7 +1173,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
     For counter = sheetNames.LowerBound To sheetNames.UpperBound
         codeName = CStr(sheetNames.Item(counter))
         If llshs.SheetInfo(codeName) = "hlist2D" Then
-            codeTransfer.TransferWorksheetCode SHEET_MODULE_NAME, codeName
+            transfer.TransferWorksheetCode SHEET_MODULE_NAME, codeName
         End If
     Next
 End Sub
