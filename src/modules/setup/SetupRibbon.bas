@@ -394,6 +394,11 @@ Public Sub clickTransSetup(ByRef control As IRibbonControl)
 
     manager.SwitchDefaultLanguage selectedLanguage
 
+    'A translation renames every header the watcher registry and the analysis
+    'dropdowns were built from, and every label the analysis formulas look up.
+    'Without this the setup came back translated and reading the old language.
+    SetupHelpers.PostImportMaintenance
+
     success = True
 
 Cleanup:

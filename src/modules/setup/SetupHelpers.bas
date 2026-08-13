@@ -353,6 +353,12 @@ Private Function ExecuteCleanOperation(ByVal service As SetupImport, _
         ThisWorkbook.Worksheets(CHECKINGSHEETNAME).Cells.Clear
     On Error GoTo 0
 
+    'A clean empties the columns the watcher registry and the analysis dropdowns
+    'were built from, and it leaves every analysis formula reading rows that are
+    'no longer there. The import path has always rebuilt all three; the clean
+    'path used to stop here and leave the stale values on screen.
+    PostImportMaintenance
+
     ExecuteCleanOperation = successMessage
 End Function
 
@@ -372,11 +378,19 @@ Private Sub SelectAllAnalysisTables(ByVal sheetName As String)
     On Error GoTo 0
 End Sub
 
-'@sub-title Rebuild the watcher registry and the analysis dropdowns after an import
+'@sub-title Rebuild the watcher registry, the analysis dropdowns and the analysis formulas
 '@details
 'One busy pair covers the whole job. The three manager routines below each enter
 'a state of their own, and busyDepth makes that nesting safe, so this is one
 'restore instead of three.
+'
+'THREE FLOWS END HERE
+'-------------------------------------------------------------------------------
+'An import rewrites whole sheets, a clean empties them, and a translation renames
+'every header and label on them. All three leave the cached managers, the watcher
+'registry, the analysis dropdowns and the analysis formulas describing the setup
+'as it read before, so all three finish through this routine. The name still says
+'import because that is the flow it was written for.
 Public Sub PostImportMaintenance()
     Dim prep As SetupPreparation
     Dim errNumber As Long
