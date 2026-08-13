@@ -1190,9 +1190,17 @@ End Sub
 '@sub-title Recalculate analysis tables, optionally targeting a single table.
 '@details
 'When a target range is provided, identifies which analysis table it belongs
-'to via target.ListObject.Name and recalculates only that table (75% savings
-'on per-cell edits). When no target is given (structural edits, post-import),
-'recalculates all four tables.
+'to via target.ListObject.Name and recalculates that table together with the
+'ones that read it, instead of all of them. When no target is given
+'(structural edits, post-import), recalculates the five analysis tables.
+'
+'WHICH TABLE READS WHICH
+'-------------------------------------------------------------------------------
+'Tab_Graph_TimeSeries is the consumer: AnalysisGraphValue reads
+'Tab_Label_TSGraph by graph title and AnalysisTimeSeriesValue reads
+'Tab_TimeSeries_Analysis by series title. Tab_SpatioTemporal_Analysis reads
+'Tab_SpatioTemporal_Specs by section. An edit recalculates the table it landed
+'on and then whatever reads that table.
 '@param target Optional Range. The edited cell(s); Nothing means recalculate all.
 Private Sub CalculateAnalysis(Optional ByVal target As Range = Nothing)
 
@@ -1206,15 +1214,32 @@ Private Sub CalculateAnalysis(Optional ByVal target As Range = Nothing)
                 EnsureTableCalculated this.tsTable, LIST_TS_DATA, "title"
                 EnsureTableCalculated this.graphTable, LIST_GRAPH_TS, "series title"
             Case LIST_GRAPH_TS
+                'The graph title and series title dropdowns sit on this table and
+                'its own Graph ID, Series ID, time variable, group by, choices and
+                'label columns read them back, so the table it recalculates first
+                'is itself. It used to recalculate only the time series table, and
+                'a title picked from either dropdown left its own row stale.
+                EnsureTableCalculated this.graphTable, LIST_GRAPH_TS, "series title"
                 EnsureTableCalculated this.tsTable, LIST_TS_DATA, "title"
+            Case LIST_LAB_GRAPH_TS
+                'AnalysisGraphValue reads this table by graph title, so a title
+                'renamed or reordered here is what the graph table looks up.
+                EnsureTableCalculated this.graphLabTable, LIST_LAB_GRAPH_TS, "graph title"
+                EnsureTableCalculated this.graphTable, LIST_GRAPH_TS, "series title"
             Case LIST_SPATIO_TEMPORAL, LIST_SPATIO_TEMPORAL_SPECS
+                EnsureTableCalculated this.spatioSpecsTable, LIST_SPATIO_TEMPORAL_SPECS, "section"
                 EnsureTableCalculated this.spatioTable, LIST_SPATIO_TEMPORAL, "section"
         End Select
         Exit Sub
     End If
 
+    'A source is calculated before the table that reads it: the label table and
+    'the time series table both feed the graph table, and the specifications
+    'table feeds the spatio-temporal table.
+    EnsureTableCalculated this.graphLabTable, LIST_LAB_GRAPH_TS, "graph title"
     EnsureTableCalculated this.tsTable, LIST_TS_DATA, "title"
     EnsureTableCalculated this.graphTable, LIST_GRAPH_TS, "series title"
+    EnsureTableCalculated this.spatioSpecsTable, LIST_SPATIO_TEMPORAL_SPECS, "section"
     EnsureTableCalculated this.spatioTable, LIST_SPATIO_TEMPORAL, "section"
 End Sub
 

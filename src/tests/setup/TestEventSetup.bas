@@ -31,6 +31,9 @@ Private Const LIST_LAB_GRAPH_TS As String = "Tab_Label_TSGraph"
 Private Const LIST_SPATIO_TEMPORAL As String = "Tab_SpatioTemporal_Analysis"
 Private Const LIST_SPATIO_TEMPORAL_SPECS As String = "Tab_SpatioTemporal_Specs"
 Private Const TAB_TRANSLATIONS As String = "Tab_Translations"
+'A cell on the Analysis sheet outside every fixture table, so a formula can be
+'given a precedent to go stale against without disturbing what the tables hold.
+Private Const SCRATCH_CELL As String = "Z1"
 
 '@ModuleInitialize
 Public Sub ModuleInitialize()
@@ -716,6 +719,126 @@ Public Sub TestFirstGraphEditBuildsItsOwnDropdownCache()
 
 Fail:
     CustomTestLogFailure Assert, "TestFirstGraphEditBuildsItsOwnDropdownCache", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("EventSetup")
+'@sub-title An edit inside the graph table recalculates the graph table.
+'@details The graph title and series title dropdowns sit on Tab_Graph_TimeSeries
+'         and its own Graph ID, Series ID, time variable, group by, choices and
+'         label columns read them back. CalculateAnalysis used to answer an edit
+'         there by recalculating Tab_TimeSeries_Analysis alone, so a title picked
+'         from either dropdown left its own row reading the previous pick.
+'
+'         WHY THE FORMULA READS A CELL OUTSIDE THE TABLE
+'         Assigning Range.Formula evaluates that cell there and then, whatever the
+'         calculation mode, so a self-contained "=7+7" is already answered before
+'         the handler is called and the test passes against the defect. A formula
+'         over a precedent cell can be left stale instead: the precedent is moved
+'         under manual calculation, which dirties the formula without evaluating
+'         it, and the value read afterwards says whether the handler asked.
+'         StaleValue guards that, so a run where manual calculation does not hold
+'         reports a failure rather than a hollow pass.
+Public Sub TestGraphEditRecalculatesTheGraphTable()
+    CustomTestSetTitles Assert, "EventSetup", "A graph table edit recalculates the graph table"
+    On Error GoTo Fail
+
+    Dim analysisSheet As Worksheet
+    Dim graphTable As ListObject
+    Dim seriesCell As Range
+    Dim derivedCell As Range
+    Dim scratchCell As Range
+    Dim priorCalculation As Long
+    Dim staleValue As Double
+    Dim derivedValue As Double
+
+    Set analysisSheet = FixtureWorkbook.Worksheets(SHEET_ANALYSIS)
+    Set graphTable = analysisSheet.ListObjects(LIST_GRAPH_TS)
+    Set seriesCell = graphTable.ListRows(1).Range.Cells(1, graphTable.ListColumns("series title").Index)
+    Set derivedCell = graphTable.ListRows(1).Range.Cells(1, graphTable.ListColumns("Graph order").Index)
+    Set scratchCell = analysisSheet.Range(SCRATCH_CELL)
+
+    priorCalculation = Application.Calculation
+
+    Application.Calculation = xlCalculationAutomatic
+    scratchCell.Value = 5
+    derivedCell.Formula = "=" & SCRATCH_CELL & "*2"
+
+    Application.Calculation = xlCalculationManual
+    scratchCell.Value = 7
+    staleValue = CDbl(derivedCell.Value)
+
+    Subject.OnSheetChange analysisSheet, seriesCell
+    derivedValue = CDbl(derivedCell.Value)
+
+    Application.Calculation = priorCalculation
+
+    Assert.AreEqual CDbl(10), staleValue, _
+        "Precondition: manual calculation must leave the derived cell stale"
+    Assert.AreEqual CDbl(14), derivedValue, _
+        "An edit inside the graph table must recalculate the graph table itself"
+    Exit Sub
+
+Fail:
+    On Error Resume Next
+        If priorCalculation <> 0 Then Application.Calculation = priorCalculation
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestGraphEditRecalculatesTheGraphTable", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("EventSetup")
+'@sub-title An edit on the graph label table recalculates the graph table that reads it.
+'@details AnalysisGraphValue reads Tab_Label_TSGraph by graph title, so a title
+'         renamed or reordered there is what Tab_Graph_TimeSeries looks up.
+'         Tab_Label_TSGraph was named in the constants and cached in the type, and
+'         CalculateAnalysis never mentioned it, so neither table was recalculated
+'         when it changed. Same stale-precedent probe as the test above.
+Public Sub TestGraphLabelEditRecalculatesTheGraphTable()
+    CustomTestSetTitles Assert, "EventSetup", "A graph label edit recalculates the graph table"
+    On Error GoTo Fail
+
+    Dim analysisSheet As Worksheet
+    Dim labelTable As ListObject
+    Dim graphTable As ListObject
+    Dim titleCell As Range
+    Dim derivedCell As Range
+    Dim scratchCell As Range
+    Dim priorCalculation As Long
+    Dim staleValue As Double
+    Dim derivedValue As Double
+
+    Set analysisSheet = FixtureWorkbook.Worksheets(SHEET_ANALYSIS)
+    Set labelTable = analysisSheet.ListObjects(LIST_LAB_GRAPH_TS)
+    Set graphTable = analysisSheet.ListObjects(LIST_GRAPH_TS)
+    Set titleCell = labelTable.ListRows(1).Range.Cells(1, labelTable.ListColumns("graph title").Index)
+    Set derivedCell = graphTable.ListRows(1).Range.Cells(1, graphTable.ListColumns("Graph order").Index)
+    Set scratchCell = analysisSheet.Range(SCRATCH_CELL)
+
+    priorCalculation = Application.Calculation
+
+    Application.Calculation = xlCalculationAutomatic
+    scratchCell.Value = 3
+    derivedCell.Formula = "=" & SCRATCH_CELL & "*3"
+
+    Application.Calculation = xlCalculationManual
+    scratchCell.Value = 6
+    staleValue = CDbl(derivedCell.Value)
+
+    Subject.OnSheetChange analysisSheet, titleCell
+    derivedValue = CDbl(derivedCell.Value)
+
+    Application.Calculation = priorCalculation
+
+    Assert.AreEqual CDbl(9), staleValue, _
+        "Precondition: manual calculation must leave the derived cell stale"
+    Assert.AreEqual CDbl(18), derivedValue, _
+        "An edit on the graph label table must recalculate the graph table that reads it"
+    Exit Sub
+
+Fail:
+    On Error Resume Next
+        If priorCalculation <> 0 Then Application.Calculation = priorCalculation
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestGraphLabelEditRecalculatesTheGraphTable", Err.Number, Err.Description
 End Sub
 
 '@section Fixture builders
