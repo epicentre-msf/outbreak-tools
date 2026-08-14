@@ -139,7 +139,7 @@ Private Sub UserForm_Initialize()
     Me.Caption = tradform.TranslatedValue(Me.Name)
     tradform.TranslateForm Me
 
-    Me.Width = 250
+    Me.Width = 200
     Me.Height = 450
 End Sub
 

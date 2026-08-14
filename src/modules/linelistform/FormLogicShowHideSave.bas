@@ -203,12 +203,18 @@ Private Sub UserForm_Initialize()
 
     Me.Caption = tradform.TranslatedValue(Me.Name)
     tradform.TranslateForm Me
-    Me.Width = 700
-    Me.Height = 380
+    Me.Width = 480
+    Me.Height = 480
 End Sub
 
 'The store can change between two shows of the form, so the list is read
 'again each time rather than once at initialize
 Private Sub UserForm_Activate()
     RefreshLayoutList
+End Sub
+
+'Go back to show/hide
+Private Sub LBL_Previous_Click()
+    Me.Hide
+    ClickShowHide
 End Sub

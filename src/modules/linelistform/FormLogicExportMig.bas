@@ -402,6 +402,13 @@ Private Sub LBL_Previous_Click()
     F_Advanced.Show
 End Sub
 
+Private Sub CHK_ExportMigData_Click()
+    CHK_ExportMigEditableLabel.Value = CHK_ExportMigData.Value
+    CHK_ExportMigShowHide.Value = CHK_ExportMigData.Value
+End Sub
+
+
+
 
 '@section Analysis export
 '===============================================================================

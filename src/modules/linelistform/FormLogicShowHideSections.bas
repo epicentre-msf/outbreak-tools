@@ -65,3 +65,9 @@ Private Sub UserForm_Initialize()
     Me.Caption = tradform.TranslatedValue(Me.Name)
     tradform.TranslateForm Me
 End Sub
+
+'Go back to show/hide
+Private Sub LBL_Previous_Click()
+    Me.Hide
+    ClickShowHide
+End Sub
