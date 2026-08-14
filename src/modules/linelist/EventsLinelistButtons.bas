@@ -37,6 +37,22 @@ Private wb As Workbook
 Private lltrads As LLTranslation
 Private wkbNames As HiddenNames
 
+'The pair the sections form is open on: the sections of the sheet, and the form
+'itself. Both are rebuilt each time the form opens.
+Private activeSections As SectionShowHide
+Private activeSectionsForm As Object
+
+'The section the last press of the section button collapsed, and the sheet it
+'was collapsed on. The press that follows brings that section back.
+'
+'Hiding a section collapses its columns, and Excel moves the cursor to the next
+'visible column when it does. That column is inside the NEXT section, so a
+'button that reads the cursor a second time acts on a section the user never
+'pointed at. The cursor is parked off the title line after a hide and the
+'section is remembered here instead.
+Private lastHiddenSectionSheet As String
+Private lastHiddenSectionIndex As Long
+
 'The event service of the running linelist
 '
 'It holds the translation helper, the workbook hidden names, the password
@@ -371,28 +387,92 @@ Private Sub SaveShowHideState(ByVal entries As ShowHide, ByVal layout As ShowHid
     store.Save entries, layout
 End Sub
 
-'Populate a show/hide form's list control from the entry list
-Private Sub PopulateShowHideList(ByVal frm As Object)
-    Dim listCtrl As Object
-    Dim counter As Long
-
-    If frm Is Nothing Then Exit Sub
-    If showHideEntries Is Nothing Then Exit Sub
+'The list control of one show/hide form
+Private Function ShowHideListOf(ByVal frm As Object) As Object
+    If frm Is Nothing Then Exit Function
 
     On Error Resume Next
     If frm.Name = "F_ShowHideLL" Then
-        Set listCtrl = frm.Controls("LST_LLVarNames")
+        Set ShowHideListOf = frm.Controls("LST_LLVarNames")
     Else
-        Set listCtrl = frm.Controls("LST_PrintNames")
+        Set ShowHideListOf = frm.Controls("LST_PrintNames")
     End If
     On Error GoTo 0
+End Function
 
+'The word the status column shows for one entry. The two words are the captions
+'of the form's own option buttons, so the column reads in the language the rest
+'of the form reads in. A form opened before the translators are built falls back
+'to the tag itself.
+Private Function ShowHideStatusText(ByVal hidden As Boolean) As String
+    Dim tagName As String
+
+    tagName = IIf(hidden, "OPT_Hide", "OPT_Show")
+    ShowHideStatusText = tagName
+
+    If tradsform Is Nothing Then Exit Function
+
+    On Error Resume Next
+    ShowHideStatusText = tradsform.TranslatedValue(tagName)
+    On Error GoTo 0
+End Function
+
+'Populate a show/hide form's list control from the entry list
+'
+'The list carries three columns: the label the user reads, the variable name the
+'dictionary spells, and whether the entry is shown or hidden right now. Only the
+'first column was ever written, so the two beside it stayed blank on every open.
+'ColumnCount is set before the rows go in, because writing List(row, 1) on a one
+'column control is refused.
+Private Sub PopulateShowHideList(ByVal frm As Object)
+    Dim listCtrl As Object
+    Dim counter As Long
+    Dim rowIdx As Long
+    Dim shownText As String
+    Dim hiddenText As String
+
+    If showHideEntries Is Nothing Then Exit Sub
+
+    Set listCtrl = ShowHideListOf(frm)
     If listCtrl Is Nothing Then Exit Sub
+
+    shownText = ShowHideStatusText(False)
+    hiddenText = ShowHideStatusText(True)
+
+    On Error Resume Next
+    listCtrl.ColumnCount = 3
+    On Error GoTo 0
 
     listCtrl.Clear
     For counter = 1 To showHideEntries.EntryCount
+        rowIdx = counter - 1
         listCtrl.AddItem showHideEntries.HeaderText(counter)
+
+        'A control the deployed form still carries as one column refuses these
+        'two writes, and the label column is what the user needs most.
+        On Error Resume Next
+        listCtrl.List(rowIdx, 1) = showHideEntries.FieldKey(counter)
+        listCtrl.List(rowIdx, 2) = IIf(showHideEntries.IsHidden(counter), _
+                                       hiddenText, shownText)
+        On Error GoTo 0
     Next
+End Sub
+
+'Rewrite the status cell of one row, after the user changed that entry. The
+'whole list is left alone: rebuilding it would drop the selection the user is
+'working from.
+Private Sub RefreshShowHideRow(ByVal entryIdx As Long)
+    Dim listCtrl As Object
+
+    If showHideEntries Is Nothing Then Exit Sub
+
+    Set listCtrl = ShowHideListOf(activeShowHideForm)
+    If listCtrl Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    listCtrl.List(entryIdx - 1, 2) = _
+        ShowHideStatusText(showHideEntries.IsHidden(entryIdx))
+    On Error GoTo 0
 End Sub
 
 '@Description("Callback for click on show/hide in a linelist worksheet on a button")
@@ -445,6 +525,67 @@ Public Sub ClickShowHide()
     SaveShowHideState showHideEntries, activeLayout
     LogShowHideLine "showhide", activeLayout, sh.Name
     Set activeShowHideForm = Nothing
+
+    ProtectAfterShowHide sh
+End Sub
+
+'Put the sheet back under protection once a show/hide session ends.
+'
+'ShowHideLayout brackets each write and closes the bracket itself, so the sheet
+'is protected on every path the layout controls. It does not control every path:
+'a raise inside the form, or a button on the form that reaches the sheet another
+'way, leaves the bracket open and the user carries on typing over locked cells.
+'One protect on the way out closes it whatever happened.
+Private Sub ProtectAfterShowHide(ByVal sh As Worksheet)
+    If sh Is Nothing Then Exit Sub
+    If pass Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    pass.Protect sh.Name
+    On Error GoTo 0
+End Sub
+
+'Build the section context of one worksheet: the sections, the entry list and
+'the layout, reconciled with what the sheet shows today. Answers Nothing on a
+'sheet that carries no section map.
+'
+'The entry list and the layout are the module ones, so a section change made
+'while the show/hide form is open lands on the same pair that form is working
+'from.
+Private Function SectionContextFor(ByVal sh As Worksheet, _
+                                   ByVal shType As String) As SectionShowHide
+    Dim layer As Byte
+    Dim secMap As SectionMap
+
+    layer = ResolveShowHideLayer(shType)
+    If layer = 0 Then Exit Function
+
+    Set secMap = SectionMap.Create(sh)
+    If secMap.Count = 0 Then Exit Function
+
+    Set showHideEntries = EntriesFor(sh, layer, DictionaryObject())
+    Set activeLayout = LayoutFor(sh, layer)
+
+    'The same reconciliation ClickShowHide does. With nothing saved yet the
+    'sheet is the record, so a column the user hid by hand is read as hidden
+    'and the toggle below agrees with what the user can see.
+    If LoadShowHideState(showHideEntries, activeLayout) > 0 Then
+        showHideEntries.Apply activeLayout
+    Else
+        showHideEntries.Adopt activeLayout
+    End If
+
+    Set SectionContextFor = SectionShowHide.Create(secMap, showHideEntries, _
+                                                   activeLayout)
+End Function
+
+'Put the cursor somewhere that names no section, so the press that follows a
+'hide is read as "bring the last one back". The first cell of the sheet is the
+'go-to-section dropdown and is never on a title line.
+Private Sub ParkTheCursor(ByVal sh As Worksheet)
+    On Error Resume Next
+    sh.Cells(1, 1).Select
+    On Error GoTo 0
 End Sub
 
 '@Description("Callback for click on show/hide section in a linelist worksheet")
@@ -454,12 +595,10 @@ Public Sub ClickShowHideSection()
 
     Dim sh As Worksheet
     Dim shType As String
-    Dim layer As Byte
-    Dim secMap As SectionMap
-    Dim touched As BetterArray
-    Dim firstPos As Long
-    Dim lastPos As Long
-    Dim hideThem As Boolean
+    Dim sections As SectionShowHide
+    Dim sectionIdx As Long
+    Dim hideIt As Boolean
+    Dim titleRng As Range
 
     Set sh = ActiveSheet
     shType = SheetTag(sh)
@@ -474,125 +613,276 @@ Public Sub ClickShowHideSection()
 
     InitializeTrads
 
-    If Not SelectionSpan(shType, firstPos, lastPos) Then
-        WarningOnSheet "MSG_WrongCells"
+    Set sections = SectionContextFor(sh, shType)
+    If sections Is Nothing Then
+        WarningOnSheet "MSG_SectionTitleCell"
         Exit Sub
     End If
 
-    Set secMap = SectionMap.Create(sh)
-    Set touched = secMap.IndicesInRange(firstPos, lastPos)
+    'A section is hidden only when the user is standing on its title, which is
+    'row 5 of a data entry sheet and column 2 of a vertical one. Anywhere else
+    'the press brings back the section the last press collapsed.
+    sectionIdx = sections.SectionAtCell(SelectedCells())
 
-    If touched.Length = 0 Then
-        WarningOnSheet "MSG_WrongCells"
-        Exit Sub
+    If sectionIdx > 0 Then
+        hideIt = True
+    ElseIf StrComp(lastHiddenSectionSheet, sh.Name, vbTextCompare) = 0 Then
+        sectionIdx = lastHiddenSectionIndex
+        hideIt = False
     End If
 
-    layer = ResolveShowHideLayer(shType)
-    If layer = 0 Then Exit Sub
-
-    Set showHideEntries = EntriesFor(sh, layer, DictionaryObject())
-    Set activeLayout = LayoutFor(sh, layer)
-
-    'The same reconciliation ClickShowHide does. With nothing saved yet the
-    'sheet is the record, so a column the user hid by hand is read as hidden
-    'and the toggle below agrees with what the user can see.
-    If LoadShowHideState(showHideEntries, activeLayout) > 0 Then
-        showHideEntries.Apply activeLayout
-    Else
-        showHideEntries.Adopt activeLayout
+    If sectionIdx = 0 Then
+        WarningOnSheet "MSG_SectionTitleCell"
+        GoTo CleanUp
     End If
 
-    'One press hides, the next shows. Every section the selection touches has
-    'to be hidden already before the press is read as "show them again", so a
-    'selection spanning a hidden section and a visible one hides both rather
-    'than half.
-    hideThem = Not AllSectionsHidden(secMap, touched)
+    If Not sections.CanChange(sectionIdx) Then
+        WarningOnSheet "MSG_SectionTitleCell"
+        GoTo CleanUp
+    End If
 
     On Error GoTo ErrHand
     LinelistEventsManager.LLEnterBusyState
-    ApplyToSections secMap, touched, hideThem
-    showHideEntries.Apply activeLayout
+
+    sections.SetHidden sectionIdx, hideIt
     SaveShowHideState showHideEntries, activeLayout
+
+    If hideIt Then
+        lastHiddenSectionSheet = sh.Name
+        lastHiddenSectionIndex = sectionIdx
+        ParkTheCursor sh
+    Else
+        lastHiddenSectionSheet = vbNullString
+        lastHiddenSectionIndex = 0
+        'Land on the title of the section that came back, so the next press
+        'collapses it again and the user sees where it went.
+        Set titleRng = sections.TitleCell(sectionIdx)
+        If Not titleRng Is Nothing Then titleRng.Select
+    End If
+
     LogShowHideLine "showhide-section", activeLayout, sh.Name
 
 ErrHand:
     If Err.Number <> 0 Then LogFailureLine "showhide-section", Err.Description
     LinelistEventsManager.LLExitBusyState
-    Set showHideEntries = Nothing
-    Set activeLayout = Nothing
+    ProtectAfterShowHide sh
+
+CleanUp:
+    'The show/hide form works from this pair while it is open, so it is left
+    'alone when the section change came from the sections form.
+    If activeShowHideForm Is Nothing Then
+        Set showHideEntries = Nothing
+        Set activeLayout = Nothing
+    Else
+        PopulateShowHideList activeShowHideForm
+    End If
 End Sub
 
-'The span of positions the user has selected, in the axis the sheet hides on:
-'columns on an HList sheet, rows on a VList one. Answers True for a cell
-'selection. A chart or a shape holds the selection as an object of its own, and
-'those answer False.
-Private Function SelectionSpan(ByVal shType As String, _
-                              ByRef firstPos As Long, _
-                              ByRef lastPos As Long) As Boolean
-    Dim rng As Range
-
-    firstPos = 0
-    lastPos = 0
-
+'What the user has selected, or Nothing when the selection is not a range. A
+'chart or a shape holds the selection as an object of its own.
+Private Function SelectedCells() As Range
     If TypeName(Application.Selection) <> "Range" Then Exit Function
-    Set rng = Application.Selection
+    Set SelectedCells = Application.Selection
+End Function
 
-    If shType = "VList" Then
-        firstPos = rng.Row
-        lastPos = firstPos + rng.Rows.Count - 1
+
+'@section The sections form
+'===============================================================================
+'The section button acts on one section, the one the cursor stands on.
+'F_ShowHideSections offers the same two actions over the whole list, so a user
+'who wants to collapse a section far from the cursor never has to travel to it.
+'The form is opened from the show/hide form and works on the same entry list and
+'the same layout.
+
+'Fill the sections list. Two columns: the title, and whether the section is
+'shown or hidden right now. A section holding nothing the user owns is listed
+'and its status is left empty, so a reader can see it is there and that the
+'form will not move it.
+Private Sub PopulateSectionsList(ByVal frm As Object)
+    Dim listCtrl As Object
+    Dim counter As Long
+    Dim rowIdx As Long
+
+    If frm Is Nothing Then Exit Sub
+    If activeSections Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    Set listCtrl = frm.Controls("LST_Sections")
+    On Error GoTo 0
+
+    If listCtrl Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    listCtrl.ColumnCount = 2
+    On Error GoTo 0
+
+    listCtrl.Clear
+    For counter = 1 To activeSections.Count
+        rowIdx = counter - 1
+        listCtrl.AddItem activeSections.SectionNameAt(counter)
+
+        On Error Resume Next
+        If activeSections.CanChange(counter) Then
+            listCtrl.List(rowIdx, 1) = _
+                ShowHideStatusText(activeSections.IsHidden(counter))
+        End If
+        On Error GoTo 0
+    Next
+End Sub
+
+'@Description("Open the sections form from the show/hide form")
+'@EntryPoint
+Public Sub ClickOpenShowHideSections()
+    Attribute ClickOpenShowHideSections.VB_Description = "Open the sections form from the show/hide form"
+
+    Dim sh As Worksheet
+    Dim shType As String
+
+    On Error GoTo ErrHand
+
+    'The show/hide form is open on top of its own sheet, and that is the sheet
+    'the sections belong to. ActiveSheet answers the same thing while the form
+    'is up, and it is what a press from the ribbon has.
+    If activeLayout Is Nothing Then
+        Set sh = ActiveSheet
     Else
-        firstPos = rng.Column
-        lastPos = firstPos + rng.Columns.Count - 1
+        Set sh = activeLayout.Wksh
     End If
 
-    SelectionSpan = (firstPos > 0)
-End Function
+    shType = SheetTag(sh)
 
-'Whether every section of the list is already hidden. A section holding nothing
-'the user owns is passed over: it can never be hidden, so counting it would
-'leave a selection that touches one stuck on "hide" for good.
-Private Function AllSectionsHidden(ByVal secMap As SectionMap, _
-                                  ByVal touched As BetterArray) As Boolean
-    Dim counter As Long
-    Dim blockIdx As Long
-    Dim state As Byte
-    Dim answered As Long
+    InitializeTrads
 
-    If showHideEntries Is Nothing Then Exit Function
+    'Sections are laid out on the data entry sheets alone.
+    If (shType <> "HList") And (shType <> "VList") Then
+        WarningOnSheet "MSG_DataSheet"
+        Exit Sub
+    End If
 
-    For counter = touched.LowerBound To touched.UpperBound
-        blockIdx = CLng(touched.Item(counter))
-        state = showHideEntries.RangeState(secMap.StartAt(blockIdx), _
-                                           secMap.EndAt(blockIdx))
+    Set activeSections = SectionContextFor(sh, shType)
+    If activeSections Is Nothing Then
+        WarningOnSheet "MSG_SectionTitleCell"
+        Exit Sub
+    End If
 
-        Select Case state
-        Case ShowHideRangeEmpty, ShowHideRangeFixed
-            'nothing to say either way
-        Case ShowHideRangeHidden
-            answered = answered + 1
-        Case Else
-            Exit Function
-        End Select
-    Next counter
+    'The form is reached by name rather than written into the code.
+    '
+    'Naming F_ShowHideSections here would be the house pattern, and it is what
+    'every other form call in this module does. It is also a COMPILE time
+    'reference: a workbook that does not carry the form stops compiling
+    'altogether, and every button of the linelist goes down with it. This module
+    'travels into each generated linelist through CodeTransfer, so it would take
+    'any linelist built before the form exists with it. UserForms.Add resolves
+    'the name when the button is pressed, and a workbook without the form says
+    'so and keeps working.
+    On Error Resume Next
+    Set activeSectionsForm = UserForms.Add("F_ShowHideSections")
+    On Error GoTo ErrHand
 
-    AllSectionsHidden = (answered > 0)
-End Function
+    If activeSectionsForm Is Nothing Then
+        LogWarningLine "showhide-sections", "no form named F_ShowHideSections"
+        WarningOnSheet "MSG_NoSectionsForm"
+        Exit Sub
+    End If
 
-'Hide or show every section of the list.
-Private Sub ApplyToSections(ByVal secMap As SectionMap, _
-                           ByVal touched As BetterArray, _
-                           ByVal hidden As Boolean)
-    Dim counter As Long
-    Dim blockIdx As Long
+    PopulateSectionsList activeSectionsForm
+    activeSectionsForm.Show
 
-    If showHideEntries Is Nothing Then Exit Sub
+    'Every option click has already written to the sheet, so the save at the
+    'foot records the state the user is looking at.
+    SaveShowHideState showHideEntries, activeLayout
+    LogShowHideLine "showhide-sections", activeLayout, sh.Name
+    ProtectAfterShowHide sh
 
-    For counter = touched.LowerBound To touched.UpperBound
-        blockIdx = CLng(touched.Item(counter))
-        showHideEntries.SetHiddenInRange secMap.StartAt(blockIdx), _
-                                         secMap.EndAt(blockIdx), _
-                                         hidden
-    Next counter
+    'The show/hide form underneath lists the variables one by one, and a whole
+    'section just moved.
+    If Not activeShowHideForm Is Nothing Then PopulateShowHideList activeShowHideForm
+
+ErrHand:
+    If Err.Number <> 0 Then LogFailureLine "showhide-sections", Err.Description
+
+    'UserForms.Add builds a fresh instance and Hide keeps it alive, so the
+    'instance is unloaded here. Two opens would otherwise leave two of them
+    'standing for as long as the workbook is open.
+    On Error Resume Next
+    Unload activeSectionsForm
+    On Error GoTo 0
+
+    Set activeSections = Nothing
+    Set activeSectionsForm = Nothing
+End Sub
+
+'@Description("Callback for click on the list of the sections form")
+'@EntryPoint
+Public Sub ClickListShowHideSections(ByVal Index As Long)
+    Attribute ClickListShowHideSections.VB_Description = "Callback for click on the list of the sections form"
+
+    Dim sectionIdx As Long
+    Dim canChange As Boolean
+
+    If activeSections Is Nothing Then Exit Sub
+    If activeSectionsForm Is Nothing Then Exit Sub
+
+    sectionIdx = Index + 1
+    If sectionIdx < 1 Or sectionIdx > activeSections.Count Then Exit Sub
+
+    canChange = activeSections.CanChange(sectionIdx)
+
+    On Error Resume Next
+    If activeSections.IsHidden(sectionIdx) Then
+        activeSectionsForm.OPT_Hide.Value = True
+    Else
+        activeSectionsForm.OPT_Show.Value = True
+    End If
+    activeSectionsForm.OPT_Show.Enabled = canChange
+    activeSectionsForm.OPT_Hide.Enabled = canChange
+    On Error GoTo 0
+End Sub
+
+'@Description("Callback for click on the show and hide options of the sections form")
+'@EntryPoint
+Public Sub ClickOptionsShowHideSections(ByVal Index As Long)
+    Attribute ClickOptionsShowHideSections.VB_Description = "Callback for click on the show and hide options of the sections form"
+
+    Dim sectionIdx As Long
+    Dim shouldHide As Boolean
+    Dim listCtrl As Object
+
+    If activeSections Is Nothing Then Exit Sub
+    If activeSectionsForm Is Nothing Then Exit Sub
+
+    sectionIdx = Index + 1
+    If sectionIdx < 1 Or sectionIdx > activeSections.Count Then Exit Sub
+    If Not activeSections.CanChange(sectionIdx) Then Exit Sub
+
+    shouldHide = activeSectionsForm.OPT_Hide.Value
+
+    On Error GoTo ErrHand
+    LinelistEventsManager.LLEnterBusyState
+
+    activeSections.SetHidden sectionIdx, shouldHide
+
+    'The section button reads this pair, so a section collapsed from the form
+    'is the one a press of the button brings back.
+    If shouldHide Then
+        lastHiddenSectionSheet = activeSections.Wksh.Name
+        lastHiddenSectionIndex = sectionIdx
+    ElseIf lastHiddenSectionIndex = sectionIdx Then
+        lastHiddenSectionSheet = vbNullString
+        lastHiddenSectionIndex = 0
+    End If
+
+    On Error Resume Next
+    Set listCtrl = activeSectionsForm.Controls("LST_Sections")
+    If Not listCtrl Is Nothing Then
+        listCtrl.List(sectionIdx - 1, 1) = _
+            ShowHideStatusText(activeSections.IsHidden(sectionIdx))
+    End If
+    On Error GoTo 0
+
+ErrHand:
+    If Err.Number <> 0 Then LogFailureLine "showhide-sections", Err.Description
+    LinelistEventsManager.LLExitBusyState
 End Sub
 
 '@Description("Callback for click on the list of showhide")
@@ -680,6 +970,9 @@ Public Sub ClickOptionsShowHide(ByVal Index As Long)
     End If
 
     activeLayout.EndBatch
+
+    'The status column of the row the user just changed
+    RefreshShowHideRow entryIdx
 End Sub
 
 '@Description("Callback for click on column width in show/hide")
@@ -779,9 +1072,11 @@ Public Sub ClickOpenCRF()
         Set crfsh = wb.Worksheets(CRFPREFIX & sh.Name)
     On Error GoTo 0
 
+    'MSG_NoCRFSheet, because the user IS standing on a data entry sheet and
+    'MSG_DataSheet told them to go and find one. The sheet is what is missing.
     If crfsh Is Nothing Then
         LogWarningLine "open-crf", "no worksheet named " & CRFPREFIX & sh.Name
-        WarningOnSheet "MSG_DataSheet"
+        WarningOnSheet "MSG_NoCRFSheet"
         Exit Sub
     End If
 
@@ -863,6 +1158,7 @@ Public Sub ClickRotateAll()
     Dim cRng As Range
     Dim shType As String
     Dim actualOrientation As xlOrientation
+    Dim openedSheetName As String
 
     Set sh = ActiveSheet
 
@@ -879,8 +1175,11 @@ Public Sub ClickRotateAll()
 
     On Error GoTo ErrHand
 
-    'Unprotect the sheet if it is protected.
-    pass.UnProtect sh.Name
+    'Unprotect the sheet if it is protected. The name is held, because sh is
+    'the print companion on a press made from the data entry sheet and the
+    'protect at the foot has to close the sheet that was opened.
+    openedSheetName = sh.Name
+    pass.UnProtect openedSheetName
     LinelistEventsManager.LLEnterBusyState busyCursor:=xlNorthwestArrow
 
     Set Lo = sh.ListObjects(1)
@@ -896,7 +1195,24 @@ Public Sub ClickRotateAll()
 
 ErrHand:
     LogOutcomeLine "rotate", Err.Number, Err.Description
+    ReprotectOpenedSheet openedSheetName
     LinelistEventsManager.LLExitBusyState
+End Sub
+
+'Put back the protection a button took off one sheet.
+'
+'Three buttons write to a sheet property that protection guards -- the header
+'direction, the row height and the column widths -- and all three left the sheet
+'open when they were done. On a press made from a data entry sheet the sheet
+'they open is the print companion, so the name is carried rather than read back
+'off ActiveSheet.
+Private Sub ReprotectOpenedSheet(ByVal sheetName As String)
+    If LenB(sheetName) = 0 Then Exit Sub
+    If pass Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    pass.Protect sheetName
+    On Error GoTo 0
 End Sub
 
 '@Description("Change the Row height of cells in the print sheet")
@@ -910,6 +1226,7 @@ Public Sub ClickRowHeight()
     Dim shType As String
     Dim inputValue As String
     Dim actualRowHeight As Long
+    Dim openedSheetName As String
 
     Set sh = ActiveSheet
 
@@ -926,7 +1243,8 @@ Public Sub ClickRowHeight()
     LinelistEventsManager.LLEnterBusyState busyCursor:=xlNorthwestArrow
 
     If shType = "HList" Then Set sh = wb.Worksheets(PRINTPREFIX & sh.Name)
-    pass.UnProtect sh.Name
+    openedSheetName = sh.Name
+    pass.UnProtect openedSheetName
 
     Set Lo = sh.ListObjects(1)
     If (Lo.DataBodyRange Is Nothing) Then
@@ -956,6 +1274,7 @@ Public Sub ClickRowHeight()
 
 ErrHand:
     If Err.Number <> 0 Then LogFailureLine "row-height", Err.Description
+    ReprotectOpenedSheet openedSheetName
     LinelistEventsManager.LLExitBusyState
 End Sub
 
@@ -1308,6 +1627,7 @@ Public Sub ClickPrintLL()
 
     Dim sh As Worksheet
     Dim shType As String
+    Dim failureDetail As String
 
     'Set up the sheet with some print Characteristics
     Set sh = ActiveSheet
@@ -1338,7 +1658,15 @@ Public Sub ClickPrintLL()
 
     pass.UnProtect sh.Name
 
-    Application.PrintCommunication = False
+    'PrintCommunication belongs to Excel on Windows. Mac Excel carries the name
+    'and refuses the write, and this line was the first statement under the
+    'handler, so the whole button ended in the failure box on every Mac before
+    'one page-setup property had been read. It is a speed setting: the writes
+    'below all work without it, they are just sent to the driver one at a time.
+    On Error Resume Next
+        Application.PrintCommunication = False
+    On Error GoTo ErrPrint
+
     'Avoid printing rows and column number'
     With sh.PageSetup
         'Specifies the margins
@@ -1354,13 +1682,10 @@ Public Sub ClickPrintLL()
         .PrintTitleColumns = vbNullString
         .PrintComments = xlPrintNoComments
         .PrintNotes = False
-        'The quality of the print
-        .PrintQuality = 600
         .CenterHorizontally = True
         .CenterVertically = False
-        'Landscape and paper size
+        'Landscape
         .Orientation = xlLandscape
-        .PaperSize = xlPaperA3
         .FirstPageNumber = xlAutomatic
         .ORDER = xlDownThenOver
         .BlackAndWhite = False
@@ -1371,8 +1696,20 @@ Public Sub ClickPrintLL()
         'Print Errors to blanks
         .PrintArea = sh.ListObjects(1).Range.Address
         .PrintErrors = xlPrintErrorsBlank
+
+        'The printer answers these two, and a printer that has no A3 tray or no
+        'say on the dots per inch refuses them. Neither is worth losing the page
+        'setup over, so each is asked for on its own and the sheet keeps the
+        'driver's own value when the answer is no.
+        On Error Resume Next
+            .PaperSize = xlPaperA3
+            .PrintQuality = 600
+        On Error GoTo ErrPrint
     End With
-    Application.PrintCommunication = True
+
+    On Error Resume Next
+        Application.PrintCommunication = True
+    On Error GoTo ErrPrint
 
     sh.PrintPreview
 
@@ -1381,16 +1718,19 @@ Public Sub ClickPrintLL()
     Exit Sub
 
 ErrPrint:
+    'The reason is copied first. Every On Error statement below clears Err, and
+    'the restore needs one of its own.
+    failureDetail = Err.Description
+
     'PrintCommunication is an APPLICATION setting. Left False it silently drops
     'every later page-setup write in this Excel session, including ones made by
     'the user by hand, so it is restored before anything else is attempted.
-    Application.PrintCommunication = True
-    LogFailureLine "print-preview", Err.Description
-    'MSG_Error, not a print-specific code. A dedicated MSG_PrintFailed row is
-    'owed to the five translation workbooks; until it is there, naming it would
-    'put the literal tag "MSG_PrintFailed" on screen, since a lookup that misses
-    'answers with the tag it was handed. The description carries the reason.
-    FailureOnSheet "MSG_Error", Err.Description
+    On Error Resume Next
+        Application.PrintCommunication = True
+    On Error GoTo 0
+
+    LogFailureLine "print-preview", failureDetail
+    FailureOnSheet "MSG_PrintFailed", failureDetail
     On Error Resume Next
         pass.Protect sh.Name
     On Error GoTo 0
@@ -1764,6 +2104,7 @@ Public Sub clickAutoFit()
     Dim Lo As ListObject
     Dim LoRng As Range
     Dim counter As Long
+    Dim openedSheetName As String
 
     Set sh = ActiveSheet
     shType = SheetTag(sh)
@@ -1783,7 +2124,8 @@ Public Sub clickAutoFit()
     'Column widths are a protected property, so the sheet has to come out of
     'protection first. The data sheet was never protected against this, which is
     'why the missing unprotect only ever showed up on the print sheet.
-    pass.UnProtect sh.Name
+    openedSheetName = sh.Name
+    pass.UnProtect openedSheetName
     LinelistEventsManager.LLEnterBusyState
     'Table data entry on linelist
     Set Lo = sh.ListObjects(1)
@@ -1801,5 +2143,6 @@ ErrHand:
     'Err is read before the Resume Next below clears it.
     LogOutcomeLine "autofit", Err.Number, Err.Description, sh.Name
     On Error Resume Next
+    ReprotectOpenedSheet openedSheetName
     LinelistEventsManager.LLExitBusyState
 End Sub

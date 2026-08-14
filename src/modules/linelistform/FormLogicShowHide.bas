@@ -33,3 +33,10 @@ Private Sub CMD_ShowHideMinimal_Click()
     ClickShowHideMinimal
     Me.Hide
 End Sub
+
+'Open the sections form on top of this one. This form stays up, and the list
+'behind is filled again once the sections form goes down, because a whole
+'section may have moved while it was open.
+Private Sub CMD_ShowHideSections_Click()
+    ClickOpenShowHideSections
+End Sub
