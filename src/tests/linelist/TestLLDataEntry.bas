@@ -782,6 +782,40 @@ TestFail:
 End Sub
 
 '@TestMethod("LLDataEntry")
+Public Sub TestTheCrfCompanionIsBuiltAndCarriesItsOwnType()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheCrfCompanionIsBuiltAndCarriesItsOwnType"
+    If Not FixtureReady("TestTheCrfCompanionIsBuiltAndCarriesItsOwnType") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim crfSh As Worksheet
+    Dim store As HiddenNames
+
+    'The sheet was the one piece of the CRF nothing created. SectionBuilder and
+    'VarWriter have written to it all along, so a build that skips it loses
+    'every CRF label, type and choice list with no word said.
+    On Error Resume Next
+        Set crfSh = OutWkb.Worksheets("crf_" & HLIST_SHEET)
+    On Error GoTo TestFail
+
+    Assert.IsFalse crfSh Is Nothing, _
+                   "A built HList sheet carries a CRF companion"
+    If crfSh Is Nothing Then Exit Sub
+
+    Assert.AreEqual xlSheetVeryHidden, CLng(crfSh.Visible), _
+                    "The CRF companion is created very hidden, which is what closing it leaves"
+
+    Set store = HiddenNames.Create(crfSh)
+    Assert.AreEqual "HList CRF", store.ValueAsString("sheet_type"), _
+                    "The CRF companion records itself as a CRF sheet"
+    Assert.AreEqual "crf_" & TableNameOf(HLIST_SHEET), store.ValueAsString("table_name"), _
+                    "The CRF companion records its own table name"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheCrfCompanionIsBuiltAndCarriesItsOwnType", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLDataEntry")
 Public Sub TestThePrintCompanionCarriesItsOwnType()
     CustomTestSetTitles Assert, TESTMODULE, "TestThePrintCompanionCarriesItsOwnType"
     If Not FixtureReady("TestThePrintCompanionCarriesItsOwnType") Then Exit Sub

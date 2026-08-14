@@ -80,6 +80,11 @@ Private Const GOTO_SECTION_CODE As String = "go_to_section"
 Private Const FILTERED_PREFIX As String = "f"
 Private Const PRINT_PREFIX As String = "print_"
 
+'The prefix Linelist.ScopedName puts on a CRF companion. Spelled the same way
+'there and in EventsLinelistButtons, and it is part of the sheet's stored table
+'name, so it is copied here exactly.
+Private Const CRF_PREFIX As String = "crf_"
+
 'What Excel accepts for a worksheet name. Linelist.ScopedName cuts to the same
 'figure, so a longer name still builds; this class reads it to tell the user
 'which dictionary names come out shortened.
@@ -307,6 +312,7 @@ End Sub
 Private Sub BuildHList()
     Dim sh As Worksheet
     Dim printSh As Worksheet
+    Dim crfSh As Worksheet
     Dim filtSh As Worksheet
     Dim llshs As LLSheets
     Dim specs As LinelistSpecs
@@ -326,6 +332,7 @@ Private Sub BuildHList()
     Dim shColEnd As Long
     Dim shHn As HiddenNames
     Dim printHiddenNames As HiddenNames
+    Dim crfHiddenNames As HiddenNames
     Dim filtSheetName As String
     Dim blankRowCells As Long
     Dim failedNumber As Long
@@ -346,9 +353,19 @@ Private Sub BuildHList()
     this.ll.AddOutputSheet this.sheetName, xlSheetHidden, sheetScope:=2
     Set printSh = this.ll.PrintWksh(this.sheetName)
 
+    'Add the CRF companion sheet. It holds one variable per row, laid out from
+    'the `crf index` column of the dictionary, and SectionBuilder and VarWriter
+    'have written to it all along -- the sheet itself was the one piece nothing
+    'created, so BuildSections resolved it to Nothing and every CRF write was
+    'skipped. It is created very hidden, which is the state ClickCloseSheet
+    'leaves it in.
+    this.ll.AddOutputSheet this.sheetName, xlSheetVeryHidden, sheetScope:=3
+    Set crfSh = this.ll.CRFWksh(this.sheetName)
+
     'Format sheets
     design.ApplyFormat sh, scope:=AllLinelistSheet
     design.ApplyFormat printSh, scope:=HListPrintedSheet
+    design.ApplyFormat crfSh, scope:=HListCRFSheet
 
     'Freeze panes
     FreezeHeader sh, llshs.DataBounds(this.sheetName, SheetBound.RowSart), 2
@@ -400,13 +417,22 @@ Private Sub BuildHList()
         but.Add actionCommand:="ClickShowHide", shapeLabel:=shapeTrads.TranslatedValue(SHP_SHOW_HIDE)
         but.Format design
         If but.HasCheckings Then HarvestCollaboratorCheckings but.CheckingValues
+
+        'And on the CRF sheet. The CRF is a show/hide layer of its own, with its
+        'own `crf status` column, so without this button a workbook built with
+        'no ribbon has no way to reach it.
+        Set rng = crfSh.Cells(1, 2)
+        Set but = Buttons.Create(outrng:=rng, codeName:=SHP_SHOW_HIDE, scope:=ButtonScopeSmall)
+        but.Add actionCommand:="ClickShowHide", shapeLabel:=shapeTrads.TranslatedValue(SHP_SHOW_HIDE)
+        but.Format design
+        If but.HasCheckings Then HarvestCollaboratorCheckings but.CheckingValues
     Else
         'Hide rows 3-4 when using ribbon template
         sh.Rows("3:4").EntireRow.Hidden = True
     End If
 
     'Build sections via SectionBuilder
-    BuildSections sh, printSh
+    BuildSections sh, printSh, crfSh
 
     'GoTo section dropdown and sheet metadata
     Set messages = specs.TransObject(TranslationOfMessages)
@@ -418,6 +444,11 @@ Private Sub BuildHList()
 
     Set printHiddenNames = HiddenNames.Create(printSh)
     WriteSheetMetadata printHiddenNames, "HList Print", PRINT_PREFIX & tableName
+
+    'The CRF tag is what ClickOpenCRF, ClickCloseSheet and ResolveShowHideLayer
+    'all read to tell the sheet apart from its two siblings.
+    Set crfHiddenNames = HiddenNames.Create(crfSh)
+    WriteSheetMetadata crfHiddenNames, "HList CRF", CRF_PREFIX & tableName
 
     'Create the main ListObject table
     With sh
@@ -646,15 +677,20 @@ End Sub
 '@sub-title Build sections using SectionBuilder
 '@details
 'Creates a SectionBuilder in the appropriate mode (HList or VList) and
-'invokes its Build method. For HList mode, also retrieves the CRF companion
-'worksheet (if it exists). Both standard and custom dropdown objects are
+'invokes its Build method. Both standard and custom dropdown objects are
 'passed to the builder for variable validation setup.
+'
+'The CRF companion arrives as a parameter. It used to be looked up here under
+'a suppressed error, which read as "use it when it happens to be there" and
+'hid the fact that nothing ever created it.
 '@param sh Worksheet. The main data entry sheet to build sections on.
 '@param printSh Worksheet. The printed companion sheet (Nothing for VList).
-Private Sub BuildSections(ByVal sh As Worksheet, ByVal printSh As Worksheet)
+'@param crfSh Worksheet. The CRF companion sheet (Nothing for VList).
+Private Sub BuildSections(ByVal sh As Worksheet, _
+                          ByVal printSh As Worksheet, _
+                          Optional ByVal crfSh As Worksheet = Nothing)
     Dim specs As LinelistSpecs
     Dim secBuilder As SectionBuilder
-    Dim crfSh As Worksheet
     Dim dropdownObj As DropdownLists
     Dim customDropdownObj As DropdownLists
 
@@ -663,10 +699,6 @@ Private Sub BuildSections(ByVal sh As Worksheet, ByVal printSh As Worksheet)
     Set customDropdownObj = this.ll.Dropdown(2)
 
     If this.layer = LLDataEntryLayerHList Then
-        On Error Resume Next
-            Set crfSh = this.ll.CRFWksh(this.sheetName)
-        On Error GoTo 0
-
         Set secBuilder = SectionBuilder.Create( _
             SectionBuilderModeHList, specs, sh, printSh, crfSh, dropdownObj, customDropdownObj)
     Else
