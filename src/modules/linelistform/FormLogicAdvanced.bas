@@ -27,9 +27,15 @@ Private Const PASTING_RULE_EMPTY As Byte = 0
 Private Const PASTING_RULE_BOTTOM As Byte = 1
 Private Const PASTING_RULE_STOP As Byte = 2
 
+' How many clicks on the form surface open the debugging password prompt. The
+' setup asks for five on its own import form; the owner asked for seven here.
+Private Const DEBUG_CLICKS As Long = 7
+Private Const DEBUG_TITLE As String = "Debugging Password"
+
 Private tradform As TranslationObject 'Translation of forms
 Private tradmess As TranslationObject 'Translation of messages
 Private currwb As Workbook
+Private numberOfClicks As Long
 
 
 '@section Initialization and control callbacks
@@ -134,7 +140,114 @@ Private Sub UserForm_Initialize()
     tradform.TranslateForm Me
 
     Me.Width = 250
-    Me.Height = 550
+    Me.Height = 450
+End Sub
+
+' The counter starts again on every open. Initialize runs once per form
+' instance and this form is shown on the predeclared instance and hidden
+' rather than unloaded, so six clicks left behind by an earlier open would
+' otherwise carry over. The caption is put back here too, because the hint
+' below overwrites it.
+Private Sub UserForm_Activate()
+    numberOfClicks = 0
+    Me.Caption = tradform.TranslatedValue(Me.Name)
+End Sub
+
+
+'@section Debug mode
+'===============================================================================
+
+' Seven clicks on the form surface, then the debugging password, and every
+' protection in the workbook comes off. This is the setup's ImportForm.LabPath
+' walk on the linelist side, with three differences forced by what is here:
+'
+' - The clicks land on the FORM, not on a label. F_Advanced carries eight
+'   command buttons and nothing else, so there is no LabProgress to write the
+'   hint into. The title bar carries it and UserForm_Activate puts the
+'   translated caption back.
+' - The password manager is the one the event service holds, so opening this
+'   form does not build a second one over the same worksheet.
+' - The busy state goes through LinelistEventsManager, which counts its
+'   nesting, rather than the setup's EventsManager.
+'
+' The strings are English literals. The workbook carries no translation keys
+' for any of this, and the setup states its own the same way.
+'
+' THERE IS NO WAY BACK OUT BY HAND, and that is the design. Debug mode ends
+' when the workbook closes: Passwords.EnsureDebugExitHandler injects
+' LeaveDebugModeOnClose into the output workbook and calls it from
+' Workbook_BeforeClose, so the protection matrix is reapplied whatever the
+' user did in between. Only the sheets the protection table lists come back
+' protected -- a sheet protected by hand while in debug mode does not.
+Private Sub UserForm_Click()
+
+    Dim pass As Passwords
+    Dim answer As Variant
+    Dim expected As String
+    Dim failDetail As String
+
+    numberOfClicks = numberOfClicks + 1
+
+    If numberOfClicks = (DEBUG_CLICKS - 1) Then
+        Me.Caption = "Click the form once more for debug mode"
+        Exit Sub
+    End If
+
+    If numberOfClicks < DEBUG_CLICKS Then Exit Sub
+
+    numberOfClicks = 0
+    Me.Caption = tradform.TranslatedValue(Me.Name)
+
+    ' A workbook with no usable keys has no debugging password to check
+    ' against, and the seven clicks do nothing at all.
+    Set pass = PasswordManagerOf()
+    If pass Is Nothing Then Exit Sub
+
+    If pass.IsInDebugMode() Then
+        MsgBox "This linelist is already in debug mode.", _
+               vbInformation + vbOKOnly, DEBUG_TITLE
+        Exit Sub
+    End If
+
+    expected = pass.Value("debuggingpassword")
+
+    answer = Application.InputBox("Enter the debugging password.", _
+                                  DEBUG_TITLE, Type:=2)
+
+    ' A cancelled InputBox answers the Boolean False, and a typed password is
+    ' always a String, so the type alone says the user backed out.
+    If VarType(answer) = vbBoolean Then Exit Sub
+
+    If StrComp(CStr(answer), expected, vbBinaryCompare) <> 0 Then
+        LogWarningLine "enter-debug-mode", "wrong password"
+        MsgBox "Incorrect password.", vbExclamation + vbOKOnly, DEBUG_TITLE
+        Exit Sub
+    End If
+
+    ' EnterDebugMode walks every worksheet in the workbook unprotecting it,
+    ' and the busy state is what keeps that walk off the screen.
+    On Error GoTo DebugFailed
+    LinelistEventsManager.LLEnterBusyState
+    pass.EnterDebugMode currwb
+    LinelistEventsManager.LLExitBusyState
+    On Error GoTo 0
+
+    LogWarningLine "enter-debug-mode", "protections removed"
+    MsgBox "The linelist is in debug mode. Every protection comes back " & _
+           "when the workbook is closed.", _
+           vbInformation + vbOKOnly, DEBUG_TITLE
+    Me.Hide
+    Exit Sub
+
+DebugFailed:
+    ' Err is read before the Resume Next below clears it.
+    failDetail = Err.Description
+    On Error Resume Next
+    LinelistEventsManager.LLExitBusyState
+    Application.Cursor = xlDefault
+    LogFailureLine "enter-debug-mode", failDetail
+    On Error GoTo 0
+    MsgBox "Unable to enter debug mode.", vbCritical + vbOKOnly, DEBUG_TITLE
 End Sub
 
 
