@@ -26,8 +26,8 @@
 #
 # What it writes: <out>/F_Name.frm (merged) and <out>/F_Name.frx (copied), for
 # every form the linelist uses. A form with no FormLogic module keeps its own
-# code and is still rewritten. F_Progr is skipped: the transfer moves ten forms
-# and the designer's progress dialog is not one of them.
+# code and is still rewritten. F_Progr is skipped: the designer's progress
+# dialog is the one form the transfer never moves.
 #
 # LINE ENDINGS ARE CRLF, AND THAT IS LOAD-BEARING
 # -----------------------------------------------------------------------------
@@ -59,10 +59,10 @@ out_dir <- if (any(args == "--out")) {
 forms_dir <- path(repo_root, ".mock", "forms", "designer")
 logic_dir <- path(repo_root, "src", "modules", "linelistform")
 
-# Forms this workflow has no use for. Linelist.TransferAllCode moves TEN forms
-# and F_Progr is not one of them: it is the designer's own progress dialog, it
-# never reaches a linelist, and emitting it only gave the headless import a
-# file to trip over. Owner decision, 2026-08-13.
+# Forms this workflow has no use for. F_Progr is the one form
+# Linelist.TransferAllCode never moves: it is the designer's own progress
+# dialog, it never reaches a linelist, and emitting it only gave the headless
+# import a file to trip over. Owner decision, 2026-08-13.
 form_skip <- c("F_Progr")
 
 # The form each FormLogic module belongs to. Every pair here is stated by the
@@ -70,16 +70,17 @@ form_skip <- c("F_Progr")
 # cannot be derived from the file name -- FormLogicShowHide belongs to
 # F_ShowHideLL, and FormLogicEpiWeek names no form at all.
 form_logic <- c(
-  F_Advanced      = "FormLogicAdvanced",
-  F_EpiWeek       = "FormLogicEpiWeek",
-  F_Export        = "FormLogicExport",
-  F_ExportMig     = "FormLogicExportMig",
-  F_Geo           = "FormLogicGeo",
-  F_ImportRep     = "FormLogicImportRep",
-  F_ShowHideLL    = "FormLogicShowHide",
-  F_ShowHidePrint = "FormLogicShowHidePrint",
-  F_ShowHideSave  = "FormLogicShowHideSave",
-  F_ShowVarLabels = "FormLogicShowVarLabels"
+  F_Advanced         = "FormLogicAdvanced",
+  F_EpiWeek          = "FormLogicEpiWeek",
+  F_Export           = "FormLogicExport",
+  F_ExportMig        = "FormLogicExportMig",
+  F_Geo              = "FormLogicGeo",
+  F_ImportRep        = "FormLogicImportRep",
+  F_ShowHideLL       = "FormLogicShowHide",
+  F_ShowHidePrint    = "FormLogicShowHidePrint",
+  F_ShowHideSave     = "FormLogicShowHideSave",
+  F_ShowHideSections = "FormLogicShowHideSections",
+  F_ShowVarLabels    = "FormLogicShowVarLabels"
 )
 
 # --- the two readers ---------------------------------------------------------
@@ -211,7 +212,7 @@ cli_alert_success(
 )
 
 # A form named in the mapping but absent from .mock is worth a word: the
-# linelist build asks for ten of them by name and a missing one ships a
+# linelist build asks for each of them by name and a missing one ships a
 # linelist short of a form.
 missing <- setdiff(names(form_logic), path_ext_remove(path_file(frm_files)))
 if (length(missing)) {
