@@ -86,3 +86,6 @@ scripts/history-rewrite
 src/tests/.generated/
 # Throwaway experiments / scratch
 .draft/
+
+#--- Comment hand-pass workspace (harvest-comments.R + update-comments.R)
+all-comments.txt
