@@ -96,14 +96,25 @@ generated    <- file.path(repo_root, "src", "tests", ".generated")
 run_dir      <- file.path(build_home, "headless", "run")
 
 # --- what to build -----------------------------------------------------------
+# Every path handed on to Excel is made absolute first. R resolves a relative
+# path against the shell's working directory; Excel resolves it against its
+# own, which is somewhere else entirely. A relative --setup therefore passes
+# the file.exists check here and comes back from the build as
+# "no setup workbook at <path>", naming a file that is plainly sitting there.
+abs_path <- function(p) {
+  if (is.null(p) || !nzchar(p)) return(p)
+  normalizePath(p, mustWork = FALSE)
+}
+
 setup_path <- opt("setup")
 if (is.null(setup_path) || !nzchar(setup_path)) {
   stop("build-linelist.R: --setup=<path> is required (the filled setup workbook to generate from).")
 }
+setup_path <- abs_path(setup_path)
 
-designer_path <- opt("designer", file.path(repo_root, ".mock", "designer_mock.xlsb"))
-forms_folder  <- opt("forms",    file.path(build_home, "forms", "merged"))
-out_folder    <- opt("out",      file.path(build_home, "build"))
+designer_path <- abs_path(opt("designer", file.path(repo_root, ".mock", "designer_mock.xlsb")))
+forms_folder  <- abs_path(opt("forms",    file.path(build_home, "forms", "merged")))
+out_folder    <- abs_path(opt("out",      file.path(build_home, "build")))
 out_name      <- opt("name",     "linelist")
 
 # Every option key is passed on every run, empty when unset. An empty value is
@@ -111,8 +122,8 @@ out_name      <- opt("name",     "linelist")
 # buttons build, empty setuplang is "read it off the setup" -- so there is no
 # case where omitting a key says something a blank one does not.
 build_options <- paste(
-  paste0("temppath=",   opt("temppath",   "")),
-  paste0("geopath=",    opt("geopath",    "")),
+  paste0("temppath=",   abs_path(opt("temppath",   ""))),
+  paste0("geopath=",    abs_path(opt("geopath",    ""))),
   paste0("setuplang=",  opt("setuplang",  "")),
   paste0("lllang=",     opt("lllang",     "")),
   paste0("llpassword=", opt("llpassword", "")),
