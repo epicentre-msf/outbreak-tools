@@ -21,9 +21,11 @@ A caller reads that string. It never has to read a dialog.
 
 | Where | What |
 |---|---|
-| `src/modules/headless/HeadlessBuild.bas` | the two entry points, imported into the driver workbook by the test registry |
+| `src/modules/headless/HeadlessBuild.bas` | the two entry points, imported into the driver workbook by the registry |
 | `scripts/headless/vba/OBTSetupImportHeadless.bas` | injected into the setup being filled, run there, removed again |
 | `scripts/headless/merge-form-code.R` | puts the current `FormLogic*` code into the exported `.frm` files |
+| `scripts/headless/build-linelist.R` | generates a linelist from a filled setup, and runs no test |
+| `scripts/headless/macos/build-linelist.applescript` | the trigger behind it, thin by design |
 
 ## Step one — fill a setup
 
@@ -65,6 +67,14 @@ is read off each module's `@ModuleDescription`, not off its file name.
 
 ## Step three — generate a linelist
 
+```
+Rscript scripts/headless/build-linelist.R --setup=<filled-setup.xlsb> \
+        [--out=<dir>] [--name=<stem>] [--temppath=<ribbon.xlsb>] ...
+```
+
+which is one command that does the whole thing: merges the forms, stages the
+source, drives Excel, and prints what the build recorded. Under it:
+
 ```vb
 outcome = HeadlessBuild.BuildLinelistFromSetup( _
               designerPath, setupPath, sourceRoot, formsFolder, _
@@ -96,6 +106,39 @@ What the run did is read back through six properties — `LastReport`,
 `LastSheetCount`, `LastVariableCount`, `LastComponentCount`, `LastLinelistPath`,
 `LastLogPath`. A caller holding `"OK"` still knows nothing about the size of what
 was built, and an empty linelist reports `"OK"` as readily as a full one.
+
+### What the script does that the entry point does not
+
+Generating used to happen only as a side effect of running
+`TestHeadlessLinelistBuild`, so making a file took a test run, and the paths it
+generated from were constants compiled into a test module — absolute, and true
+on one machine. `build-linelist.R` is that build lifted out. Every path is an
+argument, nothing is asserted, and the exit code says whether a linelist was
+written.
+
+| | |
+|---|---|
+| `--setup` | required: the filled setup to generate from |
+| `--designer` `--forms` `--out` `--name` | default to the mock designer, `<home>/forms/merged`, `<home>/build`, `linelist` |
+| `--temppath` `--geopath` `--setuplang` `--lllang` `--llpassword` | the option keys above, passed through |
+| `--no-merge` | skip step two. Skipping it is how a linelist ends up with the right buttons wired to last week's handlers |
+| `--home` | the untracked working area, same one the test harness uses |
+
+It reads `src/tests/test-registry.yml` for the list of classes and modules to
+load into the driver, and **drops every test row** before staging — the driver
+gets the build closure and no test module at all. The registry is shared because
+the closure is real and already written down once: `LinelistSpecs`, `Linelist`,
+`CodeTransfer`, `TemporaryRepos`, `ApplicationState`, `InitTransfer` and
+everything they type. A second list of it would drift, and a drifted list does
+not fail — it delivers last month's code in a file that looks right. Narrowing
+the registry for a probe only ever comments test rows, so a narrowed registry
+still builds.
+
+`HeadlessBuild.LastBuildSummary` is what the trigger reads the run back through.
+The six accessors beside it are `Property Get`, and **`Application.Run` cannot
+reach a `Property Get`** — a caller outside the process could read the outcome
+string and nothing else, so `"OK"` arrived with no idea whether the linelist
+held three sheets or none.
 
 ### The two languages are two different vocabularies
 
@@ -243,4 +286,16 @@ Both steps have a suite under `src/tests/headless/`, registered under
 
 Run `merge-form-code.R` before the harness. Without it the suite reports the
 missing folder and names the command, rather than building a linelist from stale
-form code.
+form code. `build-linelist.R` runs the merge itself, so this applies to the test
+harness alone.
+
+The two commands do two jobs and neither does the other's:
+
+| | |
+|---|---|
+| `Rscript scripts/tests/run-tests.R --build` | runs the suites, asserts, writes `test-results.csv` |
+| `Rscript scripts/headless/build-linelist.R --setup=…` | writes a linelist, asserts nothing |
+
+`TestHeadlessLinelistBuild` still generates its own file, because what it asserts
+on is a file it watched being made. A build for a person to open comes from the
+build script.

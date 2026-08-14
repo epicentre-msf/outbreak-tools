@@ -456,6 +456,28 @@ Public Property Get LastLogPath() As String
     LastLogPath = lastLog
 End Property
 
+'@Description("Everything the last run recorded, in one call.")
+'@details
+'The six above are Property Get, and a Property Get cannot be reached through
+'Application.Run. So a caller from OUTSIDE the process -- osascript, and the R
+'session behind it -- can read the outcome string of the build and nothing
+'else: it gets "OK" with no idea whether the linelist holds three sheets or
+'none. This answers all of it in one Function call, which Application.Run can
+'reach.
+'
+'The narrative carries newlines of its own, so it goes last, below a marker,
+'and a reader takes everything after that marker verbatim.
+'@return String. Key=value lines, a marker, then the narrative. Safe to call
+'before any run has happened.
+Public Function LastBuildSummary() As String
+    LastBuildSummary = "linelist=" & lastLinelist & vbLf & _
+                       "log=" & lastLog & vbLf & _
+                       "sheets=" & CStr(lastSheets) & vbLf & _
+                       "variables=" & CStr(lastVariables) & vbLf & _
+                       "components=" & CStr(lastComponents) & vbLf & _
+                       "--report--" & vbLf & runNarrative
+End Function
+
 
 '@section The generation itself
 '===============================================================================
