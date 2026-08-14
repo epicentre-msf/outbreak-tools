@@ -63,7 +63,7 @@ to set it up the first time.
 
 ### 1.1 A session closes on a scoped probe
 
-**The command above runs all 74 modules and takes about 38 minutes. Run it
+**The command above runs all 87 modules and takes about 27 minutes. Run it
 rarely.** A session is verified by a **probe**: the same command over a
 registry narrowed to the work of that session. A probe answers in two to four
 minutes, which is what makes it worth running again after a fix. Set by the

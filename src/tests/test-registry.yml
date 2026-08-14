@@ -36,8 +36,8 @@
 # NARROWING THIS FILE FOR A PROBE
 #
 # A session is verified by a probe: this registry narrowed to the work of that
-# session, then the usual `run-tests.R --build`. A full run is about 38 minutes
-# over 74 modules; a probe is two to four. The rule is `.obt/conventions.md`
+# session, then the usual `run-tests.R --build`. A full run is about 27 minutes
+# over 87 modules; a probe is two to four. The rule is `.obt/conventions.md`
 # section 13 and `automated-testing-macos.md` section 1.1.
 #
 # Comment out the `- module:` rows under a non-helpers `tests:` key that the
@@ -407,23 +407,22 @@ suites:
       # TestHelpersLite.
       - module: TestSetupErrors
         covers: [SetupErrors]
-      # TestSetupImport is parked by owner decision, the same way TestPasswords
-      # is: it is green and it is heavy. 38 tests, 137 assertions, and even after
+      # TestSetupImport is heavy: 38 tests, 137 assertions, and even after
       # Session 25 cut its churn to 9 exports and 4 opens it is the single
       # costliest module in the loop.
       #
-      # What parked it: Session 34 added TestEventSetup and
-      # TestEventsManager, and the full 37-module run then sat on the
-      # runner's 600-second Apple Events cap -- one run wrote its results and the
-      # next two returned nothing at all. The numbers reconcile exactly, so
-      # nothing green was given up: 1524 + 137 = 1661 assertions and 514 + 38 =
-      # 552 tests, which is what the 37-module run reported.
+      # It spent a long time parked. Session 34 added TestEventSetup and
+      # TestEventsManager, and the full 37-module run then sat on the runner's
+      # 600-second Apple Events cap -- one run wrote its results and the next
+      # two returned nothing at all -- so this row was commented out to get
+      # back under the cap. The cap is 3600 seconds now, and the whole reason
+      # is gone with it: the 87-module run this row rejoined came in around 27
+      # minutes, green.
       #
-      # Re-enable by uncommenting. Expect the run to land near the cap, so
-      # re-enable it on its own and read the clock. SetupImportTestFixture,
-      # PasswordsTestFixture and ProgressDisplayStub all stay registered.
-      # - module: TestSetupImport
-      #   covers: [SetupImport]
+      # SetupImportTestFixture, PasswordsTestFixture and ProgressDisplayStub
+      # all stay registered.
+      - module: TestSetupImport
+        covers: [SetupImport]
       # TestEventSetup builds its own fixture workbook and calls
       # PreparePasswordsFixture from PasswordsTestFixture under `helpers`. Its
       # helper calls are unqualified, so they resolve to TestHelpersLite.
@@ -1044,13 +1043,16 @@ suites:
   # JoinPath / EnsureFolder / ParentFolder, which were copied into
   # TestHelpersLite for it.
   #
-  # TestDevelopment is parked by owner decision, the same way TestPasswords is:
-  # it ran once, green at 25 assertions over 11 tests, and is not wanted in the
-  # regular loop. Its tests write real files, add and remove VBComponents and
-  # deploy a workbook, so they are the slowest kind here, and they only ever
-  # report on the copy of Development the driver workbook already holds.
-  # Re-enable by uncommenting -- and re-import Development.cls by hand in the
-  # VBE first, or the run reports on whatever copy is in there.
+  # TestDevelopment was parked for a long time: its tests write real files, add
+  # and remove VBComponents and deploy a workbook, so they are the slowest kind
+  # here. It is back in the loop and green.
+  #
+  # WHAT IT ACTUALLY MEASURES IS STILL THE BAKED COPY. These tests report on
+  # the Development inside unit_tests_dev.xlsb, never on
+  # src/classes/dev/Development.cls, so an edit to that file reaches them only
+  # after a hand re-import in the VBE. A green run here is therefore evidence
+  # about the workbook's copy and not about the source -- which is worth
+  # remembering before reading it as coverage of a change you just made.
   - folder: dev
     modules:
       # RibbonDev is here for EventSetup, which calls RibbonDev.ActualRibbon to
@@ -1061,9 +1063,9 @@ suites:
       # are baked into the driver workbook. Its fifteen public names clash with
       # nothing already there.
       - RibbonDev
-    tests: []
-      # - module: TestDevelopment
-      #   covers: [Development]
+    tests:
+      - module: TestDevelopment
+        covers: [Development]
 
   # --- sections -------------------------------------------------------------
   # SectionBuilder and VarWriter are the terminals of linelist generation:
