@@ -45,8 +45,11 @@
 #   Exit code: 0 on all-pass, 1 on any failure or incomplete run.
 #
 # Cross-platform: the copy/collect/summarise logic is OS-agnostic. Only the
-# trigger differs — macos/run-tests.applescript today. A Windows trigger
-# (windows/run-tests.vbs, a trigger-file watcher) is not wired in here yet.
+# trigger differs, and the host picks it — macos/run-tests.applescript through
+# osascript, windows/run-tests.vbs through cscript. Both drive the same OBT*
+# entry points in the same order, so a difference in results is a difference in
+# the VBA rather than in the harness. The Windows side has never been run
+# against a real Windows Excel, and the script says so when it picks it.
 #
 # The workbook must carry the Development manager + the OBTImport / OBTHeadless
 # modules and the Codes-sheet folder named ranges (ModulesCodes /
@@ -83,7 +86,15 @@ if (!grepl("^(/|~|[A-Za-z]:)", test_home)) test_home <- file.path(repo_root, tes
 
 workbook_src <- file.path(test_home, "unit_tests_dev.xlsb")
 scripts_dir  <- file.path(repo_root, "scripts", "tests")
-trigger      <- file.path(scripts_dir, "macos", "run-tests.applescript")
+# The trigger is the only OS-specific piece; both drive the same OBT* entry
+# points in the same order, so a difference in results is a difference in the
+# VBA rather than in the harness.
+on_windows   <- identical(.Platform$OS.type, "windows")
+trigger      <- if (on_windows) {
+  file.path(scripts_dir, "windows", "run-tests.vbs")
+} else {
+  file.path(scripts_dir, "macos", "run-tests.applescript")
+}
 generated    <- file.path(repo_root, "src", "tests", ".generated")     # build-registry.R output
 staging      <- file.path(test_home, "tests", "staging")                # untracked staging tree
 # STABLE run dir (fixed path, cleared+reused each run). macOS grants Excel file
@@ -96,9 +107,9 @@ if (!dir.exists(staging)) {
        " (set --home / OBT_TEST_HOME, or create <home>/tests/staging).")
 }
 
-if (Sys.info()[["sysname"]] != "Darwin") {
-  stop("run-tests.R: the macOS trigger is the only one implemented. ",
-       "The Windows trigger (windows/run-tests.vbs) is not wired in yet.")
+if (on_windows) {
+  message("run-tests.R: NOTE - the Windows trigger has never been run against a ",
+          "real Windows Excel. Read what it reports with that in mind.")
 }
 if (!file.exists(workbook_src)) stop("run-tests.R: workbook not found: ", workbook_src)
 if (!file.exists(trigger))      stop("run-tests.R: trigger not found: ", trigger)
@@ -227,7 +238,10 @@ message("run-tests.R: run dir assembled from src/ (classes/, tests/, .generated/
 # is already open interactively, so quit any running instance and wait until the
 # process is gone. Only quit when it is actually running (a bare `tell ... quit`
 # would auto-launch Excel just to close it).
+# macOS only. On Windows CreateObject("Excel.Application") makes its own
+# instance, and an Excel the operator has open is none of this script's business.
 excel_running <- function() {
+  if (on_windows) return(FALSE)
   identical(system2("pgrep", c("-x", "Microsoft Excel"),
                     stdout = FALSE, stderr = FALSE), 0L)
 }
@@ -247,8 +261,13 @@ if (excel_running()) {
 
 # --- 2b/3) drive Excel via the thin trigger ----------------------------------
 build_flag <- if (do_build) "build" else "nobuild"
-message("run-tests.R: launching Excel via osascript (", build_flag, ") ...")
-trigger_rc <- system2("osascript", c(shQuote(trigger), shQuote(work_copy), build_flag))
+message("run-tests.R: launching Excel via ",
+        if (on_windows) "cscript" else "osascript", " (", build_flag, ") ...")
+trigger_rc <- if (on_windows) {
+  system2("cscript", c("//nologo", shQuote(trigger), shQuote(work_copy), build_flag))
+} else {
+  system2("osascript", c(shQuote(trigger), shQuote(work_copy), build_flag))
+}
 
 # --- 4) collect + summarise --------------------------------------------------
 # Helper: dump the VBA-side diagnostics log if the wrappers wrote one.
