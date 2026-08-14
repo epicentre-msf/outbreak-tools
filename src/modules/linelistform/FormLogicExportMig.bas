@@ -23,9 +23,11 @@ Private tradform As TranslationObject
 Private tradmess As TranslationObject
 
 ' The linelist chosen for the other-linelist export. The two labels of the
-' form show this pair, and this pair is what the export reads. The module
-' state dies on any unhandled error while the form outlives it; the export
-' then finds an empty path and asks for the file again.
+' form show this pair, and this pair is what the export reads. The pair
+' outlives an untick, so a user who unticks the box and ticks it back finds
+' the file already chosen; the module state dies on any unhandled error while
+' the form outlives it, and the export then asks for the file to be chosen
+' again.
 Private otherLinelistPath As String
 Private otherLinelistPassword As String
 
@@ -55,12 +57,15 @@ Private Sub InitializeTrads()
     Set tradmess = lltrads.TransObject()
 End Sub
 
-' @description Translate the form.
+' @description Translate the form. The two other-linelist labels start hidden,
+' because the box that owns them starts off; ticking the box is what brings
+' them up.
 Private Sub UserForm_Initialize()
     InitializeTrads
 
     Me.Caption = tradform.TranslatedValue(Me.Name)
     tradform.TranslateForm Me
+    ShowOtherLinelistChoice Me.CHK_OtherLinelist.Value
     Me.Width = 250
     Me.Height = 450
 End Sub
@@ -114,55 +119,41 @@ End Function
 '@section The other-linelist choice
 '===============================================================================
 
-' @description React to the other-linelist box. The five current-linelist
-' boxes conflict with it: when one of them is on, a message asks the user to
-' fix the boxes and the box goes back off. Otherwise the user picks the
-' linelist file at once, then gives its password; cancelling the file picker
-' puts the box back off. The box going off forgets the chosen pair and the
-' translation pass puts the hint captions back on the two labels.
+' @description React to the other-linelist box. The box says where the export
+' lands, not what it carries: the five export boxes are read the same way for
+' either target, so no box conflicts with this one. Ticking brings up the path
+' and password labels, unticking puts them away, and nothing else happens
+' here -- the file is chosen by double-clicking the labels, and the export
+' runs on the export button.
 Private Sub CHK_OtherLinelist_Click()
-    InitializeTrads
-
-    If Not Me.CHK_OtherLinelist.Value Then
-        otherLinelistPath = vbNullString
-        otherLinelistPassword = vbNullString
-        tradform.TranslateForm Me
-        Exit Sub
-    End If
-
-    If Me.CHK_ExportMigData.Value Or Me.CHK_ExportMigShowHide.Value Or _
-       Me.CHK_ExportMigEditableLabel.Value Or Me.CHK_ExportMigGeo.Value Or _
-       Me.CHK_ExportMigGeoHistoric.Value Then
-        MsgBox tradmess.TranslatedValue("MSG_ExportMigConflict"), _
-               vbExclamation + vbOKOnly, _
-               tradmess.TranslatedValue("MSG_Migration")
-        Me.CHK_OtherLinelist.Value = False
-        Exit Sub
-    End If
-
-    PromptOtherLinelistPath
-    If LenB(otherLinelistPath) = 0 Then
-        Me.CHK_OtherLinelist.Value = False
-        Exit Sub
-    End If
-
-    PromptOtherLinelistPassword
+    ShowOtherLinelistChoice Me.CHK_OtherLinelist.Value
 End Sub
 
-Private Sub LBL_OtherPath_Click()
+' @description Put the path and password labels up or down.
+' @param shown Boolean. True brings the two labels up.
+Private Sub ShowOtherLinelistChoice(ByVal shown As Boolean)
+    Me.LBL_OtherPath.Visible = shown
+    Me.LBL_OtherPass.Visible = shown
+End Sub
+
+' @description Choose the linelist file. A single click is left alone, so the
+' label answers the second click only: a Click handler would open the dialog
+' before the second click could ever arrive.
+Private Sub LBL_OtherPath_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
     InitializeTrads
     PromptOtherLinelistPath
 End Sub
 
-Private Sub LBL_OtherPass_Click()
+' @description Give the password of the chosen linelist, on a double click.
+Private Sub LBL_OtherPass_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
     InitializeTrads
     PromptOtherLinelistPassword
 End Sub
 
 ' @description Ask for the linelist file and write it on the path label.
 ' Quiet while the other-linelist box is off. Choosing the current linelist is
-' refused with the conflict message, since the current-linelist boxes are the
-' way to export it.
+' refused with the conflict message, since the box is off is how the current
+' linelist is exported.
 Private Sub PromptOtherLinelistPath()
     Dim io As OSFiles
 
@@ -195,17 +186,29 @@ Private Sub PromptOtherLinelistPassword()
     Me.LBL_OtherPass.Caption = otherLinelistPassword
 End Sub
 
+' @description True when no readable file sits behind the other-linelist
+' choice. The empty path is answered before Dir is asked anything, because
+' Dir on an empty string raises rather than answering.
+' @return Boolean. True when the export has no file to open.
+Private Function OtherLinelistFileMissing() As Boolean
+    OtherLinelistFileMissing = True
+
+    If LenB(otherLinelistPath) = 0 Then Exit Function
+    If LenB(Dir(otherLinelistPath)) = 0 Then Exit Function
+
+    OtherLinelistFileMissing = False
+End Function
+
 
 '@section The export click
 '===============================================================================
 
-' @description Run the exports the checkboxes ask for. The other-linelist box
-' excludes the five current-linelist boxes: it exports everything of another
-' linelist, so combining the two makes no export to name, and the user is
-' asked to fix the boxes. The current-linelist walk exports the data, the
-' geobase and the historic geobase into one chosen folder; the other-linelist
-' walk confirms, then exports everything of that file, geobase included, into
-' one chosen folder.
+' @description Run the exports the checkboxes ask for. The five export boxes
+' say what the export carries -- the migration file, the geobase, the historic
+' geobase, and for the migration file the show/hide state and the editable
+' labels. The other-linelist box says which linelist those five are read from:
+' off, the current one; on, the file chosen on the labels. Either walk exports
+' into one folder the user picks once.
 Private Sub CMD_ExportMig_Click()
     Dim wantData As Boolean
     Dim wantGeo As Boolean
@@ -226,17 +229,12 @@ Private Sub CMD_ExportMig_Click()
     wantHistoric = Me.CHK_ExportMigGeoHistoric.Value
     wantOther = Me.CHK_OtherLinelist.Value
 
-    If wantOther And (wantData Or wantGeo Or wantHistoric Or _
-                      includeShowHide Or keepLabels) Then
-        MsgBox tradmess.TranslatedValue("MSG_ExportMigConflict"), _
-               vbExclamation + vbOKOnly, _
-               tradmess.TranslatedValue("MSG_Migration")
-        Exit Sub
-    End If
+    If Not (wantData Or wantGeo Or wantHistoric) Then Exit Sub
 
     If wantOther Then
-        OtherLinelistWalk
-    ElseIf wantData Or wantGeo Or wantHistoric Then
+        OtherLinelistWalk wantData, wantGeo, wantHistoric, _
+                          includeShowHide, keepLabels
+    Else
         CurrentLinelistWalk wantData, wantGeo, wantHistoric, _
                             includeShowHide, keepLabels
     End If
@@ -306,12 +304,23 @@ ErrHand:
     If Not appState Is Nothing Then appState.Restore
 End Sub
 
-' @description Export everything of another linelist: its whole migration
-' file, show/hide state and editable labels included, and its full geobase.
-' The user confirms first, then picks one folder for the two files. The other
-' linelist is opened read-only under the busy state, so its open events stay
-' quiet, and it is closed without saving once the files are written.
-Private Sub OtherLinelistWalk()
+' @description Export another linelist, the one chosen on the two labels,
+' with the same three files and the same two migration switches the boxes ask
+' of the current linelist. The user confirms the file first, then picks one
+' folder for the whole walk. The other linelist is opened read-only under the
+' busy state, so its open events stay quiet, and it is closed without saving
+' once the files are written.
+' @param wantData Boolean. True exports the migration file.
+' @param wantGeo Boolean. True exports the geobase.
+' @param wantHistoric Boolean. True exports the historic geobase.
+' @param includeShowHide Boolean. True carries the show/hide state into the migration file.
+' @param keepLabels Boolean. True carries the editable labels into the migration file.
+Private Sub OtherLinelistWalk(ByVal wantData As Boolean, _
+                              ByVal wantGeo As Boolean, _
+                              ByVal wantHistoric As Boolean, _
+                              ByVal includeShowHide As Boolean, _
+                              ByVal keepLabels As Boolean)
+
     Dim exporter As LLExporter
     Dim appState As ApplicationState
     Dim folderPath As String
@@ -320,7 +329,7 @@ Private Sub OtherLinelistWalk()
 
     On Error GoTo ErrHand
 
-    If LenB(Dir(otherLinelistPath)) = 0 Then
+    If OtherLinelistFileMissing() Then
         MsgBox tradmess.TranslatedValue("MSG_ProvideLLPath"), _
                vbExclamation + vbOKOnly, _
                tradmess.TranslatedValue("MSG_Migration")
@@ -352,9 +361,12 @@ Private Sub OtherLinelistWalk()
     Set exporter = LLExporter.CreateFromFile(otherLinelistPath, otherLinelistPassword)
     On Error GoTo ErrHand
 
-    savedPaths = exporter.ExportMigration(folderPath, includeShowHide:=True, _
-                                          keepLabels:=True)
-    savedPaths = JoinPath(savedPaths, exporter.ExportGeo(folderPath, onlyHistoric:=False))
+    If wantData Then _
+        savedPaths = exporter.ExportMigration(folderPath, includeShowHide, keepLabels)
+    If wantGeo Then _
+        savedPaths = JoinPath(savedPaths, exporter.ExportGeo(folderPath, onlyHistoric:=False))
+    If wantHistoric Then _
+        savedPaths = JoinPath(savedPaths, exporter.ExportGeo(folderPath, onlyHistoric:=True))
 
     'Closes the other linelist, which this exporter opened
     exporter.CloseAll
@@ -406,8 +418,6 @@ Private Sub CHK_ExportMigData_Click()
     CHK_ExportMigEditableLabel.Value = CHK_ExportMigData.Value
     CHK_ExportMigShowHide.Value = CHK_ExportMigData.Value
 End Sub
-
-
 
 
 '@section Analysis export
