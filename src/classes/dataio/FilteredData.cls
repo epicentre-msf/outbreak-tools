@@ -197,7 +197,19 @@ Private Function SyncSheet(ByVal sh As Worksheet) As Boolean
     Dim filtsh As Worksheet
     Dim filteredName As String
 
+    'Every lookup below used to be written straight, so a workbook missing any
+    'one of these pieces answered a bare Excel number -- 9 for an absent sheet,
+    '91 for an absent table -- and the box the user got said "Object variable or
+    'With block variable not set" with nothing to act on. Each piece now names
+    'itself, and the walk carries on with the other sheets.
+    On Error Resume Next
     Set lo = sh.ListObjects(1)
+    On Error GoTo 0
+
+    If lo Is Nothing Then
+        ThrowError ElementNotFound, "the sheet carries no table to read"
+    End If
+
     If lo.DataBodyRange Is Nothing Then Exit Function
 
     Set store = HiddenNames.Create(sh)
@@ -206,7 +218,14 @@ Private Function SyncSheet(ByVal sh As Worksheet) As Boolean
         ThrowError ElementNotFound, "the filtered_sheet name is missing"
     End If
 
+    On Error Resume Next
     Set filtsh = this.sourceWkb.Worksheets(filteredName)
+    On Error GoTo 0
+
+    If filtsh Is Nothing Then
+        ThrowError ElementNotFound, _
+                   "the workbook carries no worksheet named " & filteredName
+    End If
 
     RewriteCompanion lo, filtsh
 
@@ -294,18 +313,35 @@ Private Sub RewriteCompanion(ByVal sourceTable As ListObject, _
         Next rowIdx
     End If
 
+    On Error Resume Next
     Set filtLo = filtsh.ListObjects(1)
+    On Error GoTo 0
+
+    If filtLo Is Nothing Then
+        ThrowError ElementNotFound, _
+                   "the companion sheet " & filtsh.Name & " carries no table"
+    End If
 
     'A table already down to its header row has nothing to delete.
     On Error Resume Next
     filtLo.DataBodyRange.Delete
     On Error GoTo 0
 
-    If keptCount > 0 Then
-        filtLo.Resize filtsh.Range( _
-            sourceTable.HeaderRowRange.Resize(keptCount + 1).Address)
-        filtLo.DataBodyRange.Value = keptValues
+    If keptCount = 0 Then Exit Sub
+
+    filtLo.Resize filtsh.Range( _
+        sourceTable.HeaderRowRange.Resize(keptCount + 1).Address)
+
+    'Resize is what gives the table its body back, and a resize the sheet
+    'refused leaves the table on its header row alone. Writing to the body then
+    'raised 91 with nothing naming the sheet it happened on.
+    If filtLo.DataBodyRange Is Nothing Then
+        ThrowError ElementNotFound, _
+                   "the companion table on " & filtsh.Name & _
+                   " could not be grown to " & CStr(keptCount) & " rows"
     End If
+
+    filtLo.DataBodyRange.Value = keptValues
 End Sub
 
 '@label:row-holds-a-value

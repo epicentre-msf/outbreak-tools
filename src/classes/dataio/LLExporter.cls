@@ -1725,8 +1725,7 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As LLdictionary
         Case "HList"
             ' Choose between filtered or raw data
             If useFilters Then
-                Set lo = this.sourceWkb.Worksheets( _
-                    inpshNames.ValueAsString("filtered_sheet")).ListObjects(1)
+                Set lo = FilteredTableOf(inpsh, inpshNames)
             Else
                 Set lo = inpsh.ListObjects(1)
             End If
@@ -1757,6 +1756,52 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As LLdictionary
         FormatOutputSheet outsh
     Next counter
 End Sub
+
+'@label:filtered-table-of
+'@sub-title The filtered companion table of one data entry sheet
+'@details
+'The companion holds the rows the filters leave visible, and the export reads it
+'when the user ticks the filtered box. Three things have to be there: the name
+'in the sheet store, the sheet it names, and the table on that sheet. All three
+'used to be read in one chained line, so a workbook missing any of them raised a
+'bare Excel number and the box the user got named neither the sheet nor the
+'piece that was missing.
+'@param inpsh Worksheet. The data entry sheet being exported.
+'@param inpshNames HiddenNames. The hidden name store of that sheet.
+'@return ListObject. The companion table.
+'@throws ProjectError.ElementNotFound When any of the three is absent.
+Private Function FilteredTableOf(ByVal inpsh As Worksheet, _
+                                 ByVal inpshNames As HiddenNames) As ListObject
+
+    Dim filtsh As Worksheet
+    Dim filteredName As String
+
+    filteredName = inpshNames.ValueAsString("filtered_sheet")
+    If LenB(filteredName) = 0 Then
+        ThrowError ProjectError.ElementNotFound, _
+                   "The sheet " & inpsh.Name & " carries no filtered_sheet name, " & _
+                   "so the export has no filtered data to read"
+    End If
+
+    On Error Resume Next
+    Set filtsh = this.sourceWkb.Worksheets(filteredName)
+    On Error GoTo 0
+
+    If filtsh Is Nothing Then
+        ThrowError ProjectError.ElementNotFound, _
+                   "The workbook carries no worksheet named " & filteredName & _
+                   ", which is the filtered companion of " & inpsh.Name
+    End If
+
+    On Error Resume Next
+    Set FilteredTableOf = filtsh.ListObjects(1)
+    On Error GoTo 0
+
+    If FilteredTableOf Is Nothing Then
+        ThrowError ProjectError.ElementNotFound, _
+                   "The filtered companion " & filteredName & " carries no table"
+    End If
+End Function
 
 '@label:labels-for-written-columns
 '@sub-title The label row that lines up with the columns an export wrote
