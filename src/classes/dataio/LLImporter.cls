@@ -892,9 +892,17 @@ End Sub
 '@sub-title Import geobase data from a workbook
 '@details
 'Delegates to LLGeo.Import to load geobase data. When not histoOnly,
-'also updates geobase headers in HList worksheets via geo.Update,
-'dictionary geo labels via geo.UpdateDict, and show/hide tables for geo
-'variables via geo.UpdateShowHide.
+'also updates geobase headers in HList worksheets via geo.Update and
+'dictionary geo labels via geo.UpdateDict.
+'
+'THE SHOW/HIDE SHEET IS NOT TOUCHED
+'-------------------------------------------------------------------------------
+'A third call used to write the geo labels into per-sheet tables on the
+'show/hide worksheet. Those tables belonged to the first show/hide design and
+'ShowHideStore deletes them on sight now, so the call read a sheet carrying
+'only the store''s own table and raised 91 on every import. The label reaches
+'the form on its own: ShowHide composes it from the dictionary main label that
+'geo.UpdateDict has just rewritten, every time the form is built.
 '@param impwb Workbook. The opened geobase workbook.
 '@param histoOnly Optional Boolean. When True, imports only historic geobase data. Defaults to False.
 '@export
@@ -903,7 +911,6 @@ Public Sub ImportGeobase(ByVal impwb As Workbook, Optional ByVal histoOnly As Bo
     Dim geo As LLGeo
     Dim dict As LLdictionary
     Dim pass As Passwords
-    Dim showHideSh As Worksheet
 
     Set geo = GeoObject()
     geo.Import impwb, histoOnly
@@ -916,16 +923,6 @@ Public Sub ImportGeobase(ByVal impwb As Workbook, Optional ByVal histoOnly As Bo
         geo.Update pass
         ' Update dictionary geo variable labels
         geo.UpdateDict dict
-
-        ' Update show/hide geo variables
-        Set showHideSh = Nothing
-        On Error Resume Next
-        Set showHideSh = this.sourceWkb.Worksheets(SHOWHIDESHEET)
-        On Error GoTo 0
-
-        If Not showHideSh Is Nothing Then
-            geo.UpdateShowHide showHideSh, dict
-        End If
     End If
 End Sub
 

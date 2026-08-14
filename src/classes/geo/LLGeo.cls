@@ -49,9 +49,17 @@ End Enum
 'entry, and HasNoData says whether the geobase carries anything. Translate
 'rewrites the level labels, Clear and ClearHistoric empty the tables, Import
 'reads a geobase in, and ExportToFile and ExportToWkb write it out as flat data
-'or as the full structure. Update, UpdateDict, UpdateShowHide and UpdateHistoric
-'carry the translated labels across the linelist sheets, the dictionary and the
-'show/hide tables, and SkippedSheets names the sheets an update left alone.
+'or as the full structure. Update, UpdateDict and UpdateHistoric carry the
+'translated labels across the linelist sheets and the dictionary, and
+'SkippedSheets names the sheets an update left alone.
+'
+'The show/hide form takes its geo labels from the dictionary UpdateDict
+'rewrites: ShowHide composes "<sub section>: <level label>" itself, every time
+'it is built. A third routine here used to write that same string into
+'per-sheet tables on the show/hide worksheet, which is how the FIRST show/hide
+'design carried it. ShowHideStore deletes those tables on sight now, so the
+'routine walked a sheet holding nothing it could read and raised 91 on every
+'geobase import. It went on 2026-08-14 with its one caller.
 '
 'WHERE THE STATE OF THE GEOBASE LIVES
 '-------------------------------------------------------------------------------
@@ -76,7 +84,7 @@ End Enum
 'writers are InitTransfer, which stamps the meta language picked on the
 'designer's Main sheet onto the designer geo sheet just before the export, and
 'the geobase import round trip.
-'@depends BetterArray, Checking, CustomTable, DropdownLists, HiddenNames, LLdictionary, LLVariables, Passwords
+'@depends BetterArray, DropdownLists, HiddenNames, LLdictionary, Passwords
 
 '@section State
 '===============================================================================
@@ -1760,48 +1768,6 @@ Public Sub UpdateDict(ByVal dict As LLdictionary)
     For counter = 1 To controlRng.Rows.Count
         levelLabel = LevelLabelForControl(CellText(controlRng.Cells(counter, 1).Value))
         If LenB(levelLabel) > 0 Then mainlabRng.Cells(counter, 1).Value = levelLabel
-    Next
-End Sub
-
-'@label:update-show-hide
-'@sub-title Update show/hide tables with the geo labels.
-'@details
-'Iterates all ListObjects on the show/hide worksheet, finds variables
-'controlled by geo1 through geo4 and hf via the dictionary, and updates their
-'main label cells to the subsection prefix followed by the level label. This
-'keeps the show/hide interface labels in step with the geobase.
-'@param sh Worksheet. The show/hide worksheet containing ListObjects to update.
-'@param dict LLdictionary. The linelist dictionary for resolving control and subsection values.
-'@export
-Public Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As LLdictionary)
-    Dim csTab As CustomTable
-    Dim vars As LLVariables
-    Dim Lo As ListObject
-    Dim counter As Long
-    Dim mainlabRng As Range
-    Dim varRng As Range
-    Dim controlValue As String
-    Dim varValue As String
-    Dim subsecValue As String
-    Dim levelLabel As String
-
-    Set vars = LLVariables.Create(dict)
-
-    For Each Lo In sh.ListObjects
-        Set csTab = CustomTable.Create(Lo)
-        Set mainlabRng = csTab.DataRange("main label")
-        Set varRng = csTab.DataRange("variable name")
-
-        For counter = 1 To varRng.Rows.Count
-            varValue = CellText(varRng.Cells(counter, 1).Value)
-            controlValue = vars.Value(colName:="control", varName:=varValue)
-            levelLabel = LevelLabelForControl(controlValue)
-
-            If LenB(levelLabel) > 0 Then
-                subsecValue = vars.Value(colName:="sub section", varName:=varValue)
-                mainlabRng.Cells(counter, 1).Value = subsecValue & ": " & levelLabel
-            End If
-        Next
     Next
 End Sub
 
