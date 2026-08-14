@@ -62,25 +62,92 @@ Private Sub Workbook_BeforeClose(Cancel As Boolean)
     On Error GoTo 0
 End Sub
 
+' Save As is held to the macro-enabled binary format. A linelist saved as .xlsx
+' comes back with every module, form and button gone, and the user has no way to
+' tell until a button does nothing.
 Private Sub Workbook_BeforeSave(ByVal SaveAsUI As Boolean, Cancel As Boolean)
+    Dim savePath As String
+
     Application.CalculateBeforeSave = False
 
-    'Guard: restrict Save As to macro-enabled binary format (.xlsb) only
-    If SaveAsUI Then
-        Dim savePath As Variant
+    If Not SaveAsUI Then Exit Sub
 
-        Cancel = True
-        savePath = Application.GetSaveAsFilename( _
-            InitialFileName:=ThisWorkbook.Name, _
-            FileFilter:="Excel Binary Workbook (*.xlsb), *.xlsb", _
-            Title:="Save As")
+    Cancel = True
 
-        If savePath <> False Then
-            On Error Resume Next
-            Application.EnableEvents = False
-            ThisWorkbook.SaveAs Filename:=CStr(savePath), FileFormat:=xlExcel12
-            Application.EnableEvents = True
-            On Error GoTo 0
-        End If
-    End If
+    savePath = AskForSavePath()
+    If LenB(savePath) = 0 Then Exit Sub
+
+    On Error Resume Next
+    Application.EnableEvents = False
+    ThisWorkbook.SaveAs Filename:=savePath, FileFormat:=xlExcel12
+    Application.EnableEvents = True
+    On Error GoTo 0
 End Sub
+
+' Ask the user where to save, and answer a path that ends in .xlsb.
+'
+' Mac Excel refuses the two-part FileFilter string Windows takes -- "Excel
+' Binary Workbook (*.xlsb), *.xlsb" -- and the whole call raises "Method
+' GetSaveAsFilename of object _Application failed", so Save As did nothing at
+' all on a Mac. The dialog is asked for three ways, from the richest to the
+' plainest, and the first one that answers wins.
+'
+' The extension is put back on whatever comes out. The filter is what held the
+' user to .xlsb, and a dialog opened without one hands back whatever was typed.
+Private Function AskForSavePath() As String
+    Dim answer As Variant
+    Dim startName As String
+
+    startName = ThisWorkbook.Name
+
+    On Error Resume Next
+
+    answer = Application.GetSaveAsFilename( _
+        InitialFileName:=startName, _
+        FileFilter:="Excel Binary Workbook (*.xlsb), *.xlsb", _
+        Title:="Save As")
+
+    If Err.Number <> 0 Then
+        Err.Clear
+        answer = Application.GetSaveAsFilename( _
+            InitialFileName:=startName, _
+            FileFilter:="*.xlsb", _
+            Title:="Save As")
+    End If
+
+    If Err.Number <> 0 Then
+        Err.Clear
+        answer = Application.GetSaveAsFilename(InitialFileName:=startName)
+    End If
+
+    On Error GoTo 0
+
+    ' A cancelled dialog answers the Boolean False, and a dialog that never
+    ' opened leaves the variant empty.
+    If VarType(answer) = vbBoolean Then Exit Function
+    If IsEmpty(answer) Then Exit Function
+
+    AskForSavePath = WithBinaryExtension(CStr(answer))
+End Function
+
+' Put the .xlsb extension on a path, whatever the user typed.
+Private Function WithBinaryExtension(ByVal filePath As String) As String
+    Const BINARY_EXTENSION As String = ".xlsb"
+
+    Dim trimmedPath As String
+    Dim dotAt As Long
+    Dim separatorAt As Long
+
+    trimmedPath = Trim$(filePath)
+    If LenB(trimmedPath) = 0 Then Exit Function
+
+    dotAt = InStrRev(trimmedPath, ".")
+    separatorAt = InStrRev(trimmedPath, Application.PathSeparator)
+
+    ' A dot inside a folder name is not an extension.
+    If dotAt > separatorAt And dotAt > 0 Then
+        trimmedPath = Left$(trimmedPath, dotAt - 1)
+    End If
+
+    WithBinaryExtension = trimmedPath & BINARY_EXTENSION
+End Function

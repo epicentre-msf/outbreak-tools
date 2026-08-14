@@ -85,6 +85,10 @@ Private Const PIVOTSHEETNAME    As String = "RNG_CustomPivot"
 ' The message code every box title is read from.
 Private Const MSGTITLE          As String = "MSG_Error"
 
+' The message code naming the instruction worksheet. The generation writes the
+' sheet under the translated name and moves it to the front of the workbook.
+Private Const INSTSHEETCODE     As String = "INSTSHEETNAME"
+
 ' The message code a failed filter refresh is reported under. FilteredData
 ' logs its failure line under the same code, so the log reads as one action
 ' wherever the refresh started.
@@ -146,6 +150,10 @@ End Sub
 '@details
 'The open is the first line of the session in the user log, so a reader of
 'the log sees where each working session started.
+'
+'The workbook opens on the sheet it was saved on, and a linelist saved by the
+'generation lands on Geo. LandOnInstructions puts the user on the instruction
+'sheet instead, every open.
 '@export
 Public Sub OnWorkbookOpen()
     On Error Resume Next
@@ -155,7 +163,52 @@ Public Sub OnWorkbookOpen()
     Application.FormatStaleValues = False
     On Error GoTo 0
 
+    LandOnInstructions
+
     LogEventLine checkingInfo, "open", this.hostBook.Name
+End Sub
+
+
+'@sub-title Put the user on the instruction sheet.
+'@details
+'The sheet is named by the translation, and the generation moves it to the front
+'of the workbook, so the first visible worksheet is the same sheet whenever the
+'name cannot be read. A workbook built with the instructions turned off carries
+'the sheet very hidden, and the fallback then lands on the first sheet the user
+'is meant to see rather than on Geo.
+'
+'Nothing here is worth an error box on open. Every step is guarded and a
+'workbook that answers none of them opens where it was saved.
+Private Sub LandOnInstructions()
+    Dim instrSheet As Worksheet
+    Dim sh As Worksheet
+    Dim instrName As String
+
+    On Error Resume Next
+    instrName = Translation().TransObject().TranslatedValue(INSTSHEETCODE)
+    On Error GoTo 0
+
+    If LenB(instrName) > 0 Then
+        On Error Resume Next
+        Set instrSheet = this.hostBook.Worksheets(instrName)
+        On Error GoTo 0
+    End If
+
+    If instrSheet Is Nothing Then
+        For Each sh In this.hostBook.Worksheets
+            If sh.Visible = xlSheetVisible Then
+                Set instrSheet = sh
+                Exit For
+            End If
+        Next
+    End If
+
+    If instrSheet Is Nothing Then Exit Sub
+    If instrSheet.Visible <> xlSheetVisible Then Exit Sub
+
+    On Error Resume Next
+    instrSheet.Activate
+    On Error GoTo 0
 End Sub
 
 
@@ -980,7 +1033,7 @@ Private Sub HandleHListChange(ByRef sh As Worksheet, ByRef target As Range, _
 
             Set hRng = hRng.Offset(-3)
             Set cellRng = hRng.Find(What:=sectionName, LookAt:=xlWhole, MatchCase:=True)
-            If Not cellRng Is Nothing Then cellRng.Activate
+            MoveToCell cellRng
             Exit Sub
         End If
     End If
@@ -1077,12 +1130,32 @@ Private Sub HandleVListChange(ByRef sh As Worksheet, ByRef target As Range, _
         If LenB(goToCaption) > 0 Then
             varLabel = Replace(target.Value, goToCaption & ": ", vbNullString)
             Set rngLook = sh.Cells.Find(What:=varLabel, LookAt:=xlWhole, MatchCase:=True)
-            If Not rngLook Is Nothing Then rngLook.Activate
+            MoveToCell rngLook
         End If
     End If
 
     Exit Sub
 ErrHandler:
+End Sub
+
+
+'@sub-title Move the window to one cell and select it.
+'@details
+'Range.Activate selects a cell and leaves the window where it is whenever the
+'cell is already inside the visible pane. On a data entry sheet forty columns
+'wide, the section a user picks in the go-to dropdown is usually just off the
+'edge, so the selection moved and the picture did not: the dropdown looked as
+'though it had done nothing.
+'
+'Application.Goto with Scroll scrolls the pane so the cell is at its top left,
+'which is what "go to" means to the person who picked it.
+'@param cellRng Range. Where to move. Nothing leaves the window alone.
+Private Sub MoveToCell(ByVal cellRng As Range)
+    If cellRng Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    Application.Goto cellRng, Scroll:=True
+    On Error GoTo 0
 End Sub
 
 
@@ -1157,7 +1230,7 @@ Private Sub HandleAnalysisChange(ByRef sh As Worksheet, _
     Set rngLook = sh.Cells.Find(What:=sLabel, LookIn:=xlValues, LookAt:=xlWhole, _
                                 MatchCase:=True, SearchFormat:=False)
 
-    If Not rngLook Is Nothing Then rngLook.Activate
+    MoveToCell rngLook
 
     Exit Sub
 ErrHandler:

@@ -105,7 +105,11 @@ Private Sub SeedTranslationSheet(ByVal targetWkb As Workbook)
     Set sh = targetWkb.Worksheets.Add
     sh.Name = TRANS_SHEET_NAME
 
+    'MSG_GoToSec is the code the go-to captions are really built from, and it is
+    'what InitialiseHiddenNames reads for RNG_GoToSection. MSG_GoToSection stays
+    'beside it because the translation tests below use it as their sample row.
     SeedTable sh, 1, "T_TradLLMsg", "en", "fr", Array( _
+        Array("MSG_GoToSec", "Go to section", "Aller a la section"), _
         Array("MSG_GoToSection", "Go to section", "Aller a la section"), _
         Array("MSG_AnaPeriod", "Analysis period", "Periode d analyse"), _
         Array("MSG_GoToHead", "Go to header", "Aller a l entete"), _

@@ -478,7 +478,14 @@ Public Sub InitialiseHiddenNames(ByVal targetWkb As Workbook)
 
     Set msgTrans = TransObject(TranslationOfMessages)
 
-    EnsureAndSet targetNames, "RNG_GoToSection", msgTrans.TranslatedValue("MSG_GoToSection")
+    'MSG_GoToSec, the code the dropdowns themselves are built from. AnalysisOutput
+    'and LLDataEntry both write their go-to captions from MSG_GoToSec, and the
+    'analysis change handler strips this stored caption off the picked entry
+    'before it looks the section up. Reading a different code here left the
+    'handler stripping a caption no cell carries: a lookup that misses answers
+    'with the tag it was handed, so the search ran on "MSG_GoToSection: Demography"
+    'and found nothing, on every analysis sheet.
+    EnsureAndSet targetNames, "RNG_GoToSection", msgTrans.TranslatedValue("MSG_GoToSec")
     EnsureAndSet targetNames, "RNG_AnaPeriod", msgTrans.TranslatedValue("MSG_AnaPeriod")
     EnsureAndSet targetNames, "RNG_GoToHeader", msgTrans.TranslatedValue("MSG_GoToHead")
     EnsureAndSet targetNames, "RNG_NoDevide", msgTrans.TranslatedValue("MSG_NoDevide")
