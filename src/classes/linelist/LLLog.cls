@@ -21,12 +21,37 @@ Option Explicit
 '@description
 'Keeps the dated record of the important user actions of a running
 'linelist on the very hidden __log worksheet. Each event is one Checking
-'bundle: the action code is the bundle title, the entry label carries the
-'timestamp and a short detail, and the scope carries the outcome. Every
-'bundle is flushed through CheckingOutput.PrintOutput, which appends
-'across renders, so the sheet grows one block per event and the built-in
-'status and title dropdowns of the output sheet filter the log by outcome
-'and by action.
+'bundle: the bundle title is the SECTION the action belongs to, the entry
+'label carries the timestamp, the action code and a short detail, and the
+'scope carries the outcome. Every bundle is flushed through
+'CheckingOutput.PrintOutput, which appends across renders, so the sheet
+'grows one line per event and the built-in status and title dropdowns of
+'the output sheet filter the log by outcome and by section.
+'
+'THE THREE SECTIONS
+'-------------------------------------------------------------------------------
+'The log is read by three sections, and the title of an entry is the
+'section the action belongs to. The writer runs in compact mode, so a
+'section title is written the first time the sheet carries it and never
+'again: a session of a hundred actions reads as a hundred lines under at
+'most three titles.
+'
+'  open/close          the workbook open, the workbook close, a log restart
+'  data input/output   every import, every export, and clearing the data
+'  linelist lifecycle  everything else the user does inside the workbook
+'
+'An action code no case names lands in linelist lifecycle, so a new logged
+'action reaches the sheet without touching this class. The action code
+'itself moves down to the entry line, beside the timestamp, where it stays
+'readable without heading a block of its own.
+'
+'The lines stay in the order they happened, so a title marks where its
+'section first appears rather than heading a block of its own kind: an
+'action coming back to a section written earlier lands at the bottom, under
+'whatever title was last written. Each line carries its true section in the
+'hidden title column, and that is what the title dropdown of the output
+'sheet filters on, so reading the log one section at a time is a dropdown
+'away.
 '
 'PROVISIONING
 '-------------------------------------------------------------------------------
@@ -78,6 +103,17 @@ Private Const ROW_MARKER_NAME As String = "CheckingOutputStartingRow"
 
 Private Const RESTART_ACTION As String = "log"
 Private Const RESTART_DETAIL As String = "restarted"
+
+'The three sections the log is read by. Each is the title of every entry
+'that belongs to it, so the title dropdown of the output sheet filters the
+'log down to one of the three.
+Private Const SECTION_OPENCLOSE As String = "open/close"
+Private Const SECTION_DATAIO As String = "data input/output"
+Private Const SECTION_LIFECYCLE As String = "linelist lifecycle"
+
+'What sits between the action code and the detail on an entry line. The
+'two share the last written column, so they need a mark of their own.
+Private Const ACTION_SEPARATOR As String = ": "
 
 Private Type TLLLog
     targetSheet As Worksheet
@@ -145,6 +181,34 @@ End Property
 Public Property Get SheetName() As String
     SheetName = LOG_SHEET_NAME
 End Property
+
+'@label:section-of
+'@sub-title The section an action code is logged under
+'@details
+'The three sections are the whole title vocabulary of the log sheet. The
+'workbook open, the workbook close and a log restart are the session
+'boundaries and read as open/close; everything that moves data in or out
+'of the workbook reads as data input/output; every other action the user
+'takes inside the workbook reads as linelist lifecycle, which is also
+'where an action code named by no case below lands.
+'@param action String. The action code of the event.
+'@return String. One of the three section titles.
+'@export
+Public Function SectionOf(ByVal action As String) As String
+    Select Case LCase$(Trim$(action))
+
+    Case "open", "close", RESTART_ACTION
+        SectionOf = SECTION_OPENCLOSE
+
+    Case "import-data", "import-geobase", "clear-data", _
+         "export", "export-migration", "export-other", "export-analysis"
+        SectionOf = SECTION_DATAIO
+
+    Case Else
+        SectionOf = SECTION_LIFECYCLE
+
+    End Select
+End Function
 
 '@label:max-entries
 '@prop-title Row cap of the log sheet
@@ -246,17 +310,19 @@ End Sub
 '@label:flush-entry
 '@sub-title Build one Checking bundle and flush it through the writer
 '@details
-'The bundle carries one key, so the key uniqueness of Checking binds
-'inside the bundle and every event stays a plain append.
-'@param action String. The action code, used as the bundle title.
+'The bundle title is the section of the action, not the action itself, so
+'the sheet carries three titles rather than one per action code. The
+'bundle carries one key, so the key uniqueness of Checking binds inside
+'the bundle and every event stays a plain append.
+'@param action String. The action code, written on the entry line.
 '@param detail String. Short free text beside the timestamp.
 '@param scope Byte. CheckingScope value carrying the outcome.
 Private Sub FlushEntry(ByVal action As String, ByVal detail As String, ByVal scope As Byte)
     Dim checks As Checking
     Dim batch As BetterArray
 
-    Set checks = Checking.Create(action)
-    checks.Add "entry", EntryLabel(detail), scope
+    Set checks = Checking.Create(SectionOf(action))
+    checks.Add "entry", EntryLabel(action, detail), scope
 
     Set batch = New BetterArray
     batch.LowerBound = 1
@@ -268,18 +334,22 @@ End Sub
 '@label:entry-label
 '@sub-title Compose the dated label of one entry
 '@details
-'The label opens with the timestamp; the detail follows behind the
-'separator, so the two land in their own columns of the log sheet. A
-'separator inside the detail would push text past the last written
-'column, so it is softened to a single dash first.
+'The label opens with the timestamp; the action code and the detail
+'follow behind the separator, so the two land in their own columns of the
+'log sheet. The action code moved here when the title became the section:
+'the sheet has three titles now, and the line has to say which action it
+'records. A separator inside the detail would push text past the last
+'written column, so it is softened to a single dash first.
+'@param action String. The action code of the event.
 '@param detail String. Short free text beside the timestamp.
 '@return String. The composed label.
-Private Function EntryLabel(ByVal detail As String) As String
+Private Function EntryLabel(ByVal action As String, ByVal detail As String) As String
     Dim label As String
 
-    label = Format$(Now, "yyyy-mm-dd hh:mm:ss")
+    label = Format$(Now, "yyyy-mm-dd hh:mm:ss") & DETAIL_SEPARATOR & Trim$(action)
+
     If LenB(Trim$(detail)) > 0 Then
-        label = label & DETAIL_SEPARATOR & _
+        label = label & ACTION_SEPARATOR & _
                 Replace(Trim$(detail), DETAIL_SEPARATOR, "-")
     End If
 
@@ -310,10 +380,14 @@ End Sub
 
 '@label:writer
 '@sub-title Lazily create and return the CheckingOutput writer
+'@details
+'The writer is asked for compact appending, which is the mode a log wants:
+'a section title is written the first time the sheet carries it and never
+'again, and no blank rows stand between the entries.
 '@return CheckingOutput. Writer bound to the log worksheet.
 Private Function Writer() As CheckingOutput
     If this.writer Is Nothing Then
-        Set this.writer = CheckingOutput.Create(Wksh(), OUTPUT_TITLE)
+        Set this.writer = CheckingOutput.Create(Wksh(), OUTPUT_TITLE, compactAppend:=True)
     End If
     Set Writer = this.writer
 End Function

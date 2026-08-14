@@ -55,6 +55,17 @@ Clean:
     mBooting = False
 End Sub
 
+' FormatStaleValues is an Application setting, and the close below turns it back
+' on so it does not follow the user into their other files. A session holding two
+' linelists, or a linelist and a setup, therefore has one workbook turning it on
+' for another that wants it off. The linelist coming to the front is where that
+' is put right: the setting belongs to whichever workbook the user is looking at.
+Private Sub Workbook_Activate()
+    On Error Resume Next
+    Application.FormatStaleValues = False
+    On Error GoTo 0
+End Sub
+
 Private Sub Workbook_BeforeClose(Cancel As Boolean)
     On Error Resume Next
     Application.FormatStaleValues = True

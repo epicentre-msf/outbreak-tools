@@ -14,6 +14,14 @@ Option Explicit
 'across two flushes, the outcome colours, the rotation past the row cap
 'and the separator guard on the detail.
 '
+'THE THREE SECTIONS
+'-------------------------------------------------------------------------------
+'The title of an entry is the section of its action, and the writer is in
+'compact mode, so each of the three titles is written once however many
+'actions follow it. Four tests hold that: the action code no longer heads
+'a block, one title covers three actions of one section, a second section
+'brings its own title, and the mapping answers the two boundary cases.
+'
 'THE ROTATION IS REACHED BY SEEDING
 '-------------------------------------------------------------------------------
 'The cap is ten thousand rows. The test writes one cell past the cap in
@@ -30,6 +38,12 @@ Private Const LOG_SHEET As String = "__log"
 Private Const OUTPUT_COLUMN As Long = 3
 Private Const DATE_COLUMN As Long = 4
 Private Const DETAIL_COLUMN As Long = 5
+
+'The three section titles of the log sheet, held here as the suite reads
+'them off the sheet and the class holds them Private.
+Private Const SECTION_OPENCLOSE As String = "open/close"
+Private Const SECTION_DATAIO As String = "data input/output"
+Private Const SECTION_LIFECYCLE As String = "linelist lifecycle"
 
 '@section Lifecycle
 '===============================================================================
@@ -110,6 +124,27 @@ Private Function RowOfText(ByVal sh As Worksheet, ByVal columnIndex As Long, _
             Exit Function
         End If
     Next rowIndex
+End Function
+
+'@sub-title Count the rows of a column that carry a text.
+'@param sh Worksheet. The log worksheet.
+'@param columnIndex Long. The column to read.
+'@param searched String. The text to look for.
+'@return Long. How many rows carry it.
+Private Function CountOfText(ByVal sh As Worksheet, ByVal columnIndex As Long, _
+                             ByVal searched As String) As Long
+    Dim rowIndex As Long
+    Dim lastRow As Long
+    Dim total As Long
+
+    lastRow = LastOutputRow(sh)
+    For rowIndex = 1 To lastRow
+        If InStr(1, CStr(sh.Cells(rowIndex, columnIndex).Value), searched, vbTextCompare) > 0 Then
+            total = total + 1
+        End If
+    Next rowIndex
+
+    CountOfText = total
 End Function
 
 '@section Factory Tests
@@ -195,7 +230,7 @@ End Sub
 '@section Logging Tests
 '===============================================================================
 
-'@sub-title One logged event carries the action, the date and the detail.
+'@sub-title One logged event carries the section, the date, the action and the detail.
 '@TestMethod("LLLog")
 Public Sub TestLogSuccessWritesActionDateAndDetail()
     CustomTestSetTitles Assert, TESTMODULE, "TestLogSuccessWritesActionDateAndDetail"
@@ -210,19 +245,153 @@ Public Sub TestLogSuccessWritesActionDateAndDetail()
     sut.LogSuccess "import-data", "cases.xlsx"
     Set sh = sut.Wksh()
 
-    titleRow = RowOfText(sh, OUTPUT_COLUMN, "import-data")
-    Assert.IsTrue (titleRow > 0), "The action code heads the block"
+    titleRow = RowOfText(sh, OUTPUT_COLUMN, SECTION_DATAIO)
+    Assert.IsTrue (titleRow > 0), "The section heads the block"
 
     entryRow = RowOfText(sh, OUTPUT_COLUMN, "Success")
-    Assert.IsTrue (entryRow > titleRow), "The outcome line sits under the action"
+    Assert.IsTrue (entryRow > titleRow), "The outcome line sits under the section"
     Assert.IsTrue IsDate(CStr(sh.Cells(entryRow, DATE_COLUMN).Value)), _
                   "The entry label opens with the date"
-    Assert.AreEqual "cases.xlsx", CStr(sh.Cells(entryRow, DETAIL_COLUMN).Value), _
-                    "The detail sits in the last written column"
+    Assert.AreEqual "import-data: cases.xlsx", _
+                    CStr(sh.Cells(entryRow, DETAIL_COLUMN).Value), _
+                    "The action and the detail sit in the last written column"
 
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestLogSuccessWritesActionDateAndDetail", Err.Number, Err.Description
+End Sub
+
+'@sub-title The action code no longer heads a block of its own.
+'@details
+'The complaint the sections answer is a title per action. The action code
+'belongs on the entry line now, and no row of the title column carries it.
+'@TestMethod("LLLog")
+Public Sub TestTheActionCodeIsNoLongerATitle()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheActionCodeIsNoLongerATitle"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim sh As Worksheet
+
+    Set sut = LLLog.Create(FixtureWkb)
+    sut.LogSuccess "add-rows", "10 rows"
+    Set sh = sut.Wksh()
+
+    Assert.AreEqual 0&, RowOfText(sh, OUTPUT_COLUMN, "add-rows"), _
+                    "No title row carries the action code"
+    Assert.IsTrue (RowOfText(sh, OUTPUT_COLUMN, SECTION_LIFECYCLE) > 0), _
+                  "The section stands in its place"
+    Assert.IsTrue (RowOfText(sh, DETAIL_COLUMN, "add-rows") > 0), _
+                  "The action code moved to the entry line"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheActionCodeIsNoLongerATitle", Err.Number, Err.Description
+End Sub
+
+'@sub-title A section title is written once, however many actions follow it.
+'@details
+'The complaint the compact writer answers. Three actions of one section
+'are three flushes, and each flush is its own PrintOutput call, so the
+'title is only written once because the writer looks back at the sheet
+'rather than at the call it is inside. The three entry lines follow one
+'another with no blank row between them.
+'@TestMethod("LLLog")
+Public Sub TestTheSectionTitleIsWrittenOnce()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheSectionTitleIsWrittenOnce"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim sh As Worksheet
+    Dim firstRow As Long
+    Dim thirdRow As Long
+
+    Set sut = LLLog.Create(FixtureWkb)
+    sut.LogSuccess "add-rows", "10 rows"
+    sut.LogWarning "sort", "no header"
+    sut.LogSuccess "resize", "Main"
+    Set sh = sut.Wksh()
+
+    Assert.AreEqual 1&, CountOfText(sh, OUTPUT_COLUMN, SECTION_LIFECYCLE), _
+                    "Three actions of one section stand under one title"
+
+    firstRow = RowOfText(sh, DETAIL_COLUMN, "add-rows")
+    thirdRow = RowOfText(sh, DETAIL_COLUMN, "resize")
+    Assert.AreEqual 2&, thirdRow - firstRow, _
+                    "The three entries follow one another with no blank row"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheSectionTitleIsWrittenOnce", Err.Number, Err.Description
+End Sub
+
+'@sub-title A second section brings its own title, and the first keeps its own.
+'@details
+'The lines stay in the order they happened, so a title marks where its
+'section FIRST appears rather than heading a block of its own kind. The
+'last action here comes back to a section whose title is already up, and
+'its line lands at the bottom under a different heading. The hidden title
+'column carries the true section of every line, which is what the title
+'dropdown of the output sheet filters on.
+'@TestMethod("LLLog")
+Public Sub TestASecondSectionBringsItsOwnTitle()
+    CustomTestSetTitles Assert, TESTMODULE, "TestASecondSectionBringsItsOwnTitle"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim sh As Worksheet
+
+    Set sut = LLLog.Create(FixtureWkb)
+    sut.LogInfo "open", "linelist.xlsb"
+    sut.LogSuccess "add-rows", "10 rows"
+    sut.LogSuccess "export", "cases.xlsx"
+    sut.LogSuccess "sort", "Age"
+    Set sh = sut.Wksh()
+
+    Assert.AreEqual 1&, CountOfText(sh, OUTPUT_COLUMN, SECTION_OPENCLOSE), _
+                    "The session section is written once"
+    Assert.AreEqual 1&, CountOfText(sh, OUTPUT_COLUMN, SECTION_LIFECYCLE), _
+                    "The lifecycle section is written once, both entries under it"
+    Assert.AreEqual 1&, CountOfText(sh, OUTPUT_COLUMN, SECTION_DATAIO), _
+                    "The data section is written once"
+    Assert.IsTrue (RowOfText(sh, DETAIL_COLUMN, "sort") > 0), _
+                  "The action that came back to a written section still logged its line"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestASecondSectionBringsItsOwnTitle", Err.Number, Err.Description
+End Sub
+
+'@sub-title Every action falls in one of the three sections.
+'@details
+'The two boundary cases are the ones worth stating: a code named by no
+'case falls in the lifecycle section, and the restart line of the
+'rotation reads as a session boundary.
+'@TestMethod("LLLog")
+Public Sub TestActionsFallInTheThreeSections()
+    CustomTestSetTitles Assert, TESTMODULE, "TestActionsFallInTheThreeSections"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+
+    Set sut = LLLog.Create(FixtureWkb)
+
+    Assert.AreEqual SECTION_OPENCLOSE, sut.SectionOf("open"), _
+                    "The workbook open is a session boundary"
+    Assert.AreEqual SECTION_OPENCLOSE, sut.SectionOf("log"), _
+                    "The restart line is a session boundary"
+    Assert.AreEqual SECTION_DATAIO, sut.SectionOf("export-migration"), _
+                    "A migration export moves data out"
+    Assert.AreEqual SECTION_DATAIO, sut.SectionOf("clear-data"), _
+                    "Clearing the data belongs with the data"
+    Assert.AreEqual SECTION_LIFECYCLE, sut.SectionOf("sort"), _
+                    "A sort is work inside the workbook"
+    Assert.AreEqual SECTION_LIFECYCLE, sut.SectionOf("MSG_ErrUpdate"), _
+                    "A code named by no case falls in the lifecycle section"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestActionsFallInTheThreeSections", Err.Number, Err.Description
 End Sub
 
 '@sub-title A second flush appends under the first one.
@@ -241,8 +410,8 @@ Public Sub TestTwoFlushesAppend()
     sut.LogFailure "calculate", "err 1004"
     Set sh = sut.Wksh()
 
-    firstRow = RowOfText(sh, OUTPUT_COLUMN, "add-rows")
-    secondRow = RowOfText(sh, OUTPUT_COLUMN, "calculate")
+    firstRow = RowOfText(sh, DETAIL_COLUMN, "add-rows")
+    secondRow = RowOfText(sh, DETAIL_COLUMN, "calculate")
 
     Assert.IsTrue (firstRow > 0), "The first event survives the second flush"
     Assert.IsTrue (secondRow > firstRow), "The second event lands below the first"
@@ -308,7 +477,8 @@ Public Sub TestSeparatorInDetailStaysInTheLastColumn()
     Set sh = sut.Wksh()
 
     entryRow = RowOfText(sh, OUTPUT_COLUMN, "Error")
-    Assert.AreEqual "range - missing", CStr(sh.Cells(entryRow, DETAIL_COLUMN).Value), _
+    Assert.AreEqual "calculate: range - missing", _
+                    CStr(sh.Cells(entryRow, DETAIL_COLUMN).Value), _
                     "The softened detail sits whole in the last column"
 
     Exit Sub
@@ -367,11 +537,11 @@ Public Sub TestRotationClearsThePastLog()
 
     Assert.AreEqual 0&, CLng(LenB(CStr(sh.Cells(sut.MaxEntries + 1, OUTPUT_COLUMN).Value))), _
                     "The overflow cell was cleared"
-    Assert.AreEqual 0&, RowOfText(sh, OUTPUT_COLUMN, "add-rows"), _
+    Assert.AreEqual 0&, RowOfText(sh, DETAIL_COLUMN, "add-rows"), _
                     "The old log lines are gone"
 
     restartRow = RowOfText(sh, DETAIL_COLUMN, "restarted")
-    eventRow = RowOfText(sh, OUTPUT_COLUMN, "open")
+    eventRow = RowOfText(sh, DETAIL_COLUMN, "open: after the cap")
     Assert.IsTrue (restartRow > 0), "The fresh log opens with the restart line"
     Assert.IsTrue (eventRow > restartRow), _
                   "The event that met the cap lands after the restart line"

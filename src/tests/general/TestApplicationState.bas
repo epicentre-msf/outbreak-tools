@@ -11,8 +11,8 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 '@description
 'Validates the ApplicationState class, which wraps Excel Application-level
 'settings (ScreenUpdating, DisplayAlerts, Calculation, EnableEvents,
-'CalculateBeforeSave, EnableAnimations, AutomationSecurity, cursor) in an
-'RAII-style scope object.
+'CalculateBeforeSave, EnableAnimations, AutomationSecurity, FormatStaleValues,
+'cursor) in an RAII-style scope object.
 'Tests confirm that ApplyBusyState switches each property to its expected
 'performance mode, Restore returns all properties to their captured
 'snapshot, RefreshSnapshot guards against misuse while busy, and the
@@ -33,7 +33,9 @@ Private initialCalculateBeforeSave As Boolean
 Private initialEnableAnimations As Boolean
 Private initialAutomationSecurity As MsoAutomationSecurity
 Private initialCursor As XlMousePointer
+Private initialFormatStaleValues As Boolean
 Private animationsAvailable As Boolean
+Private staleFormatAvailable As Boolean
 
 
 '@section Module lifecycle
@@ -87,6 +89,7 @@ Private Sub CaptureInitialState()
     initialAutomationSecurity = Application.AutomationSecurity
     initialCursor = Application.Cursor
     animationsAvailable = TryReadAnimations(initialEnableAnimations)
+    staleFormatAvailable = TryReadStaleFormat(initialFormatStaleValues)
 End Sub
 
 '@sub-title Restore every Application property to its pre-test value.
@@ -101,6 +104,11 @@ Private Sub ResetApplicationState()
     If animationsAvailable Then
         On Error Resume Next
             Application.EnableAnimations = initialEnableAnimations
+        On Error GoTo 0
+    End If
+    If staleFormatAvailable Then
+        On Error Resume Next
+            Application.FormatStaleValues = initialFormatStaleValues
         On Error GoTo 0
     End If
 End Sub
@@ -141,6 +149,23 @@ MissingProperty:
     Err.Clear
 End Function
 
+'@sub-title Probe whether FormatStaleValues is available on this host.
+'@details
+'The property arrived with the newer calculation engine and an older Excel
+'raises on the read, so the assertions that name it are skipped where the
+'host has nothing to assert about.
+Private Function TryReadStaleFormat(ByRef value As Boolean) As Boolean
+    On Error GoTo MissingProperty
+        value = Application.FormatStaleValues
+        TryReadStaleFormat = True
+    On Error GoTo 0
+    Exit Function
+MissingProperty:
+    value = False
+    TryReadStaleFormat = False
+    Err.Clear
+End Function
+
 
 '@section Test cases
 '===============================================================================
@@ -176,6 +201,43 @@ Public Sub TestApplyBusyStateSwitchesSettings()
     End If
 
     scope.Restore
+End Sub
+
+'@sub-title Verify stale value formatting is off while busy and stays off after Restore.
+'@details
+'The one setting the class never puts back. The test opens on the state a
+'second workbook leaves behind when it closes -- formatting on -- and that
+'value is what the scope captures, so a Restore reading its snapshot would
+'hand the formatting back. Both assertions are False.
+'@TestMethod("ApplicationState")
+Public Sub TestFormatStaleValuesStaysOffThroughRestore()
+    CustomTestSetTitles Assert, "ApplicationState", "FormatStaleValuesStaysOffThroughRestore"
+
+    Dim scope As ApplicationState
+
+    SetIdleApplicationState
+    If staleFormatAvailable Then
+        On Error Resume Next
+            Application.FormatStaleValues = True
+        On Error GoTo 0
+    End If
+
+    Set scope = ApplicationState.Create(Application)
+    Assert.IsTrue (Not scope Is Nothing), "The scope is built over the live application"
+
+    scope.ApplyBusyState
+
+    If staleFormatAvailable Then
+        Assert.IsFalse Application.FormatStaleValues, _
+                       "ApplyBusyState must turn stale value formatting off"
+    End If
+
+    scope.Restore
+
+    If staleFormatAvailable Then
+        Assert.IsFalse Application.FormatStaleValues, _
+                       "Restore must leave stale value formatting off, snapshot or not"
+    End If
 End Sub
 
 '@sub-title Verify Restore returns every setting to its captured snapshot.

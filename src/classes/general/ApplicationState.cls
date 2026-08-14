@@ -38,8 +38,19 @@ Option Explicit
 'THE SETTINGS THIS CLASS COVERS
 '-------------------------------------------------------------------------------
 'ScreenUpdating, DisplayAlerts, Calculation, EnableAnimations, EnableEvents,
-'AutomationSecurity, the mouse cursor and CalculateBeforeSave. EnableAnimations
-'is missing on some hosts, and the object records whether it is there.
+'AutomationSecurity, the mouse cursor, CalculateBeforeSave and
+'FormatStaleValues. EnableAnimations and FormatStaleValues are missing on some
+'hosts, and the object records whether each is there.
+'
+'FORMATSTALEVALUES IS THE ONE SETTING NEVER PUT BACK
+'-------------------------------------------------------------------------------
+'Stale value formatting greys out every cell a manual calculation has left
+'behind, which in a linelist on manual calculation is most of the sheet. The
+'workbooks want it off from the moment they open until the moment they close,
+'so both ApplyBusyState and Restore write False and neither reads the snapshot
+'back. It is an Application setting, so a second workbook closing in the same
+'session turns it back on for the one still open; forcing it here means the
+'next operation of that workbook puts it out again.
 '@depends ProjectError
 '@version 1.0 (2026-02-09)
 
@@ -60,6 +71,8 @@ Private Type TApplicationState
     calcBeforeSave As Boolean                    'Cached CalculateBeforeSave value
     automationSecurity As MsoAutomationSecurity  'Cached automation security level
     securityBlocked As Boolean                   'Indicates whether automation security is currently blocked
+    formatStaleValues As Boolean                 'Cached FormatStaleValues value, kept for the record only
+    supportsStaleFormat As Boolean               'Flag indicating whether FormatStaleValues is available
 End Type
 
 Private this As TApplicationState
@@ -189,6 +202,7 @@ Public Sub ApplyBusyState(Optional ByVal suppressEvents As Boolean = False, _
         If this.supportsAnimations Then
             SafeSetEnableAnimations target, False
         End If
+        SafeSetFormatStaleValues target, False
         this.isBusy = True
     On Error GoTo 0
     Exit Sub
@@ -214,6 +228,7 @@ Private Sub CaptureSnapshotCore()
     this.calcBeforeSave = target.CalculateBeforeSave
     this.automationSecurity = target.AutomationSecurity
     this.cursor = target.Cursor
+    this.supportsStaleFormat = TryReadFormatStaleValues(target, this.formatStaleValues)
     this.snapshotCaptured = True
 End Sub
 
@@ -296,6 +311,10 @@ Public Sub Restore(Optional ByVal silent As Boolean = False)
         If this.supportsAnimations Then
             SafeSetEnableAnimations target, this.enableAnimations
         End If
+        'False again rather than the snapshot. The snapshot may have been taken
+        'after another workbook of the session put the setting back on, and
+        'restoring it would hand that back to a workbook that wants it off.
+        SafeSetFormatStaleValues target, False
         'ScreenUpdating must be restored LAST so that all other settings
         '(especially Calculation mode) are already in place before Excel
         'repaints the screen.
@@ -335,6 +354,45 @@ Handler:
     this.supportsAnimations = False
     Err.Clear
 End Sub
+
+'@label:safe-set-format-stale-values
+'@sub-title Set FormatStaleValues where the host has it
+'@details
+'The property arrived with the calculation engine of the newer hosts, and an
+'older Excel raises on the write. The first raise records the capability as
+'missing so the following operations stop trying.
+'@param target Application. The Excel Application instance.
+'@param value Boolean. The desired FormatStaleValues state.
+Private Sub SafeSetFormatStaleValues(ByVal target As Application, ByVal value As Boolean)
+    If Not this.supportsStaleFormat Then Exit Sub
+
+    On Error GoTo Handler
+        target.FormatStaleValues = value
+    On Error GoTo 0
+    Exit Sub
+Handler:
+    this.supportsStaleFormat = False
+    Err.Clear
+End Sub
+
+'@label:try-read-format-stale-values
+'@sub-title Attempt to read FormatStaleValues from the target application
+'@param target Application. The Excel Application instance.
+'@param value Boolean. ByRef. Receives the current value on success.
+'@return Boolean. True when the property was read successfully.
+Private Function TryReadFormatStaleValues(ByVal target As Application, _
+                                          ByRef value As Boolean) As Boolean
+    On Error GoTo Unavailable
+        value = target.FormatStaleValues
+        TryReadFormatStaleValues = True
+    On Error GoTo 0
+    Exit Function
+
+Unavailable:
+    value = False
+    TryReadFormatStaleValues = False
+    Err.Clear
+End Function
 
 '@label:try-read-enable-animations
 '@sub-title Attempt to read EnableAnimations from the target application

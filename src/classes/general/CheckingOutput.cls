@@ -37,6 +37,7 @@ Private Type TState
     targetSheet As Worksheet
     nm As String
     store As HiddenNames
+    compactAppend As Boolean
     sealed As Boolean
 End Type
 
@@ -80,10 +81,13 @@ Private Const VBIDE_PROC_KIND As Long = 0 'Matches vbext_pk_Proc to avoid VBIDE 
 'marker.
 '@param sh Worksheet. Target worksheet that will receive the checking output.
 '@param title Optional String. Label for the output session. Defaults to vbNullString.
+'@param compactAppend Optional Boolean. Writes one line per entry. Defaults to False.
 '@return CheckingOutput. Fully initialised instance.
 '@throws ProjectError.ElementNotFound When sh is Nothing.
 '@export
-Public Function Create(ByVal sh As Worksheet, Optional ByVal title As String = vbNullString) As CheckingOutput
+Public Function Create(ByVal sh As Worksheet, _
+                       Optional ByVal title As String = vbNullString, _
+                       Optional ByVal compactAppend As Boolean = False) As CheckingOutput
     If sh Is Nothing Then
         ThrowError ProjectError.ElementNotFound, _
          "Unable to create an instance of the class, please provide a valid worksheet"
@@ -94,6 +98,7 @@ Public Function Create(ByVal sh As Worksheet, Optional ByVal title As String = v
 
     Set newOutput.Wksh = sh
     newOutput.Name = title
+    newOutput.CompactAppend = compactAppend
     newOutput.Seal
     Set Create = newOutput
 End Function
@@ -134,6 +139,30 @@ End Property
 Public Property Let Name(ByVal nm As String)
     GuardNotSealed "Name"
     this.nm = nm
+End Property
+
+'@label:compact-append
+'@prop-title Whether the writer appends one line per entry
+'@details
+'A checking sheet is read one render at a time: a render opens with its
+'title and the blocks stand apart. A running log is the other shape. It is
+'one sheet written a single entry at a time over a whole session, and the
+'title of an entry has almost always been written by an earlier render.
+'Compact mode writes a title only when the sheet has never carried it and
+'drops the blank rows between blocks, so a session of a hundred actions
+'reads as a hundred lines under a handful of titles.
+'@return Boolean. True when the writer is in compact mode.
+'@export
+Public Property Get CompactAppend() As Boolean
+    CompactAppend = this.compactAppend
+End Property
+
+'@label:compact-append-set
+'@prop-title Turn compact appending on
+'@param compact Boolean. Value to assign.
+Public Property Let CompactAppend(ByVal compact As Boolean)
+    GuardNotSealed "CompactAppend"
+    this.compactAppend = compact
 End Property
 
 '@section FormattingHelpers
@@ -338,10 +367,17 @@ Private Sub WriteChecking(ByVal checksObject As Checking, _
     subtitle = checksObject.Heading(subtitle:=True)
 
     If Not TitleAlreadyWritten(title, writtenTitles) Then
-        WriteRow rowIndex:=currentRow, textValue:=title, formatTag:="level 1", sep:=sep, parentTitle:=title
-        If LenB(Trim$(title)) > 0 Then AppendTitleToStore title
-        writtenTitles.Add Item:=title, key:=title
-        currentRow = currentRow + 2
+        If TitleStandsOnTheSheet(title) Then
+            'Compact mode only. The title is up there already from an earlier
+            'render, and writing it again is what turns a log into a list of
+            'headings.
+            writtenTitles.Add Item:=title, key:=title
+        Else
+            WriteRow rowIndex:=currentRow, textValue:=title, formatTag:="level 1", sep:=sep, parentTitle:=title
+            If LenB(Trim$(title)) > 0 Then AppendTitleToStore title
+            writtenTitles.Add Item:=title, key:=title
+            currentRow = currentRow + BlockGap()
+        End If
     End If
 
     If subtitle <> vbNullString Then
@@ -361,8 +397,35 @@ Private Sub WriteChecking(ByVal checksObject As Checking, _
         currentRow = currentRow + 1
     Next keyIndex
 
-    currentRow = currentRow + 2
+    If Not this.compactAppend Then currentRow = currentRow + 2
 End Sub
+
+'@label:block-gap
+'@sub-title Rows left between a title and what it heads
+'@details
+'A checking sheet leaves a blank row under each heading. A compact log has
+'one line per entry and no blank rows at all, so its entry sits directly
+'under the title.
+'@return Long. Rows to advance after writing a title.
+Private Function BlockGap() As Long
+    BlockGap = IIf(this.compactAppend, 1, 2)
+End Function
+
+'@label:title-stands-on-the-sheet
+'@sub-title Whether an earlier render already wrote this title
+'@details
+'Answers False outside compact mode, so a checking sheet keeps writing the
+'heading of every render it makes. Inside compact mode the persistent title
+'store is the record of what the sheet already carries: it survives across
+'renders, which is exactly the span a log has to look back over.
+'@param title String. The title about to be written.
+'@return Boolean. True when the title need not be written again.
+Private Function TitleStandsOnTheSheet(ByVal title As String) As Boolean
+    If Not this.compactAppend Then Exit Function
+    If LenB(Trim$(title)) = 0 Then Exit Function
+
+    TitleStandsOnTheSheet = TitleStoreContains(Wksh(), Trim$(title))
+End Function
 
 
 '@label:title-already-written
@@ -637,7 +700,12 @@ Private Function InitialiseWorksheet() As Long
             EnsureTitleStore True
         Else
             EnsureTitleStore False
-            sh.Rows(startingRow).ClearContents
+            'Only the written columns are cleared. The title store sits far to
+            'the right on rows of its own, and a compact log climbs through
+            'those row numbers within its first few entries, so clearing the
+            'whole row would wipe a stored title and empty the filter list.
+            sh.Range(sh.Cells(startingRow, HIDDEN_TITLE_COLUMN), _
+                     sh.Cells(startingRow, FIRST_OUTPUT_COLUMN + OUTPUT_COLUMN_COUNT - 1)).ClearContents
         End If
         ApplyHiddenColumnsFormatting sh
         EnsureFilterDropdown
@@ -1247,7 +1315,7 @@ Public Sub PrintOutput(ByVal checkTable As BetterArray)
     Next index
 
     '@Ignore AssignmentNotUsed
-    currentRow = currentRow + 4
+    If Not this.compactAppend Then currentRow = currentRow + 4
     WriteRow currentRow, formatTag:="level 4", textValue:="End of checkings " & Name(), parentTitle:=END_TAG
     store.SetValue ROW_MARKER_NAME, currentRow
 
