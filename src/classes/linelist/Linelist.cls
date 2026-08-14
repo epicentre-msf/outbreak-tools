@@ -74,6 +74,10 @@ Private Const WORKBOOK_MODULE_NAME As String = "EventLinelistWorkbook"
 Private Const SHEET_MODULE_NAME As String = "EventLinelistSheet"
 Private Const SHEET_GEO As String = "Geo"
 
+'The form that hides and shows whole sections. It travels only when the designer
+'carries it, so a designer built before it exists still generates.
+Private Const SECTIONS_FORM_NAME As String = "F_ShowHideSections"
+
 Private Type TLinelist
     outWkb As Workbook
     specs As LinelistSpecs
@@ -1159,6 +1163,20 @@ Private Sub TransferAllCode(ByVal transfer As CodeTransfer, _
         codeName = codesList.Item(counter)
         transfer.TransferForm codeName
     Next
+
+    'The sections form travels only when the designer carries it. It is new, and
+    'a designer built before it exists still has to generate a working linelist,
+    'so its absence is a note rather than a failure. EventsLinelistButtons
+    'reaches the form by name at click time and says so when it is missing.
+    If transfer.HasSourceComponent(SECTIONS_FORM_NAME) Then
+        transfer.TransferForm SECTIONS_FORM_NAME
+    Else
+        LogCheck "sections-form", _
+                 "The designer carries no " & SECTIONS_FORM_NAME & " form, so the " & _
+                 "linelist is built without it. The sections button of the " & _
+                 "show/hide form will say the form is missing.", _
+                 checkingWarning
+    End If
 
     'Transfer workbook code
     transfer.TransferWorkbookCode WORKBOOK_MODULE_NAME

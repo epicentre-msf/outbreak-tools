@@ -450,6 +450,24 @@ End Sub
 '@param componentName String. The component name to look for.
 '@return Object. The VBComponent.
 '@throws ProjectError.ElementNotFound When the source workbook has no such component.
+'@label:has-source-component
+'@sub-title Whether the source workbook carries one component
+'@details
+'For a component that is being added to the project and is not in every designer
+'yet. The caller transfers it when it is there and files a note when it is not,
+'so one designer without it still generates a linelist.
+'@param componentName String. The component to look for.
+'@return Boolean. True when the source workbook carries it.
+'@export
+Public Function HasSourceComponent(ByVal componentName As String) As Boolean
+    HasSourceComponent = Not (FindComponent(SourceProject(), componentName) Is Nothing)
+End Function
+
+'@label:source-component
+'@sub-title The named component of the source workbook
+'@param componentName String. The component to look for.
+'@return Object. The VBComponent.
+'@throws ProjectError.ElementNotFound When the source workbook has no such component.
 Private Function SourceComponent(ByVal componentName As String) As Object
     Dim vbComp As Object
 
