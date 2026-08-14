@@ -45,13 +45,18 @@ Option Explicit
 'itself moves down to the entry line, beside the timestamp, where it stays
 'readable without heading a block of its own.
 '
-'The lines stay in the order they happened, so a title marks where its
-'section first appears rather than heading a block of its own kind: an
-'action coming back to a section written earlier lands at the bottom, under
-'whatever title was last written. Each line carries its true section in the
-'hidden title column, and that is what the title dropdown of the output
-'sheet filters on, so reading the log one section at a time is a dropdown
-'away.
+'A title heads a block of its own kind. An action coming back to a section
+'written earlier lands at the foot of THAT block, not at the foot of the
+'sheet, so the three blocks stay whole however far apart in time their
+'actions were taken, and a blank row stands between them. Inside a block
+'the lines keep the order they happened. Each line also carries its section
+'in the hidden title column, and that is what the title dropdown of the
+'output sheet filters on, so reading the log one section at a time is a
+'dropdown away.
+'
+'The last thing that happened is therefore no longer the last line of the
+'sheet: a close lands under the open it belongs with, near the top, while
+'the lifecycle block below carries the bulk of the session.
 '
 'PROVISIONING
 '-------------------------------------------------------------------------------
