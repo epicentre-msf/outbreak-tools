@@ -37,28 +37,32 @@ toc: false
 
 Each archive contains a **designer**, a **setup**, and a **ribbon template** (\`.xlsb\`).
 
-## Latest
+Stable releases carry a semantic version (\`vMAJOR.MINOR.PATCH\`) and are cut from
+\`main\`. The development build has no version: it is published continuously as the
+single \`dev-latest\` pre-release, which always holds the newest dev binaries.
+
+## Download
 
 | Stream | Download |
 |--------|----------|
-| Main (stable) | [OBT-main-latest.zip](https://github.com/$REPO/releases/latest/download/OBT-main-latest.zip){target="_blank"} |
-| Dev (pre-release) | [OBT-dev-latest.zip](https://github.com/$REPO/releases/download/dev-latest/OBT-dev-latest.zip){target="_blank"} |
+| Stable | [OBT-main-latest.zip](https://github.com/$REPO/releases/latest/download/OBT-main-latest.zip){target="_blank"} |
+| Development (moving) | [OBT-dev-latest.zip](https://github.com/$REPO/releases/download/dev-latest/OBT-dev-latest.zip){target="_blank"} |
 HEADER
 
-# --- Versioned releases (tag starts with 'v'): table + per-release notes ---
-versioned="$(printf '%s' "$rel" | jq -c '[ .[] | select(.tag_name | test("^v")) ]')"
+# --- Versioned releases (tag is 'vMAJOR.MINOR.PATCH'): table + per-release notes ---
+versioned="$(printf '%s' "$rel" | jq -c '[ .[] | select(.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+$")) ]')"
 vcount="$(printf '%s' "$versioned" | jq 'length')"
 
 if [ "$vcount" -gt 0 ]; then
   emit ""
-  emit "## All releases"
+  emit "## Versions"
   emit ""
-  emit "| Version | Date | Stream | Download |"
-  emit "|---------|------|--------|----------|"
+  emit "| Version | Date | Download |"
+  emit "|---------|------|----------|"
   printf '%s' "$versioned" | jq -r '
     .[]
-    | ( [ .assets[] | select(.name | test("^OBT-.*\\.zip$")) ] | .[0].browser_download_url // "" ) as $u
-    | "| \(.tag_name) | \(.published_at[0:10]) | \(if .prerelease then "dev (pre)" else "main" end) | "
+    | ( [ .assets[] | select(.name | test("^OBT-main-[0-9].*\\.zip$")) ] | .[0].browser_download_url // "" ) as $u
+    | "| \(.tag_name) | \(.published_at[0:10]) | "
       + (if $u == "" then "—" else "[download](\($u)){target=\"_blank\"}" end) + " |"
   ' | awk '!seen[$0]++' >> "$OUT"
 
@@ -66,13 +70,12 @@ if [ "$vcount" -gt 0 ]; then
   emit "## Release notes"
   i=0
   while [ "$i" -lt "$vcount" ]; do
-    name="$(printf '%s' "$versioned" | jq -r ".[$i].name // .[$i].tag_name")"
+    # The tag, never the name: unversioned releases carry an empty name on purpose.
+    name="$(printf '%s' "$versioned" | jq -r ".[$i].tag_name")"
     date="$(printf '%s' "$versioned" | jq -r ".[$i].published_at[0:10]")"
-    pre="$(printf '%s' "$versioned" | jq -r ".[$i].prerelease")"
     body="$(printf '%s' "$versioned" | jq -r ".[$i].body // \"\" | gsub(\"\r\";\"\")")"
-    [ "$pre" = "true" ] && label="pre-release" || label="stable"
     emit ""
-    emit "### $name ($label) — $date"
+    emit "### $name — $date"
     emit ""
     if [ -n "$body" ]; then emit "$body"; else emit "_No notes._"; fi
     i=$((i + 1))

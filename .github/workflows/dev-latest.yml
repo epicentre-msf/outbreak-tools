@@ -1,0 +1,75 @@
+name: Refresh the dev pre-release
+
+# There is exactly one dev pre-release, 'dev-latest', and it is mutable: every refresh
+# rebuilds OBT-dev-latest.zip from the working-binaries asset store and moves the tag
+# onto the dev HEAD. Dev builds never get version numbers — see release.yml for those.
+#
+# Fired by scripts/release/push-assets.sh (so publishing binaries republishes the dev
+# build), by a CHANGELOG.md push on dev, and by hand from the Actions tab.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths: ["CHANGELOG.md"]
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: dev-latest
+  cancel-in-progress: false
+
+jobs:
+  dev-latest:
+    if: github.ref_name == 'dev'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the dev bundle from the asset store
+        run: |
+          bash scripts/release/pull-assets.sh
+          bash scripts/release/build-release-zip.sh dev latest
+
+      - name: Write the provenance notes
+        run: |
+          {
+            echo "The current development build of OutbreakTools, rebuilt and overwritten in place on every refresh."
+            echo
+            echo "This pre-release is **mutable** and carries no version number — it always holds"
+            echo "the newest dev binaries. Version numbers are cut on \`main\` only."
+            echo
+            echo "- built from: \`$GITHUB_SHA\`"
+            echo "- built at: $(date -u '+%Y-%m-%d %H:%M UTC')"
+          } > notes.md
+
+      - name: Overwrite the single dev pre-release in place
+        env:
+          # GitHub orders the releases page by the TARGET COMMIT's date, so a release
+          # pinned to an early commit sinks below every version. dev-latest is a
+          # download pointer, not a source tag — its tag stays parked on this anchor so
+          # it can never outrank the newest stable release. The real build commit is in
+          # the notes. Same trick parks legacy-archive and working-binaries; see
+          # RELEASING.md §5.
+          ANCHOR: 1fe003045f0daa0667fbcfd2c642d50c8b45eaf3
+        run: |
+          if gh release view dev-latest >/dev/null 2>&1; then
+            gh release upload dev-latest OBT-dev-latest.zip --clobber
+            gh release edit dev-latest --prerelease --notes-file notes.md
+          else
+            gh release create dev-latest OBT-dev-latest.zip \
+              --target "$ANCHOR" --prerelease \
+              --title "" \
+              --notes-file notes.md
+          fi
+          # Only a version release carries a title. GitHub falls back to the tag name
+          # when the name is empty, which is all this release needs to say.
+          id=$(gh release view dev-latest --json databaseId --jq .databaseId)
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$id" -f name="" >/dev/null
+
+      - name: Refresh the releases page
+        run: gh workflow run publish.yml --ref dev

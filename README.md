@@ -3,10 +3,9 @@
 
 ##  Quickly build a linelist from an excel designer :snail:
 
-[![Download All](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/download_all.svg)](https://github.com/epicentre-msf/outbreak-tools/releases/latest/download/OBT-main-latest.zip)
-[![Download All Dev](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/download_all_dev.svg)](https://github.com/epicentre-msf/outbreak-tools/releases/download/dev-latest/OBT-dev-latest.zip)
-[![Download the master setup](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/setup_file.svg)](https://github.com/epicentre-msf/outbreak-tools-setup/raw/main/releases/latest/disease_setup-latest.xlsb)
-[![All Releases](https://hits.sh/epicentre-msf.github.io/outbreak-tools/releases.svg?label=All%20Releases&color=8250df)](https://epicentre-msf.github.io/outbreak-tools/releases.html)
+[Download the stable release](https://github.com/epicentre-msf/outbreak-tools/releases/latest/download/OBT-main-latest.zip) ·
+[Download the development build](https://github.com/epicentre-msf/outbreak-tools/releases/download/dev-latest/OBT-dev-latest.zip) ·
+[Download the master setup](https://github.com/epicentre-msf/outbreak-tools-setup/raw/main/releases/latest/disease_setup-latest.xlsb)
 </p>
 </div>
 

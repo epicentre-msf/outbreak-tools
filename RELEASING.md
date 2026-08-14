@@ -1,8 +1,9 @@
 # Releasing OutbreakTools
 
 How binaries, releases, and the releases page work after the move off git-tracked
-binaries. **TL;DR:** binaries live in a GitHub Release asset store (not git);
-releases are cut automatically from `CHANGELOG.md` by CI.
+binaries. **TL;DR:** binaries live in a GitHub Release asset store (not git); stable
+versions are cut from `CHANGELOG.md` by CI **on `main` only**, and the development
+build lives in one mutable pre-release that never gets a version number.
 
 ---
 
@@ -18,19 +19,20 @@ releases are cut automatically from `CHANGELOG.md` by CI.
                           │   working-binaries.tar.gz         │  (mutable, pre-release)
                           └────────────┬─────────────────────┘
                                        │ pull-assets (any machine / CI)
-                                       ▼
-  CHANGELOG.md ──push to dev/main──▶ release.yml ──▶ pull-assets → build-release-zip
-        │                                              │
-        │                              ┌───────────────▼──────────────────────────┐
-        │                              │ GitHub Releases (per version, immutable)  │
-        │                              │  v2026.06.14      (Latest)  OBT-main-….zip │
-        │                              │  v2026.06.14-dev  (pre-rel) OBT-dev-….zip  │
-        │                              │  dev-latest       (moving pointer)         │
-        │                              │  legacy-archive   (old zips)               │
-        │                              └───────────────┬──────────────────────────┘
-        └───────────────────────────── publish.yml (build-releases.sh, Releases API)
-                                                       ▼
-                                          site/releases.qmd ──▶ gh-pages (releases page)
+                    ┌──────────────────┴───────────────────┐
+                    │                                      │
+  CHANGELOG.md ─push to main─▶ release.yml     push-assets ─▶ dev-latest.yml
+        │                          │                              │
+        │           ┌──────────────▼────────────────┐  ┌──────────▼───────────────────┐
+        │           │ v<MAJOR.MINOR.PATCH> (Latest)  │  │ dev-latest (the ONE dev       │
+        │           │   OBT-main-<version>.zip       │  │   pre-release, mutable)       │
+        │           │   OBT-main-latest.zip (alias)  │  │   OBT-dev-latest.zip          │
+        │           │ immutable, one per version     │  │ no version, rebuilt each time │
+        │           └──────────────┬────────────────┘  └──────────┬───────────────────┘
+        │                          │      legacy-archive (old zips, kept forever)
+        └────────────── publish.yml (build-releases.sh, Releases API) ◀──────┘
+                                   ▼
+                      site/releases.qmd ──▶ gh-pages (releases page)
 ```
 
 Binaries are **not** committed to git: `.gitignore` covers `src/bin/`, `.mock/`, the
@@ -53,11 +55,12 @@ and the two `ribbons/_ribbontemplate_*.xlsb`.
 
 | Task | Command | What it does |
 |------|---------|--------------|
-| Publish your binaries off-git | `bash scripts/release/push-assets.sh` | bundles the paths above → uploads (`--clobber`). Creates the release on first run. |
+| Publish your binaries off-git | `bash scripts/release/push-assets.sh` | bundles the paths above → uploads (`--clobber`). Creates the release on first run, then triggers `dev-latest.yml` so the dev pre-release picks the new binaries up. |
 | Restore binaries (new machine / CI) | `bash scripts/release/pull-assets.sh` | downloads the bundle → extracts into `src/bin/`, `.mock/`, and the ribbon templates. |
 
 Windows: use the `.ps1` twins. Both need the `gh` CLI authenticated with write
-access to the repo.
+access to the repo. Set `OBT_SKIP_DEV_REFRESH=1` to publish binaries without
+republishing the dev build.
 
 **Daily flow:** edit in Excel → save to `.mock/` → run the `update … dev/main` VS Code
 tasks (`update_files.R`) to populate `src/bin/` → `push-assets` to publish. On another
@@ -65,67 +68,124 @@ machine, `pull-assets` first.
 
 ---
 
-## 3. Cutting a release
+## 3. Versions
 
-Releases are **driven by `CHANGELOG.md`** (date-based versions). To release:
+Versions are **semantic** — `vMAJOR.MINOR.PATCH` — and they exist on `main` only.
 
-1. Add a new dated heading at the top of `CHANGELOG.md`:
+- **MAJOR** — a linelist or setup built by the previous version stops working with the new one.
+- **MINOR** — new capability that stays compatible.
+- **PATCH** — fixes alone.
+
+`v1.2.0` is the baseline: the last 2024 stable build (2024-10-19), republished under
+this scheme. Everything before it lives in `legacy-archive`, which is **kept forever**.
+
+There is no such thing as a dev version. The development build is published
+continuously into one mutable pre-release, `dev-latest`, and a dev build is never cut
+as a numbered pre-release.
+
+---
+
+## 4. Cutting a stable release
+
+Stable releases are **driven by `CHANGELOG.md`**. To release:
+
+1. Rename the top `## [Unreleased]` heading to the version you are shipping:
    ```markdown
-   ## [2026.06.14]
+   ## [2.0.0]
    ### Fixed
    - ...
    ### Added
    - ...
    ```
-   (Same day twice? suffix `## [2026.06.14.1]`.)
+   A trailing date is fine (`## [2.0.0] - 2026-08-14`).
 2. Make sure the asset store has the binaries you want shipped (`push-assets`).
-3. Push `CHANGELOG.md`:
-   - **to `dev`** → cuts `v2026.06.14-dev` (**pre-release**, tagged on the dev commit) and
-     re-points the moving `dev-latest`.
-   - **to `main`** → cuts `v2026.06.14` (**Latest**) with the stable `OBT-main-latest.zip`.
+3. Merge `dev → main` and push `main`.
 
-`release.yml` then: parses the top changelog version + its notes → `pull-assets` →
-`build-release-zip` → creates the GitHub Release (notes = the changelog section,
-asset = `OBT-{branch}-{version}.zip`) → refreshes the releases page.
+`release.yml` then: parses the top semantic version + its notes → `pull-assets` →
+`build-release-zip main <version>` → creates the GitHub Release (notes = the changelog
+section, asset = `OBT-main-<version>.zip`, plus the `OBT-main-latest.zip` alias) →
+refreshes the releases page.
 
 It is **idempotent**: re-pushing the same version does nothing (the release already
-exists); a failed run self-heals the download aliases on the next run.
+exists); a failed run self-heals the download alias on the next run. A push to `main`
+that still says `## [Unreleased]` at the top resolves to the last released version and
+so cuts nothing.
 
 > The shipped zip contains a **designer**, a **setup**, and a **ribbon template**.
 > `main` ships `designer.xlsb`/`setup.xlsb`; `dev` (and `hot-fixes`) ship the `_dev`
 > builds.
+
+### Refreshing the dev build
+
+`dev-latest.yml` rebuilds `OBT-dev-latest.zip` from the asset store and overwrites the
+asset and the notes on the existing `dev-latest` pre-release. It fires when
+`push-assets.sh` publishes binaries, when `CHANGELOG.md` lands on `dev`, and from the
+Actions tab. It never creates a tag or a release of its own — there is only ever the
+one `dev-latest`, and its notes name the commit the build came from.
 
 ### Which file goes where (two separate uploads — don't confuse them)
 
 ```
 push-assets.sh ─▶ working-binaries.tar.gz   (asset store = src/bin + .mock + ribbon templates)
   you, when binaries change                       │
-                                                  │  release.yml pulls + builds from it
+                                                  │  the workflows pull + build from it
                                                   ▼
-release.yml    ─▶ OBT-<branch>-<version>.zip (the release = designer + setup + ribbon)
-  CI, on a CHANGELOG heading              + OBT-main-latest.zip / OBT-dev-latest.zip (stable aliases)
+release.yml     ─▶ OBT-main-<version>.zip   (the release = designer + setup + ribbon)
+  CI, on a CHANGELOG version landing on main   + OBT-main-latest.zip (stable alias)
+dev-latest.yml  ─▶ OBT-dev-latest.zip       (the one dev build, overwritten in place)
 ```
 
 | Upload | By | To which release | Asset(s) |
 |--------|----|------------------|----------|
 | working binaries | **you** — `push-assets.sh` | `working-binaries` (mutable store) | `working-binaries.tar.gz` |
-| a `main` version | **CI** — `release.yml` | `v<version>` (Latest) | `OBT-main-<version>.zip` **+** `OBT-main-latest.zip` |
-| a `dev` version | **CI** — `release.yml` | `v<version>-dev` + `dev-latest` | `OBT-dev-<version>.zip` ; `OBT-dev-latest.zip` |
+| a stable version | **CI** — `release.yml` | `v<version>` (Latest, immutable) | `OBT-main-<version>.zip` **+** `OBT-main-latest.zip` |
+| the dev build | **CI** — `dev-latest.yml` | `dev-latest` (mutable, unversioned) | `OBT-dev-latest.zip` |
 
 A release **reads** the asset store; it never overwrites `working-binaries.tar.gz`.
 
 ---
 
-## 4. Branch & tag model
+## 5. Branch & tag model
 
 | Branch | Stream | Tag | GitHub "Latest"? |
 |--------|--------|-----|------------------|
-| `main` | stable | `vYYYY.MM.DD` | yes (`--latest`) |
-| `dev` (default) | bleeding edge | `vYYYY.MM.DD-dev` + moving `dev-latest` | no (pre-release) |
+| `main` | stable | `vMAJOR.MINOR.PATCH` | yes (`--latest`) |
+| `dev` (default) | bleeding edge | moving `dev-latest`, no version | no (pre-release) |
 | `hot-fixes` | released through the dev stream | — | — |
 
-Stable download URLs used by the README badges:
-- Main: `…/releases/latest/download/OBT-main-latest.zip`
+Every tag on the remote is one of: a `vMAJOR.MINOR.PATCH` release, `dev-latest`,
+`legacy-archive`, or the `working-binaries` store. Anything else is stray and should
+be deleted.
+
+### Why three tags are parked on 2021 commits
+
+GitHub orders the releases page by the **target commit's date** — not by when the
+release was published. Left alone, `legacy-archive` and `working-binaries` (tagged on
+recent commits) floated above the newest version, and a `dev-latest` that chased dev
+HEAD would always outrank the newest stable release.
+
+So the three unversioned releases are parked on early commits, which puts every
+version above them and keeps the newest version on top forever:
+
+| Release | Parked on | Date |
+|---------|-----------|------|
+| `dev-latest` | `1fe00304` | 2021-02-01 |
+| `legacy-archive` | `7313ce70` | 2021-02-01 |
+| `working-binaries` | `e2bb1f46` | 2021-01-28 (initial commit) |
+
+None of the three is a source tag — they are download pointers, and `dev-latest`
+names its real build commit in its release notes. **`dev-latest.yml` must never move
+the `dev-latest` tag**; it overwrites the asset and the notes in place.
+
+The same three also carry an **empty release name**, so GitHub falls back to showing
+the bare tag instead of a bold title, and each body opens with a one-sentence summary.
+Only a version release gets a title, and its title is its tag (`v2.0.0`).
+
+Version tags are the opposite: `v<version>` is always tagged on the real `main` commit
+that produced it, which is what puts a new release at the top of the list.
+
+Stable download URLs used by the README links:
+- Stable: `…/releases/latest/download/OBT-main-latest.zip`
 - Dev:  `…/releases/download/dev-latest/OBT-dev-latest.zip`
 
 **Where workflows must live:** a `push`-triggered workflow runs from the **pushed
@@ -135,37 +195,39 @@ branch's** copy, so `release.yml` must be on **`main`** to cut main releases (me
 
 ---
 
-## 5. The releases page
+## 6. The releases page
 
 `scripts/ci/build-releases.sh` generates `site/releases.qmd` from the **GitHub
-Releases API** (`gh api …/releases`): a Latest section, an "All releases" table,
-per-release changelog notes, and a Legacy-archive table. The `working-binaries` infra
-release and the `dev-latest` pointer are excluded from the listing.
+Releases API** (`gh api …/releases`): a Download table, a Versions table, per-release
+changelog notes, and a Legacy-archive table. Only tags matching
+`v<MAJOR>.<MINOR>.<PATCH>` reach the Versions table, so the `working-binaries` store
+and the `dev-latest` pointer never appear as versions.
 
 `publish.yml` runs it (with `GH_TOKEN`) and publishes the Quarto site to `gh-pages`.
 It triggers on push to `dev`, on release events, and via `workflow_dispatch` (which is
-how `release.yml` refreshes the page after creating a release). Test it offline with
+how `release.yml` and `dev-latest.yml` refresh the page). Test it offline with
 `OUT=/tmp/r.qmd RELEASES_JSON_FILE=fixture.json bash scripts/ci/build-releases.sh`.
 
 ---
 
-## 6. File reference
+## 7. File reference
 
 | Path | Role |
 |------|------|
-| `CHANGELOG.md` | date-based release log; its top heading drives releases |
-| `scripts/release/push-assets.{sh,ps1}` | publish working binaries to the asset store |
+| `CHANGELOG.md` | release log; its top semantic version drives releases |
+| `scripts/release/push-assets.{sh,ps1}` | publish working binaries to the asset store, then refresh `dev-latest` |
 | `scripts/release/pull-assets.{sh,ps1}` | restore working binaries from the asset store |
 | `scripts/release/build-release-zip.sh` | assemble `OBT-{branch}-{version}.zip` |
 | `scripts/release/backfill-legacy.sh` | one-time: upload old `releases/old/*.zip` to `legacy-archive` |
 | `scripts/ci/build-releases.sh` | generate the releases page from the Releases API |
-| `.github/workflows/release.yml` | changelog-driven release (the engine) |
+| `.github/workflows/release.yml` | changelog-driven stable release, `main` only (the engine) |
+| `.github/workflows/dev-latest.yml` | rebuild the one dev pre-release in place |
 | `.github/workflows/publish.yml` | build docs + releases page → gh-pages |
 | `scripts/history-rewrite/` | one-time git history purge tooling (README inside) |
 
 ---
 
-## 7. Maintenance / one-time
+## 8. Maintenance / one-time
 
 - **History rewrite (done):** binaries were purged from all git history via
   `scripts/history-rewrite/` (single `filter-repo` pass over all branches, then
@@ -183,18 +245,19 @@ how `release.yml` refreshes the page after creating a release). Test it offline 
 
 ---
 
-## 8. Quick reference
+## 9. Quick reference
 
 ```sh
 # get the binaries (new machine)
 bash scripts/release/pull-assets.sh
 
 # after editing binaries in Excel + update_files tasks
+# (also refreshes the dev-latest pre-release)
 bash scripts/release/push-assets.sh
 
-# cut a release: add a "## [YYYY.MM.DD]" heading to CHANGELOG.md, then
-git add CHANGELOG.md && git commit -m "Release YYYY.MM.DD" && git push origin dev   # pre-release
-#   ... merge dev -> main and push main for the stable "Latest" release
+# cut a stable release: rename "## [Unreleased]" to "## [2.0.0]" in CHANGELOG.md, then
+git add CHANGELOG.md && git commit -m "Release 2.0.0" && git push origin dev
+git switch main && git merge dev && git push origin main    # this is what cuts v2.0.0
 
 # preview the releases page locally
 OUT=/tmp/r.qmd bash scripts/ci/build-releases.sh && less /tmp/r.qmd

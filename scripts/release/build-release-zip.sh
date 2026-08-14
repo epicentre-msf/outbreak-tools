@@ -13,7 +13,9 @@ cd "$(git rev-parse --show-toplevel)"
 BRANCH="${1:-}"
 VERSION="${2:-}"
 if [ -z "$BRANCH" ] || [ -z "$VERSION" ]; then
-  echo "usage: build-release-zip.sh <main|dev> <version>   (e.g. build-release-zip.sh main 2026.06.14)" >&2
+  echo "usage: build-release-zip.sh <main|dev> <version>" >&2
+  echo "       main ships a semantic version:  build-release-zip.sh main 2.0.0" >&2
+  echo "       dev has no version, only the moving build: build-release-zip.sh dev latest" >&2
   exit 2
 fi
 
