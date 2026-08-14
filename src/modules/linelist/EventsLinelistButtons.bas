@@ -17,6 +17,11 @@ Private Const CRFPREFIX As String = "crf_"
 'of the key, so it is copied here exactly rather than rebuilt.
 Private Const CONTROL_SUFFIX As String = " -- control"
 
+'The translation code the sections list shows for a block of variables the
+'dictionary gave no `main section`. It sits in the forms table beside the two
+'the status column reads, so the whole list speaks one language.
+Private Const EMPTY_SECTION_TAG As String = "LBL_EmptySection"
+
 'The pair the show/hide form is open on: which variables the sheet offers, and
 'the sheet itself. Both are rebuilt each time the form opens.
 '
@@ -694,6 +699,29 @@ End Function
 'The form is opened from the show/hide form and works on the same entry list and
 'the same layout.
 
+'The title one section shows in the list.
+'
+'A run of variables the dictionary left with no `main section` is recorded as a
+'block like any other, so it reaches this list with an empty title. Two thirds
+'of one data entry sheet can be made of them, and a blank first column read as
+'though the status column had grown rows of its own. They are real blocks and
+'they stay hideable, so they are listed under a translated stand-in instead.
+'
+'The tag itself is the fallback, which is what TranslatedValue answers for a
+'code the translation table has no row for. A linelist generated before the row
+'reached the workbook reads "LBL_EmptySection" and still works.
+Private Function SectionDisplayName(ByVal sectionName As String) As String
+    SectionDisplayName = sectionName
+    If LenB(Trim$(sectionName)) > 0 Then Exit Function
+
+    SectionDisplayName = EMPTY_SECTION_TAG
+    If tradsform Is Nothing Then Exit Function
+
+    On Error Resume Next
+    SectionDisplayName = tradsform.TranslatedValue(EMPTY_SECTION_TAG)
+    On Error GoTo 0
+End Function
+
 'Fill the sections list. Two columns: the title, and whether the section is
 'shown or hidden right now. A section holding nothing the user owns is listed
 'and its status is left empty, so a reader can see it is there and that the
@@ -719,7 +747,7 @@ Private Sub PopulateSectionsList(ByVal frm As Object)
     listCtrl.Clear
     For counter = 1 To activeSections.Count
         rowIdx = counter - 1
-        listCtrl.AddItem activeSections.SectionNameAt(counter)
+        listCtrl.AddItem SectionDisplayName(activeSections.SectionNameAt(counter))
 
         On Error Resume Next
         If activeSections.CanChange(counter) Then
