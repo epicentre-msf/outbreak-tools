@@ -72,7 +72,9 @@ End Enum
 '
 '  mandatory  listed, always visible, the user cannot change it.
 '  locked     listed, always hidden, the user cannot change it. A calculated
-'             column on a printed sheet or on a CRF lands here.
+'             column on a printed sheet or on a CRF lands here, and so does an
+'             automatic list: both are named by their CONTROL, never by the
+'             "list auto" column, which is about something else entirely.
 '  free       listed, starts where the dictionary says, follows the user.
 '
 'IsFree is the single question a click handler asks before it changes anything.
@@ -110,7 +112,6 @@ Private Const COL_REGISTER_BOOK As String = "register book"
 Private Const COL_CRF_STATUS As String = "crf status"
 Private Const COL_CRF_INDEX As String = "crf index"
 Private Const COL_COLUMN_INDEX As String = "column index"
-Private Const COL_LIST_AUTO As String = "list auto"
 
 'The one `register book` value that asks for a turned header
 Private Const PRINT_VERTICAL As String = "print, vertical header"
@@ -589,7 +590,6 @@ Public Sub Initialise(ByVal dict As LLdictionary, _
     Dim hasStatus As Boolean
     Dim hasRegisterBook As Boolean
     Dim hasCrfStatus As Boolean
-    Dim hasListAuto As Boolean
     Dim hasSubSection As Boolean
     Dim hasSheetType As Boolean
     Dim hasCrfIndex As Boolean
@@ -618,7 +618,6 @@ Public Sub Initialise(ByVal dict As LLdictionary, _
     hasStatus = dict.ColumnExists(COL_STATUS)
     hasRegisterBook = dict.ColumnExists(COL_REGISTER_BOOK)
     hasCrfStatus = dict.ColumnExists(COL_CRF_STATUS)
-    hasListAuto = dict.ColumnExists(COL_LIST_AUTO)
     hasSubSection = dict.ColumnExists(COL_SUB_SECTION)
     hasSheetType = dict.ColumnExists(COL_SHEET_TYPE)
     hasCrfIndex = dict.ColumnExists(COL_CRF_INDEX)
@@ -695,7 +694,7 @@ Public Sub Initialise(ByVal dict As LLdictionary, _
 
         this.mandatory(count) = IsMandatoryStatus(layerStatus, controlVal, layer)
         this.locked(count) = IsLockedStatus(layerStatus, controlVal, layer, _
-                                            this.mandatory(count), hasListAuto, vars, varName)
+                                            this.mandatory(count))
         this.hidden(count) = InitialHidden(layerStatus)
         this.authoredHidden(count) = this.hidden(count)
 
@@ -855,17 +854,11 @@ End Function
 '@param controlVal String. The control value, lower cased.
 '@param layer Byte. A ShowHideWorksheetLayer value. The layer being built.
 '@param isMandatoryEntry Boolean. Whether the entry is already mandatory.
-'@param hasListAuto Boolean. Whether the dictionary carries `list auto`.
-'@param vars LLVariables. The variable reader.
-'@param varName String. The variable being read.
 '@return Boolean. True when the entry is held hidden.
 Private Function IsLockedStatus(ByVal layerStatus As String, _
                                 ByVal controlVal As String, _
                                 ByVal layer As Byte, _
-                                ByVal isMandatoryEntry As Boolean, _
-                                ByVal hasListAuto As Boolean, _
-                                ByVal vars As LLVariables, _
-                                ByVal varName As String) As Boolean
+                                ByVal isMandatoryEntry As Boolean) As Boolean
     If isMandatoryEntry Then Exit Function
 
     If layerStatus = "always hidden" Then
@@ -875,15 +868,19 @@ Private Function IsLockedStatus(ByVal layerStatus As String, _
 
     If layer <> ShowHideLayerCRF And layer <> ShowHideLayerPrinted Then Exit Function
 
+    'An automatic list is named by its CONTROL, the same way the calculated
+    'controls beside it are. The test used to read the "list auto" DICTIONARY
+    'COLUMN instead, which is a different thing entirely: that column holds
+    '"list_auto_origin", "list_auto_indirect_origin" or nothing, and says which
+    'variables an automatic list is collected FROM. It was compared against
+    '"yes", a value that column has never held, so no automatic list was ever
+    'held hidden here -- and had it matched, it would have hidden the origins
+    'rather than the lists.
     Select Case controlVal
-        Case "formula", "choice_formula", "case_when"
+        Case "formula", "choice_formula", "case_when", "list_auto"
             IsLockedStatus = True
             Exit Function
     End Select
-
-    If hasListAuto Then
-        IsLockedStatus = (Normalise(SafeValue(vars, COL_LIST_AUTO, varName)) = "yes")
-    End If
 End Function
 
 '@label:initial-hidden
