@@ -110,6 +110,42 @@ frm_header <- function(lines) {
   lines[seq_len(last_attribute)]
 }
 
+#' Drop a form-level `Enabled = 0` from the header
+#'
+#' A UserForm whose own Enabled property is False draws itself and answers no
+#' click on any control. Every form here is shown modally, so it takes the modal
+#' loop and gives nothing back: the worksheet behind it is frozen, and no button
+#' on the form -- CMD_Back included -- can dismiss it. It reads as a hung
+#' workbook rather than as a broken form, which is what makes it expensive to
+#' diagnose.
+#'
+#' F_ShowHideSave has carried the flag in `.mock` since it was authored, and a
+#' header copied byte for byte carried it into every linelist built from it. The
+#' mock still wants the property set in its own property window; this is the
+#' belt to that brace, so no build can ship a dead form again whatever a future
+#' re-export picks up.
+#'
+#' The line is dropped rather than flipped, because an absent Enabled is True.
+#' Only the outer `Begin ... End` block is touched: these forms keep their
+#' controls in the .frx blob, so a property line in the header belongs to the
+#' form itself, and stopping at the first `End` keeps that true for a form that
+#' someday spells its controls out.
+enable_form <- function(lines) {
+  block_end <- grep("^End$", lines)
+  if (!length(block_end)) {
+    return(list(lines = lines, dropped = 0L))
+  }
+
+  region <- seq_len(block_end[[1]])
+  dead <- region[grepl("^\\s*Enabled\\s*=\\s*0\\b", lines[region])]
+
+  if (!length(dead)) {
+    return(list(lines = lines, dropped = 0L))
+  }
+
+  list(lines = lines[-dead], dropped = length(dead))
+}
+
 #' The body of a FormLogic module: everything below its own attribute lines
 #'
 #' A standard module exported from the VBE opens with `Attribute VB_Name`.
@@ -144,6 +180,7 @@ write_frm <- function(lines, out_path) {
 merged <- 0L
 copied <- 0L
 skipped <- 0L
+revived <- 0L
 
 frm_files <- dir_ls(forms_dir, glob = "*.frm")
 
@@ -173,7 +210,12 @@ for (frm in frm_files) {
   # name the vector does not carry raises "subscript out of bounds" rather than
   # answering NULL.
   if (!form_name %in% names(form_logic)) {
-    write_frm(readLines(frm, warn = FALSE), out_frm)
+    kept <- enable_form(readLines(frm, warn = FALSE))
+    if (kept$dropped) {
+      revived <- revived + 1L
+      cli_alert_warning("{form_name}: dropped Enabled = 0, it would ship dead")
+    }
+    write_frm(kept$lines, out_frm)
     copied <- copied + 1L
     cli_alert_info("{form_name}: no FormLogic module, kept its own code")
     next
@@ -185,10 +227,15 @@ for (frm in frm_files) {
     cli_abort("{form_name}: {logic_name}.bas is missing from {logic_dir}")
   }
 
-  header <- frm_header(readLines(frm, warn = FALSE))
+  header <- enable_form(frm_header(readLines(frm, warn = FALSE)))
   body <- logic_body(readLines(logic_file, warn = FALSE))
 
-  write_frm(c(header, body), out_frm)
+  if (header$dropped) {
+    revived <- revived + 1L
+    cli_alert_warning("{form_name}: dropped Enabled = 0, it would ship dead")
+  }
+
+  write_frm(c(header$lines, body), out_frm)
 
   merged <- merged + 1L
   cli_alert_success("{form_name}: {logic_name} merged ({length(body)} lines)")
@@ -210,6 +257,14 @@ cli_rule()
 cli_alert_success(
   "{merged} merged, {copied} kept own code, {skipped} skipped -> {out_dir}"
 )
+
+# Said out loud rather than counted quietly: the flag belongs in the mock's
+# property window, and this line is the reminder that it is still set there.
+if (revived) {
+  cli_alert_warning(
+    "{revived} form(s) had Enabled = 0 dropped. Set the property to True in the mock as well, or the next export brings it back."
+  )
+}
 
 # A form named in the mapping but absent from .mock is worth a word: the
 # linelist build asks for each of them by name and a missing one ships a
