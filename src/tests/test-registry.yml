@@ -1124,14 +1124,22 @@ suites:
   #
   # LLExporter and LLImporter type all three, so the dataio folder unblocks on
   # these rows.
+  # SectionShowHide joined on 2026-08-14. It binds the three above to
+  # SectionMap so the section button and the sections form act on a section the
+  # same way. SectionMap is registered under `sections`, which comes before this
+  # block, so the closure is whole. The suite calls PrepareDictionaryFixture,
+  # registered under helpers.
   - folder: showhide
     classes:
       - name: ShowHide
       - name: ShowHideLayout
       - name: ShowHideStore
+      - name: SectionShowHide
     tests:
       - module: TestShowHide
         covers: [ShowHide, ShowHideLayout, ShowHideStore]
+      - module: TestSectionShowHide
+        covers: [SectionShowHide]
 
   # --- dataio ---------------------------------------------------------------
   # Registered on 2026-08-02. Every class of the folder had never been compiled
