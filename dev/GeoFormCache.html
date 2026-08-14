@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GeoFormCache - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>GeoFormCache</h1>
+<p>Holds the four lists the geo form searches: the concatenated admin places,
+the concatenated health facilities, and the two historic lists. Each list is
+read from its workbook name on the first ask and held, so a keystroke in a
+search box of F_Geo scans memory. The concat lists are sorted once at that
+first read, so the hits of a search arrive in order with no sort per
+keystroke.</p>
+<details open class="doc-section" id="the-default-instance-carries-the-shared-cache">
+<summary>THE DEFAULT INSTANCE CARRIES THE SHARED CACHE</summary>
+<div class="section-body">
+<p>GeoModule.LoadGeo calls LoadFrom on the default instance on every form open,
+and FormLogicGeo reads the same instance on every search. LoadFrom drops the
+held lists, so each open reads each list at most once, and an open after a
+geobase import shows the new places. Create answers a separate instance for a
+caller that wants its own, which is what the tests build.</p>
+</div>
+</details>
+<details open class="doc-section" id="after-a-state-reset-the-cache-answers-empty-lists">
+<summary>AFTER A STATE RESET THE CACHE ANSWERS EMPTY LISTS</summary>
+<div class="section-body">
+<p>Instance state dies on any unhandled error and any edit to the project, and
+the form outlives both. A read in that state answers an empty list, so a
+search shows nothing and raises nothing; the next LoadGeo fills the cache
+again. A read whose workbook name is missing raises, because that is a broken
+workbook the user has to hear about, and the callers that load the form hold
+a handler for it.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-answered-lists-are-held-so-treat-them-as-read-only">
+<summary>THE ANSWERED LISTS ARE HELD, SO TREAT THEM AS READ ONLY</summary>
+<div class="section-body">
+<p>ConcatList and HistoricList answer the held BetterArray itself. A copy per
+ask would pay the length of the geobase on every keystroke. A caller that
+wants to reorder or grow the answer builds its own copy.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a></p>
+</div>
+</details>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
+<p><strong>Create a new GeoFormCache over one workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal sourceBook As Workbook) As GeoFormCache
+</code></pre>
+<p>Factory method that answers a separate instance loaded from the given
+workbook. Called on the predeclared instance. The shared cache the form
+reads is the predeclared instance itself, filled through LoadFrom.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceBook</code>: Workbook. The workbook whose names are read.</li>
+</ul>
+<p><strong>Returns:</strong> GeoFormCache. A loaded instance.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the workbook is Nothing.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-loading">Loading</h2>
+<h3 id="int-loadfrom">LoadFrom <a class="anchor-link" href="#int-loadfrom">#</a></h3>
+<p><em>load-from</em></p>
+<p><strong>Point the cache at a workbook and drop the held lists</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub LoadFrom(ByVal sourceBook As Workbook)
+</code></pre>
+<p>Records the workbook and empties the cache, so the next ask of each list
+reads it fresh. LoadGeo calls this once per form open, which is what keeps
+the form current after a geobase import.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceBook</code>: Workbook. The workbook whose names are read.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the workbook is Nothing.</li>
+</ul>
+<hr />
+<h3 id="int-refresh">Refresh <a class="anchor-link" href="#int-refresh">#</a></h3>
+<p><em>refresh</em></p>
+<p><strong>Drop the held lists and keep the workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Refresh()
+</code></pre>
+<p>The next ask of each list reads it fresh from its workbook name.</p>
+<hr />
+<h3 id="int-clear">Clear <a class="anchor-link" href="#int-clear">#</a></h3>
+<p><em>clear</em></p>
+<p><strong>Drop the held lists and the workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Clear()
+</code></pre>
+<p>Puts the cache back in its unloaded state, where every ask answers an empty
+list.</p>
+<hr />
+<h2 id="int-reading">Reading</h2>
+<h3 id="int-concatlist">ConcatList <a class="anchor-link" href="#int-concatlist">#</a></h3>
+<p><em>concat-list</em></p>
+<p><strong>The concatenated places of one scope, sorted</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ConcatList(ByVal scope As Byte) As BetterArray
+</code></pre>
+<p>The admin scope reads &quot;adm4_concat&quot; and the facility scope reads &quot;hf_concat&quot;.
+The list is read and sorted on the first ask and held until LoadFrom,
+Refresh or Clear drops it. An unloaded cache answers an empty list.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scope</code>: Byte. GeoScopeAdmin (0) or GeoScopeHF (1).</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The held list. Treat it as read only.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the scope is unknown.</li>
+</ul>
+<hr />
+<h3 id="int-historiclist">HistoricList <a class="anchor-link" href="#int-historiclist">#</a></h3>
+<p><em>historic-list</em></p>
+<p><strong>The historic places of one scope, in table order</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function HistoricList(ByVal scope As Byte) As BetterArray
+</code></pre>
+<p>The admin scope reads &quot;histo_geo&quot; and the facility scope reads &quot;histo_hf&quot;.
+The historic table shows in the order its rows hold, which is the order the
+user validated places in, so this list is held unsorted.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scope</code>: Byte. GeoScopeAdmin (0) or GeoScopeHF (1).</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The held list. Treat it as read only.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the scope is unknown.</li>
+</ul>
+<hr />
+<h2 id="int-implementation">Implementation</h2>
+<h3 id="int-readlist">ReadList <a class="anchor-link" href="#int-readlist">#</a></h3>
+<p><strong>Read one list from its workbook name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ReadList(ByVal rangeName As String, _
+                          ByVal sorted As Boolean) As BetterArray
+</code></pre>
+<p>One crossing per list per load. An unloaded cache answers an empty list; a
+loaded cache whose name is missing lets the resolve raise.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rangeName</code>: String. The workbook scoped name to read.</li>
+<li><code>sorted</code>: Boolean. True to sort the list after the read.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The list read, or an empty one with no workbook held.</p>
+<hr />
+<h3 id="int-guardscope">GuardScope <a class="anchor-link" href="#int-guardscope">#</a></h3>
+<p><strong>Refuse a scope outside the two the form knows</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardScope(ByVal scope As Byte)
+</code></pre>
+<p>GeoScopeBoth exists on the enum and has no list in the form, so an unknown
+scope raises here. An unknown scope used to mean facility in silence
+elsewhere in the geo code, and this class refuses it the way the module now
+does.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scope</code>: Byte. The scope asked for.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the scope is unknown.</li>
+</ul>
+<hr />
+<h2 id="int-error-handling">Error Handling</h2>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
+</code></pre>
+<p>Wrapper around Err.Raise that standardises the source to CLASS_NAME.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. The ProjectError error code to raise.</li>
+<li><code>message</code>: String. Human-readable description of the failure.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (4 file(s))</summary>
+<ul>
+<li><a href="Linelist.html">Linelist.cls</a></li>
+<li>GeoModule.bas</li>
+<li>FormLogicGeo.bas</li>
+<li>TestGeoFormCache.bas</li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

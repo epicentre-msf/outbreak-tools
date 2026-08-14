@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SectionShowHide - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>SectionShowHide</h1>
+<p>One section of one worksheet, hidden or shown. The three pieces it needs are
+already classes: SectionMap says where each section starts and ends, ShowHide
+holds the choice for every variable, and ShowHideLayout writes the sheet. This
+binds the three so the section button and the section form share one body.</p>
+<details open class="doc-section" id="where-the-user-has-to-stand">
+<summary>WHERE THE USER HAS TO STAND</summary>
+<div class="section-body">
+<p>A section title is written on one line of the sheet and nowhere else:</p>
+<p>HList   row 5
+VList   column 2</p>
+<p>SectionBuilder writes them there and the two numbers are copied here from it.
+SectionAtCell answers a block only for a cell on that line, so a click made
+from a data row changes nothing.</p>
+</div>
+</details>
+<details open class="doc-section" id="why-the-state-is-read-and-never-stored">
+<summary>WHY THE STATE IS READ AND NEVER STORED</summary>
+<div class="section-body">
+<p>Hiding a section stores nothing of its own. The choice lands on each variable
+inside it, and State reads those variables back. So a section a user collapsed
+through the form, through the button, or by hiding its columns one at a time
+all read the same, and nothing can drift out of step.</p>
+<p>A section holding no variable the user owns answers Fixed, and CanChange is
+False for it. Offering an action that does nothing is worse than refusing it.</p>
+<p><strong>Depends on:</strong> <a href="SectionMap.html">SectionMap</a>, <a href="ShowHide.html">ShowHide</a>, <a href="ShowHideLayout.html">ShowHideLayout</a>, The line the section titles are written on. Both numbers are SectionBuilder's, (HLIST_SEC_ROW and VLIST_SEC_COL) and mean nothing without it.</p>
+<p><strong>Version:</strong> 1.0 (2026-08-14)</p>
+</div>
+</details>
+<details open class="doc-section" id="instantiation">
+<summary>Instantiation</summary>
+<div class="section-body">
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
+<p><strong>Bind a section toggle to one worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal secMap As SectionMap, _
+                       ByVal entries As ShowHide, _
+                       ByVal layout As ShowHideLayout) As SectionShowHide
+</code></pre>
+<p>The factory.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>secMap</code>: SectionMap. The sections of the sheet.</li>
+<li><code>entries</code>: ShowHide. The variables of the sheet and their choices.</li>
+<li><code>layout</code>: ShowHideLayout. The sheet the choices are written to.</li>
+</ul>
+<p><strong>Returns:</strong> SectionShowHide. The toggle, ready to read and write.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When any of the three is Nothing.</li>
+</ul>
+<hr />
+<h3 id="bind">Bind <a class="anchor-link" href="#bind">#</a></h3>
+<p><em>bind</em></p>
+<p><strong>Take the three pieces the toggle works with</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Bind(ByVal secMap As SectionMap, _
+                ByVal entries As ShowHide, _
+                ByVal layout As ShowHideLayout)
+</code></pre>
+<p>Public because the factory calls it on a fresh instance.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>secMap</code>: SectionMap. The sections of the sheet.</li>
+<li><code>entries</code>: ShowHide. The variables of the sheet and their choices.</li>
+<li><code>layout</code>: ShowHideLayout. The sheet the choices are written to.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="accessors">
+<summary>Accessors</summary>
+<div class="section-body">
+<h3 id="count">Count <a class="anchor-link" href="#count">#</a></h3>
+<p><em>count</em></p>
+<p><strong>How many sections the sheet carries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Count() As Long
+</code></pre>
+<p>What the toggle is bound to.</p>
+<hr />
+<h3 id="wksh">Wksh <a class="anchor-link" href="#wksh">#</a></h3>
+<p><em>wksh</em></p>
+<p><strong>The worksheet the toggle writes to</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet
+</code></pre>
+<hr />
+<h3 id="sectionnameat">SectionNameAt <a class="anchor-link" href="#sectionnameat">#</a></h3>
+<p><em>section-name-at</em></p>
+<p><strong>The title of one section</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function SectionNameAt(ByVal index As Long) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based section index.</li>
+</ul>
+<p><strong>Returns:</strong> String. The title SectionBuilder wrote.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="where-the-user-is-standing">
+<summary>Where the user is standing</summary>
+<div class="section-body">
+<h3 id="titleline">TitleLine <a class="anchor-link" href="#titleline">#</a></h3>
+<p><em>title-line</em></p>
+<p><strong>The row or column the section titles are written on</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TitleLine() As Long
+</code></pre>
+<p>Turning a selected cell into a section.</p>
+<p>A row number on an HList sheet and a column number on a VList one, which is
+the same split ShowHideLayout makes for the hiding axis itself.</p>
+<p><strong>Returns:</strong> Long. The line the titles sit on.</p>
+<hr />
+<h3 id="sectionatcell">SectionAtCell <a class="anchor-link" href="#sectionatcell">#</a></h3>
+<p><em>section-at-cell</em></p>
+<p><strong>The section one selected cell stands on</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function SectionAtCell(ByVal cellRng As Range) As Long
+</code></pre>
+<p>The answer is a section only when the cell sits on the title line. A cell in a
+data row belongs to a section too, and reading it as one is what let a second
+press of the button collapse a section the user never pointed at: hiding the
+columns of a section moves the cursor onto the next visible column, and that
+column is inside the next section.</p>
+<p>A multi-cell selection is read from its first cell.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellRng</code>: Range. What the user has selected.</li>
+</ul>
+<p><strong>Returns:</strong> Long. A one based section index, or 0 when the cell names no section.</p>
+<hr />
+<h3 id="titlecell">TitleCell <a class="anchor-link" href="#titlecell">#</a></h3>
+<p><em>title-cell</em></p>
+<p><strong>The cell holding the title of one section</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function TitleCell(ByVal index As Long) As Range
+</code></pre>
+<p>Where the caller puts the cursor once a section is shown again, so the next
+press of the button acts on the section the user is looking at.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based section index.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The title cell, or Nothing when the index names no section.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="reading-and-writing-one-section">
+<summary>Reading and writing one section</summary>
+<div class="section-body">
+<h3 id="state">State <a class="anchor-link" href="#state">#</a></h3>
+<p><em>state</em></p>
+<p><strong>Where one section stands</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function State(ByVal index As Long) As Byte
+</code></pre>
+<p>The state of a section, and changing it.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based section index.</li>
+</ul>
+<p><strong>Returns:</strong> Byte. A ShowHideRangeState value.</p>
+<hr />
+<h3 id="ishidden">IsHidden <a class="anchor-link" href="#ishidden">#</a></h3>
+<p><em>is-hidden</em></p>
+<p><strong>Whether one section is hidden right now</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function IsHidden(ByVal index As Long) As Boolean
+</code></pre>
+<p>A section is hidden when every variable the user owns inside it is hidden. A
+section showing some of its variables answers False, so the next action offered
+for it is to hide the rest.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based section index.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the section is collapsed.</p>
+<hr />
+<h3 id="canchange">CanChange <a class="anchor-link" href="#canchange">#</a></h3>
+<p><em>can-change</em></p>
+<p><strong>Whether the user may hide or show one section</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function CanChange(ByVal index As Long) As Boolean
+</code></pre>
+<p>False for a section holding no variable the user owns, and for an index outside
+the map. Both are sections the toggle would leave exactly as it found them.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based section index.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the section follows the user.</p>
+<hr />
+<h3 id="sethidden">SetHidden <a class="anchor-link" href="#sethidden">#</a></h3>
+<p><em>set-hidden</em></p>
+<p><strong>Hide or show one whole section</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function SetHidden(ByVal index As Long, ByVal hidden As Boolean) As Long
+</code></pre>
+<p>The choice lands on every variable of the section the user owns, and the sheet
+is then put in step through the layout. A mandatory or a locked variable keeps
+its state, so a section holding one never disappears whole.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based section index.</li>
+<li><code>hidden</code>: Boolean. True to collapse the section.</li>
+</ul>
+<p><strong>Returns:</strong> Long. How many variables the call changed.</p>
+<hr />
+<h3 id="setallhidden">SetAllHidden <a class="anchor-link" href="#setallhidden">#</a></h3>
+<p><em>set-all-hidden</em></p>
+<p><strong>Hide or show every section of the sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function SetAllHidden(ByVal hidden As Boolean) As Long
+</code></pre>
+<p>One pass over the map and one pass over the sheet. The section form's two
+option buttons reach it when no single section is picked.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hidden</code>: Boolean. True to collapse them all.</li>
+</ul>
+<p><strong>Returns:</strong> Long. How many variables the call changed.</p>
+<hr />
+</div>
+</details>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-helpers">Helpers</h2>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
+<p><strong>Raise a project error naming this class</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
+</code></pre>
+<p>Private workers.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: ProjectError. The error to raise.</li>
+<li><code>message</code>: String. What went wrong.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (3 file(s))</summary>
+<ul>
+<li><a href="Linelist.html">Linelist.cls</a></li>
+<li>EventsLinelistButtons.bas</li>
+<li>TestSectionShowHide.bas</li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

@@ -11,13 +11,41 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>SetupErrors</h1>
-<p>Analyses setup sheets and publishes consistency reports. Validates the
-dictionary for duplicate variables, missing labels, unknown controls,
-and formula correctness; inspects choices for unused entries and missing
-labels; audits exports for missing metadata and dictionary alignment;
-and reviews translations for missing or duplicate labels. Results are
-collected as IChecking objects and published to the __checkRep reporting
-worksheet via CheckingOutput.</p>
+<p>Checks the setup sheets and publishes a report of what it finds. Create binds
+the workbook, Initialise sets the run up, Run walks every check, and Checkings
+answers the entries. The dictionary is checked for duplicate variables,
+missing labels, unknown controls and formulas that fail to parse; the choices
+for unused entries and missing labels; the exports for missing metadata and
+for variables the dictionary has none of; and the translations for missing and
+duplicate labels. Entries are collected as Checking objects and printed to the
+__checkRep worksheet through CheckingOutput.</p>
+<details open class="doc-section" id="the-checks-follow-the-builder">
+<summary>THE CHECKS FOLLOW THE BUILDER</summary>
+<div class="section-body">
+<p>Every check here answers what the linelist build will do with the same setup
+sheet. Three rules are copied from the class that builds them: a file-name
+template is parsed the way LLExport.ResolveTemplateChunk parses it, a formula
+is explained in the context it was validated in, and a choice name is matched
+without regard to case, the way LLChoices.Categories matches it at build time.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-sheets-are-tidied-first">
+<summary>THE SHEETS ARE TIDIED FIRST</summary>
+<div class="section-body">
+<p>Each checker sorts and resizes the sheet it is about to read, so every check
+below reads a sheet already in shape. The column arrays CheckDictionary works
+from are therefore read AFTER the sort and the resize: the tidy-up moves rows,
+and an array taken before it points at rows that have moved.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-report-sheet-is-writable">
+<summary>THE REPORT SHEET IS WRITABLE</summary>
+<div class="section-body">
+<p>__checkRep sits outside the hidden list and outside the protection list, and
+Passwords returns early for it by name. PrintReport clears it and writes to it
+directly, which is what the setup ribbon's check button reaches.</p>
+</div>
+</details>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -26,31 +54,42 @@ worksheet via CheckingOutput.</p>
 <p><strong>Create and initialise a setup checker instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook, _
-                       Optional ByVal passwordService As IPasswords, _
-                       Optional ByVal dictionary As ILLdictionary, _
-                       Optional ByVal choices As ILLChoices, _
-                       Optional ByVal formulaStore As IFormulaData, _
-                       Optional ByVal transManager As ISetupTranslationsTable, _
-                       Optional ByVal stateScope As IApplicationState) As ISetupErrors
+                       Optional ByVal passwordService As Passwords, _
+                       Optional ByVal dictionary As LLdictionary, _
+                       Optional ByVal choices As LLChoices, _
+                       Optional ByVal formulaStore As FormulaData, _
+                       Optional ByVal transManager As SetupTranslationsTable, _
+                       Optional ByVal stateScope As ApplicationState) As SetupErrors
 </code></pre>
 <p>Factory method on the predeclared instance. Creates a new SetupErrors,
 calls Initialise with the supplied workbook and optional collaborators,
-then returns the instance through the ISetupErrors interface.</p>
+seals it, then returns the newly built instance.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>hostBook</code>: Workbook. The workbook containing setup data.</li>
-<li><code>passwordService</code>: Optional IPasswords. Sheet protection handler.</li>
-<li><code>dictionary</code>: Optional ILLdictionary. Dictionary data accessor.</li>
-<li><code>choices</code>: Optional ILLChoices. Choices data accessor.</li>
-<li><code>formulaStore</code>: Optional IFormulaData. Formula validation handler.</li>
-<li><code>transManager</code>: Optional ISetupTranslationsTable. Translations table accessor.</li>
-<li><code>stateScope</code>: Optional IApplicationState. Application state guard.</li>
+<li><code>passwordService</code>: Optional Passwords. Sheet protection handler.</li>
+<li><code>dictionary</code>: Optional LLdictionary. Dictionary data accessor.</li>
+<li><code>choices</code>: Optional LLChoices. Choices data accessor.</li>
+<li><code>formulaStore</code>: Optional FormulaData. Formula validation handler.</li>
+<li><code>transManager</code>: Optional SetupTranslationsTable. Translations table accessor.</li>
+<li><code>stateScope</code>: Optional ApplicationState. Application state guard.</li>
 </ul>
-<p><strong>Returns:</strong> ISetupErrors. A fully initialised instance ready to run checks.</p>
+<p><strong>Returns:</strong> SetupErrors. A fully initialised instance ready to run checks.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When hostBook is Nothing.</li>
 </ul>
+<hr />
+<h3 id="seal">Seal <a class="anchor-link" href="#seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Close the instance against a second Initialise</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<p>Called by the factory. A holder that could call Initialise again could swap
+the workbook between Run and Checkings and read results that belong to
+another file. LLdictionary, LLChoices, Passwords, TableSpecs, Checking,
+CustomTable, ChoiceFormula and DropdownLists all carry the same guard.</p>
 <hr />
 </div>
 </details>
@@ -62,29 +101,30 @@ then returns the instance through the ISetupErrors interface.</p>
 <p><strong>Bind the checker to a workbook and optional collaborators</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Initialise(ByVal hostBook As Workbook, _
-                      Optional ByVal passwordService As IPasswords, _
-                      Optional ByVal dictionary As ILLdictionary, _
-                      Optional ByVal choices As ILLChoices, _
-                      Optional ByVal formulaStore As IFormulaData, _
-                      Optional ByVal transManager As ISetupTranslationsTable, _
-                      Optional ByVal stateScope As IApplicationState)
+                      Optional ByVal passwordService As Passwords, _
+                      Optional ByVal dictionary As LLdictionary, _
+                      Optional ByVal choices As LLChoices, _
+                      Optional ByVal formulaStore As FormulaData, _
+                      Optional ByVal transManager As SetupTranslationsTable, _
+                      Optional ByVal stateScope As ApplicationState)
 </code></pre>
 <p>Validates the workbook reference, stores it along with optional
 collaborators, then calls ConfigureDependencies to create any missing
-default instances and EnsureCheckContainer to prepare the results array.</p>
+default instances and ResetCheckContainer to prepare the results array.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>hostBook</code>: Workbook. The workbook containing setup tables.</li>
-<li><code>passwordService</code>: Optional IPasswords. Sheet protection handler.</li>
-<li><code>dictionary</code>: Optional ILLdictionary. Dictionary data accessor.</li>
-<li><code>choices</code>: Optional ILLChoices. Choices data accessor.</li>
-<li><code>formulaStore</code>: Optional IFormulaData. Formula validation handler.</li>
-<li><code>transManager</code>: Optional ISetupTranslationsTable. Translations table accessor.</li>
-<li><code>stateScope</code>: Optional IApplicationState. Application state guard.</li>
+<li><code>passwordService</code>: Optional Passwords. Sheet protection handler.</li>
+<li><code>dictionary</code>: Optional LLdictionary. Dictionary data accessor.</li>
+<li><code>choices</code>: Optional LLChoices. Choices data accessor.</li>
+<li><code>formulaStore</code>: Optional FormulaData. Formula validation handler.</li>
+<li><code>transManager</code>: Optional SetupTranslationsTable. Translations table accessor.</li>
+<li><code>stateScope</code>: Optional ApplicationState. Application state guard.</li>
 </ul>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When hostBook is Nothing.</li>
+<li>ProjectError.SomethingWentWrong When the instance is sealed.</li>
 </ul>
 <hr />
 </div>
@@ -100,9 +140,14 @@ default instances and EnsureCheckContainer to prepare the results array.</p>
 </code></pre>
 <p>Suspends Excel UI via EnterBusyState, resets the check container, then
 runs each checker in sequence: CheckDictionary, CheckChoice, CheckExports,
-CheckTranslations. On completion, publishes all collected IChecking objects
-to the reporting worksheet via PrintReport. Restores Excel state even when
-an error occurs during the checking run.</p>
+CheckAnalysis, CheckTranslations. On completion, publishes all collected
+Checking objects to the reporting worksheet via PrintReport. Restores Excel
+state even when an error occurs during the checking run.
+The handler is armed above EnterBusyState. ApplicationState.ApplyBusyState
+switches ScreenUpdating and DisplayAlerts off as its first two statements and
+raises afterwards if a later assignment fails, so a raise in there has to
+reach LeaveBusyState. Otherwise the user is left in an Excel session that no
+longer repaints.</p>
 <hr />
 </div>
 </details>
@@ -115,23 +160,17 @@ an error occurs during the checking run.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Checkings() As BetterArray
 </code></pre>
-<p>Returns a BetterArray containing the IChecking instances produced by the
-most recent Run call. Raises when the checker has not been initialised.</p>
-<p><strong>Returns:</strong> BetterArray. The generated IChecking instances.</p>
+<p>Returns a clone of the BetterArray holding the Checking instances produced
+by the most recent Run call, so a caller that clears it leaves this object's
+own results alone. Formulas.Varlists and LLChoices.Categories answer the
+same way. Raises when the checker has not been initialised.</p>
+<p><strong>Returns:</strong> BetterArray. A copy of the generated Checking instances.</p>
 <hr />
 </div>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-helper-workflow">Helper workflow</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ISetupErrors
-</code></pre>
-<p><strong>Returns:</strong> ISetupErrors. The current instance cast to the interface.</p>
-<hr />
 <h3 id="int-ensureinitialised">EnsureInitialised <a class="anchor-link" href="#int-ensureinitialised">#</a></h3>
 <p><em>ensure-initialised</em></p>
 <p><strong>Ensure the checker has been initialised</strong></p>
@@ -143,6 +182,21 @@ most recent Run call. Raises when the checker has not been initialised.</p>
 <li>ProjectError.ObjectNotInitialized When the workbook reference is Nothing.</li>
 </ul>
 <hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Reject a second Initialise on a sealed instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. Name of the routine being guarded.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.SomethingWentWrong When the instance is sealed.</li>
+</ul>
+<hr />
 <h3 id="int-configuredependencies">ConfigureDependencies <a class="anchor-link" href="#int-configuredependencies">#</a></h3>
 <p><em>configure-dependencies</em></p>
 <p><strong>Prepare collaborators when not provided</strong></p>
@@ -150,20 +204,13 @@ most recent Run call. Raises when the checker has not been initialised.</p>
 <pre><code class="language-vb">Private Sub ConfigureDependencies()
 </code></pre>
 <p>Creates default instances for any optional collaborator that was not
-supplied during Initialise: resolves the formula sheet, creates
-Passwords, LLdictionary, LLChoices, FormulaData, and
-SetupTranslationsTable instances from the host workbook.</p>
-<hr />
-<h3 id="int-ensurecheckcontainer">EnsureCheckContainer <a class="anchor-link" href="#int-ensurecheckcontainer">#</a></h3>
-<p><em>ensure-check-container</em></p>
-<p><strong>Ensure the internal container for checkings exists</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureCheckContainer()
-</code></pre>
+supplied during Initialise: Passwords, LLdictionary, LLChoices, FormulaData
+and SetupTranslationsTable. The __formula worksheet is resolved once, and
+only when the formula store has to be built.</p>
 <hr />
 <h3 id="int-resetcheckcontainer">ResetCheckContainer <a class="anchor-link" href="#int-resetcheckcontainer">#</a></h3>
 <p><em>reset-check-container</em></p>
-<p><strong>Reset the container prior to running checks</strong></p>
+<p><strong>Ensure the container for checkings exists and is empty</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetCheckContainer()
 </code></pre>
@@ -172,9 +219,9 @@ SetupTranslationsTable instances from the host workbook.</p>
 <p><em>application-scope</em></p>
 <p><strong>Retrieve or create the application state scope</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ApplicationScope() As IApplicationState
+<pre><code class="language-vb">Private Function ApplicationScope() As ApplicationState
 </code></pre>
-<p><strong>Returns:</strong> IApplicationState. The cached or newly created scope.</p>
+<p><strong>Returns:</strong> ApplicationState. The cached or newly created scope.</p>
 <hr />
 <h3 id="int-enterbusystate">EnterBusyState <a class="anchor-link" href="#int-enterbusystate">#</a></h3>
 <p><em>enter-busy-state</em></p>
@@ -182,6 +229,10 @@ SetupTranslationsTable instances from the host workbook.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnterBusyState()
 </code></pre>
+<p>A scope that is already busy belongs to the caller who made it busy, so this
+object leaves it alone and LeaveBusyState will not restore it. The ownership
+flag is written BEFORE ApplyBusyState, because a failure inside that call
+still leaves settings to put back.</p>
 <hr />
 <h3 id="int-leavebusystate">LeaveBusyState <a class="anchor-link" href="#int-leavebusystate">#</a></h3>
 <p><em>leave-busy-state</em></p>
@@ -189,6 +240,10 @@ SetupTranslationsTable instances from the host workbook.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LeaveBusyState(Optional ByVal silent As Boolean = False)
 </code></pre>
+<p>Restores only when this object was the one that entered the busy state.
+ApplicationState.Restore puts the whole snapshot back and clears IsBusy every
+time it runs, so restoring a scope handed in by a caller would drop that
+caller's own busy block in the middle of its work.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>silent</code>: Optional Boolean. When True, suppresses errors during restore. Defaults to False.</li>
@@ -225,6 +280,161 @@ SetupTranslationsTable instances from the host workbook.</p>
 <li>ProjectError.ObjectNotInitialized When hostBook is Nothing.</li>
 </ul>
 <hr />
+<h2 id="int-column-readers">Column readers</h2>
+<h3 id="int-celltext">CellText <a class="anchor-link" href="#int-celltext">#</a></h3>
+<p><em>cell-text</em></p>
+<p><strong>Read one cell value as text</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CellText(ByVal cellValue As Variant) As String
+</code></pre>
+<p>A cell holding an error value raises on CStr, and so does a Null. Every read
+in this class goes through here.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellValue</code>: Variant. The raw cell value.</li>
+</ul>
+<p><strong>Returns:</strong> String. The text, or an empty string when there is none.</p>
+<hr />
+<h3 id="int-columntext">ColumnText <a class="anchor-link" href="#int-columntext">#</a></h3>
+<p><em>column-text</em></p>
+<p><strong>Read a one-column Range into a 1-based array of text</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnText(ByVal columnRng As Range, ByVal rowCount As Long) As Variant
+</code></pre>
+<p>A missing column answers an array of empty strings of the requested length,
+so the loop that reads it can index it freely. One worksheet read replaces
+one read per row.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>columnRng</code>: Range. The column to read, or Nothing.</li>
+<li><code>rowCount</code>: Long. Number of rows the caller walks.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. A String array indexed 1 to rowCount.</p>
+<hr />
+<h3 id="int-readtablecolumn">ReadTableColumn <a class="anchor-link" href="#int-readtablecolumn">#</a></h3>
+<p><em>read-table-column</em></p>
+<p><strong>Read one named column of a table into an array</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ReadTableColumn(ByVal tabl As CustomTable, _
+                                 ByVal colName As String, _
+                                 ByVal rowCount As Long, _
+                                 ByRef found As Boolean) As Variant
+</code></pre>
+<p>The lookup is strict, so a request for &quot;Control&quot; can never answer with
+&quot;Control Details&quot; and a request for &quot;Export 1&quot; can never answer with
+&quot;Export 10&quot;.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tabl</code>: CustomTable. The table to read.</li>
+<li><code>colName</code>: String. The exact column header.</li>
+<li><code>rowCount</code>: Long. Number of rows the caller walks.</li>
+<li><code>found</code>: Boolean. Set to True when the column exists.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. A String array indexed 1 to rowCount.</p>
+<hr />
+<h3 id="int-buildindex">BuildIndex <a class="anchor-link" href="#int-buildindex">#</a></h3>
+<p><em>build-index</em></p>
+<p><strong>Build a delimited lookup index from a list of names</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildIndex(ByVal values As BetterArray) As String
+</code></pre>
+<p>The separator sits on both sides of every entry, so InStr on
+separator &amp; name &amp; separator can never match part of a longer name. This
+replaces a linear scan that copied a whole BetterArray on each call.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>values</code>: BetterArray. The names to index.</li>
+</ul>
+<p><strong>Returns:</strong> String. The delimited index.</p>
+<hr />
+<h3 id="int-indexholds">IndexHolds <a class="anchor-link" href="#int-indexholds">#</a></h3>
+<p><em>index-holds</em></p>
+<p><strong>Test whether a delimited index holds one name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IndexHolds(ByVal indexValue As String, ByVal nameValue As String) As Boolean
+</code></pre>
+<p>The comparison ignores case, because LLChoices.Categories reads the Choices
+sheet with AutoFilter criteria and those ignore case. The build therefore
+finds a list whose name differs only in case, and the checker follows it.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>indexValue</code>: String. A delimited index built by BuildIndex.</li>
+<li><code>name</code>: String. The name to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the name is in the index.</p>
+<hr />
+<h3 id="int-countnames">CountNames <a class="anchor-link" href="#int-countnames">#</a></h3>
+<p><em>count-names</em></p>
+<p><strong>Count how many times each name appears</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CountNames(ByVal values As Variant, ByVal rowCount As Long) As Collection
+</code></pre>
+<p>One pass over the array replaces one WorksheetFunction.CountIf per row, each
+of which scanned the whole column inside Excel. A Collection matches its keys
+without regard to case, which is how CountIf compared too.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>values</code>: Variant. A 1-based array of names.</li>
+<li><code>rowCount</code>: Long. Number of entries to read.</li>
+</ul>
+<p><strong>Returns:</strong> Collection. Counts keyed by name.</p>
+<hr />
+<h3 id="int-namecount">NameCount <a class="anchor-link" href="#int-namecount">#</a></h3>
+<p><em>name-count</em></p>
+<p><strong>Read one count out of the counts built by CountNames</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NameCount(ByVal counts As Collection, ByVal nameValue As String) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>counts</code>: Collection. Counts keyed by name.</li>
+<li><code>name</code>: String. The name to read.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The number of rows holding that name.</p>
+<hr />
+<h3 id="int-knowncontrol">KnownControl <a class="anchor-link" href="#int-knowncontrol">#</a></h3>
+<p><em>known-control</em></p>
+<p><strong>Test whether a control name is one this build understands</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function KnownControl(ByVal controlValue As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>controlValue</code>: String. The control read from the dictionary.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True for one of the ten known controls.</p>
+<hr />
+<h3 id="int-containsignoringcase">ContainsIgnoringCase <a class="anchor-link" href="#int-containsignoringcase">#</a></h3>
+<p><em>contains-ignoring-case</em></p>
+<p><strong>Test membership of a BetterArray without regard to case</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ContainsIgnoringCase(ByVal values As BetterArray, ByVal target As String) As Boolean
+</code></pre>
+<p>BetterArray.Includes ends in a plain equality under binary compare, so a
+category written Yes in a CHOICE_FORMULA against yes on the Choices sheet
+reads as absent. The build matches the two, so the checker does too.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>values</code>: BetterArray. The values to search.</li>
+<li><code>target</code>: String. The value to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the value is present in any case.</p>
+<hr />
+<h3 id="int-isliteralchunk">IsLiteralChunk <a class="anchor-link" href="#int-isliteralchunk">#</a></h3>
+<p><em>is-literal-chunk</em></p>
+<p><strong>Test whether a file-name chunk is a quoted literal</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsLiteralChunk(ByVal chunk As String) As Boolean
+</code></pre>
+<p>Mirrors LLExport.IsLiteralTemplateChunk: the chunk is a literal when it
+starts AND ends with the same quote character. Testing for a quote anywhere
+in the chunk reported a single-quoted label as a missing variable.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>chunk</code>: String. One trimmed piece of the file-name template.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the chunk is a literal.</p>
+<hr />
 <h2 id="int-core-checking-routines">Core checking routines</h2>
 <h3 id="int-checkdictionary">CheckDictionary <a class="anchor-link" href="#int-checkdictionary">#</a></h3>
 <p><em>check-dictionary</em></p>
@@ -232,13 +442,15 @@ SetupTranslationsTable instances from the host workbook.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CheckDictionary()
 </code></pre>
-<p>Unprotects the dictionary, exports, and choices sheets, then iterates
-bottom-up through the dictionary rows checking for: duplicate variable
-names, short variable names, missing main labels, missing sheet names,
-unknown controls, choice formula mismatches, formula validity, min/max
-validation types, format/type consistency, and export column alignment.
-Collects all findings into a single IChecking object and re-protects
-sheets on exit.</p>
+<p>Unprotects the dictionary and exports sheets, tidies the dictionary table,
+then reads its ten columns once into arrays and walks the rows bottom-up
+checking for: duplicate variable names, short variable names, missing main
+labels, missing sheet names, unknown controls, choice formula mismatches,
+formula validity, min/max validation types, format/type consistency, and
+export column alignment. Collects all findings into a single Checking object
+and re-protects sheets on exit.
+The Choices sheet is only read here, through the choices index and the
+category lists, so it is left protected.</p>
 <hr />
 <h3 id="int-checkchoice">CheckChoice <a class="anchor-link" href="#int-checkchoice">#</a></h3>
 <p><em>check-choice</em></p>
@@ -246,10 +458,12 @@ sheets on exit.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CheckChoice()
 </code></pre>
-<p>Unprotects the choices sheet, builds a list of choice names actually
-referenced in dictionary controls, then flags unused choices, missing
-list names, missing ordering values, and missing labels. Collects all
-findings into a single IChecking object and re-protects on exit.</p>
+<p>Unprotects the choices sheet, builds a delimited index of the choice names
+actually referenced in dictionary controls, then flags unused choices,
+missing list names, missing ordering values, and missing labels. The three
+choices columns are read by name, so the check no longer depends on the
+distance between them. Collects all findings into a single Checking object
+and re-protects on exit.</p>
 <hr />
 <h3 id="int-checkexports">CheckExports <a class="anchor-link" href="#int-checkexports">#</a></h3>
 <p><em>check-exports</em></p>
@@ -260,7 +474,12 @@ findings into a single IChecking object and re-protects on exit.</p>
 <p>Iterates over each export row, checking active exports for missing label,
 password, metadata, format, filename, and header values. Also validates
 that the corresponding dictionary column exists and is not empty, checks
-password/identifier consistency, and validates filename variable references.</p>
+password/identifier consistency, and validates filename variable references.
+Every value of a row is read from that row, and the Export Number the row
+carries is what names the export in the message and picks the dictionary
+column. The old shape read the status by row position and the password by
+Export Number, so the two only agreed while the numbers ran 1..N in row
+order.</p>
 <hr />
 <h3 id="int-checktranslations">CheckTranslations <a class="anchor-link" href="#int-checktranslations">#</a></h3>
 <p><em>check-translations</em></p>
@@ -270,7 +489,7 @@ password/identifier consistency, and validates filename variable references.</p>
 </code></pre>
 <p>Unprotects the translations sheet, updates the translations manager from
 the registry, then queries for missing and duplicate labels. Collects
-findings into a single IChecking object and re-protects on exit.</p>
+findings into a single Checking object and re-protects on exit.</p>
 <hr />
 <h3 id="int-checkanalysis">CheckAnalysis <a class="anchor-link" href="#int-checkanalysis">#</a></h3>
 <p><em>check-analysis</em></p>
@@ -278,10 +497,28 @@ findings into a single IChecking object and re-protects on exit.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CheckAnalysis()
 </code></pre>
-<p>Resolves the analysis worksheet, removes empty rows via Analysis.RemoveRows,
-then delegates to CheckTable for each of the seven analysis sections.
+<p>Resolves the analysis worksheet, removes empty rows through
+TidyAnalysisSheet, reports a failure there as a Checking entry, then
+delegates to CheckTable for each of the seven analysis sections.
 Caches the worksheet and WorksheetFunction references and passes them to
 CheckTable to avoid repeated lookups.</p>
+<hr />
+<h3 id="int-tidyanalysissheet">TidyAnalysisSheet <a class="anchor-link" href="#int-tidyanalysissheet">#</a></h3>
+<p><em>tidy-analysis-sheet</em></p>
+<p><strong>Remove the empty analysis rows before the checks read the sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TidyAnalysisSheet(ByVal analysisSheet As Worksheet) As String
+</code></pre>
+<p>The sheet is unprotected, trimmed and protected again. When any of the three
+fails, the sheet is protected in the handler and the reason is handed back so
+the caller can report it. Passwords.UnProtect stays quiet when the stored key
+does not open the sheet, and the row removal that follows then raises on a
+sheet that is still locked, so this failure is a real one for a user.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>analysisSheet</code>: Worksheet. The analysis worksheet.</li>
+</ul>
+<p><strong>Returns:</strong> String. The failure description, or an empty string on success.</p>
 <hr />
 <h3 id="int-checktable">CheckTable <a class="anchor-link" href="#int-checktable">#</a></h3>
 <p><strong>Evaluate a specific analysis section for structural errors.</strong></p>
@@ -304,9 +541,14 @@ CheckTable to avoid repeated lookups.</p>
 <pre><code class="language-vb">Private Sub PrintReport()
 </code></pre>
 <p>Resolves the __checkRep worksheet, clears its content, creates a
-CheckingOutput helper, and prints all collected IChecking objects.
+CheckingOutput helper, and prints all collected Checking objects.
 Installs the worksheet change handler for filtering support and
-activates the report sheet.</p>
+activates the report sheet.
+The clear needs no unprotect: __checkRep is deliberately outside the
+protection matrix and CheckingOutput unprotects it before it writes anyway.
+Only the change handler is allowed to fail quietly, because it writes into
+the VBA project and many machines block that. Activating the report is what
+the user pressed the button for, so a failure there is reported.</p>
 <hr />
 <h2 id="int-message-helpers">Message helpers</h2>
 <h3 id="int-formatmessage">FormatMessage <a class="anchor-link" href="#int-formatmessage">#</a></h3>
@@ -329,6 +571,18 @@ activates the report sheet.</p>
 </ul>
 <p><strong>Returns:</strong> String. The formatted message.</p>
 <hr />
+<h3 id="int-formulachecker">FormulaChecker <a class="anchor-link" href="#int-formulachecker">#</a></h3>
+<p><em>formula-checker</em></p>
+<p><strong>The one formula parser a run reuses</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FormulaChecker() As Formulas
+</code></pre>
+<p>Built with New rather than through Formulas.Create, because the factory seals
+the instance and a sealed instance refuses SetupFormula. Reuse is what keeps
+the LLVariables cache warm: a fresh parser per formula read the whole
+Variable Name column again, up to three times per dictionary row.</p>
+<p><strong>Returns:</strong> Formulas. The parser bound to this run's dictionary and formula store.</p>
+<hr />
 <h3 id="int-formulamessage">FormulaMessage <a class="anchor-link" href="#int-formulamessage">#</a></h3>
 <p><em>formula-message</em></p>
 <p><strong>Validate a formula string and return a formatted error when invalid</strong></p>
@@ -337,8 +591,12 @@ activates the report sheet.</p>
                                 ByVal messageTag As String, _
                                 Optional ByVal valueOne As String = vbNullString, _
                                 Optional ByVal valueTwo As String = vbNullString, _
-                                Optional ByVal formulaType As String = &quot;linelist&quot;) As String
+                                Optional ByVal formulaType As String = CONTEXT_LINELIST) As String
 </code></pre>
+<p>The reason is read in the context the formula was validated in. Asking for
+the default context instead made a formula that is invalid as a linelist
+formula and valid as an analysis one report &quot;The formula seems correct&quot; at
+the end of the line saying it will fail.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>formValue</code>: String. The formula expression to validate.</li>
@@ -365,20 +623,6 @@ activates the report sheet.</p>
 </ul>
 <p><strong>Returns:</strong> String. The template with the placeholder replaced.</p>
 <hr />
-<h2 id="int-interface-implementation">Interface implementation</h2>
-<h3 id="int-isetuperrors-initialise">ISetupErrors_Initialise <a class="anchor-link" href="#int-isetuperrors-initialise">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ISetupErrors_Initialise(ByVal hostBook As Workbook, _
-                                    Optional ByVal passwordService As IPasswords, _
-                                    Optional ByVal dictionary As ILLdictionary, _
-                                    Optional ByVal choices As ILLChoices, _
-                                    Optional ByVal formulaStore As IFormulaData, _
-                                    Optional ByVal transManager As ISetupTranslationsTable, _
-                                    Optional ByVal stateScope As IApplicationState)
-</code></pre>
-<p>Delegated members satisfying the ISetupErrors contract.
-See the corresponding Public members above for full documentation.</p>
-<hr />
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><em>throw-error</em></p>
 <p><strong>Raise a ProjectError-based exception</strong></p>
@@ -399,11 +643,17 @@ providing a consistent stack trace across all methods in this class.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (10 file(s))</summary>
 <ul>
-<li><a href="ISetupErrors.html">ISetupErrors.cls</a></li>
-<li><a href="SetupErrors.html">SetupErrors.cls</a></li>
+<li><a href="LLdictionary.html">LLdictionary.cls</a></li>
+<li><a href="CaseWhen.html">CaseWhen.cls</a></li>
+<li><a href="ChoiceFormula.html">ChoiceFormula.cls</a></li>
+<li><a href="EventSetup.html">EventSetup.cls</a></li>
+<li><a href="SetupPreparation.html">SetupPreparation.cls</a></li>
+<li>EventSetupWorkbook.bas</li>
 <li>SetupHelpers.bas</li>
+<li>TestLLdictionary.bas</li>
+<li>TestCaseWhen.bas</li>
 <li>TestSetupErrors.bas</li>
 </ul>
 </details>

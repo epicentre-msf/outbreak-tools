@@ -774,28 +774,28 @@
     "href": "releases.html",
     "title": "Releases",
     "section": "",
-    "text": "Each archive contains a designer, a setup, and a ribbon template (.xlsb)."
+    "text": "Each archive contains a designer, a setup, and a ribbon template (.xlsb).\nStable releases carry a semantic version (vMAJOR.MINOR.PATCH) and are cut from main. The development build has no version: it is published continuously as the single dev-latest pre-release, which always holds the newest dev binaries."
   },
   {
-    "objectID": "releases.html#latest",
-    "href": "releases.html#latest",
+    "objectID": "releases.html#download",
+    "href": "releases.html#download",
     "title": "Releases",
-    "section": "Latest",
-    "text": "Latest\n\n\n\nStream\nDownload\n\n\n\n\nMain (stable)\nOBT-main-latest.zip\n\n\nDev (pre-release)\nOBT-dev-latest.zip"
+    "section": "Download",
+    "text": "Download\n\n\n\nStream\nDownload\n\n\n\n\nStable\nOBT-main-latest.zip\n\n\nDevelopment (moving)\nOBT-dev-latest.zip"
   },
   {
-    "objectID": "releases.html#all-releases",
-    "href": "releases.html#all-releases",
+    "objectID": "releases.html#versions",
+    "href": "releases.html#versions",
     "title": "Releases",
-    "section": "All releases",
-    "text": "All releases\n\n\n\nVersion\nDate\nStream\nDownload\n\n\n\n\nv1.2.0\n2026-08-14\nmain\ndownload"
+    "section": "Versions",
+    "text": "Versions\n\n\n\nVersion\nDate\nDownload\n\n\n\n\nv1.2.0\n2026-08-14\ndownload"
   },
   {
     "objectID": "releases.html#release-notes",
     "href": "releases.html#release-notes",
     "title": "Releases",
     "section": "Release notes",
-    "text": "Release notes\n\nv1.2.0 (stable) — 2026-08-14\nBaseline release. This is the last 2024 stable build of OutbreakTools (built 2024-10-19), published under the semantic version scheme that OutbreakTools now uses.\nOBT-main-1.2.0.zip is byte-for-byte the archive listed in the legacy archive as OBT-main-2024-10-19.zip. It contains:\n\ndesigner_main-2024-10-19.xlsb\nsetup-2024-10-19.xlsb\n_ribbontemplate_main-2024-10-19.xlsb\nrun_designer_on_windows.R and rundesigner.vbs\n\nEverything published before this point stays available in the legacy archive."
+    "text": "Release notes\n\nv1.2.0 — 2026-08-14\nBaseline release. This is the last 2024 stable build of OutbreakTools (built 2024-10-19), published under the semantic version scheme that OutbreakTools now uses.\nOBT-main-1.2.0.zip is byte-for-byte the archive listed in the legacy archive as OBT-main-2024-10-19.zip. It contains:\n\ndesigner_main-2024-10-19.xlsb\nsetup-2024-10-19.xlsb\n_ribbontemplate_main-2024-10-19.xlsb\nrun_designer_on_windows.R and rundesigner.vbs\n\nEverything published before this point stays available in the legacy archive."
   },
   {
     "objectID": "releases.html#legacy-archive",

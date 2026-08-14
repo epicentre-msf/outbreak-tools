@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SeriesBuffer - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>SeriesBuffer</h1>
+<p>One chart's worth of series definitions. Entry N describes one complete
+series: the data range name, the chart type, the axis side, the category range
+name, the legend range name and the display prefix. Add appends one entry,
+Count answers how many are held, and RangeName, ChartType, AxisSide,
+CategoryRange, LegendRange and LabelPrefix read one field of one entry by
+index. Both graph builders fill one of these and every consumer walks it by
+index.</p>
+<details open class="doc-section" id="one-add-per-series">
+<summary>ONE ADD PER SERIES</summary>
+<div class="section-body">
+<p>The six values that describe one series arrive in a single Add, and an entry
+is one array of six.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a></p>
+<p><strong>Version:</strong> 1.0 (2026-07-31)</p>
+</div>
+</details>
+<details open class="doc-section" id="instantiation">
+<summary>Instantiation</summary>
+<div class="section-body">
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
+<p><strong>Create an empty series buffer</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create() As SeriesBuffer
+</code></pre>
+<p>The buffer starts with no entry. Every builder makes one per chart, so a chart
+that ends with no series answers a Count of 0 and the caller draws nothing.</p>
+<p><strong>Returns:</strong> SeriesBuffer. An empty buffer ready for Add.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="operations">
+<summary>Operations</summary>
+<div class="section-body">
+<h3 id="add">Add <a class="anchor-link" href="#add">#</a></h3>
+<p><em>add</em></p>
+<p><strong>Append one complete series to the buffer</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Add(ByVal rangeName As String, _
+               ByVal chartType As String, _
+               ByVal axisSide As String, _
+               ByVal categoryRange As String, _
+               ByVal legendRange As String, _
+               Optional ByVal labelPrefix As String = vbNullString)
+</code></pre>
+<p>The six values that describe a series arrive together, so index N of the buffer
+always holds a whole series.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rangeName</code>: String. Named range holding the series data.</li>
+<li><code>chartType</code>: String. How the series is drawn: &quot;bar&quot;, &quot;hbar&quot;, &quot;point&quot; or &quot;line&quot;.</li>
+<li><code>axisSide</code>: String. &quot;left&quot; for the primary axis, &quot;right&quot; for the secondary one.</li>
+<li><code>categoryRange</code>: String. Named range holding the category axis labels.</li>
+<li><code>legendRange</code>: String. Named range holding the legend entry text.</li>
+<li><code>labelPrefix</code>: Optional String. Text put in front of the legend entry.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="reading">
+<summary>Reading</summary>
+<div class="section-body">
+<h3 id="count">Count <a class="anchor-link" href="#count">#</a></h3>
+<p><em>count</em></p>
+<p><strong>How many series the buffer holds</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Count() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The number of entries.</p>
+<hr />
+<h3 id="rangename">RangeName <a class="anchor-link" href="#rangename">#</a></h3>
+<p><em>range-name</em></p>
+<p><strong>Named range holding the data of one series</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get RangeName(ByVal index As Long) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. 1-based position in the buffer.</li>
+</ul>
+<p><strong>Returns:</strong> String. The data range name.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When index is outside the buffer.</li>
+</ul>
+<hr />
+<h3 id="charttype">ChartType <a class="anchor-link" href="#charttype">#</a></h3>
+<p><em>chart-type</em></p>
+<p><strong>How one series is drawn</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ChartType(ByVal index As Long) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. 1-based position in the buffer.</li>
+</ul>
+<p><strong>Returns:</strong> String. &quot;bar&quot;, &quot;hbar&quot;, &quot;point&quot; or &quot;line&quot;.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When index is outside the buffer.</li>
+</ul>
+<hr />
+<h3 id="axisside">AxisSide <a class="anchor-link" href="#axisside">#</a></h3>
+<p><em>axis-side</em></p>
+<p><strong>Which axis one series is plotted against</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get AxisSide(ByVal index As Long) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. 1-based position in the buffer.</li>
+</ul>
+<p><strong>Returns:</strong> String. &quot;left&quot; or &quot;right&quot;.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When index is outside the buffer.</li>
+</ul>
+<hr />
+<h3 id="categoryrange">CategoryRange <a class="anchor-link" href="#categoryrange">#</a></h3>
+<p><em>category-range</em></p>
+<p><strong>Named range holding the category axis labels of one series</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CategoryRange(ByVal index As Long) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. 1-based position in the buffer.</li>
+</ul>
+<p><strong>Returns:</strong> String. The category range name.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When index is outside the buffer.</li>
+</ul>
+<hr />
+<h3 id="legendrange">LegendRange <a class="anchor-link" href="#legendrange">#</a></h3>
+<p><em>legend-range</em></p>
+<p><strong>Named range holding the legend entry of one series</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LegendRange(ByVal index As Long) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. 1-based position in the buffer.</li>
+</ul>
+<p><strong>Returns:</strong> String. The legend range name.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When index is outside the buffer.</li>
+</ul>
+<hr />
+<h3 id="labelprefix">LabelPrefix <a class="anchor-link" href="#labelprefix">#</a></h3>
+<p><em>label-prefix</em></p>
+<p><strong>Text put in front of the legend entry of one series</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LabelPrefix(ByVal index As Long) As String
+</code></pre>
+<p>A time series series is labelled by its prefix alone. The other builders leave
+it empty.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. 1-based position in the buffer.</li>
+</ul>
+<p><strong>Returns:</strong> String. The prefix, or an empty string.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When index is outside the buffer.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-instantiation">Instantiation</h2>
+<h3 id="int-initialise">Initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
+<p><em>initialise</em></p>
+<p><strong>Build the entry list</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Initialise()
+</code></pre>
+<p>Public because the factory calls it on the instance it just made. The list is
+1-based, which is what every consumer walks.</p>
+<hr />
+<h2 id="int-helpers">Helpers</h2>
+<h3 id="int-fieldof">FieldOf <a class="anchor-link" href="#int-fieldof">#</a></h3>
+<p><em>field-of</em></p>
+<p><strong>Read one value of one entry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FieldOf(ByVal index As Long, ByVal field As Long) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. 1-based position in the buffer.</li>
+<li><code>field</code>: Long. Which of the six values is wanted.</li>
+</ul>
+<p><strong>Returns:</strong> String. The value, as text.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When index is outside the buffer.</li>
+</ul>
+<hr />
+<h3 id="int-validateindex">ValidateIndex <a class="anchor-link" href="#int-validateindex">#</a></h3>
+<p><em>validate-index</em></p>
+<p><strong>Refuse a position the buffer does not hold</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateIndex(ByVal index As Long)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. The position to test.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When index is outside the buffer.</li>
+</ul>
+<hr />
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. The error code to raise.</li>
+<li><code>message</code>: String. Human-readable description of the failure.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (6 file(s))</summary>
+<ul>
+<li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
+<li><a href="GraphSeries.html">GraphSeries.cls</a></li>
+<li><a href="TimeSeriesGraphs.html">TimeSeriesGraphs.cls</a></li>
+<li>TestGraphSeries.bas</li>
+<li>TestSeriesBuffer.bas</li>
+<li>TestTimeSeriesGraphs.bas</li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

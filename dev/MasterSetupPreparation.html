@@ -16,15 +16,9 @@
 <h2 id="int-factory-helpers">Factory helpers</h2>
 <h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As IMasterSetupPreparation
+<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As MasterSetupPreparation
 </code></pre>
 <p>(&quot;Create a configured MasterSetupPreparation instance for the supplied workbook.&quot;)</p>
-<hr />
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IMasterSetupPreparation
-</code></pre>
-<p>(&quot;Return the current instance as an interface reference.&quot;)</p>
 <hr />
 <h2 id="int-public-api">Public API</h2>
 <h3 id="int-configure">Configure <a class="anchor-link" href="#int-configure">#</a></h3>
@@ -53,13 +47,13 @@
 <hr />
 <h3 id="int-dropdowns">Dropdowns <a class="anchor-link" href="#int-dropdowns">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Dropdowns() As IDropdownLists
+<pre><code class="language-vb">Public Property Get Dropdowns() As DropdownLists
 </code></pre>
 <p>(&quot;Expose the dropdown manager for callers needing direct access.&quot;)</p>
 <hr />
 <h3 id="int-variables">Variables <a class="anchor-link" href="#int-variables">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Variables() As IMasterSetupVariables
+<pre><code class="language-vb">Public Property Get Variables() As MasterSetupVariables
 </code></pre>
 <p>(&quot;Expose the variables manager associated with the master setup table.&quot;)</p>
 <hr />
@@ -78,13 +72,13 @@
 <hr />
 <h3 id="int-ensuredropdownmanager">EnsureDropdownManager <a class="anchor-link" href="#int-ensuredropdownmanager">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function EnsureDropdownManager() As IDropdownLists
+<pre><code class="language-vb">Private Function EnsureDropdownManager() As DropdownLists
 </code></pre>
 <p>(&quot;Ensure the dropdown manager is initialised and cached.&quot;)</p>
 <hr />
 <h3 id="int-ensurevariablesmanager">EnsureVariablesManager <a class="anchor-link" href="#int-ensurevariablesmanager">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function EnsureVariablesManager() As IMasterSetupVariables
+<pre><code class="language-vb">Private Function EnsureVariablesManager() As MasterSetupVariables
 </code></pre>
 <p>(&quot;Ensure the variables manager is initialised over an existing listobject.&quot;)</p>
 <hr />
@@ -156,7 +150,7 @@
 <hr />
 <h3 id="int-ensuredropdowndefinition">EnsureDropdownDefinition <a class="anchor-link" href="#int-ensuredropdowndefinition">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureDropdownDefinition(ByVal drop As IDropdownLists, _
+<pre><code class="language-vb">Private Sub EnsureDropdownDefinition(ByVal drop As DropdownLists, _
                                      ByVal listName As String, _
                                      ByVal items As Variant)
 </code></pre>
@@ -164,7 +158,7 @@
 <hr />
 <h3 id="int-refreshlanguagedropdowns">RefreshLanguageDropdowns <a class="anchor-link" href="#int-refreshlanguagedropdowns">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RefreshLanguageDropdowns(ByVal drop As IDropdownLists)
+<pre><code class="language-vb">Private Sub RefreshLanguageDropdowns(ByVal drop As DropdownLists)
 </code></pre>
 <p>(&quot;Populate the languages dropdowns using the translations sheet headers.&quot;)</p>
 <hr />
@@ -176,7 +170,7 @@
 <hr />
 <h3 id="int-ensuredropdownhasvalues">EnsureDropdownHasValues <a class="anchor-link" href="#int-ensuredropdownhasvalues">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureDropdownHasValues(ByVal drop As IDropdownLists, _
+<pre><code class="language-vb">Private Sub EnsureDropdownHasValues(ByVal drop As DropdownLists, _
                                     ByVal listName As String, _
                                     ByVal values As BetterArray)
 </code></pre>
@@ -184,7 +178,7 @@
 <hr />
 <h3 id="int-ensurevariablenamecolumnname">EnsureVariableNameColumnName <a class="anchor-link" href="#int-ensurevariablenamecolumnname">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureVariableNameColumnName(ByVal manager As IMasterSetupVariables)
+<pre><code class="language-vb">Private Sub EnsureVariableNameColumnName(ByVal manager As MasterSetupVariables)
 </code></pre>
 <p>(&quot;Publish the Variable Name column range as a hidden workbook name for downstream formulas.&quot;)</p>
 <hr />
@@ -210,11 +204,9 @@
 <hr />
 </details>
 <details>
-<summary>Used in (5 file(s))</summary>
+<summary>Used in (3 file(s))</summary>
 <ul>
 <li><a href="EventMasterSetup.html">EventMasterSetup.cls</a></li>
-<li><a href="IMasterSetupPreparation.html">IMasterSetupPreparation.cls</a></li>
-<li><a href="MasterSetupPreparation.html">MasterSetupPreparation.cls</a></li>
 <li>EventsMasterSetupRibbon.bas</li>
 <li>TestMasterSetupPreparation.bas</li>
 </ul>

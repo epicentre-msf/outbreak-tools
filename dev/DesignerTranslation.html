@@ -14,15 +14,15 @@
 <p>Manages translation of the designer workbook by reading translation
 tables (shapes, ranges, messages, dropdowns) from a dedicated
 translation worksheet. Provides factory creation with requirement
-validation, returns cached ITranslationObject instances scoped to
+validation, returns cached TranslationObject instances scoped to
 each content type, and applies translations to an entire designer
 worksheet by updating shape text, named range values, and dropdown
 validations. The current language code is extracted from a language
 string (e.g. &quot;FRA - Francais&quot;) and persisted as a worksheet-level
 HiddenName for cross-session persistence. All translation objects
 and name lists are cached for fast repeated access.
-Consumers interact through the IDesignerTranslation interface.</p>
-<p><strong>Depends on:</strong> <a href="TranslationObject.html">TranslationObject</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="IHiddenNames.html">IHiddenNames</a></p>
+Consumers interact through the DesignerTranslation interface.</p>
+<p><strong>Depends on:</strong> <a href="TranslationObject.html">TranslationObject</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a></p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -30,16 +30,16 @@ Consumers interact through the IDesignerTranslation interface.</p>
 <p><em>create</em></p>
 <p><strong>Create a new DesignerTranslation instance from a translation worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet) As IDesignerTranslation
+<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet) As DesignerTranslation
 </code></pre>
 <p>Factory method that validates all required ListObjects on the supplied
 worksheet, then constructs and returns a new instance through the
-IDesignerTranslation interface. Called on the predeclared instance.</p>
+DesignerTranslation interface. Called on the predeclared instance.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The translation worksheet containing T_tradShape, T_tradRange, T_tradMsg, T_tradDrop.</li>
 </ul>
-<p><strong>Returns:</strong> IDesignerTranslation. A fully initialised instance ready for use.</p>
+<p><strong>Returns:</strong> DesignerTranslation. A fully initialised instance ready for use.</p>
 <hr />
 </div>
 </details>
@@ -50,16 +50,16 @@ IDesignerTranslation interface. Called on the predeclared instance.</p>
 <p><em>trans-object</em></p>
 <p><strong>Translation object for a given content type</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get TransObject(Optional ByVal trans As Byte = DesignerTranslationOfMessages) As ITranslationObject
+<pre><code class="language-vb">Public Property Get TransObject(Optional ByVal trans As Byte = DesignerTranslationOfMessages) As TranslationObject
 </code></pre>
-<p>Returns a cached ITranslationObject for the requested translation
+<p>Returns a cached TranslationObject for the requested translation
 scope. Ensures caches are built using the current language code.
 Returns Nothing when no language code is configured.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>trans</code>: Optional Byte. TranslationType value selecting the content scope. Defaults to TranslationOfMessages.</li>
 </ul>
-<p><strong>Returns:</strong> ITranslationObject. The translation object for the requested scope.</p>
+<p><strong>Returns:</strong> TranslationObject. The translation object for the requested scope.</p>
 <hr />
 </div>
 </details>
@@ -70,7 +70,7 @@ Returns Nothing when no language code is configured.</p>
 <p><em>translate-designer</em></p>
 <p><strong>Translate an entire designer worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub TranslateDesigner(ByVal mainsh As Worksheet, ByVal language As String)
+<pre><code class="language-vb">Public Sub TranslateDesigner(ByVal mainsh As Worksheet, ByVal language As String)
 </code></pre>
 <p>Applies translations to all shapes, named ranges, and dropdown
 validations on the supplied worksheet. When a non-empty language string
@@ -93,7 +93,7 @@ language code is available.</p>
 <p><em>translation-msg</em></p>
 <p><strong>Get the translated value of a message code</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function TranslatedValue(ByVal msgCode As String) As String
+<pre><code class="language-vb">Public Function TranslatedValue(ByVal msgCode As String) As String
 </code></pre>
 <p>Returns the translated text for the supplied message code using the
 cached messages translation object. Ensures caches are built before
@@ -109,6 +109,24 @@ lookup. Returns vbNullString when no language code is configured.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance against further setup writes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup setter against post-seal mutation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The name of the property being guarded.</li>
+</ul>
+<hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><em>wksh</em></p>
 <p><strong>Translation worksheet</strong></p>
@@ -218,11 +236,11 @@ so the cache-invalidation check remains correct.</p>
 <p><em>wksh-names</em></p>
 <p><strong>Cached HiddenNames accessor for the translation worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get WkshNames() As IHiddenNames
+<pre><code class="language-vb">Private Property Get WkshNames() As HiddenNames
 </code></pre>
-<p>Lazily creates and returns an IHiddenNames instance scoped to the
+<p>Lazily creates and returns an HiddenNames instance scoped to the
 translation worksheet.</p>
-<p><strong>Returns:</strong> IHiddenNames. The HiddenNames manager for the translation worksheet.</p>
+<p><strong>Returns:</strong> HiddenNames. The HiddenNames manager for the translation worksheet.</p>
 <hr />
 <h2 id="int-cache-management">Cache Management</h2>
 <h3 id="int-ensurecaches">EnsureCaches <a class="anchor-link" href="#int-ensurecaches">#</a></h3>
@@ -285,30 +303,21 @@ for the first missing table encountered.</p>
 <li><code>loNames</code>: BetterArray. List of ListObject names to verify.</li>
 </ul>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-idesignertranslation-transobject">IDesignerTranslation_TransObject <a class="anchor-link" href="#int-idesignertranslation-transobject">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get IDesignerTranslation_TransObject(Optional ByVal trans As Byte = DesignerTranslationOfMessages) As ITranslationObject
-</code></pre>
-<p>Delegated members satisfying the IDesignerTranslation contract.
-See the corresponding members above for full documentation.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (12 file(s))</summary>
+<summary>Used in (11 file(s))</summary>
 <ul>
 <li><a href="DesignerEntry.html">DesignerEntry.cls</a></li>
-<li><a href="DesignerTranslation.html">DesignerTranslation.cls</a></li>
-<li><a href="IDesignerEntry.html">IDesignerEntry.cls</a></li>
-<li><a href="IDesignerTranslation.html">IDesignerTranslation.cls</a></li>
-<li><a href="ILinelistSpecs.html">ILinelistSpecs.cls</a></li>
+<li><a href="DesignerPreparation.html">DesignerPreparation.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
 <li>EventsDesignerCore.bas</li>
-<li><a href="DesignerTranslationStub.html">DesignerTranslationStub.cls</a></li>
-<li><a href="LinelistSpecsDesignerTranslationStub.html">LinelistSpecsDesignerTranslationStub.cls</a></li>
-<li><a href="LinelistSpecsWorkbookStub.html">LinelistSpecsWorkbookStub.cls</a></li>
-<li><a href="LLVarContextSpecsStub.html">LLVarContextSpecsStub.cls</a></li>
-<li><a href="TableSpecsLinelistStub.html">TableSpecsLinelistStub.cls</a></li>
+<li>HeadlessBuild.bas</li>
+<li>TestDesignerEntry.bas</li>
+<li>TestDesignerPreparation.bas</li>
+<li>TestDesignerTranslation.bas</li>
+<li>TestHelpers.bas</li>
+<li>TestHelpersLite.bas</li>
+<li>TestLinelistSpecs.bas</li>
 </ul>
 </details>
   </main>

@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SectionMap - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>SectionMap</h1>
+<p>The first and last position of every section of one worksheet, written when
+the sheet is built and read back whenever something needs to act on a whole
+section. Add records one block, Count, SectionNameAt, StartAt and EndAt read
+one back, IndexAtPosition finds the block a position falls in, and
+IndicesInRange finds every block a span touches. Clear drops the lot.</p>
+<details open class="doc-section" id="a-section-is-a-block-of-positions">
+<summary>A SECTION IS A BLOCK OF POSITIONS</summary>
+<div class="section-body">
+<p>A block is identified by its position range, and the title is carried for a
+person to read. Two reasons for that way round:</p>
+<p>The caller holds a cell address. The section toggle starts from what the user
+has selected, so the question it asks is &quot;which section covers this column&quot;,
+and a position is what it has to ask with.</p>
+<p>SectionBuilder groups CONSECUTIVE dictionary rows, so a run of rows is what a
+block means to the class that writes it. <code>LLdictionary.Prepare</code> sorts the
+dictionary by sheet and main section before it derives <code>column index</code>, which
+gives one run per title today. Keying on the range holds either way and costs
+the same.</p>
+</div>
+</details>
+<details open class="doc-section" id="what-a-position-means">
+<summary>WHAT A POSITION MEANS</summary>
+<div class="section-body">
+<p>The same thing it means to ShowHide and ShowHideLayout: a column number on an
+HList sheet and a row number on a VList one. Both come from the dictionary
+<code>column index</code> column, which is what SectionBuilder lays its headers out on.</p>
+</div>
+</details>
+<details open class="doc-section" id="where-the-map-lives">
+<summary>WHERE THE MAP LIVES</summary>
+<div class="section-body">
+<p>In the hidden names of the sheet itself, one name per block:</p>
+<p>section_map_count   how many blocks the sheet carries
+section_map_<n>     &quot;<start>|<end>|<name>&quot; for block n</p>
+<p>One name carries one whole block. A defined name holds its value in its
+RefersTo formula and that string is length capped, so a sheet with thirty
+sections would run a single name holding them all past the cap. The section
+title is written last and truncated, which keeps the two numbers safe even
+when a designer writes a long one.</p>
+<p><strong>Depends on:</strong> <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, The hidden names the map is kept under, What separates the two numbers and the name inside one stored block, How many fields a stored block holds. The title is the last field, so the, split is capped here and a title carrying the separator arrives whole., How much of a section name is kept. A defined name holds its value in its, RefersTo formula and that string is length capped, so the name is cut before, it can push the two numbers out.</p>
+<p><strong>Version:</strong> 1.0 (2026-08-06)</p>
+</div>
+</details>
+<details open class="doc-section" id="instantiation">
+<summary>Instantiation</summary>
+<div class="section-body">
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
+<p><strong>Read the section map of one worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal wksh As Worksheet) As SectionMap
+</code></pre>
+<p>The factory and the load it runs.</p>
+<p>A sheet with no map on it answers a Count of 0. Every reader tests the count
+before it reads a block, so an unbuilt sheet and a sheet built before this
+class existed both come back through the same path.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>wksh</code>: Worksheet. The sheet the map belongs to.</li>
+</ul>
+<p><strong>Returns:</strong> SectionMap. The map, ready to read and to add to.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the worksheet is Nothing.</li>
+</ul>
+<hr />
+<h3 id="initialise">Initialise <a class="anchor-link" href="#initialise">#</a></h3>
+<p><em>initialise</em></p>
+<p><strong>Bind to a sheet and load the blocks it carries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Initialise(ByVal wksh As Worksheet)
+</code></pre>
+<p>Public because the factory calls it on a fresh instance.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>wksh</code>: Worksheet. The sheet the map belongs to.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="accessors">
+<summary>Accessors</summary>
+<div class="section-body">
+<h3 id="wksh">Wksh <a class="anchor-link" href="#wksh">#</a></h3>
+<p><em>wksh</em></p>
+<p><strong>The worksheet this map belongs to</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet
+</code></pre>
+<p>What the map holds.</p>
+<hr />
+<h3 id="count">Count <a class="anchor-link" href="#count">#</a></h3>
+<p><em>count</em></p>
+<p><strong>How many section blocks the sheet carries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Count() As Long
+</code></pre>
+<hr />
+<h3 id="sectionnameat">SectionNameAt <a class="anchor-link" href="#sectionnameat">#</a></h3>
+<p><em>section-name-at</em></p>
+<p><strong>The title of one block</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function SectionNameAt(ByVal index As Long) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based block index.</li>
+</ul>
+<p><strong>Returns:</strong> String. The <code>main section</code> value the block was built from. A section
+the dictionary left blank answers an empty string.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the index is out of range.</li>
+</ul>
+<hr />
+<h3 id="startat">StartAt <a class="anchor-link" href="#startat">#</a></h3>
+<p><em>start-at</em></p>
+<p><strong>The first position of one block</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function StartAt(ByVal index As Long) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based block index.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The column number on an HList sheet, the row number on a VList one.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the index is out of range.</li>
+</ul>
+<hr />
+<h3 id="endat">EndAt <a class="anchor-link" href="#endat">#</a></h3>
+<p><em>end-at</em></p>
+<p><strong>The last position of one block</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function EndAt(ByVal index As Long) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based block index.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The column number on an HList sheet, the row number on a VList one.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the index is out of range.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="lookup">
+<summary>Lookup</summary>
+<div class="section-body">
+<h3 id="indexatposition">IndexAtPosition <a class="anchor-link" href="#indexatposition">#</a></h3>
+<p><em>index-at-position</em></p>
+<p><strong>The block one position falls in</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function IndexAtPosition(ByVal position As Long) As Long
+</code></pre>
+<p>Finding the block a selection lands in.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>position</code>: Long. A column number or a row number.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The one based block index, or 0 when no block covers the position.</p>
+<hr />
+<h3 id="indicesinrange">IndicesInRange <a class="anchor-link" href="#indicesinrange">#</a></h3>
+<p><em>indices-in-range</em></p>
+<p><strong>Every block a span of positions touches</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function IndicesInRange(ByVal firstPos As Long, ByVal lastPos As Long) As BetterArray
+</code></pre>
+<p>What a selection of more than one cell asks. A block is answered when it
+overlaps the span at all, which is what lets a user reach a section whose
+every position is hidden: selecting from the visible position before it to the
+visible position after it covers the whole gap.</p>
+<p>The two bounds are read in either order, so a selection made right to left
+answers the same blocks as one made left to right.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>firstPos</code>: Long. One end of the span.</li>
+<li><code>lastPos</code>: Long. The other end of the span.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The one based block indices, in map order. Empty when the
+span touches no block.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="writing">
+<summary>Writing</summary>
+<div class="section-body">
+<h3 id="clear">Clear <a class="anchor-link" href="#clear">#</a></h3>
+<p><em>clear</em></p>
+<p><strong>Drop every block the sheet carries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Clear()
+</code></pre>
+<p>What SectionBuilder calls while it builds a sheet.</p>
+<p>Called before a rebuild. A sheet rebuilt with fewer sections than last time
+would otherwise keep the tail of the old map, and those stale blocks point at
+positions the new sheet gives to something else.</p>
+<hr />
+<h3 id="add">Add <a class="anchor-link" href="#add">#</a></h3>
+<p><em>add</em></p>
+<p><strong>Record one section block</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Add(ByVal sectionName As String, _
+                    ByVal startPos As Long, _
+                    ByVal endPos As Long) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sectionName</code>: String. The <code>main section</code> value, or an empty string.</li>
+<li><code>startPos</code>: Long. The first position of the block.</li>
+<li><code>endPos</code>: Long. The last position of the block.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The one based index the block was filed under.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When startPos is below 1 or endPos is
+before startPos.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-storage">Storage</h2>
+<h3 id="int-loadblocks">LoadBlocks <a class="anchor-link" href="#int-loadblocks">#</a></h3>
+<p><em>load-blocks</em></p>
+<p><strong>Read every stored block into memory</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LoadBlocks()
+</code></pre>
+<p>Reading and writing the hidden names the map is kept in.</p>
+<p>A block whose name is missing or unreadable ends the load. The count and the
+blocks are written together, so a gap means the sheet was interrupted
+mid-build and what follows the gap cannot be trusted.</p>
+<hr />
+<h3 id="int-blockname">BlockName <a class="anchor-link" href="#int-blockname">#</a></h3>
+<p><em>block-name</em></p>
+<p><strong>The hidden name one block is kept under</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BlockName(ByVal index As Long) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based block index.</li>
+</ul>
+<p><strong>Returns:</strong> String. The name identifier.</p>
+<hr />
+<h3 id="int-encode">Encode <a class="anchor-link" href="#int-encode">#</a></h3>
+<p><em>encode</em></p>
+<p><strong>Write a block as one stored string</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Encode(ByVal sectionName As String, _
+                        ByVal startPos As Long, _
+                        ByVal endPos As Long) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sectionName</code>: String. The section title, already trimmed to length.</li>
+<li><code>startPos</code>: Long. The first position.</li>
+<li><code>endPos</code>: Long. The last position.</li>
+</ul>
+<p><strong>Returns:</strong> String. The stored form.</p>
+<hr />
+<h3 id="int-decode">Decode <a class="anchor-link" href="#int-decode">#</a></h3>
+<p><em>decode</em></p>
+<p><strong>Read a stored string back into a block</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Decode(ByVal raw As String, _
+                        ByRef sectionName As String, _
+                        ByRef startPos As Long, _
+                        ByRef endPos As Long) As Boolean
+</code></pre>
+<p>The split is capped at three fields, which lets the last field hold a section
+title carrying the separator and still arrive whole.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>raw</code>: String. The stored form.</li>
+<li><code>sectionName</code>: String. Set to the section title.</li>
+<li><code>startPos</code>: Long. Set to the first position.</li>
+<li><code>endPos</code>: Long. Set to the last position.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the string held a usable block.</p>
+<hr />
+<h3 id="int-trimmedname">TrimmedName <a class="anchor-link" href="#int-trimmedname">#</a></h3>
+<p><em>trimmed-name</em></p>
+<p><strong>Cut a section title down to what a defined name can carry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TrimmedName(ByVal sectionName As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sectionName</code>: String. The title as the dictionary spells it.</li>
+</ul>
+<p><strong>Returns:</strong> String. The title, at most MAX_NAME_LENGTH characters.</p>
+<hr />
+<h3 id="int-readcount">ReadCount <a class="anchor-link" href="#int-readcount">#</a></h3>
+<p><em>read-count</em></p>
+<p><strong>Read how many blocks the sheet says it carries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ReadCount() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The stored count, or 0.</p>
+<hr />
+<h3 id="int-writecount">WriteCount <a class="anchor-link" href="#int-writecount">#</a></h3>
+<p><em>write-count</em></p>
+<p><strong>Write how many blocks the sheet carries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteCount(ByVal newCount As Long)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>newCount</code>: Long. The count to store.</li>
+</ul>
+<hr />
+<h3 id="int-readvalue">ReadValue <a class="anchor-link" href="#int-readvalue">#</a></h3>
+<p><em>read-value</em></p>
+<p><strong>Read one stored block, answering empty when it is absent</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ReadValue(ByVal nameId As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nameId</code>: String. The hidden name to read.</li>
+</ul>
+<p><strong>Returns:</strong> String. The stored form, or an empty string.</p>
+<hr />
+<h3 id="int-writevalue">WriteValue <a class="anchor-link" href="#int-writevalue">#</a></h3>
+<p><em>write-value</em></p>
+<p><strong>Write one stored block</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteValue(ByVal nameId As String, ByVal value As String)
+</code></pre>
+<p>EnsureName then SetValue, because EnsureName leaves a name that already exists
+holding whatever it held before. Clear removes the old names first, so this is
+the belt to that pair of braces.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nameId</code>: String. The hidden name to write.</li>
+<li><code>value</code>: String. The stored form.</li>
+</ul>
+<hr />
+<h3 id="int-removeifpresent">RemoveIfPresent <a class="anchor-link" href="#int-removeifpresent">#</a></h3>
+<p><em>remove-if-present</em></p>
+<p><strong>Drop one stored block when the sheet carries it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveIfPresent(ByVal nameId As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nameId</code>: String. The hidden name to drop.</li>
+</ul>
+<hr />
+<h2 id="int-helpers">Helpers</h2>
+<h3 id="int-ensurevalidindex">EnsureValidIndex <a class="anchor-link" href="#int-ensurevalidindex">#</a></h3>
+<p><em>ensure-valid-index</em></p>
+<p><strong>Refuse a block index outside the map</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureValidIndex(ByVal index As Long)
+</code></pre>
+<p>Private guards.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. The index to check.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the index is out of range.</li>
+</ul>
+<hr />
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
+<p><strong>Raise a project error naming this class</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: ProjectError. The error to raise.</li>
+<li><code>message</code>: String. What went wrong.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (10 file(s))</summary>
+<ul>
+<li><a href="Linelist.html">Linelist.cls</a></li>
+<li><a href="SectionBuilder.html">SectionBuilder.cls</a></li>
+<li><a href="SectionShowHide.html">SectionShowHide.cls</a></li>
+<li><a href="ShowHide.html">ShowHide.cls</a></li>
+<li>HeadlessBuild.bas</li>
+<li>EventsLinelistButtons.bas</li>
+<li>TestSectionBuilder.bas</li>
+<li>TestSectionMap.bas</li>
+<li>TestSectionShowHide.bas</li>
+<li>TestShowHide.bas</li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

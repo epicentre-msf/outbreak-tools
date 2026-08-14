@@ -11,12 +11,34 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>LLChoices</h1>
-<p>Manages worksheet-based choice lists used for dropdowns and cascading
-selectors. Each choice is identified by a list name and carries long
-labels, short labels, and an ordering column. Built on top of a
-DataSheet for column-oriented data access.</p>
-<p><strong>Depends on:</strong> <a href="DataSheet.html">DataSheet</a>, <a href="CustomTable.html">CustomTable</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, <a href="ITranslationObject.html">ITranslationObject</a></p>
+<p>Manages the choice lists a workbook offers to dropdowns and cascading
+selectors. A choice is named by its list name and carries a long label, a
+short label and an order number, and the four columns sit on one worksheet
+reached through a DataSheet. AddChoice appends a list, RemoveChoice deletes
+one, ChoiceExists answers whether a list is there, Sort orders the sheet and
+Translate rewrites the labels. AllChoices, Categories and
+ConcatenateCategories give the lists back. ManageRows, AddRows, InsertRows,
+DeleteRows and RemoveRows work on the rows of the sheet, and Import and Export
+move the sheet between workbooks.</p>
+<details open class="doc-section" id="what-the-instance-holds">
+<summary>WHAT THE INSTANCE HOLDS</summary>
+<div class="section-body">
+<p>A member that needs the four choice columns reads the header row once as a
+block and matches the names in memory for the rest of that call. Nothing is
+held between calls: AddChoice appends rows, RemoveChoice deletes whole rows
+and Import clears the sheet, so the header row and the end row are read again
+on every call.</p>
+</div>
+</details>
+<details open class="doc-section" id="excel-state-belongs-to-the-caller">
+<summary>EXCEL STATE BELONGS TO THE CALLER</summary>
+<div class="section-body">
+<p>This class leaves Application.ScreenUpdating, Calculation and EnableEvents
+where it finds them, and builds no ApplicationState.</p>
+<p><strong>Depends on:</strong> <a href="DataSheet.html">DataSheet</a>, <a href="CustomTable.html">CustomTable</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, <a href="TranslationObject.html">TranslationObject</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+</div>
+</details>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -24,14 +46,15 @@ DataSheet for column-oriented data access.</p>
 <p><em>create</em></p>
 <p><strong>Create a new LLChoices instance</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal choiceWorksheet As Worksheet, _ 
+<pre><code class="language-vb">Public Function Create(ByVal choiceWorksheet As Worksheet, _
                        ByVal choiceStartRow As Long, _
-                       ByVal choiceStartColumn As Long, _ 
-                       Optional ByVal choiceName As String = vbNullString) As _ 
+                       ByVal choiceStartColumn As Long, _
+                       Optional ByVal choiceName As String = vbNullString) As _
 </code></pre>
 <p>Wraps the given worksheet in a DataSheet and returns a configured
-ILLChoices instance. The default headers are &quot;list name&quot;, &quot;label&quot;,
-&quot;short label&quot;, and &quot;ordering list&quot;.</p>
+LLChoices instance. The four columns this class works with are
+&quot;list name&quot;, &quot;ordering list&quot;, &quot;label&quot; and &quot;short label&quot;, and AddHeaders
+writes them to the sheet in that order.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>choiceWorksheet</code>: Worksheet. The worksheet hosting the choices.</li>
@@ -39,7 +62,7 @@ ILLChoices instance. The default headers are &quot;list name&quot;, &quot;label&
 <li><code>choiceStartColumn</code>: Long. First column of choice data.</li>
 <li><code>choiceName</code>: Optional String. Name for the choice object. Defaults to vbNullString.</li>
 </ul>
-<p><strong>Returns:</strong> ILLChoices. The new instance.</p>
+<p><strong>Returns:</strong> LLChoices. The new instance.</p>
 <hr />
 </div>
 </details>
@@ -50,9 +73,9 @@ ILLChoices instance. The default headers are &quot;list name&quot;, &quot;label&
 <p><em>choice-data</em></p>
 <p><strong>Associated DataSheet object</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get ChoiceData() As IDataSheet
+<pre><code class="language-vb">Public Property Get ChoiceData() As DataSheet
 </code></pre>
-<p><strong>Returns:</strong> IDataSheet. The backing DataSheet.</p>
+<p><strong>Returns:</strong> DataSheet. The backing DataSheet.</p>
 <hr />
 <h3 id="wksh">Wksh <a class="anchor-link" href="#wksh">#</a></h3>
 <p><em>wksh</em></p>
@@ -73,14 +96,21 @@ ILLChoices instance. The default headers are &quot;list name&quot;, &quot;label&
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Name() As String
 </code></pre>
+<p>The lazy default is written straight into the backing field, so a Get can
+change the object. It has to be that way: Seal closes the Let, and the
+default can only be worked out once the worksheet is known.</p>
 <p><strong>Returns:</strong> String. The choice object name.</p>
 <hr />
 <h3 id="choiceexists">ChoiceExists <a class="anchor-link" href="#choiceexists">#</a></h3>
 <p><em>choice-exists</em></p>
 <p><strong>Check whether a choice exists</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get ChoiceExists(ByVal choiceName As String) As Boolean
+<pre><code class="language-vb">Public Property Get ChoiceExists(ByVal choiceName As String) As Boolean
 </code></pre>
+<p>Answers a quiet False when the list name column is missing or the name is
+empty. Matching is case-SENSITIVE here, which is not the rule Categories
+uses -- AutoFilter criteria are case-insensitive and cannot be made
+otherwise.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>choiceName</code>: String. Choice name to search for.</li>
@@ -91,19 +121,29 @@ ILLChoices instance. The default headers are &quot;list name&quot;, &quot;label&
 <p><em>sort</em></p>
 <p><strong>Sort choices in the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Sort()
+<pre><code class="language-vb">Public Sub Sort()
 </code></pre>
+<p>Sorts on the list name first, then on the ordering column. The header row
+is read once and the three ranges are built from the positions it gives;
+the old shape asked the worksheet for the same header row four times.</p>
 <hr />
 <h3 id="addchoice">AddChoice <a class="anchor-link" href="#addchoice">#</a></h3>
 <p><em>add-choice</em></p>
 <p><strong>Add a new choice with its categories</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddChoice(ByVal choiceName As String, _
-                      ByVal longLabelData As BetterArray, _ 
+<pre><code class="language-vb">Public Sub AddChoice(ByVal choiceName As String, _
+                      ByVal longLabelData As BetterArray, _
                       Optional ByVal shortLabelData As Object = Nothing)
 </code></pre>
 <p>Appends a new choice entry with long labels and optional short labels.
-Silently exits when the choice already exists or the data is empty.</p>
+Silently exits when the choice already exists or the data is empty.
+The four columns are resolved from one header read, and the list name and
+the ordering number are written as one block each. They used to be written
+cell by cell, with both column numbers read back from the worksheet on
+every pass of the loop.
+Known and unchanged: on a sheet holding only headers DataEndRow answers
+one row below the header, so the first append lands one row low and leaves
+a blank row behind.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>choiceName</code>: String. Name of the choice to add.</li>
@@ -115,8 +155,11 @@ Silently exits when the choice already exists or the data is empty.</p>
 <p><em>remove-choice</em></p>
 <p><strong>Remove one or multiple choices</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RemoveChoice(Byval choiceNames As String, Optional ByVal sep As String = &quot;;&quot;)
+<pre><code class="language-vb">Public Sub RemoveChoice(ByVal choiceNames As String, Optional ByVal sep As String = &quot;;&quot;)
 </code></pre>
+<p>The sheet is sorted ONCE here, for the whole call. The sort used to run
+inside the per-name routine, so removing five names paid five full
+worksheet sorts.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>choiceNames</code>: String. Choice names separated by sep.</li>
@@ -127,19 +170,29 @@ Silently exits when the choice already exists or the data is empty.</p>
 <p><em>translate</em></p>
 <p><strong>Translate the choice worksheet labels</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Translate(ByVal trads As ITranslationObject)
+<pre><code class="language-vb">Public Sub Translate(ByVal trads As TranslationObject)
 </code></pre>
+<p>The BODY of the two label columns only. TranslateRange writes back every
+cell it is handed, and this used to hand it ranges that started on the
+header cell, because DataRange defaults includeHeaders to True. A
+translation table holding a tag called &quot;label&quot; or &quot;short label&quot; therefore
+replaced the HEADER with its translation, and from that moment on every
+member of this class that needs the four headers left in silence and
+Categories came back empty.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>trads</code>: ITranslationObject. Translation provider.</li>
+<li><code>trads</code>: TranslationObject. Translation provider.</li>
 </ul>
 <hr />
 <h3 id="managerows">ManageRows <a class="anchor-link" href="#managerows">#</a></h3>
 <p><em>manage-rows</em></p>
 <p><strong>Add or remove rows via a single toggle</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ManageRows(Optional ByVal del As Boolean = False)
+<pre><code class="language-vb">Public Sub ManageRows(Optional ByVal del As Boolean = False)
 </code></pre>
+<p>Works on the FIRST ListObject of the host sheet, whatever it is, and
+leaves in silence when there is none. The two branches are not symmetric:
+adding uses CustomTable's own default of 5 rows, removing takes 1.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>del</code>: Optional Boolean. When True, removes rows. Defaults to False.</li>
@@ -149,14 +202,14 @@ Silently exits when the choice already exists or the data is empty.</p>
 <p><em>add-rows</em></p>
 <p><strong>Add rows to the choice table</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddRows()
+<pre><code class="language-vb">Public Sub AddRows()
 </code></pre>
 <hr />
 <h3 id="insertrows">InsertRows <a class="anchor-link" href="#insertrows">#</a></h3>
 <p><em>insert-rows</em></p>
 <p><strong>Insert rows at the selected position</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub InsertRows(ByVal targetCell As Range, _
+<pre><code class="language-vb">Public Sub InsertRows(ByVal targetCell As Range, _
                        Optional ByVal insertShift As Boolean = False)
 </code></pre>
 <p>Mirrors the selection height inside the choices ListObject. When the
@@ -171,7 +224,7 @@ selection is invalid the attempt is logged and ignored.</p>
 <p><em>delete-rows</em></p>
 <p><strong>Delete rows intersecting the selection</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub DeleteRows(ByVal targetCell As Range, _
+<pre><code class="language-vb">Public Sub DeleteRows(ByVal targetCell As Range, _
                        Optional ByVal includeIds As Boolean = True, _
                        Optional ByVal forceShift As Boolean = False)
 </code></pre>
@@ -186,16 +239,22 @@ selection is invalid the attempt is logged and ignored.</p>
 <p><em>remove-rows</em></p>
 <p><strong>Remove empty rows from the choice table</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RemoveRows()
+<pre><code class="language-vb">Public Sub RemoveRows()
 </code></pre>
 <hr />
 <h3 id="allchoices">AllChoices <a class="anchor-link" href="#allchoices">#</a></h3>
 <p><em>all-choices</em></p>
 <p><strong>All distinct choice names</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get AllChoices() As BetterArray
+<pre><code class="language-vb">Public Property Get AllChoices() As BetterArray
 </code></pre>
-<p><strong>Returns:</strong> BetterArray. The distinct choice names.</p>
+<p>Worksheet order is kept: the first time a name is seen is where it lands.
+The column is read as ONE block and the names are de-duplicated in memory.
+It used to read every cell TWICE from the worksheet, once to ask whether
+the value was already held and once to push it, and the &quot;already held&quot;
+test copied the whole internal array on every call. On a 2,000-row choices
+sheet that was about 8,000 worksheet crossings.</p>
+<p><strong>Returns:</strong> BetterArray. The distinct choice names. Never Nothing.</p>
 <hr />
 </div>
 </details>
@@ -207,24 +266,33 @@ selection is invalid the attempt is logged and ignored.</p>
 <p><strong>Categories of a choice</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Categories(ByVal choiceName As String, _
-                               Optional ByVal useShortlabels As Boolean = False) _ 
+                               Optional ByVal useShortlabels As Boolean = False) _
 </code></pre>
 <p>Returns the long label categories for the specified choice. When
 useShortlabels is True, short labels replace long labels where
-available. Falls back to long labels for missing short entries.</p>
+available. Falls back to long labels for missing short entries.
+Matching on the choice name is case-INSENSITIVE, because AutoFilter
+criteria are and cannot be made otherwise. There used to be a full
+Range.Find in front of the filter, only to decide whether to bother
+filtering; the filter already answers &quot;no rows matched&quot; with a
+zero-length array. Dropping it means a sheet holding both list_a and
+List_A now answers as if they were one name. That is a data fault on the
+sheet, and it is also one of the ways the filter itself used to go wrong.
+A missing header is logged and answered with an empty array, the way every
+other member of this class answers. It used to raise out of the class.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>choiceName</code>: String. The choice to retrieve categories from.</li>
 <li><code>useShortlabels</code>: Optional Boolean. When True, uses short labels. Defaults to False.</li>
 </ul>
-<p><strong>Returns:</strong> BetterArray. The category values.</p>
+<p><strong>Returns:</strong> BetterArray. The category values. Never Nothing. Safe to change in place.</p>
 <hr />
 <h3 id="concatenatecategories">ConcatenateCategories <a class="anchor-link" href="#concatenatecategories">#</a></h3>
 <p><em>concatenate-categories</em></p>
 <p><strong>Concatenate all categories of a choice</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get ConcatenateCategories( _
-        ByVal choiceName As String, _ 
+<pre><code class="language-vb">Public Property Get ConcatenateCategories( _
+        ByVal choiceName As String, _
         Optional ByVal sep As String = &quot; | &quot;, _
         Optional ByVal trads As Object = Nothing) As String
 </code></pre>
@@ -247,16 +315,18 @@ category via the supplied TranslationObject.</p>
 <p><em>add-headers</em></p>
 <p><strong>Write the default headers to the choice worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddHeaders()
+<pre><code class="language-vb">Public Sub AddHeaders()
 </code></pre>
-<p>Writes the four standard column headers (list name, ordering,
-long label, short label) starting at the configured origin cell.</p>
+<p>Writes the four standard column headers starting at the configured origin
+cell, in this order: list name, ordering list, label, short label.
+The label header is always the DEFAULT one. A sheet that carried a
+translated label column loses it here.</p>
 <hr />
 <h3 id="export">Export <a class="anchor-link" href="#export">#</a></h3>
 <p><em>export</em></p>
 <p><strong>Export the current choice object to a workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Export(ByVal Wkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
+<pre><code class="language-vb">Public Sub Export(ByVal Wkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
 </code></pre>
 <p>Delegates to DataSheet.Export, including hidden names.</p>
 <p><strong>Parameters:</strong></p>
@@ -269,14 +339,19 @@ long label, short label) starting at the configured origin cell.</p>
 <p><em>import</em></p>
 <p><strong>Import choices from a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Import(ByVal fromWksh As Worksheet, _
+<pre><code class="language-vb">Public Sub Import(ByVal fromWksh As Worksheet, _
                    ByVal fromStartRow As Long, _
-                   ByVal fromStartcol As Long, _ 
+                   ByVal fromStartcol As Long, _
                    Optional ByVal clearSheet As Boolean = False)
 </code></pre>
 <p>Optionally clears the sheet and rewrites headers before importing.
 Creates a temporary DataSheet from the source range and delegates to
-DataSheet.Import.</p>
+DataSheet.Import.
+Two things to know before passing clearSheet:=True. Cells.Clear takes the
+ListObject of the sheet with it, and ManageRows, AddRows, InsertRows and
+DeleteRows all need that table, so they do nothing until something builds
+it again. And the import itself matches source columns to target columns
+case-SENSITIVELY, unlike every lookup this class makes on its own.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>fromWksh</code>: Worksheet. Source worksheet containing choices.</li>
@@ -285,71 +360,49 @@ DataSheet.Import.</p>
 <li><code>clearSheet</code>: Boolean. When True, clears the sheet before import. Defaults to False.</li>
 </ul>
 <hr />
-<h3 id="importchoice">ImportChoice <a class="anchor-link" href="#importchoice">#</a></h3>
-<p><em>import-choice</em></p>
-<p><strong>Import choices from another ILLChoices object</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ImportChoice(ByVal choiObj As ILLChoices)
-</code></pre>
-<p>Iterates all choices in the source object, retrieves both long and
-short label categories, and adds each choice via AddChoice.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>choiObj</code>: ILLChoices. Source choice object to import from.</li>
-</ul>
-<hr />
 </div>
 </details>
 <details open class="doc-section" id="checkings">
 <summary>Checkings</summary>
 <div class="section-body">
-<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
-<p><em>has-checkings</em></p>
+<h3 id="harvestcollaboratorcheckings">HarvestCollaboratorCheckings <a class="anchor-link" href="#harvestcollaboratorcheckings">#</a></h3>
+<p><em>harvest-collaborator-checkings</em></p>
 <p><strong>Whether the choice object has logged diagnostic messages</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
+<pre><code class="language-vb">Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As Checking)
 </code></pre>
+<p><code>DataSheet</code> and <code>CustomTable</code> each keep a store of their own, and nobody
+read either of them before this line.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>collaboratorChecks</code>: Checking. What the collaborator filed.</li>
+</ul>
 <p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
 <hr />
 <h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
 <p><em>checking-values</em></p>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get CheckingValues() As Object
+<pre><code class="language-vb">Public Property Get CheckingValues() As Object
 </code></pre>
-<p>Returns the internal IChecking object containing all logged messages.
+<p>Returns the internal Checking object containing all logged messages.
 Returns Nothing when no entries have been recorded.</p>
-<p><strong>Returns:</strong> Object. An IChecking instance, or Nothing.</p>
+<p><strong>Returns:</strong> Object. A Checking instance, or Nothing.</p>
 <hr />
 </div>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2 id="int-factory">Factory</h2>
-<h3 id="int-choicelabel">ChoiceLabel <a class="anchor-link" href="#int-choicelabel">#</a></h3>
-<p><em>choice-label</em></p>
-<p><strong>Resolve the label column name</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get ChoiceLabel(Optional ByVal keepDefault As Boolean = True) As String
-</code></pre>
-<p>Returns the translated label column when available, otherwise falls
-back to the default label column.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>keepDefault</code>: Optional Boolean. When True, returns the default. Defaults to True.</li>
-</ul>
-<p><strong>Returns:</strong> String. The resolved column name.</p>
-<hr />
 <h2 id="int-elements">Elements</h2>
 <h3 id="int-choicedata">ChoiceData <a class="anchor-link" href="#int-choicedata">#</a></h3>
 <p><em>choice-data-set</em></p>
 <p><strong>Assign the backing DataSheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set ChoiceData(ByVal customDataSheet As IDataSheet)
+<pre><code class="language-vb">Public Property Set ChoiceData(ByVal customDataSheet As DataSheet)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>customDataSheet</code>: IDataSheet. The DataSheet to assign.</li>
+<li><code>customDataSheet</code>: DataSheet. The DataSheet to assign.</li>
 </ul>
 <hr />
 <h3 id="int-startrow">StartRow <a class="anchor-link" href="#int-startrow">#</a></h3>
@@ -368,27 +421,118 @@ back to the default label column.</p>
 </code></pre>
 <p><strong>Returns:</strong> Long. The start column.</p>
 <hr />
-<h3 id="int-datarange">DataRange <a class="anchor-link" href="#int-datarange">#</a></h3>
-<p><em>data-range</em></p>
-<p><strong>Data range from the backing DataSheet</strong></p>
+<h2 id="int-header-lookup">Header lookup</h2>
+<h3 id="int-headervalues">HeaderValues <a class="anchor-link" href="#int-headervalues">#</a></h3>
+<p><em>header-values</em></p>
+<p><strong>Read the header row once as a 1-based list of values</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get DataRange( _ 
-    Optional ByVal colName As String = &quot;__all__&quot;, _
-    Optional ByVal includeHeaders As Boolean = True) As Range
+<pre><code class="language-vb">Private Function HeaderValues(ByRef firstColumn As Long) As Variant
+</code></pre>
+<p>Range.Value hands back a plain value when the Range is one cell and a
+two-dimensional array otherwise, so both shapes are flattened here and the
+callers do not repeat the test.
+The block is deliberately NOT kept on the instance. Callers write to these
+sheets without going through this object, so it is read again on the next
+call.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>firstColumn</code>: Long. Out. The worksheet column the header row starts at.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. A 1-based one-dimensional array of header values.</p>
+<hr />
+<h3 id="int-columnat">ColumnAt <a class="anchor-link" href="#int-columnat">#</a></h3>
+<p><em>column-at</em></p>
+<p><strong>Find one column in a header row already read</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnAt(ByRef headers As Variant, ByVal colName As String, _
+                          ByVal firstColumn As Long) As Long
+</code></pre>
+<p>Whole-string and case-insensitive, which is the rule this class has always
+used: every lookup it made went through DataRange, and DataRange forces
+matchCase:=False. The leftmost match wins, the same way DataSheet answers.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>headers</code>: Variant. The header values from HeaderValues.</li>
+<li><code>colName</code>: String. Column header to look for.</li>
+<li><code>firstColumn</code>: Long. The worksheet column the header row starts at.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The worksheet column of the match, or 0 when there is none.</p>
+<hr />
+<h3 id="int-celltext">CellText <a class="anchor-link" href="#int-celltext">#</a></h3>
+<p><em>cell-text</em></p>
+<p><strong>Read one cell value as text without raising</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CellText(ByVal cellValue As Variant) As String
+</code></pre>
+<p>A cell holding an error value (#N/A and the like) makes CStr raise a type
+mismatch. Such a cell can never match a column name or a choice name, so
+it reads as empty text instead of stopping the caller.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellValue</code>: Variant. The raw cell value.</li>
+</ul>
+<p><strong>Returns:</strong> String. The value as text, or empty text.</p>
+<hr />
+<h3 id="int-choicelabelin">ChoiceLabelIn <a class="anchor-link" href="#int-choicelabelin">#</a></h3>
+<p><em>choice-label-in</em></p>
+<p><strong>Resolve the label column name from a header row already read</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ChoiceLabelIn(ByRef headers As Variant, ByVal firstColumn As Long) As String
+</code></pre>
+<p>The translated label column wins when the sheet carries one, otherwise the
+default label column is used.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>headers</code>: Variant. The header values from HeaderValues.</li>
+<li><code>firstColumn</code>: Long. The worksheet column the header row starts at.</li>
+</ul>
+<p><strong>Returns:</strong> String. The resolved column name.</p>
+<hr />
+<h3 id="int-bodyblock">BodyBlock <a class="anchor-link" href="#int-bodyblock">#</a></h3>
+<p><em>body-block</em></p>
+<p><strong>Build a Range over the body rows of one or more columns</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BodyBlock(ByVal dataObject As DataSheet, _
+                           ByVal firstColumn As Long, _
+                           ByVal lastColumn As Long) As Range
+</code></pre>
+<p>This is what DataSheet.DataRange(name, includeHeaders:=False) builds, but
+from a column position that is already known instead of from a second
+search for the header text.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dataObject</code>: DataSheet. The backing DataSheet.</li>
+<li><code>firstColumn</code>: Long. Left worksheet column.</li>
+<li><code>lastColumn</code>: Long. Right worksheet column.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The body block.</p>
+<hr />
+<h3 id="int-columnvalues">ColumnValues <a class="anchor-link" href="#int-columnvalues">#</a></h3>
+<p><em>column-values</em></p>
+<p><strong>Read one worksheet column as a 1-based list of values</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnValues(ByVal blockRng As Range) As Variant
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>colName</code>: Optional String. Column name. Defaults to &quot;<strong>all</strong>&quot;.</li>
-<li><code>includeHeaders</code>: Optional Boolean. When True, includes headers. Defaults to True.</li>
+<li><code>blockRng</code>: Range. A single-column block.</li>
 </ul>
+<p><strong>Returns:</strong> Variant. A 1-based one-dimensional array of cell values.</p>
 <hr />
 <h2 id="int-validation">Validation</h2>
-<h3 id="int-hasvalidheaders">HasValidHeaders <a class="anchor-link" href="#int-hasvalidheaders">#</a></h3>
-<p><em>has-valid-headers</em></p>
-<p><strong>Check whether all required headers exist</strong></p>
+<h3 id="int-hasallchoicecolumns">HasAllChoiceColumns <a class="anchor-link" href="#int-hasallchoicecolumns">#</a></h3>
+<p><em>has-all-choice-columns</em></p>
+<p><strong>Check a header row already read for the four choice columns</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get HasValidHeaders() As Boolean
+<pre><code class="language-vb">Private Function HasAllChoiceColumns(ByRef headers As Variant, ByVal firstColumn As Long) As Boolean
 </code></pre>
+<p>The four ColumnExists calls this replaces cost about 40 worksheet round
+trips, and VBA does not short-circuit And, so all four always ran.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>headers</code>: Variant. The header values from HeaderValues.</li>
+<li><code>firstColumn</code>: Long. The worksheet column the header row starts at.</li>
+</ul>
 <p><strong>Returns:</strong> Boolean. True when all four required columns are found.</p>
 <hr />
 <h2 id="int-choices">Choices</h2>
@@ -403,15 +547,54 @@ back to the default label column.</p>
 <li><code>choiceName</code>: String. The name to assign.</li>
 </ul>
 <hr />
+<h3 id="int-listnamerange">ListNameRange <a class="anchor-link" href="#int-listnamerange">#</a></h3>
+<p><em>list-name-range</em></p>
+<p><strong>Body range of the list name column, or Nothing when it is missing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ListNameRange() As Range
+</code></pre>
+<p>ChoiceExists used to resolve this column twice: once through ColumnExists,
+only to be able to answer with a quiet False when the column is missing,
+and once more inside DataRange, which raises instead. The header row is
+read once here and the range is built from the position it gives.</p>
+<p><strong>Returns:</strong> Range. The list name column body, or Nothing.</p>
+<hr />
+<h3 id="int-findchoicecell">FindChoiceCell <a class="anchor-link" href="#int-findchoicecell">#</a></h3>
+<p><em>find-choice-cell</em></p>
+<p><strong>Find the first cell of the list name column holding a choice name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindChoiceCell(ByVal choiceName As String, ByVal listRng As Range) As Range
+</code></pre>
+<p>The four search arguments are kept exactly as they have always been. Three
+things follow from them and they are known, not accidents: Range.Find
+reuses whatever LookIn, SearchOrder and SearchDirection the last search
+anywhere in Excel used, including the user's own Ctrl+F; it always reads
+*, ? and ~ as wildcards even under xlWhole; and it skips hidden rows.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>choiceName</code>: String. Choice name to search for.</li>
+<li><code>listRng</code>: Range. The list name column body.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The matching cell, or Nothing.</p>
+<hr />
 <h3 id="int-removeonechoice">RemoveOneChoice <a class="anchor-link" href="#int-removeonechoice">#</a></h3>
 <p><em>remove-one-choice</em></p>
-<p><strong>Remove a single choice by name</strong></p>
+<p><strong>Remove every row of a single choice</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RemoveOneChoice(ByVal choiceName As String)
+<pre><code class="language-vb">Private Sub RemoveOneChoice(ByVal choiceName As String, ByVal listCol As Long)
 </code></pre>
+<p>The caller has already sorted the sheet, so every row of one choice sits
+in a single unbroken run. The run is found by reading the list name column
+once and matching in memory, and then taken in ONE worksheet delete.
+It used to delete a row at a time, which is one of the most expensive
+things Excel does, and the loop was only correct because Offset(1) and the
+upward shift of the rows below cancelled each other exactly.
+EntireRow.Delete takes the WHOLE worksheet row, on a sheet this class does
+not own on its own. That is unchanged.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>choiceName</code>: String. The choice to remove.</li>
+<li><code>listColumn</code>: Long. Worksheet column holding the list names.</li>
 </ul>
 <hr />
 <h3 id="int-resolverowtarget">ResolveRowTarget <a class="anchor-link" href="#int-resolverowtarget">#</a></h3>
@@ -420,6 +603,14 @@ back to the default label column.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveRowTarget(ByVal targetCell As Range, ByVal actionLabel As String) As ListObject
 </code></pre>
+<p>The &quot;the worksheet could not be resolved&quot; branch looks unreachable and is
+not: targetCell can point at a sheet that has since been deleted, and then
+reading its Worksheet raises. The trap above it is what keeps
+selectionSheet Nothing, and the next test would read .Name off Nothing, so
+both guards stay.
+This resolves the table from the SELECTION, while ManageRows takes the
+first table of the sheet. On a choices sheet carrying more than one table
+those are two different answers.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>targetCell</code>: Range. The user-selected cell to validate.</li>
@@ -432,7 +623,7 @@ back to the default label column.</p>
 <p><em>log-info</em></p>
 <p><strong>Append a diagnostic entry to the internal checking object</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _ 
+<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _
                     Optional ByVal scope As Byte = checkingNote)
 </code></pre>
 <p>Lazily creates the Checking instance on first call. Increments the
@@ -443,6 +634,39 @@ internal counter used as the entry key.</p>
 <li><code>scope</code>: Byte. Severity level. Defaults to checkingNote.</li>
 </ul>
 <hr />
+<h3 id="int-logandtrace">LogAndTrace <a class="anchor-link" href="#int-logandtrace">#</a></h3>
+<p><em>log-and-trace</em></p>
+<p><strong>Log a message and print the debug trace</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogAndTrace(ByVal label As String, _
+                        Optional ByVal scope As Byte = checkingNote)
+</code></pre>
+<p>The &quot;log it, show the trace, then leave&quot; tail was written out four times,
+on the two failure paths of the choice removal and on the header guards of
+AllChoices and the removal itself.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>label</code>: String. The message to record.</li>
+<li><code>scope</code>: Optional Byte. Severity level. Defaults to checkingNote.</li>
+</ul>
+<hr />
+<h3 id="int-logmissingheaders">LogMissingHeaders <a class="anchor-link" href="#int-logmissingheaders">#</a></h3>
+<p><em>log-missing-headers</em></p>
+<p><strong>Log that a member left because a required header is missing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogMissingHeaders(ByVal actionLabel As String)
+</code></pre>
+<p>Six members need the choice columns and they used to write this tail three
+different ways: Sort logged nothing at all, Translate logged at
+checkingNote, and the rest at checkingWarning. There is one shape now, at
+checkingWarning, because a missing header always means the caller's work
+was dropped. Sort is the one that changes: it used to leave without a
+word, which gave the user a button that did nothing and said nothing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>actionLabel</code>: String. What was not done, in plain words.</li>
+</ul>
+<hr />
 <h3 id="int-showdebug">ShowDebug <a class="anchor-link" href="#int-showdebug">#</a></h3>
 <p><em>show-debug</em></p>
 <p><strong>Print diagnostic summary to the Immediate window</strong></p>
@@ -450,39 +674,84 @@ internal counter used as the entry key.</p>
 <pre><code class="language-vb">Private Sub ShowDebug()
 </code></pre>
 <hr />
+<h3 id="int-mergecollaboratorcheckings">MergeCollaboratorCheckings <a class="anchor-link" href="#int-mergecollaboratorcheckings">#</a></h3>
+<p><em>merge-collaborator-checkings</em></p>
+<p><strong>Take the data sheet's entries before the report is read</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub MergeCollaboratorCheckings()
+</code></pre>
+<p>The data sheet lives as long as this object does, so its entries are
+folded in when the report is asked for. The flag keeps the fold to once,
+because the caller reads <code>HasCheckings</code> and then <code>CheckingValues</code>.</p>
+<hr />
+<h2 id="int-instantiation-guard">Instantiation Guard</h2>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumb</code>: Long. ProjectError code.</li>
+<li><code>errorMessage</code>: String. Descriptive message.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance so setup setters can no longer be written</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup setter against writes after sealing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. Name of the property being guarded.</li>
+</ul>
+<hr />
 </details>
 <details>
 <summary>Used in (29 file(s))</summary>
 <ul>
+<li><a href="ChoiceKeys.html">ChoiceKeys.cls</a></li>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
-<li><a href="ILinelistBuildService.html">ILinelistBuildService.cls</a></li>
-<li><a href="LinelistBuildService.html">LinelistBuildService.cls</a></li>
-<li><a href="ILLChoices.html">ILLChoices.cls</a></li>
-<li><a href="LLChoices.html">LLChoices.cls</a></li>
-<li><a href="ILinelistSpecs.html">ILinelistSpecs.cls</a></li>
+<li><a href="CustomTable.html">CustomTable.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
 <li><a href="EventMasterSetup.html">EventMasterSetup.cls</a></li>
-<li><a href="IEventMasterSetup.html">IEventMasterSetup.cls</a></li>
-<li><a href="IMasterSetupVariables.html">IMasterSetupVariables.cls</a></li>
 <li><a href="MasterSetupVariables.html">MasterSetupVariables.cls</a></li>
 <li><a href="EventSetup.html">EventSetup.cls</a></li>
-<li><a href="IEventSetup.html">IEventSetup.cls</a></li>
-<li><a href="ISetupErrors.html">ISetupErrors.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
-<li><a href="SetupImportService.html">SetupImportService.cls</a></li>
-<li><a href="DesignerImportService.html">DesignerImportService.cls</a></li>
-<li><a href="IDesignerImportService.html">IDesignerImportService.cls</a></li>
-<li>GenerationReport.bas</li>
+<li><a href="SetupImport.html">SetupImport.cls</a></li>
+<li>InitTransfer.bas</li>
 <li>MasterSetupHelpers.bas</li>
-<li>SetupHelpers.bas</li>
+<li>EventsGlobal.bas</li>
+<li>TestAnalysisOutput.bas</li>
+<li>TestChoiceKeys.bas</li>
+<li>TestLLImporter.bas</li>
 <li>TestLLChoices.bas</li>
+<li>ChoicesTestFixture.bas</li>
+<li><a href="LinelistDataStub.html">LinelistDataStub.cls</a></li>
+<li>SetupImportTestFixture.bas</li>
+<li>TestEventLinelistSheets.bas</li>
+<li>TestLinelistSpecs.bas</li>
+<li>TestLLDataEntry.bas</li>
 <li>TestEventMasterSetup.bas</li>
 <li>TestMasterSetupVariables.bas</li>
-<li><a href="LinelistSpecsWorkbookStub.html">LinelistSpecsWorkbookStub.cls</a></li>
-<li><a href="LLVarContextSpecsStub.html">LLVarContextSpecsStub.cls</a></li>
-<li><a href="TableSpecsLinelistStub.html">TableSpecsLinelistStub.cls</a></li>
+<li>TestSectionBuilder.bas</li>
+<li>TestVarWriter.bas</li>
+<li>TestSetupErrors.bas</li>
 </ul>
 </details>
   </main>

@@ -14,8 +14,12 @@
 <p>Tag-based translator backed by a ListObject table. Looks up tags in
 the first column and returns the value from the active language column.
 Supports plain text, formula-aware translation (quoted chunks only),
-range bulk-translation, and user-form caption translation.</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="IChecking.html">IChecking</a>, ProjectError, checking objects</p>
+range bulk-translation, and user-form caption translation.
+The table is read once into memory and every value is matched against that
+copy through a keyed index. The copy is kept until the table changes shape or
+Refresh is called, so a run that translates a thousand strings reads the
+worksheet twice and looks each string up without walking the copy.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, checking objects</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
@@ -24,7 +28,7 @@ range bulk-translation, and user-form caption translation.</p>
 <p><em>create</em></p>
 <p><strong>Factory returning an initialised interface</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal translationLo As ListObject, ByVal translationLang As String) As ITranslationObject
+<pre><code class="language-vb">Public Function Create(ByVal translationLo As ListObject, ByVal translationLang As String) As TranslationObject
 </code></pre>
 <p>A translation object wraps a ListObject whose first column contains tags
 and remaining columns hold language translations. Tags not found during
@@ -34,7 +38,7 @@ translation are returned as-is.</p>
 <li><code>translationLo</code>: ListObject. The translation table.</li>
 <li><code>translationLang</code>: String. The target language column header.</li>
 </ul>
-<p><strong>Returns:</strong> ITranslationObject. Ready to use.</p>
+<p><strong>Returns:</strong> TranslationObject. Ready to use.</p>
 <hr />
 </div>
 </details>
@@ -61,7 +65,7 @@ translation are returned as-is.</p>
 <p><em>name</em></p>
 <p><strong>Descriptive name including table and language</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Name() As String
+<pre><code class="language-vb">Public Property Get Name() As String
 </code></pre>
 <p><strong>Returns:</strong> String. Identifier for diagnostic output.</p>
 <hr />
@@ -69,7 +73,7 @@ translation are returned as-is.</p>
 <p><em>value-exists</em></p>
 <p><strong>Whether a tag exists in the translation table</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ValueExists(ByVal Text As String) As Boolean
+<pre><code class="language-vb">Public Function ValueExists(ByVal Text As String) As Boolean
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -81,8 +85,8 @@ translation are returned as-is.</p>
 <p><em>translated-value</em></p>
 <p><strong>Translate a text tag or formula string</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function TranslatedValue(ByVal textToTranslate As String, _ 
-                                 Optional ByVal containsFormula As Boolean = False) As String
+<pre><code class="language-vb">Public Function TranslatedValue(ByVal textToTranslate As String, _
+                                Optional ByVal containsFormula As Boolean = False) As String
 </code></pre>
 <p>When containsFormula is True, only double-quoted chunks inside the text
 are translated; unquoted characters pass through unchanged.</p>
@@ -102,7 +106,7 @@ are translated; unquoted characters pass through unchanged.</p>
 <p><em>translate-range</em></p>
 <p><strong>Translate all values in a column range</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
+<pre><code class="language-vb">Public Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -114,7 +118,7 @@ are translated; unquoted characters pass through unchanged.</p>
 <p><em>translate-form</em></p>
 <p><strong>Translate all supported controls on a user form</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub TranslateForm(ByVal UserFrm As Object)
+<pre><code class="language-vb">Public Sub TranslateForm(ByVal UserFrm As Object)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -130,7 +134,7 @@ are translated; unquoted characters pass through unchanged.</p>
 <p><em>has-checkings</em></p>
 <p><strong>Whether diagnostic entries have been recorded</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when at least one entry exists.</p>
 <hr />
@@ -138,23 +142,29 @@ are translated; unquoted characters pass through unchanged.</p>
 <p><em>checking-values</em></p>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get CheckingValues() As Object
+<pre><code class="language-vb">Public Property Get CheckingValues() As Object
 </code></pre>
 <p><strong>Returns:</strong> Object. The checking instance, or Nothing.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="helpers">
+<summary>Helpers</summary>
+<div class="section-body">
+<h3 id="refresh">Refresh <a class="anchor-link" href="#refresh">#</a></h3>
+<p><em>refresh</em></p>
+<p><strong>Drop the copy held in memory</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Refresh()
+</code></pre>
+<p>The next translation reads the table again. Call this after writing into the
+translation table through anything other than this object.</p>
 <hr />
 </div>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-elements">Elements</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Self-reference as ITranslationObject</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ITranslationObject
-</code></pre>
-<p><strong>Returns:</strong> ITranslationObject. Self-reference.</p>
-<hr />
 <h3 id="int-table">Table <a class="anchor-link" href="#int-table">#</a></h3>
 <p><em>table</em></p>
 <p><strong>The backing ListObject translation table</strong></p>
@@ -165,7 +175,7 @@ are translated; unquoted characters pass through unchanged.</p>
 <hr />
 <h3 id="int-table">Table <a class="anchor-link" href="#int-table">#</a></h3>
 <p><em>table-set</em></p>
-<p><strong>Assign the backing ListObject and reset caches</strong></p>
+<p><strong>Assign the backing ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Table(ByVal lo As ListObject)
 </code></pre>
@@ -176,7 +186,7 @@ are translated; unquoted characters pass through unchanged.</p>
 <hr />
 <h3 id="int-language">Language <a class="anchor-link" href="#int-language">#</a></h3>
 <p><em>language-set</em></p>
-<p><strong>Set the target language and reset caches</strong></p>
+<p><strong>Set the target language</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let Language(ByVal transLng As String)
 </code></pre>
@@ -185,20 +195,12 @@ are translated; unquoted characters pass through unchanged.</p>
 <li><code>transLng</code>: String. The new language column header.</li>
 </ul>
 <hr />
-<h3 id="int-languageindex">LanguageIndex <a class="anchor-link" href="#int-languageindex">#</a></h3>
-<p><em>language-index</em></p>
-<p><strong>Resolve the one-based column index of the active language</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function LanguageIndex() As Long
-</code></pre>
-<p><strong>Returns:</strong> Long. Column index, or -1 when not found.</p>
-<hr />
 <h2 id="int-checkings">Checkings</h2>
 <h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
 <p><em>log-info</em></p>
 <p><strong>Record a diagnostic entry</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _ 
+<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _
                     Optional ByVal scope As Byte = checkingNote)
 </code></pre>
 <p><strong>Parameters:</strong></p>
@@ -207,20 +209,18 @@ are translated; unquoted characters pass through unchanged.</p>
 <li><code>scope</code>: Byte. The checking scope. Defaults to checkingNote.</li>
 </ul>
 <hr />
-<h3 id="int-showdebug">ShowDebug <a class="anchor-link" href="#int-showdebug">#</a></h3>
-<p><em>show-debug</em></p>
-<p><strong>Print diagnostic information to the Immediate window</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ShowDebug()
-</code></pre>
-<hr />
 <h2 id="int-helpers">Helpers</h2>
 <h3 id="int-sanitizetext">SanitizeText <a class="anchor-link" href="#int-sanitizetext">#</a></h3>
 <p><em>sanitize-text</em></p>
-<p><strong>Clean a raw value using worksheet functions</strong></p>
+<p><strong>Clean a raw value the way the worksheet functions used to</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SanitizeText(ByVal rawValue As String) As String
 </code></pre>
+<p>Does the same three jobs as SUBSTITUTE + CLEAN + TRIM did, in plain VBA
+so a call no longer goes out to Excel: the '&lt;' character becomes a space,
+characters below code 32 are dropped, then leading, trailing and repeated
+spaces are squeezed. Worksheet TRIM squeezes inner runs of spaces down to
+one, which VBA Trim$ does not do, so that part is written out here.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>rawValue</code>: String. The raw text.</li>
@@ -235,25 +235,153 @@ are translated; unquoted characters pass through unchanged.</p>
 </code></pre>
 <p><strong>Returns:</strong> Range. The header row, or Nothing.</p>
 <hr />
-<h3 id="int-keysdatarange">KeysDataRange <a class="anchor-link" href="#int-keysdatarange">#</a></h3>
-<p><em>keys-data-range</em></p>
-<p><strong>Retrieve the data body range of the first (tags) column</strong></p>
+<h3 id="int-rangeblock">RangeBlock <a class="anchor-link" href="#int-rangeblock">#</a></h3>
+<p><em>range-block</em></p>
+<p><strong>Read a range into a two dimensional array in one go</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function KeysDataRange() As Range
+<pre><code class="language-vb">Private Function RangeBlock(ByVal target As Range) As Variant
 </code></pre>
-<p><strong>Returns:</strong> Range. The keys column data, or Nothing.</p>
+<p>Range.Value hands back a plain value for a single cell, so that case is
+wrapped to keep one shape for every caller.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>target</code>: Range. The range to read.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. A two dimensional array, or Empty when target is Nothing.</p>
 <hr />
-<h3 id="int-resolvetranslationcell">ResolveTranslationCell <a class="anchor-link" href="#int-resolvetranslationcell">#</a></h3>
-<p><em>resolve-translation-cell</em></p>
-<p><strong>Find the translated cell for a given tag token</strong></p>
+<h3 id="int-textof">TextOf <a class="anchor-link" href="#int-textof">#</a></h3>
+<p><em>text-of</em></p>
+<p><strong>Turn a cell value into text without ever raising</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolveTranslationCell(ByVal token As String) As Range
+<pre><code class="language-vb">Private Function TextOf(ByVal cellValue As Variant) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellValue</code>: Variant. The value read from a cell.</li>
+</ul>
+<p><strong>Returns:</strong> String. The value as text, empty for errors and blanks.</p>
+<hr />
+<h3 id="int-languageindex">LanguageIndex <a class="anchor-link" href="#int-languageindex">#</a></h3>
+<p><em>language-index</em></p>
+<p><strong>Resolve the one-based column index of the active language</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LanguageIndex() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. Column index, or -1 when not found.</p>
+<hr />
+<h3 id="int-tablesignature">TableSignature <a class="anchor-link" href="#int-tablesignature">#</a></h3>
+<p><em>table-signature</em></p>
+<p><strong>What the copy in memory was read from</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TableSignature() As String
+</code></pre>
+<p>The table name, the address of its body and the target language. A row added
+or removed, a column added or removed, a table replaced or a language switched
+all change it, and each one is a reason to read the table again.</p>
+<p><strong>Returns:</strong> String. The signature of the table as it stands now.</p>
+<hr />
+<h3 id="int-refreshlookup">RefreshLookup <a class="anchor-link" href="#int-refreshlookup">#</a></h3>
+<p><em>refresh-lookup</em></p>
+<p><strong>Read the tags and the active language column into memory</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RefreshLookup()
+</code></pre>
+<p>Called at the start of every public translation call. The copy is kept between
+calls and reread when the table it came from changes shape or the language
+moves. Building one analysis sheet asks for four translations per chart, and
+every one of them used to read the whole table.</p>
+<h2 id="int-the-limit-of-this">THE LIMIT OF THIS</h2>
+<p>A value typed over an existing cell leaves the shape of the table alone, so
+the copy does not notice it. Refresh drops the copy for a caller that has just
+done that.</p>
+<hr />
+<h3 id="int-registerlookupkey">RegisterLookupKey <a class="anchor-link" href="#int-registerlookupkey">#</a></h3>
+<p><em>register-lookup-key</em></p>
+<p><strong>Record the row a tag sits on, keeping the first row when a tag repeats</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RegisterLookupKey(ByVal token As String, ByVal rowIndex As Long)
+</code></pre>
+<p>Collection.Add raises 457 on a key it already holds, so the first row a tag
+appears on is the row that stays. That is the row the scan this index replaced
+answered with, because the scan stopped at its first match.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>token</code>: String. The tag read out of the first column.</li>
+<li><code>rowIndex</code>: Long. The one-based row it sits on.</li>
+</ul>
+<hr />
+<h3 id="int-lookupkey">LookupKey <a class="anchor-link" href="#int-lookupkey">#</a></h3>
+<p><em>lookup-key</em></p>
+<p><strong>Build the index key for a tag, one key per spelling</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LookupKey(ByVal token As String) As String
+</code></pre>
+<p>A Collection matches its own keys without regard to case, and this lookup is
+case sensitive, so the key carries the capitalisation as a separate part and
+&quot;Hello&quot; never answers for &quot;hello&quot;. The leading character keeps a numeric tag
+legal as a key. Same construction as SetupTranslationsTable.LabelKey.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>token</code>: String. The tag to key.</li>
+</ul>
+<p><strong>Returns:</strong> String. The key.</p>
+<hr />
+<h3 id="int-casesignature">CaseSignature <a class="anchor-link" href="#int-casesignature">#</a></h3>
+<p><em>case-signature</em></p>
+<p><strong>Spell a tag's capitalisation out in digits</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CaseSignature(ByVal token As String) As String
+</code></pre>
+<p>Digits carry no case of their own, so a Collection holds this part of the key
+exactly as written. A character reads 1 when it differs from its own lower
+case, which is the whole of what a case-insensitive comparison throws away.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>token</code>: String. The tag to describe.</li>
+</ul>
+<p><strong>Returns:</strong> String. One digit per character.</p>
+<hr />
+<h3 id="int-lookuprow">LookupRow <a class="anchor-link" href="#int-lookuprow">#</a></h3>
+<p><em>lookup-row</em></p>
+<p><strong>Find the row of a tag in the copy held in memory</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LookupRow(ByVal token As String) As Long
+</code></pre>
+<p>Answered by the keyed index built with the copy. It used to walk the copy from
+the top on every call, and translating the setup asks this once per cell of
+every translated column, so the walk cost rows times cells and was the whole of
+why translating a setup took as long as it did.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>token</code>: String. The tag to look up.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The one-based row, or 0 when the tag is not there.</p>
+<hr />
+<h3 id="int-translatetext">TranslateText <a class="anchor-link" href="#int-translatetext">#</a></h3>
+<p><em>translate-text</em></p>
+<p><strong>Translate one value against the copy already in memory</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TranslateText(ByVal textToTranslate As String, _
+                               ByVal containsFormula As Boolean) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>textToTranslate</code>: String. Text to translate.</li>
+<li><code>containsFormula</code>: Boolean. Translate as formula.</li>
+</ul>
+<p><strong>Returns:</strong> String. The translated value.</p>
+<hr />
+<h3 id="int-translatetag">TranslateTag <a class="anchor-link" href="#int-translatetag">#</a></h3>
+<p><em>translate-tag</em></p>
+<p><strong>Return the translation of one tag, or the cleaned tag itself</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TranslateTag(ByVal token As String) As String
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>token</code>: String. The tag to look up.</li>
 </ul>
-<p><strong>Returns:</strong> Range. The cell in the language column, or Nothing.</p>
+<p><strong>Returns:</strong> String. The translation, or the cleaned token when there is none.</p>
 <hr />
 <h3 id="int-translateformulatext">TranslateFormulaText <a class="anchor-link" href="#int-translateformulatext">#</a></h3>
 <p><em>translate-formula-text</em></p>
@@ -314,17 +442,6 @@ are translated; unquoted characters pass through unchanged.</p>
 <li><code>sourceMember</code>: String. Calling member name for error context.</li>
 </ul>
 <hr />
-<h3 id="int-resetcaches">ResetCaches <a class="anchor-link" href="#int-resetcaches">#</a></h3>
-<p><em>reset-caches</em></p>
-<p><strong>Invalidate cached column index</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ResetCaches(Optional ByVal resetLanguageIndex As Boolean = True)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>resetLanguageIndex</code>: Boolean. When True, clears the language column cache. Defaults to True.</li>
-</ul>
-<hr />
 <h3 id="int-raiseerror">RaiseError <a class="anchor-link" href="#int-raiseerror">#</a></h3>
 <p><em>raise-error</em></p>
 <p><strong>Raise a typed project error with optional member context</strong></p>
@@ -338,94 +455,92 @@ are translated; unquoted characters pass through unchanged.</p>
 <li><code>sourceMember</code>: String. Optional calling member name.</li>
 </ul>
 <hr />
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance so setup setters can no longer be written</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup setter against writes after sealing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. Name of the property being guarded.</li>
+</ul>
+<hr />
 </details>
 <details>
-<summary>Used in (84 file(s))</summary>
+<summary>Used in (64 file(s))</summary>
 <ul>
 <li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
-<li><a href="IAnalysis.html">IAnalysis.cls</a></li>
 <li><a href="ExportButton.html">ExportButton.cls</a></li>
 <li><a href="DesignerTranslation.html">DesignerTranslation.cls</a></li>
-<li><a href="IDesignerTranslation.html">IDesignerTranslation.cls</a></li>
-<li><a href="ILLdictionary.html">ILLdictionary.cls</a></li>
-<li><a href="ILLExport.html">ILLExport.cls</a></li>
 <li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="LLExport.html">LLExport.cls</a></li>
-<li><a href="ILLChoices.html">ILLChoices.cls</a></li>
-<li><a href="IPasswords.html">IPasswords.cls</a></li>
-<li><a href="ITranslationObject.html">ITranslationObject.cls</a></li>
+<li><a href="DropdownLists.html">DropdownLists.cls</a></li>
 <li><a href="LLChoices.html">LLChoices.cls</a></li>
 <li><a href="Passwords.html">Passwords.cls</a></li>
-<li><a href="TranslationObject.html">TranslationObject.cls</a></li>
 <li><a href="EventLinelist.html">EventLinelist.cls</a></li>
-<li><a href="IEventLinelist.html">IEventLinelist.cls</a></li>
-<li><a href="ILinelistSpecs.html">ILinelistSpecs.cls</a></li>
-<li><a href="ILLTranslation.html">ILLTranslation.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
-<li><a href="ListBuilder.html">ListBuilder.cls</a></li>
+<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
 <li><a href="LLTranslation.html">LLTranslation.cls</a></li>
 <li><a href="DiseaseSheet.html">DiseaseSheet.cls</a></li>
 <li><a href="EventMasterSetup.html">EventMasterSetup.cls</a></li>
 <li><a href="IDiseaseSheet.html">IDiseaseSheet.cls</a></li>
-<li><a href="IEventMasterSetup.html">IEventMasterSetup.cls</a></li>
-<li><a href="IMasterSetupVariables.html">IMasterSetupVariables.cls</a></li>
 <li><a href="MasterSetupVariables.html">MasterSetupVariables.cls</a></li>
 <li><a href="DiseaseExporter.html">DiseaseExporter.cls</a></li>
 <li><a href="IDiseaseExporter.html">IDiseaseExporter.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
-<li>FormLogicAdvanced.bas</li>
-<li>FormLogicExport.bas</li>
-<li>FormLogicExportMigration.bas</li>
-<li>FormLogicGeo.bas</li>
-<li>FormLogicImportRep.bas</li>
-<li>FormLogicShowVarLabels.bas</li>
-<li>LinelistEvents.bas</li>
-<li>LinelistGeo.bas</li>
+<li><a href="EventSetup.html">EventSetup.cls</a></li>
+<li><a href="SetupTranslationsTable.html">SetupTranslationsTable.cls</a></li>
 <li>EventsLinelistButtons.bas</li>
 <li>EventsLinelistRibbon.bas</li>
-<li>GeoModule.bas</li>
 <li>FormLogicAdvanced.bas</li>
 <li>FormLogicEpiWeek.bas</li>
 <li>FormLogicExport.bas</li>
 <li>FormLogicExportMig.bas</li>
 <li>FormLogicGeo.bas</li>
 <li>FormLogicImportRep.bas</li>
+<li>FormLogicShowHideSave.bas</li>
+<li>FormLogicShowHideSections.bas</li>
 <li>FormLogicShowVarLabels.bas</li>
 <li>EventsMasterSetupRibbon.bas</li>
 <li>MasterSetupHelpers.bas</li>
-<li>EventsSetupRibbon.bas</li>
-<li>SetupHelpers.bas</li>
-<li>EventsGlobal.bas</li>
-<li>EventsRibbon.bas</li>
-<li>Exports.bas</li>
-<li>ManageDiseases.bas</li>
-<li>Misc.bas</li>
-<li><a href="LinelistPasswordStub.html">LinelistPasswordStub.cls</a></li>
+<li>SetupRibbon.bas</li>
 <li>TestAnalysis.bas</li>
+<li>TestAnalysisOutput.bas</li>
+<li>TestCrossTable.bas</li>
+<li>TestCrossTableFormula.bas</li>
+<li>TestSpatialTables.bas</li>
 <li>TestExportButton.bas</li>
 <li>TestDropdownLists.bas</li>
 <li>TestLLChoices.bas</li>
 <li>TestPasswords.bas</li>
 <li>TestTranslationObject.bas</li>
 <li>AnalysisTestFixture.bas</li>
+<li><a href="LinelistDataStub.html">LinelistDataStub.cls</a></li>
+<li>TestHelpers.bas</li>
+<li>TestHelpersLite.bas</li>
+<li>TestEventLinelist.bas</li>
+<li>TestEventLinelistSheets.bas</li>
+<li>TestLLDataEntry.bas</li>
 <li>TestLLTranslation.bas</li>
 <li>TestDiseaseExporter.bas</li>
 <li>TestDiseaseIntegration.bas</li>
 <li>TestDiseaseSheet.bas</li>
 <li>TestDiseaseTranslationCache.bas</li>
 <li>TestEventMasterSetup.bas</li>
-<li><a href="AnalysisDictionaryStub.html">AnalysisDictionaryStub.cls</a></li>
-<li><a href="DesignerTranslationStub.html">DesignerTranslationStub.cls</a></li>
-<li><a href="DictionaryMinimalStub.html">DictionaryMinimalStub.cls</a></li>
-<li><a href="LinelistSpecsDesignerTranslationStub.html">LinelistSpecsDesignerTranslationStub.cls</a></li>
-<li><a href="LinelistSpecsTranslationStub.html">LinelistSpecsTranslationStub.cls</a></li>
-<li><a href="LinelistSpecsWorkbookStub.html">LinelistSpecsWorkbookStub.cls</a></li>
-<li><a href="LinelistTranslationCounterStub.html">LinelistTranslationCounterStub.cls</a></li>
-<li><a href="LLVarContextSpecsStub.html">LLVarContextSpecsStub.cls</a></li>
-<li><a href="TableSpecsLinelistStub.html">TableSpecsLinelistStub.cls</a></li>
+<li>TestSectionBuilder.bas</li>
+<li>TestVarWriter.bas</li>
+<li>TestEventSetup.bas</li>
 </ul>
 </details>
   </main>

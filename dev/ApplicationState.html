@@ -11,12 +11,46 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>ApplicationState</h1>
-<p>Cell-based guard that snapshots Excel Application settings before
-entering a locked-down busy mode and restores them afterwards.
-Handles ScreenUpdating, DisplayAlerts, Calculation, EnableAnimations,
-EnableEvents, AutomationSecurity, cursor, and CalculateBeforeSave.</p>
+<p>Holds a copy of the Excel Application settings a long operation changes, and
+puts them back when it ends. Create binds an Application and takes the copy
+straight away. ApplyBusyState turns screen updating, alerts and automatic
+calculation off, and on request also silences events, forces the automation
+security level and sets the cursor. Restore writes every saved value back.
+IsBusy and HasSnapshot answer where the object stands.</p>
+<details open class="doc-section" id="the-copy-is-taken-once">
+<summary>THE COPY IS TAKEN ONCE</summary>
+<div class="section-body">
+<p>ApplyBusyState restores from the copy the object already holds, and takes no
+new one. RefreshSnapshot takes a fresh copy, which is what a caller that
+changed a setting between two busy blocks calls first. ApplyBusyState does
+nothing when the scope is already busy; a caller that needs the settings
+written again inside one scope passes force:=True, and the copy still holds
+the values the scope opened on.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-settings-this-class-covers">
+<summary>THE SETTINGS THIS CLASS COVERS</summary>
+<div class="section-body">
+<p>ScreenUpdating, DisplayAlerts, Calculation, EnableAnimations, EnableEvents,
+AutomationSecurity, the mouse cursor, CalculateBeforeSave and
+FormatStaleValues. EnableAnimations and FormatStaleValues are missing on some
+hosts, and the object records whether each is there.</p>
+</div>
+</details>
+<details open class="doc-section" id="formatstalevalues-is-the-one-setting-never-put-back">
+<summary>FORMATSTALEVALUES IS THE ONE SETTING NEVER PUT BACK</summary>
+<div class="section-body">
+<p>Stale value formatting greys out every cell a manual calculation has left
+behind, which in a linelist on manual calculation is most of the sheet. The
+workbooks want it off from the moment they open until the moment they close,
+so both ApplyBusyState and Restore write False and neither reads the snapshot
+back. It is an Application setting, so a second workbook closing in the same
+session turns it back on for the one still open; forcing it here means the
+next operation of that workbook puts it out again.</p>
 <p><strong>Depends on:</strong> ProjectError</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+</div>
+</details>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -24,7 +58,7 @@ EnableEvents, AutomationSecurity, cursor, and CalculateBeforeSave.</p>
 <p><em>create</em></p>
 <p><strong>Factory returning an initialised interface</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(Optional ByVal excelApplication As Application) As IApplicationState
+<pre><code class="language-vb">Public Function Create(Optional ByVal excelApplication As Application) As ApplicationState
 </code></pre>
 <p>Captures the current application state immediately so callers can
 switch to busy mode without an additional call.</p>
@@ -32,79 +66,78 @@ switch to busy mode without an additional call.</p>
 <ul>
 <li><code>excelApplication</code>: Application. Target application. Defaults to Excel.Application.</li>
 </ul>
-<p><strong>Returns:</strong> IApplicationState. Ready to use.</p>
+<p><strong>Returns:</strong> ApplicationState. Ready to use.</p>
 <hr />
 </div>
 </details>
 <details open class="doc-section" id="core-logic">
 <summary>Core Logic</summary>
 <div class="section-body">
-<h3 id="applybusystatecore">ApplyBusyStateCore <a class="anchor-link" href="#applybusystatecore">#</a></h3>
+<h3 id="applybusystate">ApplyBusyState <a class="anchor-link" href="#applybusystate">#</a></h3>
 <p><em>apply-busy-state</em></p>
 <p><strong>Apply the busy state to the target application</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyBusyStateCore(Optional ByVal suppressEvents As Boolean = False, _
+<pre><code class="language-vb">Public Sub ApplyBusyState(Optional ByVal suppressEvents As Boolean = False, _
                                Optional ByVal calculateOnSave As Boolean = True, _
                                Optional ByVal busyCursor As Long = 0, _
-                               Optional ByVal blockSecurity As Boolean = False)
+                               Optional ByVal blockSecurity As Boolean = False, _
+                               Optional ByVal force As Boolean = False)
 </code></pre>
 <p>Switches the target Excel Application into a locked-down mode for heavy
 operations: disables screen updating, alerts, automatic calculation, and
 optionally suppresses events and blocks automation security.  Does nothing
 when the scope is already busy.  On failure the busy flag is cleared and a
-ProjectError is raised so the caller can attempt recovery.</p>
+ProjectError is raised so the caller can attempt recovery.
+The snapshot restored later is the one this object already holds; it belongs
+to the whole life of the object and is NOT re-taken here.  A caller that
+changed a setting on purpose between two busy blocks must ask for a new
+snapshot with RefreshSnapshot, otherwise the next Restore puts the old value
+back.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>suppressEvents</code>: Optional Boolean. When True, disables Application.EnableEvents. Defaults to False.</li>
 <li><code>calculateOnSave</code>: Optional Boolean. Value assigned to CalculateBeforeSave. Defaults to True.</li>
 <li><code>busyCursor</code>: Optional Long. Cursor shown while busy. When 0 (default), leaves cursor unchanged.</li>
 <li><code>blockSecurity</code>: Optional Boolean. When True, forces msoAutomationSecurityForceDisable. Defaults to False.</li>
+<li><code>force</code>: Optional Boolean. When True, writes the settings again even though
+the scope is already busy. Defaults to False. Excel puts screen updating back
+on by itself on some hosts -- activating a worksheet is the known case -- and
+a caller that has to re-assert the busy state in the middle of one scope passes
+True. The snapshot is untouched, so Restore still answers the values the scope
+opened on.</li>
 </ul>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ErrorUnexpectedState When the application settings cannot be applied.</li>
 </ul>
 <hr />
-<h3 id="refreshsnapshotcore">RefreshSnapshotCore <a class="anchor-link" href="#refreshsnapshotcore">#</a></h3>
+<h3 id="refreshsnapshot">RefreshSnapshot <a class="anchor-link" href="#refreshsnapshot">#</a></h3>
 <p><em>refresh-snapshot</em></p>
 <p><strong>Re-capture the snapshot from the current application state</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RefreshSnapshotCore()
+<pre><code class="language-vb">Public Sub RefreshSnapshot()
 </code></pre>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ErrorUnexpectedState When the scope is busy.</li>
+</ul>
 <hr />
-<h3 id="restoreinternal">RestoreInternal <a class="anchor-link" href="#restoreinternal">#</a></h3>
+<h3 id="restore">Restore <a class="anchor-link" href="#restore">#</a></h3>
 <p><em>restore</em></p>
 <p><strong>Restore all captured settings to the application</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RestoreInternal(ByVal silent As Boolean)
+<pre><code class="language-vb">Public Sub Restore(Optional ByVal silent As Boolean = False)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>silent</code>: Boolean. When True, swallows errors instead of raising them.</li>
+<li><code>silent</code>: Optional Boolean. When True, swallows errors instead of raising them. Defaults to False.</li>
 </ul>
 <hr />
 </div>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2 id="int-factory">Factory</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Self-reference as IApplicationState</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IApplicationState
-</code></pre>
-<p><strong>Returns:</strong> IApplicationState. Self-reference.</p>
-<hr />
 <h2 id="int-introspection">Introspection</h2>
-<h3 id="int-applicationobject">ApplicationObject <a class="anchor-link" href="#int-applicationobject">#</a></h3>
-<p><em>application-object</em></p>
-<p><strong>Application reference currently guarded</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get ApplicationObject() As Application
-</code></pre>
-<p><strong>Returns:</strong> Application. The Excel Application instance.</p>
-<hr />
 <h3 id="int-isbusy">IsBusy <a class="anchor-link" href="#int-isbusy">#</a></h3>
 <p><em>is-busy</em></p>
 <p><strong>Whether the busy state is currently active</strong></p>
@@ -133,13 +166,6 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <li><code>excelApplication</code>: Application. The Excel Application to guard.</li>
 </ul>
 <hr />
-<h3 id="int-capturesnapshot">CaptureSnapshot <a class="anchor-link" href="#int-capturesnapshot">#</a></h3>
-<p><em>capture-snapshot</em></p>
-<p><strong>Capture current application settings</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Friend Sub CaptureSnapshot()
-</code></pre>
-<hr />
 <h2 id="int-core-logic">Core Logic</h2>
 <h3 id="int-capturesnapshotcore">CaptureSnapshotCore <a class="anchor-link" href="#int-capturesnapshotcore">#</a></h3>
 <p><em>capture-snapshot-core</em></p>
@@ -160,12 +186,11 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <p><em>ensure-snapshot</em></p>
 <p><strong>Guard that a snapshot exists before proceeding</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureSnapshot(ByVal operationName As String)
+<pre><code class="language-vb">Private Sub EnsureSnapshot()
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>operationName</code>: String. Name of the calling operation for error messages.</li>
-</ul>
+<p>Takes the snapshot only when the object does not have one yet.  The snapshot
+belongs to the whole life of the object: once taken it stays until a caller
+asks for a new one with RefreshSnapshot.</p>
 <hr />
 <h3 id="int-ensurenotbusy">EnsureNotBusy <a class="anchor-link" href="#int-ensurenotbusy">#</a></h3>
 <p><em>ensure-not-busy</em></p>
@@ -189,6 +214,35 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <li><code>target</code>: Application. The Excel Application instance.</li>
 <li><code>value</code>: Boolean. The desired EnableAnimations state.</li>
 </ul>
+<hr />
+<h3 id="int-safesetformatstalevalues">SafeSetFormatStaleValues <a class="anchor-link" href="#int-safesetformatstalevalues">#</a></h3>
+<p><em>safe-set-format-stale-values</em></p>
+<p><strong>Set FormatStaleValues where the host has it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SafeSetFormatStaleValues(ByVal target As Application, ByVal value As Boolean)
+</code></pre>
+<p>The property arrived with the calculation engine of the newer hosts, and an
+older Excel raises on the write. The first raise records the capability as
+missing so the following operations stop trying.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>target</code>: Application. The Excel Application instance.</li>
+<li><code>value</code>: Boolean. The desired FormatStaleValues state.</li>
+</ul>
+<hr />
+<h3 id="int-tryreadformatstalevalues">TryReadFormatStaleValues <a class="anchor-link" href="#int-tryreadformatstalevalues">#</a></h3>
+<p><em>try-read-format-stale-values</em></p>
+<p><strong>Attempt to read FormatStaleValues from the target application</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TryReadFormatStaleValues(ByVal target As Application, _
+                                          ByRef value As Boolean) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>target</code>: Application. The Excel Application instance.</li>
+<li><code>value</code>: Boolean. ByRef. Receives the current value on success.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the property was read successfully.</p>
 <hr />
 <h3 id="int-tryreadenableanimations">TryReadEnableAnimations <a class="anchor-link" href="#int-tryreadenableanimations">#</a></h3>
 <p><em>try-read-enable-animations</em></p>
@@ -218,31 +272,35 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (23 file(s))</summary>
+<summary>Used in (27 file(s))</summary>
 <ul>
+<li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="ExportButton.html">ExportButton.cls</a></li>
-<li><a href="ApplicationState.html">ApplicationState.cls</a></li>
-<li><a href="IApplicationState.html">IApplicationState.cls</a></li>
+<li><a href="LLChoices.html">LLChoices.cls</a></li>
+<li><a href="ProgressBar.html">ProgressBar.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
+<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
 <li><a href="MasterSetupPreparation.html">MasterSetupPreparation.cls</a></li>
-<li><a href="ISetupErrors.html">ISetupErrors.cls</a></li>
-<li><a href="ISetupTranslationsTable.html">ISetupTranslationsTable.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
-<li><a href="SetupImportService.html">SetupImportService.cls</a></li>
+<li><a href="SetupImport.html">SetupImport.cls</a></li>
 <li><a href="SetupTranslationsTable.html">SetupTranslationsTable.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>EventsDesignerCore.bas</li>
 <li>EventsDesignerMulti.bas</li>
+<li>HeadlessBuild.bas</li>
 <li>LinelistEventsManager.bas</li>
 <li>FormLogicAdvanced.bas</li>
 <li>FormLogicExportMig.bas</li>
 <li>EventsMasterSetupRibbon.bas</li>
 <li>MasterSetupHelpers.bas</li>
+<li>EventsManager.bas</li>
 <li>ImportForm.bas</li>
-<li>SetupEventsManager.bas</li>
+<li>TestAnalysisOutput.bas</li>
 <li>TestApplicationState.bas</li>
 <li>TestPasswords.bas</li>
+<li>TestProgressBar.bas</li>
+<li>TestSetupErrors.bas</li>
 </ul>
 </details>
   </main>

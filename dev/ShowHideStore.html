@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ShowHideStore - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ShowHideStore</h1>
+<p>The table that carries a user's show/hide choices from one session to the
+next, and from one workbook to another during a migration. One table holds all
+four layers, told apart by the <code>layer</code> column, and every saved layout, told
+apart by the <code>layout_name</code> column. Save writes choices, Load reads them back,
+Clear drops them, HasLayer says whether a layer has rows, and HasTable, Table
+and RowCount answer where the store stands.</p>
+<details open class="doc-section" id="the-store-makes-its-own-table">
+<summary>THE STORE MAKES ITS OWN TABLE</summary>
+<div class="section-body">
+<p>Create and CreateOnSheet build the ListObject when it is absent, and add the
+<code>layout_name</code> column to a table an older build made without it.</p>
+<p>CreateForRead binds to whatever table a workbook already carries and builds
+nothing, which is what reading a migration file needs.</p>
+</div>
+</details>
+<details open class="doc-section" id="seven-columns">
+<summary>SEVEN COLUMNS</summary>
+<div class="section-body">
+<p>layer         hlist / printed / vlist / crf
+field_key     the variable name, and the key rows are matched on
+header_text   for a person reading the sheet
+hidden_flag   true / false
+entry_size    the width or the height the entry has when shown, blank when
+unknown
+orientation   vertical / horizontal, blank off the printed layer
+layout_name   empty on the rows of the current state, the layout's name on
+the rows of a saved layout</p>
+<p>The size and the hidden flag are two separate columns. A size at or below zero
+means &quot;leave the sheet alone&quot;.</p>
+<p>A file written by an older build carries <code>column_width</code> where this one writes
+<code>entry_size</code>, and no <code>layout_name</code> at all. Load reads either size name, and
+every row of a file without the layout column reads as current state.</p>
+</div>
+</details>
+<details open class="doc-section" id="saved-layouts">
+<summary>SAVED LAYOUTS</summary>
+<div class="section-body">
+<p>A saved layout is a named copy of the same rows. Save and Load take the name;
+LayoutNames, HasLayout and LayoutCount answer what is stored; DeleteLayout and
+RenameLayout manage the list; MergeLayoutsFrom copies another store's layouts
+in, which is how they travel through a migration file. The store holds at
+most MaxSavedLayouts names, and Save refuses the one past the cap.</p>
+</div>
+</details>
+<details open class="doc-section" id="save-replaces-by-key">
+<summary>SAVE REPLACES BY KEY</summary>
+<div class="section-body">
+<p>Save replaces the rows whose layer, layout name and field key match the entry
+list, and keeps every other row. Several worksheets share one layer - every
+HList sheet writes <code>hlist</code> rows - so replacing a whole layer would drop the
+other sheets' rows on every save. Variable names are unique across the
+workbook, which is what makes the key safe. A row whose variable left the
+dictionary lingers; Load skips it.</p>
+<p><strong>Depends on:</strong> <a href="ShowHide.html">ShowHide</a>, <a href="ShowHideLayout.html">ShowHideLayout</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, The worksheet a linelist keeps its show/hide table on, and the name a, linelist generated before the internal-sheet rename gave it, The table this class writes, and the name an older build wrote, The per-sheet tables the first show/hide design tiled across the same, worksheet. Both designs answer to ListObjects(1), so they cannot share a sheet., How many saved layouts one store holds at most</p>
+<p><strong>Version:</strong> 1.1 (2026-08-11)</p>
+</div>
+</details>
+<details open class="doc-section" id="instantiation">
+<summary>Instantiation</summary>
+<div class="section-body">
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
+<p><strong>Open the store of a workbook, making the table when it is absent</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal wkb As Workbook) As ShowHideStore
+</code></pre>
+<p>Three ways in: two that provision, one that reads what is there.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>wkb</code>: Workbook. The workbook holding the __show_hide worksheet.</li>
+</ul>
+<p><strong>Returns:</strong> ShowHideStore. A store ready to save and load.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the workbook is Nothing.</li>
+<li>ProjectError.ElementNotFound When the workbook has no __show_hide
+worksheet.</li>
+</ul>
+<hr />
+<h3 id="createonsheet">CreateOnSheet <a class="anchor-link" href="#createonsheet">#</a></h3>
+<p><em>create-on-sheet</em></p>
+<p><strong>Open the store on one worksheet, making the table when it is absent</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function CreateOnSheet(ByVal sh As Worksheet) As ShowHideStore
+</code></pre>
+<p>Any per-sheet table of the first show/hide design is deleted on the way, since
+both designs read ListObjects(1) and the two layouts hold different columns.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The sheet to keep the table on.</li>
+</ul>
+<p><strong>Returns:</strong> ShowHideStore. A store ready to save and load.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the worksheet is Nothing.</li>
+</ul>
+<hr />
+<h3 id="createforread">CreateForRead <a class="anchor-link" href="#createforread">#</a></h3>
+<p><em>create-for-read</em></p>
+<p><strong>Bind to the table a worksheet already carries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function CreateForRead(ByVal sh As Worksheet) As ShowHideStore
+</code></pre>
+<p>Provisions nothing, which is what reading another workbook's migration file
+needs. HasTable says whether anything was found.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The sheet to read.</li>
+</ul>
+<p><strong>Returns:</strong> ShowHideStore. A store bound to what is there.</p>
+<hr />
+<h3 id="bind">Bind <a class="anchor-link" href="#bind">#</a></h3>
+<p><em>bind</em></p>
+<p><strong>Take the sheet and the table the factory resolved</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Bind(ByVal sh As Worksheet, ByVal lo As ListObject)
+</code></pre>
+<p>Public because the factories call it on a fresh instance.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The sheet the table lives on.</li>
+<li><code>lo</code>: ListObject. The table, or Nothing when the sheet carries none.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="accessors">
+<summary>Accessors</summary>
+<div class="section-body">
+<h3 id="hastable">HasTable <a class="anchor-link" href="#hastable">#</a></h3>
+<p><em>has-table</em></p>
+<p><strong>Whether a table was found or made</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasTable() As Boolean
+</code></pre>
+<p>What the store is bound to.</p>
+<hr />
+<h3 id="table">Table <a class="anchor-link" href="#table">#</a></h3>
+<p><em>table</em></p>
+<p><strong>The ListObject the store reads and writes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Table() As ListObject
+</code></pre>
+<hr />
+<h3 id="rowcount">RowCount <a class="anchor-link" href="#rowcount">#</a></h3>
+<p><em>row-count</em></p>
+<p><strong>How many rows the store holds, over all four layers</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get RowCount() As Long
+</code></pre>
+<hr />
+<h3 id="haslayer">HasLayer <a class="anchor-link" href="#haslayer">#</a></h3>
+<p><em>has-layer</em></p>
+<p><strong>Whether the store holds any row of one layer</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function HasLayer(ByVal layer As Byte) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>layer</code>: Byte. A ShowHideWorksheetLayer value. The layer to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when at least one row carries that layer.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="saving">
+<summary>Saving</summary>
+<div class="section-body">
+<h3 id="save">Save <a class="anchor-link" href="#save">#</a></h3>
+<p><em>save</em></p>
+<p><strong>Write one layer's choices, leaving every other row alone</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Save(ByVal entries As ShowHide, _
+                Optional ByVal layout As ShowHideLayout, _
+                Optional ByVal layoutName As String = vbNullString)
+</code></pre>
+<p>Writing an entry list into the table.</p>
+<p>The rows whose layer, layout name and field key match the entry list are
+replaced; everything else is carried over untouched. So four layers share one
+table, several worksheets share one layer, and the current state sits beside
+the saved layouts.</p>
+<p>Without a layout the store writes visibility alone, which is what closing the
+form needs. With one it also records the size each entry has when shown and,
+on a printed sheet, the direction of its header - which is what a migration
+export and a saved layout need.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>entries</code>: ShowHide. The entry list to write.</li>
+<li><code>layout</code>: Optional ShowHideLayout. The sheet to read sizes from.</li>
+<li><code>layoutName</code>: Optional String. Empty writes the current state; a name
+writes a saved layout.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the entry list is Nothing.</li>
+<li>ProjectError.ElementNotFound When the store has no table, or a name is
+given and the table has no layout_name column.</li>
+<li>ProjectError.InvalidArgument When a new name would pass the cap.</li>
+</ul>
+<hr />
+<h3 id="clear">Clear <a class="anchor-link" href="#clear">#</a></h3>
+<p><em>clear</em></p>
+<p><strong>Drop every row of one layer of one state</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Clear(ByVal layer As Byte, _
+                 Optional ByVal layoutName As String = vbNullString)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>layer</code>: Byte. A ShowHideWorksheetLayer value. The layer to drop.</li>
+<li><code>layoutName</code>: Optional String. Empty drops current-state rows; a name
+drops that layout's rows of the layer. DeleteLayout drops a whole layout.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the store has no table.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="loading">
+<summary>Loading</summary>
+<div class="section-body">
+<h3 id="load">Load <a class="anchor-link" href="#load">#</a></h3>
+<p><em>load</em></p>
+<p><strong>Read one layer's saved choices into an entry list</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Load(ByVal entries As ShowHide, _
+                     Optional ByVal layout As ShowHideLayout, _
+                     Optional ByVal layoutName As String = vbNullString) As Long
+</code></pre>
+<p>Reading the table back into an entry list.</p>
+<p>Only the rows of the entry list's own layer and of the named state are read.
+A variable the list does not carry is skipped, which is what happens when the
+dictionary changed between two sessions. On a file written before saved
+layouts existed, every row reads as current state.</p>
+<p>With a layout, the saved size and header direction are applied to the sheet as
+well. Visibility is left to ShowHide.Apply, so a caller that wants the sheet to
+match the list calls Load and then Apply.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>entries</code>: ShowHide. The entry list to fill.</li>
+<li><code>layout</code>: Optional ShowHideLayout. The sheet to size.</li>
+<li><code>layoutName</code>: Optional String. Empty reads the current state; a name reads
+that saved layout.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The number of rows that matched an entry.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="saved-layouts">
+<summary>Saved layouts</summary>
+<div class="section-body">
+<h3 id="maxsavedlayouts">MaxSavedLayouts <a class="anchor-link" href="#maxsavedlayouts">#</a></h3>
+<p><em>max-saved-layouts</em></p>
+<p><strong>How many saved layouts one store holds at most</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get MaxSavedLayouts() As Long
+</code></pre>
+<p>The named copies of the show/hide state, and their bookkeeping.</p>
+<hr />
+<h3 id="layoutnames">LayoutNames <a class="anchor-link" href="#layoutnames">#</a></h3>
+<p><em>layout-names</em></p>
+<p><strong>The saved layout names, in the order they first appear</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function LayoutNames() As BetterArray
+</code></pre>
+<p>Names are compared without regard to case, and each keeps the casing of its
+first row. The current state has no name and is never listed.</p>
+<p><strong>Returns:</strong> BetterArray. The distinct names, empty when nothing is saved.</p>
+<hr />
+<h3 id="layoutcount">LayoutCount <a class="anchor-link" href="#layoutcount">#</a></h3>
+<p><em>layout-count</em></p>
+<p><strong>How many saved layouts the store holds</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function LayoutCount() As Long
+</code></pre>
+<hr />
+<h3 id="haslayout">HasLayout <a class="anchor-link" href="#haslayout">#</a></h3>
+<p><em>has-layout</em></p>
+<p><strong>Whether a saved layout of one name is stored</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function HasLayout(ByVal layoutName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>layoutName</code>: String. The name to look for, compared without regard to case.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when at least one row carries the name.</p>
+<hr />
+<h3 id="deletelayout">DeleteLayout <a class="anchor-link" href="#deletelayout">#</a></h3>
+<p><em>delete-layout</em></p>
+<p><strong>Drop every row of one saved layout, over all its layers</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub DeleteLayout(ByVal layoutName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>layoutName</code>: String. The name to drop. The current state has no name and
+is cleared through Clear.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the store has no table.</li>
+<li>ProjectError.InvalidArgument When the name is empty.</li>
+</ul>
+<hr />
+<h3 id="renamelayout">RenameLayout <a class="anchor-link" href="#renamelayout">#</a></h3>
+<p><em>rename-layout</em></p>
+<p><strong>Give one saved layout another name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RenameLayout(ByVal oldName As String, ByVal newName As String)
+</code></pre>
+<p>Renaming onto a name the store already holds is refused, because the rows of
+the two layouts would merge and neither could be told apart again. Renaming a
+layout onto its own name with other casing is allowed.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>oldName</code>: String. The name the layout holds.</li>
+<li><code>newName</code>: String. The name to give it.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the store has no table or no layout
+of the old name.</li>
+<li>ProjectError.InvalidArgument When a name is empty or the new name is
+already stored.</li>
+</ul>
+<hr />
+<h3 id="mergelayoutsfrom">MergeLayoutsFrom <a class="anchor-link" href="#mergelayoutsfrom">#</a></h3>
+<p><em>merge-layouts-from</em></p>
+<p><strong>Copy another store's saved layouts into this one</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function MergeLayoutsFrom(ByVal source As ShowHideStore) As BetterArray
+</code></pre>
+<p>How saved layouts travel: the exporter merges the linelist's layouts into the
+migration file's store, and the importer merges the file's layouts back. A
+name both stores hold is taken from the source, replacing the local rows. A
+new name is taken while the cap has room; the rest are skipped and answered
+to the caller, so an import can report them. Rows are copied as they stand -
+a variable the receiving dictionary does not carry is skipped by Load later.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>source</code>: ShowHideStore. The store to copy from.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The names that were skipped over the cap, empty when
+every layout came across.</p>
+<hr />
+</div>
+</details>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-helpers">Helpers</h2>
+<h3 id="int-provision">Provision <a class="anchor-link" href="#int-provision">#</a></h3>
+<p><em>provision</em></p>
+<p><strong>Find the store table on a sheet, or build it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Provision(ByVal sh As Worksheet) As ListObject
+</code></pre>
+<p>Private workers of the three factories and the two writers.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The sheet to provision.</li>
+</ul>
+<p><strong>Returns:</strong> ListObject. The store table.</p>
+<hr />
+<h3 id="int-ensurelayoutcolumn">EnsureLayoutColumn <a class="anchor-link" href="#int-ensurelayoutcolumn">#</a></h3>
+<p><em>ensure-layout-column</em></p>
+<p><strong>Add the layout_name column to a table an older build made</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureLayoutColumn(ByVal lo As ListObject)
+</code></pre>
+<p>A linelist generated before saved layouts existed carries a six column table.
+The column lands at the right edge and every existing row keeps an empty
+cell there, which is exactly what a current-state row looks like.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lo</code>: ListObject. The table to check.</li>
+</ul>
+<hr />
+<h3 id="int-namedtable">NamedTable <a class="anchor-link" href="#int-namedtable">#</a></h3>
+<p><em>named-table</em></p>
+<p><strong>Look for a store table by name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NamedTable(ByVal sh As Worksheet) As ListObject
+</code></pre>
+<p>The name this class writes comes first, then the name an older build wrote.
+A table under any other name is left alone, so provisioning never adopts a
+table that holds something else.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The sheet to search.</li>
+</ul>
+<p><strong>Returns:</strong> ListObject. The table, or Nothing.</p>
+<hr />
+<h3 id="int-findtable">FindTable <a class="anchor-link" href="#int-findtable">#</a></h3>
+<p><em>find-table</em></p>
+<p><strong>Look for a store table already on a sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindTable(ByVal sh As Worksheet) As ListObject
+</code></pre>
+<p>Either of the two known names first, then whatever single table the sheet
+carries. The last step is what lets a migration file written by a build this
+one has never heard of still be read.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The sheet to search.</li>
+</ul>
+<p><strong>Returns:</strong> ListObject. The table, or Nothing.</p>
+<hr />
+<h3 id="int-droplegacytables">DropLegacyTables <a class="anchor-link" href="#int-droplegacytables">#</a></h3>
+<p><em>drop-legacy-tables</em></p>
+<p><strong>Delete the per-sheet tables of the first show/hide design</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub DropLegacyTables(ByVal sh As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The sheet to sweep.</li>
+</ul>
+<hr />
+<h3 id="int-keptrows">KeptRows <a class="anchor-link" href="#int-keptrows">#</a></h3>
+<p><em>kept-rows</em></p>
+<p><strong>Every row a save or a clear carries over untouched</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function KeptRows(ByVal token As String, _
+                          ByVal layerCol As Long, _
+                          ByVal layoutName As String, _
+                          ByVal layoutCol As Long, _
+                          ByVal entries As ShowHide, _
+                          ByVal fieldCol As Long, _
+                          ByRef keptCount As Long) As Variant
+</code></pre>
+<p>A row is replaced when its layer, its layout name and its field key all
+match. With no entry list, every key of the layer and state matches, which is
+what Clear asks for.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>token</code>: String. The layer token being replaced.</li>
+<li><code>layerCol</code>: Long. The index of the layer column.</li>
+<li><code>layoutName</code>: String. The state being replaced, empty for the current one.</li>
+<li><code>layoutCol</code>: Long. The index of the layout column, or 0 on an old table.</li>
+<li><code>entries</code>: ShowHide. The entry list whose keys are replaced, or Nothing.</li>
+<li><code>fieldCol</code>: Long. The index of the field key column, or 0.</li>
+<li><code>keptCount</code>: Long. Set to the number of rows kept.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. A two dimensional block of the kept rows, or Empty.</p>
+<hr />
+<h3 id="int-appendsourcelayoutrows">AppendSourceLayoutRows <a class="anchor-link" href="#int-appendsourcelayoutrows">#</a></h3>
+<p><em>append-source-layout-rows</em></p>
+<p><strong>Copy the accepted layout rows of another table into a block</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function AppendSourceLayoutRows(ByRef block As Variant, _
+                                        ByVal startCount As Long, _
+                                        ByVal srcLo As ListObject, _
+                                        ByVal srcRows As Variant, _
+                                        ByVal accepted As Collection, _
+                                        ByVal srcLayoutCol As Long) As Long
+</code></pre>
+<p>Columns are matched by header on both sides, so a source written by another
+build still lands in the right cells here.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>block</code>: Variant. The block being filled, sized by the caller.</li>
+<li><code>startCount</code>: Long. How many rows the block already holds.</li>
+<li><code>srcLo</code>: ListObject. The source table, for its headers.</li>
+<li><code>srcRows</code>: Variant. The source body, already read.</li>
+<li><code>accepted</code>: Collection. The layout names to copy, keyed on their lower case.</li>
+<li><code>srcLayoutCol</code>: Long. The source's layout column index.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The row count of the block once the copies are in.</p>
+<hr />
+<h3 id="int-rowlayoutname">RowLayoutName <a class="anchor-link" href="#int-rowlayoutname">#</a></h3>
+<p><em>row-layout-name</em></p>
+<p><strong>The layout name one row carries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RowLayoutName(ByVal tableRows As Variant, _
+                               ByVal rowIndex As Long, _
+                               ByVal layoutCol As Long) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tableRows</code>: Variant. The body block being read.</li>
+<li><code>rowIndex</code>: Long. The row to read.</li>
+<li><code>layoutCol</code>: Long. The layout column index, or 0 on an old table.</li>
+</ul>
+<p><strong>Returns:</strong> String. The trimmed name, empty for a current-state row.</p>
+<hr />
+<h3 id="int-layoutmatches">LayoutMatches <a class="anchor-link" href="#int-layoutmatches">#</a></h3>
+<p><em>layout-matches</em></p>
+<p><strong>Whether two layout names are the same name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LayoutMatches(ByVal firstName As String, _
+                               ByVal secondName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>firstName</code>: String. One name, already trimmed.</li>
+<li><code>secondName</code>: String. The other, already trimmed.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when they match without regard to case.</p>
+<hr />
+<h3 id="int-incollection">InCollection <a class="anchor-link" href="#int-incollection">#</a></h3>
+<p><em>in-collection</em></p>
+<p><strong>Whether a keyed Collection holds one name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function InCollection(ByVal keyed As Collection, _
+                              ByVal layoutName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>keyed</code>: Collection. The collection, keyed on lower cased names.</li>
+<li><code>layoutName</code>: String. The name to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the key is there.</p>
+<hr />
+<h3 id="int-writeall">WriteAll <a class="anchor-link" href="#int-writeall">#</a></h3>
+<p><em>write-all</em></p>
+<p><strong>Replace the whole table body with one block</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteAll(ByVal block As Variant, ByVal rowCount As Long)
+</code></pre>
+<p>One write and one resize, whatever the row count. Writing row by row through
+ListRows.Add costs one Excel crossing per row, and a data sheet with two
+hundred variables closes its form four times slower for it.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>block</code>: Variant. The rows to write, one dimension per row and column.</li>
+<li><code>rowCount</code>: Long. How many rows of the block to keep.</li>
+</ul>
+<hr />
+<h3 id="int-trimblock">TrimBlock <a class="anchor-link" href="#int-trimblock">#</a></h3>
+<p><em>trim-block</em></p>
+<p><strong>Cut a block down to the rows that are used</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TrimBlock(ByVal block As Variant, _
+                           ByVal rowCount As Long, _
+                           ByVal colCount As Long) As Variant
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>block</code>: Variant. The oversized block.</li>
+<li><code>rowCount</code>: Long. How many rows to keep.</li>
+<li><code>colCount</code>: Long. How many columns to keep.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. A block of exactly rowCount by colCount.</p>
+<hr />
+<h3 id="int-columnindex">ColumnIndex <a class="anchor-link" href="#int-columnindex">#</a></h3>
+<p><em>column-index</em></p>
+<p><strong>Where one named column sits in the store's own table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnIndex(ByVal headerName As String) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>headerName</code>: String. The column header to find.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The one based column number, or 0 when the header is absent.</p>
+<hr />
+<h3 id="int-columnindexof">ColumnIndexOf <a class="anchor-link" href="#int-columnindexof">#</a></h3>
+<p><em>column-index-of</em></p>
+<p><strong>Where one named column sits in any store table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnIndexOf(ByVal lo As ListObject, _
+                               ByVal headerName As String) As Long
+</code></pre>
+<p>The merge reads another store's table through this, so both sides are matched
+by header and a source written by another build still maps.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lo</code>: ListObject. The table to search.</li>
+<li><code>headerName</code>: String. The column header to find.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The one based column number, or 0 when the header is absent.</p>
+<hr />
+<h3 id="int-sizecolumnindex">SizeColumnIndex <a class="anchor-link" href="#int-sizecolumnindex">#</a></h3>
+<p><em>size-column-index</em></p>
+<p><strong>Where the size column sits, under either of its two names</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SizeColumnIndex() As Long
+</code></pre>
+<p>A file written by an older build calls it <code>column_width</code>.</p>
+<p><strong>Returns:</strong> Long. The one based column number, or 0 when neither name is there.</p>
+<hr />
+<h3 id="int-requiretable">RequireTable <a class="anchor-link" href="#int-requiretable">#</a></h3>
+<p><em>require-table</em></p>
+<p><strong>Refuse to write when there is no table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RequireTable()
+</code></pre>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the store is bound to nothing.</li>
+</ul>
+<hr />
+<h3 id="int-layertoken">LayerToken <a class="anchor-link" href="#int-layertoken">#</a></h3>
+<p><em>layer-token</em></p>
+<p><strong>The word one layer is written under</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LayerToken(ByVal layer As Byte) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>layer</code>: Byte. A ShowHideWorksheetLayer value. The layer to name.</li>
+</ul>
+<p><strong>Returns:</strong> String. The token stored in the layer column.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the layer is unknown.</li>
+</ul>
+<hr />
+<h3 id="int-orientationtoken">OrientationToken <a class="anchor-link" href="#int-orientationtoken">#</a></h3>
+<p><em>orientation-token</em></p>
+<p><strong>The word a header direction is written under</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function OrientationToken(ByVal vertical As Boolean) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>vertical</code>: Boolean. True when the header is turned.</li>
+</ul>
+<p><strong>Returns:</strong> String. &quot;vertical&quot; or &quot;horizontal&quot;.</p>
+<hr />
+<h3 id="int-booltostring">BoolToString <a class="anchor-link" href="#int-booltostring">#</a></h3>
+<p><em>bool-to-string</em></p>
+<p><strong>Write a hidden flag in a form no language changes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BoolToString(ByVal value As Boolean) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: Boolean. The flag to write.</li>
+</ul>
+<p><strong>Returns:</strong> String. &quot;true&quot; or &quot;false&quot;.</p>
+<hr />
+<h3 id="int-tobool">ToBool <a class="anchor-link" href="#int-tobool">#</a></h3>
+<p><em>to-bool</em></p>
+<p><strong>Read a stored hidden flag</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ToBool(ByVal value As Variant) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: Variant. The cell value.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the cell says so.</p>
+<hr />
+<h3 id="int-tosize">ToSize <a class="anchor-link" href="#int-tosize">#</a></h3>
+<p><em>to-size</em></p>
+<p><strong>Read a stored size, answering zero for anything unusable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ToSize(ByVal value As Variant) As Double
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: Variant. The cell value.</li>
+</ul>
+<p><strong>Returns:</strong> Double. The size, or 0.</p>
+<hr />
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
+<p><strong>Raise a project error naming this class</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: ProjectError. The error to raise.</li>
+<li><code>message</code>: String. What went wrong.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (8 file(s))</summary>
+<ul>
+<li><a href="LLExporter.html">LLExporter.cls</a></li>
+<li><a href="LLImporter.html">LLImporter.cls</a></li>
+<li><a href="Linelist.html">Linelist.cls</a></li>
+<li><a href="ShowHide.html">ShowHide.cls</a></li>
+<li>EventsLinelistButtons.bas</li>
+<li>FormLogicAdvanced.bas</li>
+<li>FormLogicShowHideSave.bas</li>
+<li>TestShowHide.bas</li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

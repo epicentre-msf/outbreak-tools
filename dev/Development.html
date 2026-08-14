@@ -16,9 +16,9 @@ workflows in OutbreakTools. It manages code tables (ListObjects that list
 VBA classes, modules, forms, and tests), drives bulk import and export of
 code artefacts between disk and the host workbook VBProject, and executes
 deployment by protecting and hiding registered worksheets. Consumers
-interact through the IDevelopment interface using the predeclared factory
+interact with the Development class using the predeclared factory
 pattern (Development.Create).</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="IPasswords.html">IPasswords</a></p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Passwords.html">Passwords</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
@@ -27,14 +27,14 @@ pattern (Development.Create).</p>
 <p><em>create</em></p>
 <p><strong>Create a Development instance.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet) As IDevelopment
+<pre><code class="language-vb">Public Function Create(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet) As Development
 </code></pre>
-<p>Predeclared factory entry point for creating Development instances.
-Factory method on the predeclared instance that allocates a new Development
+<p>Predeclared factory entry point for creating Development instances.</p>
+<p>Factory method on the predeclared instance that allocates a new Development
 object and binds it to the supplied Dev worksheet via Initialise. When a
 codeSheet is provided, it is registered as the target for new development
-tables. The returned object is cast to the IDevelopment interface so
-consumers program against the contract rather than the concrete class.</p>
+tables. The returned object is a fully built Development instance ready
+for consumers to use.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>devSheet</code>: Worksheet. The worksheet hosting development named ranges
@@ -42,7 +42,7 @@ such as module and class folder paths.</li>
 <li><code>codeSheet</code>: Optional Worksheet. A separate worksheet to host code
 ListObjects. When omitted, tables are placed on devSheet.</li>
 </ul>
-<p><strong>Returns:</strong> IDevelopment. A fully initialised instance ready for use.</p>
+<p><strong>Returns:</strong> Development. A fully initialised instance ready for use.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When devSheet is Nothing.</li>
@@ -65,8 +65,8 @@ on the Dev worksheet.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Initialise(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet)
 </code></pre>
-<p>Instance setup that binds internal state to the host workbook.
-Validates that devSheet is not Nothing, stores the worksheet and its parent
+<p>Instance setup that binds internal state to the host workbook.</p>
+<p>Validates that devSheet is not Nothing, stores the worksheet and its parent
 workbook, enables user confirmation prompts, and initialises the hidden and
 protected sheet collections. Required named ranges for module and class
 folder paths are verified on the Dev sheet. Any previously registered code
@@ -93,8 +93,8 @@ table host. When omitted, any previously persisted code worksheet is used.</li>
 <pre><code class="language-vb">Public Function AddCodeSheets(ByVal sheetName As String) As Worksheet
 </code></pre>
 <p>Public methods for registering worksheets and creating
-development tables (classes, modules, forms, tests).
-Validates that the supplied name is non-empty and that the worksheet exists
+development tables (classes, modules, forms, tests).</p>
+<p>Validates that the supplied name is non-empty and that the worksheet exists
 in the host workbook. When user prompts are enabled, a confirmation dialog
 is displayed before proceeding. The registered worksheet is persisted via a
 worksheet-level named range so it survives workbook close/reopen cycles.
@@ -206,10 +206,14 @@ declines the confirmation prompt.</p>
 <pre><code class="language-vb">Public Sub AddHiddenSheet(ByVal sheetName As String)
 </code></pre>
 <p>Methods for registering worksheets that must be hidden or
-protected when the workbook is deployed.
-Appends the supplied worksheet name to the internal hiddenSheets
+protected when the workbook is deployed.</p>
+<p>Appends the supplied worksheet name to the internal hiddenSheets
 collection. During Deploy, every entry in this collection is set to
-xlSheetVeryHidden. The worksheet must exist in the host workbook.
+xlSheetVeryHidden. The worksheet must exist in the host workbook.</p>
+<p>A name already in the collection is left alone. RibbonDev keeps one
+Development object for the whole VBA session, so pressing the dev
+initialise button twice would otherwise push the same six sheets again and
+Deploy would hide each of them twice.
 (&quot;Track a worksheet that must be hidden during deployment.&quot;)</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -259,8 +263,8 @@ allowed on the protected sheet. Defaults to True.</li>
 <pre><code class="language-vb">Public Sub ImportAll()
 </code></pre>
 <p>Bulk import and export of VBA components listed in
-development tables.
-Iterates every ListObject on the Dev sheet and any registered code
+development tables.</p>
+<p>Iterates every ListObject on the Dev sheet and any registered code
 worksheet. Each table tag is read to determine the transfer scope (modules
 or classes) and the target disk folder. For each entry in the table, the
 corresponding .bas or .cls file is imported from disk into the host
@@ -316,14 +320,14 @@ Requires that host sheets are unlocked.
 <p><em>deploy</em></p>
 <p><strong>Protect worksheets, hide Dev assets, copy forms code, and set the deployment marker.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Deploy(ByVal pass As IPasswords, Optional ByVal lockWorkbook As Boolean = False)
+<pre><code class="language-vb">Public Sub Deploy(ByVal pass As Passwords, Optional ByVal lockWorkbook As Boolean = False)
 </code></pre>
-<p>Full deployment workflow: protect, hide, and lock the workbook.
-Executes the full deployment workflow. First applies the default password
+<p>Full deployment workflow: protect, hide, and lock the workbook.</p>
+<p>Executes the full deployment workflow. First applies the default password
 from the Dev sheet, then synchronises form modules without confirmation.
 Every worksheet registered via AddHiddenSheet is set to xlSheetVeryHidden.
 Every worksheet registered via AddProtectedSheet is protected using the
-supplied IPasswords handler with the recorded permission flags. When
+supplied Passwords handler with the recorded permission flags. When
 lockWorkbook is True, the host workbook itself is locked. The code
 worksheet (if distinct from the Dev sheet) is hidden. Finally, a debug
 exit handler is installed and the workbook-level deployment flag is set
@@ -331,7 +335,7 @@ to &quot;Yes&quot;.
 (&quot;Protect worksheets, hide Dev assets, copy forms code, and set deployment marker.&quot;)</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>pass</code>: IPasswords. The password handler used to apply protection to
+<li><code>pass</code>: Passwords. The password handler used to apply protection to
 worksheets and optionally lock the workbook.</li>
 <li><code>lockWorkbook</code>: Optional Boolean. When True, the host workbook
 structure is locked after protecting sheets. Defaults to False.</li>
@@ -367,8 +371,8 @@ False when the name does not exist or contains any other value.
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DevWorksheet() As Worksheet
 </code></pre>
-<p>Read-only and read-write properties exposing the internal state.
-Returns the Dev worksheet that stores configuration named ranges such as
+<p>Read-only and read-write properties exposing the internal state.</p>
+<p>Returns the Dev worksheet that stores configuration named ranges such as
 folder paths and counter values. Set during Initialise and never changed
 afterwards.
 (&quot;Development worksheet storing configuration named ranges.&quot;)</p>
@@ -572,8 +576,8 @@ sheet protection.
 <pre><code class="language-vb">Private Sub ProcessAllTables(ByVal mode As DevelopmentTransferMode)
 </code></pre>
 <p>Private helpers that drive the import and export of VBA
-components listed in development tables.
-Reads folder settings from the Dev sheet, then walks every ListObject on
+components listed in development tables.</p>
+<p>Reads folder settings from the Dev sheet, then walks every ListObject on
 each host worksheet. Each table is passed to ProcessListObject, which
 interprets the tag above the table to decide scope (modules or classes),
 target folder, and whether interfaces should be included.
@@ -721,7 +725,12 @@ when at least one component was transferred.
 True, the second column for a Yes/No interface flag. For each non-empty
 entry the component is transferred via TransferComponent. When the flag
 is &quot;yes&quot;, the corresponding interface file (prefixed with &quot;I&quot;) is also
-transferred. Returns True when at least one component was processed.
+transferred. Returns True when at least one component was processed.</p>
+<p>The flag is trusted in both directions. On export that means a table row
+flagged &quot;yes&quot; writes I<name>.cls out of the VBProject, so a workbook still
+holding an interface the repo deleted writes that file back. The guard for
+that is the table itself: a class with no interface carries &quot;no&quot;. Check
+git status after an export.
 (&quot;Iterate table rows and import/export each listed component.&quot;)</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -813,6 +822,21 @@ the component does not exist in the project.
 <li><code>mode</code>: DevelopmentTransferMode. Whether an import or export was performed.</li>
 </ul>
 <hr />
+<h3 id="int-appendlogline">AppendLogLine <a class="anchor-link" href="#int-appendlogline">#</a></h3>
+<p><em>append-log-line</em></p>
+<p><strong>Write one timestamped line under the Dev sheet Informations cell.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AppendLogLine(ByVal messageText As String)
+</code></pre>
+<p>Walks down from the first log row to the first empty cell and writes there.
+Exits without a word when the Informations cell is missing or the sheet has
+no room left.
+(&quot;Append one timestamped line to the Dev sheet log block.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>messageText</code>: String. The text to write after the timestamp.</li>
+</ul>
+<hr />
 <h3 id="int-writeinformation">WriteInformation <a class="anchor-link" href="#int-writeinformation">#</a></h3>
 <p><em>write-information</em></p>
 <p><strong>Write a status message to the Dev sheet Informations cell.</strong></p>
@@ -842,8 +866,8 @@ the component does not exist in the project.
 <pre><code class="language-vb">Private Sub SynchroniseFormsTables(ByVal requireConfirmation As Boolean)
 </code></pre>
 <p>Private helpers that copy code from standard modules into
-UserForm components based on forms tables.
-Walks every ListObject on each host worksheet and identifies those tagged
+UserForm components based on forms tables.</p>
+<p>Walks every ListObject on each host worksheet and identifies those tagged
 as &quot;general form modules&quot;. For each matching table, ProcessFormsTable is
 called to copy module code into the corresponding form component. When
 requireConfirmation is True, a dialog is shown before proceeding.
@@ -857,14 +881,14 @@ requireConfirmation is True, a dialog is shown before proceeding.
 <p><em>apply-default-password</em></p>
 <p><strong>Read and apply the default password from the Dev sheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyDefaultPassword(ByVal passwords As IPasswords)
+<pre><code class="language-vb">Private Sub ApplyDefaultPassword(ByVal passManager As Passwords)
 </code></pre>
 <p>Checks for a named range &quot;DefaultPassword&quot; on the Dev sheet. When found
-and non-empty, passes its value to the IPasswords handler via
+and non-empty, passes its value to the Passwords handler via
 NewDebugingPassword. Silently exits when no default password is configured.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>passwords</code>: IPasswords. The password handler to configure.</li>
+<li><code>passwords</code>: Passwords. The password handler to configure.</li>
 </ul>
 <hr />
 <h3 id="int-processformstable">ProcessFormsTable <a class="anchor-link" href="#int-processformstable">#</a></h3>
@@ -916,8 +940,8 @@ is not found in the VBProject.</li>
                                   Optional ByVal addYesNoValidation As Boolean = False) As ListObject
 </code></pre>
 <p>Private helpers that create, format, and name development
-tables on the code worksheet.
-Resolves the host worksheet, calculates the next available horizontal
+tables on the code worksheet.</p>
+<p>Resolves the host worksheet, calculates the next available horizontal
 anchor, writes the folder and tag cells above the table, creates a
 ListObject from a two-row range (header + one data row), applies project
 formatting, generates a unique name via the persisted counter, and
@@ -1167,8 +1191,8 @@ method strips the sheet prefix before comparing.
 <pre><code class="language-vb">Private Function NameNumericValue(ByVal definition As Name) As Long
 </code></pre>
 <p>Private helpers for encoding, decoding, and reading values
-from Excel Name definitions.
-Attempts to parse the RefersTo formula as a number. When the formula is
+from Excel Name definitions.</p>
+<p>Attempts to parse the RefersTo formula as a number. When the formula is
 not numeric, falls back to reading the value of the referred range.
 Returns 0 when neither approach yields a number.
 (&quot;Convert a name definition to a numeric value, using RefersTo or range value.&quot;)</p>
@@ -1229,8 +1253,8 @@ embedded doubled quotes back to single quotes.
                           Optional ByVal allowDeletingRows As Boolean = True)
 </code></pre>
 <p>Private helper for registering worksheet entries into the
-protected sheets collection.
-Wraps the sheet name, allowShape, and allowDeletingRows values into a
+protected sheets collection.</p>
+<p>Wraps the sheet name, allowShape, and allowDeletingRows values into a
 BetterArray triplet and pushes it onto the registry. Used by
 AddProtectedSheet to build the protectedSheets collection that Deploy
 iterates during deployment.
@@ -1243,6 +1267,24 @@ iterates during deployment.
 <li><code>allowDeletingRows</code>: Optional Boolean. Whether row deletion is permitted. Defaults to True.</li>
 </ul>
 <hr />
+<h3 id="int-hasregisteredsheet">HasRegisteredSheet <a class="anchor-link" href="#int-hasregisteredsheet">#</a></h3>
+<p><em>has-registered-sheet</em></p>
+<p><strong>Whether a deployment registry already holds a worksheet name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HasRegisteredSheet(ByVal registry As BetterArray, ByVal sheetName As String) As Boolean
+</code></pre>
+<p>hiddenSheets holds plain names and protectedSheets holds a triplet whose
+first item is the name, so both shapes are read here. Deploy also accepts a
+Worksheet in the hidden list, which is why that case is covered too. Names
+are matched without regard to case, the way Excel itself treats them.
+(&quot;Return True when the registry already holds the worksheet name.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>registry</code>: BetterArray. The collection to search.</li>
+<li><code>sheetName</code>: String. The worksheet name to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the name is already registered.</p>
+<hr />
 <h2 id="int-prompts">Prompts</h2>
 <h3 id="int-requestconfirmation">RequestConfirmation <a class="anchor-link" href="#int-requestconfirmation">#</a></h3>
 <p><em>request-confirmation</em></p>
@@ -1250,8 +1292,8 @@ iterates during deployment.
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RequestConfirmation(ByVal action As String) As Boolean
 </code></pre>
-<p>User confirmation dialog management.
-When displayPrompts is False, returns True immediately without showing a
+<p>User confirmation dialog management.</p>
+<p>When displayPrompts is False, returns True immediately without showing a
 dialog. Otherwise displays a Yes/No message box. Returns True only when
 the user selects Yes.
 (&quot;Display a confirmation dialog when prompts are enabled.&quot;)</p>
@@ -1280,27 +1322,16 @@ the user selects Yes.
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-idevelopment-initialise">IDevelopment_Initialise <a class="anchor-link" href="#int-idevelopment-initialise">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IDevelopment_Initialise(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet)
-</code></pre>
-<p>Delegated members that satisfy the IDevelopment contract.
-See the corresponding Public members above for full documentation.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (10 file(s))</summary>
+<summary>Used in (7 file(s))</summary>
 <ul>
 <li><a href="DesignerPreparation.html">DesignerPreparation.cls</a></li>
-<li><a href="IDesignerPreparation.html">IDesignerPreparation.cls</a></li>
-<li><a href="Development.html">Development.cls</a></li>
-<li><a href="IDevelopment.html">IDevelopment.cls</a></li>
-<li><a href="ISetupPreparation.html">ISetupPreparation.cls</a></li>
 <li><a href="SetupPreparation.html">SetupPreparation.cls</a></li>
 <li>RibbonDev.bas</li>
 <li>MasterSetupHelpers.bas</li>
 <li>TestDevelopment.bas</li>
+<li>OBTImport.bas</li>
 <li>TestSetupPreparation.bas</li>
 </ul>
 </details>

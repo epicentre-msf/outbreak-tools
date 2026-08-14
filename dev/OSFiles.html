@@ -11,15 +11,31 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>OSFiles</h1>
-<p>Cross-platform file and folder selection helper. Wraps Windows
-FileDialog and macOS AppleScript pickers behind a unified API.
-Supports single and multi-selection for both files and folders,
-persists the last-used folder across sessions, and provides
-iterator-style enumeration over multi-selections.
+<p>Picks files and folders through the dialog the host offers. On Windows the
+class opens an Excel FileDialog. On macOS it runs an AppleScript picker.
+LoadFile, LoadFiles, LoadFolder and LoadFolders each show one dialog and keep
+what the user chose; File, Files, Folder and Folders answer it back. The four
+HasValid members say whether the selection points at something that exists on
+disk.</p>
+<details open class="doc-section" id="reading-a-multi-selection">
+<summary>READING A MULTI SELECTION</summary>
+<div class="section-body">
+<p>HasNextFile and NextFile walk the selected files one at a time, and
+ResetFilesIterator puts the cursor back to the first one. The folder members
+work the same way.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-last-folder">
+<summary>THE LAST FOLDER</summary>
+<div class="section-body">
+<p>Each selection stores its folder in the workbook-level name
+OSFiles_LastFolder, and the next dialog opens on that folder.
 State bag for OS detection, selections, and cursor positions.
 Exposed methods
 Workbook-level Name used to persist the last used folder path.</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+</div>
+</details>
 <details open class="doc-section" id="initialization">
 <summary>Initialization</summary>
 <div class="section-body">
@@ -27,9 +43,9 @@ Workbook-level Name used to persist the last used folder path.</p>
 <p><em>create</em></p>
 <p><strong>Factory returning an initialised interface</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create() As IOSFiles
+<pre><code class="language-vb">Public Function Create() As OSFiles
 </code></pre>
-<p><strong>Returns:</strong> IOSFiles. Ready to use.</p>
+<p><strong>Returns:</strong> OSFiles. Ready to use.</p>
 <hr />
 </div>
 </details>
@@ -40,7 +56,7 @@ Workbook-level Name used to persist the last used folder path.</p>
 <p><em>file</em></p>
 <p><strong>Current loaded file path</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get File() As String
+<pre><code class="language-vb">Public Property Get File() As String
 </code></pre>
 <p><strong>Returns:</strong> String. The first selected file path.</p>
 <hr />
@@ -48,7 +64,7 @@ Workbook-level Name used to persist the last used folder path.</p>
 <p><em>files</em></p>
 <p><strong>All loaded file paths from a multi-selection</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Files() As Variant
+<pre><code class="language-vb">Public Property Get Files() As Variant
 </code></pre>
 <p><strong>Returns:</strong> Variant. Zero-based string array of file paths.</p>
 <hr />
@@ -56,7 +72,7 @@ Workbook-level Name used to persist the last used folder path.</p>
 <p><em>folder</em></p>
 <p><strong>Current loaded folder path</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Folder() As String
+<pre><code class="language-vb">Public Property Get Folder() As String
 </code></pre>
 <p><strong>Returns:</strong> String. The first selected folder path.</p>
 <hr />
@@ -64,7 +80,7 @@ Workbook-level Name used to persist the last used folder path.</p>
 <p><em>folders</em></p>
 <p><strong>All loaded folder paths from a multi-selection</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Folders() As Variant
+<pre><code class="language-vb">Public Property Get Folders() As Variant
 </code></pre>
 <p><strong>Returns:</strong> Variant. Zero-based string array of folder paths.</p>
 <hr />
@@ -77,14 +93,14 @@ Workbook-level Name used to persist the last used folder path.</p>
 <p><em>load-folder</em></p>
 <p><strong>Show a single-folder picker dialog</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub LoadFolder()
+<pre><code class="language-vb">Public Sub LoadFolder()
 </code></pre>
 <hr />
 <h3 id="loadfile">LoadFile <a class="anchor-link" href="#loadfile">#</a></h3>
 <p><em>load-file</em></p>
 <p><strong>Show a single-file picker dialog</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub LoadFile(ByVal filters As String, _ 
+<pre><code class="language-vb">Public Sub LoadFile(ByVal filters As String, _ 
                      Optional ByVal customMacFilter As String = vbNullString)
 </code></pre>
 <p><strong>Parameters:</strong></p>
@@ -97,7 +113,7 @@ Workbook-level Name used to persist the last used folder path.</p>
 <p><em>load-files</em></p>
 <p><strong>Show a multi-file picker dialog</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub LoadFiles(ByVal filters As String, _
+<pre><code class="language-vb">Public Sub LoadFiles(ByVal filters As String, _
                       Optional ByVal customMacFilter As String = vbNullString)
 </code></pre>
 <p><strong>Parameters:</strong></p>
@@ -110,7 +126,7 @@ Workbook-level Name used to persist the last used folder path.</p>
 <p><em>load-folders</em></p>
 <p><strong>Show a multi-folder picker dialog</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub LoadFolders()
+<pre><code class="language-vb">Public Sub LoadFolders()
 </code></pre>
 <hr />
 </div>
@@ -118,46 +134,46 @@ Workbook-level Name used to persist the last used folder path.</p>
 <details open class="doc-section" id="iteration">
 <summary>Iteration</summary>
 <div class="section-body">
-<h3 id="resetfilescursor">ResetFilesCursor <a class="anchor-link" href="#resetfilescursor">#</a></h3>
+<h3 id="resetfilesiterator">ResetFilesIterator <a class="anchor-link" href="#resetfilesiterator">#</a></h3>
 <p><em>reset-files-iterator</em></p>
 <p><strong>Reset the file iteration cursor to the beginning</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ResetFilesCursor()
+<pre><code class="language-vb">Public Sub ResetFilesIterator()
 </code></pre>
 <hr />
-<h3 id="resetfolderscursor">ResetFoldersCursor <a class="anchor-link" href="#resetfolderscursor">#</a></h3>
+<h3 id="resetfoldersiterator">ResetFoldersIterator <a class="anchor-link" href="#resetfoldersiterator">#</a></h3>
 <p><em>reset-folders-iterator</em></p>
 <p><strong>Reset the folder iteration cursor to the beginning</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ResetFoldersCursor()
+<pre><code class="language-vb">Public Sub ResetFoldersIterator()
 </code></pre>
 <hr />
-<h3 id="hasnextfilevalue">HasNextFileValue <a class="anchor-link" href="#hasnextfilevalue">#</a></h3>
+<h3 id="hasnextfile">HasNextFile <a class="anchor-link" href="#hasnextfile">#</a></h3>
 <p><em>has-next-file</em></p>
 <p><strong>Check if another file is available in the iterator</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function HasNextFileValue() As Boolean
+<pre><code class="language-vb">Public Function HasNextFile() As Boolean
 </code></pre>
 <hr />
-<h3 id="hasnextfoldervalue">HasNextFolderValue <a class="anchor-link" href="#hasnextfoldervalue">#</a></h3>
+<h3 id="hasnextfolder">HasNextFolder <a class="anchor-link" href="#hasnextfolder">#</a></h3>
 <p><em>has-next-folder</em></p>
 <p><strong>Check if another folder is available in the iterator</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function HasNextFolderValue() As Boolean
+<pre><code class="language-vb">Public Function HasNextFolder() As Boolean
 </code></pre>
 <hr />
-<h3 id="nextfilevalue">NextFileValue <a class="anchor-link" href="#nextfilevalue">#</a></h3>
+<h3 id="nextfile">NextFile <a class="anchor-link" href="#nextfile">#</a></h3>
 <p><em>next-file</em></p>
 <p><strong>Return the next file path and advance the cursor</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function NextFileValue() As String
+<pre><code class="language-vb">Public Function NextFile() As String
 </code></pre>
 <hr />
-<h3 id="nextfoldervalue">NextFolderValue <a class="anchor-link" href="#nextfoldervalue">#</a></h3>
+<h3 id="nextfolder">NextFolder <a class="anchor-link" href="#nextfolder">#</a></h3>
 <p><em>next-folder</em></p>
 <p><strong>Return the next folder path and advance the cursor</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function NextFolderValue() As String
+<pre><code class="language-vb">Public Function NextFolder() As String
 </code></pre>
 <hr />
 </div>
@@ -169,7 +185,7 @@ Workbook-level Name used to persist the last used folder path.</p>
 <p><em>has-valid-file</em></p>
 <p><strong>Whether the loaded file path is valid</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function HasValidFile() As Boolean
+<pre><code class="language-vb">Public Function HasValidFile() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when a non-empty file path exists.</p>
 <hr />
@@ -177,7 +193,7 @@ Workbook-level Name used to persist the last used folder path.</p>
 <p><em>has-valid-files</em></p>
 <p><strong>Whether the loaded files array contains entries</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function HasValidFiles() As Boolean
+<pre><code class="language-vb">Public Function HasValidFiles() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when at least one file was selected.</p>
 <hr />
@@ -185,7 +201,7 @@ Workbook-level Name used to persist the last used folder path.</p>
 <p><em>has-valid-folder</em></p>
 <p><strong>Whether the loaded folder path is valid</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function HasValidFolder() As Boolean
+<pre><code class="language-vb">Public Function HasValidFolder() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when a non-empty folder path exists.</p>
 <hr />
@@ -193,7 +209,7 @@ Workbook-level Name used to persist the last used folder path.</p>
 <p><em>has-valid-folders</em></p>
 <p><strong>Whether the loaded folders array contains entries</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function HasValidFolders() As Boolean
+<pre><code class="language-vb">Public Function HasValidFolders() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when at least one folder was selected.</p>
 <hr />
@@ -474,14 +490,6 @@ Workbook-level Name used to persist the last used folder path.</p>
 </code></pre>
 <hr />
 <h2 id="int-elements">Elements</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Self-reference as IOSFiles</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IOSFiles
-</code></pre>
-<p><strong>Returns:</strong> IOSFiles. Self-reference.</p>
-<hr />
 <h3 id="int-os">OS <a class="anchor-link" href="#int-os">#</a></h3>
 <p><em>os</em></p>
 <p><strong>Current operating system flag</strong></p>
@@ -601,15 +609,12 @@ Workbook-level Name used to persist the last used folder path.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (17 file(s))</summary>
+<summary>Used in (15 file(s))</summary>
 <ul>
 <li><a href="ExportButton.html">ExportButton.cls</a></li>
 <li><a href="DesignerPreparation.html">DesignerPreparation.cls</a></li>
-<li><a href="IOSFiles.html">IOSFiles.cls</a></li>
-<li><a href="OSFiles.html">OSFiles.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
-<li><a href="SetupImportService.html">SetupImportService.cls</a></li>
-<li>DesignerMain.bas</li>
+<li><a href="SetupImport.html">SetupImport.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>EventsDesignerCore.bas</li>
 <li>EventsDesignerMulti.bas</li>
@@ -617,9 +622,10 @@ Workbook-level Name used to persist the last used folder path.</p>
 <li>FormLogicAdvanced.bas</li>
 <li>FormLogicExportMig.bas</li>
 <li>SetupHelpers.bas</li>
-<li>Exports.bas</li>
 <li>TestManualOSFiles.bas</li>
 <li>TestOSFiles.bas</li>
+<li>TestHelpersLite.bas</li>
+<li>OBTGrantAccess.bas</li>
 </ul>
 </details>
   </main>

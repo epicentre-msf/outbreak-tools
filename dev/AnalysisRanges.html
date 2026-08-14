@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AnalysisRanges - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>AnalysisRanges</h1>
+<p>One instance holds one range identifier and answers the named-range strings
+built from it. An analysis output sheet carries about sixty named ranges per
+table, and this class is where each of those names is spelled.</p>
+<p>Create takes the identifier, BindId changes it and Id answers it. Each member
+gives one name: the value and label columns, the percentage columns, the row
+and column category ranges, the total and missing rows and columns and the
+cells where they cross, the section and table bounds, the time period names,
+and the spatial input cells.</p>
+<details open class="doc-section" id="which-names-live-here">
+<summary>WHICH NAMES LIVE HERE</summary>
+<div class="section-body">
+<p>The members are the name families built by MORE THAN ONE file, counted across
+the whole source tree. The second builder is often the graph writer, the
+linelist runtime or a standard module. A name with a single builder stays
+where it is.</p>
+<p>A member whose other builder sits in a class the test harness cannot compile
+is defined here first and adopted when that class is registered.</p>
+</div>
+</details>
+<details open class="doc-section" id="one-identifier-per-instance">
+<summary>ONE IDENTIFIER PER INSTANCE</summary>
+<div class="section-body">
+<p>The analysis writers work with two identifiers: the id of a table, and the id
+of the first table of its section. Several names are built from the table id
+in one class and from the section id in another. Binding one identifier per
+instance puts that choice in the constructor call, so tabNames and secNames
+read differently at the point of use.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-spatial-tag-is-a-parameter">
+<summary>THE SPATIAL TAG IS A PARAMETER</summary>
+<div class="section-body">
+<p>SpatialInput takes the spatial type from its caller. Telling a geo variable
+from a health facility one needs the dictionary, and this class holds no
+dictionary, no worksheet and no specification. It spells the string and
+TableSpecs decides the type. The class names no collaborator, so the builder
+and the generated linelist both carry it and read one definition of every
+string.</p>
+<p><strong>Depends on:</strong> <a href="Checking.html">Checking</a></p>
+<p><strong>Version:</strong> 1.0 (2026-07-30)</p>
+</div>
+</details>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
+<p><strong>Factory returning an instance bound to one range identifier</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal rangeId As String) As AnalysisRanges
+</code></pre>
+<p>Binds the identifier every id-suffixed member below appends. Pass a table id
+for the names that belong to one table and a section id for the names that
+belong to the section, so the call site states which it means.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rangeId</code>: String. A table id such as &quot;BA_tab5&quot; or a section id.</li>
+</ul>
+<p><strong>Returns:</strong> AnalysisRanges. Ready to use.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>InvalidArgument When rangeId is empty.</li>
+</ul>
+<hr />
+<h3 id="bindid">BindId <a class="anchor-link" href="#bindid">#</a></h3>
+<p><em>bind-id</em></p>
+<p><strong>Store the range identifier</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub BindId(ByVal rangeId As String)
+</code></pre>
+<p>Called by Create only. Public because the factory builds a second instance and
+VBA gives a class no privileged access to another instance of itself.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rangeId</code>: String. The identifier to hold.</li>
+</ul>
+<hr />
+<h3 id="id">Id <a class="anchor-link" href="#id">#</a></h3>
+<p><em>id</em></p>
+<p><strong>The identifier this instance answers for</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Id() As String
+</code></pre>
+<p><strong>Returns:</strong> String. The table or section id passed to Create.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="column-families">
+<summary>Column families</summary>
+<div class="section-body">
+<h3 id="valuescol">ValuesCol <a class="anchor-link" href="#valuescol">#</a></h3>
+<p><em>values-col</em></p>
+<p><strong>Name of the nth value column</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ValuesCol(ByVal n As Long) As String
+</code></pre>
+<p>The three per-column families, each indexed by column number.
+One loop in the table writer names all three, and the formula writer reads
+them back by the same index.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code>: Long. The one-based column number.</li>
+</ul>
+<p><strong>Returns:</strong> String. For example &quot;VALUES_COL_3_BA_tab5&quot;.</p>
+<hr />
+<h3 id="labelcol">LabelCol <a class="anchor-link" href="#labelcol">#</a></h3>
+<p><em>label-col</em></p>
+<p><strong>Name of the nth label column</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LabelCol(ByVal n As Long) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code>: Long. The one-based column number.</li>
+</ul>
+<p><strong>Returns:</strong> String. For example &quot;LABEL_COL_3_BA_tab5&quot;.</p>
+<hr />
+<h3 id="perccol">PercCol <a class="anchor-link" href="#perccol">#</a></h3>
+<p><em>perc-col</em></p>
+<p><strong>Name of the nth percentage column</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get PercCol(ByVal n As Long) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code>: Long. The one-based column number.</li>
+</ul>
+<p><strong>Returns:</strong> String. For example &quot;PERC_COL_3_BA_tab5&quot;.</p>
+<hr />
+<h3 id="perclabelcol">PercLabelCol <a class="anchor-link" href="#perclabelcol">#</a></h3>
+<p><em>perc-label-col</em></p>
+<p><strong>Name of the percentage column header</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get PercLabelCol() As String
+</code></pre>
+<p>One header serves the percentage columns of the table, so this one carries no
+column number while the three families above do.</p>
+<p><strong>Returns:</strong> String. For example &quot;PERC_LABEL_COL_BA_tab5&quot;.</p>
+<hr />
+<h3 id="spatialinput">SpatialInput <a class="anchor-link" href="#spatialinput">#</a></h3>
+<p><em>spatial-input</em></p>
+<p><strong>Name of the nth spatial input cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SpatialInput(ByVal n As Long, ByVal spatialType As String) As String
+</code></pre>
+<p>The tag depends on whether the table is grouped by an administrative level or
+by a health facility, and the caller supplies that answer because working it
+out needs a dictionary. An unrecognised type raises rather than falling back
+to the geographic tag: falling back is what named the cells one way while the
+formulas referenced the other, and a spatio-temporal table that passes
+validation always has one of the two prefixes.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code>: Long. The one-based input row number.</li>
+<li><code>spatialType</code>: String. Either &quot;hf&quot; or &quot;geo&quot;, as SpatialTableScopes answers.</li>
+</ul>
+<p><strong>Returns:</strong> String. For example &quot;INPUTSPTHF_2_SPT_tab1&quot;.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>InvalidArgument When spatialType is neither &quot;hf&quot; nor &quot;geo&quot;.</li>
+</ul>
+<hr />
+<h3 id="spatialinputtag">SpatialInputTag <a class="anchor-link" href="#spatialinputtag">#</a></h3>
+<p><em>spatial-input-tag</em></p>
+<p><strong>The spatial input tag for a spatial type</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SpatialInputTag(ByVal spatialType As String) As String
+</code></pre>
+<p>Exposed on its own because a caller that names a whole block of input cells
+wants the tag once rather than per cell, and because the reverse direction
+below compares against the same two strings.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>spatialType</code>: String. Either &quot;hf&quot; or &quot;geo&quot;.</li>
+</ul>
+<p><strong>Returns:</strong> String. Either &quot;INPUTSPTHF_&quot; or &quot;INPUTSPTGEO_&quot;.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>InvalidArgument When spatialType is neither &quot;hf&quot; nor &quot;geo&quot;.</li>
+</ul>
+<hr />
+<h3 id="idofspatialinput">IdOfSpatialInput <a class="anchor-link" href="#idofspatialinput">#</a></h3>
+<p><em>id-of-spatial-input</em></p>
+<p><strong>The range id a spatial input cell name was built from</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function IdOfSpatialInput(ByVal cellName As String) As String
+</code></pre>
+<p>SpatialInput builds &quot;INPUTSPTGEO_<n>_<rangeId>&quot;, and this is the way back:
+the tag and the row number are cut off the front and the rest is the id.
+GeoModule reads the name off the active cell at run time, and an unnamed
+cell hands an empty string over, so the answer is empty for a name this
+class did not build: no tag at the front, no row number behind it, or
+nothing after the row number. Instance state is never read, so the member
+is callable on the predeclared instance.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellName</code>: String. A name such as &quot;INPUTSPTGEO_2_SPT_tab1&quot;.</li>
+</ul>
+<p><strong>Returns:</strong> String. The range id, or an empty string.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="category-and-row-families">
+<summary>Category and row families</summary>
+<div class="section-body">
+<h3 id="rowcategories">RowCategories <a class="anchor-link" href="#rowcategories">#</a></h3>
+<p><em>row-categories</em></p>
+<p><strong>Name of the row categories band</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get RowCategories() As String
+</code></pre>
+<p>Names of the category bands, the value blocks and the markers
+that locate the table on the sheet.</p>
+<p><strong>Returns:</strong> String. For example &quot;ROW_CATEGORIES_BA_tab5&quot;.</p>
+<hr />
+<h3 id="labelrowcategories">LabelRowCategories <a class="anchor-link" href="#labelrowcategories">#</a></h3>
+<p><em>label-row-categories</em></p>
+<p><strong>Name of the header cell above the row categories</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LabelRowCategories() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;LABEL_ROW_CATEGORIES_BA_tab5&quot;.</p>
+<hr />
+<h3 id="columncategories">ColumnCategories <a class="anchor-link" href="#columncategories">#</a></h3>
+<p><em>column-categories</em></p>
+<p><strong>Name of the column categories band</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ColumnCategories() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;COLUMN_CATEGORIES_BA_tab5&quot;.</p>
+<hr />
+<h3 id="interiorvalues">InteriorValues <a class="anchor-link" href="#interiorvalues">#</a></h3>
+<p><em>interior-values</em></p>
+<p><strong>Name of the block of data cells</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get InteriorValues() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;INTERIOR_VALUES_BA_tab5&quot;.</p>
+<hr />
+<h3 id="outervalues">OuterValues <a class="anchor-link" href="#outervalues">#</a></h3>
+<p><em>outer-values</em></p>
+<p><strong>Name of the block of data cells including the totals</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get OuterValues() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;OUTER_VALUES_BA_tab5&quot;.</p>
+<hr />
+<h3 id="section">Section <a class="anchor-link" href="#section">#</a></h3>
+<p><em>section</em></p>
+<p><strong>Name of the section heading cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Section() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;SECTION_BA_tab5&quot;.</p>
+<hr />
+<h3 id="endtable">EndTable <a class="anchor-link" href="#endtable">#</a></h3>
+<p><em>end-table</em></p>
+<p><strong>Name of the cell marking the end of the table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get EndTable() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;ENDTABLE_BA_tab5&quot;.</p>
+<hr />
+<h3 id="startrow">StartRow <a class="anchor-link" href="#startrow">#</a></h3>
+<p><em>start-row</em></p>
+<p><strong>Name of the start-row marker</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get StartRow() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;STARTROW_BA_tab5&quot;.</p>
+<hr />
+<h3 id="startcol">StartCol <a class="anchor-link" href="#startcol">#</a></h3>
+<p><em>start-col</em></p>
+<p><strong>Name of the start-column marker</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get StartCol() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;STARTCOL_BA_tab5&quot;.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="total-and-missing-intersections">
+<summary>Total and missing intersections</summary>
+<div class="section-body">
+<h3 id="totalrow">TotalRow <a class="anchor-link" href="#totalrow">#</a></h3>
+<p><em>total-row</em></p>
+<p><strong>Name of the total row band</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TotalRow() As String
+</code></pre>
+<p>The total and missing bands, and the four cells where they cross.
+The writer names them and the formula writer fills them, which is why every
+one of these has two builders today.</p>
+<p><strong>Returns:</strong> String. For example &quot;TOTAL_ROW_BA_tab5&quot;.</p>
+<hr />
+<h3 id="totalcol">TotalCol <a class="anchor-link" href="#totalcol">#</a></h3>
+<p><em>total-col</em></p>
+<p><strong>Name of the total column band</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TotalCol() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;TOTAL_COL_BA_tab5&quot;.</p>
+<hr />
+<h3 id="missingrow">MissingRow <a class="anchor-link" href="#missingrow">#</a></h3>
+<p><em>missing-row</em></p>
+<p><strong>Name of the missing row band</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get MissingRow() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;MISSING_ROW_BA_tab5&quot;.</p>
+<hr />
+<h3 id="missingcol">MissingCol <a class="anchor-link" href="#missingcol">#</a></h3>
+<p><em>missing-col</em></p>
+<p><strong>Name of the missing column band</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get MissingCol() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;MISSING_COL_BA_tab5&quot;.</p>
+<hr />
+<h3 id="totalrowvalues">TotalRowValues <a class="anchor-link" href="#totalrowvalues">#</a></h3>
+<p><em>total-row-values</em></p>
+<p><strong>Name of the values inside the total row</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TotalRowValues() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;TOTAL_ROW_VALUES_BA_tab5&quot;.</p>
+<hr />
+<h3 id="totalcolvalues">TotalColValues <a class="anchor-link" href="#totalcolvalues">#</a></h3>
+<p><em>total-col-values</em></p>
+<p><strong>Name of the values inside the total column</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TotalColValues() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;TOTAL_COL_VALUES_BA_tab5&quot;.</p>
+<hr />
+<h3 id="missingrowvalues">MissingRowValues <a class="anchor-link" href="#missingrowvalues">#</a></h3>
+<p><em>missing-row-values</em></p>
+<p><strong>Name of the values inside the missing row</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get MissingRowValues() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;MISSING_ROW_VALUES_BA_tab5&quot;.</p>
+<hr />
+<h3 id="missingcolvalues">MissingColValues <a class="anchor-link" href="#missingcolvalues">#</a></h3>
+<p><em>missing-col-values</em></p>
+<p><strong>Name of the values inside the missing column</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get MissingColValues() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;MISSING_COL_VALUES_BA_tab5&quot;.</p>
+<hr />
+<h3 id="totaltotal">TotalTotal <a class="anchor-link" href="#totaltotal">#</a></h3>
+<p><em>total-total</em></p>
+<p><strong>Name of the total row and total column intersection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TotalTotal() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;TOTAL_TOTAL_BA_tab5&quot;.</p>
+<hr />
+<h3 id="totalmissing">TotalMissing <a class="anchor-link" href="#totalmissing">#</a></h3>
+<p><em>total-missing</em></p>
+<p><strong>Name of the total row and missing column intersection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TotalMissing() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;TOTAL_MISSING_BA_tab5&quot;.</p>
+<hr />
+<h3 id="missingtotal">MissingTotal <a class="anchor-link" href="#missingtotal">#</a></h3>
+<p><em>missing-total</em></p>
+<p><strong>Name of the missing row and total column intersection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get MissingTotal() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;MISSING_TOTAL_BA_tab5&quot;.</p>
+<hr />
+<h3 id="missingmissing">MissingMissing <a class="anchor-link" href="#missingmissing">#</a></h3>
+<p><em>missing-missing</em></p>
+<p><strong>Name of the missing row and missing column intersection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get MissingMissing() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;MISSING_MISSING_BA_tab5&quot;.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="temporal-families">
+<summary>Temporal families</summary>
+<div class="section-body">
+<h3 id="timeunit">TimeUnit <a class="anchor-link" href="#timeunit">#</a></h3>
+<p><em>time-unit</em></p>
+<p><strong>Name of the time unit control cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TimeUnit() As String
+</code></pre>
+<p>The date inputs, the period markers and the time unit control.</p>
+<p><strong>Returns:</strong> String. For example &quot;TIME_UNIT_TS_tab2&quot;.</p>
+<hr />
+<h3 id="startdate">StartDate <a class="anchor-link" href="#startdate">#</a></h3>
+<p><em>start-date</em></p>
+<p><strong>Name of the start date cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get StartDate() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;START_DATE_TS_tab2&quot;.</p>
+<hr />
+<h3 id="enddate">EndDate <a class="anchor-link" href="#enddate">#</a></h3>
+<p><em>end-date</em></p>
+<p><strong>Name of the end date cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get EndDate() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;END_DATE_TS_tab2&quot;.</p>
+<hr />
+<h3 id="starttimeperiod">StartTimePeriod <a class="anchor-link" href="#starttimeperiod">#</a></h3>
+<p><em>start-time-period</em></p>
+<p><strong>Name of the period start marker</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get StartTimePeriod() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;START_TIME_PERIOD_TS_tab2&quot;.</p>
+<hr />
+<h3 id="endtimeperiod">EndTimePeriod <a class="anchor-link" href="#endtimeperiod">#</a></h3>
+<p><em>end-time-period</em></p>
+<p><strong>Name of the period end marker</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get EndTimePeriod() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;END_TIME_PERIOD_TS_tab2&quot;.</p>
+<hr />
+<h3 id="firstvaluestarttime">FirstValueStartTime <a class="anchor-link" href="#firstvaluestarttime">#</a></h3>
+<p><em>first-value-start-time</em></p>
+<p><strong>Name of the first value of the period</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get FirstValueStartTime() As String
+</code></pre>
+<p>One of the names built from the table id in the table writer and from the
+section id in the formula writer. Bind the instance to whichever the call
+means and the difference stops being invisible.</p>
+<p><strong>Returns:</strong> String. For example &quot;FIRST_VALUE_START_TIME_TS_tab2&quot;.</p>
+<hr />
+<h3 id="infostartdate">InfoStartDate <a class="anchor-link" href="#infostartdate">#</a></h3>
+<p><em>info-start-date</em></p>
+<p><strong>Name of the start date information cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get InfoStartDate() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;INFO_START_DATE_TS_tab2&quot;.</p>
+<hr />
+<h3 id="infoenddate">InfoEndDate <a class="anchor-link" href="#infoenddate">#</a></h3>
+<p><em>info-end-date</em></p>
+<p><strong>Name of the end date information cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get InfoEndDate() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;INFO_END_DATE_TS_tab2&quot;.</p>
+<hr />
+<h3 id="infoanaperiod">InfoAnaPeriod <a class="anchor-link" href="#infoanaperiod">#</a></h3>
+<p><em>info-ana-period</em></p>
+<p><strong>Name of the analysis period information cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get InfoAnaPeriod() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;INFO_ANA_PERIOD_TS_tab2&quot;.</p>
+<hr />
+<h3 id="validationmindate">ValidationMinDate <a class="anchor-link" href="#validationmindate">#</a></h3>
+<p><em>validation-min-date</em></p>
+<p><strong>Name of the minimum date validation cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ValidationMinDate() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;VALIDATION_MIN_DATE_TS_tab2&quot;.</p>
+<hr />
+<h3 id="validationmaxdate">ValidationMaxDate <a class="anchor-link" href="#validationmaxdate">#</a></h3>
+<p><em>validation-max-date</em></p>
+<p><strong>Name of the maximum date validation cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ValidationMaxDate() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;VALIDATION_MAX_DATE_TS_tab2&quot;.</p>
+<hr />
+<h3 id="minmindate">MinMinDate <a class="anchor-link" href="#minmindate">#</a></h3>
+<p><em>min-min-date</em></p>
+<p><strong>Name of the earliest date across the section</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get MinMinDate() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;MIN_MIN_DATE_TS_tab2&quot;.</p>
+<hr />
+<h3 id="maxmaxdate">MaxMaxDate <a class="anchor-link" href="#maxmaxdate">#</a></h3>
+<p><em>max-max-date</em></p>
+<p><strong>Name of the latest date across the section</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get MaxMaxDate() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;MAX_MAX_DATE_TS_tab2&quot;.</p>
+<hr />
+<h3 id="userstartdate">UserStartDate <a class="anchor-link" href="#userstartdate">#</a></h3>
+<p><em>user-start-date</em></p>
+<p><strong>Name of the cell the reader types the first date into</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get UserStartDate() As String
+</code></pre>
+<p>The table writer names the cell and six formulas of the formula writer read it,
+so it belongs here beside the two dates derived from it.</p>
+<p><strong>Returns:</strong> String. For example &quot;USER_START_DATE_TS_tab2&quot;.</p>
+<hr />
+<h3 id="userenddate">UserEndDate <a class="anchor-link" href="#userenddate">#</a></h3>
+<p><em>user-end-date</em></p>
+<p><strong>Name of the cell the reader types the last date into</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get UserEndDate() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;USER_END_DATE_TS_tab2&quot;.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="spatial-control-families">
+<summary>Spatial control families</summary>
+<div class="section-body">
+<h3 id="admdropdown">AdmDropdown <a class="anchor-link" href="#admdropdown">#</a></h3>
+<p><em>adm-dropdown</em></p>
+<p><strong>Name of the administrative level dropdown cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get AdmDropdown() As String
+</code></pre>
+<p>The administrative level dropdown and the population divisor.</p>
+<p><strong>Returns:</strong> String. For example &quot;ADM_DROPDOWN_SPT_tab1&quot;.</p>
+<hr />
+<h3 id="devidepop">DevidePop <a class="anchor-link" href="#devidepop">#</a></h3>
+<p><em>devide-pop</em></p>
+<p><strong>Name of the population divisor control cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DevidePop() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;DEVIDEPOP_SPT_tab1&quot;.</p>
+<hr />
+<h3 id="popfact">PopFact <a class="anchor-link" href="#popfact">#</a></h3>
+<p><em>pop-fact</em></p>
+<p><strong>Name of the population factor cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get PopFact() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;POPFACT_SPT_tab1&quot;.</p>
+<hr />
+<h3 id="popfactlabel">PopFactLabel <a class="anchor-link" href="#popfactlabel">#</a></h3>
+<p><em>pop-fact-label</em></p>
+<p><strong>Name of the population factor header cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get PopFactLabel() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;POPFACTLABEL_SPT_tab1&quot;.</p>
+<hr />
+<h3 id="popprevfact">PopPrevFact <a class="anchor-link" href="#popprevfact">#</a></h3>
+<p><em>pop-prev-fact</em></p>
+<p><strong>Name of the previous population factor cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get PopPrevFact() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;POPPREVFACT_SPT_tab1&quot;.</p>
+<hr />
+<h3 id="previousadm">PreviousAdm <a class="anchor-link" href="#previousadm">#</a></h3>
+<p><em>previous-adm</em></p>
+<p><strong>Name of the previous administrative level cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get PreviousAdm() As String
+</code></pre>
+<p><strong>Returns:</strong> String. For example &quot;PREVIOUS_ADM_SPT_tab1&quot;.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="workbook-wide-lists">
+<summary>Workbook-wide lists</summary>
+<div class="section-body">
+<h3 id="timeunitlist">TimeUnitList <a class="anchor-link" href="#timeunitlist">#</a></h3>
+<p><em>time-unit-list</em></p>
+<p><strong>Name of the time unit choice list</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TimeUnitList() As String
+</code></pre>
+<p>Names carrying no identifier, because one copy of each serves
+every table on the sheet. Read them off the predeclared instance without
+calling Create.</p>
+</div>
+</details>
+<details open class="doc-section" id="one-list-serves-the-whole-workbook">
+<summary>ONE LIST SERVES THE WHOLE WORKBOOK</summary>
+<div class="section-body">
+<p>The time units are a workbook-level dropdown on the list sheet, added by
+Linelist.Prepare through the standard DropdownLists manager. Every temporal
+table on every sheet binds its dropdown to this one name, and GetAgg in
+CustomLinelistFunctions reads the same name to map the chosen label back to a
+time unit.</p>
+<p>The sheet used to carry its own copy: a time series sheet built
+TIME_UNIT_LIST and a spatio-temporal sheet built SPTIME_UNIT_LIST, because a
+range name resolves to one cell block and the two sheets each wanted their
+own. The reader in CustomLinelistFunctions asked for the plain name whatever
+sheet it ran on, so a workbook whose only temporal analyses were
+spatio-temporal had no such name and every period cell answered #VALUE!.</p>
+<p>The spelling is what DropdownLists derives from the list name TIME_UNIT_NAME
+below and the &quot;dropdown_&quot; prefix of the standard manager. TestAnalysisRanges
+pins the two together.</p>
+<p><strong>Returns:</strong> String. &quot;dropdown_time_unit&quot;.</p>
+<hr />
+<h3 id="timeunitlistname">TimeUnitListName <a class="anchor-link" href="#timeunitlistname">#</a></h3>
+<p><em>time-unit-list-name</em></p>
+<p><strong>The dropdown list name the time units are registered under</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TimeUnitListName() As String
+</code></pre>
+<p>What Linelist.Prepare passes to DropdownLists.Add. The workbook-level name
+above is what every reader uses; this is the registry key that produces it.</p>
+<p><strong>Returns:</strong> String. &quot;time_unit&quot;.</p>
+<hr />
+<h3 id="admunitlist">AdmUnitList <a class="anchor-link" href="#admunitlist">#</a></h3>
+<p><em>adm-unit-list</em></p>
+<p><strong>Name of the administrative unit choice list</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get AdmUnitList() As String
+</code></pre>
+<p><strong>Returns:</strong> String. &quot;ADM_UNIT_LIST&quot;.</p>
+<hr />
+<h3 id="populationfactorlist">PopulationFactorList <a class="anchor-link" href="#populationfactorlist">#</a></h3>
+<p><em>population-factor-list</em></p>
+<p><strong>Name of the population factor choice list</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get PopulationFactorList() As String
+</code></pre>
+<p><strong>Returns:</strong> String. &quot;POPULATION_FACTOR_LIST&quot;.</p>
+<hr />
+</div>
+</details>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-error-management">Error management</h2>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
+<p><strong>Raise a project error naming this class</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. A ProjectError member.</li>
+<li><code>message</code>: String. The message to carry.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (7 file(s))</summary>
+<ul>
+<li><a href="CrossTable.html">CrossTable.cls</a></li>
+<li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
+<li><a href="Linelist.html">Linelist.cls</a></li>
+<li>CustomLinelistFunctions.bas</li>
+<li>GeoModule.bas</li>
+<li>TestAnalysisRanges.bas</li>
+<li>TestCrossTableFormula.bas</li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

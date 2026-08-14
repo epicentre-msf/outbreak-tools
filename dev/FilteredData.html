@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FilteredData - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>FilteredData</h1>
+<p>Copies every HList table of the source workbook into its filtered companion
+sheet, so a filtered export and the analysis formulas read what the user can
+see on the screen. The companion keeps the rows that are visible and filled:
+a row stays out of the copy when its source row is hidden or when the row
+holds no value at all.</p>
+<p>Sync walks every worksheet, rewrites each companion, and answers the number
+of sheets it brought over. A sheet that fails is skipped and recorded, and
+the walk continues, so one broken sheet leaves the others synced.
+FailedSheets names each skipped sheet with the reason. A run that skipped a
+sheet also writes one failure line to the user log of the workbook. The
+caller reads FailedSheets and decides what a failure costs: ExportButton
+aborts the export, and the linelist filter refresh shows one box.</p>
+<details open class="doc-section" id="the-whole-row-test-runs-in-memory">
+<summary>THE WHOLE ROW TEST RUNS IN MEMORY</summary>
+<div class="section-body">
+<p>Each companion is written once. The source block is read in one crossing,
+visibility comes off one SpecialCells call over the source rows, the blank
+test runs on the array, and the kept rows go down in one write. A shape that
+copies the whole block over and then deletes the rejects pays two crossings
+per row, on tables that ClickAddRows pads 199 blank rows at a time.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-sheet-tag-is-read-the-cheap-way">
+<summary>THE SHEET TAG IS READ THE CHEAP WAY</summary>
+<div class="section-body">
+<p>The walk reads sheet_type through HiddenNames.QuickValue, which reads one
+name, and the full store is built for the HList sheets alone. A full store
+costs a walk of a sheet's whole Names collection, and the linelist filter
+refresh runs far more often than an export.</p>
+<p><strong>Depends on:</strong> <a href="HiddenNames.html">HiddenNames</a>, <a href="LLLog.html">LLLog</a>, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Version:</strong> 1.1 (2026-08-12)</p>
+</div>
+</details>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
+<p><strong>Create a filtered data sync over a workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook) As FilteredData
+</code></pre>
+<p>Factory method that validates the workbook and hands back a ready instance.
+Called on the predeclared instance.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceWkb</code>: Workbook. The linelist workbook holding the HList sheets.</li>
+</ul>
+<p><strong>Returns:</strong> FilteredData. A ready instance.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When sourceWkb is Nothing.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="public-accessors">
+<summary>Public Accessors</summary>
+<div class="section-body">
+<h3 id="failedsheets">FailedSheets <a class="anchor-link" href="#failedsheets">#</a></h3>
+<p><em>failed-sheets</em></p>
+<p><strong>The sheets the last sync skipped, each with the reason</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get FailedSheets() As BetterArray
+</code></pre>
+<p>One entry per skipped sheet, shaped &quot;sheet name: reason&quot;. The list is
+rebuilt at the top of every Sync, so it always describes the last run.
+Before the first run it answers an empty list.</p>
+<p><strong>Returns:</strong> BetterArray. The skipped sheets of the last sync.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="sync">
+<summary>Sync</summary>
+<div class="section-body">
+<h3 id="sync">Sync <a class="anchor-link" href="#sync">#</a></h3>
+<p><em>sync</em></p>
+<p><strong>Rewrite every filtered companion from its live table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Sync() As Long
+</code></pre>
+<p>Walks the worksheets of the source workbook. Each sheet whose sheet_type is
+HList has its visible filled rows written into the filtered companion. A
+sheet whose table holds no data rows is left as it is. A sheet that raises is
+recorded in FailedSheets with the reason and the walk continues.</p>
+<p><strong>Returns:</strong> Long. The number of sheets whose companion was rewritten.</p>
+<hr />
+</div>
+</details>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-public-accessors">Public Accessors</h2>
+<h3 id="int-sourceworkbook">SourceWorkbook <a class="anchor-link" href="#int-sourceworkbook">#</a></h3>
+<p><em>source-workbook-set</em></p>
+<p><strong>Assign the source linelist workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set SourceWorkbook(ByVal wkb As Workbook)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>wkb</code>: Workbook. The workbook to store.</li>
+</ul>
+<hr />
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Prevent further changes to setup-only properties</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<hr />
+<h2 id="int-sync">Sync</h2>
+<h3 id="int-syncsheet">SyncSheet <a class="anchor-link" href="#int-syncsheet">#</a></h3>
+<p><em>sync-sheet</em></p>
+<p><strong>Rewrite one filtered companion from its HList table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SyncSheet(ByVal sh As Worksheet) As Boolean
+</code></pre>
+<p>Reads the companion name off the sheet store and hands the table and the
+companion sheet to the rewrite. Raises when the filtered_sheet name is
+missing, and lets any worksheet failure travel up to the per-sheet handler
+in Sync.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The HList sheet to copy.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the companion was rewritten.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the filtered_sheet name is missing.</li>
+</ul>
+<hr />
+<h3 id="int-rewritecompanion">RewriteCompanion <a class="anchor-link" href="#int-rewritecompanion">#</a></h3>
+<p><em>rewrite-companion</em></p>
+<p><strong>Write the visible filled rows of one table into its companion</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RewriteCompanion(ByVal sourceTable As ListObject, _
+                             ByVal filtsh As Worksheet)
+</code></pre>
+<p>A row is kept when it is visible and holds at least one value. Visibility is
+read off the source rows in one SpecialCells call. The read spans the whole
+row on purpose: a column hidden by show/hide keeps its values in the
+companion, and a row leaves when a filter or the user hides it. The values
+travel through memory -- one read of the whole block, the blank test on the
+array, and one write of the kept rows. The two tables sit at the same address
+on their two sheets, which is the layout the builder writes.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceTable</code>: ListObject. The data entry table the rows come from.</li>
+<li><code>filtsh</code>: Worksheet. The sheet holding the filtered companion table.</li>
+</ul>
+<hr />
+<h3 id="int-rowholdsavalue">RowHoldsAValue <a class="anchor-link" href="#int-rowholdsavalue">#</a></h3>
+<p><em>row-holds-a-value</em></p>
+<p><strong>Say whether one row of a value block holds anything</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RowHoldsAValue(ByRef blockValues As Variant, _
+                                ByVal rowIdx As Long, _
+                                ByVal columnCount As Long) As Boolean
+</code></pre>
+<p>An empty cell and an empty string count as nothing, and every other value --
+a zero, a date, an error -- counts as data. This is what CountA answers on a
+worksheet row, read off the array instead.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>blockValues</code>: Variant. The value block, 1-based on both sides.</li>
+<li><code>rowIdx</code>: Long. The row to read.</li>
+<li><code>columnCount</code>: Long. The width of the block.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when at least one cell of the row holds a value.</p>
+<hr />
+<h2 id="int-private-helpers">Private Helpers</h2>
+<h3 id="int-recordfailure">RecordFailure <a class="anchor-link" href="#int-recordfailure">#</a></h3>
+<p><em>record-failure</em></p>
+<p><strong>Record one skipped sheet with the reason</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RecordFailure(ByVal sheetName As String, ByVal reason As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. The sheet the sync skipped.</li>
+<li><code>reason</code>: String. What the failure said.</li>
+</ul>
+<hr />
+<h3 id="int-logfailures">LogFailures <a class="anchor-link" href="#int-logfailures">#</a></h3>
+<p><em>log-failures</em></p>
+<p><strong>Write the skipped sheets of a run to the user log</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogFailures()
+</code></pre>
+<p>One failure line per run, with the skipped sheets joined in the detail. A
+run that skipped nothing writes nothing. A log write must never take down
+the sync it records, so a write that raises is swallowed here.</p>
+<hr />
+<h3 id="int-userlog">UserLog <a class="anchor-link" href="#int-userlog">#</a></h3>
+<p><em>user-log</em></p>
+<p><strong>The user log of the source workbook, built once and held</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function UserLog() As LLLog
+</code></pre>
+<p>A workbook whose log cannot be built answers Nothing and the sync keeps
+its result, so the log stays a bystander. The tried flag keeps a failed
+build from being paid again on every run.</p>
+<p><strong>Returns:</strong> LLLog. The held log, or Nothing when the build failed.</p>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Raise when a setup-only property is written after sealing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The name of the property being guarded.</li>
+</ul>
+<hr />
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. A ProjectError enum value (e.g. ObjectNotInitialized).</li>
+<li><code>message</code>: String. Human-readable description of the failure.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (4 file(s))</summary>
+<ul>
+<li><a href="ExportButton.html">ExportButton.cls</a></li>
+<li><a href="EventLinelist.html">EventLinelist.cls</a></li>
+<li><a href="Linelist.html">Linelist.cls</a></li>
+<li>TestFilteredData.bas</li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

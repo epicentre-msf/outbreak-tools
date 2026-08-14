@@ -33,9 +33,9 @@
 <h3 id="builddiseaseworkbook">BuildDiseaseWorkbook <a class="anchor-link" href="#builddiseaseworkbook">#</a></h3>
 <p><strong>Build an export workbook in-memory for the supplied disease worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function BuildDiseaseWorkbook(ByVal diseaseSheet As Worksheet, _
+<pre><code class="language-vb">Public Function BuildDiseaseWorkbook(ByVal diseaseWksh As Worksheet, _
                                      ByVal translationTable As ListObject, _
-                                     ByVal ribbonTranslations As ITranslationObject, _
+                                     ByVal ribbonTranslations As TranslationObject, _
                                      ByVal diseaseName As String, _
                                      ByVal languageTag As String, _
                                      Optional ByVal diseaseCode As String = vbNullString) As Workbook
@@ -44,7 +44,7 @@
 <ul>
 <li><code>diseaseSheet</code>: Worksheet containing the disease table and metadata.</li>
 <li><code>translationTable</code>: ListObject providing translation values to copy.</li>
-<li><code>ribbonTranslations</code>: ITranslationObject translating choice headers (may be Nothing).</li>
+<li><code>ribbonTranslations</code>: TranslationObject translating choice headers (may be Nothing).</li>
 <li><code>diseaseName</code>: String disease identifier used in metadata.</li>
 <li><code>languageTag</code>: String language captured in metadata.</li>
 <li><code>diseaseCode</code>: Optional String disease tag/code for metadata.</li>
@@ -55,9 +55,9 @@
 <p><strong>Export a disease workbook to disk.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExportDisease(ByVal exportFolder As String, _
-                              ByVal diseaseSheet As Worksheet, _
+                              ByVal diseaseWksh As Worksheet, _
                               ByVal translationTable As ListObject, _
-                              ByVal ribbonTranslations As ITranslationObject, _
+                              ByVal ribbonTranslations As TranslationObject, _
                               ByVal diseaseName As String, _
                               ByVal languageTag As String, _
                               Optional ByVal diseaseCode As String = vbNullString) As String
@@ -67,7 +67,7 @@
 <li><code>exportFolder</code>: String folder path where the workbook is saved.</li>
 <li><code>diseaseSheet</code>: Worksheet containing the disease table.</li>
 <li><code>translationTable</code>: ListObject providing translation values.</li>
-<li><code>ribbonTranslations</code>: ITranslationObject translating choice headers.</li>
+<li><code>ribbonTranslations</code>: TranslationObject translating choice headers.</li>
 <li><code>diseaseName</code>: String disease identifier used in metadata and file name.</li>
 <li><code>languageTag</code>: String disease language stored in metadata.</li>
 <li><code>diseaseCode</code>: Optional String disease tag/code for metadata.</li>
@@ -108,6 +108,14 @@
 <p><strong>Returns:</strong> String file path of the saved workbook.</p>
 <hr />
 </div>
+</details>
+<details>
+<summary>Used in (3 file(s))</summary>
+<ul>
+<li><a href="DiseaseExporter.html">DiseaseExporter.cls</a></li>
+<li>TestDiseaseExporter.bas</li>
+<li>TestDiseaseIntegration.bas</li>
+</ul>
 </details>
   </main>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>

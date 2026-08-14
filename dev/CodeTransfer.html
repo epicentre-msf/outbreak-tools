@@ -11,13 +11,53 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>CodeTransfer</h1>
-<p>Transfers VBA code components (classes, modules, forms, workbook code) from a
-source workbook to a target workbook using temporary file export/import cycles.
-Each component is exported to a temp file via the ITemporaryRepos, imported
-into the target, and the temp file is cleaned up. Consumers create an instance
-via Create and then call the transfer methods for each component type.</p>
-<p><strong>Depends on:</strong> <a href="ITemporaryRepos.html">ITemporaryRepos</a></p>
-<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<p>Moves VBA code components -- classes, standard modules, forms and workbook
+code -- from a source workbook into a target workbook. A component is exported
+to a file in the temporary repository, imported into the target, and the file
+is deleted. TransferClass, TransferModule, TransferForm, TransferWorkbookCode
+and TransferWorksheetCode each move one component, and CopyModuleText copies
+the text of one module. Linelist.TransferAllCode is the one consumer, and it
+moves 39 components in a single generation.</p>
+<details open class="doc-section" id="a-component-the-target-already-holds">
+<summary>A COMPONENT THE TARGET ALREADY HOLDS</summary>
+<div class="section-body">
+<p>VBComponents.Import stays quiet when the target already carries a component of
+that name: VBA imports the arriving one under a second name and keeps both
+copies, and the project stops compiling. Every transfer therefore removes the
+component that is already there before it imports, and files a warning through
+Checking naming it. The source copy is the one that survives, and a template
+author who wants their own code kept gives it another name. Owner decision,
+2026-07-31.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-vba-project-has-to-be-readable">
+<summary>THE VBA PROJECT HAS TO BE READABLE</summary>
+<div class="section-body">
+<p>Every member of this class reads a workbook's VBProject. Excel refuses that
+read with error 1004 while &quot;Trust access to the VBA project object model&quot; is
+off, and that is how a fresh install ships. SourceProject and TargetProject
+raise ErrorUnexpectedState naming the setting. Component lookups happen after
+that read, where a Nothing means the component is missing.</p>
+</div>
+</details>
+<details open class="doc-section" id="a-code-module-is-restored-when-a-write-fails">
+<summary>A CODE MODULE IS RESTORED WHEN A WRITE FAILS</summary>
+<div class="section-body">
+<p>Writing code into a component empties it first. The four writers keep the text
+they are about to replace and put it back when the write raises, so a failure
+leaves the target holding what it held before.</p>
+</div>
+</details>
+<details open class="doc-section" id="checkings-need-a-harvest-line">
+<summary>CHECKINGS NEED A HARVEST LINE</summary>
+<div class="section-body">
+<p>Entries filed here leave through HasCheckings and CheckingValues. Linelist
+keeps the instance after Prepare, and clickGenerate flushes the entries into
+the generation report.</p>
+<p><strong>Depends on:</strong> <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="Checking.html">Checking</a></p>
+<p><strong>Version:</strong> 1.1 (2026-07-31)</p>
+</div>
+</details>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
 <div class="section-body">
@@ -27,23 +67,34 @@ via Create and then call the transfer methods for each component type.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook, _
                        ByVal targetWkb As Workbook, _
-                       ByVal tempRepos As ITemporaryRepos) As ICodeTransfer
+                       ByVal tempRepos As TemporaryRepos) As CodeTransfer
 </code></pre>
-<p>Factory method and Friend bindings for construction.
-Creates a new CodeTransfer wired to transfer components from sourceWkb to
+<p>Factory method and Friend bindings for construction.</p>
+<p>Creates a new CodeTransfer wired to transfer components from sourceWkb to
 targetWkb using tempRepos for intermediate file storage. All three parameters
-are validated as non-Nothing.</p>
+are validated as non-Nothing, and the instance is sealed before it is handed
+back, so the three bindings hold for its whole life.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sourceWkb</code>: Workbook. The workbook containing the VBA components to export.</li>
 <li><code>targetWkb</code>: Workbook. The workbook that will receive the imported components.</li>
-<li><code>tempRepos</code>: ITemporaryRepos. The temporary file repository for export/import.</li>
+<li><code>tempRepos</code>: TemporaryRepos. The temporary file repository for export/import.</li>
 </ul>
-<p><strong>Returns:</strong> ICodeTransfer. A fully initialised instance ready for transfers.</p>
+<p><strong>Returns:</strong> CodeTransfer. A fully initialised instance ready for transfers.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When any parameter is Nothing.</li>
 </ul>
+<hr />
+<h3 id="seal">Seal <a class="anchor-link" href="#seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Close the instance to creation-only writes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<p>Called by the factory once the three bindings are in place. Swapping the target
+workbook part way through a transfer would scatter components across two files,
+so the setters refuse a second write.</p>
 <hr />
 </div>
 </details>
@@ -56,13 +107,17 @@ are validated as non-Nothing.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TransferClass(ByVal className As String)
 </code></pre>
-<p>Public methods for transferring VBA components.
-Exports the named class module (.cls) from the source workbook to a temporary
-file named &quot;CopieCls.cls&quot;, then imports it into the target workbook. The
-temporary file is cleaned up after import.</p>
+<p>Public methods for transferring VBA components.</p>
+<p>Exports the named class module to a file called after the component, imports it
+into the target workbook, and deletes the file. A class of that name already in
+the target is removed first and the removal is filed through Checking.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>className</code>: String. The VBA component name of the class to transfer.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the source workbook has no such class.</li>
 </ul>
 <hr />
 <h3 id="transfermodule">TransferModule <a class="anchor-link" href="#transfermodule">#</a></h3>
@@ -71,11 +126,16 @@ temporary file is cleaned up after import.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TransferModule(ByVal moduleName As String)
 </code></pre>
-<p>Exports the named standard module (.bas) from the source workbook to a
-temporary file named &quot;CopieMod.bas&quot;, then imports it into the target workbook.</p>
+<p>Exports the named standard module to a file called after the component, imports
+it into the target workbook, and deletes the file. A module of that name already
+in the target is removed first and the removal is filed through Checking.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>moduleName</code>: String. The VBA component name of the module to transfer.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the source workbook has no such module.</li>
 </ul>
 <hr />
 <h3 id="transferform">TransferForm <a class="anchor-link" href="#transferform">#</a></h3>
@@ -84,12 +144,18 @@ temporary file named &quot;CopieMod.bas&quot;, then imports it into the target w
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TransferForm(ByVal formName As String)
 </code></pre>
-<p>Exports the named UserForm (.frm/.frx) from the source workbook to temporary
-files, imports it into the target workbook, then deletes both the .frm and
-.frx temporary files.</p>
+<p>Exports the named UserForm to a .frm and a .frx called after the component,
+imports it into the target workbook, and deletes both files. A form of that name
+already in the target is removed first and the removal is filed through
+Checking. The .frx path is built by swapping the extension, which is what the
+VBIDE writes beside the .frm.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>formName</code>: String. The VBA component name of the form to transfer.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the source workbook has no such form.</li>
 </ul>
 <hr />
 <h3 id="transferworkbookcode">TransferWorkbookCode <a class="anchor-link" href="#transferworkbookcode">#</a></h3>
@@ -99,12 +165,17 @@ files, imports it into the target workbook, then deletes both the .frm and
 <pre><code class="language-vb">Public Sub TransferWorkbookCode(ByVal moduleName As String)
 </code></pre>
 <p>Reads all code lines from the named module in the source workbook and writes
-them into the target workbook's ThisWorkbook code module, replacing any
-existing content. Does not create a new component; instead overwrites the
-built-in ThisWorkbook code module.</p>
+them into the target workbook's ThisWorkbook code module, replacing what is
+there. The component is reached through Workbook.CodeName, which is where a
+workbook's own event code lives. The previous text is put back when the write
+raises.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>moduleName</code>: String. The source module whose code will be copied.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the source workbook has no such module.</li>
 </ul>
 <hr />
 <h3 id="transferworksheetcode">TransferWorksheetCode <a class="anchor-link" href="#transferworksheetcode">#</a></h3>
@@ -114,12 +185,12 @@ built-in ThisWorkbook code module.</p>
 <pre><code class="language-vb">Public Sub TransferWorksheetCode(ByVal moduleName As String, ByVal targetSheetName As String)
 </code></pre>
 <p>Reads all code lines from the named module in the source workbook and writes
-them into the code module of the worksheet identified by targetSheetName in
-the target workbook. Replaces any existing content in the worksheet's code
-module. The target worksheet is looked up by its user-visible Name property;
-its CodeName is then used to locate the correct VBComponent. Used to inject
-event handlers (e.g., Worksheet_SelectionChange) into specific worksheets
-during linelist generation.</p>
+them into the code module of the worksheet identified by targetSheetName in the
+target workbook, replacing what is there. The worksheet is looked up by its
+user-visible Name and its CodeName then locates the VBComponent, because the
+caller passes translated sheet names. Used to inject event handlers such as
+Worksheet_SelectionChange during linelist generation. The previous text is put
+back when the write raises.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>moduleName</code>: String. The source module whose code will be copied.</li>
@@ -138,33 +209,69 @@ target workbook whose code module will receive the code.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub CopyModuleText(ByVal moduleName As String)
 </code></pre>
-<p>Reads all code from the named module in the source workbook and writes it
-into the same-named module in the target workbook, replacing existing content.
-Used for template workbooks where the target module already exists.</p>
+<p>Reads all code from the named module in the source workbook and writes it into
+the same-named module in the target workbook, replacing what is there. Both
+workbooks have to carry the module already: this member writes text into a
+component and creates none. Linelist calls it on the template branch, where the
+target workbook arrives with its own ribbon module. The previous text is put
+back when the write raises.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>moduleName</code>: String. The module name (must exist in both workbooks).</li>
-</ul>
-<hr />
-<h3 id="copymodulecode">CopyModuleCode <a class="anchor-link" href="#copymodulecode">#</a></h3>
-<p><em>copy-module-code</em></p>
-<p><strong>Copy code between components within the target workbook</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub CopyModuleCode(ByVal sourceName As String, ByVal targetName As String)
-</code></pre>
-<p>Within the target workbook, reads code from the source component, writes it
-into the target component (replacing any existing content), then removes the
-source component from the VBProject. Useful after importing a module that
-should be injected into a different component (e.g., a worksheet module).</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sourceName</code>: String. The component to read code from and then remove.</li>
-<li><code>targetName</code>: String. The component to write code into.</li>
+<li><code>moduleName</code>: String. The module name. It has to exist in both workbooks.</li>
 </ul>
 <p><strong>Throws:</strong></p>
 <ul>
-<li>ProjectError.ObjectNotInitialized When source or target component is
-not found in the target workbook.</li>
+<li>ProjectError.ElementNotFound When either workbook lacks the module.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="diagnostics">
+<summary>Diagnostics</summary>
+<div class="section-body">
+<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
+<p><em>has-checkings</em></p>
+<p><strong>Whether anything was filed during the transfers</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
+</code></pre>
+<p>The Checking entries this instance filed, and how a caller reads them.</p>
+<p><strong>Returns:</strong> Boolean. True once one entry has been recorded.</p>
+<hr />
+<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
+<p><em>checking-values</em></p>
+<p><strong>The diagnostic log of the transfers</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CheckingValues() As Object
+</code></pre>
+<p>Answers the internal Checking object holding every entry filed by this
+instance, and Nothing while none has been filed. The GenerationLog takes it
+through Linelist.</p>
+<p><strong>Returns:</strong> Object. A Checking instance, or Nothing.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="helpers">
+<summary>Helpers</summary>
+<div class="section-body">
+<h3 id="hassourcecomponent">HasSourceComponent <a class="anchor-link" href="#hassourcecomponent">#</a></h3>
+<p><em>has-source-component</em></p>
+<p><strong>Whether the source workbook carries one component</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function HasSourceComponent(ByVal componentName As String) As Boolean
+</code></pre>
+<p>For a component that is being added to the project and is not in every designer
+yet. The caller transfers it when it is there and files a note when it is not,
+so one designer without it still generates a linelist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>componentName</code>: String. The component name to look for.</li>
+<li><code>componentName</code>: String. The component to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the source workbook carries it.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the source workbook has no such component.</li>
 </ul>
 <hr />
 </div>
@@ -172,55 +279,198 @@ not found in the target workbook.</li>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-bindings">Bindings</h2>
-<h3 id="int-binsourcewkb">BinSourceWkb <a class="anchor-link" href="#int-binsourcewkb">#</a></h3>
-<p><em>bin-source-wkb</em></p>
+<h3 id="int-sourcewkb">SourceWkb <a class="anchor-link" href="#int-sourcewkb">#</a></h3>
+<p><em>source-wkb</em></p>
 <p><strong>Assign the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Friend Property Set BinSourceWkb(ByVal value As Workbook)
+<pre><code class="language-vb">Friend Property Set SourceWkb(ByVal value As Workbook)
 </code></pre>
 <p>Friend setters used only during factory construction.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>value</code>: Workbook. The source workbook to store.</li>
+<li><code>value</code>: Workbook. The workbook the components are read from.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.SomethingWentWrong When the instance is already sealed.</li>
 </ul>
 <hr />
-<h3 id="int-bintargetwkb">BinTargetWkb <a class="anchor-link" href="#int-bintargetwkb">#</a></h3>
-<p><em>bin-target-wkb</em></p>
+<h3 id="int-targetwkb">TargetWkb <a class="anchor-link" href="#int-targetwkb">#</a></h3>
+<p><em>target-wkb</em></p>
 <p><strong>Assign the target workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Friend Property Set BinTargetWkb(ByVal value As Workbook)
+<pre><code class="language-vb">Friend Property Set TargetWkb(ByVal value As Workbook)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>value</code>: Workbook. The target workbook to store.</li>
+<li><code>value</code>: Workbook. The workbook the components are written into.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.SomethingWentWrong When the instance is already sealed.</li>
 </ul>
 <hr />
-<h3 id="int-bintemprepos">BinTempRepos <a class="anchor-link" href="#int-bintemprepos">#</a></h3>
-<p><em>bin-temp-repos</em></p>
+<h3 id="int-temprepos">TempRepos <a class="anchor-link" href="#int-temprepos">#</a></h3>
+<p><em>temp-repos</em></p>
 <p><strong>Assign the temporary repository</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Friend Property Set BinTempRepos(ByVal value As ITemporaryRepos)
+<pre><code class="language-vb">Friend Property Set TempRepos(ByVal value As TemporaryRepos)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>value</code>: ITemporaryRepos. The temporary repository to store.</li>
+<li><code>value</code>: TemporaryRepos. The folder the export files are written to.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.SomethingWentWrong When the instance is already sealed.</li>
 </ul>
 <hr />
 <h2 id="int-helpers">Helpers</h2>
 <h3 id="int-exportimportcomponent">ExportImportComponent <a class="anchor-link" href="#int-exportimportcomponent">#</a></h3>
 <p><em>export-import-component</em></p>
-<p><strong>Export a VBA component from source and import into target</strong></p>
+<p><strong>Export a VBA component from source and import it into target</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ExportImportComponent(ByVal componentName As String, ByVal tempFileName As String)
+<pre><code class="language-vb">Private Sub ExportImportComponent(ByVal componentName As String, _
+                                  ByVal tempFileName As String)
 </code></pre>
-<p>Private utilities for export/import and error handling.
-Exports the named component to a temporary file, imports it into the target
-workbook, then cleans up the temporary file. Used by TransferClass and
+<p>Private utilities for export/import, code writing and error handling.</p>
+<p>Exports the named component to a temporary file, removes any component of that
+name from the target, imports the file and deletes it. The temporary file is
+deleted again when any of those steps raises. Used by TransferClass and
 TransferModule.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>componentName</code>: String. The VBA component name to transfer.</li>
-<li><code>tempFileName</code>: String. The temporary file name (e.g., &quot;CopieCls.cls&quot;).</li>
+<li><code>tempFileName</code>: String. The temporary file name, extension included.</li>
+</ul>
+<hr />
+<h3 id="int-removetargetcomponent">RemoveTargetComponent <a class="anchor-link" href="#int-removetargetcomponent">#</a></h3>
+<p><em>remove-target-component</em></p>
+<p><strong>Take a same-named component out of the target before an import</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveTargetComponent(ByVal targetProj As Object, _
+                                  ByVal componentName As String)
+</code></pre>
+<p>VBComponents.Import stays quiet on a name clash and leaves the target holding
+two copies under two names, which stops the project compiling. The copy that is
+there goes first, and the removal is filed as a warning so the generation report
+names it.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetProj</code>: Object. The VBProject of the target workbook.</li>
+<li><code>componentName</code>: String. The component about to arrive.</li>
+</ul>
+<hr />
+<h3 id="int-sourcecomponent">SourceComponent <a class="anchor-link" href="#int-sourcecomponent">#</a></h3>
+<p><em>source-component</em></p>
+<p><strong>The named component of the source workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SourceComponent(ByVal componentName As String) As Object
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>componentName</code>: String. The component to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Object. The VBComponent.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the source workbook has no such component.</li>
+</ul>
+<hr />
+<h3 id="int-findcomponent">FindComponent <a class="anchor-link" href="#int-findcomponent">#</a></h3>
+<p><em>find-component</em></p>
+<p><strong>Look a component up and answer Nothing when it is absent</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindComponent(ByVal vbProj As Object, _
+                               ByVal componentName As String) As Object
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>vbProj</code>: Object. The VBProject to search.</li>
+<li><code>componentName</code>: String. The component name to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Object. The VBComponent, or Nothing.</p>
+<hr />
+<h3 id="int-sourceproject">SourceProject <a class="anchor-link" href="#int-sourceproject">#</a></h3>
+<p><em>source-project</em></p>
+<p><strong>The VBProject of the source workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SourceProject() As Object
+</code></pre>
+<p><strong>Returns:</strong> Object. The VBProject.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ErrorUnexpectedState When Excel refuses the read.</li>
+</ul>
+<hr />
+<h3 id="int-targetproject">TargetProject <a class="anchor-link" href="#int-targetproject">#</a></h3>
+<p><em>target-project</em></p>
+<p><strong>The VBProject of the target workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TargetProject() As Object
+</code></pre>
+<p><strong>Returns:</strong> Object. The VBProject.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ErrorUnexpectedState When Excel refuses the read.</li>
+</ul>
+<hr />
+<h3 id="int-readcode">ReadCode <a class="anchor-link" href="#int-readcode">#</a></h3>
+<p><em>read-code</em></p>
+<p><strong>Read a whole code module into one string</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ReadCode(ByVal codeMod As Object) As String
+</code></pre>
+<p>One crossing for the whole module. Reading it line by line costs one crossing
+per line, so leave this as it is.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>codeMod</code>: Object. The CodeModule to read.</li>
+</ul>
+<p><strong>Returns:</strong> String. Every line of the module, and an empty string for an empty one.</p>
+<hr />
+<h3 id="int-replacecode">ReplaceCode <a class="anchor-link" href="#int-replacecode">#</a></h3>
+<p><em>replace-code</em></p>
+<p><strong>Write text into a code module and put the old text back on a failure</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ReplaceCode(ByVal codeMod As Object, ByVal codeContent As String)
+</code></pre>
+<p>DeleteLines 1, 0 on an empty module is what the line count guards against, and a
+workbook from Workbooks.Add carries an empty ThisWorkbook module. The text that
+is about to go is kept, so a raise between the delete and the write leaves the
+module holding what it held before.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>codeMod</code>: Object. The CodeModule to write into.</li>
+<li><code>codeContent</code>: String. The text to write.</li>
+</ul>
+<hr />
+<h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
+<p><em>log-info</em></p>
+<p><strong>Record a diagnostic entry, building the Checking object on first use</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _
+                    Optional ByVal scope As Byte = checkingNote)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>label</code>: String. The message to record.</li>
+<li><code>scope</code>: Optional Byte. Severity from CheckingScope. Defaults to checkingNote.</li>
+</ul>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Refuse a write to a creation-only binding after Create</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The binding the caller tried to write.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.SomethingWentWrong When the instance is already sealed.</li>
 </ul>
 <hr />
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
@@ -235,21 +485,14 @@ TransferModule.</p>
 <li><code>errorMessage</code>: String. Human-readable description of the failure.</li>
 </ul>
 <hr />
-<h2 id="int-interfaceimplementation">InterfaceImplementation</h2>
-<h3 id="int-icodetransfer-transferclass">ICodeTransfer_TransferClass <a class="anchor-link" href="#int-icodetransfer-transferclass">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ICodeTransfer_TransferClass(ByVal className As String)
-</code></pre>
-<p>Delegated members satisfying the ICodeTransfer contract.
-See the corresponding Public members above for full documentation.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (5 file(s))</summary>
 <ul>
-<li><a href="CodeTransfer.html">CodeTransfer.cls</a></li>
-<li><a href="ICodeTransfer.html">ICodeTransfer.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
+<li>HeadlessBuild.bas</li>
+<li>EventLinelistSheet.bas</li>
+<li>EventsLinelistButtons.bas</li>
 <li>TestCodeTransfer.bas</li>
 </ul>
 </details>

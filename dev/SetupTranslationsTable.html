@@ -11,11 +11,87 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>SetupTranslationsTable</h1>
-<p>Manages a translations ListObject backed by a helper tag column.
-Synchronises translations from a watcher registry, handles language
-column creation and promotion, removes obsolete and duplicate labels,
-reports missing and duplicate entries, and exports the table to
-external workbooks. Uses HiddenNames for sequence counters.</p>
+<p>Manages the translations ListObject of a setup workbook, together with the
+helper tag column that sits beside it. UpdateFromRegistry reads the watched
+ranges of the update registry and writes one row per label. EnsureLanguages
+creates the language columns, SwitchDefaultLanguage promotes one of them,
+SwitchableLanguages and Languages list what is there, and ResetSequence puts
+the row counter back. MissingLabels, NumberOfMissing, DuplicateLabels and
+UnresolvedRanges report on the table, and Export writes it into another
+workbook.</p>
+<details open class="doc-section" id="label-matching-policy">
+<summary>LABEL MATCHING POLICY</summary>
+<div class="section-body">
+<p>A label carries its case. &quot;Hello&quot; and &quot;hello&quot; are two labels, they take two
+rows, and each one stands for itself. FindLabelRow, DeduplicateLabels and
+ComputeDuplicateSummary all answer from one keyed Collection built by
+LabelKey, and that key spells the capitalisation out so two spellings never
+share it. A Collection matches its own keys without regard to case, so the
+case travels inside the key. TranslationObject.LookupRow reads this table at
+run time and compares with vbBinaryCompare.</p>
+<p>Column titles, registry status words, mode keywords and defined-name lookups
+are matched without regard to case. Excel matches defined names that way
+itself.</p>
+</div>
+</details>
+<details open class="doc-section" id="duplicates-are-coloured-by-group">
+<summary>DUPLICATES ARE COLOURED BY GROUP</summary>
+<div class="section-body">
+<p>ApplyFormatting gives every duplicate group in a column a fill of its own,
+walked off the hue wheel by DuplicateGroupColor. A column painted in one colour
+says which cells are duplicated and nothing about which of them go together,
+and a translator staring at forty red cells has to read every one to find the
+pairs. One rule per group answers both questions at a glance.</p>
+<p>CollectDuplicateGroups finds the groups, and the summary message reads its
+groups from the same function, so the sheet and the message never disagree. The
+rules are EXACT tests, which is what carries the capitalisation through to the
+sheet: &quot;Hello&quot; and &quot;hello&quot; are two labels here and neither takes the colour of
+the other.</p>
+<p>The red rule that used to paint every duplicate is still there, added last so
+it holds the lowest priority. It now marks a duplicate this class could not
+group: one past the end of the palette, one whose label is too long for a rule
+formula, or one whose formula Excel refused.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-helper-tag-column">
+<summary>THE HELPER TAG COLUMN</summary>
+<div class="section-body">
+<p>The translations ListObject sits with one spare worksheet column to its left
+holding a tag per row, shaped <rangename>__<sequence>. That column lives
+outside the ListObject most of the time. During an update the table is resized
+one column left so each tag travels with its row through the sort, then
+resized back. LabelColumnIndex() answers 2 while the tag column is inside the
+table and 1 otherwise, and every column index in this class comes from that
+one function.</p>
+</div>
+</details>
+<details open class="doc-section" id="create-writes-nothing">
+<summary>CREATE WRITES NOTHING</summary>
+<div class="section-body">
+<p>Create locates and checks the helper column. The title, the formatting and the
+hidden language list are written by the update path alone, through
+EnsureTagColumnReady and EnsureLanguages, so a manager can be built over a
+protected sheet and read from.</p>
+</div>
+</details>
+<details open class="doc-section" id="source-ranges-are-contiguous">
+<summary>SOURCE RANGES ARE CONTIGUOUS</summary>
+<div class="section-body">
+<p>A registry range refers to one block of cells on one worksheet.
+SetupPreparation and UpdatedValues both build their names over a single table
+column. ProcessTextRange and ProcessFormulaRange read each source in one
+crossing, and Range.Value2 answers for the first area of a range, so a name
+built by hand over scattered cells brings in its first block alone.</p>
+</div>
+</details>
+<details open class="doc-section" id="error-numbers">
+<summary>ERROR NUMBERS</summary>
+<div class="section-body">
+<p>ProjectError.ErrorUnexpectedState is 1004, which is also Excel's generic error
+number. An Excel 1004 that escapes an update is raised again as 1004, so a
+caller reading the number alone sees one value for both.</p>
+</div>
+</details>
 <details open class="doc-section" id="factory-helpers">
 <summary>Factory helpers</summary>
 <div class="section-body">
@@ -23,14 +99,56 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><em>create</em></p>
 <p><strong>Create a configured translations table manager instance.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState = Nothing) As ISetupTranslationsTable
+<pre><code class="language-vb">Public Function Create(ByVal translationTable As ListObject, Optional ByVal stateScope As ApplicationState = Nothing) As SetupTranslationsTable
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>translationTable</code>: ListObject. The managed translations table.</li>
-<li><code>stateScope</code>: Optional IApplicationState. Guard for Excel settings during updates.</li>
+<li><code>stateScope</code>: Optional ApplicationState. Guard for Excel settings during updates.</li>
 </ul>
-<p><strong>Returns:</strong> ISetupTranslationsTable. Ready to process registry updates.</p>
+<p><strong>Returns:</strong> SetupTranslationsTable. Ready to process registry updates.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="public-configuration">
+<summary>Public configuration</summary>
+<div class="section-body">
+<h3 id="languagesnameid">LanguagesNameId <a class="anchor-link" href="#languagesnameid">#</a></h3>
+<p><em>languages-name-id</em></p>
+<p><strong>The HiddenName key of the persisted language list.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LanguagesNameId() As String
+</code></pre>
+<p>Name of the worksheet-level HiddenName this class writes the semicolon
+separated language list under on its Translations sheet. The designer reads
+the list back through this key when a setup file is loaded, so the key lives
+here, on the class that writes it. The answer is a constant, so the property
+works on the predeclared instance.</p>
+<p><strong>Returns:</strong> String. The HiddenName identifier.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="tag-column-infrastructure">
+<summary>Tag column infrastructure</summary>
+<div class="section-body">
+<h3 id="duplicategroupcolor">DuplicateGroupColor <a class="anchor-link" href="#duplicategroupcolor">#</a></h3>
+<p><em>duplicate-group-color</em></p>
+<p><strong>Colour for the nth duplicate group.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function DuplicateGroupColor(ByVal groupIndex As Long) As Long
+</code></pre>
+<p>The hue walks the wheel in strides of DUPLICATE_HUE_STRIDE. The stride
+and the hue count share no factor, so every hue is still reached, and
+two groups that follow each other land most of a wheel apart rather
+than one step apart. Each further lap of the wheel drops the lightness
+by one band. Past the palette the index wraps, so two groups do share
+a colour there; HighlightDuplicateGroups stops before that happens and
+leaves the rest to the red catch-all.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>groupIndex</code>: Long. Zero based position of the group.</li>
+</ul>
+<p><strong>Returns:</strong> Long. An RGB value ready for Interior.Color.</p>
 <hr />
 </div>
 </details>
@@ -41,7 +159,7 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><em>initialise-core</em></p>
 <p><strong>Store the supplied table and optional scope inside the current instance.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub InitialiseCore(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState = Nothing)
+<pre><code class="language-vb">Public Sub InitialiseCore(ByVal translationTable As ListObject, Optional ByVal stateScope As ApplicationState = Nothing)
 </code></pre>
 <hr />
 <h2 id="int-public-configuration">Public configuration</h2>
@@ -59,13 +177,6 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <pre><code class="language-vb">Public Property Get TableName() As String
 </code></pre>
 <hr />
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Self reference used by factories returning interface instances.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ISetupTranslationsTable
-</code></pre>
-<hr />
 <h3 id="int-setdisplayprompts">SetDisplayPrompts <a class="anchor-link" href="#int-setdisplayprompts">#</a></h3>
 <p><em>set-display-prompts</em></p>
 <p><strong>Allow callers to toggle display prompts used during updates.</strong></p>
@@ -77,7 +188,7 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><em>resolve-scope</em></p>
 <p><strong>Guarded access to the application scope.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolveScope() As IApplicationState
+<pre><code class="language-vb">Private Function ResolveScope() As ApplicationState
 </code></pre>
 <hr />
 <h2 id="int-language-management">Language management</h2>
@@ -85,15 +196,21 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><em>ensure-languages</em></p>
 <p><strong>Ensure all provided languages exist as table headers.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureLanguages(Optional ByVal lang As String = vbNullString)
+<pre><code class="language-vb">Public Sub EnsureLanguages(Optional ByVal lang As String = vbNullString)
 </code></pre>
 <hr />
 <h3 id="int-trygetwrittenlanguages">TryGetWrittenLanguages <a class="anchor-link" href="#int-trygetwrittenlanguages">#</a></h3>
 <p><em>try-get-written-languages</em></p>
 <p><strong>Collect language names written to the right of the table.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function TryGetWrittenLanguages(ByRef languages As String, ByVal newLang As String) As Boolean
+<pre><code class="language-vb">Private Function TryGetWrittenLanguages(ByRef languages As String, ByRef typedCells As Range, ByVal newLang As String) As Boolean
 </code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>languages</code>: ByRef String. Receives the semicolon separated language list.</li>
+<li><code>typedCells</code>: ByRef Range. Receives the cells holding the typed names, to clear later.</li>
+<li><code>newLang</code>: String. Extra language requested by the caller.</li>
+</ul>
 <hr />
 <h3 id="int-ensurelanguagecolumn">EnsureLanguageColumn <a class="anchor-link" href="#int-ensurelanguagecolumn">#</a></h3>
 <p><em>ensure-language-column</em></p>
@@ -154,23 +271,20 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <hr />
 <h3 id="int-swaplanguagecolumns">SwapLanguageColumns <a class="anchor-link" href="#int-swaplanguagecolumns">#</a></h3>
 <p><em>swap-language-columns</em></p>
-<p><strong>Swap the headers, data, and totals between two language columns.</strong></p>
+<p><strong>Swap the headers and the data between two language columns.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SwapLanguageColumns(ByVal firstIndex As Long, ByVal secondIndex As Long)
 </code></pre>
+<p>The data body of each column is read and written as one block, so a
+swap costs four Excel crossings whatever the row count. Number
+formats stay where they are: translation columns hold text. The
+translations table carries no totals row, so nothing here handles one.</p>
 <hr />
 <h3 id="int-uniquetemporaryheader">UniqueTemporaryHeader <a class="anchor-link" href="#int-uniquetemporaryheader">#</a></h3>
 <p><em>unique-temporary-header</em></p>
 <p><strong>Generate a temporary header that does not collide with existing columns.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function UniqueTemporaryHeader() As String
-</code></pre>
-<hr />
-<h3 id="int-swapcellcontents">SwapCellContents <a class="anchor-link" href="#int-swapcellcontents">#</a></h3>
-<p><em>swap-cell-contents</em></p>
-<p><strong>Swap the formula and number format between two cells.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub SwapCellContents(ByVal leftCell As Range, ByVal rightCell As Range)
 </code></pre>
 <hr />
 <h2 id="int-registry-processing">Registry processing</h2>
@@ -188,6 +302,9 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <pre><code class="language-vb">Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, _
                              Optional ByVal languages As String = vbNullString)
 </code></pre>
+<p>The sequence counter is written after the rows settle. A run that
+fails halfway leaves the counter where it was, so the retry works at
+the same sequence and the rows the failed run tagged survive.</p>
 <hr />
 <h3 id="int-processregistry">ProcessRegistry <a class="anchor-link" href="#int-processregistry">#</a></h3>
 <p><em>process-registry</em></p>
@@ -203,6 +320,30 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <pre><code class="language-vb">Private Sub ProcessRegistryTable(ByVal registryTable As ListObject, ByVal updateSequence As Long)
 </code></pre>
 <hr />
+<h3 id="int-registrycolumn">RegistryColumn <a class="anchor-link" href="#int-registrycolumn">#</a></h3>
+<p><em>registry-column</em></p>
+<p><strong>Resolve a registry column by header name, falling back to its published position.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RegistryColumn(ByVal registryTable As ListObject, _
+                                ByVal headerName As String, _
+                                ByVal fallbackColumn As Long) As Long
+</code></pre>
+<hr />
+<h3 id="int-registrycolumnbyheader">RegistryColumnByHeader <a class="anchor-link" href="#int-registrycolumnbyheader">#</a></h3>
+<p><em>registry-column-by-header</em></p>
+<p><strong>Find a registry column by header name, answering 0 when the header is absent.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RegistryColumnByHeader(ByVal registryTable As ListObject, _
+                                        ByVal headerName As String) As Long
+</code></pre>
+<hr />
+<h3 id="int-throwregistryshape">ThrowRegistryShape <a class="anchor-link" href="#int-throwregistryshape">#</a></h3>
+<p><em>throw-registry-shape</em></p>
+<p><strong>Report a registry table that carries too few columns.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowRegistryShape(ByVal registryTable As ListObject, ByVal columnCount As Long)
+</code></pre>
+<hr />
 <h3 id="int-shouldprocessrange">ShouldProcessRange <a class="anchor-link" href="#int-shouldprocessrange">#</a></h3>
 <p><em>should-process-range</em></p>
 <p><strong>Determine whether the named range should be processed this cycle.</strong></p>
@@ -216,6 +357,9 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ProcessSourceRange(ByVal sourceRange As Range, ByVal rngTag As String, ByVal mode As String)
 </code></pre>
+<p>The mode is lowered and trimmed once, and every branch reads that one
+value. A watched range and a blank mode both carry no labels, so both
+are skipped without a word.</p>
 <hr />
 <h3 id="int-processtextrange">ProcessTextRange <a class="anchor-link" href="#int-processtextrange">#</a></h3>
 <p><em>process-text-range</em></p>
@@ -231,12 +375,31 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <pre><code class="language-vb">Private Sub ProcessFormulaRange(ByVal sourceRange As Range, ByVal rngTag As String)
 </code></pre>
 <hr />
+<h3 id="int-addtokens">AddTokens <a class="anchor-link" href="#int-addtokens">#</a></h3>
+<p><em>add-tokens</em></p>
+<p><strong>Add every extracted formula token as a chunk.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddTokens(ByVal tokens As BetterArray, ByVal rngTag As String)
+</code></pre>
+<hr />
+<h3 id="int-effectivesourcerange">EffectiveSourceRange <a class="anchor-link" href="#int-effectivesourcerange">#</a></h3>
+<p><em>effective-source-range</em></p>
+<p><strong>Narrow a source range to the part of the sheet that holds data.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EffectiveSourceRange(ByVal sourceRange As Range) As Range
+</code></pre>
+<p>A defined name over a whole column answers with a 1,048,576 row
+array. The intersection with the used range keeps the read small.</p>
+<hr />
 <h3 id="int-extractformulachunks">ExtractFormulaChunks <a class="anchor-link" href="#int-extractformulachunks">#</a></h3>
 <p><em>extract-formula-chunks</em></p>
 <p><strong>Extract quoted text segments from a formula while handling escaped quotes.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ExtractFormulaChunks(ByVal formulaText As String) As BetterArray
 </code></pre>
+<p>The walk jumps from quote to quote with InStr, so the cost is one
+call per quote. Escaped double quotes are stripped first, which is
+what makes IF(A1=&quot;&quot;, ...) skip its empty comparison string.</p>
 <hr />
 <h2 id="int-chunk-management">Chunk management</h2>
 <h3 id="int-addchunk">AddChunk <a class="anchor-link" href="#int-addchunk">#</a></h3>
@@ -248,33 +411,100 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <hr />
 <h3 id="int-appendrow">AppendRow <a class="anchor-link" href="#int-appendrow">#</a></h3>
 <p><em>append-row</em></p>
-<p><strong>Append a new list row and populate the mandatory cells.</strong></p>
+<p><strong>Record a new label in memory, to be written to the sheet in one batch.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function AppendRow(ByVal label As String, ByVal rngTag As String) As Long
+<pre><code class="language-vb">Private Sub AppendRow(ByVal label As String, ByVal rngTag As String)
+</code></pre>
+<hr />
+<h3 id="int-flushpendingrows">FlushPendingRows <a class="anchor-link" href="#int-flushpendingrows">#</a></h3>
+<p><em>flush-pending-rows</em></p>
+<p><strong>Grow the table once and write every new label in one block.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FlushPendingRows()
+</code></pre>
+<hr />
+<h3 id="int-growtablerows">GrowTableRows <a class="anchor-link" href="#int-growtablerows">#</a></h3>
+<p><em>grow-table-rows</em></p>
+<p><strong>Extend the managed table by the requested number of rows in one call.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GrowTableRows(ByVal extraRows As Long)
+</code></pre>
+<hr />
+<h3 id="int-ensurelabelcapacity">EnsureLabelCapacity <a class="anchor-link" href="#int-ensurelabelcapacity">#</a></h3>
+<p><em>ensure-label-capacity</em></p>
+<p><strong>Grow the label buffer geometrically so appends stay linear.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureLabelCapacity(ByVal wanted As Long)
+</code></pre>
+<hr />
+<h3 id="int-ensuretagcapacity">EnsureTagCapacity <a class="anchor-link" href="#int-ensuretagcapacity">#</a></h3>
+<p><em>ensure-tag-capacity</em></p>
+<p><strong>Grow the tag buffer geometrically so appends stay linear.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureTagCapacity(ByVal wanted As Long)
 </code></pre>
 <hr />
 <h2 id="int-label-buffer">Label buffer</h2>
 <h3 id="int-initlabelbuffer">InitLabelBuffer <a class="anchor-link" href="#int-initlabelbuffer">#</a></h3>
 <p><em>init-label-buffer</em></p>
-<p><strong>Read the label column into a 1D in-memory buffer for lookups.</strong></p>
+<p><strong>Read the label column into a buffer and build the lookup for the cycle.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InitLabelBuffer()
 </code></pre>
 <hr />
+<h3 id="int-labelkey">LabelKey <a class="anchor-link" href="#int-labelkey">#</a></h3>
+<p><em>label-key</em></p>
+<p><strong>Build the lookup key for a label, one key per spelling.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LabelKey(ByVal label As String) As String
+</code></pre>
+<p>The leading character keeps a numeric label legal as a Collection key.
+The trailing signature is what makes two spellings different keys: a
+Collection matches its own keys without regard to case, so dropping
+the label in on its own would fold &quot;Hello&quot; onto &quot;hello&quot; no matter how
+it was cased here.</p>
+<hr />
+<h3 id="int-casesignature">CaseSignature <a class="anchor-link" href="#int-casesignature">#</a></h3>
+<p><em>case-signature</em></p>
+<p><strong>Spell a label's capitalisation out in digits.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CaseSignature(ByVal label As String) As String
+</code></pre>
+<p>Digits carry no case of their own, so a Collection holds this part of
+the key exactly as written. A character reads 1 when it differs from
+its own lower case, which is the whole of what a case-insensitive
+comparison throws away.</p>
+<hr />
+<h3 id="int-registerlabelkey">RegisterLabelKey <a class="anchor-link" href="#int-registerlabelkey">#</a></h3>
+<p><em>register-label-key</em></p>
+<p><strong>Record the row a label sits on, keeping the first row when the same spelling repeats.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RegisterLabelKey(ByVal label As String, ByVal rowIndex As Long)
+</code></pre>
+<hr />
 <h3 id="int-findlabelrow">FindLabelRow <a class="anchor-link" href="#int-findlabelrow">#</a></h3>
 <p><em>find-label-row</em></p>
-<p><strong>Find the row index for a label using a simple linear scan of the label buffer.</strong></p>
+<p><strong>Find the row index for a label through the keyed lookup.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FindLabelRow(ByVal label As String) As Long
+</code></pre>
+<hr />
+<h3 id="int-labelat">LabelAt <a class="anchor-link" href="#int-labelat">#</a></h3>
+<p><em>label-at</em></p>
+<p><strong>Read a label out of the in-memory buffer.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LabelAt(ByVal rowIndex As Long) As String
 </code></pre>
 <hr />
 <h2 id="int-tag-buffer">Tag buffer</h2>
 <h3 id="int-inittagbuffer">InitTagBuffer <a class="anchor-link" href="#int-inittagbuffer">#</a></h3>
 <p><em>init-tag-buffer</em></p>
-<p><strong>Read the tag column into a 1D in-memory buffer for batch writes.</strong></p>
+<p><strong>Read the tag column into a buffer for batch writes.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InitTagBuffer()
 </code></pre>
+<p>A row that carries a label and no tag is given the manual tag. It was
+never claimed by a watched range, so it must survive the update.</p>
 <hr />
 <h3 id="int-flushtagbuffer">FlushTagBuffer <a class="anchor-link" href="#int-flushtagbuffer">#</a></h3>
 <p><em>flush-tag-buffer</em></p>
@@ -283,12 +513,26 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <pre><code class="language-vb">Private Sub FlushTagBuffer()
 </code></pre>
 <hr />
+<h3 id="int-releaseupdatebuffers">ReleaseUpdateBuffers <a class="anchor-link" href="#int-releaseupdatebuffers">#</a></h3>
+<p><em>release-update-buffers</em></p>
+<p><strong>Drop the per-cycle buffers so a large table leaves no memory behind.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ReleaseUpdateBuffers()
+</code></pre>
+<hr />
 <h2 id="int-process-tracking">Process tracking</h2>
 <h3 id="int-trackprocessedrange">TrackProcessedRange <a class="anchor-link" href="#int-trackprocessedrange">#</a></h3>
 <p><em>track-processed-range</em></p>
 <p><strong>Track the ranges processed during the current registry cycle.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub TrackProcessedRange(ByVal rngName As String)
+</code></pre>
+<hr />
+<h3 id="int-trackunresolvedrange">TrackUnresolvedRange <a class="anchor-link" href="#int-trackunresolvedrange">#</a></h3>
+<p><em>track-unresolved-range</em></p>
+<p><strong>Record a registry range whose defined name could not be resolved.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub TrackUnresolvedRange(ByVal rngName As String)
 </code></pre>
 <hr />
 <h3 id="int-wasrangeprocessed">WasRangeProcessed <a class="anchor-link" href="#int-wasrangeprocessed">#</a></h3>
@@ -305,12 +549,22 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <pre><code class="language-vb">Private Sub ResetProcessedRanges()
 </code></pre>
 <hr />
+<h3 id="int-unresolvedranges">UnresolvedRanges <a class="anchor-link" href="#int-unresolvedranges">#</a></h3>
+<p><em>unresolved-ranges</em></p>
+<p><strong>Registry ranges that failed to resolve during the last update.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get UnresolvedRanges() As BetterArray
+</code></pre>
+<hr />
 <h3 id="int-removeobsoletelabels">RemoveObsoleteLabels <a class="anchor-link" href="#int-removeobsoletelabels">#</a></h3>
 <p><em>remove-obsolete-labels</em></p>
 <p><strong>Remove labels whose source ranges were processed but whose tags are stale.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveObsoleteLabels(ByVal updateSequence As Long)
 </code></pre>
+<p>A row that carries a label and no tag stays. Only a row with neither
+a label nor a tag is dropped, and that is the blank row a ListObject
+keeps when it holds no data.</p>
 <hr />
 <h3 id="int-deduplicatelabels">DeduplicateLabels <a class="anchor-link" href="#int-deduplicatelabels">#</a></h3>
 <p><em>deduplicate-labels</em></p>
@@ -318,6 +572,16 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub DeduplicateLabels()
 </code></pre>
+<hr />
+<h3 id="int-deleterowsbyindex">DeleteRowsByIndex <a class="anchor-link" href="#int-deleterowsbyindex">#</a></h3>
+<p><em>delete-rows-by-index</em></p>
+<p><strong>Delete the listed table rows, batching them into one Excel call each.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub DeleteRowsByIndex(ByRef indices() As Long, ByVal count As Long)
+</code></pre>
+<p>The indices are sorted downward so a flushed batch leaves the
+remaining indices valid. Union slows down past a few thousand areas,
+so the batch is capped.</p>
 <hr />
 <h3 id="int-sortindicesdescending">SortIndicesDescending <a class="anchor-link" href="#int-sortindicesdescending">#</a></h3>
 <p><em>sort-indices-descending</em></p>
@@ -332,6 +596,8 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ParseTag(ByVal tagText As String, ByRef rangeName As String, ByRef sequenceValue As Long) As Boolean
 </code></pre>
+<p>The split happens at the LAST separator, so a range name that itself
+carries the separator still yields its sequence number.</p>
 <hr />
 <h3 id="int-createbuffer">CreateBuffer <a class="anchor-link" href="#int-createbuffer">#</a></h3>
 <p><em>create-buffer</em></p>
@@ -352,14 +618,21 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><em>missing-labels</em></p>
 <p><strong>Count missing translation labels for a specific language.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function MissingLabels(ByVal lang As String) As Long
+<pre><code class="language-vb">Public Function MissingLabels(ByVal lang As String) As Long
 </code></pre>
 <hr />
 <h3 id="int-numberofmissing">NumberOfMissing <a class="anchor-link" href="#int-numberofmissing">#</a></h3>
 <p><em>number-of-missing</em></p>
 <p><strong>Summarise missing translations per language and optionally prompt the user.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function NumberOfMissing() As String
+<pre><code class="language-vb">Public Function NumberOfMissing() As String
+</code></pre>
+<hr />
+<h3 id="int-appendunresolvedline">AppendUnresolvedLine <a class="anchor-link" href="#int-appendunresolvedline">#</a></h3>
+<p><em>append-unresolved-line</em></p>
+<p><strong>Name the registry ranges that could not be resolved during the update.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AppendUnresolvedLine(ByVal messageLines As BetterArray)
 </code></pre>
 <hr />
 <h3 id="int-updatemissingsummary">UpdateMissingSummary <a class="anchor-link" href="#int-updatemissingsummary">#</a></h3>
@@ -373,7 +646,7 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><em>internal-missing-summary</em></p>
 <p><strong>Cached missing-labels summary across languages.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get InternalMissingSummary() As BetterArray
+<pre><code class="language-vb">Public Property Get InternalMissingSummary() As BetterArray
 </code></pre>
 <hr />
 <h3 id="int-updateduplicatessummary">UpdateDuplicatesSummary <a class="anchor-link" href="#int-updateduplicatessummary">#</a></h3>
@@ -387,22 +660,46 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><em>internal-duplicates-summary</em></p>
 <p><strong>Cached duplicates summary across languages.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get InternalDuplicatesSummary() As BetterArray
+<pre><code class="language-vb">Public Property Get InternalDuplicatesSummary() As BetterArray
 </code></pre>
 <hr />
 <h3 id="int-duplicatelabels">DuplicateLabels <a class="anchor-link" href="#int-duplicatelabels">#</a></h3>
 <p><em>duplicate-labels</em></p>
 <p><strong>Report duplicate translation labels when they exist.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function DuplicateLabels(ByRef duplicateMessage As String, Optional ByVal languageName As String = vbNullString) As Boolean
+<pre><code class="language-vb">Public Function DuplicateLabels(ByRef duplicateMessage As String, Optional ByVal languageName As String = vbNullString) As Boolean
 </code></pre>
 <hr />
 <h3 id="int-computeduplicatesummary">ComputeDuplicateSummary <a class="anchor-link" href="#int-computeduplicatesummary">#</a></h3>
 <p><em>compute-duplicate-summary</em></p>
-<p><strong>Compute duplicates for one language or all languages using simple linear counting.</strong></p>
+<p><strong>Count duplicates for one language or for the label column.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ComputeDuplicateSummary(ByVal languageName As String) As TDuplicateSummary
 </code></pre>
+<p>Every label is counted through one keyed Collection, so the cost is
+linear in the row count. Two spellings of the same word are two
+labels here, so neither is reported as a duplicate of the other.</p>
+<hr />
+<h3 id="int-collectduplicategroups">CollectDuplicateGroups <a class="anchor-link" href="#int-collectduplicategroups">#</a></h3>
+<p><em>collect-duplicate-groups</em></p>
+<p><strong>Find every value a column holds more than once, in first-appearance order.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CollectDuplicateGroups(ByVal targetRange As Range, _
+                                        ByRef groupLabels() As String, _
+</code></pre>
+<p>One keyed Collection carries the whole count, so the cost is linear in
+the row count. The key comes from LabelKey and spells the
+capitalisation out, so &quot;Hello&quot; and &quot;hello&quot; are counted apart and
+neither is a duplicate of the other. Both the summary message and the
+sheet colouring read their groups from here, which is what keeps the
+two of them saying the same thing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetRange</code>: Range. The one column to count.</li>
+<li><code>groupLabels</code>: ByRef String(). Receives the duplicated values, 1 based.</li>
+<li><code>groupCounts</code>: ByRef Long(). Receives how many times each one appears, 1 based.</li>
+</ul>
+<p><strong>Returns:</strong> Long. Number of duplicate groups found.</p>
 <hr />
 <h3 id="int-labelcolumndata">LabelColumnData <a class="anchor-link" href="#int-labelcolumndata">#</a></h3>
 <p><em>label-column-data</em></p>
@@ -410,6 +707,30 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LabelColumnData() As Range
 </code></pre>
+<hr />
+<h3 id="int-columnblock">ColumnBlock <a class="anchor-link" href="#int-columnblock">#</a></h3>
+<p><em>column-block</em></p>
+<p><strong>Read a one column range in a single crossing.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnBlock(ByVal source As Range) As Variant
+</code></pre>
+<hr />
+<h3 id="int-blocktext">BlockText <a class="anchor-link" href="#int-blocktext">#</a></h3>
+<p><em>block-text</em></p>
+<p><strong>Read one row out of a column block as text.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BlockText(ByVal block As Variant, ByVal rowIndex As Long) As String
+</code></pre>
+<hr />
+<h3 id="int-safetext">SafeText <a class="anchor-link" href="#int-safetext">#</a></h3>
+<p><em>safe-text</em></p>
+<p><strong>Turn a sheet value into text, answering empty for an error or a Null.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SafeText(ByVal candidate As Variant) As String
+</code></pre>
+<p>A cell holding #N/A or #REF! answers with an Error variant, and CStr
+on one raises 13. That killed a whole update and reported a type
+mismatch that pointed nowhere.</p>
 <hr />
 <h2 id="int-tag-column-infrastructure">Tag column infrastructure</h2>
 <h3 id="int-tagcolumndatarange">TagColumnDataRange <a class="anchor-link" href="#int-tagcolumndatarange">#</a></h3>
@@ -426,23 +747,140 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <pre><code class="language-vb">Private Sub ApplyTagColumnFormatting()
 </code></pre>
 <hr />
+<h3 id="int-painttagborders">PaintTagBorders <a class="anchor-link" href="#int-painttagborders">#</a></h3>
+<p><em>paint-tag-borders</em></p>
+<p><strong>Paint every edge of the tag range white so the column reads as empty.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub PaintTagBorders(ByVal target As Range)
+</code></pre>
+<hr />
+<h3 id="int-painthairlineborder">PaintHairlineBorder <a class="anchor-link" href="#int-painthairlineborder">#</a></h3>
+<p><em>paint-hairline-border</em></p>
+<p><strong>Paint one edge of a range as a white hairline.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub PaintHairlineBorder(ByVal target As Range, ByVal edge As Long)
+</code></pre>
+<hr />
 <h3 id="int-applylangcolumnformatting">ApplyLangColumnFormatting <a class="anchor-link" href="#int-applylangcolumnformatting">#</a></h3>
 <p><em>apply-lang-column-formatting</em></p>
 <p><strong>Apply font, sizing, and duplicate highlighting to a language column.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyLangColumnFormatting(ByVal langRng As Range)
+<pre><code class="language-vb">Private Sub ApplyLangColumnFormatting(ByVal langRng As Range, ByRef painted As Long)
+</code></pre>
+<p>The group rules go on first and the red catch-all goes on last.
+FormatConditions.Add appends, so the rule added last holds the lowest
+priority and shows through only where no group rule claimed the cell.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>langRng</code>: Range. The language column to format.</li>
+<li><code>painted</code>: ByRef Long. How many groups the pass has coloured so far, carried
+across every column so no two groups share a colour. See
+HighlightDuplicateGroups.</li>
+</ul>
+<hr />
+<h3 id="int-highlightduplicategroups">HighlightDuplicateGroups <a class="anchor-link" href="#int-highlightduplicategroups">#</a></h3>
+<p><em>highlight-duplicate-groups</em></p>
+<p><strong>Give every duplicate group in a column a fill of its own.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub HighlightDuplicateGroups(ByVal langRng As Range, ByRef painted As Long)
+</code></pre>
+<p>A column painted in one colour says which cells are duplicated and
+nothing about which of them belong together. One rule per group says
+both, and the eye pairs them without reading a word.</p>
+<p>Three things send a group back to the red catch-all: a palette that
+has run out (MAX_DUPLICATE_GROUPS), a label whose rule formula would
+pass MAX_RULE_FORMULA_LENGTH, and a formula Excel refuses. So red no
+longer reads as &quot;duplicate&quot;. It reads as &quot;duplicate this could not
+group&quot;, and a sheet with red on it is still telling the truth.</p>
+<p>THE COUNTER IS THE CALLER'S, NOT THIS ROUTINE'S
+It used to start at zero on every column, so the first group of every
+language drew the same colour. An untranslated row carries the source
+spelling in both columns, so those same-coloured cells landed on the
+same rows and the sheet read as though whole rows were highlighted.
+Duplicates are counted within one column and always were; what crossed
+the columns was the colour. Carrying the count across the pass gives
+every group on the sheet a colour of its own, and the palette is then
+spent sheet-wide rather than per column.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>langRng</code>: Range. The language column to paint.</li>
+<li><code>painted</code>: ByRef Long. Groups coloured so far in this pass, advanced here.</li>
+</ul>
+<hr />
+<h3 id="int-addgroupcondition">AddGroupCondition <a class="anchor-link" href="#int-addgroupcondition">#</a></h3>
+<p><em>add-group-condition</em></p>
+<p><strong>Give one duplicate group its own format condition.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function AddGroupCondition(ByVal langRng As Range, _
+                                   ByVal anchor As String, _
+                                   ByVal label As String, _
+                                   ByVal fillColor As Long) As Boolean
+</code></pre>
+<p>EXACT is what carries the case, so the sheet groups labels the way
+CollectDuplicateGroups counts them and &quot;Hello&quot; never shares a colour
+with &quot;hello&quot;.</p>
+<p>Range.Formula reads US syntax whatever the host locale is and Formula1
+follows it, so the formula is written in US form with a comma and no
+localised form is attempted. FormatConditions.Add appends without
+complaint, so the count is what says whether it was accepted.</p>
+<p><strong>Returns:</strong> Boolean. True when the group came away with a rule.</p>
+<hr />
+<h3 id="int-groupconditionformula">GroupConditionFormula <a class="anchor-link" href="#int-groupconditionformula">#</a></h3>
+<p><em>group-condition-formula</em></p>
+<p><strong>Build the EXACT test for one duplicate group.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function GroupConditionFormula(ByVal anchor As String, _
+                                       ByVal label As String) As String
+</code></pre>
+<p>A label carrying a double quote has to have it doubled or the formula
+closes early and Excel refuses the whole rule.</p>
+<p><strong>Returns:</strong> String. The formula, or empty when it would pass the length cap.</p>
+<hr />
+<h3 id="int-duplicatecolorcount">DuplicateColorCount <a class="anchor-link" href="#int-duplicatecolorcount">#</a></h3>
+<p><em>duplicate-color-count</em></p>
+<p><strong>How many duplicate groups the palette colours before it repeats.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DuplicateColorCount() As Long
+</code></pre>
+<hr />
+<h3 id="int-hsltorgb">HslToRgb <a class="anchor-link" href="#int-hsltorgb">#</a></h3>
+<p><em>hsl-to-rgb</em></p>
+<p><strong>Convert one HSL triplet into the Long an Interior.Color takes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HslToRgb(ByVal hue As Double, _
+                          ByVal saturation As Double, _
+                          ByVal lightness As Double) As Long
+</code></pre>
+<p>Hue picks the sector of the wheel, chroma is how far the colour sits
+from grey at that lightness, and the match value lifts all three
+channels so the result reads back at the lightness asked for. Stepping
+hue alone then keeps every group equally pale, which is what makes the
+black Consolas text on top stay readable whatever colour a group drew.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hue</code>: Double. Degrees, 0 to 360.</li>
+<li><code>saturation</code>: Double. 0 to 1.</li>
+<li><code>lightness</code>: Double. 0 to 1.</li>
+</ul>
+<p><strong>Returns:</strong> Long. RGB colour.</p>
+<hr />
+<h3 id="int-colorbyte">ColorByte <a class="anchor-link" href="#int-colorbyte">#</a></h3>
+<p><em>color-byte</em></p>
+<p><strong>Turn a 0 to 1 channel into the 0 to 255 byte RGB expects.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColorByte(ByVal channel As Double) As Long
 </code></pre>
 <hr />
 <h3 id="int-configuretagcolumn">ConfigureTagColumn <a class="anchor-link" href="#int-configuretagcolumn">#</a></h3>
 <p><em>configure-tag-column</em></p>
-<p><strong>Ensure the helper column header is located and configured.</strong></p>
+<p><strong>Locate and validate the helper column. No cell is written here.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ConfigureTagColumn()
 </code></pre>
 <hr />
 <h3 id="int-ensuretagcolumnready">EnsureTagColumnReady <a class="anchor-link" href="#int-ensuretagcolumnready">#</a></h3>
 <p><em>ensure-tag-column-ready</em></p>
-<p><strong>Verify the helper tag column is accessible.</strong></p>
+<p><strong>Write the helper column title and its stealth formatting.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureTagColumnReady()
 </code></pre>
@@ -453,6 +891,16 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RequireTagHeader() As Range
 </code></pre>
+<hr />
+<h3 id="int-istagheaderattached">IsTagHeaderAttached <a class="anchor-link" href="#int-istagheaderattached">#</a></h3>
+<p><em>is-tag-header-attached</em></p>
+<p><strong>Test that the held header cell is alive and still sits beside the table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsTagHeaderAttached() As Boolean
+</code></pre>
+<p>Deleting the helper column invalidates the held Range. Inserting a
+column between the helper and the table leaves it alive and no longer
+adjacent, and resizing over the wrong column follows from that.</p>
 <hr />
 <h3 id="int-attachtagheader">AttachTagHeader <a class="anchor-link" href="#int-attachtagheader">#</a></h3>
 <p><em>attach-tag-header</em></p>
@@ -482,6 +930,7 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EndTagIntegration()
 </code></pre>
+<p>The tag formatting is applied here alone, once per cycle.</p>
 <hr />
 <h3 id="int-labelcolumnindex">LabelColumnIndex <a class="anchor-link" href="#int-labelcolumnindex">#</a></h3>
 <p><em>label-column-index</em></p>
@@ -504,6 +953,9 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyFormatting()
 </code></pre>
+<p>The row autofit runs once at the end. EntireRow.AutoFit measures
+every used column on the sheet, so one call per language column was
+the same measurement done again and again.</p>
 <hr />
 <h2 id="int-data-exchange">Data exchange</h2>
 <h3 id="int-export">Export <a class="anchor-link" href="#int-export">#</a></h3>
@@ -514,11 +966,11 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 </code></pre>
 <hr />
 <h2 id="int-registry-bookkeeping">Registry bookkeeping</h2>
-<h3 id="int-nextupdatesequence">NextUpdateSequence <a class="anchor-link" href="#int-nextupdatesequence">#</a></h3>
-<p><em>next-update-sequence</em></p>
-<p><strong>Retrieve and increment the registry update sequence.</strong></p>
+<h3 id="int-plannedupdatesequence">PlannedUpdateSequence <a class="anchor-link" href="#int-plannedupdatesequence">#</a></h3>
+<p><em>planned-update-sequence</em></p>
+<p><strong>Work out the sequence this cycle runs at, without writing it.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function NextUpdateSequence(ByVal registrySheet As Worksheet) As Long
+<pre><code class="language-vb">Private Function PlannedUpdateSequence(ByVal registrySheet As Worksheet) As Long
 </code></pre>
 <hr />
 <h3 id="int-persistcountervalue">PersistCounterValue <a class="anchor-link" href="#int-persistcountervalue">#</a></h3>
@@ -539,14 +991,18 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><em>hidden-name-store</em></p>
 <p><strong>Create a HiddenNames wrapper for the supplied registry sheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function HiddenNameStore(ByVal registrySheet As Worksheet) As IHiddenNames
+<pre><code class="language-vb">Private Function HiddenNameStore(ByVal registrySheet As Worksheet) As HiddenNames
 </code></pre>
+<p>A store that cannot be built means the sequence counter is never
+written. The next run then reads zero, treats the cycle as sequence 1
+and reprocesses every row whatever its status, so this failure has to
+be heard.</p>
 <hr />
 <h3 id="int-metadatastore">MetadataStore <a class="anchor-link" href="#int-metadatastore">#</a></h3>
 <p><em>metadata-store</em></p>
 <p><strong>Resolve the hidden name store hosting metadata.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function MetadataStore() As IHiddenNames
+<pre><code class="language-vb">Private Function MetadataStore() As HiddenNames
 </code></pre>
 <hr />
 <h2 id="int-validation-and-utilities">Validation and utilities</h2>
@@ -582,36 +1038,26 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><em>throw-project-error</em></p>
 <p><strong>Raise a project error with a contextual message.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ThrowProjectError(ByVal errNumber As ProjectError, ByVal message As String)
+<pre><code class="language-vb">Private Sub ThrowProjectError(ByVal errNumber As Long, ByVal message As String)
 </code></pre>
-<hr />
-<h2 id="int-interface-implementation">Interface implementation</h2>
-<h3 id="int-isetuptranslationstable-ensurelanguages">ISetupTranslationsTable_EnsureLanguages <a class="anchor-link" href="#int-isetuptranslationstable-ensurelanguages">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ISetupTranslationsTable_EnsureLanguages(Optional ByVal languages As String = vbNullString)
-</code></pre>
-<p>Thin delegation stubs wiring ISetupTranslationsTable members to
-the corresponding public or private methods on this class.</p>
-<hr />
-<h3 id="int-isetuptranslationstable-initialise">ISetupTranslationsTable_Initialise <a class="anchor-link" href="#int-isetuptranslationstable-initialise">#</a></h3>
-<p><em>initialise</em></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ISetupTranslationsTable_Initialise(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState)
-</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. The error number to raise. Callers also pass a raw Err.Number.</li>
+</ul>
 <hr />
 </details>
 <details>
 <summary>Used in (10 file(s))</summary>
 <ul>
-<li><a href="EventSetup.html">EventSetup.cls</a></li>
-<li><a href="IEventSetup.html">IEventSetup.cls</a></li>
-<li><a href="ISetupErrors.html">ISetupErrors.cls</a></li>
-<li><a href="ISetupTranslationsTable.html">ISetupTranslationsTable.cls</a></li>
+<li><a href="TranslationObject.html">TranslationObject.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
-<li><a href="SetupImportService.html">SetupImportService.cls</a></li>
-<li><a href="SetupTranslationsTable.html">SetupTranslationsTable.cls</a></li>
+<li><a href="SetupImport.html">SetupImport.cls</a></li>
+<li><a href="UpdatedValues.html">UpdatedValues.cls</a></li>
+<li>EventsDesignerAdvanced.bas</li>
 <li>EventsMasterSetupRibbon.bas</li>
-<li>EventsSetupRibbon.bas</li>
+<li>SetupRibbon.bas</li>
+<li>TestDesignerMulti.bas</li>
+<li>SetupImportTestFixture.bas</li>
 <li>TestSetupTranslationsTable.bas</li>
 </ul>
 </details>

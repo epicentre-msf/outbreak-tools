@@ -11,13 +11,22 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>LLFormat</h1>
-<p>Reads design information from the LL format table and exposes helpers
-to apply those styles while caching lookups for performance. Supports
-import/export of format definitions across workbooks. Each FormatScope
-constant maps to a specific visual pattern applied to Worksheets,
-Ranges, Shapes, ListObjects, or Characters.</p>
-<p><strong>Depends on:</strong> <a href="CustomTable.html">CustomTable</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, ProjectError</p>
+<p>Reads the design values of a linelist from the format table and applies them.
+DesignValue answers one value by name. ApplyFormat takes a FormatScope and
+writes the look that scope stands for onto a Worksheet, a Range, a Shape, a
+ListObject or a run of Characters. Import and Export move the format table
+between workbooks, and DesignName says which design the object reads.</p>
+<details open class="doc-section" id="the-design-values-are-read-once">
+<summary>THE DESIGN VALUES ARE READ ONCE</summary>
+<div class="section-body">
+<p>DesignValue reads a value from the table the first time it is asked and holds
+the answer for the life of the object. A caller that edits the format sheet by
+hand builds a new object to reach the new values, or calls Import, which drops
+every held answer.</p>
+<p><strong>Depends on:</strong> <a href="CustomTable.html">CustomTable</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+</div>
+</details>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -26,7 +35,7 @@ Ranges, Shapes, ListObjects, or Characters.</p>
 <p><strong>Instantiate an LL format engine for a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal formatSh As Worksheet, _
-                       Optional ByVal designType As String = DEFAULT_DESIGN) As ILLFormat
+                       Optional ByVal designType As String = DEFAULT_DESIGN) As LLFormat
 </code></pre>
 <p>Validates the format worksheet, resolves the design column, and
 returns a fully initialised LLFormat instance.</p>
@@ -35,7 +44,7 @@ returns a fully initialised LLFormat instance.</p>
 <li><code>formatSh</code>: Worksheet. Worksheet containing the format specification table.</li>
 <li><code>designType</code>: String. Design column to use. Defaults to DEFAULT_DESIGN.</li>
 </ul>
-<p><strong>Returns:</strong> ILLFormat. A fully initialised LLFormat instance.</p>
+<p><strong>Returns:</strong> LLFormat. A fully initialised LLFormat instance.</p>
 <hr />
 </div>
 </details>
@@ -46,12 +55,13 @@ returns a fully initialised LLFormat instance.</p>
 <p><em>design-value</em></p>
 <p><strong>Look up a design value or colour from the format table</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function DesignValue(ByVal labelName As String, _
+<pre><code class="language-vb">Public Function DesignValue(ByVal labelName As String, _
                              Optional ByVal returnColor As Boolean = True) As Variant
 </code></pre>
 <p>Retrieves either the fill colour (Interior.Color) or the raw cell
 value for the specified label row under the active design column.
-Returns a fallback when the label is not found and logs a diagnostic.</p>
+Returns a fallback when the label is not found and logs a diagnostic.
+The answer is cached for the life of the object; see the class @details.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>labelName</code>: String. Label text stored in the format table.</li>
@@ -68,12 +78,16 @@ Returns a fallback when the label is not found and logs a diagnostic.</p>
 <p><em>apply-format</em></p>
 <p><strong>Apply a design-driven format to an Excel object</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyFormat(ByVal formattingObject As Variant, _
+<pre><code class="language-vb">Public Sub ApplyFormat(ByVal formattingObject As Variant, _
                         ByVal scope As Byte, _
                         Optional ByVal nbDecimals As Integer = 0)
 </code></pre>
 <p>Reads style metadata from the format table and applies it to the
-supplied object according to the given FormatScope constant.</p>
+supplied object according to the given FormatScope constant.
+The object is sorted ONCE here, by its type, and then handed to the sub that
+formats that kind of object. Every branch used to open with its own
+TypeName test and its own Set, 31 times over. An object of the wrong kind
+for the requested scope still leaves quietly - callers rely on that silence.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>formattingObject</code>: Variant. The Excel object to format.</li>
@@ -90,7 +104,7 @@ supplied object according to the given FormatScope constant.</p>
 <p><em>import</em></p>
 <p><strong>Import formatting definitions from another worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Import(ByVal inpsh As Worksheet)
+<pre><code class="language-vb">Public Sub Import(ByVal inpsh As Worksheet)
 </code></pre>
 <p>Reads design columns from the source worksheet and merges them into
 the current format table via CustomTable.Import. Updates the active
@@ -109,11 +123,11 @@ design name from the source DESIGNTYPE named range.</p>
 <p><em>export</em></p>
 <p><strong>Export the format table to another workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Export(ByVal toWkb As Workbook)
+<pre><code class="language-vb">Public Sub Export(ByVal toWkb As Workbook)
 </code></pre>
 <p>Copies the format table and cell styles to a new worksheet in the
-destination workbook. When a worksheet with the same name already
-exists, imports from it instead of exporting.</p>
+destination workbook. When a worksheet with the same name already exists,
+the call turns into an Import from that sheet.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>toWkb</code>: Workbook. Destination workbook.</li>
@@ -138,6 +152,62 @@ exists, imports from it instead of exporting.</p>
 <pre><code class="language-vb">Private Sub EnsureFormatReady()
 </code></pre>
 <hr />
+<h3 id="int-cachedvalue">CachedValue <a class="anchor-link" href="#int-cachedvalue">#</a></h3>
+<p><em>cached-value</em></p>
+<p><strong>Read one entry out of a keyed cache</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CachedValue(ByVal store As Collection, _
+                             ByVal cacheKey As String, _
+                             ByRef found As Boolean) As Variant
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>store</code>: Collection. The cache to read.</li>
+<li><code>cacheKey</code>: String. Key of the entry.</li>
+<li><code>found</code>: Boolean (ByRef). True when the key was present.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. The stored value, or Empty when the key is absent.</p>
+<hr />
+<h3 id="int-storecachedvalue">StoreCachedValue <a class="anchor-link" href="#int-storecachedvalue">#</a></h3>
+<p><em>store-cached-value</em></p>
+<p><strong>Add one entry to a keyed cache</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub StoreCachedValue(ByVal store As Collection, _
+                             ByVal cacheKey As String, _
+                             ByVal cacheValue As Variant)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>store</code>: Collection. The cache to write.</li>
+<li><code>cacheKey</code>: String. Key of the entry.</li>
+<li><code>cacheValue</code>: Variant. Value to keep.</li>
+</ul>
+<hr />
+<h2 id="int-format-table-access">Format Table Access</h2>
+<h3 id="int-tableofsheet">TableOfSheet <a class="anchor-link" href="#int-tableofsheet">#</a></h3>
+<p><em>table-of-sheet</em></p>
+<p><strong>Retrieve the first ListObject of a worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TableOfSheet(ByVal sh As Worksheet) As ListObject
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to read.</li>
+</ul>
+<p><strong>Returns:</strong> ListObject. The first table on the sheet.</p>
+<hr />
+<h3 id="int-headeroftable">HeaderOfTable <a class="anchor-link" href="#int-headeroftable">#</a></h3>
+<p><em>header-of-table</em></p>
+<p><strong>Retrieve the header row of a format table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HeaderOfTable(ByVal formatLo As ListObject) As Range
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formatLo</code>: ListObject. The format table.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The header row.</p>
+<hr />
 <h3 id="int-ensureformatsheetready">EnsureFormatSheetReady <a class="anchor-link" href="#int-ensureformatsheetready">#</a></h3>
 <p><em>ensure-format-sheet-ready</em></p>
 <p><strong>Validate a worksheet as a valid format source</strong></p>
@@ -159,6 +229,20 @@ exists, imports from it instead of exporting.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>label</code>: String. The message to record.</li>
+</ul>
+<hr />
+<h3 id="int-harvestcollaboratorcheckings">HarvestCollaboratorCheckings <a class="anchor-link" href="#int-harvestcollaboratorcheckings">#</a></h3>
+<p><em>harvest-collaborator-checkings</em></p>
+<p><strong>Fold what a table adapter filed into this trace</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As Checking)
+</code></pre>
+<p><code>CustomTable</code> keeps a store of its own, and nobody read it before this
+line. An import that aborted, or headers the export could not find, was
+filed and then dropped.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>collaboratorChecks</code>: Checking. What the adapter filed.</li>
 </ul>
 <hr />
 <h3 id="int-formattable">FormatTable <a class="anchor-link" href="#int-formattable">#</a></h3>
@@ -184,9 +268,35 @@ exists, imports from it instead of exporting.</p>
 <pre><code class="language-vb">Private Sub EnsureLabelColumn()
 </code></pre>
 <hr />
+<h3 id="int-findcolumnindex">FindColumnIndex <a class="anchor-link" href="#int-findcolumnindex">#</a></h3>
+<p><em>find-column-index</em></p>
+<p><strong>Find the column index of a named header, or zero when it is absent</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindColumnIndex(ByVal header As Range, ByVal columnName As String) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>header</code>: Range. The header row to search.</li>
+<li><code>columnName</code>: String. Column caption to locate.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The 1-based column index, or 0 when not found.</p>
+<hr />
+<h3 id="int-columnexists">ColumnExists <a class="anchor-link" href="#int-columnexists">#</a></h3>
+<p><em>column-exists</em></p>
+<p><strong>Test whether a named column exists in a header range</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnExists(ByVal header As Range, ByVal columnName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>header</code>: Range. The header row to search.</li>
+<li><code>columnName</code>: String. Column caption to test.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the column is found.</p>
+<hr />
 <h3 id="int-resolvecolumnindex">ResolveColumnIndex <a class="anchor-link" href="#int-resolvecolumnindex">#</a></h3>
 <p><em>resolve-column-index</em></p>
-<p><strong>Find the column index of a named header</strong></p>
+<p><strong>Find the column index of a named header, raising when it is absent</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveColumnIndex(ByVal header As Range, ByVal columnName As String) As Long
 </code></pre>
@@ -215,35 +325,21 @@ exists, imports from it instead of exporting.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LabelRowIndex(ByVal labelName As String) As Long
 </code></pre>
+<p>The lookup tries an exact match first and then a partial one. Four of the
+labels this class asks for are stored in the format table with extra words
+around them - &quot;gap for graphs&quot; sits in &quot;default row height gap for graphs&quot;,
+&quot;dropdown interior color&quot; in &quot;Select dropdown interior color&quot;, &quot;time series
+header font&quot; in &quot;Time series header font color&quot; and &quot;time series header
+interior&quot; in &quot;Time series header interior color&quot;. Partial matching has to
+stay for those four. The exact pass runs first so that a new row whose label
+merely CONTAINS an existing one leaves that older row alone.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>labelName</code>: String. Label text to locate in the Label column.</li>
 </ul>
 <p><strong>Returns:</strong> Long. The 1-based row index, or 0 when not found.</p>
 <hr />
-<h2 id="int-factory">Factory</h2>
-<h3 id="int-columnexists">ColumnExists <a class="anchor-link" href="#int-columnexists">#</a></h3>
-<p><em>column-exists</em></p>
-<p><strong>Test whether a named column exists in a header range</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ColumnExists(ByVal header As Range, ByVal columnName As String) As Boolean
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>header</code>: Range. The header row to search.</li>
-<li><code>columnName</code>: String. Column caption to test.</li>
-</ul>
-<p><strong>Returns:</strong> Boolean. True when the column is found.</p>
-<hr />
 <h2 id="int-public-interface">Public Interface</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Retrieve this formatter as an interface</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ILLFormat
-</code></pre>
-<p><strong>Returns:</strong> ILLFormat. Self-reference.</p>
-<hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><em>wksh</em></p>
 <p><strong>Retrieve the worksheet hosting the format table</strong></p>
@@ -296,11 +392,20 @@ exists, imports from it instead of exporting.</p>
 <p><em>checking-values</em></p>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get CheckingValues() As IChecking
+<pre><code class="language-vb">Public Property Get CheckingValues() As Checking
 </code></pre>
-<p><strong>Returns:</strong> IChecking. The checking instance, or Nothing.</p>
+<p><strong>Returns:</strong> Checking. The checking instance, or Nothing.</p>
 <hr />
 <h2 id="int-design-lookups">Design Lookups</h2>
+<h3 id="int-analysisbasefontsize">AnalysisBaseFontSize <a class="anchor-link" href="#int-analysisbasefontsize">#</a></h3>
+<p><em>analysis-base-font-size</em></p>
+<p><strong>Base font size used by the analysis format scopes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function AnalysisBaseFontSize() As Variant
+</code></pre>
+<p><strong>Returns:</strong> Variant. The design font size, or 11 when the design cell is blank.</p>
+<hr />
+<h2 id="int-drawing-helpers">Drawing Helpers</h2>
 <h3 id="int-drawlines">DrawLines <a class="anchor-link" href="#int-drawlines">#</a></h3>
 <p><em>draw-lines</em></p>
 <p><strong>Draw border lines around a range</strong></p>
@@ -328,6 +433,10 @@ exists, imports from it instead of exporting.</p>
                        Optional color As Variant = vbBlack, _
                        Optional line As Long = xlContinuous)
 </code></pre>
+<p>Writes the four properties in the SAME order as DrawLines. Several scopes
+called DrawLines four times, once per edge, and now call this sub once. With
+line:=xlDouble the LineStyle write is what settles the final weight, so a
+different order would make those frames come out heavier.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>rng</code>: Range. Target range to border.</li>
@@ -351,6 +460,9 @@ exists, imports from it instead of exporting.</p>
                         Optional ByVal NumFormat As String = &quot;&quot;, _
                         Optional ByVal wrap As String = vbNullString)
 </code></pre>
+<p>The Variant arguments are compared against vbNullString to mean &quot;leave this
+property alone&quot;. That works because VBA sorts every number below every
+string, and several scopes pass vbNullString on purpose to skip a property.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>rng</code>: Range. Target range.</li>
@@ -424,6 +536,108 @@ exists, imports from it instead of exporting.</p>
 <li><code>sh</code>: Worksheet. Target worksheet to configure.</li>
 </ul>
 <hr />
+<h2 id="int-formatting">Formatting</h2>
+<h3 id="int-applyworksheetformat">ApplyWorksheetFormat <a class="anchor-link" href="#int-applyworksheetformat">#</a></h3>
+<p><em>apply-worksheet-format</em></p>
+<p><strong>Apply the worksheet-level format scopes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyWorksheetFormat(ByVal sh As Worksheet, ByVal scope As Byte)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to format.</li>
+<li><code>scope</code>: Byte. FormatScope constant.</li>
+</ul>
+<hr />
+<h3 id="int-applycharactersformat">ApplyCharactersFormat <a class="anchor-link" href="#int-applycharactersformat">#</a></h3>
+<p><em>apply-characters-format</em></p>
+<p><strong>Apply the label format scopes to a Characters object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyCharactersFormat(ByVal Char As Characters, ByVal scope As Byte)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>Char</code>: Characters. The label text to format.</li>
+<li><code>scope</code>: Byte. FormatScope constant.</li>
+</ul>
+<hr />
+<h3 id="int-applyshapeformat">ApplyShapeFormat <a class="anchor-link" href="#int-applyshapeformat">#</a></h3>
+<p><em>apply-shape-format</em></p>
+<p><strong>Apply the button format scopes to a Shape</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyShapeFormat(ByVal shp As Shape, ByVal scope As Byte)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>shp</code>: Shape. The button to format.</li>
+<li><code>scope</code>: Byte. FormatScope constant.</li>
+</ul>
+<hr />
+<h3 id="int-applylistobjectformat">ApplyListObjectFormat <a class="anchor-link" href="#int-applylistobjectformat">#</a></h3>
+<p><em>apply-listobject-format</em></p>
+<p><strong>Apply the entry table format scopes to a ListObject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyListObjectFormat(ByVal tableObject As ListObject, ByVal scope As Byte)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tableObject</code>: ListObject. The entry table to format.</li>
+<li><code>scope</code>: Byte. FormatScope constant.</li>
+</ul>
+<hr />
+<h3 id="int-formatmissinglook">FormatMissingLook <a class="anchor-link" href="#int-formatmissinglook">#</a></h3>
+<p><em>format-missing-look</em></p>
+<p><strong>The shared look of the missing and one-cell analysis scopes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatMissingLook(ByVal rng As Range, _
+                              ByVal horizAlign As Long, _
+                              ByVal drawInsideLines As Boolean)
+</code></pre>
+<p>Six scopes share this block: the same two design colours, the same
+FormatRange call apart from the horizontal alignment, and the same double
+frame around the cells.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rng</code>: Range. Target range.</li>
+<li><code>horizAlign</code>: Long. Horizontal alignment constant.</li>
+<li><code>drawInsideLines</code>: Boolean. True to rule the inside of the block as well.</li>
+</ul>
+<hr />
+<h3 id="int-formatsectionbody">FormatSectionBody <a class="anchor-link" href="#int-formatsectionbody">#</a></h3>
+<p><em>format-section-body</em></p>
+<p><strong>The shared tail of the section and sub-section scopes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatSectionBody(ByVal rng As Range, _
+                              ByVal interiorColorValue As Variant, _
+                              ByVal fontColorValue As Variant, _
+                              ByVal fontSizeValue As Variant)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rng</code>: Range. Target range.</li>
+<li><code>interiorColorValue</code>: Variant. Fill colour.</li>
+<li><code>fontColorValue</code>: Variant. Font colour.</li>
+<li><code>fontSizeValue</code>: Variant. Font size in points.</li>
+</ul>
+<hr />
+<h3 id="int-applyrangeformat">ApplyRangeFormat <a class="anchor-link" href="#int-applyrangeformat">#</a></h3>
+<p><em>apply-range-format</em></p>
+<p><strong>Apply every range-level format scope</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyRangeFormat(ByVal baseRng As Range, _
+                             ByVal scope As Byte, _
+                             ByVal nbDecimals As Integer)
+</code></pre>
+<p>baseRng always holds the range the caller passed. rng is the working range
+and several scopes move it, so anything that has to measure from the
+original reads baseRng.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>baseRng</code>: Range. The range the caller passed.</li>
+<li><code>scope</code>: Byte. FormatScope constant.</li>
+<li><code>nbDecimals</code>: Integer. Decimal count for the CRF numeric scopes.</li>
+</ul>
+<hr />
 <h2 id="int-export">Export</h2>
 <h3 id="int-resolveworksheet">ResolveWorksheet <a class="anchor-link" href="#int-resolveworksheet">#</a></h3>
 <p><em>resolve-worksheet</em></p>
@@ -447,23 +661,82 @@ exists, imports from it instead of exporting.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CopyFormatTableStyles(ByVal sourceTable As ListObject, ByVal targetTable As ListObject)
 </code></pre>
+<p>Block at a time. Excel answers Null for a property whose value varies across
+a range, so a block styled the same all the way down takes six writes for the
+whole block, and a mixed block falls back to the cell loop. The header row is
+taken on its own, because it carries its own styling and would make every
+column read as mixed.
+The limit of this: the design columns hold a different colour on every row,
+which is the whole point of the format table, so those columns are still
+walked cell by cell. VBA offers a block format copy only through the
+clipboard. Copy plus PasteSpecial xlPasteFormats would do the whole table in
+one step, and the clipboard is the least reliable path on Mac Excel, so this
+code stays off it.</p>
+<hr />
+<h3 id="int-copystyles">CopyStyles <a class="anchor-link" href="#int-copystyles">#</a></h3>
+<p><em>copy-styles</em></p>
+<p><strong>Copy the styles of one block, in one step when the block allows it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CopyStyles(ByVal sourceBlock As Range, ByVal targetBlock As Range)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceBlock</code>: Range. Block to read.</li>
+<li><code>targetBlock</code>: Range. Block of the same shape to write.</li>
+</ul>
+<hr />
+<h3 id="int-copystylesasblock">CopyStylesAsBlock <a class="anchor-link" href="#int-copystylesasblock">#</a></h3>
+<p><em>copy-styles-as-block</em></p>
+<p><strong>Copy a block of styles in a single write when the block is uniform</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CopyStylesAsBlock(ByVal sourceBlock As Range, _
+                                   ByVal targetBlock As Range) As Boolean
+</code></pre>
+<p>Excel answers Null for a property whose value varies across a range, so
+reading the six properties off the whole block is both the test and the read.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceBlock</code>: Range. Block to read.</li>
+<li><code>targetBlock</code>: Range. Block of the same shape to write.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the whole block was copied in one step.</p>
+<hr />
+<h3 id="int-copystylesbycell">CopyStylesByCell <a class="anchor-link" href="#int-copystylesbycell">#</a></h3>
+<p><em>copy-styles-by-cell</em></p>
+<p><strong>Copy a block of styles cell by cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CopyStylesByCell(ByVal sourceBlock As Range, ByVal targetBlock As Range)
+</code></pre>
+<p>Both blocks are walked with a single Cells index, so the same loop serves a
+one-row block and a one-column block. Each cell fetches its Interior and its
+Font once, then takes three properties off each.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceBlock</code>: Range. Block to read.</li>
+<li><code>targetBlock</code>: Range. Block of the same shape to write.</li>
+</ul>
 <hr />
 <h3 id="int-ensuredesigntyperange">EnsureDesignTypeRange <a class="anchor-link" href="#int-ensuredesigntyperange">#</a></h3>
 <p><em>ensure-design-type-range</em></p>
 <p><strong>Create the DESIGNTYPE named range on the target sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDesignTypeRange(ByVal sourceSheet As Worksheet, _
-                                  ByVal targetSheet As Worksheet, _ 
+                                  ByVal targetSheet As Worksheet, _
                                   ByVal targetTable As ListObject)
 </code></pre>
 <hr />
-<h3 id="int-hasnamedrange">HasNamedRange <a class="anchor-link" href="#int-hasnamedrange">#</a></h3>
-<p><em>has-named-range</em></p>
-<p><strong>Test whether a worksheet-scoped named range exists</strong></p>
+<h3 id="int-namedrange">NamedRange <a class="anchor-link" href="#int-namedrange">#</a></h3>
+<p><em>named-range</em></p>
+<p><strong>Retrieve a worksheet-scoped named range, or Nothing when it is absent</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function HasNamedRange(ByVal sh As Worksheet, ByVal rngName As String) As Boolean
+<pre><code class="language-vb">Private Function NamedRange(ByVal sh As Worksheet, ByVal rngName As String) As Range
 </code></pre>
-<p><strong>Returns:</strong> Boolean. True when the named range is found.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to read.</li>
+<li><code>rngName</code>: String. The name to look up.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The named range, or Nothing.</p>
 <hr />
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><em>throw-error</em></p>
@@ -472,38 +745,54 @@ exists, imports from it instead of exporting.</p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As String)
 </code></pre>
 <hr />
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance so setup setters can no longer be written</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup setter against writes after sealing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. Name of the property being guarded.</li>
+</ul>
+<hr />
 </details>
 <details>
-<summary>Used in (28 file(s))</summary>
+<summary>Used in (26 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
 <li><a href="CustomPivotTable.html">CustomPivotTable.cls</a></li>
-<li><a href="ICrossTable.html">ICrossTable.cls</a></li>
-<li><a href="ICustomPivotTable.html">ICustomPivotTable.cls</a></li>
-<li><a href="LinelistBuildService.html">LinelistBuildService.cls</a></li>
+<li><a href="DesignerPreparation.html">DesignerPreparation.cls</a></li>
 <li><a href="Buttons.html">Buttons.cls</a></li>
-<li><a href="IButtons.html">IButtons.cls</a></li>
-<li><a href="ILLFormat.html">ILLFormat.cls</a></li>
-<li><a href="LLFormat.html">LLFormat.cls</a></li>
-<li><a href="ILinelistSpecs.html">ILinelistSpecs.cls</a></li>
+<li><a href="HiddenNames.html">HiddenNames.cls</a></li>
+<li><a href="EventLinelist.html">EventLinelist.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
-<li><a href="ListBuilder.html">ListBuilder.cls</a></li>
+<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
 <li><a href="SectionBuilder.html">SectionBuilder.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
-<li><a href="SetupImportService.html">SetupImportService.cls</a></li>
-<li><a href="CrossTable.html">CrossTable.cls</a></li>
-<li><a href="DesignerImportService.html">DesignerImportService.cls</a></li>
+<li><a href="SetupImport.html">SetupImport.cls</a></li>
 <li>EventsDesignerCore.bas</li>
-<li>GenerationReport.bas</li>
+<li>InitTransfer.bas</li>
+<li>TestAnalysisOutput.bas</li>
+<li>TestCrossTable.bas</li>
+<li>TestCustomPivotTable.bas</li>
+<li>TestDesignerPreparation.bas</li>
 <li>TestButtons.bas</li>
 <li>TestLLFormat.bas</li>
-<li>TestCustomPivotTable.bas</li>
-<li><a href="LinelistSpecsWorkbookStub.html">LinelistSpecsWorkbookStub.cls</a></li>
-<li><a href="LLFormatStub.html">LLFormatStub.cls</a></li>
-<li><a href="LLVarContextSpecsStub.html">LLVarContextSpecsStub.cls</a></li>
-<li><a href="TableSpecsLinelistStub.html">TableSpecsLinelistStub.cls</a></li>
+<li>LLFormatTestFixture.bas</li>
+<li>TestEventLinelistSheets.bas</li>
+<li>TestLLDataEntry.bas</li>
+<li>TestSectionBuilder.bas</li>
+<li>TestVarWriter.bas</li>
 </ul>
 </details>
   </main>

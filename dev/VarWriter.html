@@ -11,15 +11,38 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>VarWriter</h1>
-<p>Writes a single dictionary variable to one or more linelist worksheets.
-For HList layers the writer targets the main sheet, a printed companion,
-and a CRF companion; for VList layers only the main sheet is written.
-Each invocation of WriteVariable applies label text, number formatting,
-formulas, dropdown choices, data validation, and conditional formatting
-to the resolved cell range. The class caches dictionary, variables, and
-sheets accessors for performance across repeated calls.</p>
-<p><strong>Depends on:</strong> <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="ILLSheets.html">ILLSheets</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="IFormulaData.html">IFormulaData</a>, <a href="IFormulas.html">IFormulas</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="ILLGeo.html">ILLGeo</a>, <a href="Formulas.html">Formulas</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLSheets.html">LLSheets</a>, <a href="BetterArray.html">BetterArray</a>, Checking support</p>
-<p><strong>Version:</strong> 1.0 (2026-02-10)</p>
+<p>Writes a single dictionary variable onto one or more linelist worksheets. On
+an HList layer the writer targets the main sheet, a printed companion and a
+CRF companion; on a VList layer it writes the main sheet alone. Each call to
+WriteVariable applies the label text, the number format, the formula, the
+dropdown choices, the data validation and the conditional formatting to the
+cell range it resolves. ValueOf reads one dictionary column of the variable in
+hand, and entries filed along the way leave through HasCheckings and
+CheckingValues.</p>
+<details open class="doc-section" id="one-writer-per-sheet">
+<summary>ONE WRITER PER SHEET</summary>
+<div class="section-body">
+<p>The writer is built once per data entry sheet and used for every variable of
+that sheet. <code>SectionBuilder.Build</code> owns it. What the class holds -- the
+dictionary block, the column map, the hidden name store, the design format and
+the translated messages -- covers a whole sheet, and the table anchor is set
+on the first variable the writer is handed.</p>
+</div>
+</details>
+<details open class="doc-section" id="how-a-dictionary-value-is-read">
+<summary>HOW A DICTIONARY VALUE IS READ</summary>
+<div class="section-body">
+<p>The dictionary data block and its header row are read once, as two worksheet
+crossings, and every <code>ValueOf</code> after that answers from memory. A column added
+to the dictionary after the map was built is picked up on the first miss, the
+same way <code>LLVariables.ResolveColumnIndex</code> re-reads its header snapshot.
+A variable name is matched without regard to case here. <code>LLdictionary.Prepare</code>
+makes the names unique, so a name that differs only by case is a fault in the
+sheet.</p>
+<p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLSheets.html">LLSheets</a>, <a href="LLFormat.html">LLFormat</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="FormulaData.html">FormulaData</a>, <a href="Formulas.html">Formulas</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLGeo.html">LLGeo</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, Column index the first variable of a sheet carries when the dictionary is, numbered as <code>LLdictionary.Prepare</code> leaves it. It is the fallback for the table, anchor; the first variable the writer is handed is the primary rule., What an automatic list adds to the name of the variable it collects from, so, its table never lands on the one that variable already owns. An origin very, often has a choice list of its own, and the two used to share a single table:, the first rebuild of the automatic list then replaced the setup choices with, whatever had been typed in the column. EventLinelist carries the same suffix, and rebuilds the table under this name., Checking support, The milestone record of the sheet: one entry per variable written. It is, held apart from internalChecks because the two travel to different places., internalChecks carries the problems and reaches the __check worksheet;, this one reaches the run log's in-memory record and the text file alone.</p>
+<p><strong>Version:</strong> 1.1 (2026-07-31)</p>
+</div>
+</details>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
 <div class="section-body">
@@ -28,54 +51,33 @@ sheets accessors for performance across repeated calls.</p>
 <p><strong>Create a new VarWriter for the given layer and dependencies</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal layer As Byte, _
-                       ByVal specs As ILinelistSpecs, _
+                       ByVal specs As LinelistSpecs, _
                        ByVal wksh As Worksheet, _
                        Optional ByVal printWksh As Worksheet = Nothing, _
                        Optional ByVal crfWksh As Worksheet = Nothing, _
-                       Optional ByVal dropdownObj As IDropdownLists = Nothing, _
-                       Optional ByVal customDropdownObj As IDropdownLists = Nothing) As IVarWriter
+                       Optional ByVal dropdownObj As DropdownLists = Nothing, _
+                       Optional ByVal customDropdownObj As DropdownLists = Nothing) As VarWriter
 </code></pre>
 <p>Factory method that instantiates and configures a VarWriter. The caller
-must supply a valid ILinelistSpecs and target Worksheet at minimum.
+must supply a valid LinelistSpecs and target Worksheet at minimum.
 Optional parameters allow attaching printed and CRF companion worksheets
-(used only for HList layers) and dropdown list managers. Raises an error
-if specs or wksh is Nothing.</p>
+(used only for HList layers) and dropdown list managers.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>layer</code>: Byte. VarWriterLayer enum value (HList=1, VList=2). Use Byte for macOS compatibility.</li>
-<li><code>specs</code>: ILinelistSpecs. The linelist specifications object providing dictionary, format, translations, etc.</li>
+<li><code>specs</code>: LinelistSpecs. The linelist specifications object providing dictionary, format, translations, etc.</li>
 <li><code>wksh</code>: Worksheet. The target main worksheet.</li>
 <li><code>printWksh</code>: Optional Worksheet. Printed companion worksheet (HList only). Defaults to Nothing.</li>
 <li><code>crfWksh</code>: Optional Worksheet. CRF companion worksheet (HList only). Defaults to Nothing.</li>
-<li><code>dropdownObj</code>: Optional IDropdownLists. Dropdown lists manager. Defaults to Nothing.</li>
-<li><code>customDropdownObj</code>: Optional IDropdownLists. Custom dropdown lists manager (for choice_custom). Defaults to Nothing.</li>
+<li><code>dropdownObj</code>: Optional DropdownLists. Dropdown lists manager. Defaults to Nothing.</li>
+<li><code>customDropdownObj</code>: Optional DropdownLists. Custom dropdown lists manager (for choice_custom). Defaults to Nothing.</li>
 </ul>
-<p><strong>Returns:</strong> IVarWriter. A fully initialised writer bound to the given layer and worksheets.</p>
+<p><strong>Returns:</strong> VarWriter. A fully initialised writer bound to the given layer and worksheets.</p>
 <p><strong>Throws:</strong></p>
 <ul>
-<li>VBA.vbObjectError + 516 if specs or wksh is Nothing.</li>
+<li>ProjectError.ObjectNotInitialized When specs or wksh is Nothing.</li>
+<li>ProjectError.InvalidArgument When layer names neither VarWriterLayer member.</li>
 </ul>
-<hr />
-</div>
-</details>
-<details open class="doc-section" id="value-lookup">
-<summary>Value Lookup</summary>
-<div class="section-body">
-<h3 id="valueof">ValueOf <a class="anchor-link" href="#valueof">#</a></h3>
-<p><em>value-of</em></p>
-<p><strong>Read a dictionary column value for the current variable</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get ValueOf(ByVal colName As String) As String
-</code></pre>
-<p>Looks up the value stored in the specified dictionary column for the
-variable that was most recently passed to WriteVariable. This is the
-primary way all other methods retrieve variable metadata such as labels,
-types, formats, and control information.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>colName</code>: String. The dictionary column name to look up.</li>
-</ul>
-<p><strong>Returns:</strong> String. The column value for the current variable.</p>
 <hr />
 </div>
 </details>
@@ -89,9 +91,11 @@ types, formats, and control information.</p>
 <pre><code class="language-vb">Public Sub WriteVariable(ByVal varName As String)
 </code></pre>
 <p>Main public method called once per variable. It stores the variable name,
-resets the cached cell ranges, then dispatches to WriteMainSheet. For
-HList layers it additionally dispatches to WritePrintSheet and
-WriteCRFSheet for the companion worksheets.</p>
+resets the cached row and cell ranges, then dispatches to WriteMainSheet. For
+HList layers it additionally dispatches to WritePrintSheet and WriteCRFSheet
+for the companion worksheets. A variable the dictionary gives no column index
+is skipped and filed through Checking, because the cell it would be written to
+cannot be resolved.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>varName</code>: String. The variable name as it appears in the dictionary.</li>
@@ -99,25 +103,68 @@ WriteCRFSheet for the companion worksheets.</p>
 <hr />
 </div>
 </details>
+<details open class="doc-section" id="checkings">
+<summary>Checkings</summary>
+<div class="section-body">
+<h3 id="hasmilestones">HasMilestones <a class="anchor-link" href="#hasmilestones">#</a></h3>
+<p><em>has-milestones</em></p>
+<p><strong>Whether any variable of this sheet was written</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasMilestones() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True once one milestone entry has been filed.</p>
+<hr />
+<h3 id="milestonevalues">MilestoneValues <a class="anchor-link" href="#milestonevalues">#</a></h3>
+<p><em>milestone-values</em></p>
+<p><strong>The per-variable record of this sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get MilestoneValues() As Checking
+</code></pre>
+<p>The store travels up through <code>SectionBuilder</code> and <code>LLDataEntry</code> to the
+build driver, which takes it into the run log record-only. It never
+reaches the __check worksheet.</p>
+<p><strong>Returns:</strong> Checking. The milestone entries, or Nothing.</p>
+<hr />
+<h3 id="variableswritten">VariablesWritten <a class="anchor-link" href="#variableswritten">#</a></h3>
+<p><em>variables-written</em></p>
+<p><strong>How many variables this writer put on the sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get VariablesWritten() As Long
+</code></pre>
+<p>Counts the variables that reached the worksheet. A variable the
+dictionary gives no column index is filed as a problem and left out of
+the count.</p>
+<p><strong>Returns:</strong> Long. The number of variables written.</p>
+<hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2 id="int-instantiation">Instantiation</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Return the current instance cast to the IVarWriter interface</strong></p>
+<h2 id="int-instance-sealing">Instance Sealing</h2>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance against further setup writes</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IVarWriter
+<pre><code class="language-vb">Public Sub Seal()
 </code></pre>
-<p>Used by the factory pattern so that the With New block can return an
-interface-typed reference instead of the concrete class.</p>
-<p><strong>Returns:</strong> IVarWriter. The current instance.</p>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup-only setter against post-seal writes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The property name for the error message.</li>
+</ul>
 <hr />
 <h2 id="int-internal-setters">Internal Setters</h2>
 <h3 id="int-internalspecs">InternalSpecs <a class="anchor-link" href="#int-internalspecs">#</a></h3>
 <p><em>internal-specs</em></p>
 <p><strong>Assign the linelist specifications object</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set InternalSpecs(ByVal specs As ILinelistSpecs)
+<pre><code class="language-vb">Public Property Set InternalSpecs(ByVal specs As LinelistSpecs)
 </code></pre>
 <h1>Properties used by the factory only during instantiation.</h1>
 <hr />
@@ -153,14 +200,14 @@ interface-typed reference instead of the concrete class.</p>
 <p><em>internal-dropdown</em></p>
 <p><strong>Assign the dropdown lists manager</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set InternalDropdown(ByVal dropdownObj As IDropdownLists)
+<pre><code class="language-vb">Public Property Set InternalDropdown(ByVal dropdownObj As DropdownLists)
 </code></pre>
 <hr />
 <h3 id="int-internalcustomdropdown">InternalCustomDropdown <a class="anchor-link" href="#int-internalcustomdropdown">#</a></h3>
 <p><em>internal-custom-dropdown</em></p>
 <p><strong>Assign the custom dropdown lists manager</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set InternalCustomDropdown(ByVal dropdownObj As IDropdownLists)
+<pre><code class="language-vb">Public Property Set InternalCustomDropdown(ByVal dropdownObj As DropdownLists)
 </code></pre>
 <hr />
 <h2 id="int-cached-accessors">Cached Accessors</h2>
@@ -168,66 +215,215 @@ interface-typed reference instead of the concrete class.</p>
 <p><em>dictionary</em></p>
 <p><strong>Return the cached dictionary object</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Dictionary() As ILLdictionary
+<pre><code class="language-vb">Private Property Get Dictionary() As LLdictionary
 </code></pre>
-<h1>Lazy-loaded accessors for frequently used dependency objects.</h1>
-<p>Lazily loads the ILLdictionary from specs on first access and caches it
-in the TVarWriter UDT. Subsequent calls return the cached instance
-without re-querying specs, which improves performance when writing many
-variables in sequence.</p>
-<p><strong>Returns:</strong> ILLdictionary. The linelist dictionary.</p>
+<h1>Every collaborator the writer uses is resolved once and held. Each of these is
+reached several times per variable, so a pass-through to <code>this.specs</code> on every
+use was paid a few hundred times per sheet.</h1>
+<p><strong>Returns:</strong> LLdictionary. The linelist dictionary.</p>
 <hr />
 <h3 id="int-variables">Variables <a class="anchor-link" href="#int-variables">#</a></h3>
 <p><em>variables</em></p>
 <p><strong>Return the cached variables helper</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Variables() As ILLVariables
+<pre><code class="language-vb">Private Property Get Variables() As LLVariables
 </code></pre>
-<p>Creates an LLVariables wrapper around the dictionary on first access.
-The wrapper provides convenient lookup methods such as Value and Contains
-that are used throughout the writer.</p>
-<p><strong>Returns:</strong> ILLVariables. The variables helper object.</p>
+<p>Kept for <code>Contains</code>, which the two conditional formatting routines ask for a
+variable that is not the one being written. Reading a column of the CURRENT
+variable goes through <code>ValueOf</code>, which answers from the cached dictionary
+block.</p>
+<p><strong>Returns:</strong> LLVariables. The variables helper object.</p>
 <hr />
 <h3 id="int-sheetsobject">SheetsObject <a class="anchor-link" href="#int-sheetsobject">#</a></h3>
 <p><em>sheets-object</em></p>
 <p><strong>Return the cached sheets helper</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get SheetsObject() As ILLSheets
+<pre><code class="language-vb">Private Property Get SheetsObject() As LLSheets
 </code></pre>
-<p>Creates an LLSheets wrapper around the dictionary on first access.
-The wrapper provides VariableAddress and SheetInfo lookups used when
-building conditional-formatting formulas and resolving table anchors.</p>
-<p><strong>Returns:</strong> ILLSheets. The sheets helper object.</p>
+<p>Provides VariableAddress and SheetInfo lookups used when building
+conditional-formatting formulas and resolving table anchors.</p>
+<p><strong>Returns:</strong> LLSheets. The sheets helper object.</p>
 <hr />
 <h3 id="int-designformat">DesignFormat <a class="anchor-link" href="#int-designformat">#</a></h3>
 <p><em>design-format</em></p>
 <p><strong>Return the design format object from specs</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get DesignFormat() As ILLFormat
+<pre><code class="language-vb">Private Property Get DesignFormat() As LLFormat
 </code></pre>
-<p>Delegates directly to specs.DesignFormat on every call because the
-format object is lightweight and does not benefit from caching.</p>
-<p><strong>Returns:</strong> ILLFormat. The design format provider.</p>
+<p><code>AddLabel</code>, <code>AddFormula</code>, <code>AddChoices</code>, <code>AddCRFLabel</code>, <code>AddCRFType</code> and
+<code>AddCRFChoices</code> each ask for it, so it is resolved once per writer.</p>
+<p><strong>Returns:</strong> LLFormat. The design format provider.</p>
 <hr />
 <h3 id="int-trans">Trans <a class="anchor-link" href="#int-trans">#</a></h3>
 <p><em>trans</em></p>
 <p><strong>Return the translation object from specs</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Trans() As ITranslationObject
+<pre><code class="language-vb">Private Property Get Trans() As TranslationObject
 </code></pre>
-<p>Delegates directly to specs.TransObject on every call. Used to fetch
-translated UI messages such as MSG_Calculated and MSG_CustomChoice.</p>
-<p><strong>Returns:</strong> ITranslationObject. The translation provider.</p>
+<p><strong>Returns:</strong> TranslationObject. The translation provider.</p>
 <hr />
 <h3 id="int-formuladataobj">FormulaDataObj <a class="anchor-link" href="#int-formuladataobj">#</a></h3>
 <p><em>formula-data-obj</em></p>
 <p><strong>Return the formula data object from specs</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get FormulaDataObj() As IFormulaData
+<pre><code class="language-vb">Private Property Get FormulaDataObj() As FormulaData
 </code></pre>
-<p>Delegates directly to specs.FormulaDataObject on every call. Provides
-the lookup tables and metadata needed by the Formulas parser.</p>
-<p><strong>Returns:</strong> IFormulaData. The formula data provider.</p>
+<p>Provides the lookup tables and metadata needed by the Formulas parser.</p>
+<p><strong>Returns:</strong> FormulaData. The formula data provider.</p>
+<hr />
+<h3 id="int-ensuremessages">EnsureMessages <a class="anchor-link" href="#int-ensuremessages">#</a></h3>
+<p><em>ensure-messages</em></p>
+<p><strong>Read the three translated label messages once</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureMessages()
+</code></pre>
+<p><code>MSG_Calculated</code>, <code>MSG_Mandatory</code> and <code>MSG_CustomChoice</code> are constant for a
+whole build, and <code>AddLabel</code> used to fetch all three per variable and twice per
+HList variable.</p>
+<hr />
+<h2 id="int-dictionary-row-cache">Dictionary Row Cache</h2>
+<h3 id="int-ensuredatamap">EnsureDataMap <a class="anchor-link" href="#int-ensuredatamap">#</a></h3>
+<p><em>ensure-data-map</em></p>
+<p><strong>Read the dictionary block and build the two lookups</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureDataMap()
+</code></pre>
+<p>The dictionary block and its header row are read once per writer. Every
+<code>ValueOf</code> after that is an array read.</p>
+<p>Two crossings: the data block and the header row. From them come a header to
+column-offset map and a variable name to row-offset map. Both keep the first
+entry when a name repeats, which is the rule <code>LLVariables.HeaderColumn</code> and
+<code>LLVariables.RowIndex</code> already apply.</p>
+<hr />
+<h3 id="int-rebuilddatamap">RebuildDataMap <a class="anchor-link" href="#int-rebuilddatamap">#</a></h3>
+<p><em>rebuild-data-map</em></p>
+<p><strong>Read the dictionary block again</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RebuildDataMap()
+</code></pre>
+<p>Called on the first use and again whenever a column name misses, which is how
+a column added to the dictionary after the writer was built resolves.</p>
+<hr />
+<h3 id="int-dictionarygrewacolumn">DictionaryGrewAColumn <a class="anchor-link" href="#int-dictionarygrewacolumn">#</a></h3>
+<p><em>dictionary-grew-a-column</em></p>
+<p><strong>Test whether the dictionary is wider than the map was built from</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DictionaryGrewAColumn() As Boolean
+</code></pre>
+<p>One property read against a whole block read. <code>AddLabel</code> asks for <code>list auto</code>
+on every variable, and a dictionary that has not been through
+<code>LinelistSpecs.Prepare</code> carries no such column, so a rebuild on every miss made
+each variable pay for a full re-read of the dictionary and two lookup rebuilds
+for an answer that was always empty.</p>
+<p><strong>Returns:</strong> Boolean. True when the header row is wider than it was.</p>
+<hr />
+<h3 id="int-columnoffset">ColumnOffset <a class="anchor-link" href="#int-columnoffset">#</a></h3>
+<p><em>column-offset</em></p>
+<p><strong>Offset of a dictionary column inside a data row</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnOffset(ByVal colName As String) As Long
+</code></pre>
+<p>Whole string, without regard to case, which is what <code>LLVariables.HeaderColumn</code>
+answers. A Collection raises on a key it does not hold, and that is how a miss
+is read.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. The dictionary column header.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The 1-based offset, or 0 when the column is absent.</p>
+<hr />
+<h3 id="int-rowoffset">RowOffset <a class="anchor-link" href="#int-rowoffset">#</a></h3>
+<p><em>row-offset</em></p>
+<p><strong>Row of one variable inside the dictionary data block</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RowOffset(ByVal varName As String) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The variable name.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The 1-based row, or 0 when the variable is absent.</p>
+<hr />
+<h3 id="int-ensurerowvalues">EnsureRowValues <a class="anchor-link" href="#int-ensurerowvalues">#</a></h3>
+<p><em>ensure-row-values</em></p>
+<p><strong>Hold the current variable's dictionary row in memory</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureRowValues()
+</code></pre>
+<hr />
+<h3 id="int-blockvalues">BlockValues <a class="anchor-link" href="#int-blockvalues">#</a></h3>
+<p><em>block-values</em></p>
+<p><strong>Read a Range as a two-dimensional 1-based array</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BlockValues(ByVal blockRng As Range) As Variant
+</code></pre>
+<p><code>Range.Value</code> hands back a plain value for one cell and a two-dimensional
+array otherwise. This flattens both cases so callers see one shape.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>blockRng</code>: Range. The block to read.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. A 1-based two-dimensional array of cell values.</p>
+<hr />
+<h3 id="int-rowofvalues">RowOfValues <a class="anchor-link" href="#int-rowofvalues">#</a></h3>
+<p><em>row-of-values</em></p>
+<p><strong>Read a one-row Range as a 1-based list of values</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RowOfValues(ByVal rowRng As Range) As Variant
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rowRng</code>: Range. A single-row block.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. A 1-based one-dimensional array of cell values.</p>
+<hr />
+<h3 id="int-celltext">CellText <a class="anchor-link" href="#int-celltext">#</a></h3>
+<p><em>cell-text</em></p>
+<p><strong>Read one cell value as text</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CellText(ByVal cellValue As Variant) As String
+</code></pre>
+<p>A dictionary cell can hold an error value or a Null, and <code>CStr</code> raises on
+both. Every read of the cached block goes through here, the same way every
+read in <code>LLVariables</code> goes through its own copy.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellValue</code>: Variant. The raw cell value.</li>
+</ul>
+<p><strong>Returns:</strong> String. The text, or an empty string when there is none.</p>
+<hr />
+<h2 id="int-value-lookup">Value Lookup</h2>
+<h3 id="int-valueof">ValueOf <a class="anchor-link" href="#int-valueof">#</a></h3>
+<p><em>value-of</em></p>
+<p><strong>Read a dictionary column value for the current variable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ValueOf(ByVal colName As String) As String
+</code></pre>
+<p>The class's read hook, and the way every other method retrieves variable
+metadata such as labels, types, formats and control information. An unknown
+column and an unknown variable both answer an empty string, which is what
+<code>LLVariables.Value</code> answers for the same two cases.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. The dictionary column name to look up.</li>
+</ul>
+<p><strong>Returns:</strong> String. The column value for the current variable.</p>
+<hr />
+<h3 id="int-numberof">NumberOf <a class="anchor-link" href="#int-numberof">#</a></h3>
+<p><em>number-of</em></p>
+<p><strong>Read a dictionary column value as a whole number</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NumberOf(ByVal colName As String) As Long
+</code></pre>
+<p><code>column index</code> and <code>crf index</code> were read with a bare <code>CLng(ValueOf(...))</code> at
+eight sites, guarded at three of them and unguarded at the rest. This is the
+one rule: a value that is empty or is not a number answers 0, and every caller
+tests for 0.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. The dictionary column name to look up.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The stored number, or 0.</p>
 <hr />
 <h2 id="int-cell-range-resolution">Cell Range Resolution</h2>
 <h3 id="int-varrange">VarRange <a class="anchor-link" href="#int-varrange">#</a></h3>
@@ -240,7 +436,7 @@ the lookup tables and metadata needed by the Formulas parser.</p>
 layer-specific start position. For HList the cell is in a column at
 HLIST_START_ROW + 1; for VList it is in a row at VLIST_START_COL. The
 result is cached until WriteVariable resets it for the next variable.</p>
-<p><strong>Returns:</strong> Range. The main cell range, or Nothing if the index is invalid.</p>
+<p><strong>Returns:</strong> Range. The main cell range, or Nothing when the index is missing.</p>
 <hr />
 <h3 id="int-varprintrange">VarPrintRange <a class="anchor-link" href="#int-varprintrange">#</a></h3>
 <p><em>var-print-range</em></p>
@@ -325,7 +521,10 @@ info and label formatting.</p>
 <p>Reads the variable type (text, date, decimal, integer) and optional
 format string from the dictionary, then sets the NumberFormat property
 on the main cell range. Supports built-in formats such as round, percentage,
-euros, and dollars as well as custom format strings.</p>
+euros, and dollars as well as custom format strings. A numeric variable whose
+format reads <code>text</code> keeps the number format it already has: Excel refuses an
+empty NumberFormat, and this method sits outside every suppression in
+WriteMainSheet, so assigning one used to stop the sheet.</p>
 <hr />
 <h2 id="int-formula-application">Formula Application</h2>
 <h3 id="int-addformula">AddFormula <a class="anchor-link" href="#int-addformula">#</a></h3>
@@ -336,9 +535,32 @@ euros, and dollars as well as custom format strings.</p>
 </code></pre>
 <p>Handles formula, case_when, and choice_formula control types. Parses the
 control details string through the Formulas class, validates the result,
-and writes the Excel formula to the cell. If the parsed formula fails a
-test application it is replaced with a failure placeholder string. Also
-applies calculated-formula design formatting to the cell and its header.</p>
+and writes the Excel formula to the cell.</p>
+<p>A formula the parser rejects leaves the cell alone. The calculated-cell
+styling and the lock both sit inside the same guard, so a cell that reads as
+read-only is read-only, and the reason the parser gave is filed through
+Checking. Before this the styling was applied whatever the parser answered,
+while <code>AddLabel</code> had already unlocked the cell -- so the user saw a greyed
+calculated cell they could type into and the value went into the export.</p>
+<hr />
+<h3 id="int-neverprinted">NeverPrinted <a class="anchor-link" href="#int-neverprinted">#</a></h3>
+<p><em>never-printed</em></p>
+<p><strong>Whether a control has nothing to give on a printed sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NeverPrinted(ByVal controlValue As String) As Boolean
+</code></pre>
+<p>A calculated column reads cells that nobody fills in on paper, and an
+automatic list holds only values that have already been typed somewhere else.
+Neither belongs on a register book, whatever the <code>register book</code> column says
+about it, and the same four names decide the CRF: LLdictionary.AddVisibility
+writes <code>always hidden</code> into <code>crf status</code> for them, and
+ShowHide.IsLockedStatus holds them hidden on both layers once a linelist is
+running. The three lists have to be changed together.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>controlValue</code>: String. The <code>control</code> column of the variable.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the column is hidden on a printed sheet.</p>
 <hr />
 <h2 id="int-choice-setup">Choice Setup</h2>
 <h3 id="int-addchoices">AddChoices <a class="anchor-link" href="#int-addchoices">#</a></h3>
@@ -349,11 +571,15 @@ applies calculated-formula design formatting to the cell and its header.</p>
 </code></pre>
 <p>Handles choice_manual, choice_multiple, choice_custom, list_auto, and geo1
 control types. For each type it populates a BetterArray of categories,
-registers them with the appropriate IDropdownLists manager, and calls
+registers them with the appropriate DropdownLists manager, and calls
 SetValidation to apply dropdown data validation to the cell. The
 choice_custom branch additionally creates a hyperlink from the label cell
 to the dropdown worksheet and adds a return link. The geo1 branch sets up
 admin1 through admin4 dropdown cascades.</p>
+<p>The two dropdown managers are optional at creation, so a writer built without
+the one a control type needs files a checking and leaves the variable without
+its dropdown. The same holds for a geo variable in a linelist with no
+geography.</p>
 <hr />
 <h2 id="int-data-validation">Data Validation</h2>
 <h3 id="int-addvalidation">AddValidation <a class="anchor-link" href="#int-addvalidation">#</a></h3>
@@ -365,8 +591,9 @@ admin1 through admin4 dropdown cascades.</p>
 <p>Reads min and max values from the dictionary, converts them to Excel
 validation formulas via the ExcelFormula helper, and applies whole-number,
 date, or decimal validation with the configured alert style. Both OS-local
-and standard formula variants are attempted to ensure cross-platform
-compatibility. Text variables are skipped.</p>
+and standard formula variants are attempted, which works here because
+Validation.Add raises on a range that already carries one, so the first
+success sticks. Text variables are skipped.</p>
 <hr />
 <h2 id="int-conditional-formatting">Conditional Formatting</h2>
 <h3 id="int-addconditionalformatting">AddConditionalFormatting <a class="anchor-link" href="#int-addconditionalformatting">#</a></h3>
@@ -402,6 +629,31 @@ must be unique across records.</p>
 in orange when the corresponding pcode variable is empty but the geo
 variable itself is not. This alerts users that a geographic name was
 entered but the pcode lookup failed.</p>
+<hr />
+<h3 id="int-addonecondition">AddOneCondition <a class="anchor-link" href="#int-addonecondition">#</a></h3>
+<p><em>add-one-condition</em></p>
+<p><strong>Give a cell one expression format condition</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function AddOneCondition(ByVal cellRng As Range, _
+                                 ByVal osFormula As String, _
+                                 ByVal standardFormula As String) As Boolean
+</code></pre>
+<p>The OS-local formula is tried first and the standard one is used only when
+the first left the count where it was.</p>
+<p><code>FormatConditions.Add</code> appends whatever it is given, so the two calls this
+replaces left two conditions on every cell that took both formulas, and only
+the last of them was given a colour, <code>SetFirstPriority</code> and <code>StopIfTrue</code>. The
+unstyled one then travelled down the ListObject column as rows were added and
+into every exported copy. <code>Validation.Add</code> behaves the other way -- it raises
+on a range that already carries one -- which is why <code>AddValidation</code> keeps the
+two-call shape.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellRng</code>: Range. The cell to give the condition to.</li>
+<li><code>osFormula</code>: String. The OS-local formula, tried first.</li>
+<li><code>standardFormula</code>: String. The standard formula, tried only if the first did not take.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the cell carries a new condition.</p>
 <hr />
 <h2 id="int-crf-companion">CRF Companion</h2>
 <h3 id="int-addcrflabel">AddCRFLabel <a class="anchor-link" href="#int-addcrflabel">#</a></h3>
@@ -450,17 +702,35 @@ written when the &quot;crf choices&quot; dictionary value is &quot;yes&quot;.</p
 </ul>
 <hr />
 <h2 id="int-formula-helpers">Formula Helpers</h2>
+<h3 id="int-scratchrange">ScratchRange <a class="anchor-link" href="#int-scratchrange">#</a></h3>
+<p><em>scratch-range</em></p>
+<p><strong>The cell a formula is tried on</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get ScratchRange() As Range
+</code></pre>
+<p><code>FailedFormula</code> and <code>OSFormula</code> both need a cell to write a formula into and
+read back. It is A1 of the target worksheet, and both put back what they found.</p>
+<h2 id="int-why-a1-and-not-a-cell-out-of-the-way">WHY A1 AND NOT A CELL OUT OF THE WAY</h2>
+<p>A far cell looks safer and it is not: writing to the last column stretches the
+worksheet's used range across all 16,384 columns, and from then on every
+<code>EntireColumn</code>, every merge and every full-column read on that sheet works over
+that range. A sheet build that took a minute did not finish in nine. The cost
+is Excel's bookkeeping, so it does not show up in the code that pays it.</p>
+<p>What was actually wrong with A1 was <code>FailedFormula</code> reaching it with <code>.Clear</code>,
+which takes the formatting as well as the contents. Both helpers save the
+formula and put it back now.</p>
+<p><strong>Returns:</strong> Range. The scratch cell.</p>
+<hr />
 <h3 id="int-failedformula">FailedFormula <a class="anchor-link" href="#int-failedformula">#</a></h3>
 <p><em>failed-formula</em></p>
 <p><strong>Test if a formula fails when applied to a cell</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FailedFormula(ByVal frmName As String) As Boolean
 </code></pre>
-<p>Writes the formula to cell A1 of the main worksheet as a test. If the
-assignment raises an error the function returns True, indicating the
-formula is invalid. The cell is cleared after the test regardless of
-outcome. Application.DisplayAlerts is temporarily suppressed during
-the test.</p>
+<p>Writes the formula to the scratch cell as a test. If the assignment raises an
+error the function returns True, indicating the formula is invalid. The cell
+contents are cleared after the test whatever the outcome, and
+Application.DisplayAlerts is suppressed for the duration.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>frmName</code>: String. The Excel formula expression to test (without leading equals sign).</li>
@@ -477,9 +747,14 @@ the test.</p>
 </code></pre>
 <p>Parses the given formula string through the Formulas class, optionally
 converts it to an OS-local formula via OSFormula, and then converts the
-result to the appropriate VBA type (CInt, CDate, or CLng) based on the
-validation type when no formula literals are present. Returns Empty if
-the formula is invalid or fails the FailedFormula test.</p>
+result to the type the validation asks for. A whole number takes <code>CLng</code> and a
+decimal takes <code>CDbl</code>: <code>CInt</code> overflowed above 32,767, which is a legitimate
+bound for a count or an ID, and <code>CLng</code> on a decimal turned a maximum of 0.5
+into 0, so the validation rejected every value the dictionary meant to allow.
+Returns Empty when the formula is invalid, fails the FailedFormula test, or
+will not convert -- and the last of those is filed through Checking, because
+the caller runs under a suppression and would otherwise drop the validation
+with no message.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>formVal</code>: String. The raw formula value from the dictionary (e.g. a min or max expression).</li>
@@ -487,6 +762,45 @@ the formula is invalid or fails the FailedFormula test.</p>
 <li><code>useOS</code>: Optional Boolean. When True, converts the formula to OS-local format via OSFormula. Defaults to False.</li>
 </ul>
 <p><strong>Returns:</strong> Variant. The converted formula value, or Empty if invalid.</p>
+<hr />
+<h3 id="int-convertedbound">ConvertedBound <a class="anchor-link" href="#int-convertedbound">#</a></h3>
+<p><em>converted-bound</em></p>
+<p><strong>Read a bound as the type the validation asks for</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ConvertedBound(ByVal boundText As String, _
+                                ByVal validationTypes As Long) As Variant
+</code></pre>
+<p>Answers Empty when the text will not convert, which is how the caller knows to
+hand the bound over as formula text instead. A whole number takes <code>CLng</code> and a
+decimal takes the separator-independent read: <code>CInt</code> overflowed above 32,767,
+which is a legitimate bound for a count or an ID, and <code>CLng</code> on a decimal
+turned a maximum of 0.5 into 0, so the validation rejected every value the
+dictionary meant to allow.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>boundText</code>: String. The parsed bound.</li>
+<li><code>validationTypes</code>: Long. The Excel validation type constant.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. The converted bound, or Empty.</p>
+<hr />
+<h3 id="int-asnumber">AsNumber <a class="anchor-link" href="#int-asnumber">#</a></h3>
+<p><em>as-number</em></p>
+<p><strong>Read a bound as a number whatever decimal separator it carries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function AsNumber(ByVal numberText As String) As Double
+</code></pre>
+<p><code>CDbl</code> reads the separator of the host, and a dictionary is authored on
+whatever machine the user has. A bound typed as <code>0.5</code> on one and read back on
+a comma machine is text <code>CDbl</code> refuses, and a bound of <code>0,5</code> is text a dot
+machine refuses. The separator is taken from the host and both are mapped onto
+it.</p>
+<p><code>Val</code> was the other candidate and it answers 0 for <code>0,5</code>, which is the same
+silent truncation this method exists to stop.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>numberText</code>: String. The bound as the dictionary carries it.</li>
+</ul>
+<p><strong>Returns:</strong> Double. The number.</p>
 <hr />
 <h3 id="int-osformula">OSFormula <a class="anchor-link" href="#int-osformula">#</a></h3>
 <p><em>os-formula</em></p>
@@ -496,9 +810,12 @@ the formula is invalid or fails the FailedFormula test.</p>
 </code></pre>
 <p>On macOS with VList layers, returns the formula as-is because FormulaLocal
 is unreliable. On Windows or for HList layers, temporarily writes the
-formula to cell A1, reads back FormulaLocal, and restores the previous
-cell content. This ensures validation formulas use the correct locale-
-aware separator characters.</p>
+formula to the scratch cell, reads back FormulaLocal, and restores the
+previous cell content. This ensures validation formulas use the correct
+locale-aware separator characters.</p>
+<p>The Mac carve-out covers VList alone and the HList branch calls FormulaLocal
+whatever the machine is. If FormulaLocal is unreliable on Mac for one layer it
+is unreliable for the other, and that is still open.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>formVal</code>: String. The Excel formula expression to convert.</li>
@@ -508,36 +825,164 @@ aware separator characters.</p>
 <h2 id="int-error-handling">Error Handling</h2>
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><em>throw-error</em></p>
-<p><strong>Raise a descriptive VBA error from this class</strong></p>
+<p><strong>Raise an error with the class name as source</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
 </code></pre>
-<p>Raises a custom VBA error with number vbObjectError + 516 and the
-class name as the source. Called by Create when required arguments are
-Nothing.</p>
+<p>Raises the number it is given with the class name as the source. Every guard
+in this class names a <code>ProjectError</code> member.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
+<li><code>errNumber</code>: Long. The ProjectError value to raise.</li>
 <li><code>errorMessage</code>: String. The error description to include in the raised error.</li>
 </ul>
-<p><strong>Throws:</strong></p>
+<hr />
+<h2 id="int-checkings">Checkings</h2>
+<h3 id="int-logcheck">LogCheck <a class="anchor-link" href="#int-logcheck">#</a></h3>
+<p><em>log-check</em></p>
+<p><strong>File one entry against the current variable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogCheck(ByVal label As String, Optional ByVal scope As Byte = checkingWarning)
+</code></pre>
+<p>What <code>internalChecks</code> files is a problem: a variable it could not place, a
+formula the parser rejected, a validation bound that would not convert, a
+dropdown manager it was not given. That store reaches the __check worksheet
+through <code>SectionBuilder</code> and <code>LLDataEntry</code>.</p>
+<h2 id="int-the-milestone-store-is-separate">THE MILESTONE STORE IS SEPARATE</h2>
+<p><code>milestoneChecks</code> holds one entry per variable written, keyed by the variable
+name, and it travels to the run log's in-memory record and the text file
+alone. The two stores are kept apart because of what the worksheet costs:
+<code>CheckingOutput</code> ends every row it writes with an <code>EntireColumn.AutoFit</code>, so
+a 500-variable linelist put 500 autofits into the build when these entries
+went to the worksheet. That is why an earlier per-variable entry filed into
+<code>internalChecks</code> was removed; the record keeps the trace and the worksheet
+keeps the problems.</p>
+<h2 id="int-keys-are-unique-across-a-build">KEYS ARE UNIQUE ACROSS A BUILD</h2>
+<p><code>Checking.Add</code> raises on a duplicate key. Every entry filed here is keyed by
+the worksheet and the variable, so a second subsection, a second sheet and a
+second writer can all be merged into one Checking. The counter this replaces
+started at 0 in every instance, so the second subsection of a sheet re-added
+key &quot;0&quot; and stopped the build.</p>
+<p>Collaborator entries are re-keyed on the way in for the same reason:
+<code>Formulas</code> also keys with a counter from 0, and <code>AddFormula</code> builds a fresh
+<code>Formulas</code> per variable.</p>
+<p><strong>Parameters:</strong></p>
 <ul>
-<li>VBA.vbObjectError + 516 always.</li>
+<li><code>label</code>: String. The message for the report.</li>
+<li><code>scope</code>: Optional Byte. Severity. Defaults to checkingWarning.</li>
 </ul>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-ivarwriter-writevariable">IVarWriter_WriteVariable <a class="anchor-link" href="#int-ivarwriter-writevariable">#</a></h3>
+<h3 id="int-harvestcollaboratorcheckings">HarvestCollaboratorCheckings <a class="anchor-link" href="#int-harvestcollaboratorcheckings">#</a></h3>
+<p><em>harvest-collaborator-checkings</em></p>
+<p><strong>Merge another object's entries into this writer's store</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IVarWriter_WriteVariable(ByVal varName As String)
+<pre><code class="language-vb">Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As Checking)
 </code></pre>
-<h1>Delegated members satisfying the IVarWriter contract.</h1>
+<p>The entries are re-keyed under this variable rather than appended, so two
+collaborators that both key from 0 do not collide. The severity is read back
+through the type label <code>Checking</code> prints, which is the only way it is exposed.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>collaboratorChecks</code>: Checking. The source store.</li>
+</ul>
+<hr />
+<h3 id="int-ensurechecking">EnsureChecking <a class="anchor-link" href="#int-ensurechecking">#</a></h3>
+<p><em>ensure-checking</em></p>
+<p><strong>Build the internal store on first use</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureChecking()
+</code></pre>
+<hr />
+<h3 id="int-logmilestone">LogMilestone <a class="anchor-link" href="#int-logmilestone">#</a></h3>
+<p><em>log-milestone</em></p>
+<p><strong>File the milestone of the variable just written</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogMilestone()
+</code></pre>
+<p>Keyed by the variable name, which the dictionary keeps unique inside one
+sheet, and the store is per sheet because the writer is. A name that
+repeats all the same is numbered rather than raising, since
+<code>Checking.Add</code> refuses a duplicate key and a milestone must never stop a
+build.</p>
+<hr />
+<h3 id="int-entrykeyroot">EntryKeyRoot <a class="anchor-link" href="#int-entrykeyroot">#</a></h3>
+<p><em>entry-key-root</em></p>
+<p><strong>The key an entry of the current variable starts from</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EntryKeyRoot() As String
+</code></pre>
+<p><strong>Returns:</strong> String. Worksheet name, then the variable name.</p>
+<hr />
+<h3 id="int-uniquekey">UniqueKey <a class="anchor-link" href="#int-uniquekey">#</a></h3>
+<p><em>unique-key</em></p>
+<p><strong>Answer a key the internal store does not hold yet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function UniqueKey(ByVal keyRoot As String) As String
+</code></pre>
+<p>A variable can file more than one entry -- a rejected formula and a validation
+bound that would not convert, for instance -- so the root is numbered when it
+is already taken.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>keyRoot</code>: String. The key to start from.</li>
+</ul>
+<p><strong>Returns:</strong> String. A key that is free.</p>
+<hr />
+<h3 id="int-uniquekeyin">UniqueKeyIn <a class="anchor-link" href="#int-uniquekeyin">#</a></h3>
+<p><em>unique-key-in</em></p>
+<p><strong>Answer a key one given store does not hold yet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function UniqueKeyIn(ByVal store As Checking, ByVal keyRoot As String) As String
+</code></pre>
+<p>The writer keeps two stores -- the problems and the milestones -- and each
+needs its own free key.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>store</code>: Checking. The store the key has to be free in.</li>
+<li><code>keyRoot</code>: String. The key to start from.</li>
+</ul>
+<p><strong>Returns:</strong> String. A key that is free.</p>
+<hr />
+<h3 id="int-scopeof">ScopeOf <a class="anchor-link" href="#int-scopeof">#</a></h3>
+<p><em>scope-of</em></p>
+<p><strong>Read the severity of one entry of another checking</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ScopeOf(ByVal source As Checking, ByVal keyName As String) As Byte
+</code></pre>
+<p><code>Checking</code> exposes a scope as the decorated type label it prints in the
+report, so the byte is recovered from that text. Each of the five labels
+carries its own word after the icon, and matching on the word keeps this free
+of the icon code points.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>source</code>: Checking. The store holding the entry.</li>
+<li><code>keyName</code>: String. The entry key.</li>
+</ul>
+<p><strong>Returns:</strong> Byte. A CheckingScope member.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (20 file(s))</summary>
 <ul>
-<li><a href="IVarWriter.html">IVarWriter.cls</a></li>
+<li><a href="CrossTable.html">CrossTable.cls</a></li>
+<li><a href="LLdictionary.html">LLdictionary.cls</a></li>
+<li><a href="LLSheets.html">LLSheets.cls</a></li>
+<li><a href="Formulas.html">Formulas.cls</a></li>
+<li><a href="HiddenNames.html">HiddenNames.cls</a></li>
+<li><a href="LLGeo.html">LLGeo.cls</a></li>
+<li><a href="LLSpatial.html">LLSpatial.cls</a></li>
+<li><a href="EventLinelist.html">EventLinelist.cls</a></li>
+<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
 <li><a href="SectionBuilder.html">SectionBuilder.cls</a></li>
-<li><a href="VarWriter.html">VarWriter.cls</a></li>
+<li><a href="ShowHideLayout.html">ShowHideLayout.cls</a></li>
+<li>EventsLinelistButtons.bas</li>
+<li>TestLLSheetsExtra.bas</li>
+<li>TestLLGeo.bas</li>
+<li>TestLLSpatial.bas</li>
+<li>TestEventLinelist.bas</li>
+<li>TestEventLinelistSheets.bas</li>
+<li>TestLLDataEntry.bas</li>
+<li>TestSectionBuilder.bas</li>
 <li>TestVarWriter.bas</li>
 </ul>
 </details>

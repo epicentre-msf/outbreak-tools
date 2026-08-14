@@ -11,41 +11,53 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>CustomTable</h1>
-<p>Wraps an Excel ListObject with convenience methods for column lookup,
-row insertion and deletion, sorting, validation, import/export, and
-diagnostic logging. The class maintains a header-index cache for fast
-repeated column lookups, supports snapshot-based rollback during import,
-and tracks hidden-column state so that Find-based operations see all
-columns. Consumers interact through the ICustomTable interface. An
-optional ID column provides dictionary-style keyed access to individual
-rows.</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="IDropdownLists.html">IDropdownLists</a>, checking objects</p>
-<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<p>Wraps one Excel ListObject. ColumnExists, CellRange, ValueRange and Value read
+the table and SetValue writes into it. InsertRowsAt, DeleteRowsAt, AddRows and
+RemoveRows change its shape, RenameColumn rewrites a header, Sort orders the
+rows, SetValidation puts a dropdown behind a column, and Clean empties the
+data. Import and Export move values between this table and another table or a
+DataSheet.</p>
+<details open class="doc-section" id="what-the-instance-holds">
+<summary>WHAT THE INSTANCE HOLDS</summary>
+<div class="section-body">
+<p>A column lookup reads the header row once as a block and matches the name in
+memory for the rest of that call. Nothing about the table shape is held
+between calls, so an instance that stays alive answers from the worksheet as
+it stands at each call.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-identifier-column">
+<summary>THE IDENTIFIER COLUMN</summary>
+<div class="section-body">
+<p>AddIds fills an identifier column, and IdValue and PrefixValue say which
+column carries it and what its values start with. A row is then reached by its
+identifier.</p>
+</div>
+</details>
+<details open class="doc-section" id="moving-values-in-and-out">
+<summary>MOVING VALUES IN AND OUT</summary>
+<div class="section-body">
+<p>Import records the table before it writes, and RestoreTableSnapshot puts that
+state back. Source headers with no match here leave through
+ImportColumnsNotFound, headers an export was handed and could not write leave
+through ExportColumnsNotFound, and HasColumnsNotImported answers over the last
+import. Both routines unhide every column before they write and hide the same
+columns again after.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="DropdownLists.html">DropdownLists</a></p>
+<p><strong>Version:</strong> 1.1 (2026-07-28)</p>
+</div>
+</details>
 <details open class="doc-section" id="statemanagement">
 <summary>StateManagement</summary>
 <div class="section-body">
-<h3 id="savetablesnapshot">SaveTableSnapshot <a class="anchor-link" href="#savetablesnapshot">#</a></h3>
-<p><em>save-table-snapshot</em></p>
-<p><strong>Save a snapshot of the current table state</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub SaveTableSnapshot(Optional ByVal returnHidden As Boolean = True)
-</code></pre>
-<p>Captures the current headers and data rows into BetterArray buffers
-so RestoreTableSnapshot can revert the table if an import fails.
-Unhides hidden columns before reading to ensure full coverage.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>returnHidden</code>: Optional Boolean. When True, re-hides columns after capture. Defaults to True.</li>
-</ul>
-<hr />
 <h3 id="restoretablesnapshot">RestoreTableSnapshot <a class="anchor-link" href="#restoretablesnapshot">#</a></h3>
 <p><em>restore-table-snapshot</em></p>
 <p><strong>Restore the table from a previously saved snapshot</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RestoreTableSnapshot()
+<pre><code class="language-vb">Public Sub RestoreTableSnapshot()
 </code></pre>
 <p>Reapplies the cached headers and rows when an import needs to roll
-back. Resizes the ListObject, writes the backup data, resets caches,
+back. Resizes the ListObject, writes the backup data, resets state,
 and re-hides previously hidden columns.</p>
 <hr />
 </div>
@@ -58,11 +70,11 @@ and re-hides previously hidden columns.</p>
 <p><strong>Create a CustomTable wrapper around a ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal Lo As ListObject, _
-                      Optional ByVal idCol As String = vbNullString, _
-                      Optional ByVal idPrefix As String = vbNullString) As ICustomTable
+                       Optional ByVal idCol As String = vbNullString, _
+                       Optional ByVal idPrefix As String = vbNullString) As CustomTable
 </code></pre>
-<p>Entry point for creating CustomTable instances.
-Wraps the supplied ListObject with convenience methods for column
+<p>Entry point for creating CustomTable instances.</p>
+<p>Wraps the supplied ListObject with convenience methods for column
 lookup, row manipulation, import/export, and diagnostic logging. An
 optional ID column enables dictionary-style keyed row access. When
 adding rows, the ID column is automatically numbered in sequence,
@@ -73,7 +85,7 @@ optionally prefixed (e.g. &quot;line 1&quot;, &quot;line 2&quot;).</p>
 <li><code>idCol</code>: Optional String. Name of the ID column. Defaults to vbNullString.</li>
 <li><code>idPrefix</code>: Optional String. Prefix for auto-generated ID values. Defaults to vbNullString.</li>
 </ul>
-<p><strong>Returns:</strong> ICustomTable. A fully initialised CustomTable instance.</p>
+<p><strong>Returns:</strong> CustomTable. A fully initialised CustomTable instance.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When Lo is Nothing.</li>
@@ -102,25 +114,45 @@ optionally prefixed (e.g. &quot;line 1&quot;, &quot;line 2&quot;).</p>
 <p><em>header-range</em></p>
 <p><strong>Header row Range of the CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get HeaderRange() As Range
+<pre><code class="language-vb">Public Property Get HeaderRange() As Range
 </code></pre>
 <p>Returns the Range covering the header row of the underlying ListObject.</p>
 <p><strong>Returns:</strong> Range. The header row range.</p>
+<hr />
+<h3 id="columnexists">ColumnExists <a class="anchor-link" href="#columnexists">#</a></h3>
+<p><em>column-exists</em></p>
+<p><strong>Check whether a column exists in the table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ColumnExists(ByVal colName As String, _
+                             Optional ByVal strictSearch As Boolean = False, _
+                             Optional ByVal matchCase As Boolean = False) As Boolean
+</code></pre>
+<p>Delegates to ColumnIndex and returns True when the index is positive.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column name to search.</li>
+<li><code>strictSearch</code>: Optional Boolean. When True, uses exact matching. Defaults to False.</li>
+<li><code>matchCase</code>: Optional Boolean. When True, matching is case-sensitive. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the column is found.</p>
 <hr />
 <h3 id="datarange">DataRange <a class="anchor-link" href="#datarange">#</a></h3>
 <p><em>data-range</em></p>
 <p><strong>Range of a column or the entire data body</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get DataRange(Optional ByVal colName As String = &quot;__all__&quot;, _
-                               Optional ByVal includeHeaders As Boolean = False, _
-                               Optional ByVal strictSearch As Boolean = False, _
-                               Optional ByVal matchCase As Boolean = False) As Range
+<pre><code class="language-vb">Public Property Get DataRange(Optional ByVal colName As String = &quot;__all__&quot;, _
+                              Optional ByVal includeHeaders As Boolean = False, _
+                              Optional ByVal strictSearch As Boolean = False, _
+                              Optional ByVal matchCase As Boolean = False) As Range
 </code></pre>
 <p>Returns a data Range for the specified column, or the entire data body
 when colName is &quot;<strong>all</strong>&quot;. When strictSearch is False, the search uses
 partial matching; the first partial match is returned. Use strictSearch
 when column names share common text to avoid unexpected output. Returns
-Nothing when the column has no data rows or is not found.</p>
+Nothing when the column has no data rows or is not found.
+Answering Nothing is part of the contract: four callers read it as &quot;this
+table does not have that column&quot;, so it can never become a raise or an
+empty range.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>colName</code>: Optional String. Column header to retrieve. Defaults to &quot;<strong>all</strong>&quot;.</li>
@@ -134,17 +166,20 @@ Nothing when the column has no data rows or is not found.</p>
 <p><em>name</em></p>
 <p><strong>Name of the attached ListObject</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Name() As String
+<pre><code class="language-vb">Public Property Get Name() As String
 </code></pre>
-<p>Returns the cached name of the ListObject assigned during creation.</p>
+<p>Reads the name from the live ListObject. It is deliberately not kept on
+the instance: the user can rename a table from the Excel interface at any
+time, and a name stored at creation would then be wrong for the rest of
+the object's life.</p>
 <p><strong>Returns:</strong> String. The table name.</p>
 <hr />
 <h3 id="cellrange">CellRange <a class="anchor-link" href="#cellrange">#</a></h3>
 <p><em>cell-range</em></p>
 <p><strong>A specific cell in the CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get CellRange(ByVal colName As String, _
-                               ByVal lineNum As Long) As Range
+<pre><code class="language-vb">Public Property Get CellRange(ByVal colName As String, _
+                              ByVal lineNum As Long) As Range
 </code></pre>
 <p>Returns the cell at the intersection of the given column and worksheet
 row number. Returns Nothing when the column does not exist or the row
@@ -160,7 +195,7 @@ is out of bounds.</p>
 <p><em>value-range</em></p>
 <p><strong>Locate the cell Range by column and key</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ValueRange(ByVal colName As String, ByVal keyName As String) As Range
+<pre><code class="language-vb">Public Function ValueRange(ByVal colName As String, ByVal keyName As String) As Range
 </code></pre>
 <p>Returns the Range at the intersection of the specified column and the
 row matching keyName in the ID column. Returns Nothing when the key or
@@ -176,13 +211,12 @@ column is not found, or when no ID column is configured.</p>
 <p><em>value</em></p>
 <p><strong>Retrieve a cell value by column and key</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Value(ByVal colName As String, _
-                           ByVal keyName As String) As String
+<pre><code class="language-vb">Public Property Get Value(ByVal colName As String, _
+                          ByVal keyName As String) As String
 </code></pre>
 <p>For tables with a key column, returns the cell value at the intersection
 of the specified column and the row matching keyName. Returns an empty
-string when the key or column is not found, or when the cell value
-cannot be converted to string.</p>
+string when the key or column is not found.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>colName</code>: String. Column header to read from.</li>
@@ -199,9 +233,9 @@ cannot be converted to string.</p>
 <p><em>insert-rows-at</em></p>
 <p><strong>Insert rows at the selected position</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub InsertRowsAt(ByVal targetCell As Range, _
-                         Optional ByVal insertShift As Boolean = False, _
-                         Optional ByVal includeIds As Boolean = True)
+<pre><code class="language-vb">Public Sub InsertRowsAt(ByVal targetCell As Range, _
+                        Optional ByVal insertShift As Boolean = False, _
+                        Optional ByVal includeIds As Boolean = True)
 </code></pre>
 <p>Inserts rows matching the height of targetCell. Uses worksheet row
 insertion when insertShift is True to protect stacked tables, otherwise
@@ -218,9 +252,9 @@ includeIds is True.</p>
 <p><em>delete-rows-at</em></p>
 <p><strong>Delete rows intersecting the selection</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub DeleteRowsAt(ByVal targetCell As Range, _
-                         Optional ByVal includeIds As Boolean = True, _
-                         Optional ByVal forceShift As Boolean = False)
+<pre><code class="language-vb">Public Sub DeleteRowsAt(ByVal targetCell As Range, _
+                        Optional ByVal includeIds As Boolean = True, _
+                        Optional ByVal forceShift As Boolean = False)
 </code></pre>
 <p>Removes data rows that intersect targetCell. Uses worksheet row
 deletion when forceShift or the stored shift tracker is active,
@@ -237,7 +271,7 @@ all rows are deleted. Renumbers the ID column when includeIds is True.</p>
 <p><em>add-ids</em></p>
 <p><strong>Fill the ID column with sequential values</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddIds()
+<pre><code class="language-vb">Public Sub AddIds()
 </code></pre>
 <p>Writes sequential numbers (optionally prefixed) to every cell in the
 ID column. Silently exits when no ID column is configured or when the
@@ -248,9 +282,9 @@ modified by the user directly.</p>
 <p><em>add-rows</em></p>
 <p><strong>Add rows to the CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddRows(Optional ByVal nbRows As Long = 5, _ 
-                    Optional Byval insertShift As Boolean = False, _ 
-                    Optional ByVal includeIds As Boolean = True)
+<pre><code class="language-vb">Public Sub AddRows(Optional ByVal nbRows As Long = 5, _
+                   Optional ByVal insertShift As Boolean = False, _
+                   Optional ByVal includeIds As Boolean = True)
 </code></pre>
 <p>Appends the requested number of rows, either by inserting worksheet
 rows (to protect stacked tables) or by extending the ListObject range
@@ -268,13 +302,14 @@ column afterwards.</p>
 <p><em>remove-rows</em></p>
 <p><strong>Remove empty rows from the CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RemoveRows(Optional ByVal totalCount As Long = 0, _ 
-                       Optional ByVal includeIds As Boolean = True, _
-                       Optional ByVal forceShift As Boolean = False)
+<pre><code class="language-vb">Public Sub RemoveRows(Optional ByVal totalCount As Long = 0, _
+                      Optional ByVal includeIds As Boolean = True, _
+                      Optional ByVal forceShift As Boolean = False)
 </code></pre>
 <p>Deletes rows whose non-empty cell count falls at or below totalCount.
 In the linelist, formula cells count as non-empty, so totalCount
-should match the number of formula columns. Optionally renumbers the
+should match the number of formula columns. When totalCount is left at
+0 the class counts the formula columns itself. Optionally renumbers the
 ID column afterwards.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -287,19 +322,19 @@ ID column afterwards.</p>
 <p><em>set-validation</em></p>
 <p><strong>Set dropdown validation on a column</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub SetValidation(ByVal colName As String, _
-                          ByVal drop As IDropdownLists, _
-                          ByVal dropName As String, _
-                          Optional ByVal alertType As String = &quot;info&quot;, _
-                          Optional ByVal message As String = vbNullString)
+<pre><code class="language-vb">Public Sub SetValidation(ByVal colName As String, _
+                         ByVal drop As DropdownLists, _
+                         ByVal dropName As String, _
+                         Optional ByVal alertType As String = &quot;info&quot;, _
+                         Optional ByVal message As String = vbNullString)
 </code></pre>
-<p>Applies data validation from the supplied IDropdownLists to every cell
+<p>Applies data validation from the supplied DropdownLists to every cell
 in the specified column. Silently exits when the column does not exist
 or has no data range.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>colName</code>: String. Column header to validate.</li>
-<li><code>drop</code>: IDropdownLists. Dropdown source providing the validation list.</li>
+<li><code>drop</code>: DropdownLists. Dropdown source providing the validation list.</li>
 <li><code>dropName</code>: String. Name of the dropdown list within the source.</li>
 <li><code>alertType</code>: Optional String. Alert severity (&quot;info&quot;, &quot;warning&quot;, &quot;error&quot;). Defaults to &quot;info&quot;.</li>
 <li><code>message</code>: Optional String. Message shown when validation fails. Defaults to vbNullString.</li>
@@ -309,7 +344,7 @@ or has no data range.</p>
 <p><em>set-value</em></p>
 <p><strong>Change the value of one specific cell</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub SetValue(ByVal colName As String, ByVal keyName As String, ByVal newValue As String)
+<pre><code class="language-vb">Public Sub SetValue(ByVal colName As String, ByVal keyName As String, ByVal newValue As String)
 </code></pre>
 <p>Writes newValue to the cell identified by column name and key.
 Silently exits when the key or column is not found. Use with caution
@@ -325,13 +360,16 @@ as it modifies data inside the ListObject.</p>
 <p><em>rename-column</em></p>
 <p><strong>Rename a column header within the table</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RenameColumn(ByVal colName As String, _
-                         ByVal newName As String, _
-                         Optional ByVal strictSearch As Boolean = True, _
-                         Optional ByVal matchCase As Boolean = False)
+<pre><code class="language-vb">Public Sub RenameColumn(ByVal colName As String, _
+                        ByVal newName As String, _
+                        Optional ByVal strictSearch As Boolean = True, _
+                        Optional ByVal matchCase As Boolean = False)
 </code></pre>
-<p>Replaces the header text of the matched column with newName and resets
-the lookup cache. Raises an error when newName is empty.</p>
+<p>Replaces the header text of the matched column with newName.
+Raises an error when newName is empty.
+The strict default here is the opposite of the loose default on
+ColumnIndex and DataRange, and that is on purpose: it is what stops a
+caller asking for &quot;Label&quot; from renaming &quot;Formula Label&quot;.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>colName</code>: String. Current column header to find.</li>
@@ -348,29 +386,42 @@ the lookup cache. Raises an error when newName is empty.</p>
 <p><em>clean</em></p>
 <p><strong>Clear all non-formula, non-key columns</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Clean()
+<pre><code class="language-vb">Public Sub Clean()
 </code></pre>
 <p>Iterates every column in the table and clears the contents of those
-that do not contain formulas. Key columns are preserved since they
-are identified by their header, not by content.</p>
+that do not contain formulas. The key column is preserved: it holds
+plain values, and clearing it wiped every ID whenever Clean was called
+outside Import.
+Each column is taken from its own position in the loop. Looking the
+header text back up cost about nine round trips and a worksheet search
+for a column whose place the loop already knew.</p>
 <hr />
 <h3 id="sort">Sort <a class="anchor-link" href="#sort">#</a></h3>
 <p><em>sort</em></p>
 <p><strong>Sort the table on one or more columns</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Sort(Optional ByVal colName As String = vbNullString, _ 
-                 Optional ByVal colList As Object = Nothing, _
-                 Optional ByVal directSort As Boolean = True, _ 
-                 Optional ByVal strictSearch As Boolean = True)
+<pre><code class="language-vb">Public Sub Sort(Optional ByVal colName As String = vbNullString, _
+                Optional ByVal colList As Object = Nothing, _
+                Optional ByVal directSort As Boolean = True, _
+                Optional ByVal strictSearch As Boolean = True)
 </code></pre>
-<p>Sorts in ascending order on the specified column, then on each column
-in colList. When directSort is True, uses a simple Range.Sort; when
-False, groups rows by first occurrence of each distinct value.</p>
+<p>colList holds the sort keys in DECREASING significance: its first item ends
+up the primary key, its last item the weakest of the list, and colName is
+the final tiebreak of them all.
+That reads backwards until you see how it works. Each pass is a full
+single-key Range.Sort over the whole table, so the LAST pass applied is the
+one that decides the order. colName is therefore sorted first and colList is
+walked from its last item to its first.
+Because the keys are applied one at a time, the precedence between them
+rests on Excel leaving rows that tie on a key in the order it found them.
+Excel behaves that way, but it does not promise to. A caller that cannot
+live with that should issue one Range.Sort carrying key1/key2/key3 instead,
+the way LLChoices does.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>colName</code>: Optional String. Column header to sort on. Defaults to vbNullString.</li>
-<li><code>colList</code>: Optional Object. BetterArray of additional column headers. Defaults to Nothing.</li>
-<li><code>directSort</code>: Optional Boolean. When True, sorts directly. Defaults to True.</li>
+<li><code>colName</code>: Optional String. Column header sorted first, so it ends up the weakest key. Defaults to vbNullString.</li>
+<li><code>colList</code>: Optional Object. BetterArray of column headers, most significant first. Defaults to Nothing.</li>
+<li><code>directSort</code>: Optional Boolean. When True, sorts directly; when False, groups rows by first occurrence of each distinct value. Defaults to True.</li>
 <li><code>strictSearch</code>: Optional Boolean. When True, uses exact column matching. Defaults to True.</li>
 </ul>
 <hr />
@@ -383,18 +434,22 @@ False, groups rows by first occurrence of each distinct value.</p>
 <p><em>import</em></p>
 <p><strong>Import data from a DataSheet or CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Import(ByVal impTab As Object, _
-                   Optional ByVal pasteAtBottom As Boolean = False, _
-                   Optional ByVal strictColumnSearch As Boolean = False, _ 
-                   Optional ByVal insertShift As Boolean = True, _ 
-                   Optional ByVal formatHeaders As Object = Nothing, _ 
-                   Optional ByVal keepSourceHeaders As Boolean = False)
+<pre><code class="language-vb">Public Sub Import(ByVal impTab As Object, _
+                  Optional ByVal pasteAtBottom As Boolean = False, _
+                  Optional ByVal strictColumnSearch As Boolean = False, _
+                  Optional ByVal insertShift As Boolean = True, _
+                  Optional ByVal formatHeaders As Object = Nothing, _
+                  Optional ByVal keepSourceHeaders As Boolean = False)
 </code></pre>
-<p>Import, export, and snapshot operations.
-Copies column-matched data from the source object into this table.
+<p>Import, export, and snapshot operations.</p>
+<p>Copies column-matched data from the source object into this table.
 When keepSourceHeaders is True, replaces all headers and data entirely.
 Creates a snapshot before import and rolls back on error. Unhides
-hidden columns during the operation and restores their state afterwards.</p>
+hidden columns during the operation and restores their state afterwards.
+Note on size: with keepSourceHeaders False and the default insertShift
+True, this GROWS the table to fit the source but never shrinks it. A
+three-row table importing two rows stays three rows, with the third row
+merely blanked by Clean. Only the insertShift False branch trims.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>impTab</code>: Object. A DataSheet or CustomTable to import from.</li>
@@ -405,27 +460,11 @@ hidden columns during the operation and restores their state afterwards.</p>
 <li><code>keepSourceHeaders</code>: Optional Boolean. When True, replaces destination headers. Defaults to False.</li>
 </ul>
 <hr />
-<h3 id="importall">ImportAll <a class="anchor-link" href="#importall">#</a></h3>
-<p><em>import-all</em></p>
-<p><strong>Replace the entire table with imported data</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ImportAll(ByVal impTab As Object, Optional ByVal insertShift As Boolean = False)
-</code></pre>
-<p>Replaces all headers and data with the content of the supplied object,
-discarding the current structure entirely. Trims the table to one row,
-adjusts column count to match the source, then overwrites headers and
-data body.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>impTab</code>: Object. A DataSheet or CustomTable to import from.</li>
-<li><code>insertShift</code>: Optional Boolean. When True, inserts worksheet rows. Defaults to False.</li>
-</ul>
-<hr />
 <h3 id="importcolumnsnotfound">ImportColumnsNotFound <a class="anchor-link" href="#importcolumnsnotfound">#</a></h3>
 <p><em>import-columns-not-found</em></p>
 <p><strong>Columns not matched during the last import</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get ImportColumnsNotFound() As BetterArray
+<pre><code class="language-vb">Public Property Get ImportColumnsNotFound() As BetterArray
 </code></pre>
 <p>Returns a clone of the BetterArray containing column headers from the
 source that had no match in this table. Only available after a
@@ -433,11 +472,26 @@ successful import; logs a diagnostic and exits when no import has
 occurred.</p>
 <p><strong>Returns:</strong> BetterArray. Unmatched column headers, or Nothing.</p>
 <hr />
+<h3 id="exportcolumnsnotfound">ExportColumnsNotFound <a class="anchor-link" href="#exportcolumnsnotfound">#</a></h3>
+<p><em>export-columns-not-found</em></p>
+<p><strong>Headers the last export was asked for and could not write</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportColumnsNotFound() As BetterArray
+</code></pre>
+<p>Export skips a header it cannot resolve against this table and leaves its
+output column where it was, so the block it writes is narrower than the header
+list it was handed. A caller that writes a second row from that same list --
+the label row of a data export is the case -- has to take these entries out
+first, or every label after the first gap sits one column left of its data.</p>
+<p>The array is emptied at the start of every export, so it always describes the
+last one. It is empty when every header matched.</p>
+<p><strong>Returns:</strong> BetterArray. The headers that were skipped.</p>
+<hr />
 <h3 id="hascolumnsnotimported">HasColumnsNotImported <a class="anchor-link" href="#hascolumnsnotimported">#</a></h3>
 <p><em>has-columns-not-imported</em></p>
 <p><strong>Whether the last import had unmatched columns</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get HasColumnsNotImported() As Boolean
+<pre><code class="language-vb">Public Property Get HasColumnsNotImported() As Boolean
 </code></pre>
 <p>Returns True when the most recent import left some source columns
 unmatched against this table.</p>
@@ -447,17 +501,17 @@ unmatched against this table.</p>
 <p><em>export</em></p>
 <p><strong>Export the table to a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Export(ByVal sh As Worksheet, _ 
-           Optional ByVal headersTable As Object = Nothing, _ 
-           Optional ByVal startLine As Long = 1, _ 
-           Optional ByVal startColumn As Long = 1, _ 
-           Optional ByVal addListObject As Boolean = False, _ 
-           Optional ByVal clearSheet As Boolean = True)
+<pre><code class="language-vb">Public Sub Export(ByVal sh As Worksheet, _
+                  Optional ByVal headersTable As Object = Nothing, _
+                  Optional ByVal startLine As Long = 1, _
+                  Optional ByVal startColumn As Long = 1, _
+                  Optional ByVal addListObject As Boolean = False, _
+                  Optional ByVal clearSheet As Boolean = True)
 </code></pre>
 <p>Writes the requested columns (or all columns when headersTable is not
 a BetterArray) to the target worksheet, optionally creating a
 ListObject on the output range. Unhides hidden columns during the
-operation and restores their state afterwards.</p>
+operation and restores their state afterwards, on the failure path too.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. Target worksheet to write to.</li>
@@ -465,6 +519,7 @@ operation and restores their state afterwards.</p>
 <li><code>startLine</code>: Optional Long. Row to begin writing at. Defaults to 1.</li>
 <li><code>startColumn</code>: Optional Long. Column to begin writing at. Defaults to 1.</li>
 <li><code>addListObject</code>: Optional Boolean. When True, creates a ListObject on the output. Defaults to False.</li>
+<li><code>clearSheet</code>: Optional Boolean. When True, clears the target worksheet first. Defaults to True.</li>
 </ul>
 <hr />
 </div>
@@ -476,7 +531,7 @@ operation and restores their state afterwards.</p>
 <p><em>has-checkings</em></p>
 <p><strong>Whether the table has logged diagnostic messages</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
 </code></pre>
 <p>Returns True when at least one diagnostic entry has been recorded.</p>
 <p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
@@ -485,11 +540,11 @@ operation and restores their state afterwards.</p>
 <p><em>checking-values</em></p>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get CheckingValues() As Object
+<pre><code class="language-vb">Public Property Get CheckingValues() As Object
 </code></pre>
-<p>Returns the internal IChecking object containing all logged messages.
+<p>Returns the internal Checking object containing all logged messages.
 Returns Nothing when no entries have been recorded.</p>
-<p><strong>Returns:</strong> Object. An IChecking instance, or Nothing.</p>
+<p><strong>Returns:</strong> Object. An Checking instance, or Nothing.</p>
 <hr />
 </div>
 </details>
@@ -498,13 +553,14 @@ Returns Nothing when no entries have been recorded.</p>
 <h2 id="int-statemanagement">StateManagement</h2>
 <h3 id="int-resetcaches">ResetCaches <a class="anchor-link" href="#int-resetcaches">#</a></h3>
 <p><em>reset-caches</em></p>
-<p><strong>Reset transient caches after structural changes</strong></p>
+<p><strong>Drop the state a structural change can make wrong</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetCaches()
 </code></pre>
-<p>Cache, backup, and guard helpers that keep internal state consistent.
-Rebuilds the header index cache so column lookups remain accurate
-after columns are added, removed, or renamed.</p>
+<p>Backup and guard helpers that keep internal state consistent.</p>
+<p>Column lookups read the header row from the sheet on every call, so there
+is no lookup cache to drop here any more. The shift flag is the one piece
+of state a resize can leave saying the wrong thing.</p>
 <hr />
 <h3 id="int-resetimportstate">ResetImportState <a class="anchor-link" href="#int-resetimportstate">#</a></h3>
 <p><em>reset-import-state</em></p>
@@ -524,52 +580,16 @@ and any saved backup so the next import begins from a clean slate.</p>
 <p>Sets the backup header and row arrays to Nothing and clears the
 hasBackup flag once the operation completes successfully.</p>
 <hr />
-<h3 id="int-cachekeyforheader">CacheKeyForHeader <a class="anchor-link" href="#int-cachekeyforheader">#</a></h3>
-<p><em>cache-key-for-header</em></p>
-<p><strong>Generate a unique cache key for header lookups</strong></p>
+<h3 id="int-savetablesnapshot">SaveTableSnapshot <a class="anchor-link" href="#int-savetablesnapshot">#</a></h3>
+<p><em>save-table-snapshot</em></p>
+<p><strong>Save a snapshot of the current table state</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function CacheKeyForHeader(ByVal colName As String, _
-                                   ByVal strictSearch As Boolean, _
-                                   ByVal matchCase As Boolean) As String
+<pre><code class="language-vb">Private Sub SaveTableSnapshot()
 </code></pre>
-<p>Combines the column name with the search mode flags so that different
-search configurations stay isolated in the cache.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>colName</code>: String. The column name to look up.</li>
-<li><code>strictSearch</code>: Boolean. Whether to use exact matching.</li>
-<li><code>matchCase</code>: Boolean. Whether to match case.</li>
-</ul>
-<p><strong>Returns:</strong> String. The generated cache key.</p>
-<hr />
-<h3 id="int-trygetcachedindex">TryGetCachedIndex <a class="anchor-link" href="#int-trygetcachedindex">#</a></h3>
-<p><em>try-get-cached-index</em></p>
-<p><strong>Attempt to retrieve a cached column index</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function TryGetCachedIndex(ByVal cacheKey As String, ByRef cachedValue As Long) As Boolean
-</code></pre>
-<p>Searches the lightweight BetterArray cache for a matching key. When
-found, populates cachedValue with the stored column index.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>cacheKey</code>: String. The cache key to look up.</li>
-<li><code>cachedValue</code>: ByRef Long. Populated with the column index on hit.</li>
-</ul>
-<p><strong>Returns:</strong> Boolean. True when found in cache, False otherwise.</p>
-<hr />
-<h3 id="int-storeheaderindex">StoreHeaderIndex <a class="anchor-link" href="#int-storeheaderindex">#</a></h3>
-<p><em>store-header-index</em></p>
-<p><strong>Store a successful column lookup in the cache</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub StoreHeaderIndex(ByVal cacheKey As String, ByVal columnIndexValue As Long)
-</code></pre>
-<p>Persists a successful lookup so subsequent queries avoid a Range.Find call.
-Ignores zero or negative column indexes.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>cacheKey</code>: String. The cache key to store.</li>
-<li><code>columnIndexValue</code>: Long. The column index to cache.</li>
-</ul>
+<p>Captures the current headers and data rows into BetterArray buffers
+so RestoreTableSnapshot can revert the table if an import fails.
+Unhides hidden columns before reading, and leaves them unhidden: the
+caller puts them back once the whole operation is over.</p>
 <hr />
 <h3 id="int-ensuretableinitialized">EnsureTableInitialized <a class="anchor-link" href="#int-ensuretableinitialized">#</a></h3>
 <p><em>ensure-table-initialized</em></p>
@@ -584,17 +604,6 @@ all table operations from executing on an uninitialised instance.</p>
 <li>ProjectError.ObjectNotInitialized When the ListObject is Nothing.</li>
 </ul>
 <hr />
-<h2 id="int-factory">Factory</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ICustomTable
-</code></pre>
-<p>Returns the current instance cast to ICustomTable. Used internally
-by the factory method to return an interface reference.</p>
-<p><strong>Returns:</strong> ICustomTable. Reference to the current object.</p>
-<hr />
 <h2 id="int-elements">Elements</h2>
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><em>wksh</em></p>
@@ -602,9 +611,74 @@ by the factory method to return an interface reference.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Wksh() As Worksheet
 </code></pre>
-<p>Properties that expose the table structure and cell access.
-Returns the parent worksheet of the underlying ListObject.</p>
+<p>Properties that expose the table structure and cell access.</p>
+<p>Returns the parent worksheet of the underlying ListObject.</p>
 <p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
+<hr />
+<h3 id="int-sheetblock">SheetBlock <a class="anchor-link" href="#int-sheetblock">#</a></h3>
+<p><em>sheet-block</em></p>
+<p><strong>Build a Range on the host worksheet from four numbers</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetBlock(ByVal firstRow As Long, ByVal firstColumn As Long, _
+                            ByVal lastRow As Long, ByVal lastColumn As Long) As Range
+</code></pre>
+<p>The &quot;With sh ... .Range(.Cells(a, b), .Cells(c, d))&quot; shape was written out
+in five places. One small builder replaces all of them. It is deliberately
+bound to this table's own worksheet, so it must never be used to build a
+range on an export target sheet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>firstRow</code>: Long. Top row.</li>
+<li><code>firstColumn</code>: Long. Left column.</li>
+<li><code>lastRow</code>: Long. Bottom row.</li>
+<li><code>lastColumn</code>: Long. Right column.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The block.</p>
+<hr />
+<h3 id="int-rowvalues">RowValues <a class="anchor-link" href="#int-rowvalues">#</a></h3>
+<p><em>row-values</em></p>
+<p><strong>Read a one-row Range as a 1-based list of values</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RowValues(ByVal blockRng As Range) As Variant
+</code></pre>
+<p>Range.Value hands back a plain value when the Range is one cell, and a
+two-dimensional array otherwise. This flattens both cases so callers see
+one shape and do not repeat the test.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>blockRng</code>: Range. A single-row block.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. A 1-based one-dimensional array of cell values.</p>
+<hr />
+<h3 id="int-columnvalues">ColumnValues <a class="anchor-link" href="#int-columnvalues">#</a></h3>
+<p><em>column-values</em></p>
+<p><strong>Read a one-column Range as a 1-based list of values</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnValues(ByVal blockRng As Range) As Variant
+</code></pre>
+<p>The column twin of RowValues, and for the same reason: a one-cell Range
+hands back a plain value where a taller one hands back a two-dimensional
+array.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>blockRng</code>: Range. A single-column block.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. A 1-based one-dimensional array of cell values.</p>
+<hr />
+<h3 id="int-celltext">CellText <a class="anchor-link" href="#int-celltext">#</a></h3>
+<p><em>cell-text</em></p>
+<p><strong>Read one cell value as text without raising</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CellText(ByVal cellValue As Variant) As String
+</code></pre>
+<p>A cell holding an error value (#N/A and the like) makes CStr raise a
+type mismatch. Such a header can never match a column name, so it reads
+as empty text instead of stopping the caller.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellValue</code>: Variant. The raw cell value.</li>
+</ul>
+<p><strong>Returns:</strong> String. The value as text, or empty text.</p>
 <hr />
 <h3 id="int-table">Table <a class="anchor-link" href="#int-table">#</a></h3>
 <p><em>table</em></p>
@@ -626,8 +700,8 @@ when the reference has not been set.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Table(ByVal Lo As ListObject)
 </code></pre>
-<p>Stores the ListObject, resets caches and backup, and caches the table
-name. Raises an error when Lo is Nothing.</p>
+<p>Stores the ListObject and resets state and backup. Raises an error when
+Lo is Nothing.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>Lo</code>: ListObject. The table to assign.</li>
@@ -668,6 +742,39 @@ name. Raises an error when Lo is Nothing.</p>
 <li><code>idPrefix</code>: String. Prefix to prepend to sequential ID values.</li>
 </ul>
 <hr />
+<h3 id="int-findcolumn">FindColumn <a class="anchor-link" href="#int-findcolumn">#</a></h3>
+<p><em>find-column</em></p>
+<p><strong>Find one column in the header row, reading that row once</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindColumn(ByVal headerRng As Range, _
+                            ByVal colName As String, _
+                            ByVal strictSearch As Boolean, _
+                            ByVal matchCase As Boolean) As Long
+</code></pre>
+<p>This is the single lookup behind ColumnIndex, and so behind every column
+name this class is given. The header row is read once as a block and
+matched in memory: Range.Find used to cost a worksheet search plus five
+property reads, and a name that matched nothing repeated the whole search
+on every call because misses were never remembered.
+The two match rules are kept exactly as Range.Find applied them:
+strictSearch True is whole-string equality (xlWhole) and False is a
+substring test (xlPart); matchCase True compares binary and False compares
+text. The leftmost match wins, which several callers rely on.
+Two Range.Find behaviours are deliberately gone. It read &quot;*&quot;, &quot;?&quot; and &quot;~&quot;
+in the search text as wildcards even under xlWhole, and it reused whatever
+LookIn and SearchOrder the last search anywhere in Excel had used,
+including the user's own Ctrl+F. Both were faults.
+The block is NOT kept on the instance: callers write to these sheets
+without going through this object, so it is read again on the next call.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>headerRng</code>: Range. The header row to search.</li>
+<li><code>colName</code>: String. Column header to look for.</li>
+<li><code>strictSearch</code>: Boolean. True for whole-string matching.</li>
+<li><code>matchCase</code>: Boolean. True for case-sensitive matching.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The 1-based position within the header row, or 0 when there is none.</p>
+<hr />
 <h3 id="int-columnindex">ColumnIndex <a class="anchor-link" href="#int-columnindex">#</a></h3>
 <p><em>column-index</em></p>
 <p><strong>Resolve the 1-based column index for a header name</strong></p>
@@ -677,9 +784,12 @@ name. Raises an error when Lo is Nothing.</p>
                              Optional ByVal matchCase As Boolean = False, _
                              Optional ByVal required As Boolean = False) As Long
 </code></pre>
-<p>Searches the header row for colName using Range.Find, consulting the
-cache first for speed. Returns 0 when not found. When required is
-True, raises an error instead of returning 0.</p>
+<p>Searches the header row for colName and returns its position within that
+row. Returns 0 when not found. When required is True, raises an error
+instead of returning 0.
+The 0-for-not-found answer is deliberate and stays: DataSheet answers -1,
+and lining the two up would make a &quot;&lt; 0&quot; test written for a DataSheet
+silently pass for a CustomTable miss.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>colName</code>: String. Column name to look up.</li>
@@ -694,23 +804,6 @@ True, raises an error instead of returning 0.</p>
 <li>ProjectError.ObjectNotInitialized When the header range is Nothing and required is True.</li>
 <li>ProjectError.ElementNotFound When the column is not found and required is True.</li>
 </ul>
-<hr />
-<h3 id="int-columnexists">ColumnExists <a class="anchor-link" href="#int-columnexists">#</a></h3>
-<p><em>column-exists</em></p>
-<p><strong>Check whether a column exists in the table</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ColumnExists(ByVal colName As String, _
-                              Optional ByVal strictSearch As Boolean = False, _
-                              Optional ByVal matchCase As Boolean = False) As Boolean
-</code></pre>
-<p>Delegates to ColumnIndex and returns True when the index is positive.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>colName</code>: String. Column name to search.</li>
-<li><code>strictSearch</code>: Optional Boolean. When True, uses exact matching. Defaults to False.</li>
-<li><code>matchCase</code>: Optional Boolean. When True, matching is case-sensitive. Defaults to False.</li>
-</ul>
-<p><strong>Returns:</strong> Boolean. True when the column is found.</p>
 <hr />
 <h3 id="int-resolvelistcolumn">ResolveListColumn <a class="anchor-link" href="#int-resolvelistcolumn">#</a></h3>
 <p><em>resolve-list-column</em></p>
@@ -743,8 +836,8 @@ same guards. Returns Nothing when not found unless required is True.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddShiftTracker(Optional ByVal value As String = &quot;Yes&quot;)
 </code></pre>
-<p>Methods that add, remove, or reorganise table rows and columns.
-Persists a hidden name on the worksheet so future operations know to
+<p>Methods that add, remove, or reorganise table rows and columns.</p>
+<p>Persists a hidden name on the worksheet so future operations know to
 delete entire worksheet rows instead of just ListRows.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -792,7 +885,7 @@ shouldAdd flag, then optionally renumbers the ID column.</p>
 </code></pre>
 <p>Inserts worksheet rows below the table when insertShift is True
 (protecting stacked tables), otherwise extends the ListObject range
-directly. Resets caches after the operation.</p>
+directly. Resets state after the operation.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>lo</code>: ListObject. The table to extend.</li>
@@ -814,7 +907,7 @@ worksheet as the wrapped ListObject.</p>
 </ul>
 <p><strong>Throws:</strong></p>
 <ul>
-<li>ProjectError.InvalidArgument When targetCell is Nothing, has no worksheet, or belongs to a different sheet.</li>
+<li>ProjectError.InvalidArgument When targetCell is Nothing or belongs to a different sheet.</li>
 </ul>
 <hr />
 <h3 id="int-selectionrownumbers">SelectionRowNumbers <a class="anchor-link" href="#int-selectionrownumbers">#</a></h3>
@@ -838,20 +931,20 @@ data rows are considered; otherwise the full table range is used.</p>
 <p><em>get-total-formula-columns</em></p>
 <p><strong>Count the number of columns containing formulas</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub GetTotalFormulaColumns(ByRef rowCount As Long)
+<pre><code class="language-vb">Private Function GetTotalFormulaColumns() As Long
 </code></pre>
 <p>Scans the first data row and counts cells that have formulas. Used
-to determine the baseline non-empty cell count for row removal.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>rowCount</code>: ByRef Long. Populated with the formula column count.</li>
-</ul>
+to determine the baseline non-empty cell count for row removal.
+This used to be a Sub with a ByRef argument, and its only caller wrapped
+that argument in brackets, which passes a copy: the answer never came
+back and the count was always zero. A Function cannot be called that way.</p>
+<p><strong>Returns:</strong> Long. The number of columns whose first data cell holds a formula.</p>
 <hr />
 <h3 id="int-removeemptydatarows">RemoveEmptyDataRows <a class="anchor-link" href="#int-removeemptydatarows">#</a></h3>
 <p><em>remove-empty-data-rows</em></p>
 <p><strong>Delete data rows that are effectively empty</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, _ 
+<pre><code class="language-vb">Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, _
                                 Optional ByVal totalRowCount As Long, _
                                 Optional ByVal forceShift As Boolean)
 </code></pre>
@@ -865,6 +958,30 @@ Always preserves the first data row to keep formulas and templates.</p>
 <li><code>lo</code>: ListObject. The table to clean.</li>
 <li><code>totalRowCount</code>: Optional Long. Non-empty cell threshold.</li>
 <li><code>forceShift</code>: Optional Boolean. When True, forces worksheet row deletion.</li>
+</ul>
+<hr />
+<h3 id="int-deleterowsthroughtable">DeleteRowsThroughTable <a class="anchor-link" href="#int-deleterowsthroughtable">#</a></h3>
+<p><em>delete-rows-through-table</em></p>
+<p><strong>Delete the empty rows one at a time through the ListObject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub DeleteRowsThroughTable(ByVal lo As ListObject, ByVal bodyValues As Variant, _
+                                   ByVal tabRowCount As Long, ByVal tabColumnCount As Long, _
+                                   ByVal rowCount As Long)
+</code></pre>
+<p>The fallback of RemoveEmptyDataRows. It walks from the bottom so an index
+stays good after the row below it goes, and it raises when the table refuses
+a delete, which is the signal a caller reads as stacked tables.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lo</code>: ListObject. The table to trim.</li>
+<li><code>bodyValues</code>: Variant. The body block already read by the caller.</li>
+<li><code>tabRowCount</code>: Long. Rows in that block.</li>
+<li><code>tabColumnCount</code>: Long. Columns in that block.</li>
+<li><code>rowCount</code>: Long. Filled-cell threshold at or under which a row is empty.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.SomethingWentWrong When the table refuses a delete.</li>
 </ul>
 <hr />
 <h3 id="int-datarowcount">DataRowCount <a class="anchor-link" href="#int-datarowcount">#</a></h3>
@@ -952,9 +1069,9 @@ returns the number of data rows. Returns 0 when the source is empty.</p>
 <p><em>sort-helper</em></p>
 <p><strong>Dispatch to the appropriate sort strategy</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub SortHelper(ByVal colName As String, _ 
-                       Optional ByVal directSort As Boolean = True, _ 
-                      Optional ByVal strictSearch As Boolean = True)
+<pre><code class="language-vb">Private Sub SortHelper(ByVal colName As String, _
+                       Optional ByVal directSort As Boolean = True, _
+                       Optional ByVal strictSearch As Boolean = True)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -979,6 +1096,21 @@ preserving the original order of first appearance.</p>
 <li><code>strictSearch</code>: Optional Boolean. When True, uses exact column matching. Defaults to True.</li>
 </ul>
 <hr />
+<h3 id="int-removehelpercolumn">RemoveHelperColumn <a class="anchor-link" href="#int-removehelpercolumn">#</a></h3>
+<p><em>remove-helper-column</em></p>
+<p><strong>Drop the temporary sort column whatever happened</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveHelperColumn(ByVal lo As ListObject, ByVal helperColumn As Long)
+</code></pre>
+<p>The helper column must go on every path out of SortOnFirst. A failure to
+remove it must not replace the error that brought us here, so the attempt
+is protected.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lo</code>: ListObject. The table carrying the helper column.</li>
+<li><code>helperColumn</code>: Long. Position of the helper column.</li>
+</ul>
+<hr />
 <h3 id="int-sortsimple">SortSimple <a class="anchor-link" href="#int-sortsimple">#</a></h3>
 <p><em>sort-simple</em></p>
 <p><strong>Sort the table on a single column in ascending order</strong></p>
@@ -997,15 +1129,17 @@ preserving the original order of first appearance.</p>
 <p><strong>Import column-matched data from a source object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportObject(ByVal impTab As Object, _
-                   Optional ByVal pasteAtBottom As Boolean = False, _
-                   Optional ByVal strictColumnSearch As Boolean = False, _ 
-                   Optional ByVal insertShift As Boolean = True, _ 
-                   Optional ByVal formatHeaders As Object = Nothing)
+                         Optional ByVal pasteAtBottom As Boolean = False, _
+                         Optional ByVal strictColumnSearch As Boolean = False, _
+                         Optional ByVal insertShift As Boolean = True, _
+                         Optional ByVal formatHeaders As Object = Nothing)
 </code></pre>
 <p>Iterates the source headers, finds matching columns in this table,
-and copies data cell by cell. Columns not found are tracked in
-NOTIMPORTEDCOLUMNS. Optionally preserves formatting for specified
-headers. Trims the table when insertShift is False.</p>
+and copies data column by column. Columns not found are recorded and
+read back through ImportColumnsNotFound. Optionally preserves
+formatting for specified headers. Trims the table when insertShift is
+False, and only then: on the default True branch the table grows to fit
+the source but never shrinks.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>impTab</code>: Object. A DataSheet or CustomTable to import from.</li>
@@ -1024,11 +1158,31 @@ headers. Trims the table when insertShift is False.</p>
 <p>Transfers comments, comment threads, interior colour, font colour,
 bold, and italic from each cell in impRng to the corresponding cell
 in currRng. Uses error suppression for Excel versions that do not
-support CommentThreaded.</p>
+support CommentThreaded.
+This is deliberately NOT a straight format copy: the interior colour is
+only carried over when the source is not white and the font colour only
+when the source is not black. xlPasteFormats would be faster and would
+not do the same thing, so the routine stays a per-cell copy. What it
+stopped doing is paying for each cell more than once.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>impRng</code>: Range. Source range with formatting to copy.</li>
 <li><code>currRng</code>: Range. Destination range in this table.</li>
+</ul>
+<hr />
+<h3 id="int-importall">ImportAll <a class="anchor-link" href="#int-importall">#</a></h3>
+<p><em>import-all</em></p>
+<p><strong>Replace the entire table with imported data</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ImportAll(ByVal impTab As Object)
+</code></pre>
+<p>Replaces all headers and data with the content of the supplied object,
+discarding the current structure entirely. Trims the table to one row,
+adjusts column count to match the source, then overwrites headers and
+data body.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>impTab</code>: Object. A DataSheet or CustomTable to import from.</li>
 </ul>
 <hr />
 <h3 id="int-unhidehiddencolumns">UnhideHiddenColumns <a class="anchor-link" href="#int-unhidehiddencolumns">#</a></h3>
@@ -1037,10 +1191,14 @@ support CommentThreaded.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UnhideHiddenColumns()
 </code></pre>
-<p>Range.Find does not include hidden columns, so all columns must be
-made visible before import or export operations. Records the indexes
-of previously hidden columns so ReturnBackHiddenColumns can restore
-them afterwards.</p>
+<p>Import and export both write across the whole table, and a hidden column
+has to take its share, so every column is made visible first. The indexes
+of the columns that were hidden are recorded so ReturnBackHiddenColumns
+can put them back afterwards.
+The whole header band is tested first: EntireColumn.Hidden answers False
+when nothing is hidden, True when everything is and Null when it is
+mixed, so the common case costs one round trip instead of three per
+column.</p>
 <hr />
 <h3 id="int-returnbackhiddencolumns">ReturnBackHiddenColumns <a class="anchor-link" href="#int-returnbackhiddencolumns">#</a></h3>
 <p><em>return-back-hidden-columns</em></p>
@@ -1051,17 +1209,41 @@ them afterwards.</p>
 <p>Re-hides columns that were recorded by UnhideHiddenColumns. Uses error
 suppression as a safeguard against stale column indexes.</p>
 <hr />
+<h3 id="int-restorehiddenandreset">RestoreHiddenAndReset <a class="anchor-link" href="#int-restorehiddenandreset">#</a></h3>
+<p><em>restore-hidden-and-reset</em></p>
+<p><strong>Put the hidden columns back and drop the transient state</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RestoreHiddenAndReset()
+</code></pre>
+<p>The pair was written out three times, on both exits of Import and at the
+end of Export.</p>
+<hr />
 <h2 id="int-checkings">Checkings</h2>
 <h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
 <p><em>log-info</em></p>
 <p><strong>Log a diagnostic message</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _ 
+<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _
                     Optional ByVal scope As Byte = checkingNote)
 </code></pre>
-<p>Diagnostic logging and error handling.
-Adds a message to the internal IChecking object, creating it on first
+<p>Diagnostic logging and error handling.</p>
+<p>Adds a message to the internal Checking object, creating it on first
 use. The checkCounter provides a unique key for each entry.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>label</code>: String. The message to record.</li>
+<li><code>scope</code>: Optional Byte. Severity level from CheckingScope. Defaults to checkingNote.</li>
+</ul>
+<hr />
+<h3 id="int-logandtrace">LogAndTrace <a class="anchor-link" href="#int-logandtrace">#</a></h3>
+<p><em>log-and-trace</em></p>
+<p><strong>Log a message and print the debug trace</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogAndTrace(ByVal label As String, _
+                        Optional ByVal scope As Byte = checkingNote)
+</code></pre>
+<p>The &quot;log, show the trace, then leave&quot; tail was written out on the failure
+paths of Import, ImportColumnsNotFound and Export.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>label</code>: String. The message to record.</li>
@@ -1093,50 +1275,61 @@ for consistent stack traces.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2 id="int-interface">Interface</h2>
-<h3 id="int-icustomtable-headerrange">ICustomTable_HeaderRange <a class="anchor-link" href="#int-icustomtable-headerrange">#</a></h3>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance so setup setters can no longer be written</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get ICustomTable_HeaderRange() As Range
+<pre><code class="language-vb">Public Sub Seal()
 </code></pre>
-<p>Delegated members satisfying the ICustomTable contract.</p>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup setter against writes after sealing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. Name of the property being guarded.</li>
+</ul>
 <hr />
 </details>
 <details>
 <summary>Used in (33 file(s))</summary>
 <ul>
 <li><a href="Analysis.html">Analysis.cls</a></li>
-<li><a href="AnaTabIds.html">AnaTabIds.cls</a></li>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
 <li><a href="DesignerPreparation.html">DesignerPreparation.cls</a></li>
 <li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="LLExport.html">LLExport.cls</a></li>
-<li><a href="CustomTable.html">CustomTable.cls</a></li>
-<li><a href="ICustomTable.html">ICustomTable.cls</a></li>
+<li><a href="DataSheet.html">DataSheet.cls</a></li>
 <li><a href="LLChoices.html">LLChoices.cls</a></li>
 <li><a href="LLFormat.html">LLFormat.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
-<li><a href="IEventLinelist.html">IEventLinelist.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
+<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
 <li><a href="LLTranslation.html">LLTranslation.cls</a></li>
 <li><a href="DiseaseSheet.html">DiseaseSheet.cls</a></li>
 <li><a href="MasterSetupVariables.html">MasterSetupVariables.cls</a></li>
 <li><a href="EventSetup.html">EventSetup.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
-<li><a href="SetupImportService.html">SetupImportService.cls</a></li>
+<li><a href="SetupImport.html">SetupImport.cls</a></li>
 <li><a href="SetupPreparation.html">SetupPreparation.cls</a></li>
 <li><a href="SetupTranslationsTable.html">SetupTranslationsTable.cls</a></li>
-<li><a href="UpdatedValues.html">UpdatedValues.cls</a></li>
-<li>LinelistEvents.bas</li>
-<li>EventsDesignerCore.bas</li>
 <li>EventsDesignerMulti.bas</li>
 <li>RibbonDev.bas</li>
 <li>EventsLinelistButtons.bas</li>
 <li>MasterSetupHelpers.bas</li>
 <li>EventsGlobal.bas</li>
 <li>EventsRibbon.bas</li>
+<li>TestAnalysis.bas</li>
+<li>TestLLImporter.bas</li>
 <li>TestDesignerMulti.bas</li>
 <li>TestCustomTable.bas</li>
+<li>TestLLTranslation.bas</li>
+<li>TestSetupErrors.bas</li>
+<li>TestSetupPreparation.bas</li>
 </ul>
 </details>
   </main>

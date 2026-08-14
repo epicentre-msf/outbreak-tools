@@ -11,9 +11,13 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>TemporaryRepos</h1>
-<p>Manages a temporary folder on disk for linelist preparation artefacts.
-Creates, sanitises, and cleans up files within a dedicated repository
-directory. Automatically deletes all content on termination.</p>
+<p>Owns one folder on disk that a linelist build writes its working files into.
+Create takes the base directory, or falls back to the default one. RootPath
+answers the folder, EnsureReady creates it, and CreateFilePath builds a path
+inside it from a file name it cleans first. DeleteFile removes one file,
+DeleteAll empties the folder and creates it again, and Reset empties it and
+marks the object as needing another EnsureReady. Terminating an instance
+empties the folder.</p>
 <p><strong>Depends on:</strong> ProjectError</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="factory-helpers">
@@ -23,13 +27,13 @@ directory. Automatically deletes all content on termination.</p>
 <p><em>create</em></p>
 <p><strong>Build and initialise a temporary repository service</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(Optional ByVal baseDirectory As String) As ITemporaryRepos
+<pre><code class="language-vb">Public Function Create(Optional ByVal baseDirectory As String) As TemporaryRepos
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>baseDirectory</code>: String. Optional custom root location.</li>
 </ul>
-<p><strong>Returns:</strong> ITemporaryRepos. Ready for use.</p>
+<p><strong>Returns:</strong> TemporaryRepos. Ready for use.</p>
 <hr />
 </div>
 </details>
@@ -188,10 +192,14 @@ directory. Automatically deletes all content on termination.</p>
 <hr />
 <h3 id="int-deleteallinternal">DeleteAllInternal <a class="anchor-link" href="#int-deleteallinternal">#</a></h3>
 <p><em>delete-all-internal</em></p>
-<p><strong>Wipe every file inside the repository without recreating the folder</strong></p>
+<p><strong>Wipe every file inside the repository, keeping the folder itself</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub DeleteAllInternal()
 </code></pre>
+<p>The whole listing is read before the first file is deleted. Dir$ walks one
+folder through state the host holds, and deleting an entry part way through
+that walk makes the rest of the listing unreliable, so files were left behind.
+The listing is small: this folder holds the working files of one generation.</p>
 <hr />
 <h3 id="int-class-terminate">Class_Terminate <a class="anchor-link" href="#int-class-terminate">#</a></h3>
 <p><em>class-terminate</em></p>
@@ -214,19 +222,15 @@ directory. Automatically deletes all content on termination.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (11 file(s))</summary>
+<summary>Used in (7 file(s))</summary>
 <ul>
-<li><a href="ITemporaryRepos.html">ITemporaryRepos.cls</a></li>
-<li><a href="TemporaryRepos.html">TemporaryRepos.cls</a></li>
 <li><a href="CodeTransfer.html">CodeTransfer.cls</a></li>
-<li><a href="ILinelistSpecs.html">ILinelistSpecs.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
+<li>HeadlessBuild.bas</li>
 <li>TestTemporaryRepos.bas</li>
+<li>TestHeadlessLinelistBuild.bas</li>
 <li>TestCodeTransfer.bas</li>
-<li><a href="LinelistSpecsWorkbookStub.html">LinelistSpecsWorkbookStub.cls</a></li>
-<li><a href="LLVarContextSpecsStub.html">LLVarContextSpecsStub.cls</a></li>
-<li><a href="TableSpecsLinelistStub.html">TableSpecsLinelistStub.cls</a></li>
 </ul>
 </details>
   </main>
