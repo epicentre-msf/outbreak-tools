@@ -1129,10 +1129,16 @@ Public Sub ClickCloseSheet()
         actionCode = "close-log"
         sh.Visible = xlSheetVeryHidden
     ElseIf shType = "HList" Then
+        'A linelist generated before the CRF companion was built carries the
+        'print sheet alone, and looking the missing one up used to raise 9 and
+        'take the print sheet's close down with it.
+        On Error Resume Next
         Set printsh = wb.Worksheets(PRINTPREFIX & sh.Name)
         Set crfsh = wb.Worksheets(CRFPREFIX & sh.Name)
-        printsh.Visible = xlSheetVeryHidden
-        crfsh.Visible = xlSheetVeryHidden
+        On Error GoTo ErrClose
+
+        If Not printsh Is Nothing Then printsh.Visible = xlSheetVeryHidden
+        If Not crfsh Is Nothing Then crfsh.Visible = xlSheetVeryHidden
     ElseIf shType = "HList Print" Then
         Set printsh = sh
         printsh.Visible = xlSheetVeryHidden
@@ -1353,14 +1359,16 @@ Public Sub ClickAddRows()
     LogSuccessLine "add-rows", nbRows & " rows on " & sh.Name
 
 Cleanup:
-    'Protect only HList
-    If shType = "HList" Then pass.Protect "_active"
+    'Whichever of the two sheets was opened is closed again. The test used to
+    'read `shType = "HList"`, so rows added on a print sheet unprotected it and
+    'walked away.
+    If shType = "HList" Or shType = "HList Print" Then pass.Protect "_active"
     LinelistEventsManager.LLExitBusyState
     Exit Sub
 
 errAddRows:
     On Error Resume Next
-    If shType = "HList" Then pass.Protect "_active"
+    If shType = "HList" Or shType = "HList Print" Then pass.Protect "_active"
     LinelistEventsManager.LLExitBusyState
     FailureOnSheet "MSG_ErrAddRows"
     On Error GoTo 0
@@ -1402,13 +1410,16 @@ Public Sub ClickResize()
     LogSuccessLine "resize", sh.Name
 
 Cleanup:
-    If shType = "HList" Then pass.Protect "_active"
+    'Whichever of the two sheets was opened is closed again. The test used to
+    'read `shType = "HList"`, so a resize made on a print sheet unprotected it
+    'and walked away.
+    If shType = "HList" Or shType = "HList Print" Then pass.Protect "_active"
     LinelistEventsManager.LLExitBusyState
     Exit Sub
 
 errDelRows:
     On Error Resume Next
-    If shType = "HList" Then pass.Protect "_active"
+    If shType = "HList" Or shType = "HList Print" Then pass.Protect "_active"
     LinelistEventsManager.LLExitBusyState
     FailureOnSheet "MSG_ErrDelRows"
     On Error GoTo 0
