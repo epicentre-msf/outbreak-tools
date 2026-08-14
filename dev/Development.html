@@ -881,7 +881,7 @@ requireConfirmation is True, a dialog is shown before proceeding.
 <p><em>apply-default-password</em></p>
 <p><strong>Read and apply the default password from the Dev sheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyDefaultPassword(ByVal passwords As Passwords)
+<pre><code class="language-vb">Private Sub ApplyDefaultPassword(ByVal passManager As Passwords)
 </code></pre>
 <p>Checks for a named range &quot;DefaultPassword&quot; on the Dev sheet. When found
 and non-empty, passes its value to the Passwords handler via

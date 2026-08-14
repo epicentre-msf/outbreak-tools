@@ -54,7 +54,7 @@ work, and a blank size cell leaves the sheet alone.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet, _
                        ByVal layer As Byte, _
-                       Optional ByVal passwords As Passwords, _
+                       Optional ByVal passManager As Passwords, _
                        Optional ByVal baseTableName As String = vbNullString) As ShowHideLayout
 </code></pre>
 <p>The factory.</p>
@@ -81,7 +81,7 @@ reads it.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Bind(ByVal sh As Worksheet, _
                 ByVal layer As Byte, _
-                ByVal passwords As Passwords, _
+                ByVal passManager As Passwords, _
                 ByVal baseTableName As String)
 </code></pre>
 <p>Public because the factory calls it on a fresh instance.</p>

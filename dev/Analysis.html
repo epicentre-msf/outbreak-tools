@@ -387,6 +387,20 @@ increments the check counter.</p>
 to checkingNote.</li>
 </ul>
 <hr />
+<h3 id="int-harvestcollaboratorcheckings">HarvestCollaboratorCheckings <a class="anchor-link" href="#int-harvestcollaboratorcheckings">#</a></h3>
+<p><em>harvest-collaborator-checkings</em></p>
+<p><strong>Fold what a table adapter filed into this trace</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As Checking)
+</code></pre>
+<p><code>CustomTable</code> keeps a store of its own, and nobody read it before this
+line. An import that aborted, or a column name the adapter could not
+find, was filed and then dropped.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>collaboratorChecks</code>: Checking. What the adapter filed.</li>
+</ul>
+<hr />
 <h3 id="int-logdroppedcolumns">LogDroppedColumns <a class="anchor-link" href="#int-logdroppedcolumns">#</a></h3>
 <p><em>log-dropped-columns</em></p>
 <p><strong>Report the source columns an import could not place</strong></p>
@@ -523,7 +537,7 @@ from the resolved collection.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (48 file(s))</summary>
+<summary>Used in (47 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="AnaTabIds.html">AnaTabIds.cls</a></li>
@@ -547,7 +561,6 @@ from the resolved collection.</p>
 <li><a href="SetupImport.html">SetupImport.cls</a></li>
 <li><a href="SetupPreparation.html">SetupPreparation.cls</a></li>
 <li><a href="UpdatedValues.html">UpdatedValues.cls</a></li>
-<li>GenerationReport.bas</li>
 <li>InitTransfer.bas</li>
 <li>CustomLinelistFunctions.bas</li>
 <li>EventsLinelistButtons.bas</li>

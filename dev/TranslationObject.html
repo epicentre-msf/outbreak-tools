@@ -16,8 +16,9 @@ the first column and returns the value from the active language column.
 Supports plain text, formula-aware translation (quoted chunks only),
 range bulk-translation, and user-form caption translation.
 The table is read once into memory and every value is matched against that
-copy. The copy is kept until the table changes shape or Refresh is called, so
-a run that translates a thousand strings reads the worksheet twice.</p>
+copy through a keyed index. The copy is kept until the table changes shape or
+Refresh is called, so a run that translates a thousand strings reads the
+worksheet twice and looks each string up without walking the copy.</p>
 <p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, checking objects</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="factory">
@@ -294,12 +295,62 @@ every one of them used to read the whole table.</p>
 the copy does not notice it. Refresh drops the copy for a caller that has just
 done that.</p>
 <hr />
+<h3 id="int-registerlookupkey">RegisterLookupKey <a class="anchor-link" href="#int-registerlookupkey">#</a></h3>
+<p><em>register-lookup-key</em></p>
+<p><strong>Record the row a tag sits on, keeping the first row when a tag repeats</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RegisterLookupKey(ByVal token As String, ByVal rowIndex As Long)
+</code></pre>
+<p>Collection.Add raises 457 on a key it already holds, so the first row a tag
+appears on is the row that stays. That is the row the scan this index replaced
+answered with, because the scan stopped at its first match.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>token</code>: String. The tag read out of the first column.</li>
+<li><code>rowIndex</code>: Long. The one-based row it sits on.</li>
+</ul>
+<hr />
+<h3 id="int-lookupkey">LookupKey <a class="anchor-link" href="#int-lookupkey">#</a></h3>
+<p><em>lookup-key</em></p>
+<p><strong>Build the index key for a tag, one key per spelling</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LookupKey(ByVal token As String) As String
+</code></pre>
+<p>A Collection matches its own keys without regard to case, and this lookup is
+case sensitive, so the key carries the capitalisation as a separate part and
+&quot;Hello&quot; never answers for &quot;hello&quot;. The leading character keeps a numeric tag
+legal as a key. Same construction as SetupTranslationsTable.LabelKey.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>token</code>: String. The tag to key.</li>
+</ul>
+<p><strong>Returns:</strong> String. The key.</p>
+<hr />
+<h3 id="int-casesignature">CaseSignature <a class="anchor-link" href="#int-casesignature">#</a></h3>
+<p><em>case-signature</em></p>
+<p><strong>Spell a tag's capitalisation out in digits</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CaseSignature(ByVal token As String) As String
+</code></pre>
+<p>Digits carry no case of their own, so a Collection holds this part of the key
+exactly as written. A character reads 1 when it differs from its own lower
+case, which is the whole of what a case-insensitive comparison throws away.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>token</code>: String. The tag to describe.</li>
+</ul>
+<p><strong>Returns:</strong> String. One digit per character.</p>
+<hr />
 <h3 id="int-lookuprow">LookupRow <a class="anchor-link" href="#int-lookuprow">#</a></h3>
 <p><em>lookup-row</em></p>
 <p><strong>Find the row of a tag in the copy held in memory</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LookupRow(ByVal token As String) As Long
 </code></pre>
+<p>Answered by the keyed index built with the copy. It used to walk the copy from
+the top on every call, and translating the setup asks this once per cell of
+every translated column, so the walk cost rows times cells and was the whole of
+why translating a setup took as long as it did.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>token</code>: String. The tag to look up.</li>

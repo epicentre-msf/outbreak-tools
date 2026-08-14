@@ -384,15 +384,20 @@ so the row just written is de-duplicated and placed with the rest.</p>
 </code></pre>
 <p>Compares the supplied label against the label of each admin level and returns
 the matching raw code (&quot;adm1&quot; through &quot;adm4&quot;).</p>
-<p>A label that matches no level answers &quot;adm1&quot;. The four call sites in
-EventLinelist act on the answer and none of them handles an empty one, so the
-answer stays what it has always been until that class has a session of its
-own.</p>
+<p>A label that matches no level answers an empty string. It used to answer
+&quot;adm1&quot;, which reads on the sheet as a deliberate choice of the first level.
+Three states reach this arm and none of them is that choice: a freshly
+generated table still carrying its &quot;select a level&quot; prompt in the dropdown
+cell, a dropdown a user cleared with Delete, and a geobase re-imported under
+labels the cell never saw. The two call sites in EventLinelist that rewrite
+formulas refuse an empty answer outright, and the two that read fall back to
+PREVIOUS_ADM_<tabId>, the cell recording the level those formulas stand on.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>selectedAdmin</code>: String. The level label to resolve.</li>
 </ul>
-<p><strong>Returns:</strong> String. Admin code (&quot;adm1&quot;, &quot;adm2&quot;, &quot;adm3&quot;, or &quot;adm4&quot;).</p>
+<p><strong>Returns:</strong> String. Admin code (&quot;adm1&quot;, &quot;adm2&quot;, &quot;adm3&quot;, or &quot;adm4&quot;), or an empty
+string when the label names no level.</p>
 <hr />
 <h3 id="hasnodata">HasNoData <a class="anchor-link" href="#hasnodata">#</a></h3>
 <p><em>has-no-data</em></p>
@@ -1093,7 +1098,7 @@ ProjectError values exceed the Byte range (they start at 1001+).</p>
 <hr />
 </details>
 <details>
-<summary>Used in (18 file(s))</summary>
+<summary>Used in (21 file(s))</summary>
 <ul>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
@@ -1106,11 +1111,14 @@ ProjectError values exceed the Byte range (they start at 1001+).</p>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>InitTransfer.bas</li>
+<li>HeadlessBuild.bas</li>
 <li>GeoModule.bas</li>
 <li>FormLogicAdvanced.bas</li>
 <li>FormLogicGeo.bas</li>
+<li>TestLLImporter.bas</li>
 <li>TestLLGeo.bas</li>
 <li>GeoTestFixture.bas</li>
+<li>TestEventLinelist.bas</li>
 <li>TestEventLinelistSheets.bas</li>
 <li>TestLinelistSpecs.bas</li>
 </ul>

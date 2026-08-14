@@ -150,7 +150,7 @@ column 5.</p>
 <p><strong>Test whether a sheet exposes a control of the requested type</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ContainsControl(ByVal sheetName As String, _
-                                 Optional ByVal Control As String = &quot;list_auto&quot;, _
+                                 Optional ByVal ribbonControl As String = &quot;list_auto&quot;, _
                                  Optional ByVal colName As String = COL_CONTROL) As Boolean
 </code></pre>
 <p>The default control value is &quot;list_auto&quot;. <code>LLDataEntry</code> asks for &quot;geo1&quot;,
@@ -476,6 +476,58 @@ handing out a moved row would answer for the WRONG sheet.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the cell still reads as sheetName.</p>
 <hr />
+<h3 id="int-farthestof">FarthestOf <a class="anchor-link" href="#int-farthestof">#</a></h3>
+<p><em>farthest-of</em></p>
+<p><strong>Take the farther of a counted bound and the last written index</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FarthestOf(ByVal countedBound As Long, _
+                            ByVal sheetName As String) As Long
+</code></pre>
+<p>VarWriter places a variable at the &quot;column index&quot; its own dictionary row
+carries: for an HList sheet that number is the WORKSHEET COLUMN, for a
+VList sheet the WORKSHEET ROW (VarWriter.VarRange). Counting the variables
+and adding the count to the start only agrees with that when the indexes
+run 1, 2, 3 with no gap. A dictionary whose indexes skip a number - the
+shape a setup takes as soon as variables are removed or reordered - writes
+variables past the counted edge, and the data table was then built short of
+them: the columns were on the sheet, outside the ListObject, invisible to
+the filter, the export and every reader that walks the table.</p>
+<p>So the counted bound becomes a floor. A dictionary with no index column, or
+one holding nothing numeric, answers with the count as before.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>countedBound</code>: Long. The bound the variable count gives.</li>
+<li><code>sheetName</code>: String. The sheet being measured.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The farther of the two.</p>
+<hr />
+<h3 id="int-lastvariableindex">LastVariableIndex <a class="anchor-link" href="#int-lastvariableindex">#</a></h3>
+<p><em>last-variable-index</em></p>
+<p><strong>The largest column index the sheet's variables carry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LastVariableIndex(ByVal sheetName As String) As Long
+</code></pre>
+<p>Held per sheet name beside the count, and dropped by the same
+invalidations. A dictionary missing the index column answers 0, which
+leaves every bound where the count put it.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The largest index, or 0 when there is none to read.</p>
+<hr />
+<h3 id="int-maxcolumnindex">MaxColumnIndex <a class="anchor-link" href="#int-maxcolumnindex">#</a></h3>
+<p><em>max-column-index</em></p>
+<p><strong>Read the index column of one sheet and take its largest number</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MaxColumnIndex(ByVal sheetName As String) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The largest numeric index, or 0.</p>
+<hr />
 <h3 id="int-cacheslot">CacheSlot <a class="anchor-link" href="#int-cacheslot">#</a></h3>
 <p><em>cache-slot</em></p>
 <p><strong>Find or create the cache slot of one sheet name</strong></p>
@@ -584,7 +636,7 @@ module, so the two live where they are used.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (16 file(s))</summary>
+<summary>Used in (18 file(s))</summary>
 <ul>
 <li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="LLVariables.html">LLVariables.cls</a></li>
@@ -594,11 +646,13 @@ module, so the two live where they are used.</p>
 <li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
+<li>HeadlessBuild.bas</li>
 <li>TestCrossTable.bas</li>
 <li>TestLLSheets.bas</li>
 <li>TestLLSheetsExtra.bas</li>
 <li>TestFormulas.bas</li>
 <li>TestEventLinelistSheets.bas</li>
+<li>TestLinelist.bas</li>
 <li>TestLLDataEntry.bas</li>
 <li>TestSectionBuilder.bas</li>
 <li>TestVarWriter.bas</li>

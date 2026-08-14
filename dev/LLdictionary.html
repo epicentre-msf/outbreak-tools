@@ -823,6 +823,30 @@ this into a single block read.</p>
 <p><code>geoObject.GeoNames(...)</code> is read per level; <code>LLGeo</code> holds those in its own
 cache, so the repeat costs nothing here.</p>
 <hr />
+<h3 id="int-appendhflines">AppendHFLines <a class="anchor-link" href="#int-appendhflines">#</a></h3>
+<p><em>append-hf-lines</em></p>
+<p><strong>Give every health facility variable its hidden p-code row</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AppendHFLines()
+</code></pre>
+<p>A health facility variable occupies TWO worksheet columns, and until now it
+only ever wrote one. AppendColumnIndex reserves the pair -- its <code>Case &quot;hf&quot;</code>
+advances the next variable by 2 -- and LLSpatial.HF_COLUMN_SPAN agrees the
+block is two wide. Nothing filled the second. LLSheets sizes the data table to
+<code>max(variable count, largest column index)</code>, so the table stretched over a
+header cell nobody had written and Excel named that column &quot;Column 1&quot; itself.
+A phantom column in every linelist carrying a health facility.</p>
+<p>This is the geo expansion cut to its smallest form: one inserted row rather
+than eleven, hidden the same way, controlled by &quot;formula&quot; the same way. The
+p-code is looked up on the facility column ALONE, matched against <code>hf_concat</code>
+and read out of <code>hf_pcode</code>, both of which LLGeo publishes off T_HF beside the
+four admin pairs.</p>
+<p>The variable name is used exactly as the dictionary holds it. The geo branch
+rewrites its own row to <code>adm1_&lt;name&gt;</code> and can build prefixed names from what
+it started with; no such rewrite happens to a health facility row, so the name
+in the cell is the name VarWriter puts in the header, and it is the only
+spelling that will match the column at run time.</p>
+<hr />
 <h3 id="int-appendnumbercolumn">AppendNumberColumn <a class="anchor-link" href="#int-appendnumbercolumn">#</a></h3>
 <p><em>append-number-column</em></p>
 <p><strong>Number each distinct group and sort the dictionary on it</strong></p>
@@ -954,6 +978,31 @@ diagnostics to the user. The host worksheet name is read only when the checking
 object is built; it used to cost two crossings on every logged line, and <code>Clean</code>
 can log once per deleted column.</p>
 <hr />
+<h3 id="int-harvestcollaboratorcheckings">HarvestCollaboratorCheckings <a class="anchor-link" href="#int-harvestcollaboratorcheckings">#</a></h3>
+<p><em>harvest-collaborator-checkings</em></p>
+<p><strong>Fold what a collaborator filed into this dictionary's entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As Checking)
+</code></pre>
+<p><code>DataSheet</code> and <code>CustomTable</code> each keep a store of their own, and until
+this line nobody read either of them. An import that aborted, or a column
+name a table could not find, was filed and then dropped.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>collaboratorChecks</code>: Checking. What the collaborator filed.</li>
+</ul>
+<hr />
+<h3 id="int-mergecollaboratorcheckings">MergeCollaboratorCheckings <a class="anchor-link" href="#int-mergecollaboratorcheckings">#</a></h3>
+<p><em>merge-collaborator-checkings</em></p>
+<p><strong>Take the data sheet's entries before the report is read</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub MergeCollaboratorCheckings()
+</code></pre>
+<p>The data sheet lives as long as the dictionary does, so its entries are
+folded in when the report is asked for. The flag keeps the fold to once:
+the caller reads <code>HasCheckings</code> and then <code>CheckingValues</code>, and appending
+twice would double every line.</p>
+<hr />
 <h3 id="int-hascheckings">HasCheckings <a class="anchor-link" href="#int-hascheckings">#</a></h3>
 <p><em>has-checkings</em></p>
 <p><strong>True once something was logged</strong></p>
@@ -1008,7 +1057,6 @@ which is the one place the user sees why a build stopped.</p>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
 <li><a href="SetupImport.html">SetupImport.cls</a></li>
 <li><a href="ShowHide.html">ShowHide.cls</a></li>
-<li>GenerationReport.bas</li>
 <li>InitTransfer.bas</li>
 <li>EventsLinelistButtons.bas</li>
 <li>FormLogicAdvanced.bas</li>
@@ -1032,6 +1080,7 @@ which is the one place the user sees why a build stopped.</p>
 <li>TestValueOfFormula.bas</li>
 <li>TestGraphSeries.bas</li>
 <li>TestTimeSeriesGraphs.bas</li>
+<li>TestHeadlessLinelistBuild.bas</li>
 <li>GeoTestFixture.bas</li>
 <li>TestEventLinelistSheets.bas</li>
 <li>TestLinelist.bas</li>

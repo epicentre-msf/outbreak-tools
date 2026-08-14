@@ -52,8 +52,8 @@ keeps working.</p>
 by hf names a variable, and the filtered companion sheet of that HList carries
 the concatenated geo values of that variable, one column per administrative
 level. The distinct values of that column are the rows of the spatial table.
-The reading and the de-duplication happen in memory, and nothing is pasted
-through the RNG_PastingCol scratch column that SpatialTables creates.</p>
+The reading and the de-duplication happen in memory: one read of the column
+and a delimited index of the values already kept.</p>
 </div>
 </details>
 <details open class="doc-section" id="what-a-missing-registry-means">
@@ -72,7 +72,7 @@ lookup and Sort all answer empty when the table is absent.</p>
 <p>SpatialTables.Prepare creates it and SpatialTables.FailedFormula reads it.
 This class leaves it alone.</p>
 <p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Checking.html">Checking</a></p>
-<p><strong>Version:</strong> 2026-08-10</p>
+<p><strong>Version:</strong> 2026-08-12</p>
 </div>
 </details>
 <details open class="doc-section" id="factory">
@@ -142,6 +142,16 @@ recalculated at the end so the formula columns answer for the rows just written.
 VarWriter as &quot;<variable> -- control&quot;. This routine used to read it from a hidden
 worksheet row that stopped being written on 2026-02-06, so it matched nothing
 and every spatial table stayed at the one blank row the build gave it.</p>
+</div>
+</details>
+<details open class="doc-section" id="how-the-sheet-tag-is-read">
+<summary>HOW THE SHEET TAG IS READ</summary>
+<div class="section-body">
+<p>The tag test runs through HiddenNames.QuickValue, which reads the one stored
+name off the worksheet. The full store is built for the HList sheets alone,
+because those are the sheets whose variable columns are read below. The walk
+used to build a store per worksheet of the workbook, and every name of an
+analysis sheet was walked to answer a tag that named it as no HList.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>Any error raised while walking a sheet, after the spatial sheet has been
@@ -258,8 +268,17 @@ leaves its column alone -- a cell has a name only when something named it.
 The block is grown by two rows to reach the Total and Missing rows of its own
 table, which RowsCategoriesRange trims by count at build time, and their
 formulas move levels with the block. Every formula of the grown block moves
-from the old concat column to the new one, the new level is recorded beside
-the selector, and the sheet recalculates.</p>
+from the old concat column to the new one, and the new level is recorded beside
+the selector.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-recalculation-is-the-caller-s">
+<summary>THE RECALCULATION IS THE CALLER'S</summary>
+<div class="section-body">
+<p>The caller owns one recalculation of the sheet per validated place. It fires on
+every validate and reaches here only when the level changed, so a recalculation
+at the foot of this sub would leave the other paths dry and would run the same
+used range twice on the path it does reach.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The spatio-temporal analysis sheet.</li>
@@ -331,7 +350,9 @@ Answers an empty string when the table is absent, holds no data, or is shorter
 than the rank asked for.</p>
 <p>A rank below 1 used to read the header cell or the cells above the table, and
 the rank comes straight from the argument of a worksheet function, so
-=TopAdmin(&quot;adm1&quot;, 0, ...) in a cell answered with the internal table name.</p>
+=FindTopAdmin(ADM_DROPDOWN_sp1, 0, ...) in a cell answered with the internal
+table name. The level arrives here as the raw code; the worksheet function
+takes the label of the level and EventLinelist resolves the two.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>adminName</code>: String. Level identifier (&quot;adm1&quot; to &quot;adm4&quot;, or &quot;hf&quot;).</li>
@@ -766,13 +787,16 @@ providing a consistent stack trace across all methods in this class.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (7 file(s))</summary>
+<summary>Used in (10 file(s))</summary>
 <ul>
 <li><a href="SpatialTables.html">SpatialTables.cls</a></li>
+<li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="EventLinelist.html">EventLinelist.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
+<li>EventsLinelistButtons.bas</li>
 <li>GeoModule.bas</li>
+<li>FormLogicGeo.bas</li>
 <li>TestSpatialTables.bas</li>
 <li>TestLLSpatial.bas</li>
 </ul>

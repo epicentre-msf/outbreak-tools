@@ -261,7 +261,7 @@ translation worksheet. Lazy-loaded on first access.</p>
 <p><em>trans-object</em></p>
 <p><strong>Scoped translation object</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As TranslationObject
+<pre><code class="language-vb">Public Property Get TransObject(Optional ByVal scopeValue As Byte = TranslationOfMessages) As TranslationObject
 </code></pre>
 <p>Returns an TranslationObject for the requested translation scope.
 Results are cached per scope using direct fields for each TranslationScope
@@ -947,7 +947,7 @@ control details, then queries the choices collaborator.</p>
 <p><em>resolve-translation-scope</em></p>
 <p><strong>Query the translations collaborator for a given scope</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolveTranslationScope(ByVal translationScope As Byte) As TranslationObject
+<pre><code class="language-vb">Private Function ResolveTranslationScope(ByVal scopeValue As Byte) As TranslationObject
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -959,6 +959,26 @@ control details, then queries the choices collaborator.</p>
 <li>ProjectError.ElementNotFound When the scope returns Nothing.</li>
 </ul>
 <hr />
+<h2 id="int-workbook-orchestration">Workbook orchestration</h2>
+<h3 id="int-emptyfirstsheet">EmptyFirstSheet <a class="anchor-link" href="#int-emptyfirstsheet">#</a></h3>
+<p><em>empty-first-sheet</em></p>
+<p><strong>The first worksheet of a workbook, when it carries nothing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EmptyFirstSheet(ByVal outWkb As Workbook) As Worksheet
+</code></pre>
+<p>The placeholder Excel puts in a new workbook, and the one a template ships.
+Its name is localised -- Sheet1, Feuille1, Hoja1 -- so the name is no test at
+all and the CONTENT is what is read: a worksheet holding no value, no table,
+no shape and no pivot is a placeholder whatever it is called.</p>
+<p>It is only ever called before the first exporter writes, so &quot;empty now&quot; and
+&quot;empty because nothing has been put there yet&quot; are the same thing. Called
+later it would happily answer a real worksheet that has not been filled in.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outWkb</code>: Workbook. The output workbook, freshly opened.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The placeholder, or Nothing when the first sheet holds something.</p>
+<hr />
 <h2 id="int-checkings">Checkings</h2>
 <h3 id="int-checks">Checks <a class="anchor-link" href="#int-checks">#</a></h3>
 <p><em>checks</em></p>
@@ -966,9 +986,9 @@ control details, then queries the choices collaborator.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Checks() As Checking
 </code></pre>
-<p>What this class reports into the generation report.
-GenerationReport.HarvestSpecsCheckings collects these after Prepare, alongside
-the entries of the dictionary, the choices, the exports, the analysis, the
+<p>What this class reports into the generation log.
+GenerationLog.Harvest collects these after Prepare, alongside the
+entries of the dictionary, the choices, the exports, the analysis, the
 passwords and the format.</p>
 <p><strong>Returns:</strong> Checking. The entries, created on first use.</p>
 <hr />
@@ -1077,12 +1097,14 @@ object regardless of scope, mirroring the former single-object test stubs.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (31 file(s))</summary>
+<summary>Used in (35 file(s))</summary>
 <ul>
 <li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
 <li><a href="TableSpecs.html">TableSpecs.cls</a></li>
+<li><a href="DesignerEntry.html">DesignerEntry.cls</a></li>
+<li><a href="GenerationLog.html">GenerationLog.cls</a></li>
 <li><a href="LLVariables.html">LLVariables.cls</a></li>
 <li><a href="TimeSeriesGraphs.html">TimeSeriesGraphs.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
@@ -1090,16 +1112,18 @@ object regardless of scope, mirroring the former single-object test stubs.</p>
 <li><a href="SectionBuilder.html">SectionBuilder.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
-<li>GenerationReport.bas</li>
 <li>InitTransfer.bas</li>
+<li>HeadlessBuild.bas</li>
 <li>TestAnalysisOutput.bas</li>
 <li>TestCrossTable.bas</li>
 <li>TestTableSpecs.bas</li>
+<li>TestDesignerEntry.bas</li>
 <li>TestLLVariables.bas</li>
 <li>TestApplicationState.bas</li>
 <li>TestTemporaryRepos.bas</li>
 <li>TestGraphSeries.bas</li>
 <li>TestTimeSeriesGraphs.bas</li>
+<li>TestHeadlessLinelistBuild.bas</li>
 <li><a href="LinelistDataStub.html">LinelistDataStub.cls</a></li>
 <li>TestHelpers.bas</li>
 <li>TestHelpersLite.bas</li>

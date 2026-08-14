@@ -351,7 +351,7 @@ replaces a linear scan that copied a whole BetterArray on each call.</p>
 <p><em>index-holds</em></p>
 <p><strong>Test whether a delimited index holds one name</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function IndexHolds(ByVal indexValue As String, ByVal name As String) As Boolean
+<pre><code class="language-vb">Private Function IndexHolds(ByVal indexValue As String, ByVal nameValue As String) As Boolean
 </code></pre>
 <p>The comparison ignores case, because LLChoices.Categories reads the Choices
 sheet with AutoFilter criteria and those ignore case. The build therefore
@@ -383,7 +383,7 @@ without regard to case, which is how CountIf compared too.</p>
 <p><em>name-count</em></p>
 <p><strong>Read one count out of the counts built by CountNames</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function NameCount(ByVal counts As Collection, ByVal name As String) As Long
+<pre><code class="language-vb">Private Function NameCount(ByVal counts As Collection, ByVal nameValue As String) As Long
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>

@@ -231,6 +231,20 @@ the call turns into an Import from that sheet.</p>
 <li><code>label</code>: String. The message to record.</li>
 </ul>
 <hr />
+<h3 id="int-harvestcollaboratorcheckings">HarvestCollaboratorCheckings <a class="anchor-link" href="#int-harvestcollaboratorcheckings">#</a></h3>
+<p><em>harvest-collaborator-checkings</em></p>
+<p><strong>Fold what a table adapter filed into this trace</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As Checking)
+</code></pre>
+<p><code>CustomTable</code> keeps a store of its own, and nobody read it before this
+line. An import that aborted, or headers the export could not find, was
+filed and then dropped.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>collaboratorChecks</code>: Checking. What the adapter filed.</li>
+</ul>
+<hr />
 <h3 id="int-formattable">FormatTable <a class="anchor-link" href="#int-formattable">#</a></h3>
 <p><em>format-table</em></p>
 <p><strong>Retrieve the first ListObject on the format worksheet</strong></p>
@@ -751,7 +765,7 @@ Font once, then takes three properties off each.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (28 file(s))</summary>
+<summary>Used in (26 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
@@ -767,13 +781,11 @@ Font once, then takes three properties off each.</p>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li><a href="SetupImport.html">SetupImport.cls</a></li>
 <li>EventsDesignerCore.bas</li>
-<li>GenerationReport.bas</li>
 <li>InitTransfer.bas</li>
 <li>TestAnalysisOutput.bas</li>
 <li>TestCrossTable.bas</li>
 <li>TestCustomPivotTable.bas</li>
 <li>TestDesignerPreparation.bas</li>
-<li>TestDesignerRibbon.bas</li>
 <li>TestButtons.bas</li>
 <li>TestLLFormat.bas</li>
 <li>LLFormatTestFixture.bas</li>

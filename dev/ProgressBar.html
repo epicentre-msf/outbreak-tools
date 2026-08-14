@@ -14,8 +14,20 @@
 <p>Cell-based visual progress indicator on a worksheet. Tints cells
 to reflect completion ratio and optionally writes status text to
 a companion cell.</p>
+<details open class="doc-section" id="the-repaint-seam">
+<summary>THE REPAINT SEAM</summary>
+<div class="section-body">
+<p>Update and StepBy take an optional forceRepaint flag, default False.
+When True the render wraps itself in ScreenUpdating = True, DoEvents,
+ScreenUpdating = False, so a tick shows on screen while a driver holds
+the application busy. The flag serves long busy loops and belongs in
+drivers; ScreenUpdating is False when the call returns, and the
+driver's captured ApplicationState stays the single owner of the real
+restore.</p>
 <p><strong>Depends on:</strong> ProjectError</p>
-<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<p><strong>Version:</strong> 1.1 (2026-08-13)</p>
+</div>
+</details>
 <details open class="doc-section" id="lifecycle">
 <summary>Lifecycle</summary>
 <div class="section-body">
@@ -87,24 +99,30 @@ a companion cell.</p>
 <p><em>update</em></p>
 <p><strong>Update progress to a specific value</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Update(ByVal currentValue As Long, Optional ByVal statusMessage As String = vbNullString)
+<pre><code class="language-vb">Public Sub Update(ByVal currentValue As Long, _
+                  Optional ByVal statusMessage As String = vbNullString, _
+                  Optional ByVal forceRepaint As Boolean = False)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>currentValue</code>: Long. Absolute progress value.</li>
 <li><code>statusMessage</code>: String. Message pushed to the status cell. Defaults to vbNullString.</li>
+<li><code>forceRepaint</code>: Boolean. When True, the render repaints the screen inside itself and leaves ScreenUpdating False. Defaults to False.</li>
 </ul>
 <hr />
 <h3 id="stepby">StepBy <a class="anchor-link" href="#stepby">#</a></h3>
 <p><em>step-by</em></p>
 <p><strong>Increment progress by the provided step</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub StepBy(Optional ByVal stepValue As Long = 1, Optional ByVal statusMessage As String = vbNullString)
+<pre><code class="language-vb">Public Sub StepBy(Optional ByVal stepValue As Long = 1, _
+                  Optional ByVal statusMessage As String = vbNullString, _
+                  Optional ByVal forceRepaint As Boolean = False)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>stepValue</code>: Long. Increment. Defaults to 1.</li>
 <li><code>statusMessage</code>: String. Message pushed to the status cell. Defaults to vbNullString.</li>
+<li><code>forceRepaint</code>: Boolean. When True, the render repaints the screen inside itself and leaves ScreenUpdating False. Defaults to False.</li>
 </ul>
 <hr />
 <h3 id="complete">Complete <a class="anchor-link" href="#complete">#</a></h3>
@@ -250,6 +268,16 @@ a companion cell.</p>
 <pre><code class="language-vb">Private Sub RenderProgress()
 </code></pre>
 <hr />
+<h3 id="int-repaintnow">RepaintNow <a class="anchor-link" href="#int-repaintnow">#</a></h3>
+<p><em>repaint-now</em></p>
+<p><strong>Show the latest render on screen during a busy loop</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RepaintNow()
+</code></pre>
+<p>One screen refresh, self-contained: ScreenUpdating on, one DoEvents
+so the paint lands, ScreenUpdating off. Events stay wherever the
+driver put them, so sheet handlers stay quiet under a busy state.</p>
+<hr />
 <h3 id="int-renderstatus">RenderStatus <a class="anchor-link" href="#int-renderstatus">#</a></h3>
 <p><em>render-status</em></p>
 <p><strong>Write the latest status text to the status cell</strong></p>
@@ -295,8 +323,10 @@ a companion cell.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (1 file(s))</summary>
+<summary>Used in (3 file(s))</summary>
 <ul>
+<li>EventsDesignerAdvanced.bas</li>
+<li>EventsDesignerMulti.bas</li>
 <li>TestProgressBar.bas</li>
 </ul>
 </details>

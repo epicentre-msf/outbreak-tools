@@ -19,15 +19,16 @@ from their table specifications, writes the formulas, records the chart
 metadata in AnaTabIds and draws the charts. TransObject answers the
 translation provider, and entries filed along the way leave through
 HasCheckings and CheckingValues.</p>
-<details open class="doc-section" id="the-caller-owns-the-application-state">
-<summary>THE CALLER OWNS THE APPLICATION STATE</summary>
+<details open class="doc-section" id="the-class-owns-the-state-its-own-work-needs">
+<summary>THE CLASS OWNS THE STATE ITS OWN WORK NEEDS</summary>
 <div class="section-body">
-<p>BusyApp turns screen updating, alerts, automatic calculation and animations
-off, and nothing here turns them back on. WriteAnalysis runs inside an
-ApplicationState the caller opens and restores, which is what clickGenerate
-does. BusyApp leaves Application.EnableEvents where it finds it, so a caller
-that skips that scope builds the sheets with the linelist change handlers
-live.</p>
+<p>WriteAnalysis opens an ApplicationState of its own, turns screen updating,
+alerts, automatic calculation, animations and events off for the length of the
+build, and restores on the way out -- on the error path too. The sheets are
+therefore written under the state the analysis needs whoever calls it, and a
+caller that keeps its own scope, which is what clickGenerate does, is not
+disturbed: the snapshot taken here is the caller's busy state, so restoring
+puts that back rather than the pre-generation values.</p>
 </div>
 </details>
 <details open class="doc-section" id="a-section-is-told-to-the-loop">
@@ -37,8 +38,8 @@ live.</p>
 a TemporalSection. The loop closes the section it holds when it meets a table
 that starts a new one, and closes the last one after the loop. Nothing reads
 the row below to decide where a section ends.</p>
-<p><strong>Depends on:</strong> <a href="Linelist.html">Linelist</a>, <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLFormat.html">LLFormat</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="TableSpecs.html">TableSpecs</a>, <a href="CrossTable.html">CrossTable</a>, <a href="CrossTableFormula.html">CrossTableFormula</a>, <a href="Graphs.html">Graphs</a>, <a href="GraphSeries.html">GraphSeries</a>, <a href="TimeSeriesGraphs.html">TimeSeriesGraphs</a>, <a href="SeriesBuffer.html">SeriesBuffer</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="TemporalSection.html">TemporalSection</a>, <a href="Buttons.html">Buttons</a>, <a href="Passwords.html">Passwords</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="FormulaData.html">FormulaData</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, ListObject names in the setup worksheet, Checking support</p>
-<p><strong>Version:</strong> 2026-07-30</p>
+<p><strong>Depends on:</strong> <a href="Linelist.html">Linelist</a>, <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLFormat.html">LLFormat</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="TableSpecs.html">TableSpecs</a>, <a href="CrossTable.html">CrossTable</a>, <a href="CrossTableFormula.html">CrossTableFormula</a>, <a href="Graphs.html">Graphs</a>, <a href="GraphSeries.html">GraphSeries</a>, <a href="TimeSeriesGraphs.html">TimeSeriesGraphs</a>, <a href="SeriesBuffer.html">SeriesBuffer</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="TemporalSection.html">TemporalSection</a>, <a href="ApplicationState.html">ApplicationState</a>, <a href="Buttons.html">Buttons</a>, <a href="Passwords.html">Passwords</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="FormulaData.html">FormulaData</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, ListObject names in the setup worksheet, Checking support</p>
+<p><strong>Version:</strong> 2026-08-12</p>
 </div>
 </details>
 <details open class="doc-section" id="instantiation">
@@ -98,8 +99,14 @@ value stops after the stage it names.</li>
 </ul>
 <p><strong>Remarks:</strong></p>
 <ul>
-<li>The caller opens and restores the Application state: see the note at
-the top of this class.</li>
+<li>This is what opens and restores the application state the build runs
+under: see the note at the top of this class. A raise inside the build restores
+it before the error travels on, so no failure leaves Excel with a frozen
+screen.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>Whatever the build raises, after the application state is restored.</li>
 </ul>
 <hr />
 </div>
@@ -107,6 +114,22 @@ the top of this class.</li>
 <details open class="doc-section" id="checkings">
 <summary>Checkings</summary>
 <div class="section-body">
+<h3 id="tableswritten">TablesWritten <a class="anchor-link" href="#tableswritten">#</a></h3>
+<p><em>tables-written</em></p>
+<p><strong>How many analysis tables this build put on a sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TablesWritten() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The number of tables written.</p>
+<hr />
+<h3 id="graphswritten">GraphsWritten <a class="anchor-link" href="#graphswritten">#</a></h3>
+<p><em>graphs-written</em></p>
+<p><strong>How many charts this build put on a sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get GraphsWritten() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The number of charts written.</p>
+<hr />
 <h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
 <p><em>has-checkings</em></p>
 <p><strong>Whether anything was reported during the build</strong></p>
@@ -353,19 +376,20 @@ empty tag.</p>
 <p><strong>Returns:</strong> String. The prefix every navigation name of that sheet carries.</p>
 <hr />
 <h2 id="int-application-helpers">Application Helpers</h2>
-<h3 id="int-busyapp">BusyApp <a class="anchor-link" href="#int-busyapp">#</a></h3>
-<p><em>busy-app</em></p>
-<p><strong>Suppress Excel visual feedback and recalculation for performance.</strong></p>
+<h3 id="int-appscope">AppScope <a class="anchor-link" href="#int-appscope">#</a></h3>
+<p><em>app-scope</em></p>
+<p><strong>The application state this class builds under.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub BusyApp()
+<pre><code class="language-vb">Private Property Get AppScope() As ApplicationState
 </code></pre>
-<p>Turns ScreenUpdating, DisplayAlerts, Calculation (to manual) and
-EnableAnimations off on the Application object for the length of the build.
-The caller restores them: see the note at the top of this class.</p>
+<p>Built on first read and kept for the life of the instance. The snapshot is
+taken when the object is built, which is inside whatever state the caller was
+already in, so restoring hands that state back rather than guessing at one.</p>
+<p><strong>Returns:</strong> ApplicationState. Bound to the running Excel Application.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
-<li>Called again inside SplitOutputSheet, because activating a worksheet
-turns screen updating back on in some Excel versions.</li>
+<li>WriteAnalysis is what opens and restores it: see the note at the top
+of this class.</li>
 </ul>
 <hr />
 <h3 id="int-splitoutputsheet">SplitOutputSheet <a class="anchor-link" href="#int-splitoutputsheet">#</a></h3>
@@ -388,6 +412,9 @@ the zoom is 80%.</p>
 <li>Activating the sheet is what the freeze-pane API needs. A protected
 sheet or a hidden window makes it fail, and the failure is filed as a warning
 rather than passed over in silence.</li>
+<li>The busy state is written again after the activation, because
+activating a worksheet turns screen updating back on in some Excel versions.
+The scope is already busy at that point, which is why the call forces.</li>
 </ul>
 <hr />
 <h2 id="int-sheet-preparation">Sheet Preparation</h2>
@@ -812,6 +839,21 @@ starting at zero is what each of them used to write.</p>
 <li><code>collaboratorChecks</code>: Checking. The collaborator's store.</li>
 </ul>
 <hr />
+<h3 id="int-logmilestone">LogMilestone <a class="anchor-link" href="#int-logmilestone">#</a></h3>
+<p><em>log-milestone</em></p>
+<p><strong>File one entry for a table or a chart put on a sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogMilestone(ByVal label As String)
+</code></pre>
+<p>A linelist carries tens of analysis tables and charts, so these entries
+go to the __check worksheet with the problems. They are what shows the
+analysis phase did work, where a clean phase used to look the same
+whether it built forty tables or none.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>label</code>: String. The message for the report.</li>
+</ul>
+<hr />
 <h2 id="int-error-handling">Error Handling</h2>
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><em>throw-error</em></p>
@@ -833,7 +875,7 @@ providing a consistent stack trace across all methods in this class.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (19 file(s))</summary>
+<summary>Used in (21 file(s))</summary>
 <ul>
 <li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="AnaTabIds.html">AnaTabIds.cls</a></li>
@@ -845,6 +887,7 @@ providing a consistent stack trace across all methods in this class.</p>
 <li><a href="GraphSeries.html">GraphSeries.cls</a></li>
 <li><a href="TimeSeriesGraphs.html">TimeSeriesGraphs.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
+<li>HeadlessBuild.bas</li>
 <li>LinelistEventsManager.bas</li>
 <li>TestAnalysisOutput.bas</li>
 <li>TestAnaTabIds.bas</li>
@@ -852,6 +895,7 @@ providing a consistent stack trace across all methods in this class.</p>
 <li>TestCrossTableFormula.bas</li>
 <li>TestFormulaBuilder.bas</li>
 <li>TestTemporalSection.bas</li>
+<li>TestApplicationState.bas</li>
 <li>TestGraphs.bas</li>
 <li>TestGraphSeries.bas</li>
 </ul>

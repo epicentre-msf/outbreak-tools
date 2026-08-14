@@ -364,11 +364,14 @@ nothing said about it.</p>
 <p>Holds every number that depends on the graph scope. The width coefficient
 stretches a time series graph. The height coefficient grows the chart with
 the number of geographic units it shows.</p>
-<p>Both coefficients are fractional and both were declared As Long. 1.75 was
+<p>Both coefficients are fractional and both were declared As Long once. 1.75 was
 stored as 2, so every time series chart came out 14 per cent larger than the
 code asks for, and a spatial chart of five geographic units got 0.48 rounded
-down to zero, which is a chart of no height at all. The floor keeps a small
-chart at its normal size and lets a large one grow.</p>
+down to zero, which is a chart of no height at all.</p>
+<p>The height curve anchors at one geographic unit and each further unit adds
+8 per cent, so five units give 1.32 and twenty give 2.52. Every count a user
+can set moves the chart, and the bars keep their thickness as the count rises.
+The floor answers a count below 1, which the callers already clamp away.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>scope</code>: Byte. A GraphScope value.</li>

@@ -130,6 +130,42 @@ LLDataEntryLayerHList or LLDataEntryLayerVList.</li>
 <details open class="doc-section" id="checkings">
 <summary>Checkings</summary>
 <div class="section-body">
+<h3 id="hasmilestones">HasMilestones <a class="anchor-link" href="#hasmilestones">#</a></h3>
+<p><em>has-milestones</em></p>
+<p><strong>Whether any variable of this sheet was written</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasMilestones() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True once a variable of this sheet reached the worksheet.</p>
+<hr />
+<h3 id="milestonevalues">MilestoneValues <a class="anchor-link" href="#milestonevalues">#</a></h3>
+<p><em>milestone-values</em></p>
+<p><strong>The per-variable record of this sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get MilestoneValues() As Checking
+</code></pre>
+<p>Handed up from the section builder as the writer holds it. The build
+driver takes it into the run log record-only, so it reaches the text
+file and leaves the __check worksheet to the sheet-level entries and
+the problems.</p>
+<p><strong>Returns:</strong> Checking. The milestone entries, or Nothing.</p>
+<hr />
+<h3 id="variableswritten">VariablesWritten <a class="anchor-link" href="#variableswritten">#</a></h3>
+<p><em>variables-written</em></p>
+<p><strong>How many variables this sheet build put on the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get VariablesWritten() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The number of variables written.</p>
+<hr />
+<h3 id="sectionsplaced">SectionsPlaced <a class="anchor-link" href="#sectionsplaced">#</a></h3>
+<p><em>sections-placed</em></p>
+<p><strong>How many sections this sheet build laid out</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SectionsPlaced() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The number of sections placed.</p>
+<hr />
 <h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
 <p><em>has-checkings</em></p>
 <p><strong>Whether this build has anything to report</strong></p>
@@ -461,6 +497,16 @@ their warnings once per data entry sheet as well.</p>
 <li><code>collaboratorChecks</code>: Checking. What the collaborator filed.</li>
 </ul>
 <hr />
+<h3 id="int-builtcountstext">BuiltCountsText <a class="anchor-link" href="#int-builtcountstext">#</a></h3>
+<p><em>built-counts-text</em></p>
+<p><strong>The section and variable counts of the finished sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuiltCountsText() As String
+</code></pre>
+<p>Read off the section builder the sheet was laid out with. A sheet whose
+sections were never built answers zeros, which is what the counts are.</p>
+<p><strong>Returns:</strong> String. The counts as one phrase for the report line.</p>
+<hr />
 <h2 id="int-errors">Errors</h2>
 <h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
 <p><em>guard-not-sealed</em></p>
@@ -491,11 +537,13 @@ their warnings once per data entry sheet as well.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (9 file(s))</summary>
+<summary>Used in (11 file(s))</summary>
 <ul>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
 <li><a href="LLSheets.html">LLSheets.cls</a></li>
+<li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
+<li>HeadlessBuild.bas</li>
 <li>EventsLinelistButtons.bas</li>
 <li>TestLLSheets.bas</li>
 <li>TestEventLinelistSheets.bas</li>

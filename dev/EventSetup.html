@@ -626,9 +626,15 @@ EndSheetUpdate.</p>
 <pre><code class="language-vb">Private Sub CalculateAnalysis(Optional ByVal target As Range = Nothing)
 </code></pre>
 <p>When a target range is provided, identifies which analysis table it belongs
-to via target.ListObject.Name and recalculates only that table (75% savings
-on per-cell edits). When no target is given (structural edits, post-import),
-recalculates all four tables.</p>
+to via target.ListObject.Name and recalculates that table together with the
+ones that read it, instead of all of them. When no target is given
+(structural edits, post-import), recalculates the five analysis tables.</p>
+<h2 id="int-which-table-reads-which">WHICH TABLE READS WHICH</h2>
+<p>Tab_Graph_TimeSeries is the consumer: AnalysisGraphValue reads
+Tab_Label_TSGraph by graph title and AnalysisTimeSeriesValue reads
+Tab_TimeSeries_Analysis by series title. Tab_SpatioTemporal_Analysis reads
+Tab_SpatioTemporal_Specs by section. An edit recalculates the table it landed
+on and then whatever reads that table.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>target</code>: Optional Range. The edited cell(s); Nothing means recalculate all.</li>

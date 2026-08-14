@@ -122,11 +122,29 @@ without repeatedly scanning the workbook.</p>
 read from the table itself, so it always agrees with what the sheet holds.</p>
 <p><strong>Returns:</strong> Total number of export definitions currently present.</p>
 <hr />
-<h3 id="int-hascheckings">HasCheckings <a class="anchor-link" href="#int-hascheckings">#</a></h3>
+<h3 id="int-harvestcollaboratorcheckings">HarvestCollaboratorCheckings <a class="anchor-link" href="#int-harvestcollaboratorcheckings">#</a></h3>
+<p><em>harvest-collaborator-checkings</em></p>
 <p><strong>Whether informational checkings were captured</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
+<pre><code class="language-vb">Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As Checking)
 </code></pre>
+<p><code>DataSheet</code> and <code>CustomTable</code> each keep a store of their own, and nobody
+read either of them before this line.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>collaboratorChecks</code>: Checking. What the collaborator filed.</li>
+</ul>
+<hr />
+<h3 id="int-mergecollaboratorcheckings">MergeCollaboratorCheckings <a class="anchor-link" href="#int-mergecollaboratorcheckings">#</a></h3>
+<p><em>merge-collaborator-checkings</em></p>
+<p><strong>Take the collaborators' entries before the report is read</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub MergeCollaboratorCheckings()
+</code></pre>
+<p>The data sheet lives as long as this object does; the table adapter is the
+last one <code>ExportTable</code> built. Both are folded in when the report is asked
+for, and the flag keeps the fold to once because the caller reads
+<code>HasCheckings</code> and then <code>CheckingValues</code>.</p>
 <hr />
 <h3 id="int-checkingvalues">CheckingValues <a class="anchor-link" href="#int-checkingvalues">#</a></h3>
 <p><strong>Collected informational diagnostics</strong></p>
@@ -949,7 +967,7 @@ list is replaced. The value goes straight into a SaveAs path.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (16 file(s))</summary>
+<summary>Used in (15 file(s))</summary>
 <ul>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLdictionary.html">LLdictionary.cls</a></li>
@@ -959,7 +977,6 @@ list is replaced. The value goes straight into a SaveAs path.</p>
 <li><a href="EventSetup.html">EventSetup.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
 <li><a href="SetupImport.html">SetupImport.cls</a></li>
-<li>GenerationReport.bas</li>
 <li>InitTransfer.bas</li>
 <li>EventsLinelistButtons.bas</li>
 <li>FormLogicExport.bas</li>

@@ -22,7 +22,10 @@ IsBusy and HasSnapshot answer where the object stands.</p>
 <div class="section-body">
 <p>ApplyBusyState restores from the copy the object already holds, and takes no
 new one. RefreshSnapshot takes a fresh copy, which is what a caller that
-changed a setting between two busy blocks calls first.</p>
+changed a setting between two busy blocks calls first. ApplyBusyState does
+nothing when the scope is already busy; a caller that needs the settings
+written again inside one scope passes force:=True, and the copy still holds
+the values the scope opened on.</p>
 </div>
 </details>
 <details open class="doc-section" id="the-settings-this-class-covers">
@@ -64,7 +67,8 @@ switch to busy mode without an additional call.</p>
 <pre><code class="language-vb">Public Sub ApplyBusyState(Optional ByVal suppressEvents As Boolean = False, _
                                Optional ByVal calculateOnSave As Boolean = True, _
                                Optional ByVal busyCursor As Long = 0, _
-                               Optional ByVal blockSecurity As Boolean = False)
+                               Optional ByVal blockSecurity As Boolean = False, _
+                               Optional ByVal force As Boolean = False)
 </code></pre>
 <p>Switches the target Excel Application into a locked-down mode for heavy
 operations: disables screen updating, alerts, automatic calculation, and
@@ -82,6 +86,12 @@ back.</p>
 <li><code>calculateOnSave</code>: Optional Boolean. Value assigned to CalculateBeforeSave. Defaults to True.</li>
 <li><code>busyCursor</code>: Optional Long. Cursor shown while busy. When 0 (default), leaves cursor unchanged.</li>
 <li><code>blockSecurity</code>: Optional Boolean. When True, forces msoAutomationSecurityForceDisable. Defaults to False.</li>
+<li><code>force</code>: Optional Boolean. When True, writes the settings again even though
+the scope is already busy. Defaults to False. Excel puts screen updating back
+on by itself on some hosts -- activating a worksheet is the known case -- and
+a caller that has to re-assert the busy state in the middle of one scope passes
+True. The snapshot is untouched, so Restore still answers the values the scope
+opened on.</li>
 </ul>
 <p><strong>Throws:</strong></p>
 <ul>
@@ -220,11 +230,12 @@ asks for a new one with RefreshSnapshot.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (23 file(s))</summary>
+<summary>Used in (27 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="ExportButton.html">ExportButton.cls</a></li>
 <li><a href="LLChoices.html">LLChoices.cls</a></li>
+<li><a href="ProgressBar.html">ProgressBar.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
 <li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
@@ -235,6 +246,7 @@ asks for a new one with RefreshSnapshot.</p>
 <li>EventsDesignerAdvanced.bas</li>
 <li>EventsDesignerCore.bas</li>
 <li>EventsDesignerMulti.bas</li>
+<li>HeadlessBuild.bas</li>
 <li>LinelistEventsManager.bas</li>
 <li>FormLogicAdvanced.bas</li>
 <li>FormLogicExportMig.bas</li>
@@ -242,8 +254,10 @@ asks for a new one with RefreshSnapshot.</p>
 <li>MasterSetupHelpers.bas</li>
 <li>EventsManager.bas</li>
 <li>ImportForm.bas</li>
+<li>TestAnalysisOutput.bas</li>
 <li>TestApplicationState.bas</li>
 <li>TestPasswords.bas</li>
+<li>TestProgressBar.bas</li>
 <li>TestSetupErrors.bas</li>
 </ul>
 </details>

@@ -21,7 +21,7 @@ worksheet-level HiddenNames flags, applies data validation to the
 T_Multi table on the GenerateMultiple worksheet, and registers hidden
 sheets with the development manager. Also provides methods to read and
 write ribbon checkbox flags persisted through workbook-level hidden names.</p>
-<p><strong>Depends on:</strong> <a href="HiddenNames.html">HiddenNames</a>, <a href="Development.html">Development</a>, <a href="OSFiles.html">OSFiles</a>, <a href="CustomTable.html">CustomTable</a>, <a href="BetterArray.html">BetterArray</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="DropdownLists.html">DropdownLists</a></p>
+<p><strong>Depends on:</strong> <a href="HiddenNames.html">HiddenNames</a>, <a href="Development.html">Development</a>, <a href="OSFiles.html">OSFiles</a>, <a href="CustomTable.html">CustomTable</a>, <a href="BetterArray.html">BetterArray</a>, <a href="DropdownLists.html">DropdownLists</a></p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -51,9 +51,9 @@ result. Called on the predeclared instance.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
 </code></pre>
-<p>Stores a reference to the host workbook and clears any previously
-cached hidden names store and dropdown manager so they will be rebuilt
-on next access. Raises an error when the workbook is Nothing.</p>
+<p>Stores a reference to the host workbook. Called once by the factory,
+which then seals the instance; a later call raises. Raises an error
+when the workbook is Nothing.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>hostBook</code>: Workbook. The designer workbook to bind to.</li>
@@ -61,13 +61,15 @@ on next access. Raises an error when the workbook is Nothing.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When the workbook is Nothing.</li>
+<li>ProjectError.SomethingWentWrong When the instance is sealed.</li>
 </ul>
 <hr />
 <h3 id="prepare">Prepare <a class="anchor-link" href="#prepare">#</a></h3>
 <p><em>prepare</em></p>
 <p><strong>Execute all preparation tasks on the designer workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Prepare(ByRef devManager As Development)
+<pre><code class="language-vb">Public Sub Prepare(ByRef devManager As Development, _
+                   Optional ByVal translationsSource As Workbook = Nothing)
 </code></pre>
 <p>Runs the full preparation sequence:</p>
 <ol>
@@ -76,19 +78,26 @@ translation tables into LinelistTranslation and DesignerTranslation.</li>
 <li>Creates the dropdown worksheet and registers all standard dropdown
 lists (setup languages, interface languages, epiweek start, design).</li>
 <li>Hides internal worksheets (VeryHidden for __pass/__formatter/
-__formula/__dropdowns, Hidden for LinelistTranslation,
+__formula/__dropdowns/__check, Hidden for LinelistTranslation,
 DesignerTranslation).</li>
 <li>Seeds workbook-level HiddenNames flags (ribbon checks, language
 codes, last opened date).</li>
 <li>Seeds Geo worksheet-level HiddenNames flags (geo language, name,
 update status).</li>
-<li>Applies data validation to the T_Multi table on GenerateMultiple.
+<li>Applies data validation to the T_Multi table on GenerateMultiple.</li>
+<li>Applies dropdown validation to the Main named ranges (RNG_LangSetup,
+RNG_DesignLL, RNG_LLForm).
 When devManager is provided, hidden sheets are also registered with
-the manager for deployment.</li>
+the manager for deployment.
+When translationsSource is provided, the translation tables are read
+from that open workbook. When it is Nothing, the user is prompted to
+select the translations file. Tests hand a fixture workbook here so
+the sequence runs without a dialog.</li>
 </ol>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>devManager</code>: Development. ByRef development manager instance, or Nothing.</li>
+<li><code>translationsSource</code>: Optional Workbook. Open workbook holding the translation tables. Defaults to Nothing.</li>
 </ul>
 <hr />
 <h3 id="setflag">SetFlag <a class="anchor-link" href="#setflag">#</a></h3>
@@ -120,6 +129,34 @@ to the defaultValue when the name is missing.</p>
 <li><code>defaultValue</code>: Optional Boolean. Value returned when the flag is missing. Defaults to False.</li>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the stored value is &quot;Yes&quot;.</p>
+<hr />
+<h3 id="formatterimported">FormatterImported <a class="anchor-link" href="#formatterimported">#</a></h3>
+<p><em>formatter-imported</em></p>
+<p><strong>Whether the designer holds a formatter loaded through the ribbon</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get FormatterImported() As Boolean
+</code></pre>
+<p>Reads the workbook-level TAG_FORMATTER_IMPORTED flag. True means the
+styles import button was pressed for the setup file that is loaded now,
+so the generation ships the designer's __formatter sheet. False means
+the setup file owns the formatter.</p>
+<p><strong>Returns:</strong> Boolean. True when the flag reads &quot;Yes&quot;.</p>
+<hr />
+<h3 id="formatterimported">FormatterImported <a class="anchor-link" href="#formatterimported">#</a></h3>
+<p><em>formatter-imported-set</em></p>
+<p><strong>Set the formatter flag</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let FormatterImported(ByVal imported As Boolean)
+</code></pre>
+<p>Writes &quot;Yes&quot; or &quot;No&quot; into the workbook-level TAG_FORMATTER_IMPORTED flag,
+creating the hidden name when the designer has none yet. The styles
+import writes True; loading a setup file writes False, so the designer's
+formatter wins only after an explicit styles import for the setup that
+is loaded now.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>imported</code>: Boolean. True to mark the designer's formatter as the live copy.</li>
+</ul>
 <hr />
 <h3 id="hostworkbook">HostWorkbook <a class="anchor-link" href="#hostworkbook">#</a></h3>
 <p><em>host-workbook</em></p>
@@ -158,21 +195,88 @@ not already created by EnsureDropdowns or Prepare.</p>
 <hr />
 </div>
 </details>
+<details open class="doc-section" id="preparation-helpers">
+<summary>Preparation Helpers</summary>
+<div class="section-body">
+<h3 id="importtranslations">ImportTranslations <a class="anchor-link" href="#importtranslations">#</a></h3>
+<p><em>import-translations</em></p>
+<p><strong>Import translation tables from a translations workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ImportTranslations(Optional ByVal source As Workbook = Nothing)
+</code></pre>
+<p>Iterates through LinelistTranslation and DesignerTranslation sheets and
+imports matching ListObjects via CustomTable.Import. When source is
+Nothing, prompts the user to select an xlsx file and opens it read-only;
+the workbook opened here is also closed here. When source is provided,
+reads from that open workbook and leaves it open -- the clickImpTrans
+ribbon callback opens the file itself and hands it over that way, and
+tests hand a fixture workbook so the sequence runs without a dialog.</p>
+<p>This body is the only translations import in the project. The
+preparation sequence and the ribbon button both come here, so the eight
+table names are written down once.</p>
+<p>A sheet or table missing on either side is skipped through the resolve
+helpers, which probe and clear their own errors. The cleanup label only
+sees errors raised while the import itself is running, so a designer
+that lacks one sheet prepares without a raise.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>source</code>: Optional Workbook. Open workbook holding the translation tables, or Nothing.</li>
+</ul>
+<hr />
+<h3 id="ensuregeoflags">EnsureGeoFlags <a class="anchor-link" href="#ensuregeoflags">#</a></h3>
+<p><em>ensure-geo-flags</em></p>
+<p><strong>Ensure the Geo HiddenNames flags exist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub EnsureGeoFlags()
+</code></pre>
+<p>Creates worksheet-level HiddenNames on the Geo worksheet for language
+code, geobase name, metadata language, update status, translation state
+and form loaded state.</p>
+<p>The five level labels (RNG_ADM1NAME through RNG_ADM4NAME and RNG_HFNAME)
+are created at WORKBOOK scope. LLGeo.CheckRequirements asks for them there,
+and CrossTable resolves them from a worksheet formula on the spatial
+analysis sheet, where a worksheet-scoped name would give #NAME?.</p>
+<p>RNG_PastingGeoCol stays a real cell-based named range. It is a paste anchor
+at runtime and the paste needs a cell to land in.</p>
+<p>Exits with no work when the host workbook has no Geo worksheet.</p>
+</div>
+</details>
+<details open class="doc-section" id="public-because-a-headless-build-needs-it-on-its-own">
+<summary>PUBLIC BECAUSE A HEADLESS BUILD NEEDS IT ON ITS OWN</summary>
+<div class="section-body">
+<p>Prepare is the ordinary caller and it opens a file dialog on its first step, so
+a headless run cannot reach this through it. Every name below is what
+LLGeo.CheckRequirements asks for, and a designer that has never been prepared
+with the current code carries none of them: LLGeo.Create then fails, the
+dictionary logs &quot;geolines not append&quot;, and every geo variable stays one column
+instead of the twelve it expands into. Calling this first is what a build does
+to make the geo sheet readable, and it is idempotent -- every write is an
+EnsureName, so a designer that already carries them is left alone.</p>
+<hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2 id="int-preparation-helpers">Preparation Helpers</h2>
-<h3 id="int-importtranslations">ImportTranslations <a class="anchor-link" href="#int-importtranslations">#</a></h3>
-<p><em>import-translations</em></p>
-<p><strong>Import translation tables from a user-selected workbook</strong></p>
+<h2 id="int-instance-sealing">Instance Sealing</h2>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance against further setup writes</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ImportTranslations()
+<pre><code class="language-vb">Public Sub Seal()
 </code></pre>
-<p>Prompts the user to select an xlsx file, then iterates through
-LinelistTranslation and DesignerTranslation sheets. For each sheet,
-imports matching ListObjects via CustomTable.Import. This is the same
-logic as the clickImpTrans ribbon callback, encapsulated here so it
-runs as part of the preparation sequence.</p>
 <hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup-only member against post-seal writes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal memberName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>memberName</code>: String. The member name for the error message.</li>
+</ul>
+<hr />
+<h2 id="int-preparation-helpers">Preparation Helpers</h2>
 <h3 id="int-ensuredropdowns">EnsureDropdowns <a class="anchor-link" href="#int-ensuredropdowns">#</a></h3>
 <p><em>ensure-dropdowns</em></p>
 <p><strong>Create the dropdown worksheet and register all standard dropdown lists</strong></p>
@@ -189,11 +293,14 @@ design values dropdown lists.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub HideWorksheets(ByRef devManager As Development)
 </code></pre>
-<p>Sets __pass, __formatter, __formula, __dropdowns to xlSheetVeryHidden.
-Sets LinelistTranslation and DesignerTranslation to xlSheetHidden
-(visible in the VBA editor for developers). When a development manager
-is provided, all sheets are also registered via AddHiddenSheet for
-deployment. Silently skips any worksheet that does not exist.</p>
+<p>Sets __pass, __formatter, __formula, __dropdowns and __check to
+xlSheetVeryHidden. The __check sheet holds the generation report and
+FinaliseReport shows it after a run, so a prepared designer ships it
+hidden again. Sets LinelistTranslation and DesignerTranslation to
+xlSheetHidden (visible in the VBA editor for developers). When a
+development manager is provided, all sheets are also registered via
+AddHiddenSheet for deployment. Silently skips any worksheet that does
+not exist.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>devManager</code>: Development. Development manager for deployment registration, or Nothing.</li>
@@ -209,23 +316,6 @@ deployment. Silently skips any worksheet that does not exist.</p>
 codes, and the last opened date. Checkbox flags default to &quot;Yes&quot; (on).
 Language codes default to empty strings. Last opened date is set to the
 current date.</p>
-<hr />
-<h3 id="int-ensuregeoflags">EnsureGeoFlags <a class="anchor-link" href="#int-ensuregeoflags">#</a></h3>
-<p><em>ensure-geo-flags</em></p>
-<p><strong>Ensure the Geo HiddenNames flags exist</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureGeoFlags()
-</code></pre>
-<p>Creates worksheet-level HiddenNames on the Geo worksheet for language
-code, geobase name, metadata language, update status, translation state
-and form loaded state.</p>
-<p>The five level labels (RNG_ADM1NAME through RNG_ADM4NAME and RNG_HFNAME)
-are created at WORKBOOK scope. LLGeo.CheckRequirements asks for them there,
-and CrossTable resolves them from a worksheet formula on the spatial
-analysis sheet, where a worksheet-scoped name would give #NAME?.</p>
-<p>RNG_PastingGeoCol stays a real cell-based named range. It is a paste anchor
-at runtime and the paste needs a cell to land in.</p>
-<p>Exits with no work when the host workbook has no Geo worksheet.</p>
 <hr />
 <h3 id="int-ensurelevelname">EnsureLevelName <a class="anchor-link" href="#int-ensurelevelname">#</a></h3>
 <p><em>ensure-level-name</em></p>
@@ -307,18 +397,6 @@ then wires the &quot;language of the interface&quot;, &quot;epiweek start&quot;,
 CustomTable.SetValidation. Silently exits when the worksheet or
 table does not exist in the host workbook.</p>
 <hr />
-<h3 id="int-applymainvalidations">ApplyMainValidations <a class="anchor-link" href="#int-applymainvalidations">#</a></h3>
-<p><em>apply-main-validations</em></p>
-<p><strong>Apply dropdown validation to named ranges on the Main worksheet</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyMainValidations()
-</code></pre>
-<p>Resolves the Main worksheet from the host workbook, then applies
-dropdown validation to three named ranges: RNG_LangSetup (setup
-languages), RNG_LLForm (interface languages), and RNG_LLDesign
-(design values). Silently skips the worksheet or any named range
-that does not exist.</p>
-<hr />
 <h2 id="int-main-validations">Main Validations</h2>
 <h3 id="int-applymainvalidations">ApplyMainValidations <a class="anchor-link" href="#int-applymainvalidations">#</a></h3>
 <p><em>apply-main-validations</em></p>
@@ -383,6 +461,39 @@ Nothing when the sheet does not exist.</p>
 <li><code>sheetName</code>: String. The worksheet name to resolve.</li>
 </ul>
 <p><strong>Returns:</strong> Worksheet. The resolved worksheet, or Nothing.</p>
+<hr />
+<h3 id="int-resolvesheetin">ResolveSheetIn <a class="anchor-link" href="#int-resolvesheetin">#</a></h3>
+<p><em>resolve-sheet-in</em></p>
+<p><strong>Resolve a worksheet by name from a given workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveSheetIn(ByVal book As Workbook, ByVal sheetName As String) As Worksheet
+</code></pre>
+<p>Returns the worksheet with the given name from the supplied workbook,
+or Nothing when the sheet does not exist. Probes and clears its own
+error, so the caller's error state stays clean.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>book</code>: Workbook. The workbook to resolve the sheet from.</li>
+<li><code>sheetName</code>: String. The worksheet name to resolve.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The resolved worksheet, or Nothing.</p>
+<hr />
+<h3 id="int-resolvetablein">ResolveTableIn <a class="anchor-link" href="#int-resolvetablein">#</a></h3>
+<p><em>resolve-table-in</em></p>
+<p><strong>Resolve a ListObject by name into a CustomTable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveTableIn(ByVal sh As Worksheet, ByVal tableName As String) As CustomTable
+</code></pre>
+<p>Returns a CustomTable over the named ListObject on the supplied
+worksheet, or Nothing when the table does not exist or cannot be
+wrapped. Probes and clears its own error, so the caller's error state
+stays clean.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet holding the ListObject.</li>
+<li><code>tableName</code>: String. The ListObject name to resolve.</li>
+</ul>
+<p><strong>Returns:</strong> CustomTable. The wrapped table, or Nothing.</p>
 <hr />
 <h3 id="int-resolvenamedrange">ResolveNamedRange <a class="anchor-link" href="#int-resolvenamedrange">#</a></h3>
 <p><em>resolve-named-range</em></p>
@@ -461,13 +572,14 @@ overlap with existing ListObjects or other content.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (5 file(s))</summary>
+<summary>Used in (6 file(s))</summary>
 <ul>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>EventsDesignerCore.bas</li>
+<li>InitTransfer.bas</li>
+<li>HeadlessBuild.bas</li>
 <li>TestDesignerPreparation.bas</li>
-<li>TestDesignerRibbon.bas</li>
 </ul>
 </details>
   </main>

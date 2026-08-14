@@ -1,13 +1,5 @@
 [
   {
-    "listing": "/getting_started/home_linelist.html",
-    "items": [
-      "/getting_started/get_linelist.html",
-      "/getting_started/use_linelist.html",
-      "/getting_started/use_analyses_sheets.html"
-    ]
-  },
-  {
     "listing": "/getting_started/home_obt.html",
     "items": [
       "/getting_started/download.html",
@@ -17,10 +9,11 @@
     ]
   },
   {
-    "listing": "/cheatsheets/home_cheatsheets.html",
+    "listing": "/getting_started/home_linelist.html",
     "items": [
-      "/cheatsheets/analyses.html",
-      "/cheatsheets/variable_control.html"
+      "/getting_started/get_linelist.html",
+      "/getting_started/use_linelist.html",
+      "/getting_started/use_analyses_sheets.html"
     ]
   },
   {
@@ -35,6 +28,13 @@
       "/reference/dictionary_sheet.html",
       "/reference/exports_sheet.html",
       "/reference/translations_sheet.html"
+    ]
+  },
+  {
+    "listing": "/cheatsheets/home_cheatsheets.html",
+    "items": [
+      "/cheatsheets/analyses.html",
+      "/cheatsheets/variable_control.html"
     ]
   },
   {

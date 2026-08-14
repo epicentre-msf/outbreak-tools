@@ -110,6 +110,24 @@ caller reading the number alone sees one value for both.</p>
 <hr />
 </div>
 </details>
+<details open class="doc-section" id="public-configuration">
+<summary>Public configuration</summary>
+<div class="section-body">
+<h3 id="languagesnameid">LanguagesNameId <a class="anchor-link" href="#languagesnameid">#</a></h3>
+<p><em>languages-name-id</em></p>
+<p><strong>The HiddenName key of the persisted language list.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LanguagesNameId() As String
+</code></pre>
+<p>Name of the worksheet-level HiddenName this class writes the semicolon
+separated language list under on its Translations sheet. The designer reads
+the list back through this key when a setup file is loaded, so the key lives
+here, on the class that writes it. The answer is a constant, so the property
+works on the predeclared instance.</p>
+<p><strong>Returns:</strong> String. The HiddenName identifier.</p>
+<hr />
+</div>
+</details>
 <details open class="doc-section" id="tag-column-infrastructure">
 <summary>Tag column infrastructure</summary>
 <div class="section-body">
@@ -747,17 +765,24 @@ mismatch that pointed nowhere.</p>
 <p><em>apply-lang-column-formatting</em></p>
 <p><strong>Apply font, sizing, and duplicate highlighting to a language column.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyLangColumnFormatting(ByVal langRng As Range)
+<pre><code class="language-vb">Private Sub ApplyLangColumnFormatting(ByVal langRng As Range, ByRef painted As Long)
 </code></pre>
 <p>The group rules go on first and the red catch-all goes on last.
 FormatConditions.Add appends, so the rule added last holds the lowest
 priority and shows through only where no group rule claimed the cell.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>langRng</code>: Range. The language column to format.</li>
+<li><code>painted</code>: ByRef Long. How many groups the pass has coloured so far, carried
+across every column so no two groups share a colour. See
+HighlightDuplicateGroups.</li>
+</ul>
 <hr />
 <h3 id="int-highlightduplicategroups">HighlightDuplicateGroups <a class="anchor-link" href="#int-highlightduplicategroups">#</a></h3>
 <p><em>highlight-duplicate-groups</em></p>
 <p><strong>Give every duplicate group in a column a fill of its own.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub HighlightDuplicateGroups(ByVal langRng As Range)
+<pre><code class="language-vb">Private Sub HighlightDuplicateGroups(ByVal langRng As Range, ByRef painted As Long)
 </code></pre>
 <p>A column painted in one colour says which cells are duplicated and
 nothing about which of them belong together. One rule per group says
@@ -767,6 +792,20 @@ has run out (MAX_DUPLICATE_GROUPS), a label whose rule formula would
 pass MAX_RULE_FORMULA_LENGTH, and a formula Excel refuses. So red no
 longer reads as &quot;duplicate&quot;. It reads as &quot;duplicate this could not
 group&quot;, and a sheet with red on it is still telling the truth.</p>
+<p>THE COUNTER IS THE CALLER'S, NOT THIS ROUTINE'S
+It used to start at zero on every column, so the first group of every
+language drew the same colour. An untranslated row carries the source
+spelling in both columns, so those same-coloured cells landed on the
+same rows and the sheet read as though whole rows were highlighted.
+Duplicates are counted within one column and always were; what crossed
+the columns was the colour. Carrying the count across the pass gives
+every group on the sheet a colour of its own, and the palette is then
+spent sheet-wide rather than per column.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>langRng</code>: Range. The language column to paint.</li>
+<li><code>painted</code>: ByRef Long. Groups coloured so far in this pass, advanced here.</li>
+</ul>
 <hr />
 <h3 id="int-addgroupcondition">AddGroupCondition <a class="anchor-link" href="#int-addgroupcondition">#</a></h3>
 <p><em>add-group-condition</em></p>
@@ -1008,13 +1047,16 @@ be heard.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (7 file(s))</summary>
+<summary>Used in (10 file(s))</summary>
 <ul>
+<li><a href="TranslationObject.html">TranslationObject.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
 <li><a href="SetupImport.html">SetupImport.cls</a></li>
 <li><a href="UpdatedValues.html">UpdatedValues.cls</a></li>
+<li>EventsDesignerAdvanced.bas</li>
 <li>EventsMasterSetupRibbon.bas</li>
 <li>SetupRibbon.bas</li>
+<li>TestDesignerMulti.bas</li>
 <li>SetupImportTestFixture.bas</li>
 <li>TestSetupTranslationsTable.bas</li>
 </ul>

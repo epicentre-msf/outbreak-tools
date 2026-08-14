@@ -15,10 +15,14 @@
 export sheet and performs a custom export when clicked. The factory wires
 the button, an optional filter checkbox, and translation/workbook
 references. On click, RunExport selects a folder, optionally confirms
-filter usage, then delegates to LLExporter.ExportCustom. The factory
-returns the concrete class because callers hold a
-reference to keep the WithEvents binding alive.</p>
-<p><strong>Depends on:</strong> <a href="LLExporter.html">LLExporter</a>, <a href="ApplicationState.html">ApplicationState</a>, <a href="OSFiles.html">OSFiles</a></p>
+filter usage, syncs the filtered companions through FilteredData, then
+delegates to LLExporter.ExportCustom. A sheet the sync skipped aborts the
+export through the click handler's error path. The factory returns the
+concrete class because the caller holds a reference to keep the WithEvents
+binding alive. That caller is the F_Export code-behind, which keeps one
+instance per button in a module-level collection for as long as the form
+carries the buttons.</p>
+<p><strong>Depends on:</strong> <a href="LLExporter.html">LLExporter</a>, <a href="FilteredData.html">FilteredData</a>, <a href="ApplicationState.html">ApplicationState</a>, <a href="OSFiles.html">OSFiles</a></p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -34,8 +38,7 @@ reference to keep the WithEvents binding alive.</p>
 <p>Factory method that validates the workbook, translations, and button are
 not Nothing, then wires the WithEvents binding and optional filter
 checkbox. Called on the predeclared instance. Returns the concrete class
-(not an interface) because callers hold a reference to keep the
-WithEvents binding alive.</p>
+because the caller holds a reference to keep the WithEvents binding alive.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sourceWkb</code>: Workbook. The linelist workbook.</li>
@@ -60,10 +63,14 @@ WithEvents binding alive.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ExportNumber() As Long
 </code></pre>
-<p>Parses the button Name property by removing the NAMETAG prefix
-(&quot;CMDExport&quot;) and converting the remainder to Long. For example,
-&quot;CMDExport1&quot; yields 1, &quot;CMDExport3&quot; yields 3.</p>
-<p><strong>Returns:</strong> Long. The 1-based export number.</p>
+<p>Reads the button Name property, takes the NAMETAG prefix (&quot;CMDExport&quot;) off
+the front and reads the digits that follow. &quot;CMDExport1&quot; answers 1 and
+&quot;CMDExport3&quot; answers 3.</p>
+<p>The property answers 0 for every name it cannot place: no button bound, a
+name that does not lead with the tag, a remainder with no digits in it, and
+a number outside the Long range. The read runs on the click path, so it
+raises nothing and RunExport refuses the 0.</p>
+<p><strong>Returns:</strong> Long. The 1-based export number, or 0 when the name carries none.</p>
 <hr />
 <h3 id="usefilter">UseFilter <a class="anchor-link" href="#usefilter">#</a></h3>
 <p><em>use-filter</em></p>
@@ -73,6 +80,9 @@ WithEvents binding alive.</p>
 </code></pre>
 <p>Returns the current value of the filter checkbox. Returns False when
 no checkbox was bound.</p>
+<p>The box is read only. Every export button on the form reads the same one,
+and two exports never run at the same time, so the box holds the user's
+standing wish and the confirmation is answered per export.</p>
 <p><strong>Returns:</strong> Boolean. True when the filter checkbox is checked.</p>
 <hr />
 </div>
@@ -142,17 +152,6 @@ no checkbox was bound.</p>
 <li><code>propName</code>: String. The name of the property being guarded.</li>
 </ul>
 <hr />
-<h3 id="int-usefilter">UseFilter <a class="anchor-link" href="#int-usefilter">#</a></h3>
-<p><em>use-filter-set</em></p>
-<p><strong>Set the filter checkbox value</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Let UseFilter(ByVal value As Boolean)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>value</code>: Boolean. True to check, False to uncheck.</li>
-</ul>
-<hr />
 <h2 id="int-event-handler">Event Handler</h2>
 <h3 id="int-btn-click">Btn_Click <a class="anchor-link" href="#int-btn-click">#</a></h3>
 <p><em>btn-click</em></p>
@@ -160,6 +159,11 @@ no checkbox was bound.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Btn_Click()
 </code></pre>
+<p>A click that arrives while this button is already exporting is dropped.
+Screen updating is off for most of an export, so the form does not repaint
+and a user who reads that as nothing happening clicks again. The queued
+click runs when the first export returns, and it would ask for a folder a
+second time and write a second file.</p>
 <hr />
 <h3 id="int-runexport">RunExport <a class="anchor-link" href="#int-runexport">#</a></h3>
 <p><em>run-export</em></p>
@@ -167,22 +171,19 @@ no checkbox was bound.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RunExport()
 </code></pre>
-<p>Prompts the user to select a folder via OSFiles, applies busy state,
-optionally confirms filter usage via MsgBox, then delegates to
-LLExporter.ExportCustom and tells the user where the file went. On error,
-displays a translated error message and closes any orphaned output workbook.</p>
-<hr />
-<h3 id="int-sheettagof">SheetTagOf <a class="anchor-link" href="#int-sheettagof">#</a></h3>
-<p><strong>Get the sheet type tag from worksheet-level HiddenNames.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SheetTagOf(ByVal sh As Worksheet, _
-                            Optional ByVal nameKey As String = &quot;sheet_type&quot;) As String
-</code></pre>
-<p><strong>Parameters:</strong></p>
+<p>Asks the user everything it needs first: the folder through OSFiles, then
+the filter confirmation. Both questions are answered before the busy state
+goes on, because a box drawn under suppressed screen updating can end up
+behind the workbook window on Mac Excel. The busy state then covers the
+work: the filtered companions are synced and LLExporter.ExportCustom writes
+the file. The state is restored before the user is told where the file went.
+On error, displays a translated error message and closes any orphaned
+output workbook.</p>
+<p><strong>Throws:</strong></p>
 <ul>
-<li><code>sh</code>: Worksheet. The worksheet to query.</li>
+<li>ProjectError.SomethingWentWrong When the button name carries no
+export number.</li>
 </ul>
-<p><strong>Returns:</strong> String. The sheet type tag (HList, VList, etc.).</p>
 <hr />
 <h2 id="int-private-helpers">Private Helpers</h2>
 <h3 id="int-translatedvalue">TranslatedValue <a class="anchor-link" href="#int-translatedvalue">#</a></h3>
@@ -217,15 +218,21 @@ stopped early returns.</p>
 <li><code>password</code>: String. The password applied to the file, or vbNullString.</li>
 </ul>
 <hr />
-<h3 id="int-updatefiltereddata">UpdateFilteredData <a class="anchor-link" href="#int-updatefiltereddata">#</a></h3>
-<p><em>update-filtered-data</em></p>
-<p><strong>Sync filtered data sheets before a filtered export</strong></p>
+<h3 id="int-syncfiltereddata">SyncFilteredData <a class="anchor-link" href="#int-syncfiltereddata">#</a></h3>
+<p><em>sync-filtered-data</em></p>
+<p><strong>Sync the filtered companions and abort on a skipped sheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub UpdateFilteredData()
+<pre><code class="language-vb">Private Sub SyncFilteredData()
 </code></pre>
-<p>Copies HList data to companion filtered sheets and removes hidden or
-empty rows, ensuring the filtered export reflects the user current
-filter state.</p>
+<p>Builds a FilteredData over the source workbook and runs the sync. A sheet
+the sync skipped means the export would read a companion that no longer
+matches its table, so the failures are joined into one message and raised.
+The raise lands in RunExport's handler, which shows the message, closes
+any orphaned output workbook and restores the application state.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.SomethingWentWrong When the sync skipped a sheet.</li>
+</ul>
 <hr />
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><em>throw-error</em></p>
@@ -247,9 +254,9 @@ filter state.</p>
 <details>
 <summary>Used in (5 file(s))</summary>
 <ul>
+<li><a href="FilteredData.html">FilteredData.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
-<li>EventsLinelistButtons.bas</li>
 <li>FormLogicExport.bas</li>
 <li>TestExportButton.bas</li>
 </ul>

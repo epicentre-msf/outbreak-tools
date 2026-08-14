@@ -237,7 +237,7 @@ vbNullString when the index exceeds the array bounds.</p>
 <p><em>write-checking</em></p>
 <p><strong>Write a single Checking bundle to the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub WriteChecking(ByVal checking As Checking, _
+<pre><code class="language-vb">Private Sub WriteChecking(ByVal checksObject As Checking, _
                           ByRef currentRow As Long, _
                           ByRef writtenTitles As Collection, _
                           Optional ByVal sep As String = DEFAULT_SEPARATOR)
@@ -605,15 +605,16 @@ first access. Raises an error when no worksheet is assigned.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (12 file(s))</summary>
+<summary>Used in (13 file(s))</summary>
 <ul>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
+<li><a href="GenerationLog.html">GenerationLog.cls</a></li>
 <li><a href="Checking.html">Checking.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LLLog.html">LLLog.cls</a></li>
 <li><a href="CustomTest.html">CustomTest.cls</a></li>
+<li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
-<li>GenerationReport.bas</li>
 <li>ImportChecking.bas</li>
 <li>TestCheckingOutput.bas</li>
 <li>TestCustomTest.bas</li>

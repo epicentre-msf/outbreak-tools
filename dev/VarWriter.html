@@ -39,7 +39,7 @@ same way <code>LLVariables.ResolveColumnIndex</code> re-reads its header snapsho
 A variable name is matched without regard to case here. <code>LLdictionary.Prepare</code>
 makes the names unique, so a name that differs only by case is a fault in the
 sheet.</p>
-<p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLSheets.html">LLSheets</a>, <a href="LLFormat.html">LLFormat</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="FormulaData.html">FormulaData</a>, <a href="Formulas.html">Formulas</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLGeo.html">LLGeo</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, Column index the first variable of a sheet carries when the dictionary is, numbered as <code>LLdictionary.Prepare</code> leaves it. It is the fallback for the table, anchor; the first variable the writer is handed is the primary rule., Checking support</p>
+<p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLSheets.html">LLSheets</a>, <a href="LLFormat.html">LLFormat</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="FormulaData.html">FormulaData</a>, <a href="Formulas.html">Formulas</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLGeo.html">LLGeo</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, Column index the first variable of a sheet carries when the dictionary is, numbered as <code>LLdictionary.Prepare</code> leaves it. It is the fallback for the table, anchor; the first variable the writer is handed is the primary rule., Checking support, The milestone record of the sheet: one entry per variable written. It is, held apart from internalChecks because the two travel to different places., internalChecks carries the problems and reaches the __check worksheet;, this one reaches the run log's in-memory record and the text file alone.</p>
 <p><strong>Version:</strong> 1.1 (2026-07-31)</p>
 </div>
 </details>
@@ -100,6 +100,41 @@ cannot be resolved.</p>
 <ul>
 <li><code>varName</code>: String. The variable name as it appears in the dictionary.</li>
 </ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="checkings">
+<summary>Checkings</summary>
+<div class="section-body">
+<h3 id="hasmilestones">HasMilestones <a class="anchor-link" href="#hasmilestones">#</a></h3>
+<p><em>has-milestones</em></p>
+<p><strong>Whether any variable of this sheet was written</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasMilestones() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True once one milestone entry has been filed.</p>
+<hr />
+<h3 id="milestonevalues">MilestoneValues <a class="anchor-link" href="#milestonevalues">#</a></h3>
+<p><em>milestone-values</em></p>
+<p><strong>The per-variable record of this sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get MilestoneValues() As Checking
+</code></pre>
+<p>The store travels up through <code>SectionBuilder</code> and <code>LLDataEntry</code> to the
+build driver, which takes it into the run log record-only. It never
+reaches the __check worksheet.</p>
+<p><strong>Returns:</strong> Checking. The milestone entries, or Nothing.</p>
+<hr />
+<h3 id="variableswritten">VariablesWritten <a class="anchor-link" href="#variableswritten">#</a></h3>
+<p><em>variables-written</em></p>
+<p><strong>How many variables this writer put on the sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get VariablesWritten() As Long
+</code></pre>
+<p>Counts the variables that reached the worksheet. A variable the
+dictionary gives no column index is filed as a problem and left out of
+the count.</p>
+<p><strong>Returns:</strong> Long. The number of variables written.</p>
 <hr />
 </div>
 </details>
@@ -790,11 +825,19 @@ in this class names a <code>ProjectError</code> member.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LogCheck(ByVal label As String, Optional ByVal scope As Byte = checkingWarning)
 </code></pre>
-<p>What this class files is a problem: a variable it could not place, a formula
-the parser rejected, a validation bound that would not convert, a dropdown
-manager it was not given. The per-variable &quot;written&quot; entry that used to be
-filed here is gone -- a 500-variable linelist produced 500 report rows saying
-nothing, and each of them cloned the whole key array.</p>
+<p>What <code>internalChecks</code> files is a problem: a variable it could not place, a
+formula the parser rejected, a validation bound that would not convert, a
+dropdown manager it was not given. That store reaches the __check worksheet
+through <code>SectionBuilder</code> and <code>LLDataEntry</code>.</p>
+<h2 id="int-the-milestone-store-is-separate">THE MILESTONE STORE IS SEPARATE</h2>
+<p><code>milestoneChecks</code> holds one entry per variable written, keyed by the variable
+name, and it travels to the run log's in-memory record and the text file
+alone. The two stores are kept apart because of what the worksheet costs:
+<code>CheckingOutput</code> ends every row it writes with an <code>EntireColumn.AutoFit</code>, so
+a 500-variable linelist put 500 autofits into the build when these entries
+went to the worksheet. That is why an earlier per-variable entry filed into
+<code>internalChecks</code> was removed; the record keeps the trace and the worksheet
+keeps the problems.</p>
 <h2 id="int-keys-are-unique-across-a-build">KEYS ARE UNIQUE ACROSS A BUILD</h2>
 <p><code>Checking.Add</code> raises on a duplicate key. Every entry filed here is keyed by
 the worksheet and the variable, so a second subsection, a second sheet and a
@@ -831,6 +874,18 @@ through the type label <code>Checking</code> prints, which is the only way it is
 <pre><code class="language-vb">Private Sub EnsureChecking()
 </code></pre>
 <hr />
+<h3 id="int-logmilestone">LogMilestone <a class="anchor-link" href="#int-logmilestone">#</a></h3>
+<p><em>log-milestone</em></p>
+<p><strong>File the milestone of the variable just written</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogMilestone()
+</code></pre>
+<p>Keyed by the variable name, which the dictionary keeps unique inside one
+sheet, and the store is per sheet because the writer is. A name that
+repeats all the same is numbered rather than raising, since
+<code>Checking.Add</code> refuses a duplicate key and a milestone must never stop a
+build.</p>
+<hr />
 <h3 id="int-entrykeyroot">EntryKeyRoot <a class="anchor-link" href="#int-entrykeyroot">#</a></h3>
 <p><em>entry-key-root</em></p>
 <p><strong>The key an entry of the current variable starts from</strong></p>
@@ -854,6 +909,21 @@ is already taken.</p>
 </ul>
 <p><strong>Returns:</strong> String. A key that is free.</p>
 <hr />
+<h3 id="int-uniquekeyin">UniqueKeyIn <a class="anchor-link" href="#int-uniquekeyin">#</a></h3>
+<p><em>unique-key-in</em></p>
+<p><strong>Answer a key one given store does not hold yet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function UniqueKeyIn(ByVal store As Checking, ByVal keyRoot As String) As String
+</code></pre>
+<p>The writer keeps two stores -- the problems and the milestones -- and each
+needs its own free key.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>store</code>: Checking. The store the key has to be free in.</li>
+<li><code>keyRoot</code>: String. The key to start from.</li>
+</ul>
+<p><strong>Returns:</strong> String. A key that is free.</p>
+<hr />
 <h3 id="int-scopeof">ScopeOf <a class="anchor-link" href="#int-scopeof">#</a></h3>
 <p><em>scope-of</em></p>
 <p><strong>Read the severity of one entry of another checking</strong></p>
@@ -873,9 +943,10 @@ of the icon code points.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (16 file(s))</summary>
+<summary>Used in (18 file(s))</summary>
 <ul>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
+<li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="LLSheets.html">LLSheets.cls</a></li>
 <li><a href="Formulas.html">Formulas.cls</a></li>
 <li><a href="HiddenNames.html">HiddenNames.cls</a></li>
@@ -884,6 +955,7 @@ of the icon code points.</p>
 <li><a href="SectionBuilder.html">SectionBuilder.cls</a></li>
 <li><a href="ShowHideLayout.html">ShowHideLayout.cls</a></li>
 <li>EventsLinelistButtons.bas</li>
+<li>TestLLSheetsExtra.bas</li>
 <li>TestLLGeo.bas</li>
 <li>TestLLSpatial.bas</li>
 <li>TestEventLinelist.bas</li>

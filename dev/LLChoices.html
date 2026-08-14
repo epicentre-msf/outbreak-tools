@@ -365,12 +365,18 @@ case-SENSITIVELY, unlike every lookup this class makes on its own.</p>
 <details open class="doc-section" id="checkings">
 <summary>Checkings</summary>
 <div class="section-body">
-<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
-<p><em>has-checkings</em></p>
+<h3 id="harvestcollaboratorcheckings">HarvestCollaboratorCheckings <a class="anchor-link" href="#harvestcollaboratorcheckings">#</a></h3>
+<p><em>harvest-collaborator-checkings</em></p>
 <p><strong>Whether the choice object has logged diagnostic messages</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
+<pre><code class="language-vb">Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As Checking)
 </code></pre>
+<p><code>DataSheet</code> and <code>CustomTable</code> each keep a store of their own, and nobody
+read either of them before this line.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>collaboratorChecks</code>: Checking. What the collaborator filed.</li>
+</ul>
 <p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
 <hr />
 <h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
@@ -575,7 +581,7 @@ anywhere in Excel used, including the user's own Ctrl+F; it always reads
 <p><em>remove-one-choice</em></p>
 <p><strong>Remove every row of a single choice</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RemoveOneChoice(ByVal choiceName As String, ByVal listColumn As Long)
+<pre><code class="language-vb">Private Sub RemoveOneChoice(ByVal choiceName As String, ByVal listCol As Long)
 </code></pre>
 <p>The caller has already sorted the sheet, so every row of one choice sits
 in a single unbroken run. The run is found by reading the list name column
@@ -668,6 +674,16 @@ word, which gave the user a button that did nothing and said nothing.</p>
 <pre><code class="language-vb">Private Sub ShowDebug()
 </code></pre>
 <hr />
+<h3 id="int-mergecollaboratorcheckings">MergeCollaboratorCheckings <a class="anchor-link" href="#int-mergecollaboratorcheckings">#</a></h3>
+<p><em>merge-collaborator-checkings</em></p>
+<p><strong>Take the data sheet's entries before the report is read</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub MergeCollaboratorCheckings()
+</code></pre>
+<p>The data sheet lives as long as this object does, so its entries are
+folded in when the report is asked for. The flag keeps the fold to once,
+because the caller reads <code>HasCheckings</code> and then <code>CheckingValues</code>.</p>
+<hr />
 <h2 id="int-instantiation-guard">Instantiation Guard</h2>
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><em>throw-error</em></p>
@@ -705,7 +721,7 @@ word, which gave the user a button that did nothing and said nothing.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (30 file(s))</summary>
+<summary>Used in (29 file(s))</summary>
 <ul>
 <li><a href="ChoiceKeys.html">ChoiceKeys.cls</a></li>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
@@ -718,7 +734,6 @@ word, which gave the user a button that did nothing and said nothing.</p>
 <li><a href="EventSetup.html">EventSetup.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
 <li><a href="SetupImport.html">SetupImport.cls</a></li>
-<li>GenerationReport.bas</li>
 <li>InitTransfer.bas</li>
 <li>MasterSetupHelpers.bas</li>
 <li>EventsGlobal.bas</li>

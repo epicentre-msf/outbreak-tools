@@ -24,7 +24,6 @@ never reference each other: the contract is the set of names below, agreed by
 string convention across a workbook boundary. Change a name here and change it
 in LLSpatial in the same commit.</p>
 <p>listofgeovars              one row per spatial variable
-RNG_PastingCol             a scratch column on the sheet
 spatial_<level><em><var>      one ListObject per level
 column 1  tabl</em><level><em><var>    the lookup key
 column 2  formula</em><level>       the value LLSpatial sorts on
@@ -45,7 +44,7 @@ for a facility.</p>
 <p>LLSpatial.Update resizes a spatial table as it refreshes it, and reads the
 width off the table itself.</p>
 <p><strong>Depends on:</strong> <a href="CrossTable.html">CrossTable</a>, <a href="TableSpecs.html">TableSpecs</a>, <a href="Formulas.html">Formulas</a>, <a href="FormulaBuilder.html">FormulaBuilder</a>, <a href="Checking.html">Checking</a></p>
-<p><strong>Version:</strong> 2026-07-30</p>
+<p><strong>Version:</strong> 2026-08-12</p>
 </div>
 </details>
 <details open class="doc-section" id="instantiation">
@@ -311,8 +310,8 @@ ListObjects.Add raised 1004 on the second pass over the same workbook.</p>
 <pre><code class="language-vb">Private Property Get LastColumn() As Long
 </code></pre>
 <p>Reads the last used column of row 1 and leaves a gap after it. A sheet carrying
-only the registry answers with the first table column, which keeps the pasting
-column free.</p>
+only the registry answers with the first table column, so the columns between
+the registry and the first table stay empty.</p>
 <p><strong>Returns:</strong> Long. The 1-based column index.</p>
 <hr />
 <h2 id="int-formula-helpers">Formula Helpers</h2>
@@ -357,12 +356,12 @@ both agree on how a formula is made and on what a refusal looks like.</p>
 <h2 id="int-preparation">Preparation</h2>
 <h3 id="int-prepare">Prepare <a class="anchor-link" href="#int-prepare">#</a></h3>
 <p><em>prepare</em></p>
-<p><strong>Put the registry and the pasting column on the spatial sheet</strong></p>
+<p><strong>Put the registry on the spatial sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Prepare()
 </code></pre>
-<p>Creates the listofgeovars ListObject and names the pasting column LLSpatial
-reads. Add calls this the first time it finds no registry.</p>
+<p>Creates the listofgeovars ListObject LLSpatial walks. Add calls this the first
+time it finds no registry.</p>
 <hr />
 <h3 id="int-addvarnametolist">AddVarNameToList <a class="anchor-link" href="#int-addvarnametolist">#</a></h3>
 <p><em>add-var-name-to-list</em></p>

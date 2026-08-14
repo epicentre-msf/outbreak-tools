@@ -19,7 +19,7 @@ multiple choices; analysis go-to-section and spatial dispatch), sheet deactivate
 (list auto update), selection change (geo dropdown refresh),
 double-click (spatio-temporal geo form), filter table updates, list-auto
 dropdown maintenance, and geo/spatial UDF delegation.</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLSpatial.html">LLSpatial</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="Passwords.html">Passwords</a>, <a href="LLLog.html">LLLog</a>, ProjectError</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLSpatial.html">LLSpatial</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="Passwords.html">Passwords</a>, <a href="LLLog.html">LLLog</a>, <a href="FilteredData.html">FilteredData</a>, ProjectError</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -126,14 +126,18 @@ opens the picker: the form lives in the workbook and a class cannot reach it.</p
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
 </code></pre>
-<p>Every filtered table is rewritten from its source table. A row is kept when
-its source row is visible and holds at least one value. The old shape copied
-the whole data body across, then walked every row from the bottom reading
-EntireRow.Hidden and CountA and deleted the rejects -- two COM crossings per
-row and an Application.Union that degrades as it grows, on tables that
-ClickAddRows pads with 199 blank rows at a time. The recalculation at the
-foot is one pass: the sheet pass covers the UsedRange and column passes that
-used to follow it.</p>
+<p>FilteredData does the walk and the rewrite: every filtered table is written
+from the visible rows of its source table that hold a value. The class is the
+measured home of that work, and the filtered export runs the same code, so one
+algorithm answers both callers.</p>
+<p>A sheet the sync could not place is skipped and named. The walk finishes the
+remaining sheets and the box at the foot lists each skipped sheet with its
+reason, which is what a user needs to repair the workbook.</p>
+<p>FilteredData writes the failure line of the run to the user log, so the box
+here goes straight through ShowMessage and the log keeps one line per failed
+refresh.</p>
+<p>The recalculation at the foot is one pass: the sheet pass covers the UsedRange
+and column passes that used to follow it.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>calculate</code>: Optional Boolean. When True (default), recalculates the active sheet.</li>
@@ -215,6 +219,18 @@ answers Nothing, and the tried flag keeps the failed build from repeating.</p>
 <pre><code class="language-vb">Public Function Variables() As LLVariables
 </code></pre>
 <p><strong>Returns:</strong> LLVariables. The held reader, or Nothing when the build failed.</p>
+<hr />
+<h3 id="geomanager">GeoManager <a class="anchor-link" href="#geomanager">#</a></h3>
+<p><strong>The geobase manager of the workbook, built once and held.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function GeoManager() As LLGeo
+</code></pre>
+<p>The geo and form modules used to build one each, and LLGeo.Create walks two
+whole Names collections per build. A held instance also caches the five admin
+level labels, so anything that rewrites the Geo sheet has to be followed by
+ResetCaches for the labels to be read again. HandleImportGeobase already does
+that on both its paths.</p>
+<p><strong>Returns:</strong> LLGeo. The held manager, or Nothing when the build failed.</p>
 <hr />
 <h3 id="varlabeltable">VarLabelTable <a class="anchor-link" href="#varlabeltable">#</a></h3>
 <p><strong>The table the variable-labels form shows.</strong></p>
@@ -322,7 +338,7 @@ shorter than the tag.</p>
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>adminLevel</code>: String. Admin level label (e.g. &quot;adm1&quot;).</li>
+<li><code>adminLevel</code>: String. The level label as the dropdown carries it (e.g. &quot;District&quot;).</li>
 <li><code>adminOrder</code>: Integer. Rank order (1 = top, 2 = second, etc.).</li>
 <li><code>varName</code>: String. Variable name (with prefix, e.g. &quot;concat_adm1_myvar&quot;).</li>
 <li><code>tabId</code>: Optional String. Spatial table identifier.</li>
@@ -339,7 +355,7 @@ shorter than the tag.</p>
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>adminLevel</code>: String. Admin level label (e.g. &quot;adm1&quot;).</li>
+<li><code>adminLevel</code>: String. The level label as the dropdown carries it (e.g. &quot;District&quot;).</li>
 <li><code>adminOrder</code>: Integer. Rank order (1 = top, 2 = second, etc.).</li>
 <li><code>varName</code>: String. Variable name (with prefix &quot;concat_adm1_&quot;).</li>
 <li><code>tabId</code>: Optional String. Spatial table identifier.</li>
@@ -394,6 +410,26 @@ swallowed here.</p>
 <li><code>action</code>: String. The action code, used as the bundle title.</li>
 <li><code>detail</code>: String. Short free text beside the timestamp.</li>
 </ul>
+<hr />
+<h2 id="int-geo-spatial-udf-delegation">Geo / Spatial UDF delegation</h2>
+<h3 id="int-recordedadmincode">RecordedAdminCode <a class="anchor-link" href="#int-recordedadmincode">#</a></h3>
+<p><strong>The admin level a spatial table's formulas stand on.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RecordedAdminCode(ByVal tabId As String) As String
+</code></pre>
+<p>The dropdown label is the first source of the level and this cell is the
+second. A freshly generated table carries the &quot;select a level&quot; prompt in its
+dropdown, a user can clear the dropdown with Delete, and a geobase re-imported
+in another language leaves the cell holding a label no level answers to. In
+all three the label resolves to nothing while this cell still records the
+level the formulas of that table were last written against, so the reads stay
+on the level the sheet is actually showing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tabId</code>: String. The identifier of the analysis table.</li>
+</ul>
+<p><strong>Returns:</strong> String. The recorded admin code, or an empty string when the table
+carries no such cell.</p>
 <hr />
 <h2 id="int-private-hlist-change-handler">Private -- HList change handler</h2>
 <h3 id="int-handlehlistchange">HandleHListChange <a class="anchor-link" href="#int-handlehlistchange">#</a></h3>
@@ -473,6 +509,12 @@ LLGeo, and hands the formula rewriting to LLSpatial, which keeps each
 formula's array state. Busy state is managed by the calling
 LinelistEventsManager. The sheet protection is restored on every path,
 raise included.</p>
+<p>A label naming no level stops the whole thing here. Data validation checks
+what a user types or picks and says nothing about Delete, so an emptied
+dropdown reaches this sub as a Change like any other. Running on it would
+rewrite every concat_adm<n> in the block to concat_ and then record the empty
+level, which leaves the table reading a column that does not exist with
+nothing left on the sheet saying where it came from.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>rngName</code>: String. Named range of the admin dropdown (e.g. &quot;ADM_DROPDOWN_sp1&quot;).</li>
@@ -487,6 +529,10 @@ raise included.</p>
 <p>Reads the admin dropdown of the table, turns its label into an admin code
 through the held LLGeo, and hands the formula arithmetic to LLSpatial. The
 sheet protection is restored on every path, raise included.</p>
+<p>A label naming no level stops the whole thing here, for the same reason it
+stops UpdateSingleSpTable: the population column of an empty level is a
+column that does not exist, and dividing by it puts an error in every cell of
+the block that the revert then cannot read its way back out of.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>rngName</code>: String. Named range of the population factor (e.g. &quot;POPFACT_sp1&quot;).</li>
@@ -593,44 +639,6 @@ deactivate.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. Array of unique values.</p>
 <hr />
-<h2 id="int-private-filtered-table-copy">Private -- Filtered table copy</h2>
-<h3 id="int-rewritefilteredtable">RewriteFilteredTable <a class="anchor-link" href="#int-rewritefilteredtable">#</a></h3>
-<p><strong>Rewrite one filtered table from the visible rows of its source.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RewriteFilteredTable(ByVal sourceTable As ListObject, _
-                                 ByVal filtsh As Worksheet)
-</code></pre>
-<p>A row is kept when it is visible and holds at least one value. Visibility is
-read off the source rows in one SpecialCells call. The read spans the whole
-row on purpose: a column hidden by show/hide keeps its values in the filtered
-table, and a row leaves when a filter or the user hides it. The values travel
-through memory -- one read of the whole block, the blank test on the array,
-and one write of the kept rows. The two tables sit at the same address on
-their two sheets, which is the layout the builder writes.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sourceTable</code>: ListObject. The data entry table the rows come from.</li>
-<li><code>filtsh</code>: Worksheet. The sheet holding the filtered table.</li>
-</ul>
-<hr />
-<h3 id="int-rowholdsavalue">RowHoldsAValue <a class="anchor-link" href="#int-rowholdsavalue">#</a></h3>
-<p><strong>Say whether one row of a value block holds anything.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function RowHoldsAValue(ByRef blockValues As Variant, _
-                                ByVal rowIdx As Long, _
-                                ByVal columnCount As Long) As Boolean
-</code></pre>
-<p>Mirrors what CountA answered on the old copied row: an empty cell and an
-empty string count as nothing, and every other value -- a zero, a date, an
-error -- counts as data.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>blockValues</code>: Variant. The value block, 1-based on both sides.</li>
-<li><code>rowIdx</code>: Long. The row to read.</li>
-<li><code>columnCount</code>: Long. The width of the block.</li>
-</ul>
-<p><strong>Returns:</strong> Boolean. True when at least one cell of the row holds a value.</p>
-<hr />
 <h2 id="int-private-sheet-metadata-helpers">Private -- Sheet metadata helpers</h2>
 <h3 id="int-sheettag">SheetTag <a class="anchor-link" href="#int-sheettag">#</a></h3>
 <p><strong>Get the sheet type tag from worksheet-level HiddenNames.</strong></p>
@@ -638,9 +646,9 @@ error -- counts as data.</p>
 <pre><code class="language-vb">Private Function SheetTag(ByRef sh As Worksheet) As String
 </code></pre>
 <p>The quick read is what this wants. It used to build a whole HiddenNames store
-for one value, and UpdateFilterTables and UpdateAllListAuto both call it once
-per worksheet of the workbook, so every sheet in the loop paid a full walk of
-its own Names collection.</p>
+for one value, and UpdateAllListAuto calls it once per worksheet of the
+workbook, so every sheet in the loop paid a full walk of its own Names
+collection.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The worksheet to query.</li>
@@ -777,7 +785,7 @@ permanent refusal to build the manager again.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (20 file(s))</summary>
+<summary>Used in (25 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
@@ -793,8 +801,13 @@ permanent refusal to build the manager again.</p>
 <li>GeoModule.bas</li>
 <li>LinelistEventsManager.bas</li>
 <li>FormLogicAdvanced.bas</li>
+<li>FormLogicEpiWeek.bas</li>
+<li>FormLogicExport.bas</li>
 <li>FormLogicExportMig.bas</li>
+<li>FormLogicGeo.bas</li>
+<li>FormLogicImportRep.bas</li>
 <li>FormLogicShowHideSave.bas</li>
+<li>FormLogicShowVarLabels.bas</li>
 <li>TestLLGeo.bas</li>
 <li>GeoTestFixture.bas</li>
 <li>TestEventLinelist.bas</li>

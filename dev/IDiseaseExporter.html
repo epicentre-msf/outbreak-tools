@@ -33,7 +33,7 @@
 <h3 id="builddiseaseworkbook">BuildDiseaseWorkbook <a class="anchor-link" href="#builddiseaseworkbook">#</a></h3>
 <p><strong>Build an export workbook in-memory for the supplied disease worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function BuildDiseaseWorkbook(ByVal diseaseSheet As Worksheet, _
+<pre><code class="language-vb">Public Function BuildDiseaseWorkbook(ByVal diseaseWksh As Worksheet, _
                                      ByVal translationTable As ListObject, _
                                      ByVal ribbonTranslations As TranslationObject, _
                                      ByVal diseaseName As String, _
@@ -55,7 +55,7 @@
 <p><strong>Export a disease workbook to disk.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExportDisease(ByVal exportFolder As String, _
-                              ByVal diseaseSheet As Worksheet, _
+                              ByVal diseaseWksh As Worksheet, _
                               ByVal translationTable As ListObject, _
                               ByVal ribbonTranslations As TranslationObject, _
                               ByVal diseaseName As String, _

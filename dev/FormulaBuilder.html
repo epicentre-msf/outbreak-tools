@@ -338,6 +338,21 @@ because the setup sheet allows free text there.</p>
 <li><code>propName</code>: String. The property name for the error message.</li>
 </ul>
 <hr />
+<h2 id="int-formula-text">Formula Text</h2>
+<h3 id="int-harvestconditioncheckings">HarvestConditionCheckings <a class="anchor-link" href="#int-harvestconditioncheckings">#</a></h3>
+<p><em>harvest-condition-checkings</em></p>
+<p><strong>Take what the condition reported into the owner report</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub HarvestConditionCheckings(ByVal cond As FormulaCondition)
+</code></pre>
+<p>The keys are rewritten under this builder's own shape, because
+<code>FormulaCondition</code> counts from 0 and one owner report holds the entries
+of many conditions.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cond</code>: FormulaCondition. The condition just built.</li>
+</ul>
+<hr />
 <h2 id="int-writing-formulas">Writing Formulas</h2>
 <h3 id="int-writelongarrayformula">WriteLongArrayFormula <a class="anchor-link" href="#int-writelongarrayformula">#</a></h3>
 <p><em>write-long-array-formula</em></p>
