@@ -152,6 +152,10 @@ Private lastComponents As Long
 Private lastLinelist As String
 Private lastLog As String
 
+'What the last grant call did, when it did something worth saying. Read back
+'through LastAccessNote so a report can tell a broken call from a refusal.
+Private lastAccessNote As String
+
 'The options of the run being prepared, read out of the options string.
 Private optTemplate As String
 Private optGeo As String
@@ -178,15 +182,57 @@ Private optPassword As String
 'project its compile. On Windows there is no sandbox and the silent failure
 'is the right answer.
 '@param paths Variant. An array of POSIX paths, folders or files.
-'@return Boolean. True when every path is granted; False on a refusal or on Windows.
+'@return Boolean. True when every path is granted; False on anything else.
 Public Function EnsureFileAccess(ByVal paths As Variant) As Boolean
     Dim host As Object
+
+    lastAccessNote = vbNullString
 
     On Error Resume Next
         Set host = Application
         EnsureFileAccess = host.GrantAccessToMultipleFiles(paths)
-        Err.Clear
+
+        'The error is KEPT, and that is the point of this routine now.
+        '
+        'It used to Err.Clear here and answer False, and False was reported as
+        '"not confirmed" - English that reads as "the operator said no". On
+        '2026-08-14 a run showed the call raising 438, Object doesn't support
+        'this property or method: the member is absent on that Excel and the
+        'project had never made a single grant. Every run for months printed
+        '"not confirmed" and meant "this call is broken".
+        'A swallowed error reported as an ambiguous phrase hides a dead call.
+        If Err.Number <> 0 Then
+            lastAccessNote = "the call FAILED, error " & CStr(Err.Number) & _
+                             ": " & Err.Description
+            Err.Clear
+        End If
     On Error GoTo 0
+End Function
+
+'@Description("Word the grant result for a report, keeping a broken call visible.")
+'@details
+'Three outcomes, and they used to be two. A call that RAISED and a call that
+'answered False both printed "not confirmed", so the reader could not tell a
+'missing API from an operator saying no.
+'@param granted Boolean. What EnsureFileAccess answered.
+'@return String. The phrase for the report line.
+Private Function AccessOutcome(ByVal granted As Boolean) As String
+    If granted Then
+        AccessOutcome = "granted"
+    ElseIf LenB(LastAccessNote()) > 0 Then
+        AccessOutcome = LastAccessNote() & " - NO GRANT WAS MADE, expect prompts"
+    Else
+        AccessOutcome = "the call ran and answered no - expect prompts"
+    End If
+End Function
+
+'@Description("Say what the last EnsureFileAccess call actually did.")
+'@details
+'Empty when the call ran. A caller writes this into its report so a broken
+'grant reads as broken instead of reading as a refusal.
+'@return String. The failure, or empty.
+Public Function LastAccessNote() As String
+    LastAccessNote = lastAccessNote
 End Function
 
 
@@ -291,6 +337,10 @@ End Function
 '@param outputFolder String. Where the three files land.
 '@param outputName String. The base name of the linelist.
 '@param options String. Pipe-separated key=value pairs. See above.
+'@param grantRoot String. The ONE folder every path above sits under, for the
+'                 sandbox grant. Empty falls back to granting the five paths
+'                 separately, which is what a caller outside the headless
+'                 launcher (a test module) still does.
 '@return String. OUTCOME_OK, or "ERROR <number>: <description>".
 Public Function BuildLinelistFromSetup(ByVal designerPath As String, _
                                        ByVal setupPath As String, _
@@ -298,7 +348,8 @@ Public Function BuildLinelistFromSetup(ByVal designerPath As String, _
                                        ByVal formsFolder As String, _
                                        ByVal outputFolder As String, _
                                        ByVal outputName As String, _
-                                       Optional ByVal options As String = vbNullString) As String
+                                       Optional ByVal options As String = vbNullString, _
+                                       Optional ByVal grantRoot As String = vbNullString) As String
     Dim designerBook As Workbook
     Dim workingPath As String
     Dim appScope As ApplicationState
@@ -307,27 +358,32 @@ Public Function BuildLinelistFromSetup(ByVal designerPath As String, _
 
     ResetRunState
 
-    'The scratch folder is created before the grant, and it is deliberately NOT
-    'named in it.
-    '
-    'CodeTransfer exports every component to <lldir>/OBTApp_ and imports it back,
-    'so a run touches two files per component in there and it has to be reachable.
-    'It already is: outputFolder is its parent, a folder grant covers its whole
-    'tree, and a directory bookmark covers what is created inside it later too.
-    '
-    'Naming it anyway made things WORSE, which is why this reads the way it does.
-    'GrantAccessToMultipleFiles shows ONE dialog listing the WHOLE array whenever
-    'any single member is not yet bookmarked. Adding a folder that had never been
-    'granted turned a silent call into a prompt for all six paths, on a machine
-    'where the other five had been granted for weeks. The folder is still created
-    'here, because TemporaryRepos does not make it until the build is well past
-    'the last moment a dialog could be answered.
+    'The scratch folder is created here rather than left to TemporaryRepos,
+    'which does not make it until the build is well past the last moment a
+    'dialog could be answered. CodeTransfer exports every component to
+    '<lldir>/OBTApp_ and imports it back, so a run touches two files per
+    'component in there.
     EnsureFolder JoinPath(outputFolder, SCRATCH_FOLDER)
 
-    accessGranted = EnsureFileAccess(Array(sourceRoot, formsFolder, outputFolder, _
-                                           designerPath, setupPath))
-    AddToReport "file access: " & IIf(accessGranted, "granted", _
-                "not confirmed (expect prompts on macOS)")
+    'ONE grant when the launcher gave a root, because a folder grant persists
+    'across Excel sessions and covers files created inside it afterwards --
+    'proven by probe, written up in .obt/gotchas/macos-sandbox-grant.md. The
+    'headless launcher stages designer, setup, source, forms and output under a
+    'single root precisely so this is one path.
+    '
+    'The five-path fallback is for a caller that has no such root, which today
+    'means a test module driving this directly. It grants what it can name, and
+    'the files each run creates fresh underneath are what still prompt.
+    If LenB(Trim$(grantRoot)) > 0 Then
+        accessGranted = EnsureFileAccess(Array(grantRoot))
+        AddToReport "file access: one root, " & AccessOutcome(accessGranted) & _
+                    " - " & grantRoot
+    Else
+        accessGranted = EnsureFileAccess(Array(sourceRoot, formsFolder, outputFolder, _
+                                               designerPath, setupPath))
+        AddToReport "file access: five paths, " & AccessOutcome(accessGranted) & _
+                    " - no grant root was given"
+    End If
 
     missingPath = FirstMissingPath(designerPath, setupPath, sourceRoot, formsFolder)
     If LenB(missingPath) > 0 Then

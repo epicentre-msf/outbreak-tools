@@ -9,7 +9,14 @@
 ' Invoked by scripts/headless/build-linelist.R:
 '   cscript //nologo build-linelist.vbs "<workbook>" "<designer>" "<setup>" _
 '           "<sourceRoot>" "<formsFolder>" "<outFolder>" "<outName>" _
-'           "<options>" "<reportPath>"
+'           "<options>" "<reportPath>" "<obtHome>"
+'
+' <obtHome> is the ONE folder every other path sits under. It exists for the
+' macOS sandbox and does nothing here: Windows has no sandbox, OBTGrantRoot
+' answers "not available on this host", and the run reads what it likes. The
+' argument is still passed and still called, so the two triggers drive the same
+' entry points in the same order and a difference in what gets built stays a
+' difference in the VBA.
 '
 ' Runs NO test. It calls HeadlessBuild.BuildLinelistFromSetup directly with the
 ' eight paths R resolved, in the same order and with the same arguments as the
@@ -51,15 +58,15 @@ Option Explicit
 Dim Arg
 Set Arg = WScript.Arguments
 
-If Arg.Count < 9 Then
+If Arg.Count < 10 Then
     WScript.Echo "usage: cscript //nologo build-linelist.vbs <workbook> " & _
                  "<designer> <setup> <sourceRoot> <formsFolder> <outFolder> " & _
-                 "<outName> <options> <reportPath>"
+                 "<outName> <options> <reportPath> <obtHome>"
     WScript.Quit 2
 End If
 
 Dim wbPath, designerPath, setupPath, sourceRoot, formsFolder
-Dim outFolder, outName, buildOptions, reportPath
+Dim outFolder, outName, buildOptions, reportPath, obtHome
 
 wbPath       = Arg(0)
 designerPath = Arg(1)
@@ -70,10 +77,12 @@ outFolder    = Arg(5)
 outName      = Arg(6)
 buildOptions = Arg(7)
 reportPath   = Arg(8)
+obtHome      = Arg(9)
 
-Dim outcomeText, summaryText
+Dim outcomeText, summaryText, grantText
 outcomeText = ""
 summaryText = ""
+grantText = ""
 
 Dim xlsApp, Wkb, wbName
 ' Initialised so Cleanup can test them with Is Nothing even when Open never ran.
@@ -94,32 +103,40 @@ Set Wkb = xlsApp.Workbooks.Open(wbPath, , False)
 If Err.Number <> 0 Then Fail "Workbooks.Open"
 wbName = Wkb.Name
 
-' 0) refresh the harness modules from the run dir, so OBTImport can be iterated
+' 0) the sandbox grant, first because every call after it reads a file. It is a
+'    no-op on this host and is called anyway, so the two triggers stay in step.
+grantText = xlsApp.Run(wbName & "!" & "OBTGrantRoot", obtHome)
+If Err.Number <> 0 Then
+    grantText = "GRANT CALL FAILED " & Err.Number & ": " & Err.Description
+    Err.Clear
+End If
+
+' 1) refresh the harness modules from the run dir, so OBTImport can be iterated
 '    without a manual VBE re-import.
 xlsApp.Run wbName & "!" & "OBTRefreshHarness"
 If Err.Number <> 0 Then Fail "OBTRefreshHarness"
 
-' 1) rebuild the Codes tables from the filtered intermediates. Always, never
+' 2) rebuild the Codes tables from the filtered intermediates. Always, never
 '    optional: the driver may be holding the tables a test run left behind, and
 '    those carry the test folders too.
 xlsApp.Run wbName & "!" & "OBTBuildCodeTables"
 If Err.Number <> 0 Then Fail "OBTBuildCodeTables"
 
-' 2) pull the staged source into the driver
+' 3) pull the staged source into the driver
 xlsApp.Run wbName & "!" & "OBTSilentImport"
 If Err.Number <> 0 Then Fail "OBTSilentImport"
 
-' 3) the build. A raise here is RECORDED rather than fatal, so the report file
+' 4) the build. A raise here is RECORDED rather than fatal, so the report file
 '    still says how far the run got instead of leaving only an exit code.
 outcomeText = xlsApp.Run(wbName & "!" & "HeadlessBuild.BuildLinelistFromSetup", _
                          designerPath, setupPath, sourceRoot, formsFolder, _
-                         outFolder, outName, buildOptions)
+                         outFolder, outName, buildOptions, obtHome)
 If Err.Number <> 0 Then
     outcomeText = "TRIGGER ERROR " & Err.Number & ": " & Err.Description
     Err.Clear
 End If
 
-' 4) what the build recorded. Read it whatever the outcome was: a run that
+' 5) what the build recorded. Read it whatever the outcome was: a run that
 '    stopped halfway still holds the narrative up to the stop, and that
 '    narrative is the whole diagnostic.
 summaryText = xlsApp.Run(wbName & "!" & "HeadlessBuild.LastBuildSummary")
@@ -128,7 +145,7 @@ If Err.Number <> 0 Then
     Err.Clear
 End If
 
-WriteReport reportPath, outcomeText, summaryText
+WriteReport reportPath, outcomeText, grantText, summaryText
 
 On Error GoTo 0
 Cleanup
@@ -138,7 +155,7 @@ WScript.Quit 0
 
 ' The outcome is the one field the summary cannot carry: it is what the build
 ' ANSWERED, and a build that raised never returned to say it.
-Sub WriteReport(path, outcomeValue, summaryValue)
+Sub WriteReport(path, outcomeValue, grantValue, summaryValue)
     On Error Resume Next
 
     Dim fso, handle
@@ -151,6 +168,7 @@ Sub WriteReport(path, outcomeValue, summaryValue)
     Set handle = fso.OpenTextFile(path, 2, True)
     If Err.Number = 0 Then
         handle.WriteLine "outcome=" & outcomeValue
+        handle.WriteLine "grant=" & grantValue
         handle.WriteLine summaryValue
         handle.Close
     End If
@@ -165,7 +183,7 @@ Sub Fail(stepName)
     WScript.Echo "build-linelist.vbs: " & stepName & " failed: " & _
                  Err.Number & " " & Err.Description
     Err.Clear
-    WriteReport reportPath, "TRIGGER ERROR at " & stepName, ""
+    WriteReport reportPath, "TRIGGER ERROR at " & stepName, grantText, ""
     Cleanup
     WScript.Quit 1
 End Sub

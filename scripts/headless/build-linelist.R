@@ -4,7 +4,7 @@
 #
 #   Rscript scripts/headless/build-linelist.R --setup=<filled-setup.xlsb> \
 #           [--out=<dir>] [--name=<stem>] [--designer=<path>] \
-#           [--forms=<dir>] [--home=<dir>] [--no-merge] \
+#           [--forms=<dir>] [--home=<dir>] [--obt-home=<dir>] [--no-merge] \
 #           [--temppath=<ribbon.xlsb>] [--geopath=<geo.xlsb>] \
 #           [--setuplang=<column>] [--lllang=<code>] [--llpassword=<pass>]
 #
@@ -41,10 +41,49 @@
 #   3. Excel: refresh the harness, rebuild the Codes tables, import the source,
 #      call the build, read back what it recorded.
 #
-# The run dir is a STABLE path that is cleared and reused, and the workbook copy
-# inside it is overwritten in place. macOS ties a file-access grant to the file
-# identity rather than to the path, so sweeping and recreating hands Excel a
-# brand new file the grant no longer covers and the operator is asked again.
+# ONE FOLDER, ONE GRANT
+# -----------------------------------------------------------------------------
+# Excel for Mac is sandboxed, and a VBA file read on a path it holds no grant
+# for pops a dialog that a headless run has nobody to answer. A probe run with
+# the operator watching the screen settled how the grant behaves (written up in
+# .obt/gotchas/macos-sandbox-grant.md): one FOLDER grant persists across Excel
+# being quit and relaunched, and it cascades to files created inside that tree
+# afterwards.
+#
+# So everything Excel touches is staged under a single root, OBT_HOME, and the
+# trigger grants that one folder before its first read:
+#
+#   <OBT_HOME>/run/      the driver copy, bootstrap/, the filtered sources,
+#                        .generated/, build-report.txt, obt-import.log
+#   <OBT_HOME>/src/      classes/** + modules/**, the tree the linelist is
+#                        built from (this is what the build calls sourceRoot)
+#   <OBT_HOME>/forms/    the merged .frm files
+#   <OBT_HOME>/in/       designer, setup, ribbon template, geobase
+#   <OBT_HOME>/out/      the linelist, its log, the designer used, OBTApp_/
+#
+# This script is NOT sandboxed, so it copies the operator's setup (and designer,
+# template, geobase) IN beforehand and copies the finished linelist back OUT to
+# --out afterwards. Excel never sees a path outside OBT_HOME, which is what
+# makes a packaged install click-free: one grant panel on a machine that has
+# never run it, and none after that.
+#
+# OBT_HOME is --obt-home, else the OBT_HOME environment variable (an .Renviron
+# entry is the deployed way to set it), else <repo>/.headless-runner. Its own
+# folder rather than a corner of the test harness's working area: the two runs
+# share a registry and nothing else, and keeping the headless tree separate is
+# what lets it be swept, moved or granted without touching the test loop.
+#
+# WHAT THE GRANT ACTUALLY BUYS, which is less than this once assumed. Measured
+# on 2026-08-14 (.obt/gotchas/macos-sandbox-grant.md): a grant is PER ITEM and
+# lasts for the SESSION. It does not cover subfolders and it does not survive
+# Excel being quit. So a run still meets panels; consolidating under one root
+# cuts how many and makes them nameable in one place. Excel's own container is
+# the only spot that needs no grant at all, and the launcher cannot write there
+# (TCC), which is the open problem.
+#
+# Within it the run dir is cleared and reused rather than deleted and remade,
+# and the workbook copy is overwritten in place. That predates the grant work
+# and is kept: it costs nothing and a file kept in place keeps its identity.
 # =============================================================================
 
 # --- args --------------------------------------------------------------------
@@ -79,6 +118,21 @@ if (!grepl("^(/|~|[A-Za-z]:)", build_home)) build_home <- file.path(repo_root, b
 workbook_src <- file.path(build_home, "unit_tests_dev.xlsb")
 scripts_dir  <- file.path(repo_root, "scripts")
 
+# THE granted root. Everything Excel reads or writes goes under it, and the
+# trigger asks the sandbox about this one path and nothing else.
+#
+# Sys.getenv reads .Renviron, which is how a deployed install pins it without
+# anyone having to remember a flag: one OBT_HOME=... line in the operator's
+# .Renviron and every run lands in the folder they granted.
+obt_home <- opt("obt-home", default = {
+  if (nzchar(Sys.getenv("OBT_HOME"))) Sys.getenv("OBT_HOME")
+  else file.path(repo_root, ".headless-runner")
+})
+if (!grepl("^(/|~|[A-Za-z]:)", obt_home)) obt_home <- file.path(repo_root, obt_home)
+obt_home <- path.expand(obt_home)
+dir.create(obt_home, recursive = TRUE, showWarnings = FALSE)
+obt_home <- normalizePath(obt_home, mustWork = TRUE)
+
 # The trigger is the only OS-specific piece. Everything above and below it is
 # the same on both hosts, which is the whole point of keeping it thin: the two
 # triggers drive the SAME entry points in the SAME order with the SAME
@@ -93,7 +147,18 @@ trigger <- if (on_windows) {
 merger       <- file.path(scripts_dir, "headless", "merge-form-code.R")
 registry_r   <- file.path(scripts_dir, "tests", "build-registry.R")
 generated    <- file.path(repo_root, "src", "tests", ".generated")
-run_dir      <- file.path(build_home, "headless", "run")
+
+# The five places under the granted root. Nothing Excel touches lives outside
+# these, which is the whole of the sandbox fix.
+run_dir      <- file.path(obt_home, "run")
+staged_forms <- file.path(obt_home, "forms")
+staged_in    <- file.path(obt_home, "in")
+build_out    <- file.path(obt_home, "out")
+
+# sourceRoot is the root itself, because HeadlessBuild joins "src/classes" and
+# "src/modules" onto whatever it is given. So the tree lands at
+# <OBT_HOME>/src/classes and the build finds it where it expects to.
+source_root  <- obt_home
 
 # --- what to build -----------------------------------------------------------
 # Every path handed on to Excel is made absolute first. R resolves a relative
@@ -113,22 +178,18 @@ if (is.null(setup_path) || !nzchar(setup_path)) {
 setup_path <- abs_path(setup_path)
 
 designer_path <- abs_path(opt("designer", file.path(repo_root, ".mock", "designer_mock.xlsb")))
-forms_folder  <- abs_path(opt("forms",    file.path(build_home, "forms", "merged")))
-out_folder    <- abs_path(opt("out",      file.path(build_home, "build")))
-out_name      <- opt("name",     "linelist")
+temp_path     <- abs_path(opt("temppath", ""))
+geo_path      <- abs_path(opt("geopath",  ""))
+out_name      <- opt("name", "linelist")
 
-# Every option key is passed on every run, empty when unset. An empty value is
-# meaningful to the build and documented as such -- empty temppath is the
-# buttons build, empty setuplang is "read it off the setup" -- so there is no
-# case where omitting a key says something a blank one does not.
-build_options <- paste(
-  paste0("temppath=",   abs_path(opt("temppath",   ""))),
-  paste0("geopath=",    abs_path(opt("geopath",    ""))),
-  paste0("setuplang=",  opt("setuplang",  "")),
-  paste0("lllang=",     opt("lllang",     "")),
-  paste0("llpassword=", opt("llpassword", "")),
-  sep = "|"
-)
+# Where the OPERATOR wants the three files. Excel never writes here: it builds
+# into <OBT_HOME>/out and this script copies the result across at the end.
+dest_folder <- abs_path(opt("out", file.path(build_home, "build")))
+
+# --forms, when given, is a folder of already-merged .frm files somewhere else;
+# it gets copied into the root like every other input. Left unset, the merge
+# below writes straight into the root and there is nothing to copy.
+forms_source <- abs_path(opt("forms", ""))
 
 if (on_windows) {
   message("build-linelist.R: NOTE - the Windows trigger has never been run ",
@@ -137,10 +198,16 @@ if (on_windows) {
 for (needed in c(workbook_src, trigger, designer_path, setup_path, registry_r)) {
   if (!file.exists(needed)) stop("build-linelist.R: not found: ", needed)
 }
+for (optional in c(temp_path, geo_path)) {
+  if (nzchar(optional) && !file.exists(optional)) {
+    stop("build-linelist.R: not found: ", optional)
+  }
+}
 
+message("build-linelist.R: OBT_HOME  -> ", obt_home, " (the one granted folder)")
 message("build-linelist.R: designer  -> ", designer_path)
 message("build-linelist.R: setup     -> ", setup_path)
-message("build-linelist.R: output    -> ", file.path(out_folder, paste0(out_name, ".xlsb")))
+message("build-linelist.R: output    -> ", file.path(dest_folder, paste0(out_name, ".xlsb")))
 message("build-linelist.R: ",
         if (nzchar(opt("temppath", ""))) {
           paste0("ribbon build, template ", opt("temppath", ""))
@@ -153,15 +220,30 @@ message("build-linelist.R: ",
 # exported; the code that belongs in them lives in src/modules/linelistform. A
 # build over unmerged forms delivers every control wired to stale handlers, and
 # nothing about the delivered file says so.
+#
+# They land in <OBT_HOME>/forms whichever way they arrive, because that is where
+# Excel is allowed to read them from.
+dir.create(staged_forms, recursive = TRUE, showWarnings = FALSE)
+
 if (do_merge) {
   message("build-linelist.R: merging the current form code ...")
-  rc <- system2("Rscript", c(shQuote(merger), "--out", shQuote(forms_folder)))
+  rc <- system2("Rscript", c(shQuote(merger), "--out", shQuote(staged_forms)))
   if (rc != 0L) stop("build-linelist.R: merge-form-code.R failed (exit ", rc, ").")
+} else if (nzchar(forms_source)) {
+  message("build-linelist.R: --no-merge, copying the forms from ", forms_source)
+  if (!dir.exists(forms_source)) {
+    stop("build-linelist.R: no merged forms at ", forms_source)
+  }
+  unlink(list.files(staged_forms, full.names = TRUE), recursive = TRUE, force = TRUE)
+  copied <- file.copy(list.files(forms_source, full.names = TRUE), staged_forms,
+                      recursive = TRUE, overwrite = TRUE)
+  if (!all(copied)) stop("build-linelist.R: failed to copy the forms into ", staged_forms)
 } else {
-  message("build-linelist.R: --no-merge, using the forms already in ", forms_folder)
+  message("build-linelist.R: --no-merge, using the forms already in ", staged_forms)
 }
-if (!dir.exists(forms_folder)) {
-  stop("build-linelist.R: no merged forms at ", forms_folder,
+
+if (!length(list.files(staged_forms, pattern = "\\.frm$"))) {
+  stop("build-linelist.R: no merged forms at ", staged_forms,
        " (drop --no-merge, or point --forms at a folder that has them).")
 }
 
@@ -239,13 +321,81 @@ for (f in c("OBTImport.bas", "OBTHeadless.bas")) {
 message("build-linelist.R: staged ", nrow(tbl), " component(s) from ",
         nrow(pairs), " folder(s), no test module among them")
 
-# --- 4) clear the way --------------------------------------------------------
-dir.create(out_folder, recursive = TRUE, showWarnings = FALSE)
+# --- 3b) stage the source tree and the inputs into the granted root ----------
+# Two different things are staged from src/, and confusing them is easy:
+#
+#   run/classes, run/modules  the filtered build closure, imported into the
+#                             DRIVER so it has a HeadlessBuild to call
+#   src/classes, src/modules  the whole tree, re-imported into the LINELIST by
+#                             RefreshSourceCode (it reads <sourceRoot>/src/...)
+#
+# The whole tree rather than the registered folders, because HeadlessBuild picks
+# what it wants out of it through TRANSFER_CLASS_FOLDERS. Copying only what that
+# constant names today would put a second copy of the list here, and a second
+# copy goes stale silently.
+sync_tree <- function(from, to) {
+  if (!dir.exists(from)) stop("build-linelist.R: nothing to stage from ", from)
+  dir.create(dirname(to), recursive = TRUE, showWarnings = FALSE)
+  unlink(to, recursive = TRUE, force = TRUE)
+  dir.create(to, recursive = TRUE, showWarnings = FALSE)
+  copied <- file.copy(list.files(from, full.names = TRUE), to, recursive = TRUE)
+  if (!all(copied)) {
+    stop("build-linelist.R: failed to stage ", sum(!copied), " item(s) from ",
+         from, " into ", to)
+  }
+  invisible(TRUE)
+}
 
-# The three files a build writes. A stale linelist left in place would let a
-# failed run report a file on disk and read as a success.
-for (leaf in c(".xlsb", "-generation.txt", "-designer.xlsb")) {
-  unlink(file.path(out_folder, paste0(out_name, leaf)), force = TRUE)
+sync_tree(file.path(repo_root, "src", "classes"), file.path(source_root, "src", "classes"))
+sync_tree(file.path(repo_root, "src", "modules"), file.path(source_root, "src", "modules"))
+
+# The operator's own files, copied in under fixed names. Excel is handed these
+# copies and never the originals, which is what keeps every path it sees inside
+# the granted root no matter where the operator keeps their setup.
+dir.create(staged_in, recursive = TRUE, showWarnings = FALSE)
+
+stage_in <- function(from, leaf) {
+  if (!nzchar(from)) return("")
+  to <- file.path(staged_in, leaf)
+  if (!file.copy(from, to, overwrite = TRUE)) {
+    stop("build-linelist.R: failed to stage ", from, " into ", staged_in)
+  }
+  to
+}
+
+staged_designer <- stage_in(designer_path, "designer.xlsb")
+staged_setup    <- stage_in(setup_path,    "setup.xlsb")
+staged_template <- stage_in(temp_path,     "template.xlsb")
+staged_geo      <- stage_in(geo_path,      "geo.xlsb")
+
+# Built from the STAGED paths, so a ribbon template or geobase the operator
+# keeps on their Desktop is read from inside the root like everything else.
+#
+# Every option key is passed on every run, empty when unset. An empty value is
+# meaningful to the build and documented as such -- empty temppath is the
+# buttons build, empty setuplang is "read it off the setup" -- so there is no
+# case where omitting a key says something a blank one does not.
+build_options <- paste(
+  paste0("temppath=",   staged_template),
+  paste0("geopath=",    staged_geo),
+  paste0("setuplang=",  opt("setuplang",  "")),
+  paste0("lllang=",     opt("lllang",     "")),
+  paste0("llpassword=", opt("llpassword", "")),
+  sep = "|"
+)
+
+# --- 4) clear the way --------------------------------------------------------
+# Excel builds into the root; the operator's folder is filled from there at the
+# end of the run.
+dir.create(build_out, recursive = TRUE, showWarnings = FALSE)
+dir.create(dest_folder, recursive = TRUE, showWarnings = FALSE)
+
+# The three files a build writes, cleared in BOTH places. A stale linelist left
+# in either would let a failed run report a file on disk and read as a success.
+build_leaves <- c(".xlsb", "-generation.txt", "-designer.xlsb")
+for (leaf in build_leaves) {
+  unlink(file.path(build_out,   paste0(out_name, leaf)), force = TRUE)
+  unlink(file.path(dest_folder, paste0(out_name, leaf)), force = TRUE)
 }
 
 # Only macOS needs this. There, `run VB macro` returns a Parameter error against
@@ -258,6 +408,9 @@ excel_running <- function() {
                     stdout = FALSE, stderr = FALSE), 0L)
 }
 if (excel_running()) {
+  # `quit`, never pkill. The sandbox grant is a bookmark Excel holds and writes
+  # out on normal termination; a killed Excel can lose it, and losing it costs
+  # the operator the grant panel again on the next run.
   message("build-linelist.R: quitting the running Excel instance ...")
   system2("osascript",
           c("-e", shQuote('tell application "Microsoft Excel" to quit saving no')),
@@ -272,9 +425,12 @@ if (excel_running()) {
 }
 
 # --- 5) build ----------------------------------------------------------------
+# Every path here is inside obt_home, which is the last argument and the only
+# one the sandbox is asked about. sourceRoot is the staged tree rather than the
+# repo, and outFolder is the root's own out/ rather than the operator's folder.
 trigger_args <- shQuote(c(
-  trigger, work_copy, designer_path, setup_path, repo_root,
-  forms_folder, out_folder, out_name, build_options, report_path
+  trigger, work_copy, staged_designer, staged_setup, source_root,
+  staged_forms, build_out, out_name, build_options, report_path, obt_home
 ))
 
 message("build-linelist.R: launching Excel via ",
@@ -319,11 +475,17 @@ field <- function(key) {
 
 outcome  <- field("outcome")
 built    <- field("linelist")
+grant    <- field("grant")
 
 if (length(narrative)) {
   message("\nWhat the build did:")
   for (ln in narrative) if (nzchar(trimws(ln))) message("  ", ln)
 }
+
+# Printed on every run, because a grant that stopped taking is invisible from
+# here otherwise: nothing in an exit code or an elapsed time can see a dialog,
+# and the operator is the only one who can.
+if (nzchar(grant)) message("\nbuild-linelist.R: sandbox   -> ", grant)
 
 message(sprintf("\nbuild-linelist.R: %s sheet(s), %s variable(s), %s component(s) re-imported.",
                 field("sheets"), field("variables"), field("components")))
@@ -335,7 +497,32 @@ if (!nzchar(built) || !file.exists(built)) {
   fail(paste0("the build answered OK and there is no file at: ", built))
 }
 
-message("\nbuild-linelist.R: linelist -> ", built,
+message("\nbuild-linelist.R: built    -> ", built,
         " (", format(file.size(built), big.mark = ","), " bytes)")
-if (nzchar(field("log"))) message("build-linelist.R: log      -> ", field("log"))
+
+# --- 7) hand the files over --------------------------------------------------
+# The build wrote into the granted root because that is the only place Excel is
+# allowed to write without asking. This script is under no such restriction, so
+# it does the last hop to wherever the operator asked for the files.
+#
+# A copy that fails is a failure of the run: the operator asked for a linelist
+# in their folder and there is none there, whatever is sitting in the root.
+delivered <- character(0)
+if (!identical(normalizePath(build_out), normalizePath(dest_folder))) {
+  for (leaf in build_leaves) {
+    from <- file.path(build_out, paste0(out_name, leaf))
+    if (!file.exists(from)) next
+    to <- file.path(dest_folder, paste0(out_name, leaf))
+    if (!file.copy(from, to, overwrite = TRUE)) {
+      fail(paste0("the build succeeded and the file could not be copied out to ", to))
+    }
+    delivered <- c(delivered, to)
+  }
+} else {
+  delivered <- file.path(dest_folder, paste0(out_name, build_leaves))
+  delivered <- delivered[file.exists(delivered)]
+}
+
+message("build-linelist.R: linelist -> ", delivered[1])
+for (extra in delivered[-1]) message("build-linelist.R:          -> ", extra)
 quit(status = 0L, save = "no")

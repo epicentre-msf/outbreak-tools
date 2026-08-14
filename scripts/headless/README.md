@@ -78,8 +78,12 @@ source, drives Excel, and prints what the build recorded. Under it:
 ```vb
 outcome = HeadlessBuild.BuildLinelistFromSetup( _
               designerPath, setupPath, sourceRoot, formsFolder, _
-              outputFolder, outputName, options)
+              outputFolder, outputName, options, grantRoot)
 ```
+
+`grantRoot` is the one folder every other path sits under, and it is what the
+sandbox is asked about. Left empty, the five paths are granted separately, which
+is what `TestHeadlessLinelistBuild` still does — see **File access** below.
 
 Three files land in `outputFolder`:
 
@@ -119,10 +123,12 @@ written.
 | | |
 |---|---|
 | `--setup` | required: the filled setup to generate from |
-| `--designer` `--forms` `--out` `--name` | default to the mock designer, `<home>/forms/merged`, `<home>/build`, `linelist` |
+| `--designer` `--out` `--name` | default to the mock designer, `<home>/build`, `linelist` |
+| `--forms` | a folder of already-merged forms to copy in. Only meaningful with `--no-merge` |
 | `--temppath` `--geopath` `--setuplang` `--lllang` `--llpassword` | the option keys above, passed through |
 | `--no-merge` | skip step two. Skipping it is how a linelist ends up with the right buttons wired to last week's handlers |
 | `--home` | the untracked working area, same one the test harness uses |
+| `--obt-home` | **the granted root** — everything Excel touches is staged under it. Falls back to the `OBT_HOME` environment variable (an `.Renviron` line is the deployed way to set it), then to `<repo>/.headless-runner` |
 
 It reads `src/tests/test-registry.yml` for the list of classes and modules to
 load into the driver, and **drops every test row** before staging — the driver
@@ -225,52 +231,79 @@ that looks right and behaves like last month.
 ## File access on macOS
 
 Every path this workflow reads has to be inside a folder Excel holds a
-security-scoped grant for. Full Disk Access does **not** provide one; only a
-folder pick through a dialog does.
+security-scoped grant for. Full Disk Access does **not** provide one: the
+sandbox wants bookmarks, and TCC permissions are a different thing entirely.
 
-The run asks for it itself. Every headless entry point calls
-`HeadlessBuild.EnsureFileAccess` — a thin wrapper over
-`Application.GrantAccessToMultipleFiles`, Excel's own API for sandbox grants —
-**before its first file read**, passing the repo root. The first run on a
-machine shows one consolidated dialog; click Grant and the run proceeds. The
-grant persists, so every later run is silent.
+### One folder, one grant
 
-### The scratch folder has to exist before the grant is asked for
+Everything Excel touches is staged under one root, `OBT_HOME`, and the trigger
+grants that one folder before its first read.
+
+The direct reason is that **nothing granted the run dir at all**. `OBTImport`
+and `OBTHeadless` make no grant call, `OBTRefreshHarness` reads
+`run/bootstrap/*.bas` before anything else happens, and the only grant in the
+chain sat three steps later naming five paths that did not include it. One root
+granted at step 0 fixes that on its own.
+
+Whether it gets to **zero** panels rather than fewer rests on two properties of
+a folder grant that are **not established**: that it persists across an Excel
+restart, and that it cascades to files created in the tree afterwards. Microsoft
+documents `GrantAccessToMultipleFiles` as persistent; cascade has no
+documentation. A probe meant to settle both was void — it derived its root from
+`Environ$("HOME")`, which inside a sandboxed Excel answers the container home
+where no grant is needed. See `.obt/gotchas/macos-sandbox-grant.md` before
+citing either property.
+
+The layout:
+
+```
+<OBT_HOME>/run/      the driver copy, bootstrap/, the filtered sources,
+                     .generated/, build-report.txt, obt-import.log
+<OBT_HOME>/src/      classes/** + modules/**, the tree the linelist is built
+                     from (what the build calls sourceRoot)
+<OBT_HOME>/forms/    the merged .frm files
+<OBT_HOME>/in/       designer, setup, ribbon template, geobase
+<OBT_HOME>/out/      the linelist, its log, the designer used, OBTApp_/
+```
+
+`build-linelist.R` is not sandboxed, so it copies the operator's files **in**
+beforehand and copies the finished linelist back **out** to `--out` at the end.
+Excel is handed the staged copies and never the originals, so it sees no path
+outside the root wherever the operator keeps their setup.
+
+The trigger's **step 0** is `OBTGrantRoot`, and it runs before every other
+macro because every other macro reads a file. It lives in `OBTBootstrap` — the
+module baked into the driver — since a module that has to be read off disk
+cannot be the one that grants access to the disk. `OBTRefreshHarness` runs
+straight after it and reads `run/bootstrap/*.bas`; nothing granted that folder
+before, which is why the harness modules used to prompt on every single run.
+
+What the run reports is in `build-report.txt` as `grant=`, and
+`build-linelist.R` prints it on every run. A grant that stopped taking is
+otherwise invisible from outside: no exit code and no elapsed time can see a
+dialog.
+
+### The scratch folder still has to exist before the grant
 
 `CodeTransfer` exports every component of the transfer to `<lldir>/OBTApp_` and
 imports it straight back, so a build touches two files in there per component.
-A security-scoped grant is given for a path that **exists** — handing over a
-folder that is not on disk yet grants nothing, and the run then stops on one
-dialog per component with nobody there to answer it. `TemporaryRepos` does
-create the folder, but not until the build is well past the one moment a dialog
-could still be answered.
+`TemporaryRepos` creates the folder, but not until the build is well past the
+one moment a dialog could still be answered — so `BuildLinelistFromSetup`
+creates `<outputFolder>/OBTApp_` itself first. Under one granted root that is
+belt and braces rather than load-bearing, and it costs nothing.
 
-So `BuildLinelistFromSetup` creates `<outputFolder>/OBTApp_` itself, before the
-grant is asked for.
+### Dead ends, so nobody walks them again
 
-It does **not** name it in the grant, and that is the point.
-`GrantAccessToMultipleFiles` shows one dialog listing the **whole array**
-whenever any single member is not yet bookmarked, so adding a folder that had
-never been granted turned a silent call into a prompt for every path in it, on a
-machine where the others had been granted for weeks. `outputFolder` is the
-scratch folder's parent and is already in the array; a folder grant covers its
-whole tree, including what is created inside it afterwards.
+- An AppleScript `choose folder` sent to Excel **from outside** (osascript) does
+  not create Excel's persistent grant — the panel does not run in Excel's
+  sandbox context. Only in-process mechanisms stick.
+- Full Disk Access does nothing for this.
+- `pkill` on Excel can cost the grant. The bookmark is written on normal
+  termination, so `build-linelist.R` quits Excel through Apple Events.
 
-Two dead ends, so nobody walks them again:
-
-- An AppleScript `choose folder` sent to Excel **from outside** (osascript)
-  does not create Excel's persistent grant — the panel does not run in Excel's
-  sandbox context. Only in-process mechanisms stick: `MacScript` from the VBE
-  (what `OBTGrantAccess` does) or `GrantAccessToMultipleFiles` (what the code
-  does now).
-- Full Disk Access does nothing for this: the sandbox wants security-scoped
-  bookmarks, not TCC permissions.
-
-There is no way to drop the machinery on macOS — the sandbox is the host's, not
-this project's. What the code does instead is ask **once, for one root, in one
-dialog**. On Windows the sandbox does not exist, `GrantAccessToMultipleFiles`
-is absent, and `EnsureFileAccess` silently answers False, which is correct
-there.
+On Windows the sandbox does not exist, `GrantAccessToMultipleFiles` is absent,
+`OBTGrantRoot` answers "not available on this host", and `EnsureFileAccess`
+silently answers False. All correct there.
 
 ## Running the suites
 

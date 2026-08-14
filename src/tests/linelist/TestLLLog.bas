@@ -18,9 +18,12 @@ Option Explicit
 '-------------------------------------------------------------------------------
 'The title of an entry is the section of its action, and the writer is in
 'compact mode, so each of the three titles is written once however many
-'actions follow it. Four tests hold that: the action code no longer heads
-'a block, one title covers three actions of one section, a second section
-'brings its own title, and the mapping answers the two boundary cases.
+'actions follow it, and each heads a block of its own kind. Six tests hold
+'that: the action code no longer heads a block, one title covers three
+'actions of one section, a second section brings its own title, an action
+'coming back to a section written earlier rejoins its block rather than
+'landing at the foot of the sheet, a blank row stands between two blocks,
+'and the mapping answers the two boundary cases.
 '
 'THE ROTATION IS REACHED BY SEEDING
 '-------------------------------------------------------------------------------
@@ -35,6 +38,7 @@ Private FixtureWkb As Workbook
 Private Const TESTOUTPUTSHEET As String = "testsOutputs"
 Private Const TESTMODULE As String = "LLLog"
 Private Const LOG_SHEET As String = "__log"
+Private Const TITLE_COLUMN As Long = 2
 Private Const OUTPUT_COLUMN As Long = 3
 Private Const DATE_COLUMN As Long = 4
 Private Const DETAIL_COLUMN As Long = 5
@@ -327,12 +331,11 @@ End Sub
 
 '@sub-title A second section brings its own title, and the first keeps its own.
 '@details
-'The lines stay in the order they happened, so a title marks where its
-'section FIRST appears rather than heading a block of its own kind. The
-'last action here comes back to a section whose title is already up, and
-'its line lands at the bottom under a different heading. The hidden title
-'column carries the true section of every line, which is what the title
-'dropdown of the output sheet filters on.
+'A title heads a block of its own kind. The last action here comes back to
+'a section whose title is already up, and its line lands at the foot of
+'THAT block rather than at the foot of the sheet. The hidden title column
+'carries the section of every line, which is what the title dropdown of the
+'output sheet filters on.
 '@TestMethod("LLLog")
 Public Sub TestASecondSectionBringsItsOwnTitle()
     CustomTestSetTitles Assert, TESTMODULE, "TestASecondSectionBringsItsOwnTitle"
@@ -354,12 +357,91 @@ Public Sub TestASecondSectionBringsItsOwnTitle()
                     "The lifecycle section is written once, both entries under it"
     Assert.AreEqual 1&, CountOfText(sh, OUTPUT_COLUMN, SECTION_DATAIO), _
                     "The data section is written once"
-    Assert.IsTrue (RowOfText(sh, DETAIL_COLUMN, "sort") > 0), _
-                  "The action that came back to a written section still logged its line"
+    Assert.AreEqual 1&, RowOfText(sh, DETAIL_COLUMN, "sort") - _
+                        RowOfText(sh, DETAIL_COLUMN, "add-rows"), _
+                    "The action that came back to a written section joined its block"
 
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestASecondSectionBringsItsOwnTitle", Err.Number, Err.Description
+End Sub
+
+'@sub-title An action rejoins its own block, above the sections opened after it.
+'@details
+'The owner report the grouping answers. The close of a session is the last
+'thing that happens, and it used to land at the foot of the sheet, under
+'whatever section had been written last. It belongs with the open it closes,
+'so it is written at the foot of the open/close block and stands above every
+'block opened after that one.
+'@TestMethod("LLLog")
+Public Sub TestAnActionRejoinsItsOwnBlock()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAnActionRejoinsItsOwnBlock"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim sh As Worksheet
+    Dim openRow As Long
+    Dim closeRow As Long
+    Dim sortRow As Long
+
+    Set sut = LLLog.Create(FixtureWkb)
+    sut.LogInfo "open", "linelist.xlsb"
+    sut.LogSuccess "add-rows", "10 rows"
+    sut.LogSuccess "sort", "Age"
+    sut.LogInfo "close", "linelist.xlsb"
+    Set sh = sut.Wksh()
+
+    openRow = RowOfText(sh, DETAIL_COLUMN, "open: linelist.xlsb")
+    closeRow = RowOfText(sh, DETAIL_COLUMN, "close: linelist.xlsb")
+    sortRow = RowOfText(sh, DETAIL_COLUMN, "sort")
+
+    Assert.IsTrue (openRow > 0), "The open line is on the sheet"
+    Assert.AreEqual 1&, closeRow - openRow, _
+                    "The close sits at the foot of the block the open opened"
+    Assert.IsTrue (closeRow < sortRow), _
+                  "The block opened after the session block stands below it"
+    Assert.AreEqual SECTION_OPENCLOSE, _
+                    Trim$(CStr(sh.Cells(closeRow, TITLE_COLUMN).Value)), _
+                    "The close line carries its section in the hidden column"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAnActionRejoinsItsOwnBlock", Err.Number, Err.Description
+End Sub
+
+'@sub-title A blank row stands between two blocks.
+'@details
+'The blocks are read as blocks, so the title of a new one is not written
+'straight under the last line of the one above it.
+'@TestMethod("LLLog")
+Public Sub TestABlankRowStandsBetweenTwoBlocks()
+    CustomTestSetTitles Assert, TESTMODULE, "TestABlankRowStandsBetweenTwoBlocks"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim sh As Worksheet
+    Dim firstTitleRow As Long
+    Dim secondTitleRow As Long
+
+    Set sut = LLLog.Create(FixtureWkb)
+    sut.LogInfo "open", "linelist.xlsb"
+    sut.LogSuccess "add-rows", "10 rows"
+    Set sh = sut.Wksh()
+
+    firstTitleRow = RowOfText(sh, OUTPUT_COLUMN, SECTION_OPENCLOSE)
+    secondTitleRow = RowOfText(sh, OUTPUT_COLUMN, SECTION_LIFECYCLE)
+
+    Assert.IsTrue (firstTitleRow > 0), "The first block opens the sheet"
+    Assert.AreEqual 3&, secondTitleRow - firstTitleRow, _
+                    "A title, its one line, then a blank row, then the next title"
+    Assert.AreEqual 0&, CLng(LenB(CStr(sh.Cells(secondTitleRow - 1, OUTPUT_COLUMN).Value))), _
+                    "The row between the two blocks carries nothing"
+    Assert.AreEqual 0&, CLng(LenB(CStr(sh.Cells(secondTitleRow - 1, TITLE_COLUMN).Value))), _
+                    "The row between the two blocks belongs to no section"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestABlankRowStandsBetweenTwoBlocks", Err.Number, Err.Description
 End Sub
 
 '@sub-title Every action falls in one of the three sections.

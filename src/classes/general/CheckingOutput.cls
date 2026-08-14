@@ -148,9 +148,10 @@ End Property
 'title and the blocks stand apart. A running log is the other shape. It is
 'one sheet written a single entry at a time over a whole session, and the
 'title of an entry has almost always been written by an earlier render.
-'Compact mode writes a title only when the sheet has never carried it and
-'drops the blank rows between blocks, so a session of a hundred actions
-'reads as a hundred lines under a handful of titles.
+'Compact mode writes a title only when the sheet has never carried it, and
+'writes a line at the foot of the block its title heads rather than at the
+'foot of the sheet, so a session of a hundred actions reads as a handful of
+'blocks, each one line per action, with a blank row between them.
 '@return Boolean. True when the writer is in compact mode.
 '@export
 Public Property Get CompactAppend() As Boolean
@@ -342,7 +343,9 @@ End Function
 '@details
 'Outputs the title heading (once per unique title), optional subtitle,
 'and all keyed entries with their severity colour coding. Advances the
-'current row counter and tracks written titles to avoid duplicates.
+'current row counter and tracks written titles to avoid duplicates. This
+'is the render path of a checking sheet; a compact log is written by
+'WriteCompactChecking instead.
 '@param checking Checking. Bundle to render.
 '@param currentRow Long. ByRef row counter advanced during writing.
 '@param writtenTitles Collection. ByRef collection tracking emitted titles.
@@ -367,17 +370,10 @@ Private Sub WriteChecking(ByVal checksObject As Checking, _
     subtitle = checksObject.Heading(subtitle:=True)
 
     If Not TitleAlreadyWritten(title, writtenTitles) Then
-        If TitleStandsOnTheSheet(title) Then
-            'Compact mode only. The title is up there already from an earlier
-            'render, and writing it again is what turns a log into a list of
-            'headings.
-            writtenTitles.Add Item:=title, key:=title
-        Else
-            WriteRow rowIndex:=currentRow, textValue:=title, formatTag:="level 1", sep:=sep, parentTitle:=title
-            If LenB(Trim$(title)) > 0 Then AppendTitleToStore title
-            writtenTitles.Add Item:=title, key:=title
-            currentRow = currentRow + BlockGap()
-        End If
+        WriteRow rowIndex:=currentRow, textValue:=title, formatTag:="level 1", sep:=sep, parentTitle:=title
+        If LenB(Trim$(title)) > 0 Then AppendTitleToStore title
+        writtenTitles.Add Item:=title, key:=title
+        currentRow = currentRow + 2
     End If
 
     If subtitle <> vbNullString Then
@@ -397,35 +393,129 @@ Private Sub WriteChecking(ByVal checksObject As Checking, _
         currentRow = currentRow + 1
     Next keyIndex
 
-    If Not this.compactAppend Then currentRow = currentRow + 2
+    currentRow = currentRow + 2
 End Sub
 
-'@label:block-gap
-'@sub-title Rows left between a title and what it heads
+'@label:write-compact-checking
+'@sub-title Write one bundle at the foot of the block its title heads
 '@details
-'A checking sheet leaves a blank row under each heading. A compact log has
-'one line per entry and no blank rows at all, so its entry sits directly
-'under the title.
-'@return Long. Rows to advance after writing a title.
-Private Function BlockGap() As Long
-    BlockGap = IIf(this.compactAppend, 1, 2)
+'The compact writer of a running log. A title the sheet has never carried
+'opens a block of its own, one blank row under whatever stands above it. A
+'title already on the sheet heads a block somewhere up the sheet, and its
+'new line is opened at the foot of THAT block rather than at the foot of
+'the sheet, so a section stays whole however far apart in time its actions
+'were taken.
+'
+'Opening a line inside the sheet pushes every row under it down one, the
+'end marker included, so the bottom cursor moves with each inserted line.
+'@param checksObject Checking. Bundle to render.
+'@param bottomRow Long. ByRef cursor on the first free row at the foot of the sheet.
+'@param sep Optional String. Separator for text fragments. Defaults to "--".
+Private Sub WriteCompactChecking(ByVal checksObject As Checking, _
+                                 ByRef bottomRow As Long, _
+                                 Optional ByVal sep As String = DEFAULT_SEPARATOR)
+
+    Dim title As String
+    Dim keys As BetterArray
+    Dim keyIndex As Long
+    Dim keyName As String
+    Dim keyColour As String
+    Dim keyLabel As String
+    Dim keyType As String
+    Dim fullLabel As String
+    Dim sectionRow As Long
+    Dim targetRow As Long
+    Dim inserting As Boolean
+
+    title = checksObject.Heading
+    sectionRow = LastRowOfTitle(title)
+    inserting = (sectionRow >= FIRST_ROW_OUTPUT)
+
+    If inserting Then
+        targetRow = sectionRow + 1
+    Else
+        If bottomRow > FIRST_ROW_OUTPUT Then bottomRow = bottomRow + 1
+        WriteRow rowIndex:=bottomRow, textValue:=title, formatTag:="level 1", _
+                 sep:=sep, parentTitle:=title
+        If LenB(Trim$(title)) > 0 Then AppendTitleToStore title
+        bottomRow = bottomRow + 1
+        targetRow = bottomRow
+    End If
+
+    Set keys = checksObject.ListOfKeys
+    For keyIndex = keys.lowerBound To keys.upperBound
+        keyName = CStr(keys.Item(keyIndex))
+        keyColour = checksObject.ValueOf(keyName, checkingColor)
+        keyLabel = checksObject.ValueOf(keyName, checkingLabel)
+        keyType = checksObject.ValueOf(keyName, checkingType)
+        fullLabel = keyType & sep & keyLabel
+
+        If inserting Then InsertEntryCells targetRow
+        WriteRow rowIndex:=targetRow, textValue:=fullLabel, formatTag:=keyColour, _
+                 sep:=sep, parentTitle:=title
+        targetRow = targetRow + 1
+        bottomRow = bottomRow + 1
+    Next keyIndex
+End Sub
+
+'@label:last-row-of-title
+'@sub-title Last row the sheet already carries for a title
+'@details
+'The hidden title column says which block a row belongs to, and the last
+'row bearing a title is the foot of that block. The column is read in one
+'shot: a log runs to thousands of rows and a cell-by-cell scan would be
+'felt on every single event.
+'@param title String. The title to look for.
+'@return Long. The last row bearing the title, or 0 when the sheet carries none.
+Private Function LastRowOfTitle(ByVal title As String) As Long
+    Dim sh As Worksheet
+    Dim lastRow As Long
+    Dim titles As Variant
+    Dim rowIndex As Long
+    Dim searched As String
+
+    searched = Trim$(title)
+    If LenB(searched) = 0 Then Exit Function
+
+    Set sh = Wksh()
+    lastRow = sh.Cells(sh.rows.Count, HIDDEN_TITLE_COLUMN).End(xlUp).row
+    If lastRow < FIRST_ROW_OUTPUT Then Exit Function
+
+    titles = sh.Range(sh.Cells(FIRST_ROW_OUTPUT, HIDDEN_TITLE_COLUMN), _
+                      sh.Cells(lastRow, HIDDEN_TITLE_COLUMN)).Value2
+
+    'A one-cell range answers a scalar rather than an array
+    If Not IsArray(titles) Then
+        If StrComp(Trim$(CStr(titles)), searched, vbTextCompare) = 0 Then _
+            LastRowOfTitle = FIRST_ROW_OUTPUT
+        Exit Function
+    End If
+
+    For rowIndex = UBound(titles, 1) To LBound(titles, 1) Step -1
+        If StrComp(Trim$(CStr(titles(rowIndex, 1))), searched, vbTextCompare) = 0 Then
+            LastRowOfTitle = FIRST_ROW_OUTPUT + rowIndex - 1
+            Exit Function
+        End If
+    Next rowIndex
 End Function
 
-'@label:title-stands-on-the-sheet
-'@sub-title Whether an earlier render already wrote this title
+'@label:insert-entry-cells
+'@sub-title Open a line inside a block without moving the title store
 '@details
-'Answers False outside compact mode, so a checking sheet keeps writing the
-'heading of every render it makes. Inside compact mode the persistent title
-'store is the record of what the sheet already carries: it survives across
-'renders, which is exactly the span a log has to look back over.
-'@param title String. The title about to be written.
-'@return Boolean. True when the title need not be written again.
-Private Function TitleStandsOnTheSheet(ByVal title As String) As Boolean
-    If Not this.compactAppend Then Exit Function
-    If LenB(Trim$(title)) = 0 Then Exit Function
+'Only the hidden title column and the written columns are shifted down. The
+'title store sits far to the right on rows of its own, and a whole-row
+'insert would carry it down with the log and leave the filter dropdown
+'reading a range the titles have walked out of.
+'@param rowIndex Long. Row the new line is opened at.
+Private Sub InsertEntryCells(ByVal rowIndex As Long)
+    Dim sh As Worksheet
+    Dim target As Range
 
-    TitleStandsOnTheSheet = TitleStoreContains(Wksh(), Trim$(title))
-End Function
+    Set sh = Wksh()
+    Set target = sh.Range(sh.Cells(rowIndex, HIDDEN_TITLE_COLUMN), _
+                          sh.Cells(rowIndex, FIRST_OUTPUT_COLUMN + OUTPUT_COLUMN_COUNT - 1))
+    target.Insert Shift:=xlDown
+End Sub
 
 
 '@label:title-already-written
@@ -1311,7 +1401,11 @@ Public Sub PrintOutput(ByVal checkTable As BetterArray)
     Set writtenTitles = New Collection
 
     For index = checkTable.lowerBound To checkTable.upperBound
-        WriteChecking checkTable.Item(index), currentRow, writtenTitles
+        If this.compactAppend Then
+            WriteCompactChecking checkTable.Item(index), currentRow
+        Else
+            WriteChecking checkTable.Item(index), currentRow, writtenTitles
+        End If
     Next index
 
     '@Ignore AssignmentNotUsed
