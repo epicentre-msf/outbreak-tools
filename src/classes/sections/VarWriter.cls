@@ -949,7 +949,8 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
         If ((varStatus = "hidden") Or (varStatus = "optional, hidden")) And _
            (Not usePrinted) And (cellRng.Column > 1) Then
             cellRng.EntireColumn.Hidden = True
-        ElseIf ((varToPrint = "hidden" Or varStatus = "hidden") And usePrinted) Then
+        ElseIf (usePrinted And (varToPrint = "hidden" Or varStatus = "hidden" _
+                                Or NeverPrinted(varControl))) Then
             cellRng.EntireColumn.Hidden = True
         ElseIf (usePrinted And (varToPrint = "print, vertical header")) Then
             cellRng.Offset(-2).Orientation = 90
@@ -1156,6 +1157,25 @@ Private Sub AddFormula()
         HarvestCollaboratorCheckings varFormObject.CheckingValues
     End If
 End Sub
+
+'@label:never-printed
+'@sub-title Whether a control has nothing to give on a printed sheet
+'@details
+'A calculated column reads cells that nobody fills in on paper, and an
+'automatic list holds only values that have already been typed somewhere else.
+'Neither belongs on a register book, whatever the `register book` column says
+'about it, and the same four names decide the CRF: LLdictionary.AddVisibility
+'writes `always hidden` into `crf status` for them, and
+'ShowHide.IsLockedStatus holds them hidden on both layers once a linelist is
+'running. The three lists have to be changed together.
+'@param controlValue String. The `control` column of the variable.
+'@return Boolean. True when the column is hidden on a printed sheet.
+Private Function NeverPrinted(ByVal controlValue As String) As Boolean
+    Select Case controlValue
+        Case "formula", "choice_formula", "case_when", "list_auto"
+            NeverPrinted = True
+    End Select
+End Function
 
 '@section Choice Setup
 '===============================================================================

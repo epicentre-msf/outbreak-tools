@@ -81,6 +81,15 @@ Private Const GOTOSECCODE       As String = "go_to_section"
 'changes and never collected from.
 Private Const LISTAUTO_TAG_DIRECT As String = "list_auto_origin"
 Private Const LISTAUTO_SUFFIX     As String = "_lauto"
+
+'The flag that says this worksheet has an automatic list to rebuild. It lives
+'in the hidden names OF THE SHEET, not of the workbook. One flag for the whole
+'workbook cannot say WHICH sheet was edited: a write that lands on a sheet
+'other than the active one -- an import, a paste across sheets, a formula
+'reaching sideways -- set it for a sheet nobody was on, and the next sheet the
+'user happened to leave both consumed it and cleared it. The edited sheet then
+'kept stale lists and the innocent one was walked for nothing.
+Private Const LISTAUTO_UPDATE_FLAG As String = "update_listauto"
 Private Const DROPDOWNSHEET     As String = "__dropdown_lists"
 Private Const GEOSHEET          As String = "Geo"
 Private Const SPATIALSHEET      As String = "__spatial_tables"
@@ -257,24 +266,31 @@ End Sub
 '@sub-title Handle worksheet deactivation events.
 '@details
 'The handler is written into the code module of each HList sheet, so the sheet
-'that was left arrives as an object and one flag is all this reads. It wants the
-'workbook hidden names alone: the labels of the translation stack have no part
-'in it.
+'that was left arrives as an object and its own flag is all this reads.
+'
+'Rebuilding an automatic list means reading a whole column, uniquing it and
+'writing a table, per list, and it is far too slow to do on the way out of
+'every sheet. It happens only when something the lists depend on was edited on
+'THIS sheet, which is what the flag records and what the sheet-change handler
+'raises. A sheet nobody touched costs one hidden-name read on the way out.
 '@param prevsh Worksheet. The sheet that was deactivated.
 '@export
 Public Sub OnSheetDeactivate(ByVal prevsh As Worksheet)
+    Dim shHn As HiddenNames
+
     On Error GoTo ErrHand
 
     If prevsh Is Nothing Then Exit Sub
 
-    EnsureWorkbookNames
+    Set shHn = SheetStore(prevsh)
+    If shHn Is Nothing Then Exit Sub
 
-    'Update the listAuto only if the flag was set during editing
-    If this.wkbNames Is Nothing Then Exit Sub
-    If this.wkbNames.ValueAsString("RNG_UpdateListAuto") <> "yes" Then Exit Sub
+    'Update the automatic lists only if this sheet was flagged during editing.
+    'UpdateListAutoSheet lowers the flag itself, so the import walk lowers it
+    'too and a sheet is never rebuilt twice over one edit.
+    If shHn.ValueAsString(LISTAUTO_UPDATE_FLAG) <> "yes" Then Exit Sub
 
     UpdateListAutoSheet prevsh
-    this.wkbNames.SetValue "RNG_UpdateListAuto", "no"
 
     Exit Sub
 ErrHand:
@@ -987,12 +1003,14 @@ Private Sub HandleHListChange(ByRef sh As Worksheet, ByRef target As Range, _
             Exit Sub
         End If
 
-        'Update the list auto flag
+        'Raise the flag of THIS sheet when the edited variable is one an
+        'automatic list depends on -- the direct origin it collects from, or a
+        'variable feeding a formula that origin is built on. Both tags count
+        'here: an indirect origin changing can move what the direct one
+        'computes. Nothing is rebuilt yet; leaving the sheet is what does that.
         If shHn.ValueAsString(varName & " -- listauto") <> vbNullString Then
-            EnsureWorkbookNames
-            If Not this.wkbNames Is Nothing Then
-                this.wkbNames.SetValue "RNG_UpdateListAuto", "yes"
-            End If
+            shHn.EnsureName LISTAUTO_UPDATE_FLAG, "no", HiddenNameTypeString
+            shHn.SetValue LISTAUTO_UPDATE_FLAG, "yes"
             Exit Sub
         End If
 
@@ -1509,6 +1527,14 @@ Private Sub UpdateListAutoSheet(ByRef sh As Worksheet)
 
     Set shHn = SheetStore(sh)
     If shHn Is Nothing Then Exit Sub
+
+    'The flag comes down as soon as the sheet is in hand, ahead of the exits
+    'below. Lowering it at the end instead would leave it raised for good on a
+    'sheet that carries no automatic list, and on a workbook whose dropdown
+    'sheet has gone missing -- a flag that can never come down is one this
+    'walk re-enters on the way out of every sheet, for ever.
+    shHn.EnsureName LISTAUTO_UPDATE_FLAG, "no", HiddenNameTypeString
+    shHn.SetValue LISTAUTO_UPDATE_FLAG, "no"
 
     'Early exit if this sheet has no listauto variables
     If shHn.ValueAsString("has_listauto") <> "yes" Then Exit Sub

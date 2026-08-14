@@ -1442,7 +1442,15 @@ End Sub
 'The logic mirrors the designer wizard so that prepared dictionaries behave the
 'same whether produced manually or through automation. The status and control
 'columns are read as two blocks and the two answers are written as two blocks.
-'A row with an unhandled status keeps both cells empty, and the status is logged.
+'
+'The status decides both columns, and then the CONTROL has the last word on the
+'CRF one: a formula, a choice_formula, a case_when and a list_auto read
+'"always hidden" there whatever their status is.
+'
+'A row whose status is filled in with something this dictionary does not know
+'keeps both cells empty and the value is logged. A row with no status at all
+'keeps them empty and is passed over in silence, since there is nothing there
+'for anybody to have got wrong.
 Private Sub AddVisibility()
     Dim firstRow As Long
     Dim lastRow As Long
@@ -1478,27 +1486,44 @@ Private Sub AddVisibility()
 
     For counter = 1 To UBound(statusValues)
         statusValue = TextOf(statusValues(counter))
+        controlValue = TextOf(controlValues(counter))
 
-        Select Case statusValue
-            Case "hidden"
-                visibilityValues(counter) = "always hidden"
-                crfStatusValues(counter) = "always hidden"
-            Case "mandatory"
-                visibilityValues(counter) = "always visible"
-                controlValue = TextOf(controlValues(counter))
-                If controlValue = "formula" Or controlValue = "choice_formula" Or controlValue = "case_when" Then
+        'A variable the designer gave no status at all keeps both cells empty
+        'and says nothing about it. An empty cell is not a value anybody wrote
+        'wrong, so the note below is kept for a status that IS filled in and is
+        'none of the ones this dictionary knows.
+        If LenB(Trim$(statusValue)) > 0 Then
+            Select Case statusValue
+                Case "hidden"
+                    visibilityValues(counter) = "always hidden"
                     crfStatusValues(counter) = "always hidden"
-                Else
+                Case "mandatory"
+                    visibilityValues(counter) = "always visible"
                     crfStatusValues(counter) = "visible on creation"
-                End If
-            Case "optional, hidden"
-                visibilityValues(counter) = "hidden on creation"
-                crfStatusValues(counter) = "hidden on creation"
-            Case "optional, visible", "optional"
-                visibilityValues(counter) = "visible on creation"
-                crfStatusValues(counter) = "visible on creation"
-            Case Else
-                LogInfo "Unhandled status value " & statusValue & " at row " & CStr(firstRow + counter - 1), checkingNote
+                Case "optional, hidden"
+                    visibilityValues(counter) = "hidden on creation"
+                    crfStatusValues(counter) = "hidden on creation"
+                Case "optional, visible", "optional"
+                    visibilityValues(counter) = "visible on creation"
+                    crfStatusValues(counter) = "visible on creation"
+                Case Else
+                    LogInfo "Unhandled status value " & statusValue & " at row " & CStr(firstRow + counter - 1), checkingNote
+            End Select
+        End If
+
+        'Whatever the status says. A calculated column has nothing to give on a
+        'form somebody fills in by hand, and an automatic list has nothing but
+        'values already typed elsewhere, so neither belongs on a CRF at any
+        'status -- mandatory, optional or unwritten. This used to sit inside
+        'the mandatory branch alone, which left an optional formula reading
+        '"visible on creation" here while the CRF held it hidden anyway.
+        'ShowHide.IsLockedStatus names the same four controls and holds them
+        'hidden on the printed sheet as well, which has no derived column of
+        'its own: the printed layer reads `register book`, written by hand.
+        'The two lists have to be changed together.
+        Select Case controlValue
+            Case "formula", "choice_formula", "case_when", "list_auto"
+                crfStatusValues(counter) = "always hidden"
         End Select
     Next
 

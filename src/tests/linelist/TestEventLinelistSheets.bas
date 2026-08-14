@@ -123,8 +123,9 @@ Private Const LIST_ADMIN2 As String = "admin2"
 Private Const LIST_ADMIN3 As String = "admin3"
 Private Const LIST_ADMIN4 As String = "admin4"
 
-'The workbook hidden name the list auto branch raises.
-Private Const LISTAUTO_FLAG As String = "RNG_UpdateListAuto"
+'The hidden name the list auto branch raises, on the SHEET that was edited.
+'One workbook-level flag could not say which sheet needed rebuilding.
+Private Const LISTAUTO_FLAG As String = "update_listauto"
 
 'The variables of the dictionary fixture each branch is driven through.
 '  text_h2       carries "yes" in the Editable Label column and stands in as the
@@ -296,7 +297,6 @@ Private Sub BuildFixture()
     Dim formData As FormulaData
     Dim formulaSheet As Worksheet
     Dim choicesObj As LLChoices
-    Dim bookNames As HiddenNames
     Dim designerGeoSheet As Worksheet
 
     Set SpecsWkb = NewWorkbook()
@@ -358,12 +358,6 @@ Private Sub BuildFixture()
     'children of the value the user picked. A generation copies the designer's
     'geo sheet across, so the two carry the same geography.
     GeoTestFixture.PrepareGeoFixture GEO_SHEET, OutWkb, withData:=True
-
-    'The flag the list auto branch raises. SetValue answers a name it cannot
-    'find with a raise, and the raise lands on the handler's error label, so a
-    'workbook missing this name measures nothing.
-    Set bookNames = HiddenNames.Create(OutWkb)
-    bookNames.EnsureName LISTAUTO_FLAG, "no", HiddenNameTypeString
 
     Set Specs = LinelistSpecs.Create(SpecsWkb)
     Specs.TestAssignDictionary Dict
@@ -689,10 +683,11 @@ TestFail:
     CustomTestLogFailure Assert, "TestALabelThatIsNotEditableIsLeftAlone", Err.Number, Err.Description
 End Sub
 
-'@sub-title An edit of a list auto column raises the workbook flag.
+'@sub-title An edit of a list auto column raises the flag of that sheet.
 '@details
 'The flag is what the deactivate handler reads to decide whether the dropdowns
-'of the sheet being left want rebuilding.
+'of the sheet being left want rebuilding. It lives on the sheet, so an edit
+'landing on one sheet cannot send another sheet off to rebuild.
 '@TestMethod("EventLinelist")
 Public Sub TestAListAutoEditRaisesTheWorkbookFlag()
     CustomTestSetTitles Assert, TESTMODULE, "TestAListAutoEditRaisesTheWorkbookFlag"
@@ -700,16 +695,19 @@ Public Sub TestAListAutoEditRaisesTheWorkbookFlag()
     On Error GoTo TestFail
 
     Dim valueRng As Range
+    Dim sheetNames As HiddenNames
 
-    Sut.WorkbookNames.SetValue LISTAUTO_FLAG, "no"
+    Set sheetNames = HiddenNames.Create(HListSheet())
+    sheetNames.EnsureName LISTAUTO_FLAG, "no", HiddenNameTypeString
+    sheetNames.SetValue LISTAUTO_FLAG, "no"
 
     Set valueRng = HListCell(EDITABLE_VAR, ROW_LISTAUTO_ONE)
     valueRng.Value = LISTAUTO_VALUE_ONE
 
     Sut.OnSheetChange HListSheet(), valueRng
 
-    Assert.AreEqual "yes", Sut.WorkbookNames.ValueAsString(LISTAUTO_FLAG), _
-                    "An edit of a list auto column should raise the update flag"
+    Assert.AreEqual "yes", sheetNames.ValueAsString(LISTAUTO_FLAG), _
+                    "An edit of a list auto column should raise the flag of that sheet"
 
     Exit Sub
 TestFail:

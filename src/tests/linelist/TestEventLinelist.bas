@@ -60,7 +60,9 @@ Private FixtureWkb As Workbook
 Private Const TESTOUTPUTSHEET As String = "testsOutputs"
 Private Const TESTMODULE As String = "EventLinelist"
 Private Const TRANS_SHEET_NAME As String = "LinelistTranslation"
-Private Const LISTAUTO_FLAG As String = "RNG_UpdateListAuto"
+'The flag lives in the hidden names of the SHEET that was edited. It used to be
+'one workbook-level name, which could not say which sheet needed rebuilding.
+Private Const LISTAUTO_FLAG As String = "update_listauto"
 
 'The geobase worksheet the class looks for, and the T_NAMES table the level
 'labels are translated from.
@@ -272,6 +274,37 @@ Private Function WorkbookNameValue(ByVal targetWkb As Workbook, _
 
     Set store = HiddenNames.Create(targetWkb)
     WorkbookNameValue = store.ValueAsString(nameId)
+End Function
+
+'@sub-title Give a sheet-level hidden name its value.
+'@details
+'The automatic lists are flagged on the sheet that was edited, not on the
+'workbook, so the flag tests reach a worksheet store.
+'@param targetSheet Worksheet. The sheet carrying the name.
+'@param nameId String. The hidden name.
+'@param value String. The value to store.
+Private Sub SetSheetName(ByVal targetSheet As Worksheet, _
+                         ByVal nameId As String, ByVal value As String)
+    Dim store As HiddenNames
+
+    Set store = HiddenNames.Create(targetSheet)
+    If store.HasName(nameId) Then
+        store.SetValue nameId, value
+    Else
+        store.EnsureName nameId, value, HiddenNameTypeString
+    End If
+End Sub
+
+'@sub-title Read one sheet-level hidden name back.
+'@param targetSheet Worksheet. The sheet carrying the name.
+'@param nameId String. The hidden name.
+'@return String. The stored value.
+Private Function SheetNameValue(ByVal targetSheet As Worksheet, _
+                                ByVal nameId As String) As String
+    Dim store As HiddenNames
+
+    Set store = HiddenNames.Create(targetSheet)
+    SheetNameValue = store.ValueAsString(nameId)
 End Function
 
 '@sub-title Write four admin values across one row and answer the first cell.
@@ -876,12 +909,12 @@ Public Sub TestDeactivateClearsTheListAutoFlagWithoutATranslationSheet()
     Dim dataWksh As Worksheet
 
     Set dataWksh = FixtureWkb.Worksheets(1)
-    SetWorkbookName FixtureWkb, LISTAUTO_FLAG, "yes"
+    SetSheetName dataWksh, LISTAUTO_FLAG, "yes"
 
     Set sut = EventLinelist.Create(FixtureWkb)
     sut.OnSheetDeactivate dataWksh
 
-    Assert.AreEqual "no", WorkbookNameValue(FixtureWkb, LISTAUTO_FLAG), _
+    Assert.AreEqual "no", SheetNameValue(dataWksh, LISTAUTO_FLAG), _
                     "The flag is cleared even though the workbook has no translation worksheet"
 
     Exit Sub
@@ -901,12 +934,12 @@ Public Sub TestDeactivateLeavesTheFlagWhenItIsNotYes()
     Dim dataWksh As Worksheet
 
     Set dataWksh = FixtureWkb.Worksheets(1)
-    SetWorkbookName FixtureWkb, LISTAUTO_FLAG, "no"
+    SetSheetName dataWksh, LISTAUTO_FLAG, "no"
 
     Set sut = EventLinelist.Create(FixtureWkb)
     sut.OnSheetDeactivate dataWksh
 
-    Assert.AreEqual "no", WorkbookNameValue(FixtureWkb, LISTAUTO_FLAG), _
+    Assert.AreEqual "no", SheetNameValue(dataWksh, LISTAUTO_FLAG), _
                     "A flag reading no is left where it stands"
 
     Exit Sub
@@ -925,9 +958,11 @@ Public Sub TestDeactivateIgnoresNothing()
     On Error GoTo TestFail
 
     Dim sut As EventLinelist
+    Dim dataWksh As Worksheet
     Dim errNumber As Long
 
-    SetWorkbookName FixtureWkb, LISTAUTO_FLAG, "yes"
+    Set dataWksh = FixtureWkb.Worksheets(1)
+    SetSheetName dataWksh, LISTAUTO_FLAG, "yes"
     Set sut = EventLinelist.Create(FixtureWkb)
 
     On Error Resume Next
@@ -937,8 +972,8 @@ Public Sub TestDeactivateIgnoresNothing()
 
     On Error GoTo TestFail
     Assert.AreEqual 0&, errNumber, "A Nothing sheet raises nothing"
-    Assert.AreEqual "yes", WorkbookNameValue(FixtureWkb, LISTAUTO_FLAG), _
-                    "A Nothing sheet leaves the flag alone"
+    Assert.AreEqual "yes", SheetNameValue(dataWksh, LISTAUTO_FLAG), _
+                    "A Nothing sheet leaves the flag of every sheet alone"
 
     Exit Sub
 TestFail:

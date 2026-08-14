@@ -860,10 +860,11 @@ Private Sub PrepareTemporarySheets()
 
     Set outWkb = OutputWkb
 
-    'Workbook-level hidden names for the global flags
+    'Workbook-level hidden names for the global flags. The automatic lists have
+    'no name here: which sheet needs rebuilding is a fact about a sheet, so the
+    'flag lives in the hidden names of each HList sheet and EventLinelist
+    'raises it there.
     Set wkbNames = HiddenNames.Create(outWkb)
-    wkbNames.EnsureName "RNG_UpdateListAuto", vbNullString, HiddenNameTypeString
-    wkbNames.SetValue "RNG_UpdateListAuto", vbNullString
     wkbNames.EnsureName "RNG_ImportDone", vbNullString, HiddenNameTypeString
     wkbNames.SetValue "RNG_ImportDone", vbNullString
     wkbNames.EnsureName "RNG_GeoUpdateManual", vbNullString, HiddenNameTypeString
