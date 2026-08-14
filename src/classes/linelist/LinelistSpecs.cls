@@ -118,6 +118,17 @@ Private Const DESIGNER_SHEET_MAIN As String = "Main"
 Private Const DESIGNER_SHEET_DESIGNER_TRANSLATION As String = "DesignerTranslation"
 Private Const RANGE_DESIGN_TYPE As String = "DESIGNTYPE"
 
+'The two tags of the "list auto" dictionary column, and they mean different
+'things. A DIRECT origin is a variable a list_auto control names in its control
+'details: its column is what the automatic list collects. An INDIRECT origin is
+'a variable that only feeds a formula a direct origin is built on. Both are
+'watched, because either changing means the collected values may have moved,
+'and only the DIRECT one is ever collected from. Reading the two as one is what
+'used to rebuild an ordinary choice dropdown out of whatever had been typed
+'under it.
+Private Const LISTAUTO_TAG_DIRECT As String = "list_auto_origin"
+Private Const LISTAUTO_TAG_INDIRECT As String = "list_auto_indirect_origin"
+
 'The debugging password lives in this named range on the designer's Main
 'worksheet. The tag table asked for RNG_RNG_LLPassword, a doubled prefix that
 'matches no name in the workbook, so the lookup answered an empty string under
@@ -788,17 +799,24 @@ End Function
 '@label:add-list-auto
 '@sub-title Populate the "list auto" dictionary column for list_auto variables
 '@details
-'Adds a "list auto" column to the dictionary, then finds all variables
-'with control type "list_auto" and marks their control details with
-'"list_auto_origin". For formula-type variables (formula, case_when,
-'choice_formula), recursively traces referenced variables and marks
-'them as well.
+'Adds a "list auto" column to the dictionary, then reads the control details
+'of every list_auto variable. Those details name the DIRECT origin, the
+'variable whose entered values the automatic list collects, and each one is
+'tagged `list_auto_origin`. An origin that is itself a formula is followed
+'through `RecursiveListAuto`, and everything found down that chain is tagged
+'`list_auto_indirect_origin`: it is watched for changes and never collected
+'from.
+'
+'The direct tag is written over whatever is there. A variable can be reached
+'as an indirect origin of one list and be the direct origin of another, and
+'the two arrive in whichever order the dictionary happens to hold, so the
+'stronger tag has to win rather than the earlier one.
 Private Sub AddListAuto()
     Dim dict As LLdictionary
     Dim vars As LLVariables
     Dim listVars As BetterArray
     Dim idx As Long
-    Dim varName As String
+    Dim originName As String
     Dim controlType As String
 
     Set dict = Dictionary()
@@ -806,30 +824,42 @@ Private Sub AddListAuto()
     Set vars = this.variables
 
     dict.AddColumn "list auto"
+
+    'The control details of every list_auto variable: the names of the
+    'variables their lists are collected from.
     Set listVars = dict.Data.FilterData("control", "list_auto", "control details", matchCase:=False)
 
     If listVars Is Nothing Then Exit Sub
 
     For idx = listVars.LowerBound To listVars.UpperBound
-        varName = CStr(listVars.Item(idx))
+        originName = CStr(listVars.Item(idx))
 
-        vars.SetValue varName:=varName, colName:="List Auto", newValue:="list_auto_origin", onEmpty:=True
+        vars.SetValue varName:=originName, colName:="list auto", _
+                      newValue:=LISTAUTO_TAG_DIRECT, onEmpty:=False
 
-        controlType = LCase$(Trim$(vars.Value(varName:=varName, colName:="control")))
+        controlType = LCase$(Trim$(vars.Value(varName:=originName, colName:="control")))
         Select Case controlType
             Case "formula", "case_when", "choice_formula"
-                RecursiveListAuto varName
+                RecursiveListAuto originName
         End Select
     Next idx
 End Sub
 
 '@label:recursive-list-auto
-'@sub-title Recursively mark referenced variables in formula chains as list_auto
+'@sub-title Mark the variables a formula origin is built on
 '@details
 'Parses the control details of a formula-type variable using the Formulas
-'engine, extracts the list of referenced variables, marks each with
-'"list_auto_origin", and recurses into any that are themselves formulas
-'or case_when types.
+'engine, extracts the list of referenced variables, tags each of them
+'`list_auto_indirect_origin`, and recurses into any that are themselves
+'formulas or case_when types.
+'
+'These variables are NOT collected from. A list built out of them would be a
+'list of whatever happens to sit under a variable that merely feeds a formula
+'-- an ordinary choice column, most of the time. They carry the tag so an edit
+'to one still tells the workbook that an automatic list may have moved.
+'
+'The write is `onEmpty:=True`, so a variable already tagged as a direct origin
+'keeps that tag.
 '@param varName String. The formula variable whose references to trace.
 Private Sub RecursiveListAuto(ByVal varName As String)
     Dim dict As LLdictionary
@@ -861,7 +891,8 @@ Private Sub RecursiveListAuto(ByVal varName As String)
     For idx = referencedVars.LowerBound To referencedVars.UpperBound
         referencedName = CStr(referencedVars.Item(idx))
 
-        vars.SetValue varName:=referencedName, colName:="list auto", newValue:="list_auto_origin", onEmpty:=True
+        vars.SetValue varName:=referencedName, colName:="list auto", _
+                      newValue:=LISTAUTO_TAG_INDIRECT, onEmpty:=True
 
         referencedControl = LCase$(Trim$(vars.Value(varName:=referencedName, colName:="control")))
         If referencedControl = "formula" Or referencedControl = "case_when" Then

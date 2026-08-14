@@ -107,6 +107,14 @@ Private Const VLIST_START_COL As Long = 5
 'Column index the first variable of a sheet carries when the dictionary is
 'numbered as `LLdictionary.Prepare` leaves it. It is the fallback for the table
 'anchor; the first variable the writer is handed is the primary rule.
+'What an automatic list adds to the name of the variable it collects from, so
+'its table never lands on the one that variable already owns. An origin very
+'often has a choice list of its own, and the two used to share a single table:
+'the first rebuild of the automatic list then replaced the setup choices with
+'whatever had been typed in the column. EventLinelist carries the same suffix
+'and rebuilds the table under this name.
+Private Const LISTAUTO_SUFFIX As String = "_lauto"
+
 Private Const HLIST_ANCHOR_INDEX As Long = 1
 Private Const VLIST_ANCHOR_INDEX As Long = 4
 
@@ -1286,8 +1294,12 @@ Private Sub AddChoices()
         drop.AddReturnLink listName:=dropName, returnRng:=anchorRng
 
     Case "list_auto"
-        ' HList only
-        dropName = ValueOf("control details")
+        ' HList only. The control details name the origin -- the variable whose
+        ' entered values this list collects -- and the table is named after it
+        ' with the suffix, so an origin that carries a choice list of its own
+        ' keeps that list untouched. The table opens empty: it fills at run time
+        ' from what the users enter under the origin.
+        dropName = ValueOf("control details") & LISTAUTO_SUFFIX
         Set cat = New BetterArray
         cat.Push ""
         drop.Add cat, dropName

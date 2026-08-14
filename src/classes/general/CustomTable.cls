@@ -1096,6 +1096,9 @@ Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, _
     Dim sh As Worksheet
     Dim deleteWholeRow As Boolean
     Dim deleteError As Long
+    Dim deadRows As Range
+    Dim thisRow As Range
+    Dim firstBodyRow As Long
 
     If totalRowCount = 0 Then
         rowCount = GetTotalFormulaColumns()
@@ -1122,6 +1125,20 @@ Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, _
     'Hoisted out of the loop: the sheet was resolved again on every deletion.
     Set sh = Wksh()
 
+    'The ListRows delete leaves the rest of the worksheet row where it is, so
+    'it cannot be batched and takes the walk below.
+    If Not deleteWholeRow Then
+        DeleteRowsThroughTable lo, bodyValues, tabRowCount, tabColumnCount, rowCount
+        Exit Sub
+    End If
+
+    'The empty rows are gathered first and deleted in ONE call. Deleting them
+    'one at a time made Excel shift the whole sheet up once per row, and a
+    'sheet holding a few thousand spare rows spent minutes on it. A multi-area
+    'range costs a single shift however many areas it carries.
+    Set deadRows = Nothing
+    firstBodyRow = bodyRng.Row
+
     For rowIndex = tabRowCount To 2 Step -1
         filledCells = 0
         For columnIndex = 1 To tabColumnCount
@@ -1134,35 +1151,75 @@ Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, _
         Next
 
         If filledCells <= rowCount Then
-            If deleteWholeRow Then
-                deleteError = 0
-                'Deleting the worksheet row already removes the ListRow and
-                'pulls everything below up by one. The ListRows delete that
-                'used to follow unconditionally therefore hit the row below,
-                'which may hold data. It is now only a fallback.
-                On Error Resume Next
-                    sh.Rows(lo.ListRows(rowIndex).Range().Row).Delete
-                    deleteError = Err.Number
-                    Err.Clear
-                On Error GoTo 0
-
-                If deleteError <> 0 Then
-                    On Error Resume Next
-                        lo.ListRows(rowIndex).Delete
-                        deleteError = Err.Number
-                        Err.Clear
-                    On Error GoTo 0
-                End If
-
-                'Raise outside the protected block. Raised inside it, VBA
-                'resumes at the next statement and the caller never sees it.
-                If deleteError <> 0 Then
-                    ThrowError ProjectError.SomethingWentWrong, _
-                               "Unable to resize the table (maybe tables are stacked?)"
-                End If
+            'Read off the block rather than the ListObject. Asking the table
+            'for row N cost a round trip an iteration, and the answer is the
+            'body's first row plus the offset in every case.
+            Set thisRow = sh.rows(firstBodyRow + rowIndex - 1)
+            If deadRows Is Nothing Then
+                Set deadRows = thisRow
             Else
-                'Either delete the entire worksheet row or the listRow
+                Set deadRows = Application.Union(deadRows, thisRow)
+            End If
+        End If
+    Next rowIndex
+
+    If deadRows Is Nothing Then Exit Sub
+
+    deleteError = 0
+    On Error Resume Next
+        deadRows.Delete
+        deleteError = Err.Number
+        Err.Clear
+    On Error GoTo 0
+
+    'The fallback walks the table itself, which is what a stacked layout
+    'sometimes needs. It is slow and it only runs when the one-shot delete was
+    'refused.
+    If deleteError <> 0 Then DeleteRowsThroughTable lo, bodyValues, _
+                                                    tabRowCount, tabColumnCount, rowCount
+End Sub
+
+'@label:delete-rows-through-table
+'@sub-title Delete the empty rows one at a time through the ListObject
+'@details
+'The fallback of RemoveEmptyDataRows. It walks from the bottom so an index
+'stays good after the row below it goes, and it raises when the table refuses
+'a delete, which is the signal a caller reads as stacked tables.
+'@param lo ListObject. The table to trim.
+'@param bodyValues Variant. The body block already read by the caller.
+'@param tabRowCount Long. Rows in that block.
+'@param tabColumnCount Long. Columns in that block.
+'@param rowCount Long. Filled-cell threshold at or under which a row is empty.
+'@throws ProjectError.SomethingWentWrong When the table refuses a delete.
+Private Sub DeleteRowsThroughTable(ByVal lo As ListObject, ByVal bodyValues As Variant, _
+                                   ByVal tabRowCount As Long, ByVal tabColumnCount As Long, _
+                                   ByVal rowCount As Long)
+    Dim rowIndex As Long
+    Dim columnIndex As Long
+    Dim filledCells As Long
+    Dim deleteError As Long
+
+    For rowIndex = tabRowCount To 2 Step -1
+        filledCells = 0
+        For columnIndex = 1 To tabColumnCount
+            If Not IsEmpty(bodyValues(rowIndex, columnIndex)) Then
+                filledCells = filledCells + 1
+            End If
+        Next
+
+        If filledCells <= rowCount Then
+            deleteError = 0
+            On Error Resume Next
                 lo.ListRows(rowIndex).Delete
+                deleteError = Err.Number
+                Err.Clear
+            On Error GoTo 0
+
+            'Raise outside the protected block. Raised inside it, VBA resumes
+            'at the next statement and the caller never sees it.
+            If deleteError <> 0 Then
+                ThrowError ProjectError.SomethingWentWrong, _
+                           "Unable to resize the table (maybe tables are stacked?)"
             End If
         End If
     Next rowIndex

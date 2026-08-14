@@ -1438,16 +1438,20 @@ Public Sub ClickResize()
     LogSuccessLine "resize", sh.Name
 
 Cleanup:
-    'Whichever of the two sheets was opened is closed again. The test used to
-    'read `shType = "HList"`, so a resize made on a print sheet unprotected it
-    'and walked away.
-    If shType = "HList" Or shType = "HList Print" Then pass.Protect "_active"
+    'Protected whatever the sheet turned out to be. The test used to read
+    '`shType = "HList"`, so a resize made on a print sheet unprotected it and
+    'walked away; it then read both tags, which still left the protection
+    'riding on a variable read earlier in the walk. Protect is harmless on a
+    'sheet that was never unprotected, and leaving one open is not.
+    On Error Resume Next
+    pass.Protect "_active"
+    On Error GoTo 0
     LinelistEventsManager.LLExitBusyState
     Exit Sub
 
 errDelRows:
     On Error Resume Next
-    If shType = "HList" Or shType = "HList Print" Then pass.Protect "_active"
+    pass.Protect "_active"
     LinelistEventsManager.LLExitBusyState
     FailureOnSheet "MSG_ErrDelRows"
     On Error GoTo 0

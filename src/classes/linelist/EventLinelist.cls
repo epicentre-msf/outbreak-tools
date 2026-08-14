@@ -72,6 +72,15 @@ Private this As TEventLinelist
 '===============================================================================
 Private Const CLASSNAME         As String = "EventLinelist"
 Private Const GOTOSECCODE       As String = "go_to_section"
+
+'The tag a variable carries when an automatic list is collected FROM it, and
+'the suffix of the table that list lives in. Both are written by the
+'generation -- the tag by LinelistSpecs, the suffix by VarWriter -- and a
+'change to either belongs in all three files at once. The indirect tag is
+'deliberately absent here: a variable that only feeds a formula is watched for
+'changes and never collected from.
+Private Const LISTAUTO_TAG_DIRECT As String = "list_auto_origin"
+Private Const LISTAUTO_SUFFIX     As String = "_lauto"
 Private Const DROPDOWNSHEET     As String = "__dropdown_lists"
 Private Const GEOSHEET          As String = "Geo"
 Private Const SPATIALSHEET      As String = "__spatial_tables"
@@ -1460,13 +1469,39 @@ End Sub
 '@section Private -- List auto helpers
 '===============================================================================
 
-'@sub-title Update the list-auto dropdowns for a single sheet.
+'@sub-title Update the automatic lists of a single sheet.
 '@details
-'Checks the has_listauto flag to skip sheets without list-auto variables.
-'Iterates header columns and updates dropdown lists from unique data values.
+'Checks the has_listauto flag to skip sheets that carry none, then walks the
+'header row and rebuilds the automatic list of every DIRECT origin from the
+'values entered under it.
+'
+'ONLY A DIRECT ORIGIN IS COLLECTED FROM
+'-------------------------------------------------------------------------------
+'The "list auto" column of the dictionary carries two tags. A direct origin is
+'named in the control details of a list_auto variable, and its column is what
+'the automatic list holds. An indirect origin only feeds a formula a direct
+'origin is built on; it is watched, because an edit to it can move what the
+'direct origin computes, and it is never collected from. Both tags used to be
+'read as one, so an ordinary choice column that happened to feed such a formula
+'had its dropdown rebuilt out of whatever had been typed under it.
+'
+'THE LIST HAS ITS OWN TABLE
+'-------------------------------------------------------------------------------
+'The table rebuilt here is the origin''s name plus the suffix, which is the
+'name VarWriter gave it and the name the list_auto cells validate against. The
+'origin''s own dropdown, when it has one, is a different table and is left
+'alone.
+'
+'NOTHING IS CLEARED BEFORE THE REPLACEMENT IS IN HAND
+'-------------------------------------------------------------------------------
+'An empty column ends the walk for that variable. Clearing first and writing
+'after left the table empty whenever the new values came to nothing, and a
+'ListObject cannot hold no data row at all, so the list came back offering one
+'blank entry.
 '@param sh Worksheet. The HList sheet to update.
 Private Sub UpdateListAutoSheet(ByRef sh As Worksheet)
     Dim varName As String
+    Dim listName As String
     Dim arrTable As BetterArray
     Dim hRng As Range
     Dim shHn As HiddenNames
@@ -1488,17 +1523,20 @@ Private Sub UpdateListAutoSheet(ByRef sh As Worksheet)
         varName = hRng.Cells(1, colIdx).Value
         If varName = vbNullString Then GoTo NextCol
 
-        If shHn.ValueAsString(varName & " -- listauto") <> vbNullString Then
-            If this.drop.Exists(varName) Then
-                arrTable.FromExcelRange hRng.Cells(1, colIdx).Offset(1), _
-                                        DetectLastColumn:=False, _
-                                        DetectLastRow:=True
-                Set arrTable = GetUniqueBA(arrTable)
-                this.drop.ClearList varName
-                this.drop.Update arrTable, varName
-                this.drop.Sort varName, xlDescending
-            End If
-        End If
+        If shHn.ValueAsString(varName & " -- listauto") <> LISTAUTO_TAG_DIRECT Then GoTo NextCol
+
+        listName = varName & LISTAUTO_SUFFIX
+        If Not this.drop.Exists(listName) Then GoTo NextCol
+
+        arrTable.FromExcelRange hRng.Cells(1, colIdx).Offset(1), _
+                                DetectLastColumn:=False, _
+                                DetectLastRow:=True
+        Set arrTable = GetUniqueBA(arrTable)
+        If arrTable.Length = 0 Then GoTo NextCol
+
+        this.drop.ClearList listName
+        this.drop.Update arrTable, listName
+        this.drop.Sort listName, xlDescending
 NextCol:
     Next colIdx
 End Sub
