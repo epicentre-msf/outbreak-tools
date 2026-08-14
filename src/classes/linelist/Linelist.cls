@@ -1118,7 +1118,8 @@ Private Sub TransferAllCode(ByVal transfer As CodeTransfer, _
                    "LLVariables", "LLTranslation", "LLExporter", "LLImporter", _
                    "LLLog", _
                    "Passwords", "Checking", "CheckingOutput", "OSFiles", _
-                   "TranslationObject", "HiddenNames", "ApplicationState"
+                   "TranslationObject", "HiddenNames", "ApplicationState", _ 
+                   "SectionShowHide"
 
     codesList.Push "DropdownLists", "CustomTable", _
                    "ShowHide", "ShowHideLayout", "ShowHideStore", "SectionMap", _
