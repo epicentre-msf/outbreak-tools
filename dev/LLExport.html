@@ -11,42 +11,6 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>LLExport</h1>
-<p>Manages the export specification sheet, the table where each row defines one
-export of a linelist. Create binds the worksheet through a DataSheet.
-NumberOfExports counts the rows, IsActive says whether an export is switched
-on, ActiveExportNumbers lists the ones that are, and ColumnValue reads any
-column of one row. ManageRows, InsertRows, DeleteRows, AddRows and RemoveRows
-work on the rows, Sort orders the table, Translate rewrites the two translated
-columns, and ImportSpecs and ExportSpecs move the sheet between workbooks.
-SyncDictionaryExports keeps the export columns of the dictionary in step with
-this table.</p>
-<details open class="doc-section" id="the-file-name-of-an-export">
-<summary>THE FILE NAME OF AN EXPORT</summary>
-<div class="section-body">
-<p>ExportFileName builds the name one export is saved under. The template comes
-from the &quot;file name&quot; column, and its chunks are replaced from the dictionary.
-A version suffix read from Passwords and a timestamp are added at the end, and
-the whole name is cleaned of the characters a file name cannot carry. An
-export asked for with exportAll is named from the workbook instead. An empty
-template falls back to a default one.</p>
-</div>
-</details>
-<details open class="doc-section" id="what-the-instance-holds">
-<summary>WHAT THE INSTANCE HOLDS</summary>
-<div class="section-body">
-<p>The specification block and its header row are read once and answered from
-memory. The class drops that copy whenever it writes to the table, and
-ResetCaches drops it for a caller that wrote to the sheet itself.</p>
-</div>
-</details>
-<details open class="doc-section" id="what-is-reported">
-<summary>WHAT IS REPORTED</summary>
-<div class="section-body">
-<p>Entries filed while a member runs leave through HasCheckings and
-CheckingValues.</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="CustomTable.html">CustomTable</a>, <a href="DataSheet.html">DataSheet</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="Passwords.html">Passwords</a>, <a href="TranslationObject.html">TranslationObject</a></p>
-</div>
-</details>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
@@ -55,7 +19,7 @@ CheckingValues.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal exportSheet As Worksheet, _
                        Optional ByVal startRow As Long = 1, _
-                       Optional ByVal startColumn As Long = 1) As LLExport
+                       Optional ByVal startColumn As Long = 1) As ILLExport
 </code></pre>
 <p>Creates a linelist export handler over the specification sheet provided by the
 caller. The implementation caches the underlying datasheet, worksheet, and
@@ -67,7 +31,7 @@ without repeatedly scanning the workbook.</p>
 <li><code>startRow</code>: Optional; first row of the export table (defaults to 1).</li>
 <li><code>startColumn</code>: Optional; first column of the export table (defaults to 1).</li>
 </ul>
-<p><strong>Returns:</strong> A fully initialised <code>LLExport</code> instance.</p>
+<p><strong>Returns:</strong> A fully initialised <code>ILLExport</code> instance.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized when the worksheet is missing.</li>
@@ -76,7 +40,7 @@ without repeatedly scanning the workbook.</p>
 <h3 id="int-internaldata">InternalData <a class="anchor-link" href="#int-internaldata">#</a></h3>
 <p><em>SetInternalData</em></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set InternalData(ByVal exportData As DataSheet)
+<pre><code class="language-vb">Public Property Set InternalData(ByVal exportData As IDataSheet)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -93,63 +57,46 @@ without repeatedly scanning the workbook.</p>
 <li><code>exportSheet</code>: Worksheet that stores the export specification table.</li>
 </ul>
 <hr />
-<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
-<p><strong>Prevent further changes to creation-only setters</strong></p>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><strong>Return the current instance as interface</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Seal()
+<pre><code class="language-vb">Public Property Get Self() As ILLExport
 </code></pre>
-<hr />
-<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
-<p><strong>Guard creation-only setters after sealing</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
-</code></pre>
+<p><strong>Returns:</strong> The object cast as <code>ILLExport</code>.</p>
 <hr />
 <h2 id="int-properties">Properties</h2>
 <h3 id="int-data">Data <a class="anchor-link" href="#int-data">#</a></h3>
 <p><strong>Underlying export datasheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Data() As DataSheet
+<pre><code class="language-vb">Public Property Get Data() As IDataSheet
 </code></pre>
 <p><strong>Returns:</strong> Datasheet abstraction wrapping the export specification table.</p>
+<hr />
+<h3 id="int-worksheet">Worksheet <a class="anchor-link" href="#int-worksheet">#</a></h3>
+<p><strong>Worksheet hosting the export specification table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Worksheet() As Worksheet
+</code></pre>
+<p><strong>Returns:</strong> Worksheet reference used by the handler.</p>
 <hr />
 <h3 id="int-numberofexports">NumberOfExports <a class="anchor-link" href="#int-numberofexports">#</a></h3>
 <p><strong>Count the configured export rows</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get NumberOfExports() As Long
 </code></pre>
-<p>Counts rows within the specification table excluding headers. The count is
-read from the table itself, so it always agrees with what the sheet holds.</p>
+<p>Counts rows within the specification table excluding headers.</p>
 <p><strong>Returns:</strong> Total number of export definitions currently present.</p>
 <hr />
-<h3 id="int-harvestcollaboratorcheckings">HarvestCollaboratorCheckings <a class="anchor-link" href="#int-harvestcollaboratorcheckings">#</a></h3>
-<p><em>harvest-collaborator-checkings</em></p>
+<h3 id="int-hascheckings">HasCheckings <a class="anchor-link" href="#int-hascheckings">#</a></h3>
 <p><strong>Whether informational checkings were captured</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As Checking)
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
 </code></pre>
-<p><code>DataSheet</code> and <code>CustomTable</code> each keep a store of their own, and nobody
-read either of them before this line.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>collaboratorChecks</code>: Checking. What the collaborator filed.</li>
-</ul>
-<hr />
-<h3 id="int-mergecollaboratorcheckings">MergeCollaboratorCheckings <a class="anchor-link" href="#int-mergecollaboratorcheckings">#</a></h3>
-<p><em>merge-collaborator-checkings</em></p>
-<p><strong>Take the collaborators' entries before the report is read</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub MergeCollaboratorCheckings()
-</code></pre>
-<p>The data sheet lives as long as this object does; the table adapter is the
-last one <code>ExportTable</code> built. Both are folded in when the report is asked
-for, and the flag keeps the fold to once because the caller reads
-<code>HasCheckings</code> and then <code>CheckingValues</code>.</p>
 <hr />
 <h3 id="int-checkingvalues">CheckingValues <a class="anchor-link" href="#int-checkingvalues">#</a></h3>
 <p><strong>Collected informational diagnostics</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get CheckingValues() As Checking
+<pre><code class="language-vb">Public Property Get CheckingValues() As IChecking
 </code></pre>
 <p><strong>Returns:</strong> Checking object containing log entries, if any.</p>
 <hr />
@@ -157,26 +104,26 @@ for, and the flag keeps the fold to once because the caller reads
 <h3 id="int-managerows">ManageRows <a class="anchor-link" href="#int-managerows">#</a></h3>
 <p><strong>Align export rows and dictionary columns</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub ManageRows(Optional ByVal del As Boolean = False, _
-                      Optional ByVal dict As LLdictionary, _
-                      Optional ByVal rowCount As Long = 2)
+<pre><code class="language-vb">Private Sub ManageRows(Optional ByVal del As Boolean = False, _ 
+                       Optional ByVal dict As ILLdictionary, _
+                       Optional ByVal rowCount As Long = 2)
 </code></pre>
 <p>Handle the addition or removal of export rows while keeping the dictionary
 columns aligned with the actual identifiers present in the worksheet. The
-logic operates on identifiers, so arbitrary deletions leave unrelated export
-columns in place.</p>
+logic operates on identifiers rather than simple counts so arbitrary deletions
+do not remove unrelated export columns.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>del</code>: Optional flag switching to row removal mode.</li>
 <li><code>dict</code>: Optional dictionary used to add/remove export columns.</li>
-<li><code>rowCount</code>: Optional threshold for row removal; rows with non-empty cells at or below the threshold are trimmed (defaults to 2).</li>
+<li><code>del</code>: Optional flag switching to row removal mode.</li>
+<li><code>rowCount</code>: Optional threshold for row removal; rows with non-empty cells at or below the threshold are trimmed (defaults to 0, removing empty rows).</li>
 </ul>
 <hr />
 <h3 id="int-insertrows">InsertRows <a class="anchor-link" href="#int-insertrows">#</a></h3>
 <p><strong>Insert export rows and keep dictionary columns aligned</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InsertRows(ByVal targetCell As Range, _
-                      Optional ByVal dict As LLdictionary, _
+                      Optional ByVal dict As ILLdictionary, _
                       Optional ByVal insertShift As Boolean = False)
 </code></pre>
 <p><strong>Parameters:</strong></p>
@@ -190,20 +137,14 @@ columns in place.</p>
 <p><strong>Delete export rows intersecting the supplied selection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub DeleteRows(ByVal targetCell As Range, _
-                      Optional ByVal dict As LLdictionary, _
+                      Optional ByVal dict As ILLdictionary, _
                       Optional ByVal forceShift As Boolean = False)
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>targetCell</code>: Range holding the rows the user selected.</li>
-<li><code>dict</code>: Optional dictionary to prune export columns from.</li>
-<li><code>forceShift</code>: Optional Boolean asking the table to shift worksheet rows up.</li>
-</ul>
 <hr />
 <h3 id="int-addrows">AddRows <a class="anchor-link" href="#int-addrows">#</a></h3>
 <p><strong>Append export definition rows</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub AddRows(Optional ByVal dict As LLdictionary)
+<pre><code class="language-vb">Public Sub AddRows(Optional ByVal dict As ILLdictionary)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -213,266 +154,25 @@ columns in place.</p>
 <h3 id="int-removerows">RemoveRows <a class="anchor-link" href="#int-removerows">#</a></h3>
 <p><strong>Remove empty export rows</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub RemoveRows(Optional ByVal dict As LLdictionary, _
+<pre><code class="language-vb">Public Sub RemoveRows(Optional ByVal dict As ILLdictionary, _ 
                       Optional ByVal rowCount As Long = 2)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dict</code>: Optional dictionary to align export columns with.</li>
-<li><code>rowCount</code>: Optional threshold; rows with non-empty cell counts at or below this value are removed (defaults to 2).</li>
+<li><code>rowCount</code>: Optional threshold; rows with non-empty cell counts at or below this value are removed (defaults to 0).</li>
 </ul>
 <hr />
 <h3 id="int-syncdictionaryexports">SyncDictionaryExports <a class="anchor-link" href="#int-syncdictionaryexports">#</a></h3>
 <p><strong>Synchronise dictionary export columns</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub SyncDictionaryExports(Optional ByVal dict As LLdictionary)
+<pre><code class="language-vb">Public Sub SyncDictionaryExports(Optional ByVal dict As ILLdictionary)
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>dict</code>: Optional dictionary; the cached one is used when this is missing.</li>
-</ul>
 <hr />
 <h3 id="int-sort">Sort <a class="anchor-link" href="#int-sort">#</a></h3>
 <p><strong>Sort export definitions and normalize identifiers</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Sort(Optional ByVal dict As LLdictionary)
+<pre><code class="language-vb">Public Sub Sort(Optional ByVal dict As ILLdictionary)
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>dict</code>: Optional dictionary whose export columns follow the new order.</li>
-</ul>
-<hr />
-<h2 id="int-row-coordination-helpers">Row Coordination Helpers</h2>
-<h3 id="int-applyincludedefaults">ApplyIncludeDefaults <a class="anchor-link" href="#int-applyincludedefaults">#</a></h3>
-<p><strong>Write the default identifier flag into the rows that have none</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyIncludeDefaults(ByVal tableObj As CustomTable, _
-                                 ByVal startIndex As Long, _
-                                 ByVal endIndex As Long)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>tableObj</code>: CustomTable wrapping the export specification table.</li>
-<li><code>startIndex</code>: First row of the range to fill, 1-based within the table body.</li>
-<li><code>endIndex</code>: Last row of the range to fill.</li>
-</ul>
-<hr />
-<h3 id="int-resolveselectionrowindex">ResolveSelectionRowIndex <a class="anchor-link" href="#int-resolveselectionrowindex">#</a></h3>
-<p><strong>Turn a worksheet selection into a row index inside the table body</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolveSelectionRowIndex(ByVal tableObj As CustomTable, _
-                                          ByVal targetCell As Range) As Long
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>tableObj</code>: CustomTable wrapping the export specification table.</li>
-<li><code>targetCell</code>: Range the user selected.</li>
-</ul>
-<p><strong>Returns:</strong> Long. The 1-based row index, clamped to one past the last row.</p>
-<hr />
-<h3 id="int-assignexportnumbers">AssignExportNumbers <a class="anchor-link" href="#int-assignexportnumbers">#</a></h3>
-<p><strong>Give the freshly inserted rows the next free export numbers</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function AssignExportNumbers(ByVal tableObj As CustomTable, _
-                                     ByVal startIndex As Long, _
-                                     ByVal insertCount As Long) As BetterArray
-</code></pre>
-<p>The numbers in use are read once and kept in memory, so the routine answers
-every later question about them without going back to the worksheet.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>tableObj</code>: CustomTable wrapping the export specification table.</li>
-<li><code>startIndex</code>: First inserted row, 1-based within the table body.</li>
-<li><code>insertCount</code>: How many rows were inserted.</li>
-</ul>
-<p><strong>Returns:</strong> BetterArray. Every export number in use once the rows are numbered.</p>
-<hr />
-<h3 id="int-sequentiallyrenameexports">SequentiallyRenameExports <a class="anchor-link" href="#int-sequentiallyrenameexports">#</a></h3>
-<p><strong>Renumber every export row from 1 and follow up in the dictionary</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub SequentiallyRenameExports(ByVal tableObj As CustomTable, _
-                                      Optional ByVal dict As LLdictionary)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>tableObj</code>: CustomTable wrapping the export specification table.</li>
-<li><code>dict</code>: Optional dictionary whose export columns follow the new order.</li>
-</ul>
-<hr />
-<h3 id="int-renamedictionaryexports">RenameDictionaryExports <a class="anchor-link" href="#int-renamedictionaryexports">#</a></h3>
-<p><strong>Move the dictionary export columns onto the new sequence</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RenameDictionaryExports(ByVal dict As LLdictionary, _
-                                    ByRef previousNames() As String, _
-</code></pre>
-<p>The rename runs in two passes through temporary names so an old &quot;Export 3&quot;
-can become &quot;Export 1&quot; while another column still carries that name.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>dict</code>: Dictionary holding the export columns.</li>
-<li><code>previousNames</code>: The export identifiers as they read before the sort.</li>
-<li><code>total</code>: How many export rows there are now.</li>
-</ul>
-<hr />
-<h3 id="int-nextavailableexportnumber">NextAvailableExportNumber <a class="anchor-link" href="#int-nextavailableexportnumber">#</a></h3>
-<p><strong>Pick the lowest export number that is still free</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function NextAvailableExportNumber(ByVal existing As BetterArray) As Long
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>existing</code>: BetterArray of the export numbers already in use.</li>
-</ul>
-<p><strong>Returns:</strong> Long. The next free number.</p>
-<hr />
-<h3 id="int-highestnumber">HighestNumber <a class="anchor-link" href="#int-highestnumber">#</a></h3>
-<p><strong>Largest value in a list of export numbers</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function HighestNumber(ByVal numbers As BetterArray) As Long
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>numbers</code>: BetterArray of export numbers, possibly Nothing.</li>
-</ul>
-<p><strong>Returns:</strong> Long. The largest value, or zero for an empty list.</p>
-<hr />
-<h3 id="int-newnumberlist">NewNumberList <a class="anchor-link" href="#int-newnumberlist">#</a></h3>
-<p><strong>Build an empty 1-based list of export numbers</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function NewNumberList() As BetterArray
-</code></pre>
-<p><strong>Returns:</strong> BetterArray. An empty list ready to be pushed into.</p>
-<hr />
-<h3 id="int-temporaryexportcolumn">TemporaryExportColumn <a class="anchor-link" href="#int-temporaryexportcolumn">#</a></h3>
-<p><strong>Placeholder header used while export columns swap names</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function TemporaryExportColumn(ByVal orderIndex As Long) As String
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>orderIndex</code>: Position in the new sequence.</li>
-</ul>
-<p><strong>Returns:</strong> String. The placeholder header.</p>
-<hr />
-<h3 id="int-normalizedexportheader">NormalizedExportHeader <a class="anchor-link" href="#int-normalizedexportheader">#</a></h3>
-<p><strong>Turn an export identifier into the dictionary column header</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function NormalizedExportHeader(ByVal headerText As String) As String
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>headerText</code>: The identifier as it reads on the export sheet.</li>
-</ul>
-<p><strong>Returns:</strong> String. The matching column header, empty when the text carries no number.</p>
-<hr />
-<h3 id="int-ensureexportidentifiers">EnsureExportIdentifiers <a class="anchor-link" href="#int-ensureexportidentifiers">#</a></h3>
-<p><strong>Give every export row a unique identifier</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function EnsureExportIdentifiers(ByVal tableObj As CustomTable) As BetterArray
-</code></pre>
-<p>The identifier column is read as one block, settled in memory and written back
-in one go. A row whose number repeats an earlier one, or whose text carries no
-number, takes the next free number.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>tableObj</code>: CustomTable wrapping the export specification table.</li>
-</ul>
-<p><strong>Returns:</strong> BetterArray. The export numbers in worksheet order.</p>
-<hr />
-<h3 id="int-collectexportnumbers">CollectExportNumbers <a class="anchor-link" href="#int-collectexportnumbers">#</a></h3>
-<p><strong>Read the export numbers the specification table holds</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function CollectExportNumbers(ByVal tableObj As CustomTable) As BetterArray
-</code></pre>
-<p>The identifier column is read as one block and parsed in memory.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>tableObj</code>: CustomTable wrapping the export specification table.</li>
-</ul>
-<p><strong>Returns:</strong> BetterArray. The export numbers in worksheet order, Nothing when there are none.</p>
-<hr />
-<h3 id="int-enumeratedictionaryexportnumbers">EnumerateDictionaryExportNumbers <a class="anchor-link" href="#int-enumeratedictionaryexportnumbers">#</a></h3>
-<p><strong>Read the export numbers the dictionary columns carry</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function EnumerateDictionaryExportNumbers(ByVal dict As LLdictionary) As BetterArray
-</code></pre>
-<p>The dictionary header row is read as one block, so a wide dictionary costs one
-worksheet crossing instead of one per column.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>dict</code>: Dictionary to inspect.</li>
-</ul>
-<p><strong>Returns:</strong> BetterArray. The export numbers found, Nothing when there are none.</p>
-<hr />
-<h3 id="int-containsnumber">ContainsNumber <a class="anchor-link" href="#int-containsnumber">#</a></h3>
-<p><strong>Whether a list of export numbers holds a value</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ContainsNumber(ByVal numbers As BetterArray, ByVal target As Long) As Boolean
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>numbers</code>: BetterArray of export numbers, possibly Nothing.</li>
-<li><code>target</code>: The value to look for.</li>
-</ul>
-<p><strong>Returns:</strong> Boolean. True when the value is in the list.</p>
-<hr />
-<h3 id="int-parseexportidentifier">ParseExportIdentifier <a class="anchor-link" href="#int-parseexportidentifier">#</a></h3>
-<p><strong>Read the number out of an export identifier</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ParseExportIdentifier(ByVal rawValue As Variant) As Long
-</code></pre>
-<p>Anything that starts with &quot;export&quot; and ends in digits gives that number.
-&quot;export&quot; on its own, and text such as &quot;exported&quot;, give zero: the conversion
-runs under On Error Resume Next so a bad tail reads as &quot;no number&quot;.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>rawValue</code>: The cell value to read.</li>
-</ul>
-<p><strong>Returns:</strong> Long. The export number, or zero.</p>
-<hr />
-<h3 id="int-syncdictionaryexportscore">SyncDictionaryExportsCore <a class="anchor-link" href="#int-syncdictionaryexportscore">#</a></h3>
-<p><strong>Make the dictionary export columns match the export rows</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub SyncDictionaryExportsCore(ByVal exportNumbers As BetterArray, ByVal dict As LLdictionary)
-</code></pre>
-<p>The dictionary header is read once and the list of export columns is kept in
-memory as columns are added, so a sync of n exports costs one header read.
-The dictionary is then told how many export columns it carries.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>exportNumbers</code>: BetterArray of the export numbers on the specification sheet.</li>
-<li><code>dict</code>: Dictionary to align.</li>
-</ul>
-<hr />
-<h3 id="int-ensuredictionaryexportcolumn">EnsureDictionaryExportColumn <a class="anchor-link" href="#int-ensuredictionaryexportcolumn">#</a></h3>
-<p><strong>Add one export column to the dictionary in the right place</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureDictionaryExportColumn(ByVal dict As LLdictionary, _
-                                         ByVal exportIndex As Long, _
-                                         ByVal existing As BetterArray)
-</code></pre>
-<p>The new column goes right after the highest numbered export column below it,
-and after &quot;unique&quot; when there is none. The list of numbers already placed is
-passed in, so the dictionary header is read once per sync.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>dict</code>: Dictionary to add the column to.</li>
-<li><code>exportIndex</code>: Export number the column belongs to.</li>
-<li><code>existing</code>: BetterArray of the export numbers already present.</li>
-</ul>
-<hr />
-<h3 id="int-exportcolumnname">ExportColumnName <a class="anchor-link" href="#int-exportcolumnname">#</a></h3>
-<p><strong>Dictionary column header for an export number</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ExportColumnName(ByVal exportIndex As Long) As String
-</code></pre>
-<p>The header is capitalised here while <code>LLdictionary</code> lower-cases what it is
-given and searches with matchCase False. Both sides have to keep that true.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>exportIndex</code>: Export number.</li>
-</ul>
-<p><strong>Returns:</strong> String. The column header.</p>
 <hr />
 <h2 id="int-specmanagement">SpecManagement</h2>
 <h3 id="int-importspecs">ImportSpecs <a class="anchor-link" href="#int-importspecs">#</a></h3>
@@ -514,8 +214,8 @@ given and searches with matchCase False. Both sides have to keep that true.</p>
 <p><strong>Build the filename for a specific export definition</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExportFileName(ByVal exportNumber As Long, _
-                               ByVal dict As LLdictionary, _
-                               ByVal pass As Passwords, _
+                               ByVal dict As ILLdictionary, _
+                               ByVal pass As IPasswords, _
                                Optional ByVal exportAll As Boolean = False) As String
 </code></pre>
 <p><strong>Parameters:</strong></p>
@@ -532,13 +232,12 @@ given and searches with matchCase False. Both sides have to keep that true.</p>
 <li>ProjectError.ObjectNotInitialized when required collaborators are missing.</li>
 </ul>
 <hr />
-<h2 id="int-export-count">Export Count</h2>
-<h3 id="int-countexportrows">CountExportRows <a class="anchor-link" href="#int-countexportrows">#</a></h3>
-<p><strong>How many rows the specification table holds</strong></p>
+<h2 id="int-export-count-tracking">Export Count Tracking</h2>
+<h3 id="int-hiddennamestore">HiddenNameStore <a class="anchor-link" href="#int-hiddennamestore">#</a></h3>
+<p><strong>Resolve worksheet name manager</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function CountExportRows() As Long
+<pre><code class="language-vb">Private Function HiddenNameStore() As IHiddenNames
 </code></pre>
-<p><strong>Returns:</strong> Long. The row count, zero when there is no data store.</p>
 <hr />
 <h2 id="int-utilities">Utilities</h2>
 <h3 id="int-isactive">IsActive <a class="anchor-link" href="#int-isactive">#</a></h3>
@@ -574,18 +273,8 @@ given and searches with matchCase False. Both sides have to keep that true.</p>
 <h3 id="int-translate">Translate <a class="anchor-link" href="#int-translate">#</a></h3>
 <p><strong>Translate the current LLExport</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Translate(ByVal trads As TranslationObject)
+<pre><code class="language-vb">Private Sub Translate(ByVal trads As ITranslationObject)
 </code></pre>
-<p>A setup workbook that lacks one of the two translated columns is logged and
-the other column is still translated.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>trads</code>: Translation table to read the wording from.</li>
-</ul>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ObjectNotInitialized when the translation object is missing.</li>
-</ul>
 <hr />
 <h2 id="int-private-helpers">Private Helpers</h2>
 <h3 id="int-ensuredataready">EnsureDataReady <a class="anchor-link" href="#int-ensuredataready">#</a></h3>
@@ -600,301 +289,124 @@ the other column is still translated.</p>
 <pre><code class="language-vb">Private Sub EnsureWorksheetReady()
 </code></pre>
 <hr />
-<h3 id="int-resolvedictionary">ResolveDictionary <a class="anchor-link" href="#int-resolvedictionary">#</a></h3>
-<p><strong>Keep the dictionary the caller passed, or reuse the cached one</strong></p>
+<h3 id="int-ensuredictionaryready">EnsureDictionaryReady <a class="anchor-link" href="#int-ensuredictionaryready">#</a></h3>
+<p><strong>Validate dictionary dependency</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ResolveDictionary(Optional ByVal dict As LLdictionary, _
-                              Optional ByVal required As Boolean = True)
+<pre><code class="language-vb">Private Sub EnsureDictionaryReady(Optional ByVal dict As ILLdictionary, Optional ByVal resetInt As Boolean = False, Optional ByVal required As Boolean = True)
 </code></pre>
-<p>A dictionary passed in becomes the cached one. When nothing is passed the
-cached one stands. This is the single place the class picks its dictionary.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>dict</code>: Optional dictionary supplied by the caller.</li>
-<li><code>required</code>: Optional; raise when no dictionary can be resolved. Defaults to True.</li>
-</ul>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ObjectNotInitialized when required is True and none is found.</li>
-</ul>
 <hr />
 <h3 id="int-ensurevariablesready">EnsureVariablesReady <a class="anchor-link" href="#int-ensurevariablesready">#</a></h3>
 <p><strong>Lazily instantiate dictionary-backed variable helper</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureVariablesReady(Optional ByVal dict As LLdictionary)
+<pre><code class="language-vb">Private Sub EnsureVariablesReady(Optional ByVal dict As ILLdictionary)
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>dict</code>: Optional dictionary the variables read from.</li>
-</ul>
 <hr />
 <h3 id="int-internaldictionary">InternalDictionary <a class="anchor-link" href="#int-internaldictionary">#</a></h3>
-<p><strong>Dictionary the class is currently working with</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get InternalDictionary() As LLdictionary
+<pre><code class="language-vb">Private Property Get InternalDictionary() As ILLdictionary
 </code></pre>
-<p><strong>Returns:</strong> LLdictionary. The cached dictionary.</p>
 <hr />
-<h3 id="int-dictionaryisavailable">DictionaryIsAvailable <a class="anchor-link" href="#int-dictionaryisavailable">#</a></h3>
-<p><strong>Whether a dictionary is cached</strong></p>
+<h3 id="int-internaldictionary">InternalDictionary <a class="anchor-link" href="#int-internaldictionary">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function DictionaryIsAvailable() As Boolean
+<pre><code class="language-vb">Private Property Set InternalDictionary(ByVal dict As ILLdictionary)
 </code></pre>
-<p><strong>Returns:</strong> Boolean. True when the class holds one.</p>
 <hr />
 <h3 id="int-validateexportnumber">ValidateExportNumber <a class="anchor-link" href="#int-validateexportnumber">#</a></h3>
 <p><strong>Validate export number bounds</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateExportNumber(ByVal exportNumber As Long)
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>exportNumber</code>: The number to check.</li>
-</ul>
 <hr />
 <h3 id="int-validatepasswords">ValidatePasswords <a class="anchor-link" href="#int-validatepasswords">#</a></h3>
 <p><strong>Validate password provider dependency</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ValidatePasswords(ByVal pass As Passwords)
+<pre><code class="language-vb">Private Sub ValidatePasswords(ByVal pass As IPasswords)
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>pass</code>: The password object to check.</li>
-</ul>
 <hr />
 <h3 id="int-exporttable">ExportTable <a class="anchor-link" href="#int-exporttable">#</a></h3>
 <p><strong>Retrieve export table wrapper</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ExportTable() As CustomTable
+<pre><code class="language-vb">Private Function ExportTable() As ICustomTable
 </code></pre>
-<p>VBA evaluates both sides of Or, so the two guards below are written as two
-separate tests: reading Count off Nothing would raise on the very case the
-first test is there to catch.</p>
-<p><strong>Returns:</strong> CustomTable. The wrapper over the first table on the export sheet.</p>
-<hr />
-<h2 id="int-specification-reads">Specification Reads</h2>
-<h3 id="int-loadspecification">LoadSpecification <a class="anchor-link" href="#int-loadspecification">#</a></h3>
-<p><strong>Read the whole specification table once</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub LoadSpecification()
-</code></pre>
-<p>The header row and the data body are each read in one crossing and kept.
-Every later read of a cell is answered from those two arrays, so an export
-that reads eight columns costs two crossings instead of eight searches.
-The copy is dropped by <code>DropSpecification</code> whenever the class writes to the
-table, and by <code>ResetCaches</code> for a caller that wrote to the sheet itself.</p>
-<hr />
-<h3 id="int-dropspecification">DropSpecification <a class="anchor-link" href="#int-dropspecification">#</a></h3>
-<p><strong>Forget the copy of the specification table</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub DropSpecification()
-</code></pre>
-<hr />
-<h3 id="int-speccolumnindex">SpecColumnIndex <a class="anchor-link" href="#int-speccolumnindex">#</a></h3>
-<p><strong>Position of a column in the specification table</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SpecColumnIndex(ByVal columnName As String) As Long
-</code></pre>
-<p>Whole string, case-insensitive, leftmost wins. That is the same rule the
-worksheet search used before, applied to the header row held in memory.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>columnName</code>: Header to look for.</li>
-</ul>
-<p><strong>Returns:</strong> Long. The 1-based position, zero when the header is missing.</p>
-<hr />
-<h3 id="int-specrowcount">SpecRowCount <a class="anchor-link" href="#int-specrowcount">#</a></h3>
-<p><strong>How many rows the copy of the specification table holds</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SpecRowCount() As Long
-</code></pre>
-<p><strong>Returns:</strong> Long. The row count, zero when nothing is loaded.</p>
 <hr />
 <h3 id="int-readvalue">ReadValue <a class="anchor-link" href="#int-readvalue">#</a></h3>
-<p><strong>Read a column value for one export row</strong></p>
+<p><strong>Read a column value from the cached datasheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ReadValue(ByVal columnName As String, _
                            ByVal exportNumber As Long, _
                            Optional ByVal required As Boolean = False) As String
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>columnName</code>: Header of the column to read.</li>
-<li><code>exportNumber</code>: Row to read, 1-based within the table body.</li>
-<li><code>required</code>: Optional; raise when the column or the row is missing.</li>
-</ul>
-<p><strong>Returns:</strong> String. The cell value, empty when it cannot be read and required is False.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ElementNotFound when a required column is missing.</li>
-<li>ProjectError.InvalidArgument when a required row is out of range.</li>
-</ul>
 <hr />
-<h3 id="int-speccolumnrange">SpecColumnRange <a class="anchor-link" href="#int-speccolumnrange">#</a></h3>
-<p><strong>Resolve one specification column as a worksheet Range</strong></p>
+<h3 id="int-resolvecolumnrange">ResolveColumnRange <a class="anchor-link" href="#int-resolvecolumnrange">#</a></h3>
+<p><strong>Resolve and cache a specification column</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SpecColumnRange(ByVal columnName As String) As Range
+<pre><code class="language-vb">Private Function ResolveColumnRange(ByVal columnName As String, _
+                                    ByVal required As Boolean) As Range
 </code></pre>
-<p><code>Translate</code> writes back into the cells, so it needs the Range itself rather
-than the values held in memory.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>columnName</code>: Header of the column.</li>
-</ul>
-<p><strong>Returns:</strong> Range. The column body, Nothing when the header is missing.</p>
-<hr />
-<h3 id="int-rowvalues">RowValues <a class="anchor-link" href="#int-rowvalues">#</a></h3>
-<p><strong>Read a one-row Range as a 1-based list of values</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function RowValues(ByVal rowRange As Range) As Variant
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>rowRange</code>: Range spanning one row.</li>
-</ul>
-<p><strong>Returns:</strong> Variant. A 1-based one-dimensional array.</p>
-<hr />
-<h3 id="int-columnvalues">ColumnValues <a class="anchor-link" href="#int-columnvalues">#</a></h3>
-<p><strong>Read a one-column Range as a 1-based list of values</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ColumnValues(ByVal columnRange As Range) As Variant
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>columnRange</code>: Range spanning one column.</li>
-</ul>
-<p><strong>Returns:</strong> Variant. A 1-based one-dimensional array.</p>
-<hr />
-<h3 id="int-blockvalues">BlockValues <a class="anchor-link" href="#int-blockvalues">#</a></h3>
-<p><strong>Read a Range as a 1-based two-dimensional array</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function BlockValues(ByVal blockRange As Range) As Variant
-</code></pre>
-<p>Range.Value hands back a plain value for one cell and a two-dimensional array
-otherwise. This gives callers one shape.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>blockRange</code>: Range to read.</li>
-</ul>
-<p><strong>Returns:</strong> Variant. A 1-based two-dimensional array.</p>
 <hr />
 <h3 id="int-resetcaches">ResetCaches <a class="anchor-link" href="#int-resetcaches">#</a></h3>
 <p><strong>Reset cached references and diagnostics</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ResetCaches()
 </code></pre>
-<p>Callers that write to the export sheet themselves call this so the next read
-goes back to the worksheet.</p>
 <hr />
 <h3 id="int-composetemplatepath">ComposeTemplatePath <a class="anchor-link" href="#int-composetemplatepath">#</a></h3>
 <p><strong>Build the filename path from template chunks</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ComposeTemplatePath(ByVal template As String) As String
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>template</code>: The file name template read from the specification table.</li>
-</ul>
-<p><strong>Returns:</strong> String. The resolved chunks joined by a double underscore.</p>
 <hr />
 <h3 id="int-resolvetemplatechunk">ResolveTemplateChunk <a class="anchor-link" href="#int-resolvetemplatechunk">#</a></h3>
 <p><strong>Resolve a single template chunk into a safe string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveTemplateChunk(ByVal rawChunk As String, _
-                                      ByVal hostWorkbook As Workbook) As String
+                                      ByVal workbook As Workbook) As String
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>rawChunk</code>: One piece of the template.</li>
-<li><code>hostWorkbook</code>: Workbook holding the named ranges the chunk may point at.</li>
-</ul>
-<p><strong>Returns:</strong> String. The resolved and sanitised value.</p>
 <hr />
 <h3 id="int-isliteraltemplatechunk">IsLiteralTemplateChunk <a class="anchor-link" href="#int-isliteraltemplatechunk">#</a></h3>
 <p><strong>Determine whether a chunk represents a literal string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function IsLiteralTemplateChunk(ByVal chunk As String) As Boolean
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>chunk</code>: The chunk text.</li>
-</ul>
-<p><strong>Returns:</strong> Boolean. True when the chunk is wrapped in quotes.</p>
 <hr />
 <h3 id="int-stripliteralchunk">StripLiteralChunk <a class="anchor-link" href="#int-stripliteralchunk">#</a></h3>
 <p><strong>Remove wrapping quotes from literal chunk values</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function StripLiteralChunk(ByVal chunk As String) As String
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>chunk</code>: The chunk text.</li>
-</ul>
-<p><strong>Returns:</strong> String. The chunk without its wrapping quotes.</p>
 <hr />
 <h3 id="int-resolvevariablechunk">ResolveVariableChunk <a class="anchor-link" href="#int-resolvevariablechunk">#</a></h3>
 <p><strong>Resolve dictionary-driven chunk value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveVariableChunk(ByVal chunk As String, _
-                                      ByVal hostWorkbook As Workbook) As String
+                                       ByVal workbook As Workbook) As String
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>chunk</code>: Name of the variable the chunk points at.</li>
-<li><code>hostWorkbook</code>: Workbook holding the named range.</li>
-</ul>
-<p><strong>Returns:</strong> String. The sanitised value, empty when the chunk cannot be resolved.</p>
 <hr />
 <h3 id="int-trygetworksheet">TryGetWorksheet <a class="anchor-link" href="#int-trygetworksheet">#</a></h3>
 <p><strong>Safely retrieve a worksheet by name</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function TryGetWorksheet(ByVal hostWorkbook As Workbook, ByVal sheetName As String) As Worksheet
+<pre><code class="language-vb">Private Function TryGetWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Worksheet
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>hostWorkbook</code>: Workbook to look in.</li>
-<li><code>sheetName</code>: Name of the worksheet.</li>
-</ul>
-<p><strong>Returns:</strong> Worksheet. Nothing when there is no such sheet.</p>
 <hr />
 <h3 id="int-trygetnamedrange">TryGetNamedRange <a class="anchor-link" href="#int-trygetnamedrange">#</a></h3>
 <p><strong>Safely retrieve a named range for a chunk</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function TryGetNamedRange(ByVal hostWorkbook As Workbook, _
+<pre><code class="language-vb">Private Function TryGetNamedRange(ByVal workbook As Workbook, _
                                   ByVal chunk As String, _
                                   ByVal targetSheet As Worksheet) As Range
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>hostWorkbook</code>: Workbook holding the workbook-level names.</li>
-<li><code>chunk</code>: Name to look for.</li>
-<li><code>targetSheet</code>: Worksheet to fall back on for a sheet-level name.</li>
-</ul>
-<p><strong>Returns:</strong> Range. Nothing when there is no such name.</p>
 <hr />
 <h3 id="int-sanitizechunk">SanitizeChunk <a class="anchor-link" href="#int-sanitizechunk">#</a></h3>
 <p><strong>Sanitise individual chunk values for filenames</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SanitizeChunk(ByVal chunk As String) As String
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>chunk</code>: The value to clean.</li>
-</ul>
-<p><strong>Returns:</strong> String. The cleaned value, &quot;chunk&quot; when nothing is left.</p>
 <hr />
 <h3 id="int-replaceinvalidcharacters">ReplaceInvalidCharacters <a class="anchor-link" href="#int-replaceinvalidcharacters">#</a></h3>
 <p><strong>Replace characters unsupported in filenames</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ReplaceInvalidCharacters(ByVal value As String) As String
 </code></pre>
-<p>Each pass works on the result of the one before it, so every character in the
-list is replaced. The value goes straight into a SaveAs path.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>value</code>: The text to clean.</li>
-</ul>
-<p><strong>Returns:</strong> String. The text with every listed character turned into an underscore.</p>
 <hr />
 <h3 id="int-ensuresanitizelist">EnsureSanitizeList <a class="anchor-link" href="#int-ensuresanitizelist">#</a></h3>
 <p><strong>Initialise invalid filename character list</strong></p>
@@ -905,53 +417,32 @@ list is replaced. The value goes straight into a SaveAs path.</p>
 <h3 id="int-buildversionsuffix">BuildVersionSuffix <a class="anchor-link" href="#int-buildversionsuffix">#</a></h3>
 <p><strong>Compose version/public key suffix for filenames</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function BuildVersionSuffix(ByVal pass As Passwords) As String
+<pre><code class="language-vb">Private Function BuildVersionSuffix(ByVal pass As IPasswords) As String
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>pass</code>: Password provider holding the version and the public key.</li>
-</ul>
-<p><strong>Returns:</strong> String. The suffix to append to the file name.</p>
 <hr />
 <h3 id="int-buildtimestamp">BuildTimestamp <a class="anchor-link" href="#int-buildtimestamp">#</a></h3>
 <p><strong>Compose timestamp fragment for filenames</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildTimestamp() As String
 </code></pre>
-<p><strong>Returns:</strong> String. The current date and time in the file name format.</p>
 <hr />
 <h3 id="int-defaulttemplate">DefaultTemplate <a class="anchor-link" href="#int-defaulttemplate">#</a></h3>
 <p><strong>Provide fallback filename template</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DefaultTemplate(ByVal exportNumber As Long) As String
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>exportNumber</code>: The export the template belongs to.</li>
-</ul>
-<p><strong>Returns:</strong> String. The fallback template.</p>
 <hr />
 <h3 id="int-workbookbasename">WorkbookBaseName <a class="anchor-link" href="#int-workbookbasename">#</a></h3>
 <p><strong>Remove Excel extensions from workbook name</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function WorkbookBaseName(ByVal hostWorkbook As Workbook) As String
+<pre><code class="language-vb">Private Function WorkbookBaseName(ByVal workbook As Workbook) As String
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>hostWorkbook</code>: The workbook to name.</li>
-</ul>
-<p><strong>Returns:</strong> String. The lower-cased name without its extension.</p>
 <hr />
 <h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
 <p><strong>Append informational diagnostics to the Checking log</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, Optional ByVal scope As Byte = checkingInfo)
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>label</code>: The message to record.</li>
-<li><code>scope</code>: Optional checking scope. Defaults to checkingInfo.</li>
-</ul>
 <hr />
 <h2 id="int-error-handling">Error Handling</h2>
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
@@ -959,31 +450,36 @@ list is replaced. The value goes straight into a SaveAs path.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>errNumb</code>: The ProjectError value to raise.</li>
-<li><code>errorMessage</code>: The message to carry with it.</li>
-</ul>
 <hr />
 </details>
 <details>
-<summary>Used in (15 file(s))</summary>
+<summary>Used in (25 file(s))</summary>
 <ul>
+<li><a href="ExportButton.html">ExportButton.cls</a></li>
+<li><a href="ILLExporter.html">ILLExporter.cls</a></li>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
-<li><a href="LLdictionary.html">LLdictionary.cls</a></li>
-<li><a href="LLVariables.html">LLVariables.cls</a></li>
+<li><a href="ILinelistBuildService.html">ILinelistBuildService.cls</a></li>
+<li><a href="LinelistBuildService.html">LinelistBuildService.cls</a></li>
+<li><a href="ILLExport.html">ILLExport.cls</a></li>
+<li><a href="LLExport.html">LLExport.cls</a></li>
+<li><a href="ILinelistSpecs.html">ILinelistSpecs.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
 <li><a href="EventSetup.html">EventSetup.cls</a></li>
-<li><a href="SetupErrors.html">SetupErrors.cls</a></li>
-<li><a href="SetupImport.html">SetupImport.cls</a></li>
-<li>InitTransfer.bas</li>
+<li><a href="IEventSetup.html">IEventSetup.cls</a></li>
+<li><a href="SetupImportService.html">SetupImportService.cls</a></li>
+<li><a href="DesignerImportService.html">DesignerImportService.cls</a></li>
+<li><a href="IDesignerImportService.html">IDesignerImportService.cls</a></li>
+<li>GenerationReport.bas</li>
 <li>EventsLinelistButtons.bas</li>
 <li>FormLogicExport.bas</li>
+<li>FormLogicExportMig.bas</li>
+<li>SetupHelpers.bas</li>
 <li>TestLLExporter.bas</li>
 <li>TestLLExport.bas</li>
-<li>TestLinelistSpecs.bas</li>
-<li>TestSetupErrors.bas</li>
+<li><a href="LinelistSpecsWorkbookStub.html">LinelistSpecsWorkbookStub.cls</a></li>
+<li><a href="LLVarContextSpecsStub.html">LLVarContextSpecsStub.cls</a></li>
+<li><a href="TableSpecsLinelistStub.html">TableSpecsLinelistStub.cls</a></li>
 </ul>
 </details>
   </main>

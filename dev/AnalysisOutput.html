@@ -11,37 +11,14 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>AnalysisOutput</h1>
-<p>Writes every analysis sheet of a generated linelist. Create takes the setup
-worksheet that holds the analysis definition ListObjects and the linelist
-facade the sheets are written into. WriteAnalysis walks each analysis scope --
-normal, time series, spatial and spatio-temporal -- builds the cross-tables
-from their table specifications, writes the formulas, records the chart
-metadata in AnaTabIds and draws the charts. TransObject answers the
-translation provider, and entries filed along the way leave through
-HasCheckings and CheckingValues.</p>
-<details open class="doc-section" id="the-class-owns-the-state-its-own-work-needs">
-<summary>THE CLASS OWNS THE STATE ITS OWN WORK NEEDS</summary>
-<div class="section-body">
-<p>WriteAnalysis opens an ApplicationState of its own, turns screen updating,
-alerts, automatic calculation, animations and events off for the length of the
-build, and restores on the way out -- on the error path too. The sheets are
-therefore written under the state the analysis needs whoever calls it, and a
-caller that keeps its own scope, which is what clickGenerate does, is not
-disturbed: the snapshot taken here is the caller's busy state, so restoring
-puts that back rather than the pre-generation values.</p>
-</div>
-</details>
-<details open class="doc-section" id="a-section-is-told-to-the-loop">
-<summary>A SECTION IS TOLD TO THE LOOP</summary>
-<div class="section-body">
-<p>The date bounds and the navigation dropdown of a temporal section are held by
-a TemporalSection. The loop closes the section it holds when it meets a table
-that starts a new one, and closes the last one after the loop. Nothing reads
-the row below to decide where a section ends.</p>
-<p><strong>Depends on:</strong> <a href="Linelist.html">Linelist</a>, <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLFormat.html">LLFormat</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="TableSpecs.html">TableSpecs</a>, <a href="CrossTable.html">CrossTable</a>, <a href="CrossTableFormula.html">CrossTableFormula</a>, <a href="Graphs.html">Graphs</a>, <a href="GraphSeries.html">GraphSeries</a>, <a href="TimeSeriesGraphs.html">TimeSeriesGraphs</a>, <a href="SeriesBuffer.html">SeriesBuffer</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="TemporalSection.html">TemporalSection</a>, <a href="ApplicationState.html">ApplicationState</a>, <a href="Buttons.html">Buttons</a>, <a href="Passwords.html">Passwords</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="FormulaData.html">FormulaData</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, ListObject names in the setup worksheet, Checking support</p>
-<p><strong>Version:</strong> 2026-08-12</p>
-</div>
-</details>
+<p>Orchestrates the complete analysis output pipeline for the linelist builder.
+Given a setup worksheet containing analysis definition ListObjects and an
+output linelist facade, this class iterates through each analysis scope
+(normal, time series, spatial, spatio-temporal), builds cross-tables from
+table specifications, writes formulas, registers metadata in AnaTabIds, and
+renders charts. Consumers interact through the IAnalysisOutput interface.</p>
+<p><strong>Depends on:</strong> <a href="ILinelist.html">ILinelist</a>, <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="ITableSpecs.html">ITableSpecs</a>, <a href="ICrossTable.html">ICrossTable</a>, <a href="ICrossTableFormula.html">ICrossTableFormula</a>, <a href="IGraphSpecs.html">IGraphSpecs</a>, <a href="IGraphs.html">IGraphs</a>, <a href="IAnaTabIds.html">IAnaTabIds</a>, <a href="IButtons.html">IButtons</a>, <a href="IPasswords.html">IPasswords</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="IFormulaData.html">IFormulaData</a>, <a href="BetterArray.html">BetterArray</a>, ListObject names in the setup worksheet, Bug #2 fix: GoTo arrays are now local to each scope, not shared instance state., They are passed as parameters to WriteTable and managed per-scope in WriteAnalysis., Checking support</p>
+<p><strong>Version:</strong> 1.0 (2026-02-10)</p>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
 <div class="section-body">
@@ -50,23 +27,23 @@ the row below to decide where a section ends.</p>
 <p><strong>Create an AnalysisOutput orchestrator bound to a setup worksheet and output linelist.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal specSh As Worksheet, _
-                       ByVal ll As Linelist) As AnalysisOutput
+                       ByVal ll As ILinelist) As IAnalysisOutput
 </code></pre>
 <p>Factory method that creates a new AnalysisOutput instance tied to the given
-setup worksheet and output linelist. The setup worksheet holds the ListObjects
-that define which tables (global summary, univariate, bivariate, time series,
-spatial, spatio-temporal) should be generated. The linelist is the output
-workbook facade where analysis sheets are created and populated. Both
-parameters are validated before construction.</p>
+setup worksheet and output linelist. The setup worksheet contains the
+ListObjects that define which tables (global summary, univariate, bivariate,
+time series, spatial, spatio-temporal) should be generated. The linelist is
+the output workbook facade where analysis sheets will be created and
+populated. Both parameters are validated before construction.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>specSh</code>: Worksheet. The setup worksheet holding the analysis ListObjects
-(Tab_Global_Summary, Tab_Univariate_Analysis, Tab_Bivariate_Analysis,
+<li><code>specSh</code>: Worksheet. The setup worksheet containing analysis ListObjects
+(Tab_global_summary, Tab_Univariate_Analysis, Tab_Bivariate_Analysis,
 Tab_TimeSeries_Analysis, Tab_Spatial_Analysis, Tab_SpatioTemporal_Analysis).</li>
-<li><code>ll</code>: Linelist. The output linelist workbook facade where analysis sheets
+<li><code>ll</code>: ILinelist. The output linelist workbook facade where analysis sheets
 will be created.</li>
 </ul>
-<p><strong>Returns:</strong> AnalysisOutput. A fully initialised orchestrator instance ready for use.</p>
+<p><strong>Returns:</strong> IAnalysisOutput. A fully initialised orchestrator instance ready for use.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>InvalidArgument When the specifications worksheet is Nothing.</li>
@@ -80,115 +57,65 @@ will be created.</li>
 <div class="section-body">
 <h3 id="writeanalysis">WriteAnalysis <a class="anchor-link" href="#writeanalysis">#</a></h3>
 <p><em>write-analysis</em></p>
-<p><strong>Write all analysis tables, formulas and charts to the output.</strong></p>
+<p><strong>Write all analysis tables, formulas, and graphs to the output.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub WriteAnalysis(Optional ByVal part As Byte = AnalysisBuildStageAll)
+<pre><code class="language-vb">Private Sub WriteAnalysis(Optional ByVal part As Byte = 0)
 </code></pre>
-<p>Builds the four analysis sheets in order: normal (global summary, univariate
-and bivariate), time series, spatial and spatio-temporal. The stage says how
-far to go, and every sheet up to that point is finished, protected and hidden
-when it stayed empty.</p>
-<p>The freeze-pane split of all four sheets runs at the end, in one pass.
-Activating a worksheet forces a repaint and a scroll sync that screen updating
-does not suppress, and it used to happen in the middle of every scope.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>part</code>: Optional Byte. A constant from the AnalysisBuildStage enum.
-Defaults to AnalysisBuildStageAll, which builds the four sheets. Any other
-value stops after the stage it names.</li>
-</ul>
+<p>Top-level entry point that builds all four analysis output worksheets.
+Top-level orchestrator that builds all four analysis output worksheets in
+sequence: (1) Normal (univariate + bivariate + global summary), (2) Time
+Series, (3) Spatial, and (4) Spatio-Temporal. For each scope the method
+prepares the sheet (PrepareSheet), allocates fresh local GoTo arrays
+(Bug #2 fix), calls WriteTable for each relevant setup ListObject,
+optionally calls graph-creation subs, builds the section-level GoTo
+dropdown (AddGoTo), re-adds command buttons (AddCommands), password-
+protects the sheet, and hides it if no tables were written (the
+RNG_HasTable_* flag is still empty). Application performance mode is
+enabled once at the top via BusyApp.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
-<li>This is what opens and restores the application state the build runs
-under: see the note at the top of this class. A raise inside the build restores
-it before the error travels on, so no failure leaves Excel with a frozen
-screen.</li>
+<li>The normal scope writes three ListObjects (GLOBALSUMMARY,
+UNIVARIATE, BIVARIATE) in sequence. Time-series and spatio-temporal
+scopes also create graphs and a graph-level GoTo dropdown. The caller
+(IAnalysisOutput_WriteAnalysis) is responsible for restoring Application
+settings after this method returns.</li>
 </ul>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>Whatever the build raises, after the application state is restored.</li>
-</ul>
-<hr />
-</div>
-</details>
-<details open class="doc-section" id="checkings">
-<summary>Checkings</summary>
-<div class="section-body">
-<h3 id="tableswritten">TablesWritten <a class="anchor-link" href="#tableswritten">#</a></h3>
-<p><em>tables-written</em></p>
-<p><strong>How many analysis tables this build put on a sheet</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get TablesWritten() As Long
-</code></pre>
-<p><strong>Returns:</strong> Long. The number of tables written.</p>
-<hr />
-<h3 id="graphswritten">GraphsWritten <a class="anchor-link" href="#graphswritten">#</a></h3>
-<p><em>graphs-written</em></p>
-<p><strong>How many charts this build put on a sheet</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get GraphsWritten() As Long
-</code></pre>
-<p><strong>Returns:</strong> Long. The number of charts written.</p>
-<hr />
-<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
-<p><em>has-checkings</em></p>
-<p><strong>Whether anything was reported during the build</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
-</code></pre>
-<p><strong>Returns:</strong> Boolean. True when at least one entry was filed.</p>
-<hr />
-<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
-<p><em>checking-values</em></p>
-<p><strong>The report of this build</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get CheckingValues() As Checking
-</code></pre>
-<p><strong>Returns:</strong> Checking. The store, or Nothing when nothing was filed.</p>
 <hr />
 </div>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-internal-properties">Internal Properties</h2>
-<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
-<p><em>seal</em></p>
-<p><strong>Seal the instance against further setup writes.</strong></p>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
+<p><strong>Current object instance.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Seal()
+<pre><code class="language-vb">Public Property Get Self() As IAnalysisOutput
 </code></pre>
-<p>Properties used during factory construction and internal wiring.</p>
-<hr />
-<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
-<p><em>guard-not-sealed</em></p>
-<p><strong>Guard a setup setter against post-creation writes.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>propName</code>: String. The property name for the error message.</li>
-</ul>
+<p>Properties used during factory construction and internal wiring.
+Convenience accessor that returns the current instance cast to the
+IAnalysisOutput interface, enabling the predeclared factory pattern.</p>
+<p><strong>Returns:</strong> IAnalysisOutput. The current instance cast to the interface.</p>
 <hr />
 <h3 id="int-outputll">OutputLL <a class="anchor-link" href="#int-outputll">#</a></h3>
 <p><em>output-ll-get</em></p>
 <p><strong>Output linelist facade.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get OutputLL() As Linelist
+<pre><code class="language-vb">Public Property Get OutputLL() As ILinelist
 </code></pre>
-<p>Returns the Linelist reference representing the output workbook where
+<p>Returns the ILinelist reference representing the output workbook where
 analysis worksheets are created and populated.</p>
-<p><strong>Returns:</strong> Linelist. The output linelist workbook facade.</p>
+<p><strong>Returns:</strong> ILinelist. The output linelist workbook facade.</p>
 <hr />
 <h3 id="int-outputll">OutputLL <a class="anchor-link" href="#int-outputll">#</a></h3>
 <p><em>output-ll-set</em></p>
 <p><strong>Assign the output linelist facade.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set OutputLL(ByVal ll As Linelist)
+<pre><code class="language-vb">Public Property Set OutputLL(ByVal ll As ILinelist)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>ll</code>: Linelist. The output linelist workbook facade to store.</li>
+<li><code>ll</code>: ILinelist. The output linelist workbook facade to store.</li>
 </ul>
 <hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
@@ -197,8 +124,8 @@ analysis worksheets are created and populated.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
 </code></pre>
-<p>Returns the setup worksheet holding the analysis definition ListObjects.</p>
-<p><strong>Returns:</strong> Worksheet. The setup worksheet holding the analysis ListObjects.</p>
+<p>Returns the setup worksheet containing analysis definition ListObjects.</p>
+<p><strong>Returns:</strong> Worksheet. The setup worksheet containing analysis ListObjects.</p>
 <hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><em>wksh-set</em></p>
@@ -216,44 +143,47 @@ analysis worksheets are created and populated.</p>
 <p><em>linelist-data</em></p>
 <p><strong>Linelist metadata facade.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get LinelistData() As LinelistSpecs
+<pre><code class="language-vb">Private Property Get LinelistData() As ILinelistSpecs
 </code></pre>
 <p>Convenience accessors for frequently used collaborators retrieved
-through the output linelist and its metadata facade.</p>
-<p>Convenience accessor that retrieves the LinelistSpecs object from the stored
-output linelist. LinelistSpecs is the central metadata facade providing access
-to the dictionary, translation objects, formula data, design format, passwords
-and sheet configuration.</p>
-<p><strong>Returns:</strong> LinelistSpecs. Metadata facade for the output linelist.</p>
+through the output linelist and its metadata facade.
+Convenience accessor that retrieves the ILinelistSpecs object from the
+stored output linelist. ILinelistSpecs is the central metadata facade
+providing access to the dictionary, translation objects, formula data,
+design format, passwords, and sheet configuration. This property avoids
+repeating OutputLL().LinelistData() throughout the class.</p>
+<p><strong>Returns:</strong> ILinelistSpecs. Metadata facade for the output linelist.</p>
 <hr />
 <h3 id="int-designformat">DesignFormat <a class="anchor-link" href="#int-designformat">#</a></h3>
 <p><em>design-format</em></p>
 <p><strong>Design format object.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get DesignFormat() As LLFormat
+<pre><code class="language-vb">Private Property Get DesignFormat() As ILLFormat
 </code></pre>
-<p>Convenience accessor for the LLFormat design format object used to apply
-visual formatting (fonts, colours, borders, cell styles) to analysis
-worksheets, cells and chart elements. Delegates through LinelistData to the
-shared format singleton so all analysis output uses consistent styling from
-the setup workbook.</p>
-<p><strong>Returns:</strong> LLFormat. Design format object for the output linelist.</p>
+<p>Convenience accessor for the ILLFormat design format object used to
+apply visual formatting (fonts, colours, borders, cell styles) to analysis
+worksheets, cells, and chart elements. Delegates through LinelistData to
+retrieve the shared format singleton so all analysis output uses consistent
+styling from the setup workbook.</p>
+<p><strong>Returns:</strong> ILLFormat. Design format object for the output linelist.</p>
 <hr />
 <h3 id="int-transobject">TransObject <a class="anchor-link" href="#int-transobject">#</a></h3>
 <p><em>trans-object</em></p>
 <p><strong>Translation object for a given scope.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get TransObject(Optional ByVal scope As Byte = TranslationOfMessages) As TranslationObject
+<pre><code class="language-vb">Public Property Get TransObject(Optional ByVal scope As Byte = TranslationOfMessages) As ITranslationObject
 </code></pre>
-<p>Retrieves a TranslationObject for the requested translation scope. Translation
-objects resolve human-readable labels, button captions, sheet names and other
-locale-dependent strings from the setup workbook.</p>
+<p>Retrieves an ITranslationObject for the requested translation scope.
+Translation objects resolve human-readable labels, button captions, sheet
+names, and other locale-dependent strings from the setup workbook. The
+scope parameter controls which translation table is used: messages (default),
+shape names, or other categories defined by the TranslationScope enum.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>scope</code>: Optional Byte. A constant from the TranslationScope enum.
-Defaults to TranslationOfMessages. Use TranslationOfShapes for button labels.</li>
+Defaults to TranslationOfMessages. Use TranslationOfShapes for button/shape labels.</li>
 </ul>
-<p><strong>Returns:</strong> TranslationObject. Bound to the requested translation scope.</p>
+<p><strong>Returns:</strong> ITranslationObject. Bound to the requested translation scope.</p>
 <hr />
 <h3 id="int-outputsh">OutputSh <a class="anchor-link" href="#int-outputsh">#</a></h3>
 <p><em>output-sh</em></p>
@@ -261,221 +191,127 @@ Defaults to TranslationOfMessages. Use TranslationOfShapes for button labels.</l
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get OutputSh(Optional ByVal scope As Byte = AnalysisScopeNormal) As Worksheet
 </code></pre>
-<p>Resolves the output worksheet in the linelist workbook for the given analysis
-scope. Each scope maps to a translated sheet name held in the messages
-translation table (for example &quot;LLSHEET_Analysis&quot; for the normal scope), so
-the output sheet names match the configured language.</p>
-<p>Each sheet is resolved once and kept. Resolving one costs a translated value
-and a worksheet lookup, and this property is read from the sheet preparation,
-the button placement, the freeze panes, every table and both chart passes.</p>
+<p>Resolves the output worksheet in the linelist workbook for the given
+analysis scope. Each scope maps to a translated sheet name stored in
+the messages translation table (e.g. &quot;LLSHEET_Analysis&quot; for normal,
+&quot;LLSHEET_TemporalAnalysis&quot; for time series). The translation ensures
+the output sheet names match the user's configured language.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>scope</code>: Optional Byte. A constant from the AnalysisScope enum saying
-which analysis worksheet to answer. Defaults to AnalysisScopeNormal.</li>
+<li><code>scope</code>: Optional Byte. A constant from the AnalysisScope enum indicating
+which analysis worksheet to return. Defaults to AnalysisScopeNormal.</li>
 </ul>
 <p><strong>Returns:</strong> Worksheet. The output analysis sheet in the linelist workbook.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.InvalidArgument When the scope is outside the four.</li>
-</ul>
-<hr />
-<h3 id="int-outputnames">OutputNames <a class="anchor-link" href="#int-outputnames">#</a></h3>
-<p><em>output-names</em></p>
-<p><strong>Metadata reader for the output worksheet of a scope.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get OutputNames(ByVal scope As Byte) As HiddenNames
-</code></pre>
-<p>One HiddenNames per output sheet, resolved once. Each Create walks the
-worksheet names and reads a comment on every tracked one, and this class used
-to build about ten of them per run.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>scope</code>: Byte. A constant from the AnalysisScope enum.</li>
-</ul>
-<p><strong>Returns:</strong> HiddenNames. Reader bound to that scope's output sheet.</p>
 <hr />
 <h3 id="int-namesobject">NamesObject <a class="anchor-link" href="#int-namesobject">#</a></h3>
 <p><em>names-object</em></p>
 <p><strong>Lazily-initialised analysis tracking object.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get NamesObject() As AnaTabIds
+<pre><code class="language-vb">Private Property Get NamesObject() As IAnaTabIds
 </code></pre>
-<p>Lazily-initialised accessor for the AnaTabIds tracking object. AnaTabIds keeps
-the registry of chart metadata created during the analysis build, and the
-export reads it back to rebuild the charts in the exported workbook. The
-object is created once on first access, over the temporary analysis worksheet
-of the linelist.</p>
-<p><strong>Returns:</strong> AnaTabIds. Tracking object that records the chart metadata.</p>
+<p>Lazily-initialised accessor for the IAnaTabIds tracking object. AnaTabIds
+maintains a registry of all cross-table named ranges and graph metadata
+created during the analysis build. This registry is later used by the
+update/filter commands to locate tables and graphs at runtime. The object
+is created once on first access using the temporary analysis worksheet
+from the linelist, and all subsequent calls return the cached instance.</p>
+<p><strong>Returns:</strong> IAnaTabIds. Tracking object that records table and graph metadata.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
-<li>The backing worksheet comes from lData.TemporarySheetName(TempSheetAnalysis),
-which must exist in the output linelist before this property is first read.</li>
+<li>The backing worksheet comes from lData.TemporarySheetName(TemporarySheetAnalysis),
+which must exist in the output linelist before this property is first accessed.</li>
 </ul>
-<hr />
-<h2 id="int-scope-mapping">Scope Mapping</h2>
-<h3 id="int-isknownscope">IsKnownScope <a class="anchor-link" href="#int-isknownscope">#</a></h3>
-<p><em>is-known-scope</em></p>
-<p><strong>Whether a value is one of the four analysis scopes</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function IsKnownScope(ByVal scope As Byte) As Boolean
-</code></pre>
-<p>The analysis scope, the chart scope, the sheet tag and the
-navigation prefix are four names for one thing. Each translation is stated
-here once, so no call site has to assume that two enums line up by number.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>scope</code>: Byte. The value to test.</li>
-</ul>
-<p><strong>Returns:</strong> Boolean. True for the four scopes.</p>
-<hr />
-<h3 id="int-graphscopeof">GraphScopeOf <a class="anchor-link" href="#int-graphscopeof">#</a></h3>
-<p><em>graph-scope-of</em></p>
-<p><strong>The chart scope that goes with an analysis scope</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function GraphScopeOf(ByVal scope As Byte) As Byte
-</code></pre>
-<p>GraphScope has three members and AnalysisScope has four. The two agree by
-number on the first three, and this class used to pass an analysis scope
-straight into a chart scope parameter. Spatio-temporal has no chart scope of
-its own, and its charts are laid out like the time series ones.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>scope</code>: Byte. A constant from the AnalysisScope enum.</li>
-</ul>
-<p><strong>Returns:</strong> Byte. A constant from the GraphScope enum.</p>
-<hr />
-<h3 id="int-sheettagof">SheetTagOf <a class="anchor-link" href="#int-sheettagof">#</a></h3>
-<p><em>sheet-tag-of</em></p>
-<p><strong>The sheet_type value that goes with an analysis scope</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SheetTagOf(ByVal scope As Byte) As String
-</code></pre>
-<p>EventLinelist, LLExporter, LLImporter and the epidemiological week helper all
-branch on this string, so an unknown scope raises here instead of stamping an
-empty tag.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>scope</code>: Byte. A constant from the AnalysisScope enum.</li>
-</ul>
-<p><strong>Returns:</strong> String. The sheet_type value.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.InvalidArgument When the scope is outside the four.</li>
-</ul>
-<hr />
-<h3 id="int-gotoprefixof">GoToPrefixOf <a class="anchor-link" href="#int-gotoprefixof">#</a></h3>
-<p><em>goto-prefix-of</em></p>
-<p><strong>The navigation prefix that goes with an analysis scope</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function GoToPrefixOf(ByVal scope As Byte) As String
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>scope</code>: Byte. A constant from the AnalysisScope enum.</li>
-</ul>
-<p><strong>Returns:</strong> String. The prefix every navigation name of that sheet carries.</p>
 <hr />
 <h2 id="int-application-helpers">Application Helpers</h2>
-<h3 id="int-appscope">AppScope <a class="anchor-link" href="#int-appscope">#</a></h3>
-<p><em>app-scope</em></p>
-<p><strong>The application state this class builds under.</strong></p>
+<h3 id="int-busyapp">BusyApp <a class="anchor-link" href="#int-busyapp">#</a></h3>
+<p><em>busy-app</em></p>
+<p><strong>Suppress Excel visual feedback and recalculation for performance.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get AppScope() As ApplicationState
+<pre><code class="language-vb">Private Sub BusyApp()
 </code></pre>
-<p>Built on first read and kept for the life of the instance. The snapshot is
-taken when the object is built, which is inside whatever state the caller was
-already in, so restoring hands that state back rather than guessing at one.</p>
-<p><strong>Returns:</strong> ApplicationState. Bound to the running Excel Application.</p>
+<p>Disables ScreenUpdating, DisplayAlerts, Calculation (switches to manual),
+and EnableAnimations on the Application object to maximise performance during
+batch write operations. These settings are restored externally after the
+full analysis build completes.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
-<li>WriteAnalysis is what opens and restores it: see the note at the top
-of this class.</li>
+<li>This sub is called multiple times (e.g. inside SplitOutputSheet)
+because activating a worksheet can re-enable ScreenUpdating in some Excel
+versions.</li>
 </ul>
 <hr />
 <h3 id="int-splitoutputsheet">SplitOutputSheet <a class="anchor-link" href="#int-splitoutputsheet">#</a></h3>
 <p><em>split-output-sheet</em></p>
-<p><strong>Apply the freeze-pane split to an analysis output worksheet.</strong></p>
+<p><strong>Apply freeze-pane split to an analysis output worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub SplitOutputSheet(ByVal scope As Byte)
+<pre><code class="language-vb">Private Sub SplitOutputSheet(Optional ByVal scope As Byte = AnalysisScopeNormal)
 </code></pre>
-<p>Freezes the header rows and the left navigation columns so they stay visible
-while the user scrolls through the tables. The row split is 2 for the normal
-and spatial scopes and 3 for the time series and spatio-temporal ones, which
-carry an extra row for the header dropdown. The column split is always 3 and
-the zoom is 80%.</p>
+<p>Applies a freeze-pane split to the output analysis worksheet so that
+header rows and the left navigation columns remain visible while the
+user scrolls through tables. The row split is 2 for normal/spatial
+scopes and 3 for time-series and spatio-temporal scopes (which have
+an extra GoTo-header dropdown row). The column split is always 3.
+Zoom is set to 80% for a wider view of cross-tables.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>scope</code>: Byte. A constant from the AnalysisScope enum.</li>
+<li><code>scope</code>: Optional Byte. A constant from the AnalysisScope enum.
+Defaults to AnalysisScopeNormal. Time-series and spatio-temporal scopes
+get an extra frozen row.</li>
 </ul>
 <p><strong>Remarks:</strong></p>
 <ul>
-<li>Activating the sheet is what the freeze-pane API needs. A protected
-sheet or a hidden window makes it fail, and the failure is filed as a warning
-rather than passed over in silence.</li>
-<li>The busy state is written again after the activation, because
-activating a worksheet turns screen updating back on in some Excel versions.
-The scope is already busy at that point, which is why the call forces.</li>
+<li>The sub activates the worksheet (required by the FreezePanes API),
+wraps everything in On Error Resume Next to tolerate protected-sheet or
+hidden-window conditions, and calls BusyApp twice because Activate can
+re-enable ScreenUpdating.</li>
 </ul>
 <hr />
 <h2 id="int-sheet-preparation">Sheet Preparation</h2>
 <h3 id="int-addcommands">AddCommands <a class="anchor-link" href="#int-addcommands">#</a></h3>
 <p><em>add-commands</em></p>
-<p><strong>Add the filter/update command button to an analysis output worksheet.</strong></p>
+<p><strong>Add a filter/update command button to the analysis output worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddCommands(ByVal scope As Byte)
+<pre><code class="language-vb">Private Sub AddCommands(Optional ByVal scope As Byte = AnalysisScopeNormal)
 </code></pre>
-<p>Places the command button that runs either the standard filter-update macro or
-the spatial one, depending on the scope. The button sits at row 2 column 2, is
-styled with the design format and is labelled with the translated SHP_Filter
-shape name. Exits early when the linelist is built from a template, because
-the template already carries the buttons.</p>
-<p>This runs once per scope, from PrepareSheet, after the sheet format has been
-applied. It used to run a second time at the end of each scope; Buttons.Add
-short-circuits on an existing shape, so the second call stacked nothing and
-cost a Buttons instance, a shape scan, a translation and a format per scope.
-What the second call did lose was its own diagnostics, because the instance
-was created inside it and dropped.</p>
+<p>Places a command button on the output worksheet that triggers either the
+standard filter-update macro (UPDATEFILTERCOMMAND) or the spatial-specific
+update macro (UPDATESPCOMMAND) depending on the scope. The button is placed
+at row 2 col 2, styled using the design format, and labelled with the
+translated SHP_Filter shape name. Exits early when the linelist is built
+from a template (mainobj.HasTemplate), because the template already
+contains the buttons.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>scope</code>: Byte. A constant from the AnalysisScope enum. The spatial scope
-gets the spatial update command.</li>
-</ul>
-<hr />
-<h3 id="int-stampsheettype">StampSheetType <a class="anchor-link" href="#int-stampsheettype">#</a></h3>
-<p><em>stamp-sheet-type</em></p>
-<p><strong>Write the sheet_type tag of an analysis output worksheet</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub StampSheetType(ByVal scope As Byte)
-</code></pre>
-<p>The tag is what every runtime reader of the linelist uses to tell one analysis
-sheet from another, so a sheet that ends up empty gets it too.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>scope</code>: Byte. A constant from the AnalysisScope enum.</li>
+<li><code>scope</code>: Optional Byte. A constant from the AnalysisScope enum. Defaults
+to AnalysisScopeNormal. When AnalysisScopeSpatial, the spatial-specific
+update command is assigned.</li>
 </ul>
 <hr />
 <h3 id="int-preparesheet">PrepareSheet <a class="anchor-link" href="#int-preparesheet">#</a></h3>
 <p><em>prepare-sheet</em></p>
-<p><strong>Initialise an analysis output worksheet before any table is written.</strong></p>
+<p><strong>Perform five-step initialisation of an analysis output worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub PrepareSheet(ByVal scope As Byte)
+<pre><code class="language-vb">Private Sub PrepareSheet(Optional ByVal scope As Byte = AnalysisScopeNormal)
 </code></pre>
-<p>Four steps: apply the AllAnalysisSheet base format to the whole worksheet,
-stamp the sheet_type tag, place the ComputedOnFiltered() warning formula at
-row 2 column 5 with the warning format, and add the command button.</p>
-<p>The freeze-pane split is not part of this. Activating a worksheet forces a
-repaint that screen updating does not suppress, so the four splits are applied
-in one pass at the end of the build.</p>
+<p>Initialises an analysis output worksheet before any tables are written.
+The five steps are: (1) write a scope-specific flag named range at row 1
+col 10 (e.g. RNG_HasTable_UNI), formatted as a hidden cell; (2) apply
+the AllAnalysisSheet base format to the entire worksheet; (3) write a
+sheet-info identifier at row 1 col 3 as a hidden cell; (4) place the
+ComputedOnFiltered() warning formula at row 2 col 5 with LinelistWarning
+formatting; (5) delegate to AddCommands and SplitOutputSheet for button
+and freeze-pane setup.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>scope</code>: Byte. A constant from the AnalysisScope enum. Decides the
-sheet_type tag and which update command the button carries.</li>
+<li><code>scope</code>: Optional Byte. A constant from the AnalysisScope enum. Defaults
+to AnalysisScopeNormal. Determines the flag range name, sheet-info string,
+and freeze-pane row count.</li>
 </ul>
 <hr />
 <h2 id="int-goto-dropdown-helpers">GoTo Dropdown Helpers</h2>
 <h3 id="int-addgoto">AddGoTo <a class="anchor-link" href="#int-addgoto">#</a></h3>
 <p><em>add-goto</em></p>
-<p><strong>Create a data-validation dropdown for section, header or graph navigation.</strong></p>
+<p><strong>Create a data-validation dropdown for section/graph navigation.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddGoTo(ByVal cellRng As Range, _
                     ByVal dropArray As BetterArray, _
@@ -483,122 +319,60 @@ sheet_type tag and which update command the button carries.</li>
                     Optional ByVal goToPrefix As String = &quot;ua_&quot;, _
                     Optional ByVal goToSuffix As String = vbNullString)
 </code></pre>
-<p>Creates a data-validation dropdown in one cell that navigates to a named
-section, header or graph on the analysis sheet. Selecting an entry runs the
-GoTo macro that scrolls to the matching named range. The cell is formatted as
-a selection dropdown, its initial value is the label, and it is given a
-workbook-level name.</p>
-<p>An empty list leaves the cell without a dropdown and still names it.
-EventLinelist reads those names without guarding, and the one entry that used
-to keep the normal sheet's list non-empty was a dropdown entry that navigated
-nowhere.</p>
+<p>Creates a data-validation dropdown in a single cell that lets the user
+navigate to a named section, header, or graph on the analysis sheet. The
+entries in dropArray become the validation list; selecting one triggers a
+GoTo macro that scrolls to the corresponding named range. The cell is
+formatted as a LinelistSelectionDropdown, its initial value is set to
+goToLabel, and it receives a workbook-level named range. If dropArray
+is empty the method exits silently so callers do not need to guard.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>cellRng</code>: Range. The single cell the dropdown goes in.</li>
-<li><code>dropArray</code>: BetterArray. Display strings for the entries.</li>
+<li><code>cellRng</code>: Range. The single-cell Range where the dropdown will be placed.</li>
+<li><code>dropArray</code>: BetterArray. Display strings for the dropdown entries.
+Must have Length &gt; 0 or the method exits early.</li>
 <li><code>goToLabel</code>: String. The default display value written into the cell.</li>
-<li><code>goToPrefix</code>: Optional String. Short prefix for the name, one per analysis
-sheet. Defaults to &quot;ua_&quot;.</li>
-<li><code>goToSuffix</code>: Optional String. Suffix telling a section-level dropdown
-from a graph-level one. Defaults to vbNullString.</li>
+<li><code>goToPrefix</code>: Optional String. A short prefix for the named range,
+scoped per analysis type. Defaults to &quot;ua_&quot;.</li>
+<li><code>goToSuffix</code>: Optional String. An optional suffix appended to the named
+range, used to distinguish section-level vs graph-level dropdowns.
+Defaults to vbNullString.</li>
 </ul>
 <hr />
 <h2 id="int-temporal-section-helpers">Temporal Section Helpers</h2>
-<h3 id="int-writesectionbounds">WriteSectionBounds <a class="anchor-link" href="#int-writesectionbounds">#</a></h3>
-<p><em>write-section-bounds</em></p>
-<p><strong>Write the two date bounds of a temporal section</strong></p>
+<h3 id="int-minmaxformula">MinMaxFormula <a class="anchor-link" href="#int-minmaxformula">#</a></h3>
+<p><em>min-max-formula</em></p>
+<p><strong>Finalise temporal section date-period boundary formulas and GoTo header dropdown.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub WriteSectionBounds(ByVal outsh As Worksheet, ByVal secId As String, _
-                               ByVal minFormula As String, ByVal maxFormula As String)
+<pre><code class="language-vb">Private Sub MinMaxFormula(ByVal outsh As Worksheet, ByVal secId As String, _
+                          ByVal minFormula As String, ByVal maxFormula As String, _
+                          ByVal goToPrefix As String, _
+                          ByVal headersList As BetterArray, _
+                          ByVal goToHeaderLabel As String)
 </code></pre>
-<p>Writing out a temporal section once the loop has finished with it.</p>
-<p>MIN_MIN_DATE_<secId> and MAX_MAX_DATE_<secId> are created by CrossTable in the
-new-section branch of its temporal header block, so a section whose anchor
-table failed leaves them absent and the write raises 1004. The absence is
-filed as a warning and the rest of the section is kept.</p>
+<p>Min/Max formula finalisation and GoTo header dropdown for temporal sections.
+Finalises a temporal (time-series or spatio-temporal) section by writing
+its date-period boundary formulas and adding a GoTo Header dropdown. Each
+temporal section has two named ranges: MIN_MIN_DATE_{secId} and
+MAX_MAX_DATE_{secId}, which hold the overall minimum and maximum dates
+across all tables in that section. The minFormula and maxFormula strings
+are comma-separated MIN/MAX fragments accumulated by WriteTable; this
+method wraps them in a final worksheet formula. After writing, a GoTo
+Header dropdown is placed two rows below the SECTION_{secId} named range.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>outsh</code>: Worksheet. The analysis sheet the names live on.</li>
-<li><code>secId</code>: String. Identifier of the section.</li>
-<li><code>minFormula</code>: String. The complete formula for the earliest date.</li>
-<li><code>maxFormula</code>: String. The complete formula for the latest date.</li>
-</ul>
-<hr />
-<h3 id="int-namespatiotemporalcolumn">NameSpatioTemporalColumn <a class="anchor-link" href="#int-namespatiotemporalcolumn">#</a></h3>
-<p><em>name-spatio-temporal-column</em></p>
-<p><strong>Name the formula column that spans a spatio-temporal section</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub NameSpatioTemporalColumn(ByVal outsh As Worksheet, ByVal secId As String, _
-                                     ByVal lastTabId As String)
-</code></pre>
-<p>GeoModule reads SPT_FORMULA_COLUMN_<secId> at runtime. It spans from the
-column categories of the first table of the section to those of the last one,
-so it can only be named once the section is finished.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>outsh</code>: Worksheet. The analysis sheet.</li>
-<li><code>secId</code>: String. Identifier of the section.</li>
-<li><code>lastTabId</code>: String. Identifier of the last table of the section.</li>
-</ul>
-<hr />
-<h3 id="int-closetemporalsection">CloseTemporalSection <a class="anchor-link" href="#int-closetemporalsection">#</a></h3>
-<p><em>close-temporal-section</em></p>
-<p><strong>Finish a temporal section and write everything it held</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub CloseTemporalSection(ByVal outsh As Worksheet, _
-                                 ByVal section As TemporalSection, _
-                                 ByVal scope As Byte, _
-                                 ByVal goToHeaderLabel As String)
-</code></pre>
-<p>Writes the two date bounds, adds the header dropdown two rows under the
-section anchor, and names the spatio-temporal formula column. Does nothing
-when no section is open, so the caller can call it at every section boundary
-and once more after the loop.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>outsh</code>: Worksheet. The analysis sheet.</li>
-<li><code>section</code>: TemporalSection. The section holder.</li>
-<li><code>scope</code>: Byte. A constant from the AnalysisScope enum.</li>
-<li><code>goToHeaderLabel</code>: String. Translated label of the header dropdown.</li>
-</ul>
-<hr />
-<h3 id="int-addsectiongoto">AddSectionGoTo <a class="anchor-link" href="#int-addsectiongoto">#</a></h3>
-<p><em>add-section-go-to</em></p>
-<p><strong>Hang the header dropdown of one section under its anchor</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddSectionGoTo(ByVal outsh As Worksheet, ByVal secId As String, _
-                           ByVal headers As BetterArray, ByVal scope As Byte, _
-                           ByVal goToHeaderLabel As String)
-</code></pre>
-<p>The anchor is SECTION_<secId>, which CrossTable writes only in its new-section
-branch, so a section whose anchor table failed has none. That failure used to
-end CloseTemporalSection, which took NameSpatioTemporalColumn with it and left
-SPT_FORMULA_COLUMN_<secId> uncreated -- a name GeoModule reads at runtime in the
-delivered linelist. The two are guarded apart now, the way WriteSectionBounds
-already was.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>outsh</code>: Worksheet. The analysis sheet.</li>
-<li><code>secId</code>: String. Identifier of the section.</li>
-<li><code>headers</code>: BetterArray. The entries of the dropdown.</li>
-<li><code>scope</code>: Byte. A constant from the AnalysisScope enum.</li>
-<li><code>goToHeaderLabel</code>: String. Translated label of the dropdown.</li>
-</ul>
-<hr />
-<h3 id="int-namegraphstart">NameGraphStart <a class="anchor-link" href="#int-namegraphstart">#</a></h3>
-<p><em>name-graph-start</em></p>
-<p><strong>Name the cell the charts of a temporal sheet start at</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub NameGraphStart(ByVal outsh As Worksheet, ByVal secId As String, _
-                           ByVal scope As Byte)
-</code></pre>
-<p>The charts go five rows under the last table of the sheet. Both chart passes
-read this name, and it is created once the tables are done.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>outsh</code>: Worksheet. The analysis sheet.</li>
-<li><code>secId</code>: String. Identifier of the last section of the sheet.</li>
-<li><code>scope</code>: Byte. A constant from the AnalysisScope enum.</li>
+<li><code>outsh</code>: Worksheet. The output analysis worksheet where formulas and
+dropdown are written.</li>
+<li><code>secId</code>: String. The section identifier string (e.g. &quot;SEC1&quot;) used to
+locate the named ranges.</li>
+<li><code>minFormula</code>: String. Comma-separated MIN expressions to wrap in the
+final = MIN(...) formula.</li>
+<li><code>maxFormula</code>: String. Comma-separated MAX expressions to wrap in the
+final = MAX(...) formula.</li>
+<li><code>goToPrefix</code>: String. Prefix for the GoTo named range (&quot;ts_&quot; or &quot;spt_&quot;).</li>
+<li><code>headersList</code>: BetterArray. Header display strings for the dropdown entries.</li>
+<li><code>goToHeaderLabel</code>: String. Translated label for the GoTo Header dropdown
+default value.</li>
 </ul>
 <hr />
 <h2 id="int-table-creation">Table Creation</h2>
@@ -608,250 +382,104 @@ read this name, and it is created once the tables are done.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WriteTable(ByVal loName As String, _
                        ByVal sectionsList As BetterArray, _
-                       ByVal scope As Byte)
+                       ByVal headersList As BetterArray, _
+                       Optional ByVal scope As Byte = AnalysisScopeNormal)
 </code></pre>
-<p>Core table-creation loop and supporting write logic.</p>
-<p>Core table-creation loop. Walks every data row of the setup ListObject named
-by loName and, for each valid row, creates a TableSpecs, builds a CrossTable
-on the output sheet, applies the formulas, formats the table and, for a row
-that asks for one, creates a chart. For the time series and spatio-temporal
-scopes it also carries the open TemporalSection: a row that starts a new
-section closes the one before it, and the last section is closed after the
-loop.</p>
-<p>Each row runs inside a per-table error handler, so one malformed row is
-skipped and named in the generation report while the rest of the scope is
-built.</p>
+<p>Core table-creation loop and supporting write logic.
+Core table-creation loop. Iterates over every data row of the setup
+ListObject identified by loName, and for each valid row: creates a
+TableSpecs, builds a CrossTable on the output sheet, applies
+CrossTableFormula formulas, formats the table with the design, registers
+the table's named ranges in the AnaTabIds tracking object, and optionally
+creates a chart (GraphSpecs + Graphs). For time-series and spatio-temporal
+scopes, additional logic accumulates MIN/MAX date formulas per section
+and writes them via MinMaxFormula when a section boundary is detected.
+GoTo section and header entries are pushed into the caller-provided
+sectionsList and headersList arrays. Each table is wrapped in a per-table
+error handler (Bug #3 fix) so that a single malformed row does not abort
+the entire analysis; errors are logged to the Immediate window.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>loName</code>: String. Name of the setup ListObject whose rows define the tables.</li>
-<li><code>sectionsList</code>: BetterArray. Collects the section entries of the
-sheet-level navigation dropdown. Passed ByVal and grown through Push.</li>
-<li><code>scope</code>: Byte. A constant from the AnalysisScope enum. Decides which
-output sheet receives the tables.</li>
+<li><code>loName</code>: String. Name of the ListObject on the setup worksheet whose
+rows define the tables to build.</li>
+<li><code>sectionsList</code>: BetterArray. Accumulates GoTo section entries (passed
+ByVal but mutated via Push). The caller uses this after the call to
+create the section-level dropdown.</li>
+<li><code>headersList</code>: BetterArray. Accumulates GoTo header entries for
+time-series and spatio-temporal scopes.</li>
+<li><code>scope</code>: Optional Byte. A constant from the AnalysisScope enum. Defaults
+to AnalysisScopeNormal. Controls which output sheet receives the tables.</li>
 </ul>
 <p><strong>Remarks:</strong></p>
 <ul>
-<li>Exits early when the ListObject has no data row.</li>
+<li>The loop uses Do...Loop While with Offset(1) advancement. If the
+ListObject has no DataBodyRange, the method exits early.</li>
 </ul>
 <hr />
 <h2 id="int-graph-creation">Graph Creation</h2>
-<h3 id="int-addgraphseries">AddGraphSeries <a class="anchor-link" href="#int-addgraphseries">#</a></h3>
-<p><em>add-graph-series</em></p>
-<p><strong>Add one series to a chart and register it for the export</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddGraphSeries(ByVal gr As Graphs, ByVal namObj As AnaTabIds, _
-                           ByVal scope As Byte, ByVal graphId As String, _
-                           ByVal seriesName As String, ByVal seriesType As String, _
-                           ByVal seriesPos As String, ByVal seriesLabel As String, _
-                           ByVal seriesColumnLabel As String, _
-                           ByVal hardCodeLabels As Boolean, _
-                           ByVal outRangeAddress As String, _
-                           Optional ByVal prefix As String = vbNullString, _
-                           Optional ByVal prefixOnly As Boolean = False)
-</code></pre>
-<p>The two chart passes that run after the tables of a sheet are
-written, and the two steps they share.</p>
-<p>The chart and the registry have to be told the same thing about a series, and
-three places told them separately. AnaTabIds.AddGraphInfo takes nine required
-arguments; one of those three left the ninth out, which is a compile fault in
-an early-bound call, so the whole file stopped compiling. One call site cannot
-make that mistake twice.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>gr</code>: Graphs. The chart being built.</li>
-<li><code>namObj</code>: AnaTabIds. The registry the export reads back.</li>
-<li><code>scope</code>: Byte. A constant from the AnalysisScope enum.</li>
-<li><code>graphId</code>: String. Identifier of the chart.</li>
-<li><code>seriesName</code>: String. Named range holding the series data.</li>
-<li><code>seriesType</code>: String. Chart type of the series.</li>
-<li><code>seriesPos</code>: String. Axis the series is plotted against.</li>
-<li><code>seriesLabel</code>: String. Named range holding the category labels.</li>
-<li><code>seriesColumnLabel</code>: String. Named range holding the column header labels.</li>
-<li><code>hardCodeLabels</code>: Boolean. True writes the labels as literals.</li>
-<li><code>outRangeAddress</code>: String. Address the chart is placed at.</li>
-<li><code>prefix</code>: Optional String. Label prefix. Defaults to vbNullString.</li>
-<li><code>prefixOnly</code>: Optional Boolean. True uses the prefix as the whole label.</li>
-</ul>
-<hr />
-<h3 id="int-finishgraph">FinishGraph <a class="anchor-link" href="#int-finishgraph">#</a></h3>
-<p><em>finish-graph</em></p>
-<p><strong>Format a chart, register its look and harvest what it reported</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub FinishGraph(ByVal gr As Graphs, ByVal namObj As AnaTabIds, _
-                        ByVal scope As Byte, ByVal graphId As String, _
-                        ByVal catTitle As String, ByVal valuesTitle As String, _
-                        ByVal hardCodeLabels As Boolean, _
-                        ByVal heightFactor As Long, ByVal plotTitle As String)
-</code></pre>
-<p>The second half every chart shares. The chart scope comes from the analysis
-scope through GraphScopeOf, so a chart is never formatted against a number
-that happens to line up.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>gr</code>: Graphs. The chart being finished.</li>
-<li><code>namObj</code>: AnaTabIds. The registry the export reads back.</li>
-<li><code>scope</code>: Byte. A constant from the AnalysisScope enum.</li>
-<li><code>graphId</code>: String. Identifier of the chart.</li>
-<li><code>catTitle</code>: String. Category axis title.</li>
-<li><code>valuesTitle</code>: String. Value axis title.</li>
-<li><code>hardCodeLabels</code>: Boolean. True writes the labels as literals.</li>
-<li><code>heightFactor</code>: Long. Height multiplier of the chart.</li>
-<li><code>plotTitle</code>: String. Chart title.</li>
-</ul>
-<hr />
-<h3 id="int-graphanchor">GraphAnchor <a class="anchor-link" href="#int-graphanchor">#</a></h3>
-<p><em>graph-anchor</em></p>
-<p><strong>The cell the charts of a sheet start at</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function GraphAnchor(ByVal outsh As Worksheet, ByVal anchorName As String) As Range
-</code></pre>
-<p>The name is created after the last table of the sheet is written, so a scope
-whose tables all failed does not carry it. Answering Nothing is what lets the
-caller give up on the charts rather than end the whole build.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>outsh</code>: Worksheet. The analysis sheet.</li>
-<li><code>anchorName</code>: String. Name of the anchor cell.</li>
-</ul>
-<p><strong>Returns:</strong> Range. The anchor cell, or Nothing when the name is absent.</p>
-<hr />
 <h3 id="int-writetimeseriesgraphs">WriteTimeSeriesGraphs <a class="anchor-link" href="#int-writetimeseriesgraphs">#</a></h3>
 <p><em>write-time-series-graphs</em></p>
-<p><strong>Build all time series charts from the graph definition ListObjects.</strong></p>
+<p><strong>Build all time-series charts from the graph definition ListObjects.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
-                                  ByVal graphTitleLoName As String, _
-                                  ByVal tabLoName As String, _
-                                  ByVal graphsList As BetterArray)
+                                   ByVal graphTitleLoName As String, _
+                                   ByVal tabLoName As String, _
+                                   ByVal graphsList As BetterArray)
 </code></pre>
-<p>Reads three setup ListObjects: the graph definition table, the graph title
-table and the time series table. TimeSeriesGraphs resolves them into
+<p>Methods that build time-series and spatio-temporal charts after
+tables have been written.
+Reads three setup ListObjects: the graph definition table (graphLoName),
+the graph title/label table (graphTitleLoName), and the original time-series
+table (tabLoName). These are bundled into a BetterArray and passed to
+GraphSpecs.CreateRangeSpecs, which operates in complex mode -- resolving
 multi-series graphs with mixed chart types and separate axis positions.
-Each graph is then created, its series added and registered, formatted and
-given its title cell, and the anchor moves down fifty rows. A graph dropdown
-is placed at row 3 column 3 at the end.</p>
+The method then loops over each graph, creates it via Graphs.Create,
+iterates its series to add data ranges and labels, formats the chart,
+records metadata in AnaTabIds, and advances the anchor cell by 50 rows.
+Finally, a GoTo graph dropdown is placed at row 3 col 3.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>graphLoName</code>: String. Name of the ListObject defining the graph series.</li>
-<li><code>graphTitleLoName</code>: String. Name of the ListObject defining the titles.</li>
-<li><code>tabLoName</code>: String. Name of the time series table ListObject.</li>
-<li><code>graphsList</code>: BetterArray. Collects the graph entries of the dropdown.</li>
+<li><code>graphLoName</code>: String. Name of the ListObject defining graph series.</li>
+<li><code>graphTitleLoName</code>: String. Name of the ListObject defining graph
+titles and labels.</li>
+<li><code>tabLoName</code>: String. Name of the time-series table ListObject, used by
+GraphSpecs to resolve named ranges for series data.</li>
+<li><code>graphsList</code>: BetterArray. Accumulates GoTo graph display strings for
+the navigation dropdown.</li>
 </ul>
 <p><strong>Remarks:</strong></p>
 <ul>
-<li>Exits early when the sheet holds no table, when either definition
-ListObject has no data row, or when the charts have no anchor to start from.</li>
+<li>Exits early if the RNG_HasTable_TS flag is empty (no tables were
+written) or if either the graph or title ListObject has no data rows.</li>
 </ul>
 <hr />
 <h3 id="int-writespatiotemporalgraph">WriteSpatioTemporalGraph <a class="anchor-link" href="#int-writespatiotemporalgraph">#</a></h3>
 <p><em>write-spatio-temporal-graph</em></p>
-<p><strong>Build the spatio-temporal charts from the table definition ListObject.</strong></p>
+<p><strong>Build spatio-temporal charts from the table definition ListObject.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WriteSpatioTemporalGraph(ByVal loName As String, _
-                                     ByVal graphsList As BetterArray)
+                                      ByVal graphsList As BetterArray)
 </code></pre>
-<p>Walks the same setup ListObject the spatio-temporal tables were built from and
-creates one chart per row that asks for one. The plot title is the translated
-graph label and the value of the table's start column. Charts are spaced fifty
-rows apart, and a graph dropdown is placed at row 3 column 3 at the end.</p>
+<p>Builds spatio-temporal charts by re-reading the same setup ListObject
+that was used to create the spatio-temporal tables (loName). Unlike
+WriteTimeSeriesGraphs which uses a separate graph-definition ListObject,
+this method iterates over the original table rows, checks HasGraph for
+each, and creates one chart per qualifying table using the simpler
+GraphSpecs.Create (non-complex) mode. Each graph's plot title is composed
+from the translated &quot;MSG_Graph&quot; label plus the STARTCOL named-range value.
+Charts are spaced 50 rows apart. After all charts are created, a GoTo
+graph dropdown is placed at row 3 col 3.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>loName</code>: String. Name of the spatio-temporal ListObject.</li>
-<li><code>graphsList</code>: BetterArray. Collects the graph entries of the dropdown.</li>
+<li><code>loName</code>: String. Name of the spatio-temporal ListObject whose rows
+define both the tables and the graphs.</li>
+<li><code>graphsList</code>: BetterArray. Accumulates GoTo graph display strings for
+the navigation dropdown.</li>
 </ul>
 <p><strong>Remarks:</strong></p>
 <ul>
-<li>Skips a row that is not a valid table or asks for no chart. Exits
-early when the ListObject has no data row or the charts have no anchor.</li>
-</ul>
-<hr />
-<h2 id="int-orchestration">Orchestration</h2>
-<h3 id="int-scopehasrows">ScopeHasRows <a class="anchor-link" href="#int-scopehasrows">#</a></h3>
-<p><em>scope-has-rows</em></p>
-<p><strong>Whether any setup ListObject of a scope carries a row</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ScopeHasRows(ByVal loNames As BetterArray) As Boolean
-</code></pre>
-<p>Top-level entry point that builds the four analysis output
-worksheets.</p>
-<p>Formatting an analysis sheet writes a font size and a column width over all
-sixteen thousand columns, and a scope with no row is hidden at the end of its
-own build anyway.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>loNames</code>: BetterArray. Names of the setup ListObjects of the scope.</li>
-</ul>
-<p><strong>Returns:</strong> Boolean. True when at least one of them has a data row.</p>
-<hr />
-<h3 id="int-buildscope">BuildScope <a class="anchor-link" href="#int-buildscope">#</a></h3>
-<p><em>build-scope</em></p>
-<p><strong>Build one analysis sheet from end to end</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub BuildScope(ByVal scope As Byte, ByVal loNames As BetterArray, _
-                       ByVal buildGraphs As Boolean)
-</code></pre>
-<p>The four scopes were four copies of the same twenty lines. Each one prepares
-its sheet, writes its tables, adds its charts, hangs the section dropdown at
-row 2 column 3, protects the sheet and hides it when nothing was written.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>scope</code>: Byte. A constant from the AnalysisScope enum.</li>
-<li><code>loNames</code>: BetterArray. Names of the setup ListObjects to walk, in order.</li>
-<li><code>buildGraphs</code>: Boolean. True runs the chart pass of the scope.</li>
-</ul>
-<hr />
-<h3 id="int-scopetables">ScopeTables <a class="anchor-link" href="#int-scopetables">#</a></h3>
-<p><em>scope-tables</em></p>
-<p><strong>The setup ListObjects one scope is built from</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ScopeTables(ByVal scope As Byte) As BetterArray
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>scope</code>: Byte. A constant from the AnalysisScope enum.</li>
-</ul>
-<p><strong>Returns:</strong> BetterArray. The ListObject names, in the order they are written.</p>
-<hr />
-<h2 id="int-checkings">Checkings</h2>
-<h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
-<p><em>log-info</em></p>
-<p><strong>Record one entry in this class's own checking store</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, Optional ByVal scope As Byte = checkingSuccess)
-</code></pre>
-<p>The key names this class. Every collaborator of a build files its entries into
-one report, Checking.Add raises on a duplicate key, and a bare counter
-starting at zero is what each of them used to write.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>label</code>: String. The message to record.</li>
-<li><code>scope</code>: Optional Byte. Severity from CheckingLogType. Defaults to checkingSuccess.</li>
-</ul>
-<hr />
-<h3 id="int-harvestcollaboratorcheckings">HarvestCollaboratorCheckings <a class="anchor-link" href="#int-harvestcollaboratorcheckings">#</a></h3>
-<p><em>harvest-collaborator-checkings</em></p>
-<p><strong>Fold a collaborator's entries into the report of this build</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As Checking)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>collaboratorChecks</code>: Checking. The collaborator's store.</li>
-</ul>
-<hr />
-<h3 id="int-logmilestone">LogMilestone <a class="anchor-link" href="#int-logmilestone">#</a></h3>
-<p><em>log-milestone</em></p>
-<p><strong>File one entry for a table or a chart put on a sheet</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub LogMilestone(ByVal label As String)
-</code></pre>
-<p>A linelist carries tens of analysis tables and charts, so these entries
-go to the __check worksheet with the problems. They are what shows the
-analysis phase did work, where a clean phase used to look the same
-whether it built forty tables or none.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>label</code>: String. The message for the report.</li>
+<li>Skips rows where ValidTable is False or HasGraph is False. Exits
+early if the ListObject has no DataBodyRange.</li>
 </ul>
 <hr />
 <h2 id="int-error-handling">Error Handling</h2>
@@ -873,31 +501,22 @@ providing a consistent stack trace across all methods in this class.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
+<h2 id="int-interface-implementation">Interface Implementation</h2>
+<h3 id="int-ianalysisoutput-writeanalysis">IAnalysisOutput_WriteAnalysis <a class="anchor-link" href="#int-ianalysisoutput-writeanalysis">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IAnalysisOutput_WriteAnalysis(Optional ByVal part As Byte = 0)
+</code></pre>
+<p>Delegated members satisfying the IAnalysisOutput contract.
+See the corresponding Public/Private members above for full documentation.</p>
+<hr />
 </details>
 <details>
-<summary>Used in (21 file(s))</summary>
+<summary>Used in (4 file(s))</summary>
 <ul>
-<li><a href="Analysis.html">Analysis.cls</a></li>
-<li><a href="AnaTabIds.html">AnaTabIds.cls</a></li>
-<li><a href="CrossTable.html">CrossTable.cls</a></li>
-<li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
-<li><a href="SpatialTables.html">SpatialTables.cls</a></li>
-<li><a href="LLSpatial.html">LLSpatial.cls</a></li>
-<li><a href="Graphs.html">Graphs.cls</a></li>
-<li><a href="GraphSeries.html">GraphSeries.cls</a></li>
-<li><a href="TimeSeriesGraphs.html">TimeSeriesGraphs.cls</a></li>
+<li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
+<li><a href="IAnalysisOutput.html">IAnalysisOutput.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
-<li>HeadlessBuild.bas</li>
-<li>LinelistEventsManager.bas</li>
 <li>TestAnalysisOutput.bas</li>
-<li>TestAnaTabIds.bas</li>
-<li>TestCrossTable.bas</li>
-<li>TestCrossTableFormula.bas</li>
-<li>TestFormulaBuilder.bas</li>
-<li>TestTemporalSection.bas</li>
-<li>TestApplicationState.bas</li>
-<li>TestGraphs.bas</li>
-<li>TestGraphSeries.bas</li>
 </ul>
 </details>
   </main>

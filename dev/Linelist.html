@@ -11,40 +11,17 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>Linelist</h1>
-<p>Facade for the output linelist workbook. Prepare adds every worksheet the
-linelist needs, prepares the temporary sheets with their hidden names and
-ListObjects, formats the admin sheet and transfers the VBA code, and SaveLL
-writes the .xlsb the user receives. AddOutputSheet adds one sheet,
-SheetExists and SheetNames answer what is there, Wksh, PrintWksh and CRFWksh
-reach a data entry sheet and its two companions, and Dropdown and Pivots
-answer the two managers the class builds on first use.
-LinelistSpecs.Prepare has to have run first: it is what creates the output
-workbook and points the domain managers at it.</p>
-<p>The class uses VB_Creatable = True, so callers build one with
-<code>Set ll = Linelist.Create(specs)</code> over a <code>New Linelist</code>.</p>
-<details open class="doc-section" id="sheet-names-and-their-scope">
-<summary>SHEET NAMES AND THEIR SCOPE</summary>
-<div class="section-body">
-<p>A data entry sheet can carry two companions, and each companion is the same
-name under a prefix: <code>print_</code> for the printable copy, <code>crf_</code> for the case
-report form. ScopedName is the one place that puts a prefix on a name and cuts
-the result to what Excel accepts, and AddOutputSheet, ResolveWksh and the
-SheetExists calls all go through it. A sheet created under a shortened name is
-found again under the same shortened name.</p>
-<p>A name the cut actually shortens is filed as a report entry, once per name, so
-the user learns which sheet came out under a different name.</p>
-</div>
-</details>
-<details open class="doc-section" id="what-this-class-reports">
-<summary>WHAT THIS CLASS REPORTS</summary>
-<div class="section-body">
-<p>Prepare files its own entries and folds in the ones CodeTransfer filed, so
-HasCheckings and CheckingValues answer over both. clickGenerate flushes them
-into the generation report right after Prepare returns.</p>
-<p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLSheets.html">LLSheets</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="LLFormat.html">LLFormat</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="CustomPivotTable.html">CustomPivotTable</a>, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="Buttons.html">Buttons</a>, <a href="CodeTransfer.html">CodeTransfer</a>, <a href="Passwords.html">Passwords</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="ShowHideStore.html">ShowHideStore</a>, <a href="AnalysisRanges.html">AnalysisRanges</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a></p>
-<p><strong>Version:</strong> 1.4 (2026-08-01)</p>
-</div>
-</details>
+<p>Facade for the output linelist workbook. This class orchestrates the full
+lifecycle of creating, populating, saving, and error-managing the .xlsb
+workbook that end-users receive. It lazily creates the output workbook
+(or opens a template), adds temporary and permanent worksheets, exports
+specifications, prepares hidden names and ListObjects, formats the admin
+sheet, transfers all VBA code components, and finally saves the workbook
+with password protection. The class uses VB_Creatable = True so that
+factory consumers create instances via <code>New Linelist</code> rather than
+<code>With New Linelist</code>.</p>
+<p><strong>Depends on:</strong> <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="ITemporaryRepos.html">ITemporaryRepos</a>, <a href="ICodeTransfer.html">ICodeTransfer</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="IButtons.html">IButtons</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="ICustomPivotTable.html">ICustomPivotTable</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="CustomPivotTable.html">CustomPivotTable</a>, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Buttons.html">Buttons</a>, <a href="CodeTransfer.html">CodeTransfer</a>, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -52,19 +29,19 @@ into the generation report right after Prepare returns.</p>
 <p><em>create</em></p>
 <p><strong>Instantiate a Linelist facade bound to specifications</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal specs As LinelistSpecs) As Linelist
+<pre><code class="language-vb">Public Function Create(ByVal specs As ILinelistSpecs) As ILinelist
 </code></pre>
-<p>Instance creation via VB_Creatable = True factory pattern.</p>
-<p>Validates that the supplied specifications object is not Nothing, creates
+<p>Instance creation via VB_Creatable = True factory pattern.
+Validates that the supplied specifications object is not Nothing, creates
 a new Linelist instance via <code>New Linelist</code>, binds the specifications
-through the Friend property, and returns an Linelist interface reference.</p>
+through the Friend property, and returns an ILinelist interface reference.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>specs</code>: LinelistSpecs. The linelist specifications providing
+<li><code>specs</code>: ILinelistSpecs. The linelist specifications providing
 dictionary, translations, design format, passwords, and all other setup
 data required to build the output workbook.</li>
 </ul>
-<p><strong>Returns:</strong> Linelist. A ready-to-use linelist facade.</p>
+<p><strong>Returns:</strong> ILinelist. A ready-to-use linelist facade.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When specs is Nothing.</li>
@@ -79,47 +56,24 @@ data required to build the output workbook.</li>
 <p><em>linelist-data</em></p>
 <p><strong>Specifications backing this linelist</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get LinelistData() As LinelistSpecs
+<pre><code class="language-vb">Public Property Get LinelistData() As ILinelistSpecs
 </code></pre>
 <p>Worksheet resolution and collaborator accessors exposed through
-the Linelist contract.</p>
-<p>Returns the LinelistSpecs instance that was supplied during factory
+the ILinelist contract.
+Returns the ILinelistSpecs instance that was supplied during factory
 construction, providing access to dictionary, choices, translations,
 and all other setup data.</p>
-<p><strong>Returns:</strong> LinelistSpecs. The linelist specifications.</p>
+<p><strong>Returns:</strong> ILinelistSpecs. The linelist specifications.</p>
 <hr />
 <h3 id="dictionary">Dictionary <a class="anchor-link" href="#dictionary">#</a></h3>
 <p><em>dictionary</em></p>
 <p><strong>Dictionary from the specifications</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Dictionary() As LLdictionary
+<pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary
 </code></pre>
 <p>Convenience accessor that delegates to specs.Dictionary, avoiding
 the extra indirection at call sites.</p>
-<p><strong>Returns:</strong> LLdictionary. The linelist dictionary.</p>
-<hr />
-<h3 id="sheetnames">SheetNames <a class="anchor-link" href="#sheetnames">#</a></h3>
-<p><em>sheet-names</em></p>
-<p><strong>The dictionary's unique sheet names</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get SheetNames() As BetterArray
-</code></pre>
-<p>One walk of the dictionary's sheet name column, kept for the whole build.
-Prepare, TransferAllCode and clickGenerate each derived this list on their own,
-and every walk reads the whole column.</p>
-<p><strong>Returns:</strong> BetterArray. The unique sheet names of the dictionary.</p>
-<hr />
-<h3 id="sheetinfomanager">SheetInfoManager <a class="anchor-link" href="#sheetinfomanager">#</a></h3>
-<p><em>sheet-info-manager</em></p>
-<p><strong>The LLSheets over the dictionary, shared by the whole build</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get SheetInfoManager() As LLSheets
-</code></pre>
-<p>One LLSheets instance over the specifications dictionary, built on first read
-and kept for the whole build. TransferAllCode and the sheet-building loop of
-clickGenerate each created their own over the same dictionary, so every row
-resolution and every cache slot was computed twice.</p>
-<p><strong>Returns:</strong> LLSheets. The sheet information manager of the dictionary.</p>
+<p><strong>Returns:</strong> ILLdictionary. The linelist dictionary.</p>
 <hr />
 <h3 id="wksh">Wksh <a class="anchor-link" href="#wksh">#</a></h3>
 <p><em>wksh</em></p>
@@ -182,61 +136,27 @@ ResolveWksh with scope 3.</p>
 <p><em>dropdown</em></p>
 <p><strong>Dropdown lists manager for the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Dropdown(Optional ByVal scope As Byte = 1) As DropdownLists
+<pre><code class="language-vb">Public Property Get Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
 </code></pre>
-<p>Returns the DropdownLists instance backed by the appropriate list sheet.
-Scope 1 uses the temporary _<em>dropdown_lists sheet with the &quot;dropdown</em>&quot; header
-prefix; scope 2 uses the custom choice sheet with no prefix.</p>
-<p>Each scope is built once and kept. DropdownLists accumulates its report entries
-in instance state, and this property used to hand back a fresh object every
-time, so every warning the data-entry build recorded went to a throwaway
-instance and clickGenerate's phase 2b flush pushed nothing. Keeping the
-instance also takes a worksheet lookup and an object construction out of the
-per-sheet build loop, which asks for both scopes on every sheet.</p>
+<p>Returns an IDropdownLists instance backed by the appropriate list sheet.
+Scope 1 uses the temporary dropdown_lists__ sheet with &quot;dropdown_&quot; prefix;
+scope 2 uses the custom choice sheet with no prefix.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>scope</code>: Optional Byte. 1 = standard dropdowns, 2 = custom choice
 dropdowns. Defaults to 1.</li>
 </ul>
-<p><strong>Returns:</strong> DropdownLists. The dropdown lists manager.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.InvalidArgument When the scope is neither 1 nor 2.</li>
-</ul>
+<p><strong>Returns:</strong> IDropdownLists. The dropdown lists manager.</p>
 <hr />
 <h3 id="pivots">Pivots <a class="anchor-link" href="#pivots">#</a></h3>
 <p><em>pivots</em></p>
 <p><strong>Pivot tables manager for the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Pivots() As CustomPivotTable
+<pre><code class="language-vb">Public Property Get Pivots() As ICustomPivotTable
 </code></pre>
-<p>Returns the CustomPivotTable instance backed by the translated custom pivot
-table sheet. It is built once and kept, for the reason the dropdown managers
-are: the class holds the metadata of the blocks it has stacked, and a fresh
-instance per call starts empty.</p>
-<p><strong>Returns:</strong> CustomPivotTable. The pivot tables manager.</p>
-<hr />
-<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
-<p><em>has-checkings</em></p>
-<p><strong>Whether this linelist has anything to report</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
-</code></pre>
-<p>Answers True once an entry has been filed. Prepare files a warning for every
-sheet name it had to shorten, and folds in the entries CodeTransfer filed for
-the components it replaced in the output workbook.</p>
-<p><strong>Returns:</strong> Boolean. True when there is something to read.</p>
-<hr />
-<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
-<p><em>checking-values</em></p>
-<p><strong>The report entries of this linelist</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get CheckingValues() As Checking
-</code></pre>
-<p>Answers the Checking object holding the entries, and Nothing while none have
-been filed. clickGenerate flushes it into the generation report right after
-Prepare returns.</p>
-<p><strong>Returns:</strong> Checking. The entries, or Nothing.</p>
+<p>Returns an ICustomPivotTable instance backed by the translated custom
+pivot table sheet in the output workbook.</p>
+<p><strong>Returns:</strong> ICustomPivotTable. The pivot tables manager.</p>
 <hr />
 <h3 id="sheetexists">SheetExists <a class="anchor-link" href="#sheetexists">#</a></h3>
 <p><em>sheet-exists</em></p>
@@ -245,8 +165,7 @@ Prepare returns.</p>
 <pre><code class="language-vb">Public Function SheetExists(ByVal sheetName As String) As Boolean
 </code></pre>
 <p>Tests whether a worksheet with the given name exists in the output
-workbook without raising an error. The name is taken as it stands: callers
-that work with a scope pass the answer of ScopedName.</p>
+workbook without raising an error. Uses On Error Resume Next internally.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sheetName</code>: String. The worksheet name to test.</li>
@@ -260,15 +179,14 @@ that work with a scope pass the answer of ScopedName.</p>
 <pre><code class="language-vb">Public Sub AddOutputSheet(ByVal sheetName As String, _
                           Optional ByVal Hide As Long = xlSheetVeryHidden, _
                           Optional ByVal sheetScope As Byte = 1, _
-                          Optional ByVal beforeSheet As Worksheet)
+                          Optional ByVal beforeSheet As String = vbNullString)
 </code></pre>
-<p>Creates a worksheet in the output workbook under the name ScopedName builds
-from the base name and the scope. When beforeSheet is supplied the new sheet is
-inserted immediately before it; otherwise the sheet is appended at the default
-position.</p>
-<p>A sheet that is already there is left alone. Template workbooks ship with some
-of these sheets already made, and rebuilding one would throw away what the
-template author put in it.</p>
+<p>Creates a new worksheet in the output workbook with the given name,
+applying an optional scope prefix (&quot;print_&quot; or &quot;crf_&quot;) and visibility
+setting. The sheet name is truncated to 30 characters (Excel limit for
+sheet names). When beforeSheet is supplied and that sheet exists in
+the output workbook, the new sheet is inserted immediately before it;
+otherwise the sheet is appended at the default position.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sheetName</code>: String. The base name for the new worksheet.</li>
@@ -276,8 +194,8 @@ template author put in it.</p>
 xlSheetVeryHidden.</li>
 <li><code>sheetScope</code>: Optional Byte. 1 = no prefix, 2 = print_ prefix,
 3 = crf_ prefix. Defaults to 1.</li>
-<li><code>beforeSheet</code>: Optional Worksheet. An existing worksheet of the output
-workbook to insert before. Defaults to Nothing (append at default position).</li>
+<li><code>beforeSheet</code>: Optional String. Name of an existing worksheet to
+insert before. Defaults to vbNullString (append at default position).</li>
 </ul>
 <hr />
 </div>
@@ -291,30 +209,23 @@ workbook to insert before. Defaults to Nothing (append at default position).</li
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Prepare()
 </code></pre>
-<p>Build, save, and error-manage the output workbook.</p>
-<p>Runs the whole build of the output workbook:</p>
+<p>Build, save, and error-manage the output workbook.
+Orchestrates the complete linelist creation process:</p>
 <ol>
-<li>Takes the temporary repository the specifications created.</li>
-<li>Resolves the Geo worksheet once. Every sheet this routine adds goes in
-before it, and the anchor is passed down as a worksheet.</li>
-<li>Writes the two language hidden names and every translated message and sheet
-name onto the output workbook.</li>
-<li>Adds one data-entry worksheet per dictionary sheet name.</li>
-<li>Adds the six analysis and custom worksheets.</li>
-<li>Adds the six temporary worksheets and prepares them with their hidden names
-and ListObjects.</li>
-<li>Moves the instruction sheet to the front (template workbooks only).</li>
+<li>Initialises the temporary repository for code transfer files.</li>
+<li>Lazily creates the output workbook (or opens a template).</li>
+<li>Optionally shows the instruction sheet for template workbooks.</li>
+<li>Adds six temporary sheets (single, list, analysis, import, spatial,
+show/hide) and prepares them with hidden names and ListObjects.</li>
+<li>Exports specifications to the workbook via ILinelistSpecs.Export.</li>
+<li>Adds analysis and custom sheets in reversed dictionary order.</li>
+<li>Adds data entry sheets from the dictionary's unique sheet names.</li>
+<li>Repositions the instruction sheet.</li>
 <li>Adds and formats the admin sheet (non-template only).</li>
-<li>Transfers the VBA components into the workbook.</li>
-<li>Folds the code transfer's report entries into this instance's.</li>
+<li>Deletes the initial default sheet.</li>
+<li>Transfers all VBA code via CodeTransfer (classes, modules, forms,
+workbook code).</li>
 </ol>
-<p>The default worksheet Workbooks.Add made is dropped by LinelistSpecs.Prepare,
-before any exporter writes to the workbook.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ErrorUnexpectedState When the specifications have not been
-prepared.</li>
-</ul>
 <hr />
 <h3 id="savell">SaveLL <a class="anchor-link" href="#savell">#</a></h3>
 <p><em>save-ll</em></p>
@@ -323,14 +234,9 @@ prepared.</li>
 <pre><code class="language-vb">Public Sub SaveLL()
 </code></pre>
 <p>Saves the output workbook in .xlsb format with the configured password,
-protects the workbook structure via Passwords.Protect, activates an
+protects the workbook structure via IPasswords.Protect, activates an
 appropriate visible sheet (admin or instruction), closes the workbook,
-and cleans up temporary files via TemporaryRepos.Reset.</p>
-<p>Both cached references to the workbook are dropped once it is closed. This
-instance held one and LinelistSpecs held the other, and a read of either after
-the close raised an automation error. The read that mattered was ErrorManage,
-reached from clickGenerate's cleanup, so the failure landed inside the error
-handler and hid the error that got it there.</p>
+and cleans up temporary files via ITemporaryRepos.Reset.</p>
 <hr />
 <h3 id="errormanage">ErrorManage <a class="anchor-link" href="#errormanage">#</a></h3>
 <p><em>error-manage</em></p>
@@ -342,27 +248,11 @@ handler and hid the error that got it there.</p>
 they want to view the incomplete linelist workbook or close it without
 saving. If the user chooses Yes the workbook's Application is made
 visible; otherwise the workbook is closed without saving.</p>
-<p>A workbook SaveLL has already closed leaves nothing to show, and the message
-says so. This routine is reached from a caller's error handler, so it has to
-finish whatever state the build left behind.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>textMessage</code>: Optional String. Error description to display.
 Defaults to vbNullString.</li>
 </ul>
-<hr />
-<h3 id="discardbuild">DiscardBuild <a class="anchor-link" href="#discardbuild">#</a></h3>
-<p><em>discard-build</em></p>
-<p><strong>Close the incomplete output workbook and drop the references to it</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub DiscardBuild()
-</code></pre>
-<p>Closes the output workbook of a build that stopped before SaveLL, with its
-changes thrown away, and drops both cached references to it: the one this
-instance holds and the one LinelistSpecs holds. The multi generation driver
-calls it after a failed row, so the loop moves to the next row with no
-workbook left open behind it; ErrorManage routes its close branch here. When
-there is no output workbook the call exits quietly.</p>
 <hr />
 </div>
 </details>
@@ -373,84 +263,30 @@ there is no output workbook the call exits quietly.</p>
 <p><em>bin-specs</em></p>
 <p><strong>Bind the linelist specifications to this instance</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Friend Property Set BinSpecs(ByVal value As LinelistSpecs)
+<pre><code class="language-vb">Friend Property Set BinSpecs(ByVal value As ILinelistSpecs)
 </code></pre>
-<p>Friend setters used by the factory to inject dependencies.</p>
-<p>Called by Create to inject the LinelistSpecs dependency into the
+<p>Friend setters used by the factory to inject dependencies.
+Called by Create to inject the ILinelistSpecs dependency into the
 backing UDT. Exposed as Friend to prevent external callers from
 resetting specifications after construction.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>value</code>: LinelistSpecs. The specifications to bind.</li>
+<li><code>value</code>: ILinelistSpecs. The specifications to bind.</li>
 </ul>
 <hr />
-<h2 id="int-private-workbook-management">Private - Workbook management</h2>
+<h2 id="int-private-workbook-management">Private — Workbook management</h2>
 <h3 id="int-outputwkb">OutputWkb <a class="anchor-link" href="#int-outputwkb">#</a></h3>
 <p><em>output-wkb</em></p>
 <p><strong>Return the output workbook from LinelistSpecs</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get OutputWkb() As Workbook
 </code></pre>
-<p>Internal helpers for reaching the output workbook and for turning
-a base sheet name plus a scope into the name Excel actually carries.</p>
-<p>On first access, retrieves the output workbook that LinelistSpecs.Prepare
-created and caches it locally.</p>
-<p>The class used to record Worksheets(1).Name here so Prepare could delete it
-later. First access is well after every exporter has written to the workbook,
-and LLGeo inserts its two sheets near the front, so the name recorded was a
-real, populated sheet. LinelistSpecs.Prepare drops the default worksheet now,
-holding the reference it took before the first exporter ran.</p>
+<p>Internal helpers for lazily creating and managing the output
+workbook and suppressing UI updates during batch operations.
+On first access, retrieves the output workbook that LinelistSpecs.Prepare
+created and caches it locally. Also records the name of the initial
+default sheet so Prepare can delete it later.</p>
 <p><strong>Returns:</strong> Workbook. The output workbook.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ErrorUnexpectedState When there is no output workbook.</li>
-</ul>
-<hr />
-<h3 id="int-scopedname">ScopedName <a class="anchor-link" href="#int-scopedname">#</a></h3>
-<p><em>scoped-name</em></p>
-<p><strong>The worksheet name a base name carries under a scope</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ScopedName(ByVal sheetName As String, ByVal sheetScope As Byte) As String
-</code></pre>
-<p>Puts the scope's prefix on the base name and cuts the result to the 31
-characters Excel accepts. Every caller that creates a sheet and every caller
-that looks one up goes through here, which is what keeps the two sides
-agreeing.</p>
-<p>A cut that shortens the name is filed as a report entry, once per resulting
-name, so a build finishes and the user reads which sheets came out shorter.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sheetName</code>: String. The base sheet name.</li>
-<li><code>sheetScope</code>: Byte. 1 = no prefix, 2 = print_ prefix, 3 = crf_ prefix.</li>
-</ul>
-<p><strong>Returns:</strong> String. The worksheet name to create or to look up.</p>
-<hr />
-<h3 id="int-reportshortname">ReportShortName <a class="anchor-link" href="#int-reportshortname">#</a></h3>
-<p><em>report-short-name</em></p>
-<p><strong>File one report entry for a name that had to be shortened</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ReportShortName(ByVal fullName As String, ByVal shortName As String)
-</code></pre>
-<p>The same name is scoped many times during a build, so the entry is filed once
-and the names already filed are kept in a keyed Collection.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>fullName</code>: String. The name the prefix and the base name make.</li>
-<li><code>shortName</code>: String. The name the worksheet actually carries.</li>
-</ul>
-<hr />
-<h3 id="int-alreadyreported">AlreadyReported <a class="anchor-link" href="#int-alreadyreported">#</a></h3>
-<p><em>already-reported</em></p>
-<p><strong>Whether a shortened name has been filed already</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function AlreadyReported(ByVal shortName As String) As Boolean
-</code></pre>
-<p>A Collection raises on a key it does not hold, which is how a miss is read.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>shortName</code>: String. The shortened worksheet name.</li>
-</ul>
-<p><strong>Returns:</strong> Boolean. True when the name has been filed.</p>
 <hr />
 <h3 id="int-resolvewksh">ResolveWksh <a class="anchor-link" href="#int-resolvewksh">#</a></h3>
 <p><em>resolve-wksh</em></p>
@@ -459,8 +295,9 @@ and the names already filed are kept in a keyed Collection.</p>
 <pre><code class="language-vb">Private Sub ResolveWksh(ByVal sheetName As String, ByVal sheetScope As Byte, _
                         ByRef result As Worksheet)
 </code></pre>
-<p>Builds the worksheet name through ScopedName, verifies the sheet exists, and
-returns a reference through the ByRef result parameter.</p>
+<p>Builds the actual sheet name by prepending the appropriate prefix based
+on sheetScope (1 = none, 2 = &quot;print_&quot;, 3 = &quot;crf_&quot;), verifies the sheet
+exists, and returns a reference through the ByRef result parameter.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sheetName</code>: String. The base sheet name.</li>
@@ -472,56 +309,7 @@ returns a reference through the ByRef result parameter.</p>
 <li>ProjectError.InvalidArgument When the sheet does not exist.</li>
 </ul>
 <hr />
-<h3 id="int-geoanchor">GeoAnchor <a class="anchor-link" href="#int-geoanchor">#</a></h3>
-<p><em>geo-anchor</em></p>
-<p><strong>The Geo worksheet every added sheet goes in before</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function GeoAnchor() As Worksheet
-</code></pre>
-<p>Prepare used to pass the name &quot;Geo&quot; down to more than twenty AddOutputSheet
-calls, and each one resolved it again. A missing anchor made AddOutputSheet
-fall back to a bare Worksheets.Add, which inserts before whatever sheet is
-active and gives a different final sheet order on every run. The anchor is
-resolved once here and a missing one stops the build.</p>
-<p><strong>Returns:</strong> Worksheet. The Geo worksheet of the output workbook.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ElementNotFound When the Geo worksheet is missing.</li>
-</ul>
-<hr />
-<h3 id="int-dictionarysheetnames">DictionarySheetNames <a class="anchor-link" href="#int-dictionarysheetnames">#</a></h3>
-<p><em>dictionary-sheet-names</em></p>
-<p><strong>The dictionary's sheet names, walked once per build</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function DictionarySheetNames() As BetterArray
-</code></pre>
-<p>Prepare and TransferAllCode both need this list and each used to derive it,
-which walks the whole dictionary.</p>
-<p><strong>Returns:</strong> BetterArray. The unique sheet names of the dictionary.</p>
-<hr />
-<h3 id="int-dictionarysheetinfo">DictionarySheetInfo <a class="anchor-link" href="#int-dictionarysheetinfo">#</a></h3>
-<p><em>dictionary-sheet-info</em></p>
-<p><strong>The dictionary's sheet manager, built on first read</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function DictionarySheetInfo() As LLSheets
-</code></pre>
-<p>The dictionary is meaningful once specs.Prepare has run, and a build on first
-read keeps an early ask safe.</p>
-<p><strong>Returns:</strong> LLSheets. The sheet information manager of the dictionary.</p>
-<hr />
-<h3 id="int-builddropdown">BuildDropdown <a class="anchor-link" href="#int-builddropdown">#</a></h3>
-<p><em>build-dropdown</em></p>
-<p><strong>Build the dropdown manager of one scope</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function BuildDropdown(ByVal scope As Byte) As DropdownLists
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>scope</code>: Byte. 1 = standard dropdowns, 2 = custom choice dropdowns.</li>
-</ul>
-<p><strong>Returns:</strong> DropdownLists. The manager over the sheet that scope reads.</p>
-<hr />
-<h2 id="int-private-prepare-helpers">Private - Prepare helpers</h2>
+<h2 id="int-private-prepare-helpers">Private — Prepare helpers</h2>
 <h3 id="int-preparetemporarysheets">PrepareTemporarySheets <a class="anchor-link" href="#int-preparetemporarysheets">#</a></h3>
 <p><em>prepare-temporary-sheets</em></p>
 <p><strong>Set up hidden names and ListObjects on temporary sheets</strong></p>
@@ -529,68 +317,41 @@ read keeps an early ask safe.</p>
 <pre><code class="language-vb">Private Sub PrepareTemporarySheets()
 </code></pre>
 <p>Internal routines called by Prepare to set up temporary sheets,
-the admin sheet, and code transfer.</p>
-<p>Performs three setup tasks on the output workbook:</p>
+the admin sheet, and code transfer.
+Performs three setup tasks on the output workbook:</p>
 <ol>
-<li>Creates workbook-level hidden names for the global flags: update list auto,
-import done, geo update manual, show all optionals, export init, number of
-exports and epi week start.</li>
+<li>Creates workbook-level hidden names for global flags (update list auto,
+import done, geo update manual, show all optionals, export init, number
+of exports, epi week start) — replaces the removed TemporarySheetUpdates.</li>
 <li>Creates four ListObjects on the import report sheet for tracking sheets
 and variables not imported/found.</li>
-<li>Asks AnaTabIds to build its registry table on the analysis sheet. That
-class reads the columns, so it writes the headers.</li>
+<li>Creates twelve ListObjects on the analysis sheet (tab_ids, graph_ids,
+graph_formats for each of the four analysis scopes: uba, ts, sp,
+sptemp) plus four worksheet-level hidden names storing the translated
+analysis sheet names.</li>
 </ol>
-<hr />
-<h3 id="int-prepareanalysislists">PrepareAnalysisLists <a class="anchor-link" href="#int-prepareanalysislists">#</a></h3>
-<p><em>prepare-analysis-lists</em></p>
-<p><strong>Add the choice lists every analysis sheet shares</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub PrepareAnalysisLists()
-</code></pre>
-<h2 id="int-one-list-for-the-whole-workbook">ONE LIST FOR THE WHOLE WORKBOOK</h2>
-<p>The time units a temporal table can group by are one workbook-level dropdown on
-the list sheet. Every temporal table binds its own time unit cell to it, and
-GetAgg in CustomLinelistFunctions reads the same list to turn the chosen label
-back into a time unit.</p>
-<p>Each analysis sheet used to build a copy of its own, which is why there were
-two spellings of the same five words. A reader that named one of them answered
-wrongly on the sheet carrying the other, and answered nothing at all in a
-workbook that carried neither.</p>
-<p>The words come from the message translations, so the list is written in the
-language of the linelist. The dropdown is added once; DropdownLists refuses a
-second one under the same name and files the reason.</p>
 <hr />
 <h3 id="int-initialiseworkbooknames">InitialiseWorkbookNames <a class="anchor-link" href="#int-initialiseworkbooknames">#</a></h3>
 <p><em>initialise-workbook-names</em></p>
-<p><strong>Check the two language selections before the build starts</strong></p>
+<p><strong>Set language HiddenNames on the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InitialiseWorkbookNames()
 </code></pre>
-<p>The two language codes reach the output workbook through
-InitTransfer.SyncDesignerLanguageNames and ExportDesignerHiddenNames, during
-specs.Prepare. This routine used to write them a second time, deriving the
-interface code with a bare Split on &quot;-&quot; where the transfer guards the
-split with InStr. Both answer the same string for every input, including an
-empty one, so the second write added nothing.</p>
-<p>What it does add is the check: an empty language selection is a mistake the
-user can fix, and the build service says nothing about it. That check is what
-is left here.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ObjectNotInitialized When either language is empty.</li>
-</ul>
+<p>Creates workbook-level HiddenNames for the dictionary language
+(RNG_DictionaryLanguage) and interface language (RNG_LLLanguageCode)
+on the output workbook. These are required by LLTranslation.TransObject
+to resolve the correct language code for translation lookups.</p>
 <hr />
 <h3 id="int-initialisetranslationnames">InitialiseTranslationNames <a class="anchor-link" href="#int-initialisetranslationnames">#</a></h3>
 <p><em>initialise-translation-names</em></p>
-<p><strong>Create the translated message and sheet names on the output workbook</strong></p>
+<p><strong>Propagate language HiddenNames to the translation worksheet and create translated names</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InitialiseTranslationNames()
 </code></pre>
-<p>Calls InitialiseHiddenNames to create all RNG_* translated message and sheet
-names on the output workbook.</p>
-<p>A second copy of the two language codes used to be written onto the translation
-worksheet here. LLTranslation reads its languages from the workbook store, so
-that copy was written and never read.</p>
+<p>Calls InitialiseSheetNames on the LLTranslation instance to store
+dictionary and interface language codes as worksheet-level HiddenNames
+on the translation sheet. Then calls InitialiseHiddenNames to create
+all RNG_* translated message/sheet names on the output workbook.</p>
 <hr />
 <h3 id="int-prepareadmin">PrepareAdmin <a class="anchor-link" href="#int-prepareadmin">#</a></h3>
 <p><em>prepare-admin</em></p>
@@ -601,7 +362,7 @@ that copy was written and never read.</p>
 <p>Applies the linelist design format to the admin sheet, then creates two
 large-scope buttons (Advanced and Export) with translated labels. After
 placing the buttons, re-suppresses UI updates and activates the admin
-sheet. Finally protects the active sheet via Passwords.Protect with
+sheet. Finally protects the active sheet via IPasswords.Protect with
 the &quot;_active&quot; scope marker.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
@@ -613,86 +374,41 @@ shape-specific translated labels for the buttons.</li>
 <p><em>transfer-all-code</em></p>
 <p><strong>Transfer all VBA code components to the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub TransferAllCode(ByVal transfer As CodeTransfer, _
-                            ByVal sheetNames As BetterArray)
+<pre><code class="language-vb">Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer)
 </code></pre>
-<p>Moves the VBA the generated linelist runs on, in five steps:</p>
+<p>Uses the supplied ICodeTransfer to copy VBA components from the setup
+workbook to the output workbook in five phases:</p>
 <ol>
-<li>36 class modules. ChoiceKeys, ImportMetadata, ImportReport and
-CheckingOutput joined the list with the import work: LLExporter types
-ChoiceKeys, LLImporter types the first three, ImportChecking types
-CheckingOutput and F_ImportRep reads ImportReport, so a linelist without
-them fails project compilation. LLLog joined with the user log:
-EventLinelist holds one and the button and form modules write their
-outcome lines through it. SectionMap, GeoFormCache and AnalysisRanges
-joined last: EventsLinelistButtons types SectionMap, GeoModule and the
-F_Geo code-behind call GeoFormCache statically, and GeoModule names
-AnalysisRanges. None of the three is reached by a bare procedure call, so
-the call scan reported the set closed while a generated linelist could not
-compile.</li>
-<li>5 standard modules, carrying the linelist toolbar and its helpers.
-NO FormLogic MODULE IS TRANSFERRED. Every one of them uses Me and declares
-control event handlers, which only compile inside a form, and the merged
-.frm files already carry that code in the code module where it belongs.
-The two calls into it are written qualified -- F_Export.SetupExportForm and
-F_ExportMig.HandleAnalysisExport -- so they run the form's copy and need no
-standard module at all. Transferring the four of them was what cost a
-delivered linelist its compile.</li>
-<li>The ribbon module. A template workbook already carries EventsLinelistRibbon,
-so its code text is overwritten; otherwise the module is imported.</li>
-<li>10 user forms.</li>
-<li>The workbook code module, then EventLinelistSheet into the code module of
-every hlist2D data-entry worksheet.</li>
+<li>Transfers 49 class modules (interface+implementation pairs for
+DataSheet, LLExport, LLChoices, LLdictionary, LLGeo, Passwords,
+LLSheets, LLTranslation, OSFiles, TranslationObject, LLVariables,
+LLSpatial, DropdownLists, ShowHideManager, CustomTable, LLExporter,
+LLImporter, Graphs, AnaTabIds, ExportButton, HiddenNames,
+EventLinelist, ApplicationState, plus BetterArray and Checking).</li>
+<li>Transfers 7 standard modules (CustomLinelistFunctions, GeoModule,
+LinelistEventsManager, EventsLinelistButtons, FormLogicAdvanced,
+FormLogicExportMig, FormLogicExport). For template workbooks,
+copies the ribbon module text (EventsLinelistRibbon); otherwise
+transfers it as a new module.</li>
+<li>Transfers 9 user forms (F_Advanced, F_Export, F_ExportMig, F_Geo,
+F_ImportRep, F_ShowHideLL, F_ShowHidePrint, F_ShowVarLabels,
+F_EpiWeek).</li>
+<li>Transfers the workbook code module (EventLinelistWorkbook).</li>
 </ol>
-<p>Two free scans check the three lists below, and they read different things.
-scripts/devtools/transferred-code-scan.R reads CALLS: a transferred module
-invoking a Public procedure defined outside the set.
-scripts/devtools/linelist-components-scan.R reads NAMES: a type, a predeclared
-class or an enum the set mentions and does not carry. Run both after any
-change here.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>codeTransfer</code>: CodeTransfer. The code transfer engine.</li>
-<li><code>sheetNames</code>: BetterArray. The dictionary's unique sheet names, walked once
-by Prepare and passed down.</li>
+<li><code>codeTransfer</code>: ICodeTransfer. The code transfer engine.</li>
 </ul>
 <hr />
-<h2 id="int-checkings">Checkings</h2>
-<h3 id="int-checks">Checks <a class="anchor-link" href="#int-checks">#</a></h3>
-<p><em>checks</em></p>
-<p><strong>The report entries of this instance</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Checks() As Checking
-</code></pre>
-<p>What this class reports into the generation report. clickGenerate
-reads HasCheckings right after Prepare and flushes CheckingValues.</p>
-<p><strong>Returns:</strong> Checking. The entries, created on first use.</p>
-<hr />
-<h3 id="int-logcheck">LogCheck <a class="anchor-link" href="#int-logcheck">#</a></h3>
-<p><em>log-check</em></p>
-<p><strong>File one report entry</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub LogCheck(ByVal checkKey As String, ByVal message As String, _
-                     Optional ByVal scope As Byte = checkingNote)
-</code></pre>
-<p>Checking.Add raises on a duplicate key, and one report carries the entries of
-several classes, so the key names this class and the thing the entry is about.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>checkKey</code>: String. What the entry is about, used to build the key.</li>
-<li><code>message</code>: String. The message text.</li>
-<li><code>scope</code>: Optional Byte. The checking scope. Defaults to checkingNote.</li>
-</ul>
-<hr />
-<h2 id="int-private-error-handling">Private - Error handling</h2>
+<h2 id="int-private-error-handling">Private — Error handling</h2>
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><em>throw-error</em></p>
 <p><strong>Raise a project error with class context</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
 </code></pre>
-<p>Centralised error-raising helper.</p>
-<p>Wraps Err.Raise with CLASS_NAME as the source, providing consistent
+<p>Centralised error-raising helper.
+Wraps Err.Raise with CLASS_NAME as the source, providing consistent
 error attribution across all methods in this class.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -700,68 +416,39 @@ error attribution across all methods in this class.</p>
 <li><code>errorMessage</code>: String. Descriptive message for the error.</li>
 </ul>
 <hr />
+<h2 id="int-ilinelist-implementation">ILinelist implementation</h2>
+<h3 id="int-ilinelist-wksh">ILinelist_Wksh <a class="anchor-link" href="#int-ilinelist-wksh">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get ILinelist_Wksh(ByVal sheetName As String) As Worksheet
+</code></pre>
+<p>Delegated members satisfying the ILinelist contract.
+All members forward to their Public counterparts above.</p>
+<hr />
 </details>
 <details>
-<summary>Used in (58 file(s))</summary>
+<summary>Used in (21 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
-<li><a href="AnalysisRanges.html">AnalysisRanges.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
-<li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
-<li><a href="TableSpecs.html">TableSpecs.cls</a></li>
-<li><a href="LLExporter.html">LLExporter.cls</a></li>
-<li><a href="LLImporter.html">LLImporter.cls</a></li>
-<li><a href="DesignerEntry.html">DesignerEntry.cls</a></li>
-<li><a href="LLdictionary.html">LLdictionary.cls</a></li>
-<li><a href="LLSheets.html">LLSheets.cls</a></li>
-<li><a href="LLChoices.html">LLChoices.cls</a></li>
-<li><a href="TemporaryRepos.html">TemporaryRepos.cls</a></li>
-<li><a href="LLGeo.html">LLGeo.cls</a></li>
-<li><a href="LLSpatial.html">LLSpatial.cls</a></li>
-<li><a href="TimeSeriesGraphs.html">TimeSeriesGraphs.cls</a></li>
-<li><a href="CodeTransfer.html">CodeTransfer.cls</a></li>
-<li><a href="EventLinelist.html">EventLinelist.cls</a></li>
+<li><a href="ILinelistBuildService.html">ILinelistBuildService.cls</a></li>
+<li><a href="LinelistBuildService.html">LinelistBuildService.cls</a></li>
+<li><a href="GraphSpecs.html">GraphSpecs.cls</a></li>
+<li><a href="ILinelist.html">ILinelist.cls</a></li>
+<li><a href="ILinelistSpecs.html">ILinelistSpecs.cls</a></li>
+<li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
-<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
-<li><a href="LLLog.html">LLLog.cls</a></li>
-<li><a href="LLTranslation.html">LLTranslation.cls</a></li>
+<li><a href="ListBuilder.html">ListBuilder.cls</a></li>
+<li><a href="SectionBuilder.html">SectionBuilder.cls</a></li>
+<li><a href="VarWriter.html">VarWriter.cls</a></li>
+<li>DesignerMain.bas</li>
 <li>EventsDesignerAdvanced.bas</li>
-<li>EventsDesignerMulti.bas</li>
-<li>InitTransfer.bas</li>
-<li>HeadlessBuild.bas</li>
-<li>CustomLinelistFunctions.bas</li>
-<li>EventLinelistSheet.bas</li>
-<li>EventLinelistWorkbook.bas</li>
-<li>EventsLinelistButtons.bas</li>
-<li>EventsLinelistRibbon.bas</li>
-<li>ImportChecking.bas</li>
-<li>LinelistEventsManager.bas</li>
-<li>FormLogicAdvanced.bas</li>
-<li>FormLogicEpiWeek.bas</li>
-<li>FormLogicExport.bas</li>
-<li>FormLogicExportMig.bas</li>
-<li>FormLogicGeo.bas</li>
-<li>FormLogicImportRep.bas</li>
-<li>FormLogicShowHide.bas</li>
-<li>FormLogicShowHidePrint.bas</li>
-<li>FormLogicShowHideSave.bas</li>
-<li>FormLogicShowVarLabels.bas</li>
-<li>TestAnalysisOutput.bas</li>
-<li>TestAnalysisRanges.bas</li>
-<li>TestCrossTable.bas</li>
-<li>TestCrossTableFormula.bas</li>
-<li>TestFormulas.bas</li>
-<li>TestHeadlessLinelistBuild.bas</li>
-<li><a href="LinelistDataStub.html">LinelistDataStub.cls</a></li>
-<li>LLFormatTestFixture.bas</li>
-<li>TestHelpersLite.bas</li>
-<li>TestCodeTransfer.bas</li>
-<li>TestCustomLinelistFunctions.bas</li>
-<li>TestEventLinelistSheets.bas</li>
+<li>GenerationReport.bas</li>
 <li>TestLinelist.bas</li>
+<li><a href="LinelistSpecsWorkbookStub.html">LinelistSpecsWorkbookStub.cls</a></li>
+<li><a href="LinelistStub.html">LinelistStub.cls</a></li>
+<li><a href="LLVarContextSpecsStub.html">LLVarContextSpecsStub.cls</a></li>
+<li><a href="TableSpecsLinelistStub.html">TableSpecsLinelistStub.cls</a></li>
 <li>TestLinelistSpecs.bas</li>
-<li>TestLLDataEntry.bas</li>
-<li>OBTImport.bas</li>
 </ul>
 </details>
   </main>

@@ -18,15 +18,15 @@
 <p><strong>Configure builder dependencies.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Initialise(ByVal hostWorkbook As Workbook, _
-                      ByVal dropdowns As DropdownLists, _
-                      ByVal translations As TranslationObject, _
-                      ByVal varObj As MasterSetupVariables)
+                      ByVal dropdowns As IDropdownLists, _
+                      ByVal translations As ITranslationObject, _
+                      ByVal varObj As IMasterSetupVariables)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>hostWorkbook</code>: Workbook where disease sheets are created.</li>
-<li><code>dropdowns</code>: DropdownLists providing data validation helpers.</li>
-<li><code>translations</code>: TranslationObject supplying translated labels.</li>
+<li><code>dropdowns</code>: IDropdownLists providing data validation helpers.</li>
+<li><code>translations</code>: ITranslationObject supplying translated labels.</li>
 </ul>
 <hr />
 </div>
@@ -61,13 +61,6 @@
 </code></pre>
 <hr />
 </div>
-</details>
-<details>
-<summary>Used in (2 file(s))</summary>
-<ul>
-<li><a href="DiseaseSheet.html">DiseaseSheet.cls</a></li>
-<li>TestDiseaseSheet.bas</li>
-</ul>
 </details>
   </main>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>

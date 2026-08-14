@@ -19,20 +19,20 @@ multiple choices; analysis go-to-section and spatial dispatch), sheet deactivate
 (list auto update), selection change (geo dropdown refresh),
 double-click (spatio-temporal geo form), filter table updates, list-auto
 dropdown maintenance, and geo/spatial UDF delegation.</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLSpatial.html">LLSpatial</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="Passwords.html">Passwords</a>, <a href="LLLog.html">LLLog</a>, <a href="FilteredData.html">FilteredData</a>, ProjectError</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLSpatial.html">LLSpatial</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="Passwords.html">Passwords</a>, ProjectError</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
 <h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Build a configured EventLinelist instance bound to a host workbook.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As EventLinelist
+<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As IEventLinelist
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>hostBook</code>: Workbook. The linelist workbook.</li>
 </ul>
-<p><strong>Returns:</strong> EventLinelist. Configured service instance.</p>
+<p><strong>Returns:</strong> IEventLinelist. Configured service instance.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When hostBook is Nothing.</li>
@@ -40,8 +40,8 @@ dropdown maintenance, and geo/spatial UDF delegation.</p>
 <hr />
 </div>
 </details>
-<details open class="doc-section" id="public-operations">
-<summary>Public operations</summary>
+<details open class="doc-section" id="ieventlinelist-implementation">
+<summary>IEventLinelist implementation</summary>
 <div class="section-body">
 <h3 id="configure">Configure <a class="anchor-link" href="#configure">#</a></h3>
 <p><strong>Configure the service with its host workbook context.</strong></p>
@@ -62,8 +62,6 @@ dropdown maintenance, and geo/spatial UDF delegation.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub OnWorkbookOpen()
 </code></pre>
-<p>The open is the first line of the session in the user log, so a reader of
-the log sees where each working session started.</p>
 <hr />
 <h3 id="onsheetchange">OnSheetChange <a class="anchor-link" href="#onsheetchange">#</a></h3>
 <p><strong>Handle worksheet change events.</strong></p>
@@ -79,15 +77,11 @@ the log sees where each working session started.</p>
 <h3 id="onsheetdeactivate">OnSheetDeactivate <a class="anchor-link" href="#onsheetdeactivate">#</a></h3>
 <p><strong>Handle worksheet deactivation events.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub OnSheetDeactivate(ByVal prevsh As Worksheet)
+<pre><code class="language-vb">Public Sub OnSheetDeactivate(ByVal prevSheetName As String)
 </code></pre>
-<p>The handler is written into the code module of each HList sheet, so the sheet
-that was left arrives as an object and one flag is all this reads. It wants the
-workbook hidden names alone: the labels of the translation stack have no part
-in it.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>prevsh</code>: Worksheet. The sheet that was deactivated.</li>
+<li><code>prevSheetName</code>: String. Name of the sheet that was deactivated.</li>
 </ul>
 <hr />
 <h3 id="onselectionchange">OnSelectionChange <a class="anchor-link" href="#onselectionchange">#</a></h3>
@@ -95,11 +89,6 @@ in it.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub OnSelectionChange(ByVal sh As Worksheet, ByVal target As Range)
 </code></pre>
-<p>The sheet is an HList sheet by construction. Worksheet_SelectionChange is
-written into the code module of the HList sheets alone, so a &quot;sheet_type&quot; read
-here can only ever answer HList, and it cost a walk of the sheet Names
-collection on every arrow key. The handler below wants the store, and reads the
-held one.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The worksheet where the selection changed.</li>
@@ -109,35 +98,19 @@ held one.</p>
 <h3 id="ondoubleclick">OnDoubleClick <a class="anchor-link" href="#ondoubleclick">#</a></h3>
 <p><strong>Handle double-click events on analysis sheets.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function OnDoubleClick(ByVal sh As Worksheet, ByVal target As Range) As Long
+<pre><code class="language-vb">Public Sub OnDoubleClick(ByVal sh As Worksheet, ByVal target As Range)
 </code></pre>
-<p>Answers the geo scope whose picker the double-click asked for, and
-GEOSCOPENONE when the click asked for no picker at all. The caller is what
-opens the picker: the form lives in the workbook and a class cannot reach it.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The worksheet where the double-click occurred.</li>
 <li><code>target</code>: Range. The double-clicked cell.</li>
 </ul>
-<p><strong>Returns:</strong> Long. GeoScopeAdmin, GeoScopeHF, or GEOSCOPENONE.</p>
 <hr />
 <h3 id="updatefiltertables">UpdateFilterTables <a class="anchor-link" href="#updatefiltertables">#</a></h3>
 <p><strong>Update filter tables used by analysis sheets.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
 </code></pre>
-<p>FilteredData does the walk and the rewrite: every filtered table is written
-from the visible rows of its source table that hold a value. The class is the
-measured home of that work, and the filtered export runs the same code, so one
-algorithm answers both callers.</p>
-<p>A sheet the sync could not place is skipped and named. The walk finishes the
-remaining sheets and the box at the foot lists each skipped sheet with its
-reason, which is what a user needs to repair the workbook.</p>
-<p>FilteredData writes the failure line of the run to the user log, so the box
-here goes straight through ShowMessage and the log keeps one line per failed
-refresh.</p>
-<p>The recalculation at the foot is one pass: the sheet pass covers the UsedRange
-and column passes that used to follow it.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>calculate</code>: Optional Boolean. When True (default), recalculates the active sheet.</li>
@@ -149,148 +122,11 @@ and column passes that used to follow it.</p>
 <pre><code class="language-vb">Public Sub UpdateAllListAuto()
 </code></pre>
 <hr />
-<h3 id="translation">Translation <a class="anchor-link" href="#translation">#</a></h3>
-<p><strong>The one translation helper of the workbook.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Translation() As LLTranslation
-</code></pre>
-<p>The button, ribbon and geo modules each used to build their own. LLTranslation
-validates all five tables on Create and caches every scope it is asked for
-until Refresh, so one instance answers all four callers for the price of the
-first build, and Refresh then has one place to be called from. A module reaches
-this through LinelistEventsManager.EventLinelistService.</p>
-<p><strong>Returns:</strong> LLTranslation. The held helper, or Nothing when the workbook carries no
-usable translation sheet.</p>
-<hr />
-<h3 id="workbooknames">WorkbookNames <a class="anchor-link" href="#workbooknames">#</a></h3>
-<p><strong>The hidden names of the workbook, built once and held.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function WorkbookNames() As HiddenNames
-</code></pre>
-<p>The button module used to build its own on every click, and a workbook store
-costs a walk of the whole Names collection.</p>
-<p><strong>Returns:</strong> HiddenNames. The held store, or Nothing when the build failed.</p>
-<hr />
-<h3 id="sheetnames">SheetNames <a class="anchor-link" href="#sheetnames">#</a></h3>
-<p><strong>The hidden names of one worksheet, built once and held.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function SheetNames(ByVal sh As Worksheet) As HiddenNames
-</code></pre>
-<p>One store serves the event handlers and the buttons together, and the class
-drops it when that sheet raises a change. The button module read a sheet tag,
-a table name and a blank row count through three separate stores.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sh</code>: Worksheet. The worksheet whose names are wanted.</li>
-</ul>
-<p><strong>Returns:</strong> HiddenNames. The held store, or Nothing when the build failed.</p>
-<hr />
-<h3 id="passwordmanager">PasswordManager <a class="anchor-link" href="#passwordmanager">#</a></h3>
-<p><strong>The password manager of the workbook, built once and held.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function PasswordManager() As Passwords
-</code></pre>
-<p><strong>Returns:</strong> Passwords. The held manager, or Nothing when the build failed.</p>
-<hr />
-<h3 id="userlog">UserLog <a class="anchor-link" href="#userlog">#</a></h3>
-<p><strong>The user log of the workbook, built once and held.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function UserLog() As LLLog
-</code></pre>
-<p>The dated record of the user actions, kept on the very hidden log
-worksheet. Fail and Warn write their line through it, and the button and
-form modules write their outcome lines through it. An old linelist grows
-the log sheet on the first logged event.</p>
-<p><strong>Returns:</strong> LLLog. The held log, or Nothing when the build failed.</p>
-<hr />
-<h3 id="dictionary">Dictionary <a class="anchor-link" href="#dictionary">#</a></h3>
-<p><strong>The dictionary of the linelist, built once and held.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Dictionary() As LLdictionary
-</code></pre>
-<p>The variable-labels button used to build a dictionary per click, and creating
-one walks the whole Dictionary worksheet. A workbook with no Dictionary sheet
-answers Nothing, and the tried flag keeps the failed build from repeating.</p>
-<p><strong>Returns:</strong> LLdictionary. The held dictionary, or Nothing when the build failed.</p>
-<hr />
-<h3 id="variables">Variables <a class="anchor-link" href="#variables">#</a></h3>
-<p><strong>The variable reader of the dictionary, built once and held.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Variables() As LLVariables
-</code></pre>
-<p><strong>Returns:</strong> LLVariables. The held reader, or Nothing when the build failed.</p>
-<hr />
-<h3 id="geomanager">GeoManager <a class="anchor-link" href="#geomanager">#</a></h3>
-<p><strong>The geobase manager of the workbook, built once and held.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function GeoManager() As LLGeo
-</code></pre>
-<p>The geo and form modules used to build one each, and LLGeo.Create walks two
-whole Names collections per build. A held instance also caches the five admin
-level labels, so anything that rewrites the Geo sheet has to be followed by
-ResetCaches for the labels to be read again. HandleImportGeobase already does
-that on both its paths.</p>
-<p><strong>Returns:</strong> LLGeo. The held manager, or Nothing when the build failed.</p>
-<hr />
-<h3 id="varlabeltable">VarLabelTable <a class="anchor-link" href="#varlabeltable">#</a></h3>
-<p><strong>The table the variable-labels form shows.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function VarLabelTable() As BetterArray
-</code></pre>
-<p>One row per hlist2D variable: the pivot block title of its table, the
-variable name and the main label. The pivot titles are worksheet hidden names
-CustomPivotTable writes on the custom pivot sheet, and that sheet is reached
-through the workbook hidden name RNG_CustomPivot. A workbook where the
-dictionary or the pivot sheet cannot be read answers what it can: an empty
-table, or rows with empty titles.</p>
-<p>The rows are built in memory. The button used to stage them on the __temp
-worksheet and read them back, one Excel crossing per cell.</p>
-<p><strong>Returns:</strong> BetterArray. One item per variable, each an array of title, name and
-label.</p>
-<hr />
 <h3 id="resetcaches">ResetCaches <a class="anchor-link" href="#resetcaches">#</a></h3>
 <p><strong>Clear cached resources.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ResetCaches()
 </code></pre>
-<hr />
-</div>
-</details>
-<details open class="doc-section" id="messages">
-<summary>Messages</summary>
-<div class="section-body">
-<h3 id="warn">Warn <a class="anchor-link" href="#warn">#</a></h3>
-<p><strong>Tell the user why a button refused to act.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Warn(ByVal msgCode As String)
-</code></pre>
-<p>The refusal is also one warning line of the user log, written before the
-box shows, with the message code as the action. Every refusal box of the
-button, ribbon and geo modules comes through here, so the log covers them
-all through this one edit.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>msgCode</code>: String. Code of the message in the message translation table.</li>
-</ul>
-<hr />
-<h3 id="fail">Fail <a class="anchor-link" href="#fail">#</a></h3>
-<p><strong>Tell the user an operation failed.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Fail(ByVal msgCode As String, _
-                Optional ByVal detail As String = vbNullString, _
-                Optional ByVal fallback As String = vbNullString)
-</code></pre>
-<p>The failure is also one failure line of the user log, written before the
-box shows, with the message code as the action and the detail beside the
-date. Every failure box of the button, ribbon and geo modules comes
-through here, so the log covers them all through this one edit.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>msgCode</code>: String. Code of the message in the message translation table.</li>
-<li><code>detail</code>: String. Optional. Follows the message, for an Err.Description.</li>
-<li><code>fallback</code>: String. Optional. Shown when the workbook carries no usable
-translation sheet. Leave it off to stay quiet in that state.</li>
-</ul>
 <hr />
 </div>
 </details>
@@ -309,25 +145,6 @@ translation sheet. Leave it off to stay quiet in that state.</li>
 </ul>
 <p><strong>Returns:</strong> String. Pipe-delimited concatenation of non-empty admin values.</p>
 <hr />
-<h3 id="barespatialname">BareSpatialName <a class="anchor-link" href="#barespatialname">#</a></h3>
-<p><strong>Take the authored spatial tag off a variable name.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function BareSpatialName(ByVal varName As String) As String
-</code></pre>
-<p>The spatial formulas carry the dictionary variable the tables were summed
-over -- &quot;concat_adm1_&quot; in front of a geographic name, &quot;hf_&quot; in front of a
-facility one -- and the spatial tables are keyed on the bare name. The tag
-comes off whole, so a bare name carrying underscores of its own survives; a
-name with no tag passes through unchanged, and the table lookup then answers
-its usual empty string. The delegates below used to split on &quot;_&quot; and count
-characters instead, which cut an underscored name short and raised on a name
-shorter than the tag.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>varName</code>: String. Variable name as the formula carries it.</li>
-</ul>
-<p><strong>Returns:</strong> String. The bare variable name.</p>
-<hr />
 <h3 id="topadmin">TopAdmin <a class="anchor-link" href="#topadmin">#</a></h3>
 <p><strong>Return the top admin name for a spatial variable.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -338,9 +155,9 @@ shorter than the tag.</p>
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>adminLevel</code>: String. The level label as the dropdown carries it (e.g. &quot;District&quot;).</li>
+<li><code>adminLevel</code>: String. Admin level label (e.g. &quot;adm1&quot;).</li>
 <li><code>adminOrder</code>: Integer. Rank order (1 = top, 2 = second, etc.).</li>
-<li><code>varName</code>: String. Variable name (with prefix, e.g. &quot;concat_adm1_myvar&quot;).</li>
+<li><code>varName</code>: String. Variable name (with prefix, e.g. &quot;adm1_concat_adm1_myvar&quot;).</li>
 <li><code>tabId</code>: Optional String. Spatial table identifier.</li>
 </ul>
 <p><strong>Returns:</strong> String. Admin name at the given rank.</p>
@@ -355,7 +172,7 @@ shorter than the tag.</p>
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>adminLevel</code>: String. The level label as the dropdown carries it (e.g. &quot;District&quot;).</li>
+<li><code>adminLevel</code>: String. Admin level label (e.g. &quot;adm1&quot;).</li>
 <li><code>adminOrder</code>: Integer. Rank order (1 = top, 2 = second, etc.).</li>
 <li><code>varName</code>: String. Variable name (with prefix &quot;concat_adm1_&quot;).</li>
 <li><code>tabId</code>: Optional String. Spatial table identifier.</li>
@@ -381,105 +198,49 @@ shorter than the tag.</p>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2 id="int-messages">Messages</h2>
-<h3 id="int-showmessage">ShowMessage <a class="anchor-link" href="#int-showmessage">#</a></h3>
-<p><strong>Show one box, translated when a translator is there.</strong></p>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><strong>Current object instance cast to the interface.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ShowMessage(ByVal msgCode As String, _
-                        ByVal boxStyle As Long, _
-                        ByVal detail As String, _
-                        ByVal fallback As String)
+<pre><code class="language-vb">Public Property Get Self() As IEventLinelist
 </code></pre>
-<p>A workbook with no usable translation sheet has no text to show, and the
-callers that still have something to say pass a fallback. Every other caller
-stays quiet, which is what the two boxes this replaced did.</p>
+<p><strong>Returns:</strong> IEventLinelist. The current instance.</p>
 <hr />
-<h3 id="int-logeventline">LogEventLine <a class="anchor-link" href="#int-logeventline">#</a></h3>
-<p><strong>Write one line of the user log.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub LogEventLine(ByVal scope As Byte, _
-                         ByVal action As String, _
-                         ByVal detail As String)
-</code></pre>
-<p>A log write must never take down the box or the walk it records, so a
-workbook whose log cannot be built stays quiet and a write that raises is
-swallowed here.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>scope</code>: Byte. CheckingScope value carrying the outcome.</li>
-<li><code>action</code>: String. The action code, used as the bundle title.</li>
-<li><code>detail</code>: String. Short free text beside the timestamp.</li>
-</ul>
-<hr />
-<h2 id="int-geo-spatial-udf-delegation">Geo / Spatial UDF delegation</h2>
-<h3 id="int-recordedadmincode">RecordedAdminCode <a class="anchor-link" href="#int-recordedadmincode">#</a></h3>
-<p><strong>The admin level a spatial table's formulas stand on.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function RecordedAdminCode(ByVal tabId As String) As String
-</code></pre>
-<p>The dropdown label is the first source of the level and this cell is the
-second. A freshly generated table carries the &quot;select a level&quot; prompt in its
-dropdown, a user can clear the dropdown with Delete, and a geobase re-imported
-in another language leaves the cell holding a label no level answers to. In
-all three the label resolves to nothing while this cell still records the
-level the formulas of that table were last written against, so the reads stay
-on the level the sheet is actually showing.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>tabId</code>: String. The identifier of the analysis table.</li>
-</ul>
-<p><strong>Returns:</strong> String. The recorded admin code, or an empty string when the table
-carries no such cell.</p>
-<hr />
-<h2 id="int-private-hlist-change-handler">Private -- HList change handler</h2>
+<h2 id="int-private-hlist-change-handler">Private — HList change handler</h2>
 <h3 id="int-handlehlistchange">HandleHListChange <a class="anchor-link" href="#int-handlehlistchange">#</a></h3>
 <p><strong>Handle value changes on HList sheets.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub HandleHListChange(ByRef sh As Worksheet, ByRef target As Range, _
-                              ByRef shHn As HiddenNames)
+                              ByRef shHn As IHiddenNames)
 </code></pre>
-<p>Dispatches on the position of the edited cell, cheapest and most specific test
-first, and every branch exits. An edit inside the table recalculates its own
-row and goes to the geo cascade, the list-auto flag or the multiple choice
-toggle; an edit on the label row updates the editable label; an edit on the
-go-to cell navigates to the chosen section; an edit on the header row is
-refused and the cell restored.</p>
-<h2 id="int-the-go-to-test-reads-the-first-cell-and-the-sheet-store">THE GO-TO TEST READS THE FIRST CELL AND THE SHEET STORE</h2>
-<p>The builder puts the go-to dropdown in the first cell of the sheet and stores
-its caption in the sheet store under <table>_go_to_section. Resolving that id
-as a range name raised 1004 on every sheet the builder makes, because the id
-names a stored string; the raise landed on the error label, so the header
-protection and the multiple choice toggle below the old block never ran.</p>
+<p>Dispatches based on the target cell's position relative to the table:
+geo cascades (geo1-geo4 controls), editable labels (label row),
+list_auto flagging, go-to-section navigation, header protection
+(header row), and multiple choice updates.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The HList worksheet.</li>
 <li><code>target</code>: Range. The edited cell(s).</li>
-<li><code>shHn</code>: HiddenNames. The worksheet-level hidden names (shared from caller).</li>
+<li><code>shHn</code>: IHiddenNames. The worksheet-level hidden names (shared from caller).</li>
 </ul>
 <hr />
-<h2 id="int-private-vlist-change-handler">Private -- VList change handler</h2>
+<h2 id="int-private-vlist-change-handler">Private — VList change handler</h2>
 <h3 id="int-handlevlistchange">HandleVListChange <a class="anchor-link" href="#int-handlevlistchange">#</a></h3>
 <p><strong>Handle value changes on VList sheets.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub HandleVListChange(ByRef sh As Worksheet, ByRef target As Range, _
-                              ByRef shHn As HiddenNames)
+                              ByRef shHn As IHiddenNames)
 </code></pre>
-<p>Dispatches on the column of the edited cell and every branch exits. An edit in
-the label column updates the editable label; an edit in the value column
-recalculates the value block once and runs the multiple choice toggle when the
-control asks for it; an edit on the go-to cell navigates to the chosen label.
-The value block used to be recalculated on every edit of the sheet, above the
-dispatch, so a label edit and a navigation both paid for it.</p>
-<p>The go-to test reads the first cell of the sheet and the caption the sheet
-store carries, the same way the HList handler does.</p>
+<p>Handles editable label updates, multiple choice updates, and go-to-section
+navigation on vertical list sheets.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The VList worksheet.</li>
 <li><code>target</code>: Range. The edited cell(s).</li>
-<li><code>shHn</code>: HiddenNames. The worksheet-level hidden names (shared from caller).</li>
+<li><code>shHn</code>: IHiddenNames. The worksheet-level hidden names (shared from caller).</li>
 </ul>
 <hr />
-<h2 id="int-private-analysis-change-handler">Private -- Analysis change handler</h2>
+<h2 id="int-private-analysis-change-handler">Private — Analysis change handler</h2>
 <h3 id="int-handleanalysischange">HandleAnalysisChange <a class="anchor-link" href="#int-handleanalysischange">#</a></h3>
 <p><strong>Handle value changes on analysis sheets.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -488,9 +249,9 @@ store carries, the same way the HList handler does.</p>
                                   ByRef analysisType As String)
 </code></pre>
 <p>Processes go-to-section navigation for all analysis types. For spatial
-analysis sheets, three dispatch methods (UpdateSingleSpTable,
-DevideByPopulation, FormatDevidePop) read what changed and hand the
-formula work to LLSpatial, based on named range patterns.</p>
+analysis sheets, dispatches to local spatial table update methods
+(UpdateSingleSpTable, DevideByPopulation, FormatDevidePop)
+based on named range patterns.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The analysis worksheet.</li>
@@ -498,23 +259,15 @@ formula work to LLSpatial, based on named range patterns.</p>
 <li><code>analysisType</code>: String. The sheet type tag (Uni-Bi-Analysis, TS-Analysis, etc.).</li>
 </ul>
 <hr />
-<h2 id="int-private-spatial-table-update-handlers">Private -- Spatial table update handlers</h2>
+<h2 id="int-private-spatial-table-update-handlers">Private — Spatial table update handlers</h2>
 <h3 id="int-updatesinglesptable">UpdateSingleSpTable <a class="anchor-link" href="#int-updatesinglesptable">#</a></h3>
-<p><strong>Move a spatial table to the admin level the user picked.</strong></p>
+<p><strong>Update formulas in a single spatial table when user changes admin level.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UpdateSingleSpTable(ByVal rngName As String)
 </code></pre>
-<p>Reads the dropdown, turns its label into an admin code through the held
-LLGeo, and hands the formula rewriting to LLSpatial, which keeps each
-formula's array state. Busy state is managed by the calling
-LinelistEventsManager. The sheet protection is restored on every path,
-raise included.</p>
-<p>A label naming no level stops the whole thing here. Data validation checks
-what a user types or picks and says nothing about Delete, so an emptied
-dropdown reaches this sub as a Change like any other. Running on it would
-rewrite every concat_adm<n> in the block to concat_ and then record the empty
-level, which leaves the table reading a column that does not exist with
-nothing left on the sheet saying where it came from.</p>
+<p>Replaces the admin reference in all formulas within the table's outer values
+range. Uses cached geo/passwords instances instead of creating new ones.
+Busy state is managed by the calling LinelistEventsManager.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>rngName</code>: String. Named range of the admin dropdown (e.g. &quot;ADM_DROPDOWN_sp1&quot;).</li>
@@ -526,13 +279,9 @@ nothing left on the sheet saying where it came from.</p>
 <pre><code class="language-vb">Private Sub DevideByPopulation(ByVal rngName As String, _
                                Optional ByVal revertBack As Boolean = False)
 </code></pre>
-<p>Reads the admin dropdown of the table, turns its label into an admin code
-through the held LLGeo, and hands the formula arithmetic to LLSpatial. The
-sheet protection is restored on every path, raise included.</p>
-<p>A label naming no level stops the whole thing here, for the same reason it
-stops UpdateSingleSpTable: the population column of an empty level is a
-column that does not exist, and dividing by it puts an error in every cell of
-the block that the revert then cannot read its way back out of.</p>
+<p>Iterates through the outer values range of a spatial table and modifies
+formulas to include or remove population division. Uses cached
+geo/spatial/passwords instances.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>rngName</code>: String. Named range of the population factor (e.g. &quot;POPFACT_sp1&quot;).</li>
@@ -544,21 +293,20 @@ the block that the revert then cannot read its way back out of.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FormatDevidePop(ByVal rngName As String)
 </code></pre>
-<p>Reads the divide/no-divide dropdown against the two translated labels of the
-workbook store, hands the cell formatting to LLSpatial, then delegates to
-DevideByPopulation to apply or remove the formula modifications. The sheet
-protection is restored on every path, raise included.</p>
+<p>Shows or hides the population factor cell and label based on the
+divide/no-divide dropdown selection, then delegates to DevideByPopulation
+to apply or remove the formula modifications.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>rngName</code>: String. Named range of the divide/no-divide dropdown.</li>
 </ul>
 <hr />
-<h2 id="int-private-selection-change-handler">Private -- Selection change handler</h2>
+<h2 id="int-private-selection-change-handler">Private — Selection change handler</h2>
 <h3 id="int-handleselectionhlist">HandleSelectionHList <a class="anchor-link" href="#int-handleselectionhlist">#</a></h3>
 <p><strong>Handle selection changes on HList sheets.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub HandleSelectionHList(ByRef sh As Worksheet, ByRef target As Range, _
-                                ByRef shHn As HiddenNames)
+                                ByRef shHn As IHiddenNames)
 </code></pre>
 <p>Updates geo dropdown validation lists when the user navigates to a geo2, geo3,
 or geo4 cell.</p>
@@ -566,10 +314,10 @@ or geo4 cell.</p>
 <ul>
 <li><code>sh</code>: Worksheet. The HList worksheet.</li>
 <li><code>target</code>: Range. The newly selected cell(s).</li>
-<li><code>shHn</code>: HiddenNames. The worksheet-level hidden names (shared from caller).</li>
+<li><code>shHn</code>: IHiddenNames. The worksheet-level hidden names (shared from caller).</li>
 </ul>
 <hr />
-<h2 id="int-private-list-auto-helpers">Private -- List auto helpers</h2>
+<h2 id="int-private-list-auto-helpers">Private — List auto helpers</h2>
 <h3 id="int-updatelistautosheet">UpdateListAutoSheet <a class="anchor-link" href="#int-updatelistautosheet">#</a></h3>
 <p><strong>Update the list-auto dropdowns for a single sheet.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -582,102 +330,50 @@ Iterates header columns and updates dropdown lists from unique data values.</p>
 <li><code>sh</code>: Worksheet. The HList sheet to update.</li>
 </ul>
 <hr />
-<h2 id="int-private-multiple-choice-helper">Private -- Multiple choice helper</h2>
+<h2 id="int-private-multiple-choice-helper">Private — Multiple choice helper</h2>
 <h3 id="int-updatemultiplechoice">UpdateMultipleChoice <a class="anchor-link" href="#int-updatemultiplechoice">#</a></h3>
 <p><strong>Handle multiple choice dropdown value toggling.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UpdateMultipleChoice(ByRef target As Range, ByRef choiSep As String)
 </code></pre>
-<p>The toggle needs the value the cell held before the edit. That comes from the
-held copy RememberCellValue keeps, filled when the user lands on the cell and
-refreshed after every edit. The undo stack is the fallback for a cell the
-session has no reading for -- it costs a round trip per call, which on a
-multiple choice column is a round trip per keystroke.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>target</code>: Range. The edited cell.</li>
 <li><code>choiSep</code>: String. Separator between choices (e.g. &quot;, &quot;).</li>
 </ul>
 <hr />
-<h2 id="int-private-previous-value-capture">Private -- Previous value capture</h2>
-<h3 id="int-remembercellvalue">RememberCellValue <a class="anchor-link" href="#int-remembercellvalue">#</a></h3>
-<p><strong>Hold the value of one cell for the next edit to it.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RememberCellValue(ByRef target As Range)
-</code></pre>
-<p>OnSelectionChange stores the value found under the selection, and OnSheetChange
-stores what the cell holds once its handlers have run. A selection of several
-cells drops the held reading, because one value can stand for one cell only.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>target</code>: Range. The selected or edited cells.</li>
-</ul>
-<hr />
-<h3 id="int-cellkey">CellKey <a class="anchor-link" href="#int-cellkey">#</a></h3>
-<p><strong>The identity of one cell, as sheet name and address.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function CellKey(ByRef target As Range) As String
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>target</code>: Range. The cell.</li>
-</ul>
-<p><strong>Returns:</strong> String. Sheet name and address joined with an exclamation mark.</p>
-<hr />
-<h2 id="int-private-unique-values-helper">Private -- Unique values helper</h2>
+<h2 id="int-private-unique-values-helper">Private — Unique values helper</h2>
 <h3 id="int-getuniqueba">GetUniqueBA <a class="anchor-link" href="#int-getuniqueba">#</a></h3>
 <p><strong>Return unique values from a BetterArray.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function GetUniqueBA(ByRef inputTable As BetterArray) As BetterArray
+<pre><code class="language-vb">Private Function GetUniqueBA(ByRef inputTable As BetterArray, _
+                             Optional ByVal Sort As Boolean = False) As BetterArray
 </code></pre>
-<p>The array built here goes to the caller as it stands. Each call used to answer
-a Clone, which copied every unique value once per list-auto column per sheet
-deactivate.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>inputTable</code>: BetterArray. Source array.</li>
+<li><code>Sort</code>: Optional Boolean. Whether to sort the result.</li>
 </ul>
 <p><strong>Returns:</strong> BetterArray. Array of unique values.</p>
 <hr />
-<h2 id="int-private-sheet-metadata-helpers">Private -- Sheet metadata helpers</h2>
+<h2 id="int-private-sheet-metadata-helpers">Private — Sheet metadata helpers</h2>
 <h3 id="int-sheettag">SheetTag <a class="anchor-link" href="#int-sheettag">#</a></h3>
 <p><strong>Get the sheet type tag from worksheet-level HiddenNames.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SheetTag(ByRef sh As Worksheet) As String
 </code></pre>
-<p>The quick read is what this wants. It used to build a whole HiddenNames store
-for one value, and UpdateAllListAuto calls it once per worksheet of the
-workbook, so every sheet in the loop paid a full walk of its own Names
-collection.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The worksheet to query.</li>
 </ul>
 <p><strong>Returns:</strong> String. The sheet type tag (HList, VList, Uni-Bi-Analysis, etc.).</p>
 <hr />
-<h2 id="int-private-lazy-initialisation">Private -- Lazy initialisation</h2>
-<h3 id="int-ensureworkbooknames">EnsureWorkbookNames <a class="anchor-link" href="#int-ensureworkbooknames">#</a></h3>
-<p><strong>Lazily initialise the workbook-level hidden names.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureWorkbookNames()
-</code></pre>
-<p>This used to sit at the foot of EnsureTranslation, below two early exits. A
-workbook with no LinelistTranslation sheet took the exit at that sheet lookup
-and never reached the line, so this.wkbNames stayed Nothing for the whole
-session: RNG_GoToSection was never read and go-to-section did nothing on every
-sheet, with no message. The store has nothing to do with the translation
-tables, so it is built on its own.</p>
-<hr />
+<h2 id="int-private-lazy-initialisation">Private — Lazy initialisation</h2>
 <h3 id="int-ensuretranslation">EnsureTranslation <a class="anchor-link" href="#int-ensuretranslation">#</a></h3>
-<p><strong>Lazily initialise the translation helper and the message translator.</strong></p>
+<p><strong>Lazily initialise translation, message translator, and hidden names.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureTranslation()
 </code></pre>
-<p>A translation sheet missing a table, or a workbook whose language code is
-empty, leaves the two fields Nothing and every event that needs them does
-nothing. The suppression is kept for that reason: an event handler has nothing
-above it to catch a raise. A workbook in that state costs the events their
-labels and leaves everything else working.</p>
 <hr />
 <h3 id="int-ensuredropdown">EnsureDropdown <a class="anchor-link" href="#int-ensuredropdown">#</a></h3>
 <p><strong>Lazily initialise the dropdown manager.</strong></p>
@@ -703,17 +399,6 @@ labels and leaves everything else working.</p>
 <pre><code class="language-vb">Private Sub EnsurePasswords()
 </code></pre>
 <hr />
-<h3 id="int-ensurelog">EnsureLog <a class="anchor-link" href="#int-ensurelog">#</a></h3>
-<p><strong>Lazily initialise the user log.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureLog()
-</code></pre>
-<p>Growing the log sheet on an old linelist wants the workbook structure
-unprotected, so the build unprotects around Create when the sheet is
-missing and protects back after. The password manager is Nothing on a
-workbook with no password worksheet, and such a workbook is unprotected
-anyway.</p>
-<hr />
 <h3 id="int-ensuredictionary">EnsureDictionary <a class="anchor-link" href="#int-ensuredictionary">#</a></h3>
 <p><strong>Lazily initialise the dictionary and variables helpers.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -726,31 +411,6 @@ anyway.</p>
 <pre><code class="language-vb">Private Sub EnsureVariables()
 </code></pre>
 <hr />
-<h3 id="int-sheetstore">SheetStore <a class="anchor-link" href="#int-sheetstore">#</a></h3>
-<p><strong>The hidden names of one worksheet, built once and held.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SheetStore(ByRef sh As Worksheet) As HiddenNames
-</code></pre>
-<p>Keyed on the sheet name in a Collection. Scripting.Dictionary is missing on Mac
-Excel and LLFormat holds its three caches the same shape. The store of a sheet
-costs a walk of that sheet's Names collection, and the selection handler asks
-for one on every arrow key.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sh</code>: Worksheet. The worksheet whose names are wanted.</li>
-</ul>
-<p><strong>Returns:</strong> HiddenNames. The held store, or Nothing when the build failed.</p>
-<hr />
-<h3 id="int-dropsheetstore">DropSheetStore <a class="anchor-link" href="#int-dropsheetstore">#</a></h3>
-<p><strong>Forget the held store of one worksheet.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub DropSheetStore(ByRef sheetName As String)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sheetName</code>: String. Name of the worksheet whose store is dropped.</li>
-</ul>
-<hr />
 <h3 id="int-sheetornothing">SheetOrNothing <a class="anchor-link" href="#int-sheetornothing">#</a></h3>
 <p><strong>Retrieve a worksheet from the host workbook or Nothing.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -762,16 +422,14 @@ for one on every arrow key.</p>
 </ul>
 <p><strong>Returns:</strong> Worksheet. The worksheet, or Nothing when not found.</p>
 <hr />
-<h2 id="int-private-cache-management">Private -- Cache management</h2>
+<h2 id="int-private-cache-management">Private — Cache management</h2>
 <h3 id="int-resetinternalcaches">ResetInternalCaches <a class="anchor-link" href="#int-resetinternalcaches">#</a></h3>
 <p><strong>Clear all lazily-cached domain managers.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetInternalCaches()
 </code></pre>
-<p>The tried flags go with the fields. A flag left standing turns this into a
-permanent refusal to build the manager again.</p>
 <hr />
-<h2 id="int-private-error-handling">Private -- Error handling</h2>
+<h2 id="int-private-error-handling">Private — Error handling</h2>
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><strong>Raise a ProjectError-based exception.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -785,33 +443,13 @@ permanent refusal to build the manager again.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (25 file(s))</summary>
+<summary>Used in (5 file(s))</summary>
 <ul>
-<li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
-<li><a href="LLGeo.html">LLGeo.cls</a></li>
-<li><a href="LLSpatial.html">LLSpatial.cls</a></li>
+<li><a href="EventLinelist.html">EventLinelist.cls</a></li>
+<li><a href="IEventLinelist.html">IEventLinelist.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
-<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
-<li><a href="VarWriter.html">VarWriter.cls</a></li>
-<li><a href="ShowHideStore.html">ShowHideStore.cls</a></li>
 <li>CustomLinelistFunctions.bas</li>
-<li>EventLinelistWorkbook.bas</li>
-<li>EventsLinelistButtons.bas</li>
-<li>EventsLinelistRibbon.bas</li>
-<li>GeoModule.bas</li>
 <li>LinelistEventsManager.bas</li>
-<li>FormLogicAdvanced.bas</li>
-<li>FormLogicEpiWeek.bas</li>
-<li>FormLogicExport.bas</li>
-<li>FormLogicExportMig.bas</li>
-<li>FormLogicGeo.bas</li>
-<li>FormLogicImportRep.bas</li>
-<li>FormLogicShowHideSave.bas</li>
-<li>FormLogicShowVarLabels.bas</li>
-<li>TestLLGeo.bas</li>
-<li>GeoTestFixture.bas</li>
-<li>TestEventLinelist.bas</li>
-<li>TestEventLinelistSheets.bas</li>
 </ul>
 </details>
   </main>

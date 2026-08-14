@@ -17,7 +17,7 @@
 <h3 id="int-removeworksheet">RemoveWorksheet <a class="anchor-link" href="#int-removeworksheet">#</a></h3>
 <p><strong>Remove the specified worksheet using guarded Application settings.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function RemoveWorksheet(ByVal targetBook As Workbook, ByVal sheetName As String) As Boolean
+<pre><code class="language-vb">Public Function RemoveWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -30,7 +30,7 @@
 <h3 id="int-worksheetexists">WorksheetExists <a class="anchor-link" href="#int-worksheetexists">#</a></h3>
 <p><strong>Test whether a worksheet exists within the workbook.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function WorksheetExists(ByVal targetBook As Workbook, ByVal sheetName As String) As Boolean
+<pre><code class="language-vb">Public Function WorksheetExists(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -43,7 +43,7 @@
 <h3 id="int-validateworkbook">ValidateWorkbook <a class="anchor-link" href="#int-validateworkbook">#</a></h3>
 <p><strong>Ensure the workbook reference is valid.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ValidateWorkbook(ByVal targetBook As Workbook)
+<pre><code class="language-vb">Private Sub ValidateWorkbook(ByVal workbook As Workbook)
 </code></pre>
 <hr />
 <h3 id="int-validatesheetname">ValidateSheetName <a class="anchor-link" href="#int-validatesheetname">#</a></h3>
@@ -55,7 +55,7 @@
 <h3 id="int-findworksheet">FindWorksheet <a class="anchor-link" href="#int-findworksheet">#</a></h3>
 <p><strong>Locate the worksheet by name using case-insensitive comparison.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function FindWorksheet(ByVal targetBook As Workbook, ByVal sheetName As String) As Worksheet
+<pre><code class="language-vb">Private Function FindWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Worksheet
 </code></pre>
 <hr />
 <h3 id="int-createguard">CreateGuard <a class="anchor-link" href="#int-createguard">#</a></h3>
@@ -73,8 +73,10 @@
 <hr />
 </details>
 <details>
-<summary>Used in (2 file(s))</summary>
+<summary>Used in (4 file(s))</summary>
 <ul>
+<li><a href="DiseaseWorksheetManager.html">DiseaseWorksheetManager.cls</a></li>
+<li><a href="IDiseaseWorksheetManager.html">IDiseaseWorksheetManager.cls</a></li>
 <li>TestDiseaseIntegration.bas</li>
 <li>TestDiseaseWorksheetManager.bas</li>
 </ul>

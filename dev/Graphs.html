@@ -11,39 +11,14 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>Graphs</h1>
-<p>Wraps one Excel ChartObject on an analysis worksheet. Add draws the chart at a
-caller-supplied Range, AddSeries attaches one data series from a named range,
-AddLabels gives that series its category and legend labels, and Format applies
-the look the GraphScope calls for. Entries filed along the way leave through
-HasCheckings and CheckingValues.</p>
-<details open class="doc-section" id="the-phase-order">
-<summary>THE PHASE ORDER</summary>
-<div class="section-body">
-<p>Add, then AddSeries and AddLabels once per series, then Format. All four
-callers drive it that way: AnalysisOutput builds a chart per table and a chart
-per time series graph, and AnaTabIds replays both from its tracking tables
-when a linelist is exported.</p>
-</div>
-</details>
-<details open class="doc-section" id="a-series-that-fails-takes-its-labels-with-it">
-<summary>A SERIES THAT FAILS TAKES ITS LABELS WITH IT</summary>
-<div class="section-body">
-<p>AddSeries answers a missing named range by filing a warning and adding no
-series. The labels that follow belong to that series, so AddLabels reads the
-flag AddSeries leaves and skips them.</p>
-</div>
-</details>
-<details open class="doc-section" id="every-size-this-class-applies-comes-from-one-function">
-<summary>EVERY SIZE THIS CLASS APPLIES COMES FROM ONE FUNCTION</summary>
-<div class="section-body">
-<p>SizeForScope holds the whole policy: the width coefficient that stretches a
-time series chart, the height coefficient that grows a spatial one, the plot
-area box and the legend position. It is arithmetic over two numbers, so a test
-reaches it through Format with no chart to automate.</p>
+<p>Simplifies the creation and formatting of Excel ChartObject instances on
+analysis worksheets. The class wraps a single chart, allowing callers to
+attach data series from named ranges, assign category and legend labels,
+and apply scope-dependent formatting (time series, spatial, or standard).
+Charts are positioned at a caller-supplied Range and sized according to
+the GraphScope enum. Consumers interact through the IGraphs interface.</p>
 <p><strong>Depends on:</strong> <a href="Checking.html">Checking</a></p>
-<p><strong>Version:</strong> 1.1 (2026-07-31)</p>
-</div>
-</details>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
 <div class="section-body">
@@ -51,30 +26,24 @@ reaches it through Format with no chart to automate.</p>
 <p><em>create</em></p>
 <p><strong>Create a Graph object bound to a worksheet and position</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet, ByVal posRng As Range, _
-                       Optional ByVal grName As String = vbNullString) As Graphs
+<pre><code class="language-vb">Public Function Create(sh As Worksheet, posRng As Range, Optional ByVal grName As String = vbNullString) As IGraphs
 </code></pre>
 <p>Graph objects simplify the manipulation of Excel graphs. They are based on a basic
 graphic grammar with the ability to stack graphs on top of each other.
 At its core, a graph object is created with a worksheet and a range where
 to write the graph. Values to be plotted should be in a named range on the
 worksheet used to instantiate the class.</p>
-<p>The position range has to sit on the worksheet the values come from. The class
-draws the chart on the parent of the range and reads every named range off the
-worksheet, so two different sheets would draw a chart in one place and feed it
-from another, with the legend references qualified by the wrong sheet name.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The worksheet containing the values to be plotted.</li>
 <li><code>posRng</code>: Range. The cell or range determining where to position the graph.</li>
 <li><code>grName</code>: Optional String. Display name for the graph. Defaults to vbNullString.</li>
 </ul>
-<p><strong>Returns:</strong> Graphs. A ready-to-use graph instance.</p>
+<p><strong>Returns:</strong> IGraphs. A ready-to-use graph instance.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When sh is Nothing.</li>
 <li>ProjectError.ObjectNotInitialized When posRng is Nothing.</li>
-<li>ProjectError.InvalidArgument When posRng sits on another worksheet.</li>
 </ul>
 <p><strong>Depends on:</strong></p>
 <ul>
@@ -90,24 +59,23 @@ from another, with the legend references qualified by the wrong sheet name.</p>
 <p><em>add</em></p>
 <p><strong>Create an empty chart on the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Add()
+<pre><code class="language-vb">Private Sub Add()
 </code></pre>
-<p>Chart creation, series attachment, labelling, and formatting.</p>
-<p>Creates an empty graph on a worksheet, ready for data to be
-attached to the graph. The graph is empty at creation, so the legend and the
-plot area are left to Format, which owns both and runs once the series exist.</p>
+<p>Chart creation, series attachment, labelling, and formatting.
+Creates an empty graph on a worksheet, ready for data to be
+attached to the graph. The graph is empty at creation. The width and height
+of the graph object may change depending on the scope in the future.</p>
 <hr />
 <h3 id="addseries">AddSeries <a class="anchor-link" href="#addseries">#</a></h3>
 <p><em>addseries</em></p>
 <p><strong>Attach a data series from a named range</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, _
-                    Optional ByVal axisPos As String = vbNullString)
+<pre><code class="language-vb">Private Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, _
+                    Optional axisPos As String = vbNullString)
 </code></pre>
 <p>One graph can have multiple series added. Series are referenced using
 named ranges on the graph object worksheet. If the named range does not
-exist, the method files a warning, adds no series, and marks the attempt as
-failed so the labels that follow are skipped too. If no chart exists
+exist, the method logs a warning and exits silently. If no chart exists
 yet, Add is called lazily before attaching the series.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -125,7 +93,7 @@ yet, Add is called lazily before attaching the series.</p>
 <p><em>has-checkings</em></p>
 <p><strong>Determine whether diagnostics have been captured</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
+<pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
 </code></pre>
 <p>Returns True when at least one LogInfo call has been made,
 indicating that diagnostic information is available.</p>
@@ -135,36 +103,26 @@ indicating that diagnostic information is available.</p>
 <p><em>checking-values</em></p>
 <p><strong>Retrieve the collected checking entries</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get CheckingValues() As Checking
+<pre><code class="language-vb">Private Property Get CheckingValues() As IChecking
 </code></pre>
-<p>Returns the internal Checking store when at least one entry has
+<p>Returns the internal IChecking store when at least one entry has
 been recorded. Returns Nothing otherwise.</p>
-<p><strong>Returns:</strong> Object. The Checking instance with logged diagnostics.</p>
+<p><strong>Returns:</strong> Object. The IChecking instance with logged diagnostics.</p>
 <hr />
 </div>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-instantiation">Instantiation</h2>
-<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
-<p><em>seal</em></p>
-<p><strong>Seal the instance against further setup writes</strong></p>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
+<p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Seal()
+<pre><code class="language-vb">Public Property Get Self() As IGraphs
 </code></pre>
-<p>Called by the factory after the last setup write. Once sealed, the
-creation-only setters raise through ThrowError.</p>
-<hr />
-<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
-<p><em>guard-not-sealed</em></p>
-<p><strong>Guard a setup setter against post-creation writes</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>propName</code>: String. The property name reported in the error message.</li>
-</ul>
+<p>Returns the current instance cast to its interface. Used internally
+by the factory method to return an IGraphs reference.</p>
+<p><strong>Returns:</strong> IGraphs. Reference to the current object.</p>
 <hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><em>wksh</em></p>
@@ -234,36 +192,38 @@ chart on the worksheet.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get graphChart() As ChartObject
 </code></pre>
-<p>Internal chart object state.</p>
-<p>Returns the ChartObject created by Add. Nothing until Add is called, and
-Nothing again after Format removes an empty frame.</p>
+<p>Internal chart object and series index state.
+Returns the ChartObject created by Add. Nothing until Add is called.</p>
 <p><strong>Returns:</strong> ChartObject. The underlying Excel chart object.</p>
 <hr />
-<h3 id="int-seriescount">SeriesCount <a class="anchor-link" href="#int-seriescount">#</a></h3>
-<p><em>series-count</em></p>
-<p><strong>How many series the chart carries</strong></p>
+<h3 id="int-seriesindex">seriesIndex <a class="anchor-link" href="#int-seriesindex">#</a></h3>
+<p><em>series-index</em></p>
+<p><strong>Latest series index</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SeriesCount() As Long
+<pre><code class="language-vb">Private Property Get seriesIndex() As Long
 </code></pre>
-<p>The chart's own SeriesCollection is the truth. The class used to keep a counter
-beside it and add one per AddSeries call, which drifted from the chart the
-moment a series was left out.</p>
-<p><strong>Returns:</strong> Long. The number of series on the chart, 0 when there is no chart.</p>
+<p>Tracks the 1-based index of the most recently added series.
+Incremented by AddSeries and used by AddLabels to target the
+correct series entry.</p>
+<p><strong>Returns:</strong> Long. Current series index.</p>
 <hr />
-<h3 id="int-lastseries">LastSeries <a class="anchor-link" href="#int-lastseries">#</a></h3>
-<p><em>last-series</em></p>
-<p><strong>The series added most recently</strong></p>
+<h3 id="int-seriesindex">seriesIndex <a class="anchor-link" href="#int-seriesindex">#</a></h3>
+<p><em>series-index-set</em></p>
+<p><strong>Update the latest series index</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function LastSeries() As Series
+<pre><code class="language-vb">Private Property Let seriesIndex(ByVal ind As Long)
 </code></pre>
-<p><strong>Returns:</strong> Series. The last series of the chart, or Nothing when there is none.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>ind</code>: Long. New index value.</li>
+</ul>
 <hr />
 <h2 id="int-operations">Operations</h2>
 <h3 id="int-addlabels">AddLabels <a class="anchor-link" href="#int-addlabels">#</a></h3>
 <p><em>addlabels</em></p>
 <p><strong>Assign category and legend labels to the current series</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub AddLabels(ByVal catName As String, _
+<pre><code class="language-vb">Private Sub AddLabels(ByVal catName As String, _
                      ByVal lblName As String, _
                      Optional ByVal prefix As String = vbNullString, _
                      Optional ByVal prefixOnly As Boolean = False, _
@@ -274,9 +234,6 @@ added series. The optional prefix is prepended to the legend name,
 separated by &quot; - &quot; unless prefixOnly is True. When hardCodeLabels is
 False, the legend entry references the named range dynamically rather
 than using a literal string.</p>
-<p>The labels belong to the series added just before them, so a failed AddSeries
-skips them. Writing them anyway put series n's category axis and legend entry
-onto series n-1.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>catName</code>: String. Named range for category axis labels.</li>
@@ -286,30 +243,11 @@ onto series n-1.</p>
 <li><code>hardCodeLabels</code>: Optional Boolean. When True, legend text is literal; when False, references the named range. Defaults to True.</li>
 </ul>
 <hr />
-<h3 id="int-legendtext">LegendText <a class="anchor-link" href="#int-legendtext">#</a></h3>
-<p><em>legend-text</em></p>
-<p><strong>Build the literal legend entry of a series</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function LegendText(ByVal prefix As String, ByVal prefixOnly As Boolean, _
-                            ByVal hasLabelRange As Boolean, _
-                            ByVal lblRng As Range) As String
-</code></pre>
-<p>Reads the label cell only on the branch that uses it. Every simple-mode series
-asks for a reference instead, so the read used to be paid for and thrown away.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>prefix</code>: String. Display prefix.</li>
-<li><code>prefixOnly</code>: Boolean. True answers the prefix alone.</li>
-<li><code>hasLabelRange</code>: Boolean. True when lblRng holds a resolved range.</li>
-<li><code>lblRng</code>: Range. The cell carrying the label text.</li>
-</ul>
-<p><strong>Returns:</strong> String. The text to write as the series name.</p>
-<hr />
 <h3 id="int-format">Format <a class="anchor-link" href="#int-format">#</a></h3>
 <p><em>format</em></p>
 <p><strong>Apply layout and formatting to the chart</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
+<pre><code class="language-vb">Private Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
                   Optional ByVal catTitle As String = vbNullString, _
                   Optional ByVal plotTitle As String = vbNullString, _
                   Optional ByVal secondAxisTitle As String = vbNullString, _
@@ -322,9 +260,6 @@ for spatio-temporal analyses, they are wider. The scope controls dimension coeff
 axis gridline colours, legend placement, and plot area reverse ordering. When
 hardCodeLabels is False, axis titles and the chart title reference named ranges
 dynamically rather than using literal strings.</p>
-<p>A chart with no series has no axes, so reading them raised 1004 and took the
-whole chart pass of a sheet with it. Format removes such a frame and files the
-reason.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>valuesTitle</code>: Optional String. Title for the value axis (Y-axis). Defaults to vbNullString.</li>
@@ -336,232 +271,38 @@ reason.</p>
 <li><code>hardCodeLabels</code>: Optional Boolean. When True, axis titles are literal text. Defaults to True.</li>
 </ul>
 <hr />
-<h2 id="int-layout">Layout</h2>
-<h3 id="int-knownscope">KnownScope <a class="anchor-link" href="#int-knownscope">#</a></h3>
-<p><em>known-scope</em></p>
-<p><strong>Answer a scope this class knows how to lay out</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function KnownScope(ByVal scope As Byte) As Byte
-</code></pre>
-<p>The scope-to-dimensions policy, and the six steps Format applies.</p>
-<p>AnalysisOutput maps its own four analysis scopes onto these three before it
-calls, and AnaTabIds does the same when it replays a chart. A number outside
-the three used to fall through every branch and take the standard layout with
-nothing said about it.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>scope</code>: Byte. A GraphScope value.</li>
-</ul>
-<p><strong>Returns:</strong> Byte. The scope given, or GraphScopeNormal when it is unknown.</p>
-<hr />
-<h3 id="int-sizeforscope">SizeForScope <a class="anchor-link" href="#int-sizeforscope">#</a></h3>
-<p><em>size-for-scope</em></p>
-<p><strong>Answer the chart and plot-area dimensions for one scope</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SizeForScope(ByVal scope As Byte, _
-                              ByVal heightFactor As Long) As TGraphLayout
-</code></pre>
-<p>Holds every number that depends on the graph scope. The width coefficient
-stretches a time series graph. The height coefficient grows the chart with
-the number of geographic units it shows.</p>
-<p>Both coefficients are fractional and both were declared As Long once. 1.75 was
-stored as 2, so every time series chart came out 14 per cent larger than the
-code asks for, and a spatial chart of five geographic units got 0.48 rounded
-down to zero, which is a chart of no height at all.</p>
-<p>The height curve anchors at one geographic unit and each further unit adds
-8 per cent, so five units give 1.32 and twenty give 2.52. Every count a user
-can set moves the chart, and the bars keep their thickness as the count rises.
-The floor answers a count below 1, which the callers already clamp away.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>scope</code>: Byte. A GraphScope value.</li>
-<li><code>heightFactor</code>: Long. The geographic unit count, 1 or more.</li>
-</ul>
-<p><strong>Returns:</strong> TGraphLayout. The dimensions to apply.</p>
-<hr />
-<h3 id="int-readytoformat">ReadyToFormat <a class="anchor-link" href="#int-readytoformat">#</a></h3>
-<p><em>ready-to-format</em></p>
-<p><strong>Whether the chart can take a layout</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ReadyToFormat(ByVal co As ChartObject) As Boolean
-</code></pre>
-<p>A chart with zero series has no axes, and reading Axes on one raises 1004.
-An empty bordered frame on the analysis sheet reads as a broken chart, and the
-export would faithfully draw it again, so the frame goes.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>co</code>: ChartObject. The chart Format is about to lay out.</li>
-</ul>
-<p><strong>Returns:</strong> Boolean. True when there is a chart carrying at least one series.</p>
-<hr />
-<h3 id="int-applychartframe">ApplyChartFrame <a class="anchor-link" href="#int-applychartframe">#</a></h3>
-<p><em>apply-chart-frame</em></p>
-<p><strong>Size the chart and draw its border</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyChartFrame(ByVal co As ChartObject, ByRef layout As TGraphLayout)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>co</code>: ChartObject. The chart being laid out.</li>
-<li><code>layout</code>: TGraphLayout. The dimensions of its scope.</li>
-</ul>
-<hr />
-<h3 id="int-formatcategoryaxis">FormatCategoryAxis <a class="anchor-link" href="#int-formatcategoryaxis">#</a></h3>
-<p><em>format-category-axis</em></p>
-<p><strong>Format the category axis and write its title</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub FormatCategoryAxis(ByVal ax As Axis, ByVal catTitle As String, _
-                               ByVal hardCodeLabels As Boolean, _
-                               ByRef layout As TGraphLayout)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>ax</code>: Axis. The primary category axis.</li>
-<li><code>catTitle</code>: String. Axis title, or the name of a range holding one.</li>
-<li><code>hardCodeLabels</code>: Boolean. True writes the title as literal text.</li>
-<li><code>layout</code>: TGraphLayout. The dimensions of its scope.</li>
-</ul>
-<hr />
-<h3 id="int-formatvalueaxis">FormatValueAxis <a class="anchor-link" href="#int-formatvalueaxis">#</a></h3>
-<p><em>format-value-axis</em></p>
-<p><strong>Format the primary value axis and write its title</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub FormatValueAxis(ByVal ax As Axis, ByVal valuesTitle As String, _
-                            ByVal hardCodeLabels As Boolean)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>ax</code>: Axis. The primary value axis.</li>
-<li><code>valuesTitle</code>: String. Axis title, or the name of a range holding one.</li>
-<li><code>hardCodeLabels</code>: Boolean. True writes the title as literal text.</li>
-</ul>
-<hr />
-<h3 id="int-formatcharttitle">FormatChartTitle <a class="anchor-link" href="#int-formatcharttitle">#</a></h3>
-<p><em>format-chart-title</em></p>
-<p><strong>Write the chart title, when one was asked for</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub FormatChartTitle(ByVal cht As Chart, ByVal plotTitle As String, _
-                             ByVal hardCodeLabels As Boolean)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>cht</code>: Chart. The chart being laid out.</li>
-<li><code>plotTitle</code>: String. Chart title, or the name of a range holding one.</li>
-<li><code>hardCodeLabels</code>: Boolean. True writes the title as literal text.</li>
-</ul>
-<hr />
-<h3 id="int-formatsecondaryaxis">FormatSecondaryAxis <a class="anchor-link" href="#int-formatsecondaryaxis">#</a></h3>
-<p><em>format-secondary-axis</em></p>
-<p><strong>Format the secondary value axis</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub FormatSecondaryAxis(ByVal ax As Axis, ByVal secondAxisTitle As String)
-</code></pre>
-<p>The scale runs from 0 to 1 with a tick every tenth, which is what a fraction
-needs. CrossTableFormula is what decides that the percentage columns hold
-fractions.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>ax</code>: Axis. The secondary value axis.</li>
-<li><code>secondAxisTitle</code>: String. Axis title. An empty one gives a per cent sign.</li>
-</ul>
-<hr />
-<h3 id="int-applyplotarea">ApplyPlotArea <a class="anchor-link" href="#int-applyplotarea">#</a></h3>
-<p><em>apply-plot-area</em></p>
-<p><strong>Colour and place the plot area</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyPlotArea(ByVal plotBox As PlotArea, ByRef layout As TGraphLayout)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>plotBox</code>: PlotArea. The plot area of the chart.</li>
-<li><code>layout</code>: TGraphLayout. The dimensions of its scope.</li>
-</ul>
-<hr />
-<h3 id="int-applylegend">ApplyLegend <a class="anchor-link" href="#int-applylegend">#</a></h3>
-<p><em>apply-legend</em></p>
-<p><strong>Place the legend</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyLegend(ByVal cht As Chart, ByRef layout As TGraphLayout)
-</code></pre>
-<p>Format owns the legend position. Add used to set it as well, on a chart that
-had no series and so may have had no legend at all.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>cht</code>: Chart. The chart being laid out.</li>
-<li><code>layout</code>: TGraphLayout. The dimensions of its scope.</li>
-</ul>
-<hr />
-<h3 id="int-settitlefromname">SetTitleFromName <a class="anchor-link" href="#int-settitlefromname">#</a></h3>
-<p><em>set-title-from-name</em></p>
-<p><strong>Write a title as literal text or as a reference to a cell</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub SetTitleFromName(ByVal titleObj As Object, ByVal nameOrText As String, _
-                             ByVal hardCoded As Boolean)
-</code></pre>
-<p>Formula is the property the object model gives for a reference, so that is what
-a dynamic title is written through. Caption was measured on 2026-07-31 doing
-the same thing on this host: it parses &quot;= 'Analysis'!$C$7&quot; and binds the title
-to the cell, which is what the class relied on before. TestGraphs holds that
-measurement.</p>
-<p>A caller asking for a reference against a name the worksheet does not carry is
-told about it, because that combination means the caller expected the name to
-be there.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>titleObj</code>: Object. An AxisTitle or a ChartTitle.</li>
-<li><code>nameOrText</code>: String. The title text, or the name of a range holding it.</li>
-<li><code>hardCoded</code>: Boolean. True writes the text as it stands.</li>
-</ul>
-<hr />
 <h2 id="int-helpers">Helpers</h2>
-<h3 id="int-tryrange">TryRange <a class="anchor-link" href="#int-tryrange">#</a></h3>
-<p><em>try-range</em></p>
-<p><strong>Resolve a named range on the host worksheet, answering whether it exists</strong></p>
+<h3 id="int-rangeexist">RangeExist <a class="anchor-link" href="#int-rangeexist">#</a></h3>
+<p><em>range-exist</em></p>
+<p><strong>Test whether a named range exists on the host worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function TryRange(ByVal rngName As String, ByRef outRng As Range) As Boolean
+<pre><code class="language-vb">Private Function RangeExist(ByVal rngName As String) As Boolean
 </code></pre>
-<p>Private utility functions for range resolution.</p>
-<p>The class used to ask twice for every name it wanted: once to learn whether the
-name resolved and once to read it, and the address helper asked twice more.
-Labelling one series cost seven resolutions of two names. A miss costs more
-than a hit, because a miss is a trapped COM error, and the export path asks for
-an empty name on every time series series it replays.</p>
+<p>Private utility functions for range validation and address resolution.
+Uses On Error Resume Next to attempt resolving the named range.
+Returns True when the range is valid and non-Nothing.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>rngName</code>: String. The name to resolve.</li>
-<li><code>outRng</code>: Range. Receives the resolved range, or Nothing.</li>
+<li><code>rngName</code>: String. Named range to check.</li>
 </ul>
-<p><strong>Returns:</strong> Boolean. True when the name resolved.</p>
+<p><strong>Returns:</strong> Boolean. True when the named range exists.</p>
 <hr />
-<h3 id="int-qualifiedaddress">QualifiedAddress <a class="anchor-link" href="#int-qualifiedaddress">#</a></h3>
-<p><em>qualified-address</em></p>
-<p><strong>Return the full worksheet-qualified address of a range</strong></p>
+<h3 id="int-rngaddress">RngAddress <a class="anchor-link" href="#int-rngaddress">#</a></h3>
+<p><em>rng-address</em></p>
+<p><strong>Return the full worksheet-qualified address of a named range</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function QualifiedAddress(ByVal rng As Range) As String
+<pre><code class="language-vb">Private Function RngAddress(ByVal rngName As String) As String
 </code></pre>
-<p>The address is in the format 'SheetName'!$A$1, which a chart formula takes.</p>
+<p>Resolves the named range on the host worksheet and returns its address
+in the format 'SheetName'!$A$1. Returns vbNullString when the range
+does not exist.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>rng</code>: Range. The range to describe.</li>
+<li><code>rngName</code>: String. Named range to resolve.</li>
 </ul>
-<p><strong>Returns:</strong> String. Worksheet-qualified address.</p>
+<p><strong>Returns:</strong> String. Worksheet-qualified address or vbNullString.</p>
 <hr />
 <h2 id="int-checking">Checking</h2>
-<h3 id="int-graphkey">GraphKey <a class="anchor-link" href="#int-graphkey">#</a></h3>
-<p><em>graph-key</em></p>
-<p><strong>A name for this chart that no other chart shares</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function GraphKey() As String
-</code></pre>
-<p>Logging and validation support via the Checking interface.</p>
-<p>AnalysisOutput builds one chart per table and one per time series graph, and
-the caller of a checking merges them all into one report. Checking.Add raises
-on a duplicate key, so a key made of a bare counter took the whole generation
-down on the second chart that filed anything. The display name is used when
-the caller gave one; otherwise the cell the chart sits on names it, and every
-chart of a sheet sits on a cell of its own.</p>
-<p><strong>Returns:</strong> String. The identifier used in every key this instance files.</p>
-<hr />
 <h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
 <p><em>log-info</em></p>
 <p><strong>Record a diagnostic entry in the internal checking store</strong></p>
@@ -569,9 +310,10 @@ chart of a sheet sits on a cell of its own.</p>
 <pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _
                     Optional ByVal scope As Byte = checkingNote)
 </code></pre>
-<p>Lazily creates the Checking instance on first use and appends the message
-under a key naming this class, this chart and a counter. The checking store is
-exposed through HasCheckings and CheckingValues.</p>
+<p>Logging and validation support via the IChecking interface.
+Lazily creates the Checking instance on first use and appends the
+message using a monotonically increasing counter key. The checking
+store is exposed through HasCheckings and CheckingValues.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>label</code>: String. The message to record.</li>
@@ -579,13 +321,21 @@ exposed through HasCheckings and CheckingValues.</p>
 </ul>
 <hr />
 <h2 id="int-errorhandling">ErrorHandling</h2>
+<h3 id="int-showdebug">ShowDebug <a class="anchor-link" href="#int-showdebug">#</a></h3>
+<p><em>show-debug</em></p>
+<p><strong>Print debug information to the Immediate window</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ShowDebug()
+</code></pre>
+<p>Centralised error-raising and debug helpers.
+Outputs basic debug information including the graph name.</p>
+<hr />
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><em>throw-error</em></p>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
 </code></pre>
-<p>Centralised error-raising helper.</p>
 <p>Wrapper around Err.Raise that standardises the source for consistent
 stack traces across all methods in this class.</p>
 <p><strong>Parameters:</strong></p>
@@ -598,19 +348,23 @@ stack traces across all methods in this class.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
+<h2 id="int-interface">Interface</h2>
+<h3 id="int-igraphs-add">IGraphs_Add <a class="anchor-link" href="#int-igraphs-add">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IGraphs_Add()
+</code></pre>
+<p>Delegated members satisfying the IGraphs contract.</p>
+<hr />
 </details>
 <details>
-<summary>Used in (9 file(s))</summary>
+<summary>Used in (6 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="AnaTabIds.html">AnaTabIds.cls</a></li>
-<li><a href="GraphSeries.html">GraphSeries.cls</a></li>
-<li><a href="TimeSeriesGraphs.html">TimeSeriesGraphs.cls</a></li>
+<li><a href="Graphs.html">Graphs.cls</a></li>
+<li><a href="IGraphs.html">IGraphs.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
-<li>TestAnaTabIds.bas</li>
 <li>TestGraphs.bas</li>
-<li>TestGraphSeries.bas</li>
-<li>TestTimeSeriesGraphs.bas</li>
 </ul>
 </details>
   </main>

@@ -17,7 +17,7 @@
 <h3 id="worksheetexists">WorksheetExists <a class="anchor-link" href="#worksheetexists">#</a></h3>
 <p><strong>Determine whether the specified worksheet exists within the workbook.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function WorksheetExists(ByVal targetBook As Workbook, ByVal sheetName As String) As Boolean
+<pre><code class="language-vb">Public Function WorksheetExists(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -34,7 +34,7 @@
 <h3 id="removeworksheet">RemoveWorksheet <a class="anchor-link" href="#removeworksheet">#</a></h3>
 <p><strong>Remove a worksheet using guarded Application settings.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function RemoveWorksheet(ByVal targetBook As Workbook, ByVal sheetName As String) As Boolean
+<pre><code class="language-vb">Public Function RemoveWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -44,14 +44,6 @@
 <p><strong>Returns:</strong> Boolean True when the worksheet was removed.</p>
 <hr />
 </div>
-</details>
-<details>
-<summary>Used in (3 file(s))</summary>
-<ul>
-<li><a href="DiseaseWorksheetManager.html">DiseaseWorksheetManager.cls</a></li>
-<li>TestDiseaseIntegration.bas</li>
-<li>TestDiseaseWorksheetManager.bas</li>
-</ul>
 </details>
   </main>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>

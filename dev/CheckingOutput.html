@@ -11,7 +11,7 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>CheckingOutput</h1>
-<p>Renders Checking diagnostic entries to a worksheet with formatted rows,
+<p>Renders IChecking diagnostic entries to a worksheet with formatted rows,
 severity-based colour coding, and interactive drop-down filters for
 status and title. The class manages hidden helper columns, a title
 store for filter validation lists, and optional worksheet event
@@ -25,10 +25,10 @@ automatically.</p>
 <p><em>create</em></p>
 <p><strong>Create an output writer bound to a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet, Optional ByVal title As String = vbNullString) As CheckingOutput
+<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet, Optional ByVal title As String = vbNullString) As ICheckingOutput
 </code></pre>
-<p>Entry point for creating CheckingOutput instances.</p>
-<p>Instantiates a new writer and associates it with the supplied
+<p>Entry point for creating CheckingOutput instances.
+Instantiates a new writer and associates it with the supplied
 worksheet. Optionally assigns a title used for the end-of-checkings
 marker.</p>
 <p><strong>Parameters:</strong></p>
@@ -36,7 +36,7 @@ marker.</p>
 <li><code>sh</code>: Worksheet. Target worksheet that will receive the checking output.</li>
 <li><code>title</code>: Optional String. Label for the output session. Defaults to vbNullString.</li>
 </ul>
-<p><strong>Returns:</strong> CheckingOutput. Fully initialised instance.</p>
+<p><strong>Returns:</strong> ICheckingOutput. Fully initialised instance.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ElementNotFound When sh is Nothing.</li>
@@ -72,10 +72,10 @@ ApplyWorksheetFilter.</p>
 <p><em>ensure-worksheet-change-handler</em></p>
 <p><strong>Inject the Worksheet_Change handler into the target module</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub EnsureWorksheetChangeHandler()
+<pre><code class="language-vb">Private Sub EnsureWorksheetChangeHandler()
 </code></pre>
-<p>Injection and generation of the Worksheet_Change handler for interactive filtering.</p>
-<p>Injects the filtering VBA code into the worksheet's code module so
+<p>Injection and generation of the Worksheet_Change handler for interactive filtering.
+Injects the filtering VBA code into the worksheet's code module so
 filter drop-down changes trigger row visibility updates automatically.
 Skips injection when the event marker hidden name is already present.</p>
 <p><strong>Throws:</strong></p>
@@ -85,22 +85,21 @@ Skips injection when the event marker hidden name is already present.</p>
 <hr />
 </div>
 </details>
-<details open class="doc-section" id="output">
-<summary>Output</summary>
+<details open class="doc-section" id="interface">
+<summary>Interface</summary>
 <div class="section-body">
-<h3 id="printoutput">PrintOutput <a class="anchor-link" href="#printoutput">#</a></h3>
+<h3 id="icheckingoutput-printoutput">ICheckingOutput_PrintOutput <a class="anchor-link" href="#icheckingoutput-printoutput">#</a></h3>
 <p><em>print-output</em></p>
 <p><strong>Write checking values to a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub PrintOutput(ByVal checkTable As BetterArray)
+<pre><code class="language-vb">Private Sub ICheckingOutput_PrintOutput(ByVal checkTable As BetterArray)
 </code></pre>
-<p>End-to-end rendering of checking entries to the worksheet.</p>
 <p>Coordinates the end-to-end rendering: validates the input array,
 initialises the worksheet, writes each checking bundle, appends the
 end marker, and records the final row position.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>checkTable</code>: BetterArray. Collection of Checking instances to print.</li>
+<li><code>checkTable</code>: BetterArray. Collection of IChecking instances to print.</li>
 </ul>
 <p><strong>Throws:</strong></p>
 <ul>
@@ -118,8 +117,8 @@ end marker, and records the final row position.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
 </code></pre>
-<p>Properties that expose internal state and the interface pointer.</p>
-<p>Returns the worksheet previously supplied during Create or the setter.</p>
+<p>Properties that expose internal state and the interface pointer.
+Returns the worksheet previously supplied during Create or the setter.</p>
 <p><strong>Returns:</strong> Worksheet. Reference to the target worksheet.</p>
 <hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
@@ -132,6 +131,16 @@ end marker, and records the final row position.</p>
 <ul>
 <li><code>sh</code>: Worksheet. Target worksheet to use.</li>
 </ul>
+<hr />
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ICheckingOutput
+</code></pre>
+<p>Returns the current instance cast to its interface. Used internally
+by the factory method to return an ICheckingOutput reference.</p>
+<p><strong>Returns:</strong> ICheckingOutput. Reference to the current object.</p>
 <hr />
 <h3 id="int-name">Name <a class="anchor-link" href="#int-name">#</a></h3>
 <p><em>name</em></p>
@@ -160,8 +169,8 @@ end marker, and records the final row position.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveFormatting(Optional ByVal tag As String) As TFormatting
 </code></pre>
-<p>Colour resolution, text decoration, and border styling.</p>
-<p>Maps a tag string (colour name or heading level) to font, fill, and
+<p>Colour resolution, text decoration, and border styling.
+Maps a tag string (colour name or heading level) to font, fill, and
 border properties returned in a TFormatting structure.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -235,20 +244,20 @@ vbNullString when the index exceeds the array bounds.</p>
 <h2 id="int-checkingwriters">CheckingWriters</h2>
 <h3 id="int-writechecking">WriteChecking <a class="anchor-link" href="#int-writechecking">#</a></h3>
 <p><em>write-checking</em></p>
-<p><strong>Write a single Checking bundle to the worksheet</strong></p>
+<p><strong>Write a single IChecking bundle to the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub WriteChecking(ByVal checksObject As Checking, _
+<pre><code class="language-vb">Private Sub WriteChecking(ByVal checking As IChecking, _
                           ByRef currentRow As Long, _
                           ByRef writtenTitles As Collection, _
                           Optional ByVal sep As String = DEFAULT_SEPARATOR)
 </code></pre>
-<p>Outputs headings and detail entries for individual checking bundles.</p>
-<p>Outputs the title heading (once per unique title), optional subtitle,
+<p>Outputs headings and detail entries for individual checking bundles.
+Outputs the title heading (once per unique title), optional subtitle,
 and all keyed entries with their severity colour coding. Advances the
 current row counter and tracks written titles to avoid duplicates.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>checking</code>: Checking. Bundle to render.</li>
+<li><code>checking</code>: IChecking. Bundle to render.</li>
 <li><code>currentRow</code>: Long. ByRef row counter advanced during writing.</li>
 <li><code>writtenTitles</code>: Collection. ByRef collection tracking emitted titles.</li>
 <li><code>sep</code>: Optional String. Separator for text fragments. Defaults to &quot;--&quot;.</li>
@@ -276,8 +285,8 @@ Uses On Error Resume Next to handle missing keys.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureTitleStore(Optional ByVal resetStore As Boolean = False)
 </code></pre>
-<p>Manages the hidden title store used for the title filter validation list.</p>
-<p>When resetStore is True, clears all stored titles and re-creates
+<p>Manages the hidden title store used for the title filter validation list.
+When resetStore is True, clears all stored titles and re-creates
 the anchor cell. Otherwise ensures the anchor exists and the named
 range is defined.</p>
 <p><strong>Parameters:</strong></p>
@@ -400,8 +409,8 @@ keep a white font and hidden presentation.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function InitialiseWorksheet() As Long
 </code></pre>
-<p>Resets and initialises the worksheet before rendering.</p>
-<p>On first render, clears all cells, sets the Consolas font, creates
+<p>Resets and initialises the worksheet before rendering.
+On first render, clears all cells, sets the Consolas font, creates
 the title store, installs filter dropdowns, removes gridlines, and
 records the starting row marker. On subsequent renders, resumes from
 the last written row.</p>
@@ -414,8 +423,8 @@ the last written row.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureFilterDropdown()
 </code></pre>
-<p>Drop-down filter management and row-visibility algorithms.</p>
-<p>Creates validation drop-downs for both status (severity) and title
+<p>Drop-down filter management and row-visibility algorithms.
+Creates validation drop-downs for both status (severity) and title
 filtering. Ensures the title store named range is available for the
 title validation list.</p>
 <hr />
@@ -457,8 +466,8 @@ FilterCheckingOutputRows procedures.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveManagedWorksheetProcedures(ByVal codeModule As Object)
 </code></pre>
-<p>Utilities for managing injected worksheet procedures.</p>
-<p>Removes any instance of the managed procedures so a single fresh
+<p>Utilities for managing injected worksheet procedures.
+Removes any instance of the managed procedures so a single fresh
 handler can be written without duplication.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -482,20 +491,20 @@ procedure is not found.</p>
 <h2 id="int-helpers">Helpers</h2>
 <h3 id="int-validatechecktable">ValidateCheckTable <a class="anchor-link" href="#int-validatechecktable">#</a></h3>
 <p><em>validate-check-table</em></p>
-<p><strong>Verify that the BetterArray contains only Checking entries</strong></p>
+<p><strong>Verify that the BetterArray contains only IChecking entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateCheckTable(ByVal checkTable As BetterArray)
 </code></pre>
-<p>Private utility methods for validation, normalisation, and storage.</p>
-<p>Iterates the array and raises an error for any item that does not
-implement Checking.</p>
+<p>Private utility methods for validation, normalisation, and storage.
+Iterates the array and raises an error for any item that does not
+implement IChecking.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>checkTable</code>: BetterArray. Table of checking entries to validate.</li>
 </ul>
 <p><strong>Throws:</strong></p>
 <ul>
-<li>ProjectError.InvalidArgument When an item does not implement Checking.</li>
+<li>ProjectError.InvalidArgument When an item does not implement IChecking.</li>
 </ul>
 <hr />
 <h3 id="int-normalisetypelabel">NormaliseTypeLabel <a class="anchor-link" href="#int-normalisetypelabel">#</a></h3>
@@ -538,13 +547,13 @@ the plain-text type label for filtering comparisons.</p>
 <hr />
 <h3 id="int-hiddenstore">HiddenStore <a class="anchor-link" href="#int-hiddenstore">#</a></h3>
 <p><em>hidden-store</em></p>
-<p><strong>Lazily create and return the HiddenNames store</strong></p>
+<p><strong>Lazily create and return the IHiddenNames store</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function HiddenStore() As HiddenNames
+<pre><code class="language-vb">Private Function HiddenStore() As IHiddenNames
 </code></pre>
 <p>Creates the HiddenNames wrapper bound to the target worksheet on
 first access. Raises an error when no worksheet is assigned.</p>
-<p><strong>Returns:</strong> HiddenNames. Hidden name store.</p>
+<p><strong>Returns:</strong> IHiddenNames. Hidden name store.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When the worksheet is Nothing.</li>
@@ -572,8 +581,8 @@ first access. Raises an error when no worksheet is assigned.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
 </code></pre>
-<p>Centralised error-raising pattern.</p>
-<p>Wrapper around Err.Raise that standardises the source to
+<p>Centralised error-raising pattern.
+Wrapper around Err.Raise that standardises the source to
 &quot;CheckingOutput&quot; for consistent stack traces.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -585,41 +594,24 @@ first access. Raises an error when no worksheet is assigned.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
-<p><em>seal</em></p>
-<p><strong>Seal the instance so setup setters can no longer be written</strong></p>
+<h2 id="int-interface">Interface</h2>
+<h3 id="int-icheckingoutput-wksh">ICheckingOutput_Wksh <a class="anchor-link" href="#int-icheckingoutput-wksh">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Seal()
+<pre><code class="language-vb">Private Property Get ICheckingOutput_Wksh() As Worksheet
 </code></pre>
-<hr />
-<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
-<p><em>guard-not-sealed</em></p>
-<p><strong>Guard a setup setter against writes after sealing</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>propName</code>: String. Name of the property being guarded.</li>
-</ul>
+<p>Delegated members satisfying the ICheckingOutput contract.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (13 file(s))</summary>
+<summary>Used in (7 file(s))</summary>
 <ul>
-<li><a href="LLImporter.html">LLImporter.cls</a></li>
-<li><a href="GenerationLog.html">GenerationLog.cls</a></li>
-<li><a href="Checking.html">Checking.cls</a></li>
-<li><a href="Linelist.html">Linelist.cls</a></li>
-<li><a href="LLLog.html">LLLog.cls</a></li>
+<li><a href="CheckingOutput.html">CheckingOutput.cls</a></li>
+<li><a href="ICheckingOutput.html">ICheckingOutput.cls</a></li>
 <li><a href="CustomTest.html">CustomTest.cls</a></li>
-<li><a href="VarWriter.html">VarWriter.cls</a></li>
+<li><a href="ISetupErrors.html">ISetupErrors.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
-<li>ImportChecking.bas</li>
+<li>GenerationReport.bas</li>
 <li>TestCheckingOutput.bas</li>
-<li>TestCustomTest.bas</li>
-<li>TestLLLog.bas</li>
-<li>OBTHeadless.bas</li>
 </ul>
 </details>
   </main>

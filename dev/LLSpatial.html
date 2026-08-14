@@ -11,70 +11,15 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>LLSpatial</h1>
-<p>Fills the spatial analysis tables of a generated linelist, orders them, and
-reads ranked values back out for the TopAdmin, TopPop and TopHF worksheet
-functions. Exists says whether the registry table is there, Update fills the
-tables from the data sheets, Sort orders them, and TopGeoValue and TopHFValue
-answer one ranked value.</p>
-<p>This class also owns the formula rewriting of the spatial analysis events.
-RewriteFormulas moves a token through every formula of a range while keeping
-each formula's array state, ChangeAdminLevel moves one table to a new admin
-level, PreviousSectionLevel and MigrateSection move the formula columns of a
-spatio-temporal section the same way, ApplyPopulationFactor divides values by
-the population or restores them, and FormatPopulationFactor shows or hides
-the factor cells. The event dispatch stays with the callers: EventLinelist
-and GeoModule read what the user changed and hand the work over here, so the
-array-formula handling is written once.</p>
-<details open class="doc-section" id="the-contract-with-spatialtables">
-<summary>THE CONTRACT WITH SPATIALTABLES</summary>
-<div class="section-body">
-<p>SpatialTables builds these tables at build time and this class fills them at
-run time. The two never reference each other: the contract is a set of names
-agreed by string convention across a workbook boundary, and both files hold
-their own copy of the four constants and the two name builders. That is the
-house rule, a class keeps every constant it needs inside itself. Change a name
-here and change it in SpatialTables in the same commit.</p>
-<p>listofgeovars              one row per spatial variable, &quot;<var><em><tabId>&quot;
-spatial</em><level><em><var>      one ListObject per level
-column 1  tabl</em><level><em><var>    the lookup key this class writes
-column 2  formula</em><level>       the value this class sorts on
-column 3  population_<level>    administrative levels only
-column 4  attack_rate_<level>   administrative levels only</p>
-<p>The width of a table and the meaning of each column are SpatialTables to
-decide. Every column is resolved by name here, so a table that grows a column
-keeps working.</p>
-</div>
-</details>
-<details open class="doc-section" id="where-the-values-come-from">
-<summary>WHERE THE VALUES COME FROM</summary>
-<div class="section-body">
-<p>Update walks the HList sheets of the workbook. A column controlled by geo1 or
-by hf names a variable, and the filtered companion sheet of that HList carries
-the concatenated geo values of that variable, one column per administrative
-level. The distinct values of that column are the rows of the spatial table.
-The reading and the de-duplication happen in memory: one read of the column
-and a delimited index of the values already kept.</p>
-</div>
-</details>
-<details open class="doc-section" id="what-a-missing-registry-means">
-<summary>WHAT A MISSING REGISTRY MEANS</summary>
-<div class="section-body">
-<p>Linelist creates the spatial worksheet on every linelist, and SpatialTables
-creates the listofgeovars table when a spatial cross-table is defined. So a
-linelist with geo variables and no spatial analysis has the sheet with no
-table in it, and Update on such a sheet does nothing: Exists, the variable
-lookup and Sort all answer empty when the table is absent.</p>
-</div>
-</details>
-<details open class="doc-section" id="rng-testingformula-belongs-to-spatialtables">
-<summary>RNG_TESTINGFORMULA BELONGS TO SPATIALTABLES</summary>
-<div class="section-body">
-<p>SpatialTables.Prepare creates it and SpatialTables.FailedFormula reads it.
-This class leaves it alone.</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Checking.html">Checking</a></p>
-<p><strong>Version:</strong> 2026-08-12</p>
-</div>
-</details>
+<p>Manages the spatial analysis tables that aggregate filtered linelist data
+by geographic admin level and health facility. The spatial sheet contains
+a &quot;listofgeovars&quot; ListObject that lists which variables have spatial
+tables, and one ListObject per admin level per variable (named
+&quot;spatial_adm1_varname&quot; etc.) holding aggregated values, formula columns,
+and attack rate columns. This class populates those tables from filtered
+companion sheets, sorts them by formula or attack rate, and retrieves
+ranked values for use in analyses and graphs.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a></p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -82,44 +27,43 @@ This class leaves it alone.</p>
 <p><em>create</em></p>
 <p><strong>Create a new LLSpatial instance from the spatial tables worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet) As LLSpatial
+<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet) As ILLSpatial
 </code></pre>
-<p>Factory method that checks the supplied worksheet is given and is named
-&quot;__spatial_tables&quot;, then returns a new instance. Called on the predeclared
-instance.</p>
-<p>The listofgeovars table is left out of the check on purpose: the worksheet and
-the table have different lifecycles, and a linelist that carries the sheet with
-no table still needs an instance for the two callers that build one on every
-run. See the class description.</p>
+<p>Factory method that validates the supplied worksheet meets requirements
+(must be named &quot;spatial_tables__&quot; and contain the &quot;listofgeovars&quot;
+ListObject), then returns a new instance through the ILLSpatial
+interface. Called on the predeclared instance.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The spatial tables worksheet.</li>
 </ul>
-<p><strong>Returns:</strong> LLSpatial. A fully initialised instance ready for use.</p>
+<p><strong>Returns:</strong> ILLSpatial. A fully initialised instance ready for use.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When the worksheet is Nothing.</li>
-<li>ProjectError.InvalidArgument When the worksheet name is not &quot;__spatial_tables&quot;.</li>
+<li>ProjectError.InvalidArgument When the worksheet name is not &quot;spatial_tables__&quot;.</li>
 </ul>
 <hr />
 </div>
 </details>
-<details open class="doc-section" id="the-registry-of-spatial-variables">
-<summary>The Registry Of Spatial Variables</summary>
+<details open class="doc-section" id="exists">
+<summary>Exists</summary>
 <div class="section-body">
 <h3 id="exists">Exists <a class="anchor-link" href="#exists">#</a></h3>
 <p><em>exists</em></p>
-<p><strong>Check if a variable has spatial tables</strong></p>
+<p><strong>Check if a variable name exists in the spatial variables list</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Exists(ByVal varName As String) As Boolean
+<pre><code class="language-vb">Private Function Exists(ByVal varName As String) As Boolean
 </code></pre>
-<p>Answers True when the listofgeovars table carries at least one name built on
-this variable. A spatial sheet with no listofgeovars table answers False.</p>
+<p>Searches the &quot;listofgeovars&quot; ListObject range for a partial match of the
+supplied variable name using xlPart matching. Returns True when at least
+one cell contains the variable name as a substring, indicating that
+spatial analysis tables exist for this variable.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>varName</code>: String. The bare variable name to look up.</li>
+<li><code>varName</code>: String. Variable name or partial name to look up.</li>
 </ul>
-<p><strong>Returns:</strong> Boolean. True when the variable is registered.</p>
+<p><strong>Returns:</strong> Boolean. True when the variable is found in the list.</p>
 <hr />
 </div>
 </details>
@@ -130,33 +74,16 @@ this variable. A spatial sheet with no listofgeovars table answers False.</p>
 <p><em>update</em></p>
 <p><strong>Update all spatial tables from HList filtered data</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Update()
+<pre><code class="language-vb">Private Sub Update()
 </code></pre>
-<p>Walks the worksheets of the workbook and works on the HList ones. For each of
-them it resolves the filtered companion sheet, then walks the variable columns
-of the table looking for a control value of geo1 or of hf. A geo1 column takes
-the concat column of the companion and fills the four administrative tables of
-the variable; an hf column fills the single facility table. The spatial sheet is
-recalculated at the end so the formula columns answer for the rows just written.</p>
-<p>The control value of a variable is a hidden name of the sheet, written by
-VarWriter as &quot;<variable> -- control&quot;. This routine used to read it from a hidden
-worksheet row that stopped being written on 2026-02-06, so it matched nothing
-and every spatial table stayed at the one blank row the build gave it.</p>
-</div>
-</details>
-<details open class="doc-section" id="how-the-sheet-tag-is-read">
-<summary>HOW THE SHEET TAG IS READ</summary>
-<div class="section-body">
-<p>The tag test runs through HiddenNames.QuickValue, which reads the one stored
-name off the worksheet. The full store is built for the HList sheets alone,
-because those are the sheets whose variable columns are read below. The walk
-used to build a store per worksheet of the workbook, and every name of an
-analysis sheet was walked to answer a tag that named it as no HList.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>Any error raised while walking a sheet, after the spatial sheet has been
-recalculated. The caller is what puts Excel back the way it found it.</li>
-</ul>
+<p>Iterates all worksheets in the workbook looking for HList sheets. For
+each HList sheet, locates its filtered companion sheet (from cell(1,5)),
+then walks the variable columns looking for geo1 and hf control values.
+When a geo1 column is found, extracts the concat column data from the
+filtered companion and calls UpdateSpatialValue to populate the spatial
+tables for all four admin levels. When an hf column is found, does the
+same for the HF spatial table. After processing all sheets, recalculates
+the spatial sheet so formula columns update.</p>
 <hr />
 </div>
 </details>
@@ -165,168 +92,19 @@ recalculated. The caller is what puts Excel back the way it found it.</li>
 <div class="section-body">
 <h3 id="sort">Sort <a class="anchor-link" href="#sort">#</a></h3>
 <p><em>sort</em></p>
-<p><strong>Order the spatial tables of one analysis table</strong></p>
+<p><strong>Sort spatial tables by formula value or attack rate for a given table id</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Sort(ByVal tabId As String, Optional ByVal onAR As Boolean = False)
+<pre><code class="language-vb">Private Sub Sort(ByVal tabId As String, Optional ByVal onAR As Boolean = False)
 </code></pre>
-<p>Finds the variable the table identifier belongs to, then orders its tables on
-the value column or on the attack rate column, highest first. A facility
-variable carries one table and a geographic one carries four.</p>
+<p>Locates the spatial variable whose name partially matches tabId in the
+&quot;listofgeovars&quot; list, then iterates admin1 through admin4 and sorts each
+corresponding ListObject by either the formula column or the attack_rate
+column in descending order. Silently skips tables that do not exist, have
+no data body, or whose first column is empty.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>tabId</code>: String. The identifier of the analysis table.</li>
-<li><code>onAR</code>: Optional Boolean. True to order on the attack rate. Defaults to False.</li>
-</ul>
-<hr />
-</div>
-</details>
-<details open class="doc-section" id="spatial-formula-rewriting">
-<summary>Spatial Formula Rewriting</summary>
-<div class="section-body">
-<h3 id="rewriteformulas">RewriteFormulas <a class="anchor-link" href="#rewriteformulas">#</a></h3>
-<p><em>rewrite-formulas</em></p>
-<p><strong>Replace a token in every formula of a range</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub RewriteFormulas(ByVal valuesRng As Range, ByVal oldText As String, _
-                           ByVal newText As String)
-</code></pre>
-<p>The formula rewriting of the spatial analysis events. The caller
-reads what the user changed and hands the sheet, the table identifier and the
-admin code over; the loops that touch the formulas live here, so the
-array-formula handling is written once for every caller.</p>
-<p>Walks the cells of the range and rewrites each formula that holds the old
-text, with the new text in its place. A plain formula is written back through
-Formula and an array formula through FormulaArray, decided by HasArray.
-Range.FormulaArray answers the ordinary formula string for a cell outside an
-array formula, so a read through it cannot tell the two apart: a reader built
-on it pushed every write through FormulaArray, which turns a plain formula
-into an array one and raises 1004 for any formula over 255 characters.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>valuesRng</code>: Range. The block of cells to rewrite.</li>
-<li><code>oldText</code>: String. The text to replace.</li>
-<li><code>newText</code>: String. The replacement.</li>
-</ul>
-<hr />
-<h3 id="changeadminlevel">ChangeAdminLevel <a class="anchor-link" href="#changeadminlevel">#</a></h3>
-<p><em>change-admin-level</em></p>
-<p><strong>Move the formulas of one spatial table to a new admin level</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub ChangeAdminLevel(ByVal sh As Worksheet, ByVal tabId As String, _
-                            ByVal newAdmin As String)
-</code></pre>
-<p>Reads the level the table stands on from its PREVIOUS_ADM_ cell, rewrites
-every formula of the OUTER_VALUES_ block from the old concat column to the
-new one, writes the new level back, and recalculates the block. The caller
-reads the dropdown and turns its label into an admin code, because that
-answer needs the geo sheet and this class holds none.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sh</code>: Worksheet. The spatial analysis sheet.</li>
-<li><code>tabId</code>: String. The identifier of the analysis table.</li>
-<li><code>newAdmin</code>: String. The admin code to move to, &quot;adm1&quot; to &quot;adm4&quot; or &quot;hf&quot;.</li>
-</ul>
-<hr />
-<h3 id="previoussectionlevel">PreviousSectionLevel <a class="anchor-link" href="#previoussectionlevel">#</a></h3>
-<p><em>previous-section-level</em></p>
-<p><strong>Read the admin level a spatio-temporal section stands on</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function PreviousSectionLevel(ByVal sh As Worksheet, _
-                                     ByVal rngName As String, _
-                                     ByVal tabId As String) As Long
-</code></pre>
-<p>The cell right of the level selector records the level the section's formulas
-read. A value outside 1 to 4 means the cell was cleared or overwritten: a
-rewrite on it would migrate nothing while still recording the new level, and
-the sheet would then be one level behind with no way back. GeoModule reads
-this before it unprotects the sheet, so a raise here leaves a deliberately
-open sheet open.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sh</code>: Worksheet. The spatio-temporal analysis sheet.</li>
-<li><code>rngName</code>: String. The named range of the level selector.</li>
-<li><code>tabId</code>: String. The identifier of the analysis table, for the message.</li>
-</ul>
-<p><strong>Returns:</strong> Long. The recorded level, 1 to 4.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.InvalidArgument When the cell reads outside 1 to 4.</li>
-</ul>
-<hr />
-<h3 id="migratesection">MigrateSection <a class="anchor-link" href="#migratesection">#</a></h3>
-<p><em>migrate-section</em></p>
-<p><strong>Move the formula columns of one spatio-temporal section to a new admin level</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub MigrateSection(ByVal sh As Worksheet, ByVal rngName As String, _
-                          ByVal tabId As String, ByVal prevAdm As Long, _
-                          ByVal actAdm As Long)
-</code></pre>
-<p>Walks the SPT_FORMULA_COLUMN_ header row of the section. A header formula
-naming the selector marks a formula column, the VALUES block of that column
-derives from the name of its header cell, and a header cell with no name
-leaves its column alone -- a cell has a name only when something named it.
-The block is grown by two rows to reach the Total and Missing rows of its own
-table, which RowsCategoriesRange trims by count at build time, and their
-formulas move levels with the block. Every formula of the grown block moves
-from the old concat column to the new one, and the new level is recorded beside
-the selector.</p>
-</div>
-</details>
-<details open class="doc-section" id="the-recalculation-is-the-caller-s">
-<summary>THE RECALCULATION IS THE CALLER'S</summary>
-<div class="section-body">
-<p>The caller owns one recalculation of the sheet per validated place. It fires on
-every validate and reaches here only when the level changed, so a recalculation
-at the foot of this sub would leave the other paths dry and would run the same
-used range twice on the path it does reach.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sh</code>: Worksheet. The spatio-temporal analysis sheet.</li>
-<li><code>rngName</code>: String. The named range of the level selector.</li>
-<li><code>tabId</code>: String. The identifier of the analysis table.</li>
-<li><code>prevAdm</code>: Long. The level the section stands on.</li>
-<li><code>actAdm</code>: Long. The level to move to.</li>
-</ul>
-<hr />
-<h3 id="applypopulationfactor">ApplyPopulationFactor <a class="anchor-link" href="#applypopulationfactor">#</a></h3>
-<p><em>apply-population-factor</em></p>
-<p><strong>Divide the values of one spatial table by the population, or restore them</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub ApplyPopulationFactor(ByVal sh As Worksheet, ByVal tabId As String, _
-                                 ByVal adminName As String, _
-                                 Optional ByVal revertBack As Boolean = False)
-</code></pre>
-<p>Walks the OUTER_VALUES_ block and rewraps each formula that reads the concat
-column of the given admin code. The first application wraps the formula as
-&quot;factor * formula / population cell&quot;, a later one swaps the old factor for
-the new, and revertBack unwraps both pieces. The factor comes from the
-POPFACT_ cell and falls back to 100 when that cell does not read as a number.
-The tables are reordered on the attack rate while the division is on, and on
-the plain value once it is off. The factor applied is written into the
-POPPREVFACT_ cell, so the next call knows what to swap or unwrap.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sh</code>: Worksheet. The spatial analysis sheet.</li>
-<li><code>tabId</code>: String. The identifier of the analysis table.</li>
-<li><code>adminName</code>: String. The admin code the formulas read, &quot;adm1&quot; to &quot;adm4&quot; or &quot;hf&quot;.</li>
-<li><code>revertBack</code>: Optional Boolean. True restores the plain formulas. Defaults to False.</li>
-</ul>
-<hr />
-<h3 id="formatpopulationfactor">FormatPopulationFactor <a class="anchor-link" href="#formatpopulationfactor">#</a></h3>
-<p><em>format-population-factor</em></p>
-<p><strong>Show or hide the population factor cells of one spatial table</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub FormatPopulationFactor(ByVal sh As Worksheet, ByVal tabId As String, _
-                                  ByVal factorVisible As Boolean)
-</code></pre>
-<p>The factor cell and its label are white, locked and hidden while the division
-is off, and black, editable and readable while it is on. The caller decides
-which, from the dropdown the user changed.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sh</code>: Worksheet. The spatial analysis sheet.</li>
-<li><code>tabId</code>: String. The identifier of the analysis table.</li>
-<li><code>factorVisible</code>: Boolean. True shows the factor cells.</li>
+<li><code>tabId</code>: String. Table identifier used to locate the variable name via partial match.</li>
+<li><code>onAR</code>: Optional Boolean. True to sort by attack_rate column, False for formula column. Defaults to False.</li>
 </ul>
 <hr />
 </div>
@@ -336,75 +114,64 @@ which, from the dropdown the user changed.</p>
 <div class="section-body">
 <h3 id="topgeovalue">TopGeoValue <a class="anchor-link" href="#topgeovalue">#</a></h3>
 <p><em>top-geo-value</em></p>
-<p><strong>Value at a given rank from an ordered spatial table</strong></p>
+<p><strong>Value at a given rank from a sorted spatial geo table</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get TopGeoValue(ByVal adminName As String, _
+<pre><code class="language-vb">Private Property Get TopGeoValue(ByVal adminName As String, _
                                  ByVal orderValue As Long, _
                                  ByVal inputVarName As String, _
                                  Optional ByVal tabId As String = vbNullString, _
-                                 Optional ByVal columnChoice As Byte = 1) As String
+                                 Optional ByVal concatValue As Byte = 1) As String
 </code></pre>
-<p>Reads the table of one variable at one administrative level and answers the
-value at the requested rank, either the admin unit itself or its population.
-Answers an empty string when the table is absent, holds no data, or is shorter
-than the rank asked for.</p>
-<p>A rank below 1 used to read the header cell or the cells above the table, and
-the rank comes straight from the argument of a worksheet function, so
-=FindTopAdmin(ADM_DROPDOWN_sp1, 0, ...) in a cell answered with the internal
-table name. The level arrives here as the raw code; the worksheet function
-takes the label of the level and EventLinelist resolves the two.</p>
+<p>Constructs the ListObject name from the admin name and variable name
+(with tabId suffix), then retrieves the value at the requested rank
+position. The concatValue parameter selects the column: 1 returns
+the name column (first column), any other value returns the concat
+column (third column). Returns an empty string when the table does
+not exist, has no data, or the rank exceeds available rows.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>adminName</code>: String. Level identifier (&quot;adm1&quot; to &quot;adm4&quot;, or &quot;hf&quot;).</li>
-<li><code>orderValue</code>: Long. Rank position in the ordered table, 1 for the top one.</li>
-<li><code>inputVarName</code>: String. The bare variable name.</li>
-<li><code>tabId</code>: Optional String. The identifier of the analysis table. Defaults to vbNullString.</li>
-<li><code>columnChoice</code>: Optional Byte. 1 for the admin unit, anything else for its population. Defaults to 1.</li>
+<li><code>adminName</code>: String. Admin level name (&quot;adm1&quot;, &quot;adm2&quot;, &quot;adm3&quot;, or &quot;adm4&quot;).</li>
+<li><code>orderValue</code>: Long. Rank position in the sorted table (1-based).</li>
+<li><code>inputVarName</code>: String. Base variable name.</li>
+<li><code>tabId</code>: Optional String. Table identifier suffix appended to the variable name. Defaults to vbNullString.</li>
+<li><code>concatValue</code>: Optional Byte. 1 for the name column, other values for the concat column. Defaults to 1.</li>
 </ul>
-<p><strong>Returns:</strong> String. The value at that rank, or an empty string.</p>
+<p><strong>Returns:</strong> String. The value at the requested rank, or empty string if not found.</p>
 <hr />
 <h3 id="tophfvalue">TopHFValue <a class="anchor-link" href="#tophfvalue">#</a></h3>
 <p><em>top-hf-value</em></p>
-<p><strong>Value at a given rank from an ordered facility table</strong></p>
+<p><strong>Value at a given rank from a sorted spatial HF table</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get TopHFValue(ByVal orderValue As Long, _
+<pre><code class="language-vb">Private Property Get TopHFValue(ByVal orderValue As Long, _
                                 ByVal inputVarName As String, _
                                 Optional ByVal tabId As String = vbNullString) As String
 </code></pre>
-<p>The facility table is the same shape as an administrative one under another
-level name, so this is that read with the level fixed. The two used to be two
-copies of one function, and every fix to one of them had to be made twice.</p>
+<p>Constructs the HF ListObject name from the variable name (with tabId
+suffix), then retrieves the value at the requested rank position from
+the first column. Returns an empty string when the table does not exist,
+has no data, or the rank exceeds available rows.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>orderValue</code>: Long. Rank position in the ordered table, 1 for the top one.</li>
-<li><code>inputVarName</code>: String. The bare variable name.</li>
-<li><code>tabId</code>: Optional String. The identifier of the analysis table. Defaults to vbNullString.</li>
+<li><code>orderValue</code>: Long. Rank position in the sorted table (1-based).</li>
+<li><code>inputVarName</code>: String. Base variable name.</li>
+<li><code>tabId</code>: Optional String. Table identifier suffix appended to the variable name. Defaults to vbNullString.</li>
 </ul>
-<p><strong>Returns:</strong> String. The facility at that rank, or an empty string.</p>
+<p><strong>Returns:</strong> String. The value at the requested rank, or empty string if not found.</p>
 <hr />
 </div>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
-<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
-<p><em>seal</em></p>
-<p><strong>Seal the instance against further setup writes.</strong></p>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
+<p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Seal()
+<pre><code class="language-vb">Public Property Get Self() As ILLSpatial
 </code></pre>
-<p>Marks the instance as sealed so setup-only setters raise if called again.
-Called by the factory after the last setup write.</p>
-<hr />
-<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
-<p><strong>Guard a setup-only setter against post-seal writes.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>propName</code>: String. The property name used in the error message.</li>
-</ul>
+<p>Convenience accessor so consuming code can fluently retrieve the
+interface reference from the predeclared Create method.</p>
+<p><strong>Returns:</strong> ILLSpatial. The current instance cast to the interface.</p>
 <hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><em>wksh</em></p>
@@ -426,6 +193,22 @@ Called by the factory after the last setup write.</p>
 </ul>
 <hr />
 <h2 id="int-naming-conventions">Naming Conventions</h2>
+<h3 id="int-currentheadername">CurrentHeaderName <a class="anchor-link" href="#int-currentheadername">#</a></h3>
+<p><em>current-header-name</em></p>
+<p><strong>Named range name for a spatial table header</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get CurrentHeaderName(ByVal varName As String, _
+                                       ByVal adminName As String) As String
+</code></pre>
+<p>Builds the conventional named range name used to locate the header row
+of a spatial table. The pattern is &quot;tabl_{adminName}_{varName}&quot;.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The variable name component.</li>
+<li><code>adminName</code>: String. The admin level component (e.g. &quot;adm1&quot;, &quot;hf&quot;).</li>
+</ul>
+<p><strong>Returns:</strong> String. The constructed named range name.</p>
+<hr />
 <h3 id="int-currentloname">CurrentLoName <a class="anchor-link" href="#int-currentloname">#</a></h3>
 <p><em>current-lo-name</em></p>
 <p><strong>ListObject name for a spatial table</strong></p>
@@ -433,318 +216,81 @@ Called by the factory after the last setup write.</p>
 <pre><code class="language-vb">Private Property Get CurrentLoName(ByVal varName As String, _
                                    ByVal adminName As String) As String
 </code></pre>
-<p>Builds the conventional ListObject name for a spatial table. The pattern is
-&quot;spatial_{adminName}_{varName}&quot;, for instance &quot;spatial_adm1_cases_sp1&quot;.
-SpatialTables builds the same string from the same pieces.</p>
+<p>Builds the conventional ListObject name for a spatial table. The pattern
+is &quot;spatial_{adminName}_{varName}&quot;.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>varName</code>: String. The variable name component, with its table identifier.</li>
+<li><code>varName</code>: String. The variable name component.</li>
 <li><code>adminName</code>: String. The admin level component (e.g. &quot;adm1&quot;, &quot;hf&quot;).</li>
 </ul>
 <p><strong>Returns:</strong> String. The constructed ListObject name.</p>
 <hr />
-<h2 id="int-worksheet-lookups">Worksheet Lookups</h2>
-<h3 id="int-loornothing">LoOrNothing <a class="anchor-link" href="#int-loornothing">#</a></h3>
-<p><em>lo-or-nothing</em></p>
-<p><strong>The named ListObject of the spatial sheet, or Nothing</strong></p>
+<h2 id="int-exists">Exists</h2>
+<h3 id="int-sheettagof">SheetTagOf <a class="anchor-link" href="#int-sheettagof">#</a></h3>
+<p><strong>Get the sheet type tag from worksheet-level HiddenNames.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function LoOrNothing(ByVal loName As String) As ListObject
-</code></pre>
-<p>The guarded resolvers every other section reads through. Each one
-declares its own local, so a failed lookup answers Nothing rather than the
-answer of the call before it.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>loName</code>: String. The ListObject name to resolve.</li>
-</ul>
-<p><strong>Returns:</strong> ListObject. The table, or Nothing when the sheet carries no such name.</p>
-<hr />
-<h3 id="int-columnbodyornothing">ColumnBodyOrNothing <a class="anchor-link" href="#int-columnbodyornothing">#</a></h3>
-<p><em>column-body-or-nothing</em></p>
-<p><strong>The data body of one named column of a table, or Nothing</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ColumnBodyOrNothing(ByVal Lo As ListObject, _
-                                     ByVal colName As String) As Range
+<pre><code class="language-vb">Private Function SheetTagOf(ByVal sh As Worksheet) As String
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>Lo</code>: ListObject. The table to read.</li>
-<li><code>colName</code>: String. The column name.</li>
+<li><code>sh</code>: Worksheet. The worksheet to query.</li>
 </ul>
-<p><strong>Returns:</strong> Range. The data body of that column, or Nothing.</p>
+<p><strong>Returns:</strong> String. The sheet type tag (HList, VList, etc.).</p>
 <hr />
-<h3 id="int-columnrangeornothing">ColumnRangeOrNothing <a class="anchor-link" href="#int-columnrangeornothing">#</a></h3>
-<p><em>column-range-or-nothing</em></p>
-<p><strong>One named column of a table with its header, or Nothing</strong></p>
+<h3 id="int-loexists">LoExists <a class="anchor-link" href="#int-loexists">#</a></h3>
+<p><em>lo-exists</em></p>
+<p><strong>Check if a ListObject exists on the spatial sheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ColumnRangeOrNothing(ByVal Lo As ListObject, _
-                                      ByVal colName As String) As Range
+<pre><code class="language-vb">Private Function LoExists(ByVal loName As String) As Boolean
 </code></pre>
+<p>Attempts to retrieve the named ListObject from the spatial worksheet.
+Returns True when the object is found, False otherwise. Uses error
+trapping to handle the case where the name does not exist.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>Lo</code>: ListObject. The table to read.</li>
-<li><code>colName</code>: String. The column name.</li>
+<li><code>loName</code>: String. The ListObject name to check.</li>
 </ul>
-<p><strong>Returns:</strong> Range. The whole column including its header, or Nothing.</p>
+<p><strong>Returns:</strong> Boolean. True when the ListObject exists.</p>
 <hr />
-<h3 id="int-rangevalues">RangeValues <a class="anchor-link" href="#int-rangevalues">#</a></h3>
-<p><em>range-values</em></p>
-<p><strong>Read a range into a two dimensional array in one crossing</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function RangeValues(ByVal rng As Range) As Variant
-</code></pre>
-<p>Range.Value hands back a scalar for a single cell and an array for anything
-wider, so a one-cell range is wrapped to give every caller the same shape.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>rng</code>: Range. The range to read.</li>
-</ul>
-<p><strong>Returns:</strong> Variant. A 1-based two dimensional array of the values.</p>
-<hr />
-<h2 id="int-the-registry-of-spatial-variables">The Registry Of Spatial Variables</h2>
-<h3 id="int-registerednames">RegisteredNames <a class="anchor-link" href="#int-registerednames">#</a></h3>
-<p><em>registered-names</em></p>
-<p><strong>Every name the listofgeovars table holds</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function RegisteredNames() As BetterArray
-</code></pre>
-<p>One crossing reads the whole column into memory, and every match in this class
-is then a string test. Range.Find inherits LookIn, SearchOrder and
-SearchDirection from the last search of the Excel session, including one the
-user ran from the Find dialog, so a lookup built on it can miss for a reason
-that has nothing to do with the workbook.</p>
-<p>The header cell is left out because the data body is read on its own. A search
-over the whole table range answered True for &quot;list&quot; on an empty table, and a
-header hit could become a variable name.</p>
-<p><strong>Returns:</strong> BetterArray. The registered names, empty when the table is absent.</p>
-<hr />
+<h2 id="int-list-of-variable-names">List of Variable Names</h2>
 <h3 id="int-listofexistingvarnames">ListOfExistingVarNames <a class="anchor-link" href="#int-listofexistingvarnames">#</a></h3>
 <p><em>list-of-existing-var-names</em></p>
-<p><strong>The spatial names one variable carries</strong></p>
+<p><strong>Build a list of all spatial variable names matching a base name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ListOfExistingVarNames(ByVal varName As String) As BetterArray
 </code></pre>
-<p>A registered name is always &quot;<variable>_<tableId>&quot;, and one variable can carry
-several spatial tables, so the test is on the prefix and the underscore that
-follows it. A bare substring test also caught every other variable whose name
-contains this one: with &quot;cases&quot; and &quot;new_cases&quot; both registered, updating
-&quot;cases&quot; rewrote the four &quot;new_cases_sp1&quot; tables from the &quot;concat_adm1_cases&quot;
-column, and the values landed in the wrong tables looking plausible.</p>
+<p>Searches the &quot;listofgeovars&quot; ListObject for all cells that partially
+match the supplied variable name. Returns a BetterArray of the full
+variable names found. The search progresses through the range by
+narrowing it after each match to avoid finding the same cell again.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>varName</code>: String. The bare variable name.</li>
+<li><code>varName</code>: String. Base variable name to search for.</li>
 </ul>
-<p><strong>Returns:</strong> BetterArray. The matching registered names.</p>
+<p><strong>Returns:</strong> BetterArray. All matching spatial variable names.</p>
 <hr />
-<h3 id="int-registerednamefortable">RegisteredNameForTable <a class="anchor-link" href="#int-registerednamefortable">#</a></h3>
-<p><em>registered-name-for-table</em></p>
-<p><strong>The variable a table identifier belongs to</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function RegisteredNameForTable(ByVal tabId As String) As String
-</code></pre>
-<p>The test is on the suffix. A substring test matched &quot;sp10&quot; and &quot;sp11&quot; when it
-was asked for &quot;sp1&quot;, so it broke on the day a linelist carried ten spatial
-cross-tables.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>tabId</code>: String. The table identifier.</li>
-</ul>
-<p><strong>Returns:</strong> String. The registered name, empty when nothing carries that identifier.</p>
-<hr />
-<h2 id="int-update">Update</h2>
-<h3 id="int-updateonehlist">UpdateOneHList <a class="anchor-link" href="#int-updateonehlist">#</a></h3>
-<p><em>update-one-hlist</em></p>
-<p><strong>Fill the spatial tables of the variables of one HList sheet</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub UpdateOneHList(ByVal sh As Worksheet, ByVal wb As Workbook, _
-                           ByVal shHn As HiddenNames)
-</code></pre>
-<p>The columns of one variable sit side by side, so a geo column is followed by
-the eleven columns of its expansion and a facility column by its pcode. A sheet
-with no filtered companion, no table name or no first table is left alone.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sh</code>: Worksheet. The HList worksheet.</li>
-<li><code>wb</code>: Workbook. The workbook holding the sheet.</li>
-<li><code>shHn</code>: HiddenNames. The hidden name store of that sheet.</li>
-</ul>
-<hr />
-<h3 id="int-namewithoutprefix">NameWithoutPrefix <a class="anchor-link" href="#int-namewithoutprefix">#</a></h3>
-<p><em>name-without-prefix</em></p>
-<p><strong>Cut a known prefix off the front of a name</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function NameWithoutPrefix(ByVal fullName As String, _
-                                   ByVal prefix As String) As String
-</code></pre>
-<p>The header cell of a geo column always carries its prefix at the front. Replace
-took the prefix out wherever it sat, so a variable named &quot;adm1_site_adm1_ref&quot;
-came back as &quot;sitref&quot;.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>fullName</code>: String. The name as the header cell holds it.</li>
-<li><code>prefix</code>: String. The prefix to cut.</li>
-</ul>
-<p><strong>Returns:</strong> String. The name with the leading prefix removed.</p>
-<hr />
+<h2 id="int-update-spatial-values">Update Spatial Values</h2>
 <h3 id="int-updatespatialvalue">UpdateSpatialValue <a class="anchor-link" href="#int-updatespatialvalue">#</a></h3>
 <p><em>update-spatial-value</em></p>
-<p><strong>Fill the spatial tables of one variable from a filtered column</strong></p>
+<p><strong>Populate spatial ListObjects from a filtered input range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UpdateSpatialValue(ByVal inputRng As Range, _
-                               ByVal spatialNames As BetterArray, _
+                               ByVal inputVarName As String, _
                                Optional ByVal isHF As Boolean = False)
 </code></pre>
-<p>A geographic variable has one table per administrative level, and the columns
-of the companion sheet hold concat_adm1 through concat_adm4 side by side, so the
-input range walks one column right per level. A facility variable has one table
-and one column.</p>
+<p>For each matching variable name returned by ListOfExistingVarNames,
+iterates admin levels 1 through 4 (or just HF when isHF is True). For
+each admin level, pastes the input range values to a scratch column
+(RNG_PastingCol), removes duplicates, clears the existing spatial table
+data, pastes the deduplicated values into the ListObject first column,
+resizes the table to fit, and sorts by the formula column in descending
+order. The input range is shifted one column right for each admin level
+to cascade through the concat columns.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>inputRng</code>: Range. The filtered column the first level reads.</li>
-<li><code>spatialNames</code>: BetterArray. The registered names of this variable.</li>
-<li><code>isHF</code>: Optional Boolean. True for the facility table. Defaults to False.</li>
-</ul>
-<hr />
-<h3 id="int-distinctvalues">DistinctValues <a class="anchor-link" href="#int-distinctvalues">#</a></h3>
-<p><em>distinct-values</em></p>
-<p><strong>The distinct values of a range, read in one crossing</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function DistinctValues(ByVal rng As Range) As Variant
-</code></pre>
-<p>The values used to go out to a scratch column, through RemoveDuplicates, and
-back again — five worksheet round trips per level per variable per sheet, on a
-range that can run to tens of thousands of rows. The index is a delimited
-string, and the separator sits on both sides of every entry so a short entry
-cannot match inside a longer one.</p>
-<p>Blanks are dropped here. EventLinelist.GeoConcat answers an empty string for a
-record whose geo levels are not all filled, RemoveDuplicates collapsed those to
-one blank, and that blank became a data row that could take rank 1 once the
-tables were ordered.</p>
-<p>Two values that differ only in case are one value, which is what
-RemoveDuplicates answered and what COUNTIFS answers over the same data.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>rng</code>: Range. The column to read.</li>
-</ul>
-<p><strong>Returns:</strong> Variant. A 1-based two dimensional array of the distinct values, or
-Empty when the range holds none.</p>
-<hr />
-<h3 id="int-fillonetable">FillOneTable <a class="anchor-link" href="#int-fillonetable">#</a></h3>
-<p><em>fill-one-table</em></p>
-<p><strong>Write the values of one spatial table and order it</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub FillOneTable(ByVal Lo As ListObject, ByVal adminName As String, _
-                         ByRef values As Variant)
-</code></pre>
-<p>The rows below the first are cleared before the resize, so a table that shrinks
-leaves nothing of its old self standing under it. The first data row keeps the
-formulas SpatialTables wrote, and they are copied down over the new rows.</p>
-<p>The table is calculated before it is ordered. Update recalculates the whole
-sheet, and that happens once every sheet has been walked, so the sort would read
-the values of the run before.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>Lo</code>: ListObject. The spatial table to fill.</li>
-<li><code>adminName</code>: String. The level identifier the sort column is named for.</li>
-<li><code>values</code>: Variant. The values for the first column, or Empty for none.</li>
-</ul>
-<hr />
-<h3 id="int-cleardatarowsbelowfirst">ClearDataRowsBelowFirst <a class="anchor-link" href="#int-cleardatarowsbelowfirst">#</a></h3>
-<p><em>clear-data-rows-below-first</em></p>
-<p><strong>Empty every data row of a table but the first</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ClearDataRowsBelowFirst(ByVal Lo As ListObject)
-</code></pre>
-<p>ClearContents leaves the number formats, the borders and the validation of the
-column standing. Clear took those with the values, so the key column lost its
-formatting on every update.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>Lo</code>: ListObject. The table to clear.</li>
-</ul>
-<hr />
-<h3 id="int-fillformulacolumns">FillFormulaColumns <a class="anchor-link" href="#int-fillformulacolumns">#</a></h3>
-<p><em>fill-formula-columns</em></p>
-<p><strong>Copy the formulas of the first data row over every row</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub FillFormulaColumns(ByVal Lo As ListObject)
-</code></pre>
-<p>The rows used to be left to the calculated-column autofill of the host, which
-is an option a user can switch off, and Resize is a weaker trigger for it than
-a row insert. SpatialTables writes the value column as an array formula, and an
-array formula is the least likely of all to be filled that way, so only the
-first row of a table held a number and the sort ranked it against blanks.</p>
-<p>AutoFill needs a destination taller than one cell and raises 1004 otherwise,
-which a table of one row produces on the ordinary path.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>Lo</code>: ListObject. The table whose formula columns are filled.</li>
-</ul>
-<hr />
-<h2 id="int-sort">Sort</h2>
-<h3 id="int-sortonetable">SortOneTable <a class="anchor-link" href="#int-sortonetable">#</a></h3>
-<p><em>sort-one-table</em></p>
-<p><strong>Order one spatial table on one of its value columns</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub SortOneTable(ByVal Lo As ListObject, ByVal adminName As String, _
-                         ByVal onAR As Boolean)
-</code></pre>
-<p>Excel wants the sort key inside the range it sorts and raises 1004 when it sits
-outside. Both sort sites of this class ordered the first column alone with a key
-in the second or the fourth, under On Error Resume Next, so no spatial table has
-ever been ordered and every &quot;top N admin units&quot; figure was in insertion order.</p>
-<p>Sorting the whole table is safe: SpatialTables writes the population and the
-attack rate as relative references to the cells of their own row, so Excel moves
-them with the row they belong to.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>Lo</code>: ListObject. The table to order.</li>
-<li><code>adminName</code>: String. The level identifier the value columns are named for.</li>
-<li><code>onAR</code>: Boolean. True to order on the attack rate.</li>
-</ul>
-<hr />
-<h2 id="int-spatial-formula-rewriting">Spatial Formula Rewriting</h2>
-<h3 id="int-headerformulatexts">HeaderFormulaTexts <a class="anchor-link" href="#int-headerformulatexts">#</a></h3>
-<p><em>header-formula-texts</em></p>
-<p><strong>Read the header row of formulas in one crossing</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function HeaderFormulaTexts(ByVal headerRng As Range) As Variant
-</code></pre>
-<p>A one-cell range answers a scalar through Formula, so it is wrapped to give
-the caller one shape.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>headerRng</code>: Range. The SPT_FORMULA_COLUMN_ row of one section.</li>
-</ul>
-<p><strong>Returns:</strong> Variant. A two-dimensional array of formula strings.</p>
-<hr />
-<h3 id="int-formulatextof">FormulaTextOf <a class="anchor-link" href="#int-formulatextof">#</a></h3>
-<p><em>formula-text-of</em></p>
-<p><strong>Read the formula of one cell through the property that owns it</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function FormulaTextOf(ByVal cellRng As Range, _
-                               ByVal isArrayFormula As Boolean) As String
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>cellRng</code>: Range. The cell to read.</li>
-<li><code>isArrayFormula</code>: Boolean. What HasArray answered for the cell.</li>
-</ul>
-<p><strong>Returns:</strong> String. The formula string.</p>
-<hr />
-<h3 id="int-writeformulatext">WriteFormulaText <a class="anchor-link" href="#int-writeformulatext">#</a></h3>
-<p><em>write-formula-text</em></p>
-<p><strong>Write the formula of one cell through the property that owns it</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub WriteFormulaText(ByVal cellRng As Range, _
-                             ByVal formulaText As String, _
-                             ByVal isArrayFormula As Boolean)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>cellRng</code>: Range. The cell to write.</li>
-<li><code>formulaText</code>: String. The formula string.</li>
-<li><code>isArrayFormula</code>: Boolean. True writes through FormulaArray.</li>
+<li><code>inputRng</code>: Range. The filtered data range to extract values from.</li>
+<li><code>inputVarName</code>: String. Base variable name to look up in the spatial list.</li>
+<li><code>isHF</code>: Optional Boolean. True to update HF tables only, False for admin1-4. Defaults to False.</li>
 </ul>
 <hr />
 <h2 id="int-validation">Validation</h2>
@@ -754,8 +300,9 @@ the caller one shape.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CheckRequirements(ByVal sh As Worksheet)
 </code></pre>
-<p>Guards the factory by checking the worksheet is given and its name matches the
-expected &quot;__spatial_tables&quot; constant.</p>
+<p>Guards the factory Create method by ensuring the worksheet is not
+Nothing and its name matches the expected &quot;spatial_tables__&quot; constant.
+Raises an error when either condition fails.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The worksheet to validate.</li>
@@ -763,7 +310,7 @@ expected &quot;__spatial_tables&quot; constant.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When the worksheet is Nothing.</li>
-<li>ProjectError.InvalidArgument When the worksheet name does not match &quot;__spatial_tables&quot;.</li>
+<li>ProjectError.InvalidArgument When the worksheet name does not match &quot;spatial_tables__&quot;.</li>
 </ul>
 <hr />
 <h2 id="int-error-handling">Error Handling</h2>
@@ -785,19 +332,24 @@ providing a consistent stack trace across all methods in this class.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
+<h2 id="int-interface-implementation">Interface Implementation</h2>
+<h3 id="int-illspatial-exists">ILLSpatial_Exists <a class="anchor-link" href="#int-illspatial-exists">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get ILLSpatial_Exists(ByVal varName As String) As Boolean
+</code></pre>
+<p>Delegated members satisfying the ILLSpatial contract.
+See the corresponding members above for full documentation.</p>
+<hr />
 </details>
 <details>
-<summary>Used in (10 file(s))</summary>
+<summary>Used in (7 file(s))</summary>
 <ul>
-<li><a href="SpatialTables.html">SpatialTables.cls</a></li>
-<li><a href="LLdictionary.html">LLdictionary.cls</a></li>
+<li><a href="ILLSpatial.html">ILLSpatial.cls</a></li>
+<li><a href="LLSpatial.html">LLSpatial.cls</a></li>
 <li><a href="EventLinelist.html">EventLinelist.cls</a></li>
+<li><a href="IEventLinelist.html">IEventLinelist.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
-<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
-<li>EventsLinelistButtons.bas</li>
 <li>GeoModule.bas</li>
-<li>FormLogicGeo.bas</li>
-<li>TestSpatialTables.bas</li>
 <li>TestLLSpatial.bas</li>
 </ul>
 </details>

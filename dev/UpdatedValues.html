@@ -11,63 +11,9 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>UpdatedValues</h1>
-<p>Tracks the setup columns that are watched for a change, and answers whether
-one of them has been edited.</p>
-<p>A setup column is watched when one of the three rows above its header carries
-a known tag: &quot;watch for update&quot;, &quot;translate as text&quot; or &quot;translate as
-formula&quot;. AddColumns reads those tags and writes one row per watched column
-into the registry table. CheckUpdate flips that row's flag when the user edits
-the column, and IsUpdated answers the flag. AddSheet registers a worksheet,
-RemoveLo drops one registry table, ClearUp and DeleteUp empty the registry,
-and SwitchTagsToNo and SwitchTagsToYes set every flag at once.</p>
-<details open class="doc-section" id="on-the-sheet">
-<summary>ON THE SHEET</summary>
-<div class="section-body">
-<p>The registry worksheet holds ONE registry ListObject, named UpLo_<sheetkey>
-where sheetkey is the normalised worksheet name. It carries four columns in
-this order, and both the names and the order are a published format that
-SetupTranslationsTable reads:</p>
-<p>colname      | rngname     | updated | headername</p>
-<table>-<col>| RNG_...     | no      | watch for update
-<p>Each row also has a workbook-level defined name, RNG_<table><em><column></em><sheet>,
-pointing at the watched column. That name is how a registry row turns back
-into a Range for the translations run. It is built at build time, and the
-change handler leaves it alone.</p>
-<p>When the registry empties, the table is unlisted and its cells are cleared.
-The sheet is then free of tables, which is what SetupTranslationsTable reads:
-it treats every table it finds on that sheet as a registry.</p>
-</div>
-</details>
-<details open class="doc-section" id="in-memory">
-<summary>IN MEMORY</summary>
-<div class="section-body">
-<p>The registry is read once, on first use, in a single .Value2 call, into keyed
-Collections: the composite key &quot;<tablekey>|<columnkey>&quot; points at a row index
-and a flag, an alias map answers IsUpdated, and a table set lets the change
-handler leave an unwatched table without reading anything. Scripting.Dictionary
-is missing on Mac Excel, so these are keyed Collections.</p>
-<p>An edit inside a watched table costs four to five COM crossings whatever the
-registry holds, and the flag is written the first time a column flips within a
-reset cycle.</p>
-</div>
-</details>
-<details open class="doc-section" id="two-readers-one-flag-column">
-<summary>TWO READERS, ONE FLAG COLUMN</summary>
-<div class="section-body">
-<p>The translations run resets the flags itself through SwitchTagsToNo. The
-analysis dropdown refresh resets nothing, so it calls AcknowledgeUpdates:
-every flag reading &quot;yes&quot; at that moment goes into an in-memory set, and
-IsUpdated answers False for those keys until the user edits the column again.
-The set lives in memory alone, so opening the workbook starts it empty.</p>
-</div>
-</details>
-<details open class="doc-section" id="create-writes-nothing">
-<summary>CREATE WRITES NOTHING</summary>
-<div class="section-body">
-<p>Building an instance binds a worksheet and stops there. Two helper factories
-build a fresh instance on every ribbon click.</p>
-</div>
-</details>
+<p>Tracks watched setup columns and exposes update status to events. Maintains
+a registry of ListObjects on a dedicated worksheet, backed by workbook-level
+named ranges, to detect column-level changes and report update flags.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -75,16 +21,14 @@ build a fresh instance on every ribbon click.</p>
 <p><em>create</em></p>
 <p><strong>Build a new watcher bound to the specified registry worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet, Optional ByVal ignoredId As String = vbNullString) As UpdatedValues
+<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet, Optional ByVal ignoredId As String = vbNullString) As IUpdatedValues
 </code></pre>
-<p>Binds the worksheet and nothing else. No cell is read and no table is created
-until a member that needs the registry runs.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>sh</code>: Worksheet. Registry worksheet hosting the watcher table.</li>
+<li><code>sh</code>: Worksheet. Registry worksheet hosting the watcher tables.</li>
 <li><code>ignoredId</code>: Optional String. Reserved for future use (ignored).</li>
 </ul>
-<p><strong>Returns:</strong> UpdatedValues. Configured watcher instance.</p>
+<p><strong>Returns:</strong> IUpdatedValues. Configured watcher instance.</p>
 <hr />
 </div>
 </details>
@@ -101,85 +45,33 @@ until a member that needs the registry runs.</p>
 <hr />
 </div>
 </details>
-<details open class="doc-section" id="statustracking">
-<summary>StatusTracking</summary>
+<details open class="doc-section" id="interface-implementation">
+<summary>Interface implementation</summary>
 <div class="section-body">
-<h3 id="isupdated">IsUpdated <a class="anchor-link" href="#isupdated">#</a></h3>
-<p><em>is-updated</em></p>
-<p><strong>Determine whether the tracked column has been marked as updated.</strong></p>
+<h3 id="exists">Exists <a class="anchor-link" href="#exists">#</a></h3>
+<p><em>exists</em></p>
+<p><strong>Determine whether a registry ListObject already exists for the supplied identifier.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get IsUpdated(ByVal checkColName As String) As Boolean
+<pre><code class="language-vb">Public Function Exists(ByVal listName As String) As Boolean
 </code></pre>
-<p>The identifier is matched against the column name, the whole registry label
-and the defined name, all normalised the same way. So &quot;variable name&quot; and
-&quot;variable_name&quot; ask the same question, which is what the Dictionary headers
-need. The answer comes from memory and costs no worksheet call.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>checkColName</code>: String. Column name, registry label or defined name.</li>
+<li><code>listName</code>: String. Table or registry identifier to look up.</li>
 </ul>
-<p><strong>Returns:</strong> Boolean. True when the column carries a change nobody has acted on.</p>
-<hr />
-<h3 id="acknowledgeupdates">AcknowledgeUpdates <a class="anchor-link" href="#acknowledgeupdates">#</a></h3>
-<p><em>acknowledge-updates</em></p>
-<p><strong>Record every flag that currently reads &quot;yes&quot; as already acted on.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub AcknowledgeUpdates()
-</code></pre>
-<p>The reader that never resets the flag column calls this after it has rebuilt
-what it had to rebuild. The set is memory only, so a workbook open starts it
-empty and the first Analysis activation of a session still rebuilds.</p>
-<hr />
-</div>
-</details>
-<details open class="doc-section" id="cleanuphelpers">
-<summary>CleanupHelpers</summary>
-<div class="section-body">
-<h3 id="deleteup">DeleteUp <a class="anchor-link" href="#deleteup">#</a></h3>
-<p><em>delete-up</em></p>
-<p><strong>Remove every registry table on the sheet and the defined names they used.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub DeleteUp()
-</code></pre>
-<p>Every ListObject on the registry sheet goes, including the ones this class
-never created. A workbook built before the single-table layout carries one
-registry per source table and a name index table beside them; leaving any of
-them behind would make the translations run read the old rows and the new rows
-side by side and add every label twice. SetupPreparation calls this before it
-rebuilds, so this sweep is the whole upgrade.</p>
-<hr />
-<h3 id="switchtagstono">SwitchTagsToNo <a class="anchor-link" href="#switchtagstono">#</a></h3>
-<p><em>switch-tags-to-no</em></p>
-<p><strong>Force every registry status flag to the default value.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub SwitchTagsToNo()
-</code></pre>
-<hr />
-<h3 id="switchtagstoyes">SwitchTagsToYes <a class="anchor-link" href="#switchtagstoyes">#</a></h3>
-<p><em>switch-tags-to-yes</em></p>
-<p><strong>Force every registry status flag to the updated value.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub SwitchTagsToYes()
-</code></pre>
+<p><strong>Returns:</strong> Boolean. True when a matching registry ListObject exists.</p>
 <hr />
 </div>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
-<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
-<p><em>seal</em></p>
-<p><strong>Seal the instance so setup-only setters can no longer be used.</strong></p>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
+<p><strong>Current object instance cast to the interface.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Seal()
+<pre><code class="language-vb">Public Property Get Self() As IUpdatedValues
 </code></pre>
-<hr />
-<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
-<p><em>guard-not-sealed</em></p>
-<p><strong>Raise when a setup-only setter is used after sealing.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
-</code></pre>
+<p><strong>Returns:</strong> IUpdatedValues. The current instance.</p>
 <hr />
 <h2 id="int-publicstate">PublicState</h2>
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
@@ -193,6 +85,7 @@ rebuilds, so this sweep is the whole upgrade.</p>
 <li><code>sh</code>: Worksheet. The worksheet to assign.</li>
 </ul>
 <hr />
+<h2 id="int-privateaccessors">PrivateAccessors</h2>
 <h3 id="int-ensureworksheet">EnsureWorksheet <a class="anchor-link" href="#int-ensureworksheet">#</a></h3>
 <p><em>ensure-worksheet</em></p>
 <p><strong>Guard that the registry worksheet reference is initialised before use.</strong></p>
@@ -200,18 +93,187 @@ rebuilds, so this sweep is the whole upgrade.</p>
 <pre><code class="language-vb">Private Function EnsureWorksheet() As Worksheet
 </code></pre>
 <hr />
+<h3 id="int-registrylistobjectfortable">RegistryListObjectForTable <a class="anchor-link" href="#int-registrylistobjectfortable">#</a></h3>
+<p><em>registry-list-object-for-table</em></p>
+<p><strong>Retrieve or create the registry ListObject that stores watchers for the supplied source table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RegistryListObjectForTable(ByVal tableName As String, _
+                                            ByVal createWhenMissing As Boolean) As ListObject
+</code></pre>
+<hr />
+<h3 id="int-registrylistobjectbyname">RegistryListObjectByName <a class="anchor-link" href="#int-registrylistobjectbyname">#</a></h3>
+<p><em>registry-list-object-by-name</em></p>
+<p><strong>Locate a registry ListObject on the worksheet by its name.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RegistryListObjectByName(ByVal listName As String) As ListObject
+</code></pre>
+<hr />
+<h3 id="int-registrytable">RegistryTable <a class="anchor-link" href="#int-registrytable">#</a></h3>
+<p><em>registry-table</em></p>
+<p><strong>Return a CustomTable helper for the specified registry ListObject name or the last accessed one.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get RegistryTable(Optional ByVal tableName As String = vbNullString) As ICustomTable
+</code></pre>
+<hr />
+<h3 id="int-resetregistrycache">ResetRegistryCache <a class="anchor-link" href="#int-resetregistrycache">#</a></h3>
+<p><em>reset-registry-cache</em></p>
+<p><strong>Clear cached references so subsequent calls rebuild registry helpers.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetRegistryCache()
+</code></pre>
+<hr />
+<h3 id="int-tracklastregistryname">TrackLastRegistryName <a class="anchor-link" href="#int-tracklastregistryname">#</a></h3>
+<p><em>track-last-registry-name</em></p>
+<p><strong>Remember the most recently accessed registry ListObject name.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub TrackLastRegistryName(ByVal listName As String)
+</code></pre>
+<hr />
+<h3 id="int-resolveregistrylistname">ResolveRegistryListName <a class="anchor-link" href="#int-resolveregistrylistname">#</a></h3>
+<p><em>resolve-registry-list-name</em></p>
+<p><strong>Determine the registry ListObject name to use for the provided identifier or the last accessed registry.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveRegistryListName(ByVal candidate As String) As String
+</code></pre>
+<hr />
+<h3 id="int-lastregistrylistname">LastRegistryListName <a class="anchor-link" href="#int-lastregistrylistname">#</a></h3>
+<p><em>last-registry-list-name</em></p>
+<p><strong>Retrieve the most recently added registry ListObject name on the worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LastRegistryListName() As String
+</code></pre>
+<hr />
+<h3 id="int-registrylistobjects">RegistryListObjects <a class="anchor-link" href="#int-registrylistobjects">#</a></h3>
+<p><em>registry-list-objects</em></p>
+<p><strong>Enumerate every registry ListObject hosted on the watcher worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RegistryListObjects(Optional ByVal preferredName As String = vbNullString) As Collection
+</code></pre>
+<hr />
+<h2 id="int-nameindex">NameIndex</h2>
+<h3 id="int-registrylistnamefortable">RegistryListNameForTable <a class="anchor-link" href="#int-registrylistnamefortable">#</a></h3>
+<p><em>registry-list-name-for-table</em></p>
+<p><strong>Resolve the registry ListObject name for the supplied table, creating a new identifier when requested.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RegistryListNameForTable(ByVal tableName As String, _
+                                          ByVal allowCreateEntry As Boolean) As String
+</code></pre>
+<hr />
+<h3 id="int-buildregistrylistname">BuildRegistryListName <a class="anchor-link" href="#int-buildregistrylistname">#</a></h3>
+<p><em>build-registry-list-name</em></p>
+<p><strong>Compose the registry ListObject name for the supplied table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildRegistryListName(ByVal tableName As String) As String
+</code></pre>
+<hr />
+<h3 id="int-ensurenameindextable">EnsureNameIndexTable <a class="anchor-link" href="#int-ensurenameindextable">#</a></h3>
+<p><em>ensure-name-index-table</em></p>
+<p><strong>Guarantee the registry name index ListObject exists on the worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureNameIndexTable() As ListObject
+</code></pre>
+<hr />
+<h3 id="int-ensurenameindexheaders">EnsureNameIndexHeaders <a class="anchor-link" href="#int-ensurenameindexheaders">#</a></h3>
+<p><em>ensure-name-index-headers</em></p>
+<p><strong>Apply the expected headers to the name index ListObject.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureNameIndexHeaders(ByVal lo As ListObject)
+</code></pre>
+<hr />
+<h3 id="int-ensurenameindexentry">EnsureNameIndexEntry <a class="anchor-link" href="#int-ensurenameindexentry">#</a></h3>
+<p><em>ensure-name-index-entry</em></p>
+<p><strong>Insert or refresh the name index entry for the supplied table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureNameIndexEntry(ByVal tableName As String, ByVal registryName As String)
+</code></pre>
+<hr />
+<h3 id="int-removenameindexentry">RemoveNameIndexEntry <a class="anchor-link" href="#int-removenameindexentry">#</a></h3>
+<p><em>remove-name-index-entry</em></p>
+<p><strong>Remove the name index entry associated with the supplied registry.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveNameIndexEntry(ByVal tableName As String, ByVal registryName As String)
+</code></pre>
+<hr />
+<h3 id="int-resetregistrynamecache">ResetRegistryNameCache <a class="anchor-link" href="#int-resetregistrynamecache">#</a></h3>
+<p><em>reset-registry-name-cache</em></p>
+<p><strong>Clear the cached registry name lookup.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetRegistryNameCache()
+</code></pre>
+<hr />
+<h3 id="int-registrynamecache">RegistryNameCache <a class="anchor-link" href="#int-registrynamecache">#</a></h3>
+<p><em>registry-name-cache</em></p>
+<p><strong>Load or retrieve the cached registry names for the current worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RegistryNameCache() As Collection
+</code></pre>
+<hr />
+<h3 id="int-lookupregistryname">LookupRegistryName <a class="anchor-link" href="#int-lookupregistryname">#</a></h3>
+<p><em>lookup-registry-name</em></p>
+<p><strong>Retrieve the registry ListObject name associated with the supplied table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LookupRegistryName(ByVal tableName As String) As String
+</code></pre>
+<hr />
+<h3 id="int-lookuptablenamefromregistry">LookupTableNameFromRegistry <a class="anchor-link" href="#int-lookuptablenamefromregistry">#</a></h3>
+<p><em>lookup-table-name-from-registry</em></p>
+<p><strong>Attempt to determine the original table name from a registry ListObject.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LookupTableNameFromRegistry(ByVal registryName As String) As String
+</code></pre>
+<hr />
+<h3 id="int-clearnameindexentries">ClearNameIndexEntries <a class="anchor-link" href="#int-clearnameindexentries">#</a></h3>
+<p><em>clear-name-index-entries</em></p>
+<p><strong>Remove every entry from the registry name index.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ClearNameIndexEntries()
+</code></pre>
+<hr />
+<h3 id="int-clampstartcolumn">ClampStartColumn <a class="anchor-link" href="#int-clampstartcolumn">#</a></h3>
+<p><em>clamp-start-column</em></p>
+<p><strong>Ensure a proposed registry column start fits within the worksheet boundaries.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ClampStartColumn(ByVal startColumn As Long, _
+                                  Optional ByVal targetSh As Worksheet) As Long
+</code></pre>
+<hr />
+<h3 id="int-worksheetlastusedcolumn">WorksheetLastUsedColumn <a class="anchor-link" href="#int-worksheetlastusedcolumn">#</a></h3>
+<p><em>worksheet-last-used-column</em></p>
+<p><strong>Determine the last used column on the registry worksheet using End(xlToLeft).</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function WorksheetLastUsedColumn(ByVal sh As Worksheet) As Long
+</code></pre>
+<hr />
+<h3 id="int-nextavailablecolumn">NextAvailableColumn <a class="anchor-link" href="#int-nextavailablecolumn">#</a></h3>
+<p><em>next-available-column</em></p>
+<p><strong>Determine the next column available for placing the registry table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NextAvailableColumn() As Long
+</code></pre>
+<hr />
+<h3 id="int-createregistrylistobject">CreateRegistryListObject <a class="anchor-link" href="#int-createregistrylistobject">#</a></h3>
+<p><em>create-registry-list-object</em></p>
+<p><strong>Build an empty registry ListObject with the expected headers.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CreateRegistryListObject(ByVal sh As Worksheet, ByVal loName As String) As ListObject
+</code></pre>
+<hr />
+<h3 id="int-ensureregistryheaders">EnsureRegistryHeaders <a class="anchor-link" href="#int-ensureregistryheaders">#</a></h3>
+<p><em>ensure-registry-headers</em></p>
+<p><strong>Guarantee the registry ListObject exposes the expected header names.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureRegistryHeaders(ByVal lo As ListObject)
+</code></pre>
+<hr />
 <h2 id="int-columnregistration">ColumnRegistration</h2>
 <h3 id="int-addcolumns">AddColumns <a class="anchor-link" href="#int-addcolumns">#</a></h3>
 <p><em>add-columns</em></p>
 <p><strong>Register or refresh watched columns for the supplied ListObject.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub AddColumns(ByVal source As ListObject)
+<pre><code class="language-vb">Private Sub AddColumns(ByVal source As ListObject)
 </code></pre>
-<p>Reads the three rows above the header in one call and the header row in one
-call, keeps the columns whose tag is one of the three known tags, and rewrites
-the registry rows for this table. A table with no tagged column creates
-nothing. The flag of a column that was already registered is carried over, so
-a rebuild does not lose a pending change.</p>
+<p>Scans the source ListObject header row for metadata tags and synchronises
+the registry table so named ranges remain aligned with the current layout.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>source</code>: ListObject. Table to inspect for update tags.</li>
@@ -221,32 +283,15 @@ a rebuild does not lose a pending change.</p>
 <p><em>add-sheet</em></p>
 <p><strong>Register tagged columns for every ListObject on the provided worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub AddSheet(ByVal targetSheet As Worksheet)
+<pre><code class="language-vb">Private Sub AddSheet(ByVal targetSheet As Worksheet)
 </code></pre>
-<p>Every table on the sheet is read, and the registry is written once at the end
-rather than once per table.</p>
 <hr />
-<h3 id="int-removelo">RemoveLo <a class="anchor-link" href="#int-removelo">#</a></h3>
+<h3 id="int-removelistobject">RemoveListObject <a class="anchor-link" href="#int-removelistobject">#</a></h3>
 <p><em>remove-lo</em></p>
 <p><strong>Remove registry entries associated with the supplied ListObject.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub RemoveLo(ByVal target As ListObject)
+<pre><code class="language-vb">Private Sub RemoveListObject(ByVal target As ListObject)
 </code></pre>
-<hr />
-<h3 id="int-mergetableentries">MergeTableEntries <a class="anchor-link" href="#int-mergetableentries">#</a></h3>
-<p><em>merge-table-entries</em></p>
-<p><strong>Replace the registry rows belonging to one table with the supplied rows.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub MergeTableEntries(ByVal tableName As String, _
-                              ByVal wanted As Collection, _
-                              ByVal source As ListObject)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>tableName</code>: String. Source table whose rows are being replaced.</li>
-<li><code>wanted</code>: Collection. Rows to keep for that table, empty to drop them all.</li>
-<li><code>source</code>: ListObject. Table the defined names point at, Nothing when dropping.</li>
-</ul>
 <hr />
 <h3 id="int-columnlabelmatchestable">ColumnLabelMatchesTable <a class="anchor-link" href="#int-columnlabelmatchestable">#</a></h3>
 <p><em>column-label-matches-table</em></p>
@@ -256,33 +301,16 @@ rather than once per table.</p>
                                          ByVal tableName As String) As Boolean
 </code></pre>
 <hr />
-<h3 id="int-readtagblock">ReadTagBlock <a class="anchor-link" href="#int-readtagblock">#</a></h3>
-<p><em>read-tag-block</em></p>
-<p><strong>Read the rows above the header row in one call.</strong></p>
+<h3 id="int-columntag">ColumnTag <a class="anchor-link" href="#int-columntag">#</a></h3>
+<p><em>column-tag</em></p>
+<p><strong>Read the metadata tag associated with a column header, searching above the header row.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ReadTagBlock(ByVal headerRow As Range, ByRef block As Variant, ByRef tagRows As Long)
+<pre><code class="language-vb">Private Function ColumnTag(ByVal headerCell As Range) As String
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>headerRow</code>: Range. Header row of the source table.</li>
-<li><code>block</code>: Variant. Output, the values of the rows above the header.</li>
-<li><code>tagRows</code>: Long. Output, how many rows the block holds.</li>
+<li><code>headerCell</code>: Range. The target header cell.</li>
 </ul>
-<hr />
-<h3 id="int-tagforcolumn">TagForColumn <a class="anchor-link" href="#int-tagforcolumn">#</a></h3>
-<p><em>tag-for-column</em></p>
-<p><strong>Read the metadata tag of a column, walking up from the header row.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function TagForColumn(ByVal block As Variant, _
-                              ByVal tagRows As Long, _
-                              ByVal columnCount As Long, _
-                              ByVal columnIndex As Long) As String
-</code></pre>
-<p>The walk answers with the first cell holding one of the three known tags. A
-section title or a note sitting between the tag row and the header is stepped
-over, and a value that is not a tag never wins. Analysis tables are stacked,
-so the row three above a header can belong to the table above it; looking for
-a known tag removes that risk with it.</p>
 <hr />
 <h3 id="int-shouldwatchcolumn">ShouldWatchColumn <a class="anchor-link" href="#int-shouldwatchcolumn">#</a></h3>
 <p><em>should-watch-column</em></p>
@@ -295,67 +323,49 @@ a known tag removes that risk with it.</p>
 <li><code>tagValue</code>: String. Tag retrieved from worksheet metadata.</li>
 </ul>
 <hr />
-<h2 id="int-registrywriting">RegistryWriting</h2>
-<h3 id="int-beginbatch">BeginBatch <a class="anchor-link" href="#int-beginbatch">#</a></h3>
-<p><em>begin-batch</em></p>
-<p><strong>Load the registry rows into memory so a build pass can change them.</strong></p>
+<h3 id="int-buildregistryindex">BuildRegistryIndex <a class="anchor-link" href="#int-buildregistryindex">#</a></h3>
+<p><em>build-registry-index</em></p>
+<p><strong>Create a lightweight lookup of existing registry rows keyed by normalised range name.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub BeginBatch()
+<pre><code class="language-vb">Private Function BuildRegistryIndex(ByVal registry As ListObject) As BetterArray
 </code></pre>
 <hr />
-<h3 id="int-endbatch">EndBatch <a class="anchor-link" href="#int-endbatch">#</a></h3>
-<p><em>end-batch</em></p>
-<p><strong>Write the registry rows back in one call and drop the in-memory index.</strong></p>
+<h3 id="int-ensureregistryrowfromindex">EnsureRegistryRowFromIndex <a class="anchor-link" href="#int-ensureregistryrowfromindex">#</a></h3>
+<p><em>ensure-registry-row-from-index</em></p>
+<p><strong>Locate or append a registry row for the provided range name.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EndBatch()
+<pre><code class="language-vb">Private Function EnsureRegistryRowFromIndex(ByVal registry As ListObject, _
+                                            ByVal registryIndex As BetterArray, _
+                                            ByVal rangeName As String, _
+                                            ByRef isNew As Boolean) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>registryIndex</code>: BetterArray. Index built from existing entries.</li>
+<li><code>rangeName</code>: String. Normalised range identifier.</li>
+<li><code>isNew</code>: Boolean. Output flag indicating whether a new row was added.</li>
+</ul>
+<hr />
+<h3 id="int-findregistryrowinindex">FindRegistryRowInIndex <a class="anchor-link" href="#int-findregistryrowinindex">#</a></h3>
+<p><em>find-registry-row-in-index</em></p>
+<p><strong>Locate a registry row index in the cached index by its normalised key.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindRegistryRowInIndex(ByVal registryIndex As BetterArray, _
+                                        ByVal key As String) As Long
 </code></pre>
 <hr />
-<h3 id="int-readregistryentries">ReadRegistryEntries <a class="anchor-link" href="#int-readregistryentries">#</a></h3>
-<p><em>read-registry-entries</em></p>
-<p><strong>Read every registry row into a collection, in one call.</strong></p>
+<h3 id="int-populateregistryrow">PopulateRegistryRow <a class="anchor-link" href="#int-populateregistryrow">#</a></h3>
+<p><em>populate-registry-row</em></p>
+<p><strong>Write watcher metadata to the specified registry row and initialise status flags.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ReadRegistryEntries() As Collection
+<pre><code class="language-vb">Private Sub PopulateRegistryRow(ByVal registry As ListObject, _
+                                ByVal rowIndex As Long, _
+                                ByVal columnLabel As String, _
+                                ByVal rangeName As String, _
+                                ByVal tagValue As String, _
+                                ByVal isNew As Boolean)
 </code></pre>
 <hr />
-<h3 id="int-writeregistryentries">WriteRegistryEntries <a class="anchor-link" href="#int-writeregistryentries">#</a></h3>
-<p><em>write-registry-entries</em></p>
-<p><strong>Write the supplied rows over the registry table in one call.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub WriteRegistryEntries(ByVal entries As Collection)
-</code></pre>
-<p>An empty registry leaves no table behind: the ListObject is unlisted and its
-cells are cleared. A table always keeps one data row, so an empty table would
-mean a blank row every reader has to step over.</p>
-<hr />
-<h3 id="int-resolveregistry">ResolveRegistry <a class="anchor-link" href="#int-resolveregistry">#</a></h3>
-<p><em>resolve-registry</em></p>
-<p><strong>Locate the registry table, building it when asked.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolveRegistry(ByVal createWhenMissing As Boolean) As ListObject
-</code></pre>
-<hr />
-<h3 id="int-createregistrytable">CreateRegistryTable <a class="anchor-link" href="#int-createregistrytable">#</a></h3>
-<p><em>create-registry-table</em></p>
-<p><strong>Build an empty registry ListObject with the expected headers.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function CreateRegistryTable(ByVal sh As Worksheet) As ListObject
-</code></pre>
-<hr />
-<h3 id="int-ensureregistryheaders">EnsureRegistryHeaders <a class="anchor-link" href="#int-ensureregistryheaders">#</a></h3>
-<p><em>ensure-registry-headers</em></p>
-<p><strong>Guarantee the registry ListObject exposes the expected header names.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureRegistryHeaders(ByVal lo As ListObject)
-</code></pre>
-<hr />
-<h3 id="int-removeregistrytable">RemoveRegistryTable <a class="anchor-link" href="#int-removeregistrytable">#</a></h3>
-<p><em>remove-registry-table</em></p>
-<p><strong>Take the registry table off the sheet and clear the cells it held.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RemoveRegistryTable()
-</code></pre>
-<hr />
-<h2 id="int-namedranges">NamedRanges</h2>
 <h3 id="int-ensurenamedrange">EnsureNamedRange <a class="anchor-link" href="#int-ensurenamedrange">#</a></h3>
 <p><em>ensure-named-range</em></p>
 <p><strong>Create or refresh the workbook defined name pointing to the watched column.</strong></p>
@@ -365,67 +375,80 @@ mean a blank row every reader has to step over.</p>
                              ByVal rangeName As String)
 </code></pre>
 <hr />
-<h3 id="int-removenamedrange">RemoveNamedRange <a class="anchor-link" href="#int-removenamedrange">#</a></h3>
-<p><em>remove-named-range</em></p>
-<p><strong>Delete a single defined name if it exists in the workbook.</strong></p>
+<h3 id="int-addexpectedkey">AddExpectedKey <a class="anchor-link" href="#int-addexpectedkey">#</a></h3>
+<p><em>add-expected-key</em></p>
+<p><strong>Track range names detected during scanning to support registry pruning.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RemoveNamedRange(ByVal rangeName As String)
+<pre><code class="language-vb">Private Sub AddExpectedKey(ByVal expected As BetterArray, ByVal rangeName As String)
 </code></pre>
 <hr />
-<h3 id="int-removesheetnamedranges">RemoveSheetNamedRanges <a class="anchor-link" href="#int-removesheetnamedranges">#</a></h3>
-<p><em>remove-sheet-named-ranges</em></p>
-<p><strong>Delete every watcher defined name belonging to the registry sheet, in one pass.</strong></p>
+<h3 id="int-expectedcontains">ExpectedContains <a class="anchor-link" href="#int-expectedcontains">#</a></h3>
+<p><em>expected-contains</em></p>
+<p><strong>Test whether the expected list already includes the provided range name.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RemoveSheetNamedRanges()
+<pre><code class="language-vb">Private Function ExpectedContains(ByVal expected As BetterArray, ByVal rangeName As String) As Boolean
+</code></pre>
+<hr />
+<h3 id="int-pruneobsoleteentries">PruneObsoleteEntries <a class="anchor-link" href="#int-pruneobsoleteentries">#</a></h3>
+<p><em>prune-obsolete-entries</em></p>
+<p><strong>Remove registry rows and named ranges for columns no longer tagged for watching.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub PruneObsoleteEntries(ByVal registry As ListObject, _
+                                 ByVal expected As BetterArray, _
+                                 ByVal tableName As String)
 </code></pre>
 <hr />
 <h2 id="int-statustracking">StatusTracking</h2>
-<h3 id="int-checkupdate">CheckUpdate <a class="anchor-link" href="#int-checkupdate">#</a></h3>
+<h3 id="int-isupdated">IsUpdated <a class="anchor-link" href="#int-isupdated">#</a></h3>
+<p><em>is-updated</em></p>
+<p><strong>Determine whether the tracked column has been marked as updated.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get IsUpdated(ByVal checkColName As String) As Boolean
+</code></pre>
+<p>Searches across all registry ListObjects for a matching entry and returns
+True when the column is flagged as updated since the last reset.</p>
+<hr />
+<h3 id="int-checkstatus">CheckStatus <a class="anchor-link" href="#int-checkstatus">#</a></h3>
 <p><em>check-update</em></p>
 <p><strong>Evaluate a range change against the registered watchers and flag updates.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub CheckUpdate(ByVal tagReference As Variant, ByVal Target As Range)
+<pre><code class="language-vb">Private Sub CheckStatus(ByVal tagReference As Variant, ByVal Target As Range)
 </code></pre>
-<p>Every watched column the change covers is flagged, so a paste across two
-watched columns flips two flags.</p>
-<p>The handler only ever writes a flag. Cleanup belongs to AddColumns and
-AddSheet, which run at build time: a defined name can fail to resolve for a
-moment while a source table resizes or a sheet is renamed, and deleting a row
-on that would take the registration away for good.</p>
-<p>The cost is four to five worksheet calls whatever the registry holds. A table
-nobody watches is left after two of them, and the flag write happens only the
-first time a column flips within a reset cycle.</p>
+<p>Compares the changed range with named ranges tracked in the registry and
+marks the first matching entry as updated.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>tagReference</code>: Variant. Kept for the call shape; the table is read from Target.</li>
+<li><code>tagReference</code>: Variant. Identifier selecting the registry scope.</li>
 <li><code>Target</code>: Range. The changed cells to evaluate.</li>
 </ul>
 <hr />
-<h3 id="int-markwidetarget">MarkWideTarget <a class="anchor-link" href="#int-markwidetarget">#</a></h3>
-<p><em>mark-wide-target</em></p>
-<p><strong>Flag the watched tables a whole-row or whole-column change reaches.</strong></p>
+<h3 id="int-resolvenamedrange">ResolveNamedRange <a class="anchor-link" href="#int-resolvenamedrange">#</a></h3>
+<p><em>resolve-named-range</em></p>
+<p><strong>Attempt to resolve the workbook defined name into a concrete Range reference.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub MarkWideTarget(ByVal changed As Range)
+<pre><code class="language-vb">Private Function ResolveNamedRange(ByVal rangeName As String) As Range
 </code></pre>
-<p>Selecting a worksheet row or column gives a target with no ListObject. Only
-the watched tables on that sheet are asked, one Intersect each.</p>
 <hr />
-<h3 id="int-markcolumns">MarkColumns <a class="anchor-link" href="#int-markcolumns">#</a></h3>
-<p><em>mark-columns</em></p>
-<p><strong>Flag every watched column of one table that the change covers.</strong></p>
+<h3 id="int-updatestatusforcell">UpdateStatusForCell <a class="anchor-link" href="#int-updatestatusforcell">#</a></h3>
+<p><em>update-status-for-cell</em></p>
+<p><strong>Write the supplied status flag into the registry row matching the range cell.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub MarkColumns(ByVal lo As ListObject, ByVal changed As Range)
+<pre><code class="language-vb">Private Sub UpdateStatusForCell(ByVal rangeCell As Range, ByVal statusValue As String)
 </code></pre>
-<p>The header row is read on every edit rather than cached. It is one worksheet
-call, and it stays right when the user inserts or deletes a column in the
-source table; a cached position would need an invalidation signal that costs a
-call to read anyway.</p>
 <hr />
-<h3 id="int-markkey">MarkKey <a class="anchor-link" href="#int-markkey">#</a></h3>
-<p><em>mark-key</em></p>
-<p><strong>Write the updated flag for one watched column, the first time it changes.</strong></p>
+<h3 id="int-removeoutdatedentry">RemoveOutdatedEntry <a class="anchor-link" href="#int-removeoutdatedentry">#</a></h3>
+<p><em>remove-outdated-entry</em></p>
+<p><strong>Clean registry rows that point to missing or invalid named ranges.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub MarkKey(ByVal tableKey As String, ByVal headerText As String)
+<pre><code class="language-vb">Private Function RemoveOutdatedEntry(ByVal registry As ListObject, _
+                                     ByVal rangeCell As Range) As Boolean
+</code></pre>
+<hr />
+<h3 id="int-resetupdatestatus">ResetUpdateStatus <a class="anchor-link" href="#int-resetupdatestatus">#</a></h3>
+<p><em>reset-update-status</em></p>
+<p><strong>Reset every registry row to the default (non-updated) status value.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetUpdateStatus()
 </code></pre>
 <hr />
 <h2 id="int-cleanuphelpers">CleanupHelpers</h2>
@@ -433,115 +456,95 @@ call to read anyway.</p>
 <p><em>clear-up</em></p>
 <p><strong>Reset all tracked columns to the default (not updated) status.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub ClearUp()
+<pre><code class="language-vb">Private Sub ClearUp()
+</code></pre>
+<hr />
+<h3 id="int-deleteup">DeleteUp <a class="anchor-link" href="#int-deleteup">#</a></h3>
+<p><em>delete-up</em></p>
+<p><strong>Remove the watcher registry and associated workbook named ranges.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub DeleteUp()
+</code></pre>
+<hr />
+<h3 id="int-removeregistrytable">RemoveRegistryTable <a class="anchor-link" href="#int-removeregistrytable">#</a></h3>
+<p><em>remove-registry-table</em></p>
+<p><strong>Remove an entire registry ListObject and associated named ranges from the worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveRegistryTable(ByVal registry As ListObject, _
+                                Optional ByVal tableName As String = vbNullString)
+</code></pre>
+<hr />
+<h3 id="int-removeallnamedranges">RemoveAllNamedRanges <a class="anchor-link" href="#int-removeallnamedranges">#</a></h3>
+<p><em>remove-all-named-ranges</em></p>
+<p><strong>Delete all workbook defined names created for watcher columns.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveAllNamedRanges()
+</code></pre>
+<hr />
+<h3 id="int-removenamedrange">RemoveNamedRange <a class="anchor-link" href="#int-removenamedrange">#</a></h3>
+<p><em>remove-named-range</em></p>
+<p><strong>Delete a single defined name if it exists in the workbook.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveNamedRange(ByVal rangeName As String)
 </code></pre>
 <hr />
 <h3 id="int-switchtags">SwitchTags <a class="anchor-link" href="#int-switchtags">#</a></h3>
 <p><em>switch-tags</em></p>
-<p><strong>Set every registry status flag on the sheet to the supplied value.</strong></p>
+<p><strong>Set every registry status flag to the supplied value.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SwitchTags(ByVal value As String)
 </code></pre>
-<p>Every table on the sheet carrying an &quot;updated&quot; column is reset, including the
-ones this class never built. The master setup registry is hand-built and a
-workbook made before the single-table layout carries its own registries; both
-have to reset when the translations button is pressed.</p>
-<hr />
-<h3 id="int-statuscolumnof">StatusColumnOf <a class="anchor-link" href="#int-statuscolumnof">#</a></h3>
-<p><em>status-column-of</em></p>
-<p><strong>Return the flag column of a table that carries one.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function StatusColumnOf(ByVal lo As ListObject) As Range
-</code></pre>
-<hr />
-<h2 id="int-inmemoryindex">InMemoryIndex</h2>
-<h3 id="int-ensureindex">EnsureIndex <a class="anchor-link" href="#int-ensureindex">#</a></h3>
-<p><em>ensure-index</em></p>
-<p><strong>Build the in-memory index the first time something needs it.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureIndex()
-</code></pre>
-<hr />
-<h3 id="int-resetindex">ResetIndex <a class="anchor-link" href="#int-resetindex">#</a></h3>
-<p><em>reset-index</em></p>
-<p><strong>Drop the in-memory index so the next read rebuilds it from the sheet.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ResetIndex()
-</code></pre>
-<p>The acknowledged set is left alone. It answers for the session, and the index
-is dropped whenever the registry is written.</p>
-<hr />
-<h3 id="int-loadindex">LoadIndex <a class="anchor-link" href="#int-loadindex">#</a></h3>
-<p><em>load-index</em></p>
-<p><strong>Read the whole registry in one call and build the lookups from it.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub LoadIndex()
-</code></pre>
-<hr />
-<h3 id="int-refreshstatusindex">RefreshStatusIndex <a class="anchor-link" href="#int-refreshstatusindex">#</a></h3>
-<p><em>refresh-status-index</em></p>
-<p><strong>Put the same flag on every key the index holds.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RefreshStatusIndex(ByVal value As String)
-</code></pre>
-<hr />
-<h3 id="int-setstatus">SetStatus <a class="anchor-link" href="#int-setstatus">#</a></h3>
-<p><em>set-status</em></p>
-<p><strong>Record the flag of one key.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub SetStatus(ByVal key As String, ByVal value As String)
-</code></pre>
-<hr />
-<h3 id="int-readstatus">ReadStatus <a class="anchor-link" href="#int-readstatus">#</a></h3>
-<p><em>read-status</em></p>
-<p><strong>Read a flag cell, answering the default for anything that is not &quot;yes&quot;.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ReadStatus(ByVal valueText As String) As String
-</code></pre>
-<hr />
-<h3 id="int-registrycolumnposition">RegistryColumnPosition <a class="anchor-link" href="#int-registrycolumnposition">#</a></h3>
-<p><em>registry-column-position</em></p>
-<p><strong>Find a registry column by header name, falling back to its published position.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function RegistryColumnPosition(ByVal lo As ListObject, _
-                                        ByVal headerName As String, _
-                                        ByVal fallbackColumn As Long) As Long
-</code></pre>
-<hr />
-<h3 id="int-columndata">ColumnData <a class="anchor-link" href="#int-columndata">#</a></h3>
-<p><em>column-data</em></p>
-<p><strong>Return the data body of one registry column by position.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ColumnData(ByVal lo As ListObject, ByVal position As Long) As Range
-</code></pre>
 <hr />
 <h2 id="int-utilities">Utilities</h2>
-<h3 id="int-registryname">RegistryName <a class="anchor-link" href="#int-registryname">#</a></h3>
-<p><em>registry-name</em></p>
-<p><strong>Compose the name of the registry table hosted on this sheet.</strong></p>
+<h3 id="int-registrycolumndata">RegistryColumnData <a class="anchor-link" href="#int-registrycolumndata">#</a></h3>
+<p><em>registry-column-data</em></p>
+<p><strong>Return the DataBodyRange for the specified registry column if available.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function RegistryName() As String
+<pre><code class="language-vb">Private Function RegistryColumnData(ByVal registry As ListObject, _
+                                    ByVal headerName As String) As Range
 </code></pre>
 <hr />
-<h3 id="int-sheetkey">SheetKey <a class="anchor-link" href="#int-sheetkey">#</a></h3>
-<p><em>sheet-key</em></p>
-<p><strong>Return the normalised worksheet name, read and normalised once.</strong></p>
+<h3 id="int-registrytagfromvariant">RegistryTagFromVariant <a class="anchor-link" href="#int-registrytagfromvariant">#</a></h3>
+<p><em>registry-tag-from-variant</em></p>
+<p><strong>Normalise a tag reference into a registry identifier string.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SheetKey() As String
+<pre><code class="language-vb">Private Function RegistryTagFromVariant(ByVal tagReference As Variant) As String
 </code></pre>
+<p>Converts a Variant tag reference into a registry identifier:</p>
+<ul>
+<li>ListObject: returns ListObject.Name (scopes search to that table's registry).</li>
+<li>String: returns the string value (used as table name or registry identifier).</li>
+<li>Worksheet: returns vbNullString (caller should fall back to Target.ListObject).</li>
+</ul>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tagReference</code>: Variant. The tag reference to normalise.</li>
+</ul>
+<p><strong>Returns:</strong> String. The registry identifier, or vbNullString when not resolvable.</p>
+<hr />
+<h3 id="int-rowcount">RowCount <a class="anchor-link" href="#int-rowcount">#</a></h3>
+<p><em>row-count</em></p>
+<p><strong>Return the number of rows contained in the supplied range.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RowCount(ByVal target As Range) As Long
+</code></pre>
+<hr />
+<h3 id="int-currentloname">CurrentLoName <a class="anchor-link" href="#int-currentloname">#</a></h3>
+<p><em>current-lo-name</em></p>
+<p><strong>Compose the ListObject name used when storing the registry table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CurrentLoName(ByVal tableName As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tableName</code>: String. Source ListObject name associated with the registry.</li>
+</ul>
 <hr />
 <h3 id="int-buildcolumnlabel">BuildColumnLabel <a class="anchor-link" href="#int-buildcolumnlabel">#</a></h3>
 <p><em>build-column-label</em></p>
 <p><strong>Compose the descriptive label stored in the registry for a watched column.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildColumnLabel(ByVal tableName As String, ByVal columnName As String) As String
-</code></pre>
-<hr />
-<h3 id="int-tablenamefromlabel">TableNameFromLabel <a class="anchor-link" href="#int-tablenamefromlabel">#</a></h3>
-<p><em>table-name-from-label</em></p>
-<p><strong>Retrieve the table portion from a table-column label.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function TableNameFromLabel(ByVal columnLabel As String) As String
 </code></pre>
 <hr />
 <h3 id="int-extractcolumnnamefromlabel">ExtractColumnNameFromLabel <a class="anchor-link" href="#int-extractcolumnnamefromlabel">#</a></h3>
@@ -551,11 +554,27 @@ is dropped whenever the registry is written.</p>
 <pre><code class="language-vb">Private Function ExtractColumnNameFromLabel(ByVal columnLabel As String) As String
 </code></pre>
 <hr />
+<h3 id="int-columnmatchesidentifier">ColumnMatchesIdentifier <a class="anchor-link" href="#int-columnmatchesidentifier">#</a></h3>
+<p><em>column-matches-identifier</em></p>
+<p><strong>Determine whether the supplied registry label or range name matches the target identifier.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnMatchesIdentifier(ByVal columnLabel As String, _
+                                         ByVal rangeName As String, _
+                                         ByVal targetKey As String) As Boolean
+</code></pre>
+<hr />
 <h3 id="int-buildrangename">BuildRangeName <a class="anchor-link" href="#int-buildrangename">#</a></h3>
 <p><em>build-range-name</em></p>
 <p><strong>Generate the workbook defined name for a watched column, including table context.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function BuildRangeName(ByVal tableKey As String, ByVal columnKey As String) As String
+<pre><code class="language-vb">Private Function BuildRangeName(ByVal tableKey As String, ByVal normalizedColumnKey As String) As String
+</code></pre>
+<hr />
+<h3 id="int-normalizecolumnkey">NormalizeColumnKey <a class="anchor-link" href="#int-normalizecolumnkey">#</a></h3>
+<p><em>normalize-column-key</em></p>
+<p><strong>Produce a workbook-friendly identifier from a column header.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NormalizeColumnKey(ByVal columnName As String) As String
 </code></pre>
 <hr />
 <h3 id="int-normalizeidentifier">NormalizeIdentifier <a class="anchor-link" href="#int-normalizeidentifier">#</a></h3>
@@ -564,9 +583,20 @@ is dropped whenever the registry is written.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NormalizeIdentifier(ByVal valueText As String) As String
 </code></pre>
-<p>Letters are lower-cased, digits are kept, and everything else becomes a single
-underscore, with leading and trailing underscores dropped. One pass writes the
-answer in place with Mid$, the way HiddenNames.SanitizeNameId does it.</p>
+<hr />
+<h3 id="int-replacerepeatedunderscores">ReplaceRepeatedUnderscores <a class="anchor-link" href="#int-replacerepeatedunderscores">#</a></h3>
+<p><em>replace-repeated-underscores</em></p>
+<p><strong>Collapse multiple underscores into a single instance.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ReplaceRepeatedUnderscores(ByVal valueText As String) As String
+</code></pre>
+<hr />
+<h3 id="int-trimunderscores">TrimUnderscores <a class="anchor-link" href="#int-trimunderscores">#</a></h3>
+<p><em>trim-underscores</em></p>
+<p><strong>Remove leading and trailing underscore characters.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TrimUnderscores(ByVal valueText As String) As String
+</code></pre>
 <hr />
 <h3 id="int-normalizevalue">NormalizeValue <a class="anchor-link" href="#int-normalizevalue">#</a></h3>
 <p><em>normalize-value</em></p>
@@ -575,60 +605,21 @@ answer in place with Mid$, the way HiddenNames.SanitizeNameId does it.</p>
 <pre><code class="language-vb">Private Function NormalizeValue(ByVal valueText As String) As String
 </code></pre>
 <hr />
-<h3 id="int-safetext">SafeText <a class="anchor-link" href="#int-safetext">#</a></h3>
-<p><em>safe-text</em></p>
-<p><strong>Read a cell value as text, answering an empty string for an error value.</strong></p>
+<h3 id="int-bulkvalue">BulkValue <a class="anchor-link" href="#int-bulkvalue">#</a></h3>
+<p><em>bulk-value</em></p>
+<p><strong>Read a value from a bulk-read .Value2 result.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SafeText(ByVal value As Variant) As String
+<pre><code class="language-vb">Private Function BulkValue(ByVal data As Variant, ByVal idx As Long, ByVal rowTotal As Long) As Variant
 </code></pre>
-<hr />
-<h3 id="int-celltext">CellText <a class="anchor-link" href="#int-celltext">#</a></h3>
-<p><em>cell-text</em></p>
-<p><strong>Read one cell out of a bulk .Value2 result.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function CellText(ByVal block As Variant, _
-                          ByVal rowIndex As Long, _
-                          ByVal columnIndex As Long, _
-                          ByVal rowTotal As Long, _
-                          ByVal columnTotal As Long) As String
-</code></pre>
-<p>A single cell read through .Value2 answers a scalar rather than a 2D array, so
-both shapes are handled here.</p>
-<hr />
-<h3 id="int-keyedadd">KeyedAdd <a class="anchor-link" href="#int-keyedadd">#</a></h3>
-<p><em>keyed-add</em></p>
-<p><strong>Add an item under a key, leaving the first entry in place.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub KeyedAdd(ByVal target As Collection, ByVal item As Variant, ByVal key As String)
-</code></pre>
-<hr />
-<h3 id="int-keyedremove">KeyedRemove <a class="anchor-link" href="#int-keyedremove">#</a></h3>
-<p><em>keyed-remove</em></p>
-<p><strong>Remove the item held under a key, when there is one.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub KeyedRemove(ByVal target As Collection, ByVal key As String)
-</code></pre>
-<hr />
-<h3 id="int-keyedhas">KeyedHas <a class="anchor-link" href="#int-keyedhas">#</a></h3>
-<p><em>keyed-has</em></p>
-<p><strong>Report whether a key holds an item.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function KeyedHas(ByVal source As Collection, ByVal key As String) As Boolean
-</code></pre>
-<hr />
-<h3 id="int-keyedtext">KeyedText <a class="anchor-link" href="#int-keyedtext">#</a></h3>
-<p><em>keyed-text</em></p>
-<p><strong>Read the text held under a key, answering an empty string when there is none.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function KeyedText(ByVal source As Collection, ByVal key As String) As String
-</code></pre>
-<hr />
-<h3 id="int-keyednumber">KeyedNumber <a class="anchor-link" href="#int-keyednumber">#</a></h3>
-<p><em>keyed-number</em></p>
-<p><strong>Read the number held under a key, answering zero when there is none.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function KeyedNumber(ByVal source As Collection, ByVal key As String) As Long
-</code></pre>
+<p>When a single-row Range is read via .Value2, VBA returns a scalar Variant
+rather than a 2D array. This helper transparently handles both cases.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code>: Variant. The .Value2 result (scalar for 1 row, 2D array otherwise).</li>
+<li><code>idx</code>: Long. The 1-based row index to read.</li>
+<li><code>rowTotal</code>: Long. Total number of rows in the source range.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. The cell value at the requested row.</p>
 <hr />
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><em>throw-error</em></p>
@@ -637,22 +628,43 @@ both shapes are handled here.</p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As String)
 </code></pre>
 <hr />
+<h2 id="int-interface-implementation">Interface implementation</h2>
+<h3 id="int-iupdatedvalues-addcolumns">IUpdatedValues_AddColumns <a class="anchor-link" href="#int-iupdatedvalues-addcolumns">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IUpdatedValues_AddColumns(ByVal Lo As ListObject)
+</code></pre>
+<h1>Thin delegation stubs forwarding each IUpdatedValues member
+to the corresponding internal implementation above.</h1>
+<hr />
+<h3 id="int-iupdatedvalues-switchtagstono">IUpdatedValues_SwitchTagsToNo <a class="anchor-link" href="#int-iupdatedvalues-switchtagstono">#</a></h3>
+<p><em>switch-tags-to-no</em></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IUpdatedValues_SwitchTagsToNo()
+</code></pre>
+<hr />
+<h3 id="int-iupdatedvalues-switchtagstoyes">IUpdatedValues_SwitchTagsToYes <a class="anchor-link" href="#int-iupdatedvalues-switchtagstoyes">#</a></h3>
+<p><em>switch-tags-to-yes</em></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IUpdatedValues_SwitchTagsToYes()
+</code></pre>
+<hr />
 </details>
 <details>
-<summary>Used in (13 file(s))</summary>
+<summary>Used in (14 file(s))</summary>
 <ul>
-<li><a href="LLFormat.html">LLFormat.cls</a></li>
 <li><a href="EventSetup.html">EventSetup.cls</a></li>
+<li><a href="IEventSetup.html">IEventSetup.cls</a></li>
+<li><a href="ISetupPreparation.html">ISetupPreparation.cls</a></li>
+<li><a href="IUpdatedValues.html">IUpdatedValues.cls</a></li>
 <li><a href="SetupPreparation.html">SetupPreparation.cls</a></li>
-<li><a href="SetupTranslationsTable.html">SetupTranslationsTable.cls</a></li>
+<li><a href="UpdatedValues.html">UpdatedValues.cls</a></li>
 <li>EventsMasterSetupRibbon.bas</li>
 <li>MasterSetupHelpers.bas</li>
+<li>EventsSetupRibbon.bas</li>
 <li>SetupHelpers.bas</li>
-<li>SetupRibbon.bas</li>
 <li>EventsGlobal.bas</li>
 <li>EventsRibbon.bas</li>
 <li>TestSetupPreparation.bas</li>
-<li>TestSetupTranslationsTable.bas</li>
 <li>TestUpdatedValues.bas</li>
 </ul>
 </details>

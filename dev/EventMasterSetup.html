@@ -17,7 +17,13 @@
 <h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
 <p><strong>Create a configured master setup event manager.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As EventMasterSetup
+<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As IEventMasterSetup
+</code></pre>
+<hr />
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><strong>Self reference used by factories returning the interface.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IEventMasterSetup
 </code></pre>
 <hr />
 <h2 id="int-lifecycle">Lifecycle</h2>
@@ -55,31 +61,31 @@
 <h3 id="int-dropdowns">Dropdowns <a class="anchor-link" href="#int-dropdowns">#</a></h3>
 <p><strong>Provide the dropdown manager, ensuring the preparation ran.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Dropdowns() As DropdownLists
+<pre><code class="language-vb">Public Property Get Dropdowns() As IDropdownLists
 </code></pre>
 <hr />
 <h3 id="int-variables">Variables <a class="anchor-link" href="#int-variables">#</a></h3>
 <p><strong>Provide the master setup variables manager.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Variables() As MasterSetupVariables
+<pre><code class="language-vb">Public Property Get Variables() As IMasterSetupVariables
 </code></pre>
 <hr />
 <h3 id="int-choices">Choices <a class="anchor-link" href="#int-choices">#</a></h3>
 <p><strong>Provide the master setup choices helper.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Choices() As LLChoices
+<pre><code class="language-vb">Public Property Get Choices() As ILLChoices
 </code></pre>
 <hr />
 <h3 id="int-translations">Translations <a class="anchor-link" href="#int-translations">#</a></h3>
 <p><strong>Provide the workbook-wide translations object.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Translations() As TranslationObject
+<pre><code class="language-vb">Public Property Get Translations() As ITranslationObject
 </code></pre>
 <hr />
 <h3 id="int-ribbontranslations">RibbonTranslations <a class="anchor-link" href="#int-ribbontranslations">#</a></h3>
 <p><strong>Provide the ribbon translations object.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get RibbonTranslations() As TranslationObject
+<pre><code class="language-vb">Public Property Get RibbonTranslations() As ITranslationObject
 </code></pre>
 <hr />
 <h3 id="int-ribbon">Ribbon <a class="anchor-link" href="#int-ribbon">#</a></h3>
@@ -90,8 +96,10 @@
 <hr />
 </details>
 <details>
-<summary>Used in (1 file(s))</summary>
+<summary>Used in (3 file(s))</summary>
 <ul>
+<li><a href="EventMasterSetup.html">EventMasterSetup.cls</a></li>
+<li><a href="IEventMasterSetup.html">IEventMasterSetup.cls</a></li>
 <li>TestEventMasterSetup.bas</li>
 </ul>
 </details>

@@ -30,8 +30,8 @@ class.</p>
 <pre><code class="language-vb">Public Function Create(ByVal titleName As String, _
                        Optional ByVal subtitleName As String = vbNullString) As _
 </code></pre>
-<p>Entry point for creating Checking instances.</p>
-<p>Checking objects are collections of messages tagged with a scope
+<p>Entry point for creating Checking instances.
+Checking objects are collections of messages tagged with a scope
 (Error, Warning, Info, Note, or Success) for logging purposes. The
 entries are stored in three parallel BetterArray tables (keys, labels,
 scopes). Checkings must have a title identifying the topic. Optionally,
@@ -42,7 +42,7 @@ when printing the messages to a worksheet via CheckingOutput.</p>
 <li><code>titleName</code>: String. Title of the checkings topic.</li>
 <li><code>subtitleName</code>: Optional String. Subtitle of the checkings. Defaults to vbNullString.</li>
 </ul>
-<p><strong>Returns:</strong> Checking. A ready-to-use Checking instance.</p>
+<p><strong>Returns:</strong> IChecking. A ready-to-use Checking instance.</p>
 <p><strong>Depends on:</strong></p>
 <ul>
 <li>BetterArray</li>
@@ -57,10 +57,10 @@ when printing the messages to a worksheet via CheckingOutput.</p>
 <p><em>name</em></p>
 <p><strong>Name of the checking object</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Name() As String
+<pre><code class="language-vb">Private Property Get Name() As String
 </code></pre>
-<p>Read-only metadata properties.</p>
-<p>Returns the checking title as the object name. Used for identification
+<p>Read-only metadata properties exposed through the interface.
+Returns the checking title as the object name. Used for identification
 in output and presentation contexts.</p>
 <p><strong>Returns:</strong> String. The checking title.</p>
 <hr />
@@ -68,7 +68,7 @@ in output and presentation contexts.</p>
 <p><em>heading</em></p>
 <p><strong>Title or subtitle of the checking object</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Heading(Optional ByVal subtitle As Boolean = False) As String
+<pre><code class="language-vb">Private Property Get Heading(Optional ByVal subtitle As Boolean = False) As String
 </code></pre>
 <p>Returns the subtitle when the subtitle flag is True, otherwise returns
 the title. Used by CheckingOutput for heading display.</p>
@@ -82,7 +82,7 @@ the title. Used by CheckingOutput for heading display.</p>
 <p><em>length</em></p>
 <p><strong>Total number of entries in the checking</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Length() As Long
+<pre><code class="language-vb">Private Property Get Length() As Long
 </code></pre>
 <p>Returns the count of diagnostic messages stored in the parallel arrays.</p>
 <p><strong>Returns:</strong> Long. Number of entries.</p>
@@ -96,10 +96,10 @@ the title. Used by CheckingOutput for heading display.</p>
 <p><em>list-of-keys</em></p>
 <p><strong>Get the list of keys in the checking</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get ListOfKeys() As BetterArray
+<pre><code class="language-vb">Private Property Get ListOfKeys() As BetterArray
 </code></pre>
-<p>Key lookup and enumeration.</p>
-<p>Returns a clone of the internal keys BetterArray. When the keys table
+<p>Key lookup and enumeration.
+Returns a clone of the internal keys BetterArray. When the keys table
 is uninitialised, creates an empty BetterArray with LowerBound 1.</p>
 <p><strong>Returns:</strong> BetterArray. Clone of stored keys.</p>
 <hr />
@@ -107,13 +107,10 @@ is uninitialised, creates an empty BetterArray with LowerBound 1.</p>
 <p><em>key-exists</em></p>
 <p><strong>Test whether a key is present in the checking</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function KeyExists(ByVal keyName As String) As Boolean
+<pre><code class="language-vb">Private Function KeyExists(ByVal keyName As String) As Boolean
 </code></pre>
 <p>Searches the keys BetterArray for the specified key name. Returns
 False immediately for empty strings.</p>
-<p>The stored table is read directly. <code>ListOfKeys</code> hands out a clone, and <code>Add</code>
-asks this question on every call, so a build that files 500 entries used to
-copy an array averaging 250 items 500 times before recording anything.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>keyName</code>: String. Key to search for.</li>
@@ -132,8 +129,8 @@ copy an array averaging 250 items 500 times before recording anything.</p>
 <pre><code class="language-vb">Public Sub Add(ByVal keyName As String, ByVal label As String, _
                 Optional ByVal scope As Byte = checkingNote)
 </code></pre>
-<p>Adding, retrieving, cloning, and appending diagnostic entries.</p>
-<p>Adds a key, the corresponding label, and the scope to the checking.
+<p>Adding, retrieving, cloning, and appending diagnostic entries.
+Adds a key, the corresponding label, and the scope to the checking.
 Keys must be unique; duplicate keys raise an error. On first call,
 initialises the three parallel BetterArray tables.</p>
 <p><strong>Parameters:</strong></p>
@@ -151,7 +148,7 @@ initialises the three parallel BetterArray tables.</p>
 <p><em>value-of</em></p>
 <p><strong>Retrieve a property of one specific key</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb"> Public Property Get ValueOf(ByVal keyName As String, Optional ByVal retrievedValue As Byte = 1) As String
+<pre><code class="language-vb"> Private Property Get ValueOf(ByVal keyName As String, Optional ByVal retrievedValue As Byte = 1) As String
 </code></pre>
 <p>Returns the label, the type descriptor (with icon), or the colour
 string for the specified key depending on the retrievedValue selector.
@@ -171,36 +168,25 @@ Raises an error when the key does not exist.</p>
 <p><em>clone</em></p>
 <p><strong>Produce a deep copy of the current checking entries</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Clone() As Checking
+<pre><code class="language-vb">Private Function Clone() As IChecking
 </code></pre>
 <p>Creates a new Checking instance with the same title, subtitle, and
 logged entries. Required so that flushing a checking into another
 container does not keep a live reference to the current object.</p>
-<p><strong>Returns:</strong> Checking. Independent clone.</p>
+<p><strong>Returns:</strong> IChecking. Independent clone.</p>
 <hr />
 <h3 id="append">Append <a class="anchor-link" href="#append">#</a></h3>
 <p><em>append</em></p>
 <p><strong>Append entries from another checking to the current one</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Append(ByVal checks As Checking)
+<pre><code class="language-vb">Private Sub Append(ByVal checks As IChecking)
 </code></pre>
-<p>Iterates through the supplied Checking entries and adds each one
+<p>Iterates through the supplied IChecking entries and adds each one
 to the current checking. Silently exits when the supplied checking
 is Nothing or empty.</p>
-</div>
-</details>
-<details open class="doc-section" id="what-happens-to-a-key-both-sides-hold">
-<summary>WHAT HAPPENS TO A KEY BOTH SIDES HOLD</summary>
-<div class="section-body">
-<p>It is numbered and the entry is kept. <code>Add</code> is the strict half of the contract
-and still raises on a duplicate; this is the merge, and every caller in the
-tree uses it as one. Two classes that both key their entries with a counter
-from 0 -- <code>Formulas</code> and <code>FormulaCondition</code> do -- used to stop the caller dead
-the second time their stores met.</p>
-<p>Owner decision, 2026-07-31.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>checks</code>: Checking. Source checking to merge from.</li>
+<li><code>checks</code>: IChecking. Source checking to merge from.</li>
 </ul>
 <hr />
 </div>
@@ -208,13 +194,23 @@ the second time their stores met.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-publicaccessors">PublicAccessors</h2>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IChecking
+</code></pre>
+<p>Properties that expose internal state and the interface pointer.
+Returns the current instance cast to its interface. Used internally
+by the factory method to return an IChecking reference.</p>
+<p><strong>Returns:</strong> IChecking. Reference to the current object.</p>
+<hr />
 <h3 id="int-checkingtitle">CheckingTitle <a class="anchor-link" href="#int-checkingtitle">#</a></h3>
 <p><em>checking-title</em></p>
 <p><strong>Title of the checking topic</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CheckingTitle() As String
 </code></pre>
-<p>Properties that expose internal state and the object pointer.</p>
 <p>Returns the title string assigned during creation or via the setter.</p>
 <p><strong>Returns:</strong> String. Title of the checkings.</p>
 <hr />
@@ -249,21 +245,6 @@ the second time their stores met.</p>
 <li><code>subtitleName</code>: String. Subtitle to assign.</li>
 </ul>
 <hr />
-<h2 id="int-inputoutput">InputOutput</h2>
-<h3 id="int-freekey">FreeKey <a class="anchor-link" href="#int-freekey">#</a></h3>
-<p><em>free-key</em></p>
-<p><strong>Answer a key this checking does not hold yet</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function FreeKey(ByVal keyRoot As String) As String
-</code></pre>
-<p>The root is numbered until it is free. Used by <code>Append</code> alone, so a direct
-<code>Add</code> keeps raising on a duplicate.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>keyRoot</code>: String. The key to start from.</li>
-</ul>
-<p><strong>Returns:</strong> String. A key that is free.</p>
-<hr />
 <h2 id="int-helpers">Helpers</h2>
 <h3 id="int-scopefromtypelabel">ScopeFromTypeLabel <a class="anchor-link" href="#int-scopefromtypelabel">#</a></h3>
 <p><em>scope-from-type-label</em></p>
@@ -271,8 +252,8 @@ the second time their stores met.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ScopeFromTypeLabel(ByVal typeLabel As String) As Byte
 </code></pre>
-<p>Private utility methods.</p>
-<p>Parses the human-readable type label (e.g. &quot;Error&quot;, &quot;Warning&quot;) and
+<p>Private utility methods.
+Parses the human-readable type label (e.g. &quot;Error&quot;, &quot;Warning&quot;) and
 returns the corresponding CheckingScope enum value. Defaults to
 checkingNote when no match is found.</p>
 <p><strong>Parameters:</strong></p>
@@ -288,8 +269,8 @@ checkingNote when no match is found.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
 </code></pre>
-<p>Centralised error-raising pattern.</p>
-<p>Wrapper around Err.Raise that standardises the source to CLASSNAME
+<p>Centralised error-raising pattern.
+Wrapper around Err.Raise that standardises the source to CLASSNAME
 for consistent stack traces.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -301,95 +282,67 @@ for consistent stack traces.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
-<p><em>seal</em></p>
-<p><strong>Seal the instance so setup setters can no longer be written</strong></p>
+<h2 id="int-interface">Interface</h2>
+<h3 id="int-ichecking-name">IChecking_Name <a class="anchor-link" href="#int-ichecking-name">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Seal()
+<pre><code class="language-vb">Private Property Get IChecking_Name() As String
 </code></pre>
-<hr />
-<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
-<p><em>guard-not-sealed</em></p>
-<p><strong>Guard a setup setter against writes after sealing</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>propName</code>: String. Name of the property being guarded.</li>
-</ul>
+<p>Delegated members satisfying the IChecking contract.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (83 file(s))</summary>
+<summary>Used in (62 file(s))</summary>
 <ul>
 <li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
-<li><a href="AnalysisRanges.html">AnalysisRanges.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
-<li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
-<li><a href="CustomPivotTable.html">CustomPivotTable.cls</a></li>
-<li><a href="FormulaBuilder.html">FormulaBuilder.cls</a></li>
-<li><a href="SpatialTables.html">SpatialTables.cls</a></li>
-<li><a href="TableSpecs.html">TableSpecs.cls</a></li>
-<li><a href="ImportMetadata.html">ImportMetadata.cls</a></li>
-<li><a href="LLExporter.html">LLExporter.cls</a></li>
-<li><a href="LLImporter.html">LLImporter.cls</a></li>
-<li><a href="DesignerEntry.html">DesignerEntry.cls</a></li>
-<li><a href="GenerationLog.html">GenerationLog.cls</a></li>
+<li><a href="IAnalysis.html">IAnalysis.cls</a></li>
+<li><a href="IAnalysisOutput.html">IAnalysisOutput.cls</a></li>
+<li><a href="ICrossTable.html">ICrossTable.cls</a></li>
+<li><a href="ILLdictionary.html">ILLdictionary.cls</a></li>
+<li><a href="ILLExport.html">ILLExport.cls</a></li>
+<li><a href="ILLVariables.html">ILLVariables.cls</a></li>
 <li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="LLExport.html">LLExport.cls</a></li>
 <li><a href="LLVariables.html">LLVariables.cls</a></li>
 <li><a href="FormulaCondition.html">FormulaCondition.cls</a></li>
 <li><a href="Formulas.html">Formulas.cls</a></li>
+<li><a href="IFormulaCondition.html">IFormulaCondition.cls</a></li>
+<li><a href="IFormulas.html">IFormulas.cls</a></li>
 <li><a href="Buttons.html">Buttons.cls</a></li>
+<li><a href="Checking.html">Checking.cls</a></li>
 <li><a href="CheckingOutput.html">CheckingOutput.cls</a></li>
 <li><a href="CustomTable.html">CustomTable.cls</a></li>
 <li><a href="DataSheet.html">DataSheet.cls</a></li>
 <li><a href="DropdownLists.html">DropdownLists.cls</a></li>
-<li><a href="HiddenNames.html">HiddenNames.cls</a></li>
+<li><a href="IChecking.html">IChecking.cls</a></li>
+<li><a href="ICheckingOutput.html">ICheckingOutput.cls</a></li>
+<li><a href="ICustomTable.html">ICustomTable.cls</a></li>
+<li><a href="IDataSheet.html">IDataSheet.cls</a></li>
+<li><a href="IDropdownLists.html">IDropdownLists.cls</a></li>
+<li><a href="ILLChoices.html">ILLChoices.cls</a></li>
+<li><a href="ILLFormat.html">ILLFormat.cls</a></li>
+<li><a href="IPasswords.html">IPasswords.cls</a></li>
 <li><a href="LLChoices.html">LLChoices.cls</a></li>
 <li><a href="LLFormat.html">LLFormat.cls</a></li>
 <li><a href="Passwords.html">Passwords.cls</a></li>
 <li><a href="TranslationObject.html">TranslationObject.cls</a></li>
-<li><a href="LLGeo.html">LLGeo.cls</a></li>
-<li><a href="LLSpatial.html">LLSpatial.cls</a></li>
 <li><a href="Graphs.html">Graphs.cls</a></li>
-<li><a href="GraphSeries.html">GraphSeries.cls</a></li>
-<li><a href="SeriesBuffer.html">SeriesBuffer.cls</a></li>
-<li><a href="TimeSeriesGraphs.html">TimeSeriesGraphs.cls</a></li>
-<li><a href="CodeTransfer.html">CodeTransfer.cls</a></li>
+<li><a href="IGraphs.html">IGraphs.cls</a></li>
+<li><a href="IListBuilder.html">IListBuilder.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
-<li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
-<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
-<li><a href="LLLog.html">LLLog.cls</a></li>
-<li><a href="LLTranslation.html">LLTranslation.cls</a></li>
-<li><a href="MasterSetupVariables.html">MasterSetupVariables.cls</a></li>
+<li><a href="ListBuilder.html">ListBuilder.cls</a></li>
 <li><a href="CustomTest.html">CustomTest.cls</a></li>
+<li><a href="ISectionBuilder.html">ISectionBuilder.cls</a></li>
+<li><a href="IVarWriter.html">IVarWriter.cls</a></li>
 <li><a href="SectionBuilder.html">SectionBuilder.cls</a></li>
-<li><a href="SectionMap.html">SectionMap.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
+<li><a href="ISetupErrors.html">ISetupErrors.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
-<li><a href="SetupPreparation.html">SetupPreparation.cls</a></li>
-<li><a href="ShowHide.html">ShowHide.cls</a></li>
-<li><a href="ShowHideLayout.html">ShowHideLayout.cls</a></li>
-<li><a href="ShowHideStore.html">ShowHideStore.cls</a></li>
-<li>EventsDesignerAdvanced.bas</li>
-<li>EventsDesignerMulti.bas</li>
-<li>InitTransfer.bas</li>
-<li>HeadlessBuild.bas</li>
-<li>ImportChecking.bas</li>
+<li><a href="ShowHideManager.html">ShowHideManager.cls</a></li>
+<li>GenerationReport.bas</li>
+<li><a href="LinelistPasswordStub.html">LinelistPasswordStub.cls</a></li>
 <li>TestAnalysis.bas</li>
-<li>TestAnalysisOutput.bas</li>
-<li>TestAnalysisRanges.bas</li>
-<li>TestCrossTable.bas</li>
-<li>TestCrossTableFormula.bas</li>
-<li>TestFormulaBuilder.bas</li>
-<li>TestSpatialTables.bas</li>
-<li>TestLLExporter.bas</li>
-<li>TestDesignerEntry.bas</li>
-<li>TestGenerationLog.bas</li>
-<li>TestFormulaCondition.bas</li>
 <li>TestButtons.bas</li>
 <li>TestChecking.bas</li>
 <li>TestCheckingOutput.bas</li>
@@ -397,15 +350,11 @@ for consistent stack traces.</p>
 <li>TestDropdownLists.bas</li>
 <li>TestLLFormat.bas</li>
 <li>TestPasswords.bas</li>
-<li>TestGraphs.bas</li>
-<li>TestGraphSeries.bas</li>
-<li>TestTimeSeriesGraphs.bas</li>
-<li>TestCodeTransfer.bas</li>
-<li>TestLLDataEntry.bas</li>
-<li>TestLLLog.bas</li>
-<li>TestVarWriter.bas</li>
 <li>TestSetupErrors.bas</li>
-<li>TestSetupPreparation.bas</li>
+<li><a href="AnalysisDictionaryStub.html">AnalysisDictionaryStub.cls</a></li>
+<li><a href="DictionaryMinimalStub.html">DictionaryMinimalStub.cls</a></li>
+<li><a href="LLFormatStub.html">LLFormatStub.cls</a></li>
+<li><a href="LLVarContextVariablesStub.html">LLVarContextVariablesStub.cls</a></li>
 </ul>
 </details>
   </main>

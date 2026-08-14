@@ -11,86 +11,80 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>LLSheets</h1>
-<p>Answers questions about ONE sheet of a linelist: the dictionary row that
-describes it, its type, its table name, how many variables it holds, and where
-a variable sits on it. Contains says whether the dictionary knows the sheet,
-RowIndex gives its dictionary row, SheetInfo answers its type or its table
-name, NumberOfVars counts its variables, DataBounds answers the first and the
-last row and column of its data, ContainsControl says whether a control
-appears on it, and VariableAddress gives the address of one variable. Every
-read checks the state it needs and raises a ProjectError whose message names
-the sheet.</p>
-<details open class="doc-section" id="what-the-instance-holds">
-<summary>WHAT THE INSTANCE HOLDS</summary>
-<div class="section-body">
-<p>The dictionary row is held per sheet name. Before a held row is handed out,
-the cell it points at is read once and compared with the name it should carry,
-so a dictionary whose rows moved gives a fresh row.</p>
-<p>The variable count is held per sheet name until InvalidateCaches.
-LLdictionary.Prepare inserts geo rows, so an object built before preparation
-answers over the dictionary as it stood then.</p>
-<p>The sheet-type and table-name column indexes are held too.</p>
-<p>The preparation flag is asked of the dictionary on every call that needs it.
-LLdictionary.Prepared holds a True answer itself and drops it in every routine
-that can turn True back into False. This class has no way to see a Clean or
-an AddColumn run on the dictionary, so it keeps no copy of that flag.</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="DataSheet.html">DataSheet</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a></p>
-</div>
-</details>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
 <h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Instantiate a sheet helper bound to the supplied dictionary</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal dict As LLdictionary) As LLSheets
+<pre><code class="language-vb">Public Function Create(ByVal dict As ILLdictionary) As ILLSheets
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dict</code>: LLdictionary providing sheet metadata.</li>
+<li><code>dict</code>: ILLdictionary providing sheet metadata.</li>
 </ul>
-<p><strong>Returns:</strong> LLSheets fully initialised helper.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ObjectNotInitialized When dict is Nothing or has no DataSheet.</li>
-<li>ProjectError.ElementNotFound When a required dictionary column is missing.</li>
-</ul>
+<p><strong>Returns:</strong> ILLSheets fully initialised helper.</p>
 <hr />
 </div>
 </details>
-<details open class="doc-section" id="sheet-queries">
-<summary>Sheet Queries</summary>
-<div class="section-body">
-<h3 id="contains">Contains <a class="anchor-link" href="#contains">#</a></h3>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-public-accessors">Public Accessors</h2>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><strong>Expose the interface reference of this predeclared instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ILLSheets
+</code></pre>
+<p><strong>Returns:</strong> ILLSheets reference to the current object.</p>
+<hr />
+<h3 id="int-dictionary">Dictionary <a class="anchor-link" href="#int-dictionary">#</a></h3>
+<p><strong>Retrieve the backing dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary
+</code></pre>
+<p><strong>Returns:</strong> ILLdictionary reference captured during initialisation.</p>
+<hr />
+<h3 id="int-dictionary">Dictionary <a class="anchor-link" href="#int-dictionary">#</a></h3>
+<p><strong>Store the backing dictionary and prime cached lookups</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Dictionary(ByVal dict As ILLdictionary)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: ILLdictionary holding linelist metadata.</li>
+</ul>
+<hr />
+<h3 id="int-sheetrange">SheetRange <a class="anchor-link" href="#int-sheetrange">#</a></h3>
+<p><strong>Return the cached range referencing sheet names</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get SheetRange(Optional ByVal requirePrepared As Boolean = False) As Range
+</code></pre>
+<p><strong>Returns:</strong> Range spanning the sheet-name column including the header.</p>
+<hr />
+<h2 id="int-sheet-queries">Sheet Queries</h2>
+<h3 id="int-contains">Contains <a class="anchor-link" href="#int-contains">#</a></h3>
 <p><strong>Determine whether the dictionary includes the supplied sheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Contains(ByVal sheetName As String) As Boolean
+<pre><code class="language-vb">Private Function Contains(ByVal sheetName As String) As Boolean
 </code></pre>
-<p>The match is case-insensitive, the same rule Excel applies to worksheet names.
-A sheet stored as &quot;Data&quot; and asked for as &quot;data&quot; is the same sheet, and
-<code>LLDataEntry</code> refuses to build a sheet this call reports as missing.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sheetName</code>: String. Sheet identifier to locate.</li>
 </ul>
 <p><strong>Returns:</strong> True when the sheet exists.</p>
 <hr />
-<h3 id="rowindex">RowIndex <a class="anchor-link" href="#rowindex">#</a></h3>
+<h3 id="int-rowindex">RowIndex <a class="anchor-link" href="#int-rowindex">#</a></h3>
 <p><strong>Lookup the worksheet row hosting the sheet metadata</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function RowIndex(ByVal sheetName As String) As Long
+<pre><code class="language-vb">Private Function RowIndex(ByVal sheetName As String) As Long
 </code></pre>
-<p>Answers 0 for a sheet the dictionary does not hold, and for the header row.
-The sheet-name range is captured with its header, so this used to hand back
-the header row for a call asking about the header text, and <code>LLDataEntry</code>
-places rows from the answer.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sheetName</code>: String. Sheet identifier to locate.</li>
 </ul>
 <p><strong>Returns:</strong> Worksheet row index for the sheet entry, or 0 when not found.</p>
 <hr />
-<h3 id="sheetinfo">SheetInfo <a class="anchor-link" href="#sheetinfo">#</a></h3>
+<h3 id="int-sheetinfo">SheetInfo <a class="anchor-link" href="#int-sheetinfo">#</a></h3>
 <p><strong>Fetch additional metadata about a sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function SheetInfo(ByVal sheetName As String, Optional ByVal info As Byte = SheetInfoType.SheetInfoSheetType) As String
@@ -98,63 +92,53 @@ places rows from the answer.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sheetName</code>: String. Sheet identifier.</li>
-<li><code>info</code>: Byte. Requested metadata selector, from SheetInfoType.</li>
+<li><code>info</code>: Byte. Requested metadata selector.</li>
 </ul>
-<p><strong>Returns:</strong> Requested metadata value; raises when the selector is unknown.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ElementNotFound When the sheet or the metadata column is missing.</li>
-<li>ProjectError.InvalidArgument When the selector is unknown.</li>
-</ul>
+<p><strong>Returns:</strong> Requested metadata value; raises when selector is unknown.</p>
 <hr />
-<h3 id="numberofvars">NumberOfVars <a class="anchor-link" href="#numberofvars">#</a></h3>
+<h3 id="int-varlist">Varlist <a class="anchor-link" href="#int-varlist">#</a></h3>
+<p><em>VarList</em></p>
+<p><strong>Retrieve the ordered list of variables belonging to a sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Varlist(ByVal sheetName As String) As BetterArray
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray containing variable names for the sheet.</p>
+<hr />
+<h3 id="int-numbervars">NumberVars <a class="anchor-link" href="#int-numbervars">#</a></h3>
 <p><strong>Count the variables associated with a sheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function NumberOfVars(ByVal sheetName As String) As Long
+<pre><code class="language-vb">Private Function NumberVars(ByVal sheetName As String) As Long
 </code></pre>
-<p>The count is read once per sheet name and held. One AutoFilter pass answers
-it, and <code>DataBounds</code> asks for it twice per sheet on the <code>LLDataEntry</code> path,
-which asks again on its own.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sheetName</code>: String. Sheet identifier.</li>
 </ul>
 <p><strong>Returns:</strong> Long number of variables present on the sheet.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ElementNotFound When the sheet is missing from the dictionary.</li>
-</ul>
 <hr />
-<h3 id="databounds">DataBounds <a class="anchor-link" href="#databounds">#</a></h3>
+<h3 id="int-databounds">DataBounds <a class="anchor-link" href="#int-databounds">#</a></h3>
 <p><strong>Compute the data boundaries for a sheet layout</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function DataBounds(ByVal sheetName As String, _
+<pre><code class="language-vb">Private Function DataBounds(ByVal sheetName As String, _
                             Optional ByVal Bound As Byte = SheetBound.RowSart) As Long
 </code></pre>
-<p>The four bounds of a horizontal sheet: top row 8, bottom row 8 + 201, left
-column 1, right column 1 + variables - 1. The four bounds of a vertical
-sheet: top row 4, bottom row 4 + variables - 1, left column 5, right
-column 5.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sheetName</code>: String. Sheet identifier.</li>
-<li><code>Bound</code>: Byte. Selector from the SheetBound enumeration.</li>
+<li><code>Bound</code>: Byte. Selector from SheetBound enumeration.</li>
 </ul>
 <p><strong>Returns:</strong> Long representing the requested bound.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.InvalidArgument When the sheet type or the selector is unknown.</li>
-</ul>
 <hr />
-<h3 id="containscontrol">ContainsControl <a class="anchor-link" href="#containscontrol">#</a></h3>
+<h3 id="int-containscontrol">ContainsControl <a class="anchor-link" href="#int-containscontrol">#</a></h3>
 <p><strong>Test whether a sheet exposes a control of the requested type</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function ContainsControl(ByVal sheetName As String, _
-                                 Optional ByVal ribbonControl As String = &quot;list_auto&quot;, _
+<pre><code class="language-vb">Private Function ContainsControl(ByVal sheetName As String, _
+                                 Optional ByVal Control As String = &quot;list_auto&quot;, _
                                  Optional ByVal colName As String = COL_CONTROL) As Boolean
 </code></pre>
-<p>The default control value is &quot;list_auto&quot;. <code>LLDataEntry</code> asks for &quot;geo1&quot;,
-which the dictionary holds only after <code>LLdictionary.AppendGeoLines</code> has run.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sheetName</code>: String. Sheet identifier.</li>
@@ -162,128 +146,18 @@ which the dictionary holds only after <code>LLdictionary.AppendGeoLines</code> h
 <li><code>colName</code>: String. Column hosting the control types. Defaults to &quot;control&quot;.</li>
 </ul>
 <p><strong>Returns:</strong> True when the control type exists on the sheet.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ElementNotFound When the sheet or the control column is missing.</li>
-</ul>
 <hr />
-<h3 id="variableaddress">VariableAddress <a class="anchor-link" href="#variableaddress">#</a></h3>
+<h3 id="int-variableaddress">VariableAddress <a class="anchor-link" href="#int-variableaddress">#</a></h3>
 <p><strong>Build an Excel address pointing to the variable slot on its sheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function VariableAddress(ByVal varName As String, Optional ByVal onSheet As String = vbNullString) As String
+<pre><code class="language-vb">Private Function VariableAddress(ByVal varName As String, Optional ByVal onSheet As String = vbNullString) As String
 </code></pre>
-<p>The address is built from the DICTIONARY worksheet on purpose. <code>.Address</code>
-returns an A1 string that carries no sheet name, so only the row and the
-column number reach the result, and the sheet prefix is added here.</p>
-<p>A horizontal sheet gets a relative address and a vertical sheet gets an
-absolute one. <code>Formulas</code> and <code>VarWriter</code> drop both straight into formulas, so
-the two forms behave differently when Excel fills them down; that is the
-shape those two callers expect.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>varName</code>: String. Variable identifier.</li>
 <li><code>onSheet</code>: Optional String. Sheet where the reference will be consumed; suppresses sheet prefix when matching.</li>
 </ul>
 <p><strong>Returns:</strong> String Excel address for the variable.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ObjectNotInitialized When the dictionary is missing or unprepared.</li>
-<li>ProjectError.InvalidArgument When varName is empty or the sheet type is unknown.</li>
-<li>ProjectError.ElementNotFound When the variable is absent from the dictionary.</li>
-</ul>
-<hr />
-</div>
-</details>
-<details open class="doc-section" id="sheet-row-resolution">
-<summary>Sheet Row Resolution</summary>
-<div class="section-body">
-<h3 id="invalidatecaches">InvalidateCaches <a class="anchor-link" href="#invalidatecaches">#</a></h3>
-<p><strong>Drop everything this object holds about the worksheet</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub InvalidateCaches()
-</code></pre>
-<p>The way out for a caller that changed the dictionary behind this object. The
-variable counts and the sheet-name range are held for the life of the
-instance, so a caller that adds or removes dictionary rows calls this to be
-answered from the worksheet again.</p>
-<hr />
-</div>
-</details>
-<details>
-<summary>Internal members (not exported)</summary>
-<h2 id="int-public-accessors">Public Accessors</h2>
-<h3 id="int-dictionary">Dictionary <a class="anchor-link" href="#int-dictionary">#</a></h3>
-<p><strong>Retrieve the backing dictionary</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Dictionary() As LLdictionary
-</code></pre>
-<p><strong>Returns:</strong> LLdictionary reference captured during initialisation.</p>
-<hr />
-<h3 id="int-dictionary">Dictionary <a class="anchor-link" href="#int-dictionary">#</a></h3>
-<p><strong>Store the backing dictionary and prime cached lookups</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set Dictionary(ByVal dict As LLdictionary)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>dict</code>: LLdictionary holding linelist metadata.</li>
-</ul>
-<hr />
-<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
-<p><strong>Prevent further changes to creation-only setters</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Seal()
-</code></pre>
-<hr />
-<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
-<p><strong>Guard creation-only setters after sealing</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>propName</code>: String. Name used in the message.</li>
-</ul>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.SomethingWentWrong When the instance is already sealed.</li>
-</ul>
-<hr />
-<h2 id="int-sheet-queries">Sheet Queries</h2>
-<h3 id="int-countvariables">CountVariables <a class="anchor-link" href="#int-countvariables">#</a></h3>
-<p><em>count-variables</em></p>
-<p><strong>Count the dictionary rows that belong to one sheet</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function CountVariables(ByVal sheetName As String) As Long
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sheetName</code>: String. Sheet identifier.</li>
-</ul>
-<p><strong>Returns:</strong> Long number of variables on that sheet.</p>
-<hr />
-<h3 id="int-boundvalue">BoundValue <a class="anchor-link" href="#int-boundvalue">#</a></h3>
-<p><em>bound-value</em></p>
-<p><strong>Compute one bound from a sheet type that is already resolved</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function BoundValue(ByVal sheetName As String, _
-                            ByVal sheetType As String, _
-                            ByVal Bound As Byte) As Long
-</code></pre>
-<p>The sheet type is validated once, here. <code>VariableAddress</code> resolves the type
-for its own use and hands it down, so the address path reads the type cell
-once where it used to read it twice.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sheetName</code>: String. Sheet identifier, used for the variable count.</li>
-<li><code>sheetType</code>: String. Sheet type already read from the dictionary.</li>
-<li><code>Bound</code>: Byte. Selector from the SheetBound enumeration.</li>
-</ul>
-<p><strong>Returns:</strong> Long representing the requested bound.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.InvalidArgument When the sheet type or the selector is unknown.</li>
-</ul>
 <hr />
 <h2 id="int-state-validation">State Validation</h2>
 <h3 id="int-ensuredictionaryready">EnsureDictionaryReady <a class="anchor-link" href="#int-ensuredictionaryready">#</a></h3>
@@ -291,17 +165,9 @@ once where it used to read it twice.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDictionaryReady(Optional ByVal requirePrepared As Boolean = False)
 </code></pre>
-<p><code>LLdictionary.Prepared</code> is asked on every call that requires preparation. It
-holds a True answer on the dictionary itself, so the read costs one Boolean
-once the dictionary is prepared, and it stays honest when another object
-undoes the preparation.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>requirePrepared</code>: Optional Boolean. When True, the dictionary must be prepared.</li>
-</ul>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ObjectNotInitialized When the dictionary is missing or unprepared.</li>
 </ul>
 <hr />
 <h3 id="int-ensuresheetexists">EnsureSheetExists <a class="anchor-link" href="#int-ensuresheetexists">#</a></h3>
@@ -309,15 +175,9 @@ undoes the preparation.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureSheetExists(ByVal sheetName As String)
 </code></pre>
-<p><code>EnsureSheetRow</code> raises for a sheet the dictionary does not hold, so this is
-the same check under the name the two callers read better with.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sheetName</code>: String. Sheet identifier to validate.</li>
-</ul>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ElementNotFound When the sheet is missing from the dictionary.</li>
 </ul>
 <hr />
 <h3 id="int-ensuresheetrow">EnsureSheetRow <a class="anchor-link" href="#int-ensuresheetrow">#</a></h3>
@@ -330,11 +190,6 @@ the same check under the name the two callers read better with.</p>
 <li><code>sheetName</code>: String. Sheet identifier.</li>
 </ul>
 <p><strong>Returns:</strong> Long worksheet row index.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.InvalidArgument When the name is empty or is the header value.</li>
-<li>ProjectError.ElementNotFound When the sheet is missing from the dictionary.</li>
-</ul>
 <hr />
 <h3 id="int-ensurecontrolcolumnexists">EnsureControlColumnExists <a class="anchor-link" href="#int-ensurecontrolcolumnexists">#</a></h3>
 <p><strong>Guarantee the control column exists before filtering</strong></p>
@@ -344,10 +199,6 @@ the same check under the name the two callers read better with.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>colName</code>: String. Column header to validate.</li>
-</ul>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ElementNotFound When the column is missing.</li>
 </ul>
 <hr />
 <h3 id="int-ensurevalidsheetname">EnsureValidSheetName <a class="anchor-link" href="#int-ensurevalidsheetname">#</a></h3>
@@ -359,10 +210,6 @@ the same check under the name the two callers read better with.</p>
 <ul>
 <li><code>sheetName</code>: String. Sheet identifier to validate.</li>
 </ul>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.InvalidArgument When the name is empty or is the header value.</li>
-</ul>
 <hr />
 <h2 id="int-lookup-helpers">Lookup Helpers</h2>
 <h3 id="int-sheetinfovalue">SheetInfoValue <a class="anchor-link" href="#int-sheetinfovalue">#</a></h3>
@@ -373,37 +220,9 @@ the same check under the name the two callers read better with.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sheetName</code>: String. Sheet identifier.</li>
-<li><code>infoSelector</code>: Byte. Selector from SheetInfoType.</li>
+<li><code>infoSelector</code>: Byte. Selector from LLSheetInfoField.</li>
 </ul>
 <p><strong>Returns:</strong> String metadata value.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.InvalidArgument When the selector is unknown.</li>
-</ul>
-<hr />
-<h3 id="int-hostsheet">HostSheet <a class="anchor-link" href="#int-hostsheet">#</a></h3>
-<p><em>host-sheet</em></p>
-<p><strong>Worksheet holding the dictionary</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get HostSheet() As Worksheet
-</code></pre>
-<p>Held on the instance. Reaching it through <code>dict.Data.Wksh</code> costs two
-crossings before any work, on every cell this class resolves.</p>
-<p><strong>Returns:</strong> Worksheet</p>
-<hr />
-<h3 id="int-celltext">CellText <a class="anchor-link" href="#int-celltext">#</a></h3>
-<p><em>cell-text</em></p>
-<p><strong>Read one cell value as text</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function CellText(ByVal cellValue As Variant) As String
-</code></pre>
-<p>A dictionary cell can hold an error value (<code>#N/A</code>, <code>#REF!</code>) or a Null, and
-<code>CStr</code> raises on both.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>cellValue</code>: Variant. The raw cell value.</li>
-</ul>
-<p><strong>Returns:</strong> String. The text, or an empty string when there is none.</p>
 <hr />
 <h3 id="int-sheettypecolumnindex">SheetTypeColumnIndex <a class="anchor-link" href="#int-sheettypecolumnindex">#</a></h3>
 <p><strong>Cache the column index for sheet type lookups</strong></p>
@@ -418,142 +237,31 @@ crossings before any work, on every cell this class resolves.</p>
 <pre><code class="language-vb">Private Function TableNameColumnIndex() As Long
 </code></pre>
 <p><strong>Returns:</strong> Long worksheet column index.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ElementNotFound When the table-name column is missing.</li>
-</ul>
 <hr />
 <h3 id="int-variablesprovider">VariablesProvider <a class="anchor-link" href="#int-variablesprovider">#</a></h3>
 <p><strong>Lazily initialise the LLVariables helper for address resolution</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function VariablesProvider() As LLVariables
+<pre><code class="language-vb">Private Function VariablesProvider() As ILLVariables
 </code></pre>
-<p><strong>Returns:</strong> LLVariables cached instance.</p>
+<p><strong>Returns:</strong> ILLVariables cached instance.</p>
 <hr />
 <h3 id="int-columnindex">ColumnIndex <a class="anchor-link" href="#int-columnindex">#</a></h3>
-<p><strong>Resolve a dictionary column, and raise when it is absent</strong></p>
+<p><strong>Wrapper around IDataSheet.ColumnIndex with optional caching</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ColumnIndex(ByVal colName As String) As Long
+<pre><code class="language-vb">Private Function ColumnIndex(ByVal colName As String, ByVal allowMissing As Boolean) As Long
 </code></pre>
-<p><code>DataSheet.ColumnIndex</code> raises with <code>shouldExist:=True</code>, so the answer that
-comes back is always a real column.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>colName</code>: String. Column header to locate.</li>
+<li><code>allowMissing</code>: Boolean. When False, raises when the column is absent.</li>
 </ul>
 <p><strong>Returns:</strong> Long worksheet column index.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ElementNotFound When the column is absent.</li>
-</ul>
-<hr />
-<h2 id="int-sheet-row-resolution">Sheet Row Resolution</h2>
-<h3 id="int-resolvesheetrow">ResolveSheetRow <a class="anchor-link" href="#int-resolvesheetrow">#</a></h3>
-<p><em>sheet-row</em></p>
-<p><strong>Worksheet row that describes one sheet</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolveSheetRow(ByVal sheetName As String) As Long
-</code></pre>
-<p>The row is held per sheet name. A held row is checked against the cell it
-points at before it is handed out: <code>LLdictionary.Prepare</code> inserts rows, and
-handing out a moved row would answer for the WRONG sheet.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sheetName</code>: String. Sheet identifier.</li>
-</ul>
-<p><strong>Returns:</strong> Long. The worksheet row, or 0 when the dictionary has no such sheet.</p>
-<hr />
-<h3 id="int-rowstillholds">RowStillHolds <a class="anchor-link" href="#int-rowstillholds">#</a></h3>
-<p><em>row-still-holds</em></p>
-<p><strong>Check one cell against the sheet name it should hold</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function RowStillHolds(ByVal rowNum As Long, ByVal sheetName As String) As Boolean
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>rowNum</code>: Long. Worksheet row to test.</li>
-<li><code>sheetName</code>: String. Name the row should carry.</li>
-</ul>
-<p><strong>Returns:</strong> Boolean. True when the cell still reads as sheetName.</p>
-<hr />
-<h3 id="int-farthestof">FarthestOf <a class="anchor-link" href="#int-farthestof">#</a></h3>
-<p><em>farthest-of</em></p>
-<p><strong>Take the farther of a counted bound and the last written index</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function FarthestOf(ByVal countedBound As Long, _
-                            ByVal sheetName As String) As Long
-</code></pre>
-<p>VarWriter places a variable at the &quot;column index&quot; its own dictionary row
-carries: for an HList sheet that number is the WORKSHEET COLUMN, for a
-VList sheet the WORKSHEET ROW (VarWriter.VarRange). Counting the variables
-and adding the count to the start only agrees with that when the indexes
-run 1, 2, 3 with no gap. A dictionary whose indexes skip a number - the
-shape a setup takes as soon as variables are removed or reordered - writes
-variables past the counted edge, and the data table was then built short of
-them: the columns were on the sheet, outside the ListObject, invisible to
-the filter, the export and every reader that walks the table.</p>
-<p>So the counted bound becomes a floor. A dictionary with no index column, or
-one holding nothing numeric, answers with the count as before.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>countedBound</code>: Long. The bound the variable count gives.</li>
-<li><code>sheetName</code>: String. The sheet being measured.</li>
-</ul>
-<p><strong>Returns:</strong> Long. The farther of the two.</p>
-<hr />
-<h3 id="int-lastvariableindex">LastVariableIndex <a class="anchor-link" href="#int-lastvariableindex">#</a></h3>
-<p><em>last-variable-index</em></p>
-<p><strong>The largest column index the sheet's variables carry</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function LastVariableIndex(ByVal sheetName As String) As Long
-</code></pre>
-<p>Held per sheet name beside the count, and dropped by the same
-invalidations. A dictionary missing the index column answers 0, which
-leaves every bound where the count put it.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sheetName</code>: String. Sheet identifier.</li>
-</ul>
-<p><strong>Returns:</strong> Long. The largest index, or 0 when there is none to read.</p>
-<hr />
-<h3 id="int-maxcolumnindex">MaxColumnIndex <a class="anchor-link" href="#int-maxcolumnindex">#</a></h3>
-<p><em>max-column-index</em></p>
-<p><strong>Read the index column of one sheet and take its largest number</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function MaxColumnIndex(ByVal sheetName As String) As Long
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sheetName</code>: String. Sheet identifier.</li>
-</ul>
-<p><strong>Returns:</strong> Long. The largest numeric index, or 0.</p>
-<hr />
-<h3 id="int-cacheslot">CacheSlot <a class="anchor-link" href="#int-cacheslot">#</a></h3>
-<p><em>cache-slot</em></p>
-<p><strong>Find or create the cache slot of one sheet name</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function CacheSlot(ByVal sheetName As String) As Long
-</code></pre>
-<p>Names are matched without case, which is the rule the lookups use. A
-dictionary holds a handful of sheets, so a walk over the slots is cheaper
-than anything that would index them.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sheetName</code>: String. Sheet identifier.</li>
-</ul>
-<p><strong>Returns:</strong> Long. The slot number, from 1.</p>
 <hr />
 <h3 id="int-findsheetcell">FindSheetCell <a class="anchor-link" href="#int-findsheetcell">#</a></h3>
 <p><strong>Locate the range corresponding to a sheet name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FindSheetCell(ByVal sheetName As String) As Range
 </code></pre>
-<p><code>LookIn</code>, <code>SearchOrder</code> and <code>SearchDirection</code> are all passed. Excel reuses
-whatever the last <code>Find</code> anywhere in the application used when they are left
-out, and that includes the user's own Ctrl+F dialog.
-The header row is refused here, so every caller gets the same rule: the
-sheet-name range is captured with its header, and the header text is a column
-title rather than a sheet.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sheetName</code>: String. Sheet identifier (may be empty).</li>
@@ -565,10 +273,6 @@ title rather than a sheet.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SanitizeSearchTerm(ByVal value As String) As String
 </code></pre>
-<p>Excel reads <code>*</code>, <code>?</code>, <code>[</code>, <code>]</code> and <code>#</code> in the search text as patterns, so a
-sheet named with one of them would match the wrong row. <code>LLdictionary</code> keeps
-its own copy beside the search it serves; a class cannot reach a standard
-module, so the two live where they are used.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>value</code>: String. Raw search term.</li>
@@ -592,34 +296,30 @@ module, so the two live where they are used.</p>
 <pre><code class="language-vb">Private Sub ResetCaches()
 </code></pre>
 <hr />
+<h3 id="int-invalidatecaches">InvalidateCaches <a class="anchor-link" href="#int-invalidatecaches">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub InvalidateCaches()
+</code></pre>
+<hr />
 <h3 id="int-validatedictionary">ValidateDictionary <a class="anchor-link" href="#int-validatedictionary">#</a></h3>
 <p><strong>Ensure the supplied dictionary exposes the required columns</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ValidateDictionary(ByVal dict As LLdictionary)
+<pre><code class="language-vb">Private Sub ValidateDictionary(ByVal dict As ILLdictionary)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dict</code>: LLdictionary to validate.</li>
-</ul>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ObjectNotInitialized When the dictionary or its DataSheet is missing.</li>
-<li>ProjectError.ElementNotFound When a required column is missing.</li>
+<li><code>dict</code>: ILLdictionary to validate.</li>
 </ul>
 <hr />
 <h3 id="int-ensurecolumnexists">EnsureColumnExists <a class="anchor-link" href="#int-ensurecolumnexists">#</a></h3>
 <p><strong>Validate that a dictionary column is present</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureColumnExists(ByVal dict As LLdictionary, ByVal colName As String)
+<pre><code class="language-vb">Private Sub EnsureColumnExists(ByVal dict As ILLdictionary, ByVal colName As String)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dict</code>: LLdictionary to inspect.</li>
+<li><code>dict</code>: ILLdictionary to inspect.</li>
 <li><code>colName</code>: String. Column header to verify.</li>
-</ul>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ElementNotFound When the column is missing.</li>
 </ul>
 <hr />
 <h2 id="int-error-handling">Error Handling</h2>
@@ -630,32 +330,26 @@ module, so the two live where they are used.</p>
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>errNumb</code>: Long. The ProjectError value.</li>
+<li><code>errNumb</code>: ProjectError enumeration value.</li>
 <li><code>errorMessage</code>: String human readable description.</li>
 </ul>
 <hr />
 </details>
 <details>
-<summary>Used in (18 file(s))</summary>
+<summary>Used in (12 file(s))</summary>
 <ul>
-<li><a href="LLdictionary.html">LLdictionary.cls</a></li>
-<li><a href="LLVariables.html">LLVariables.cls</a></li>
+<li><a href="ILLSheets.html">ILLSheets.cls</a></li>
+<li><a href="LLSheets.html">LLSheets.cls</a></li>
 <li><a href="Formulas.html">Formulas.cls</a></li>
 <li><a href="ValueOfFormula.html">ValueOfFormula.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
-<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
+<li><a href="ListBuilder.html">ListBuilder.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
+<li>DesignerMain.bas</li>
 <li>EventsDesignerAdvanced.bas</li>
-<li>HeadlessBuild.bas</li>
-<li>TestCrossTable.bas</li>
 <li>TestLLSheets.bas</li>
 <li>TestLLSheetsExtra.bas</li>
 <li>TestFormulas.bas</li>
-<li>TestEventLinelistSheets.bas</li>
-<li>TestLinelist.bas</li>
-<li>TestLLDataEntry.bas</li>
-<li>TestSectionBuilder.bas</li>
-<li>TestVarWriter.bas</li>
 </ul>
 </details>
   </main>

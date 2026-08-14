@@ -11,40 +11,6 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>LLdictionary</h1>
-<p>Manages the &quot;Dictionary&quot; worksheet, the sheet that describes every variable of
-a linelist. Create binds the worksheet through a DataSheet. ColumnExists,
-VariableExists, UniqueValues and DataRange read it. AddColumn, InsertColumn,
-RemoveColumn and RenameColumn work on its columns, and ManageRows, InsertRows
-and DeleteRows on its rows. Sort orders the sheet, Clean empties it, Translate
-rewrites its labels, and Import and Export move it between workbooks.
-SpecialVars, ChoicesVars, GeoVars and TimeVars answer the variables of one
-kind.</p>
-<details open class="doc-section" id="preparation">
-<summary>PREPARATION</summary>
-<div class="section-body">
-<p>Prepare adds the helper columns a build reads: table names, column indices,
-CRF metadata, visibility and the geo rows. It runs once per sheet and Prepared
-says whether it has run. TotalNumberOfExports carries the number of export
-columns the sheet holds. The geo object Prepare is handed is typed Object and
-reached at run time, so LLGeo stays outside the compile dependencies of this
-class.</p>
-</div>
-</details>
-<details open class="doc-section" id="how-the-sheet-is-read">
-<summary>HOW THE SHEET IS READ</summary>
-<div class="section-body">
-<p>A row loop reads its block into a Variant once, works in memory, and writes
-the block back once.</p>
-</div>
-</details>
-<details open class="doc-section" id="what-is-reported">
-<summary>WHAT IS REPORTED</summary>
-<div class="section-body">
-<p>Entries filed while a member runs leave through HasCheckings and
-CheckingValues.</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="CustomTable.html">CustomTable</a>, <a href="DataSheet.html">DataSheet</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="TranslationObject.html">TranslationObject</a></p>
-</div>
-</details>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
 <div class="section-body">
@@ -54,51 +20,24 @@ CheckingValues.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal dictWksh As Worksheet, ByVal dictStartRow As Long, _
                        ByVal dictStartColumn As Long, _
-                       Optional ByVal numberOfExports As Long = 0) As LLdictionary
+                       Optional ByVal numberOfExports As Long = DEFAULTNUMBEROFEXPORTS) As ILLdictionary
 </code></pre>
 <p>Creates a linelist dictionary wrapper around the supplied worksheet. The
 routine initialises a backing <code>DataSheet</code> so all subsequent access goes through
 a consistent abstraction and callers interact with a predeclared instance.</p>
-<p><code>numberOfExports</code> defaults to 0, which means &quot;keep whatever the worksheet
-already stores&quot;. Fourteen of the twenty production call sites omit the
-argument, and a default of 20 wrote 20 over the real count and persisted it,
-so a workbook holding 3 exports came back claiming 20. <code>SetupErrors</code> then
-looped 1 To 20 over a three-row status table and reported notes about exports
-that are not there. The four call sites that pass a number still decide.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>dictWksh</code>: Worksheet hosting the dictionary data</li>
 <li><code>dictStartRow</code>: Long. Header row of the dictionary</li>
 <li><code>dictStartColumn</code>: Long. First column of the dictionary</li>
-<li><code>numberOfExports</code>: Optional Long. Expected number of export columns. Zero reads</li>
-<li><code>the</code>: stored value.</li>
+<li><code>numberOfExports</code>: Optional Long. Expected number of export columns</li>
 </ul>
-<p><strong>Returns:</strong> An LLdictionary instance</p>
+<p><strong>Returns:</strong> An ILLdictionary instance</p>
 <p><strong>Depends on:</strong></p>
 <ul>
 <li>DataSheet</li>
 <li>Checking</li>
 </ul>
-<hr />
-</div>
-</details>
-<details open class="doc-section" id="preparation">
-<summary>Preparation</summary>
-<div class="section-body">
-<h3 id="sort">Sort <a class="anchor-link" href="#sort">#</a></h3>
-<p><em>sort</em></p>
-<p><strong>Sort the dictionary by sheet and main section</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Sort()
-</code></pre>
-<p>Reached from the designer Sort button on the setup Dictionary sheet, through
-<code>EventSetup.SortTables</code>.</p>
-<p>The clean afterwards keeps the generated columns. The three helper columns the
-sort writes (&quot;main section sort&quot;, &quot;main section index&quot; and its number_ helper)
-sit outside the allowed list, so the plain clean already removes them. Passing
-True here also deleted table name, column index, visibility, crf index, crf
-choices, crf status and list auto, so a sort on a prepared dictionary undid the
-preparation.</p>
 <hr />
 </div>
 </details>
@@ -113,34 +52,29 @@ preparation.</p>
 </code></pre>
 <p>Loads the stored number of export columns from the worksheet when available.
 When no persisted value exists, the routine falls back to the requested input
-and persists it so subsequent sessions pick up the same configuration.
-A requested total of zero means &quot;use what is stored&quot;.</p>
+and persists it so subsequent sessions pick up the same configuration.</p>
+<hr />
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ILLdictionary
+</code></pre>
+<p>Convenience accessor so consuming code can fluently retrieve the instance
+returned by <code>Create</code> without repeatedly typing <code>Set x = New LLdictionary</code>.</p>
+<p><strong>Returns:</strong> ILLdictionary</p>
 <hr />
 <h2 id="int-data-elements">Data Elements</h2>
 <h3 id="int-data">Data <a class="anchor-link" href="#int-data">#</a></h3>
 <p><em>data</em></p>
 <p><strong>DataSheet backing store</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Data() As DataSheet
+<pre><code class="language-vb">Public Property Get Data() As IDataSheet
 </code></pre>
 <p>Expose the lazily initialised <code>DataSheet</code> wrapper used for all worksheet
 interactions. Consumers rely on this to perform advanced queries without
 directly manipulating Excel ranges.</p>
-<p><strong>Returns:</strong> DataSheet</p>
-<hr />
-<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
-<p><em>seal</em></p>
-<p><strong>Prevent further changes to creation-only setters</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Seal()
-</code></pre>
-<hr />
-<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
-<p><em>guard-not-sealed</em></p>
-<p><strong>Guard creation-only setters after sealing</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
-</code></pre>
+<p><strong>Returns:</strong> IDataSheet</p>
 <hr />
 <h3 id="int-totalnumberofexports">TotalNumberOfExports <a class="anchor-link" href="#int-totalnumberofexports">#</a></h3>
 <p><em>exports</em></p>
@@ -185,51 +119,47 @@ hidden counter.</p>
 <pre><code class="language-vb">Private Function NormaliseTotalExports(ByVal requestedTotal As Long, ByVal suppressInvalidLog As Boolean) As Long
 </code></pre>
 <hr />
+<h3 id="int-resetcolumncaches">ResetColumnCaches <a class="anchor-link" href="#int-resetcolumncaches">#</a></h3>
+<p><em>reset-export-cache</em></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetColumnCaches()
+</code></pre>
+<hr />
 <h3 id="int-persisttotalexports">PersistTotalExports <a class="anchor-link" href="#int-persisttotalexports">#</a></h3>
 <p><em>persist-exports</em></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PersistTotalExports(ByVal totalCount As Long)
 </code></pre>
-<p>Persist the export counter into the hidden name store of the dictionary
-worksheet.</p>
 <hr />
-<h3 id="int-persisttotalexportson">PersistTotalExportsOn <a class="anchor-link" href="#int-persisttotalexportson">#</a></h3>
-<p><em>persist-exports-on</em></p>
+<h3 id="int-persisttotalexportsonsheet">PersistTotalExportsOnSheet <a class="anchor-link" href="#int-persisttotalexportsonsheet">#</a></h3>
+<p><em>persist-exports-sheet</em></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub PersistTotalExportsOn(ByVal targetSheet As Worksheet, ByVal totalCount As Long)
-</code></pre>
-<p>Persist the export counter onto a worksheet this object does not own. Used
-when the counter is written into an exported workbook.</p>
-<hr />
-<h3 id="int-writetotalexports">WriteTotalExports <a class="anchor-link" href="#int-writetotalexports">#</a></h3>
-<p><em>write-exports</em></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub WriteTotalExports(ByVal store As HiddenNames, ByVal totalCount As Long)
-</code></pre>
-<hr />
-<h3 id="int-storedtotalexports">StoredTotalExports <a class="anchor-link" href="#int-storedtotalexports">#</a></h3>
-<p><em>stored-exports</em></p>
-<p><strong>Export counter held on the dictionary worksheet</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function StoredTotalExports() As Long
+<pre><code class="language-vb">Private Sub PersistTotalExportsOnSheet(ByVal sheet As Worksheet, ByVal totalCount As Long)
 </code></pre>
 <hr />
 <h3 id="int-storedtotalexportsfromsheet">StoredTotalExportsFromSheet <a class="anchor-link" href="#int-storedtotalexportsfromsheet">#</a></h3>
-<p><em>stored-exports-from</em></p>
-<p><strong>Export counter held on a foreign worksheet</strong></p>
+<p><em>stored-exports</em></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function StoredTotalExportsFromSheet(ByVal sourceSheet As Worksheet) As Long
+<pre><code class="language-vb">Private Function StoredTotalExportsFromSheet(ByVal sheet As Worksheet) As Long
 </code></pre>
 <hr />
 <h3 id="int-hiddennamestore">HiddenNameStore <a class="anchor-link" href="#int-hiddennamestore">#</a></h3>
 <p><em>hidden-name-store</em></p>
-<p><strong>Hidden name store of the dictionary worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function HiddenNameStore() As HiddenNames
+<pre><code class="language-vb">Private Function HiddenNameStore(Optional ByVal sheet As Worksheet) As IHiddenNames
 </code></pre>
-<p>The store is built once and kept. The host worksheet is fixed at creation, so
-the second test only guards the case where the backing DataSheet was replaced
-before the object was sealed.</p>
+<hr />
+<h3 id="int-trysheetnamedefinition">TrySheetNameDefinition <a class="anchor-link" href="#int-trysheetnamedefinition">#</a></h3>
+<p><em>try-sheet-name</em></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TrySheetNameDefinition(ByVal sheet As Worksheet, ByVal nameId As String) As Name
+</code></pre>
+<hr />
+<h3 id="int-extractsimplename">ExtractSimpleName <a class="anchor-link" href="#int-extractsimplename">#</a></h3>
+<p><em>extract-name</em></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExtractSimpleName(ByVal qualifiedName As String) As String
+</code></pre>
 <hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><em>wksh</em></p>
@@ -264,8 +194,6 @@ listobjects.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get DictEndRow() As Long
 </code></pre>
-<p>One <code>End(xlUp)</code> scan per call, so callers read it once and hold the number
-rather than asking inside a loop.</p>
 <p><strong>Returns:</strong> Long</p>
 <hr />
 <h3 id="int-dictendcolumn">DictEndColumn <a class="anchor-link" href="#int-dictendcolumn">#</a></h3>
@@ -274,7 +202,6 @@ rather than asking inside a loop.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get DictEndColumn() As Long
 </code></pre>
-<p>One <code>End(xlToLeft)</code> scan per call. Same rule as <code>DictEndRow</code>.</p>
 <p><strong>Returns:</strong> Long</p>
 <hr />
 <h3 id="int-datarange">DataRange <a class="anchor-link" href="#int-datarange">#</a></h3>
@@ -294,118 +221,7 @@ so filtering or header inclusion behaves consistently everywhere.</p>
 </ul>
 <p><strong>Returns:</strong> Range</p>
 <hr />
-<h2 id="int-block-readers-and-writers">Block Readers And Writers</h2>
-<h3 id="int-columnvalues">ColumnValues <a class="anchor-link" href="#int-columnvalues">#</a></h3>
-<p><em>column-values</em></p>
-<p><strong>Read a single-column Range as a 1-based list of values</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ColumnValues(ByVal target As Range) As Variant
-</code></pre>
-<p>Small helpers that move a whole column between the worksheet and a plain
-Variant array. They exist so every row loop in this class costs one read and
-one write instead of one crossing per cell.</p>
-<p><code>Range.Value</code> hands back a plain value for one cell and a two-dimensional
-array otherwise. This flattens both cases so callers see one shape.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>target</code>: Range. A single-column block.</li>
-</ul>
-<p><strong>Returns:</strong> Variant. A 1-based one-dimensional array of cell values.</p>
-<hr />
-<h3 id="int-rowvalues">RowValues <a class="anchor-link" href="#int-rowvalues">#</a></h3>
-<p><em>row-values</em></p>
-<p><strong>Read a single-row Range as a 1-based list of values</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function RowValues(ByVal target As Range) As Variant
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>target</code>: Range. A single-row block.</li>
-</ul>
-<p><strong>Returns:</strong> Variant. A 1-based one-dimensional array of cell values.</p>
-<hr />
-<h3 id="int-sheetcolumnvalues">SheetColumnValues <a class="anchor-link" href="#int-sheetcolumnvalues">#</a></h3>
-<p><em>sheet-column-values</em></p>
-<p><strong>Read one worksheet column between two rows</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SheetColumnValues(ByVal columnNumber As Long, _
-                                   ByVal firstRow As Long, _
-                                   ByVal lastRow As Long) As Variant
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>columnNumber</code>: Long. Worksheet column index.</li>
-<li><code>firstRow</code>: Long. Top row of the block.</li>
-<li><code>lastRow</code>: Long. Bottom row of the block.</li>
-</ul>
-<p><strong>Returns:</strong> Variant. A 1-based one-dimensional array of cell values.</p>
-<hr />
-<h3 id="int-writesheetcolumn">WriteSheetColumn <a class="anchor-link" href="#int-writesheetcolumn">#</a></h3>
-<p><em>write-sheet-column</em></p>
-<p><strong>Write a 1-based list of values back into one worksheet column</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub WriteSheetColumn(ByVal columnNumber As Long, ByVal firstRow As Long, ByRef values As Variant)
-</code></pre>
-<p>An element left <code>Empty</code> clears its cell, which is how the routines below leave
-a row untouched without writing an empty string into it. An empty string would
-count as content for <code>End(xlUp)</code> and move the last data row.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>columnNumber</code>: Long. Worksheet column index.</li>
-<li><code>firstRow</code>: Long. Top row of the block.</li>
-<li><code>values</code>: Variant. A one-dimensional array of values.</li>
-</ul>
-<hr />
-<h3 id="int-textof">TextOf <a class="anchor-link" href="#int-textof">#</a></h3>
-<p><em>text-of</em></p>
-<p><strong>Read one cell value as text without raising</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function TextOf(ByVal cellValue As Variant) As String
-</code></pre>
-<p>A cell holding an error value (#N/A and the like) or Null makes <code>CStr</code> raise a
-type mismatch. Such a value can never match a header or a control tag, so it
-reads as empty text.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>cellValue</code>: Variant. The raw cell value.</li>
-</ul>
-<p><strong>Returns:</strong> String</p>
-<hr />
-<h3 id="int-listposition">ListPosition <a class="anchor-link" href="#int-listposition">#</a></h3>
-<p><em>list-position</em></p>
-<p><strong>Find a value in a plain String list</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ListPosition(ByRef values() As String, ByVal usedCount As Long, _
-</code></pre>
-<p><code>BetterArray.Includes</code> copies the whole internal array on every call, so a
-linear scan over a local array is cheaper inside a row loop.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>values</code>: String array. The list, filled from index 1.</li>
-<li><code>usedCount</code>: Long. How many entries are filled.</li>
-<li><code>searchValue</code>: String. The value to look for.</li>
-</ul>
-<p><strong>Returns:</strong> Long. The 1-based position, or zero when the value is absent.</p>
-<hr />
 <h2 id="int-column-configuration">Column Configuration</h2>
-<h3 id="int-ensurecolumnsinitialized">EnsureColumnsInitialized <a class="anchor-link" href="#int-ensurecolumnsinitialized">#</a></h3>
-<p><em>ensure-columns</em></p>
-<p><strong>Build the allowed and generated column lists</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureColumnsInitialized()
-</code></pre>
-<p>Both lists come from constants that never move, so they are built once per
-object and never rebuilt. Export columns are answered by the &quot;export&quot; prefix
-test in <code>ColumnExists</code>; pushing <code>export 1</code> ... <code>export N</code> into the list as
-well changed no answer, and it made the list depend on the export counter.</p>
-<hr />
-<h3 id="int-ensureformatcolumns">EnsureFormatColumns <a class="anchor-link" href="#int-ensureformatcolumns">#</a></h3>
-<p><em>ensure-format-columns</em></p>
-<p><strong>Ensure the conditional formatting columns exist</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureFormatColumns()
-</code></pre>
-<hr />
 <h3 id="int-columnexists">ColumnExists <a class="anchor-link" href="#int-columnexists">#</a></h3>
 <p><em>columnexists</em></p>
 <p><strong>Test if a column exists</strong></p>
@@ -415,9 +231,6 @@ well changed no answer, and it made the list depend on the export counter.</p>
 <p>Checks whether a column header is present in the dictionary and optionally
 verifies it belongs to the known schema. Recording the attempt helps capture
 incomplete dictionaries during setup.</p>
-<p>The lookup lower-cases its argument and searches with <code>matchCase</code> False.
-<code>LLExport.ExportColumnName</code> builds &quot;Export 3&quot; with a capital and relies on
-that, so both sides have to keep it true.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>colName</code>: Column header to look for</li>
@@ -444,30 +257,14 @@ that, so both sides have to keep it true.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function UniqueValues(ByVal colName As String) As BetterArray
 </code></pre>
-<p>Collects a distinct list of values for the requested column. The column is
-read in one crossing and the duplicates are dropped in memory.</p>
+<p>Collects a distinct list of values for the requested column, ignoring
+case-sensitive duplicates to reflect how dictionary metadata is typically
+interpreted.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>colName</code>: Column header</li>
 </ul>
 <p><strong>Returns:</strong> BetterArray</p>
-<hr />
-<h3 id="int-sanitizesearchterm">SanitizeSearchTerm <a class="anchor-link" href="#int-sanitizesearchterm">#</a></h3>
-<p><em>sanitize-search-term</em></p>
-<p><strong>Escape the characters Excel reads as a search pattern</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SanitizeSearchTerm(ByVal searchText As String) As String
-</code></pre>
-<p><code>Range.Find</code> treats *, ?, [, ] and # as patterns, and a tilde as the escape.
-<code>TableSpecs</code> asks about composed names such as &quot;adm1_&quot; &amp; rowVar, so a user
-variable name carrying one of those characters would match the wrong row.
-<code>LLVariables</code> and <code>LLSheets</code> each hold their own copy of this routine; folding
-the three into one place belongs to the session that owns those two files.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>searchText</code>: String. The raw search term.</li>
-</ul>
-<p><strong>Returns:</strong> String. The escaped term.</p>
 <hr />
 <h3 id="int-variableexists">VariableExists <a class="anchor-link" href="#int-variableexists">#</a></h3>
 <p><em>variableexists</em></p>
@@ -478,10 +275,6 @@ the three into one place belongs to the session that owns those two files.</p>
 <p>Tests the dictionary for a specific variable identifier by scanning the
 &quot;variable name&quot; column. Used to guard operations that may attempt to insert
 duplicate entries.</p>
-<p><code>LookIn</code> and <code>SearchOrder</code> are named because <code>Range.Find</code> reuses whatever the
-last search anywhere in the application used, the user's own Ctrl+F included.
-The match stays case-sensitive: <code>LLVariables.Contains</code> answers the same way and
-<code>TableSpecs</code> reads both.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>varName</code>: Variable identifier</li>
@@ -539,20 +332,15 @@ column cannot be located to aid troubleshooting in designer flows.</p>
 </code></pre>
 <hr />
 <h2 id="int-row-operations">Row Operations</h2>
-<h3 id="int-managerows">ManageRows <a class="anchor-link" href="#int-managerows">#</a></h3>
-<p><em>managerows</em></p>
-<p><strong>Add or remove rows on the dictionary listobject</strong></p>
+<h3 id="int-addrows">AddRows <a class="anchor-link" href="#int-addrows">#</a></h3>
+<p><em>addrows</em></p>
+<p><strong>Append rows via listobject</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub ManageRows(Optional ByVal del As Boolean = False)
+<pre><code class="language-vb">Public Sub AddRows()
 </code></pre>
-<p>The dictionary listobject is taken as the first one on the worksheet, because
-this entry point has no selection to start from. <code>InsertRows</code> and <code>DeleteRows</code>
-work from the caller's selection and reach the table through it.
-Not every dictionary is table-backed; with no ListObject the attempt is logged.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>del</code>: Optional Boolean. True removes rows, False adds them.</li>
-</ul>
+<p>Adds rows to the listobject backing the dictionary while preserving table
+formatting. When no listobject is available the action is logged for
+traceability.</p>
 <hr />
 <h3 id="int-insertrows">InsertRows <a class="anchor-link" href="#int-insertrows">#</a></h3>
 <p><strong>Insert rows relative to a target selection</strong></p>
@@ -577,30 +365,16 @@ is logged and ignored to keep the structure stable.</p>
                       Optional ByVal forceShift As Boolean = False)
 </code></pre>
 <hr />
-<h3 id="int-resolverowtarget">ResolveRowTarget <a class="anchor-link" href="#int-resolverowtarget">#</a></h3>
-<p><em>resolve-row-target</em></p>
-<p><strong>Resolve the listobject behind a selection</strong></p>
+<h3 id="int-removerows">RemoveRows <a class="anchor-link" href="#int-removerows">#</a></h3>
+<p><em>removerows</em></p>
+<p><strong>Remove rows via listobject</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolveRowTarget(ByVal targetCell As Range, ByVal actionLabel As String) As ListObject
+<pre><code class="language-vb">Public Sub RemoveRows()
 </code></pre>
+<p>Removes rows from the dictionary listobject using the shared <code>ManageRows</code>
+helper. Logs a note when a listobject is not present.</p>
 <hr />
 <h2 id="int-specialised-views">Specialised Views</h2>
-<h3 id="int-resolvespecialvars">ResolveSpecialVars <a class="anchor-link" href="#int-resolvespecialvars">#</a></h3>
-<p><em>resolve-special-vars</em></p>
-<p><strong>Filter variables on a tag column</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolveSpecialVars(ByVal firstCondition As String, _
-                                    Optional ByVal secondCondition As String = vbNullString, _
-                                    Optional ByVal conditionName As String = &quot;Control&quot;) As BetterArray
-</code></pre>
-<p>Shared filtering routine behind <code>ChoicesVars</code>, <code>GeoVars</code>, and <code>TimeVars</code>. The
-function inspects the control column (or a custom column) and returns the
-variables that match the supplied criteria. Only variables living on
-horizontal sheets (<code>hlist2D</code>) are relevant for these helpers.</p>
-<p>The three columns are read as three blocks and matched in memory. <code>EventSetup</code>
-asks for five different filters back to back, so this used to walk the same
-three columns cell by cell five times.</p>
-<hr />
 <h3 id="int-specialvars">SpecialVars <a class="anchor-link" href="#int-specialvars">#</a></h3>
 <p><em>specialvars</em></p>
 <p><strong>Filtered variable list by criteria</strong></p>
@@ -651,16 +425,6 @@ column.</p>
 <p><strong>Returns:</strong> BetterArray</p>
 <hr />
 <h2 id="int-preparation">Preparation</h2>
-<h3 id="int-clearpreparedcache">ClearPreparedCache <a class="anchor-link" href="#int-clearpreparedcache">#</a></h3>
-<p><em>clear-prepared</em></p>
-<p><strong>Drop the held preparation answer</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ClearPreparedCache()
-</code></pre>
-<p>Called by every routine that adds, removes or renames a column, or moves the
-last data row, because <code>Prepared</code> reads six column names, two forbidden ones
-and the font colour of the cell below the data.</p>
-<hr />
 <h3 id="int-prepared">Prepared <a class="anchor-link" href="#int-prepared">#</a></h3>
 <p><em>prepared</em></p>
 <p><strong>Dictionary preparation flag</strong></p>
@@ -670,22 +434,13 @@ and the font colour of the cell below the data.</p>
 <p>Indicates whether all helper columns have been generated for designer
 workflows. The heuristic mirrors the legacy implementation by inspecting
 specific markers instead of tracking explicit state.</p>
-<p>A True answer is held on the object. VBA evaluates every operand of <code>And</code>, so
-one read costs eight column searches plus a font read, and
-<code>Formulas.ParsedLinelistFormula</code> reaches it once per token in every formula in
-the workbook through <code>LLSheets.VariableAddress</code>. That hot path always runs on a
-prepared dictionary, so holding True is where the whole win is.</p>
-<p>A False answer is read again every time. Preparation is what turns False into
-True, and another object over the same worksheet can be the one that runs it,
-so a held False could go stale with nothing to drop it. Every routine here that
-can turn True back into False drops the held answer itself.</p>
 <p><strong>Returns:</strong> Boolean</p>
 <hr />
 <h3 id="int-prepare">Prepare <a class="anchor-link" href="#int-prepare">#</a></h3>
 <p><em>prepare</em></p>
 <p><strong>Prepare dictionary for designer workflows</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Prepare(Optional ByVal preservedSheetNames As BetterArray, _
+<pre><code class="language-vb">Public Sub Prepare(Optional ByVal PreservedSheetNames As BetterArray, _
                    Optional ByVal geoObject As Object, _
                    Optional ByVal tablePrefix As String = &quot;table&quot;)
 </code></pre>
@@ -693,17 +448,12 @@ can turn True back into False drops the held answer itself.</p>
 table names, CRF indices, geo duplications, and visibility columns. The method
 guards against repeated execution by checking the <code>Prepared</code> flag and logs
 issues discovered during enrichment.</p>
-<p>The order of operations is fixed: exported workbooks depend on it. The sheet is
-sorted twice, once by <code>AppendNumberColumn</code> to group the rows by sheet and again
-inside <code>AddMainSectionSort</code> to order each sheet by main section. The second
-sort numbers its groups in first-seen order, so it needs the rows already
-grouped by sheet. Both sorts stay.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>preservedSheetNames</code>: BetterArray of sheet names that should keep their</li>
+<li><code>PreservedSheetNames</code>: BetterArray of sheet names that should keep their</li>
 <li><code>original</code>: values</li>
-<li><code>geoObject</code>: LLGeo instance required for geo expansions. Taken as Object and</li>
-<li><code>reached</code>: late.</li>
+<li><code>geoObject</code>: LLGeo instance required for geo expansions</li>
+<li><code>msgTrads</code>: ITranslationObject used during column creation</li>
 <li><code>tablePrefix</code>: Optional String prefix applied to generated table names</li>
 </ul>
 <hr />
@@ -712,25 +462,6 @@ grouped by sheet. Both sorts stay.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureRequiredColumns()
 </code></pre>
-<hr />
-<h3 id="int-validdictionarycolumn">ValidDictionaryColumn <a class="anchor-link" href="#int-validdictionarycolumn">#</a></h3>
-<p><em>valid-dictionary-column</em></p>
-<p><strong>Decide in memory whether a header belongs to the dictionary</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ValidDictionaryColumn(ByVal columnName As String, _
-                                       ByRef knownHeaders() As String, _
-</code></pre>
-<p>Same rule as <code>ColumnExists</code> with <code>checkValidity</code> set: the header must sit in
-the dictionary header row, and it must either be in the allowed list or start
-with the word &quot;export&quot;. The two log messages match the ones <code>ColumnExists</code>
-writes, so a cleaned workbook still reports the same notes.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>columnName</code>: String. The header, already lower-cased.</li>
-<li><code>knownHeaders</code>: String array. Lower-cased headers of the dictionary block.</li>
-<li><code>knownCount</code>: Long. How many entries of that array are filled.</li>
-</ul>
-<p><strong>Returns:</strong> Boolean. True when the column is kept.</p>
 <hr />
 <h3 id="int-clean">Clean <a class="anchor-link" href="#int-clean">#</a></h3>
 <p><em>clean</em></p>
@@ -741,163 +472,10 @@ writes, so a cleaned workbook still reports the same notes.</p>
 <p>Deletes columns that fall outside the supported dictionary schema. When the
 optional argument is True, helper columns introduced during preparation are
 removed as well so the dictionary reverts to the user-provided structure.</p>
-<p>The header row is read once and every decision is taken in memory. Asking the
-worksheet for each header and then searching the worksheet again for its name
-cost two crossings a column.</p>
-<p>The walk starts at the dictionary start column. It used to start at column 1,
-so for a dictionary that does not begin in column A the columns to its left
-were read as headers and deleted.</p>
-<p>This deletes ENTIRE worksheet columns. Anything else living on the Dictionary
-sheet to the right of the table goes with them.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>removeAddedColumns</code>: Optional Boolean. Remove preparation columns too.</li>
 </ul>
-<hr />
-<h3 id="int-goodsheetnames">GoodSheetNames <a class="anchor-link" href="#int-goodsheetnames">#</a></h3>
-<p><em>good-sheet-names</em></p>
-<p><strong>Suffix sheet names that clash with reserved names</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub GoodSheetNames(ByVal preservedSheetNames As BetterArray)
-</code></pre>
-<p>The sheet-name column is read once and written back only when a name really
-moved, so a dictionary with nothing to rename keeps its cells untouched.</p>
-<hr />
-<h3 id="int-normalisevariablename">NormaliseVariableName <a class="anchor-link" href="#int-normalisevariablename">#</a></h3>
-<p><em>normalise-variable-name</em></p>
-<p><strong>Clean one variable name in plain VBA</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function NormaliseVariableName(ByVal rawName As String) As String
-</code></pre>
-<p>Reproduces the three worksheet functions this used to call, with no crossing
-into Excel: U+00A0 NO-BREAK SPACE becomes a space, codes below 32 are dropped (worksheet
-CLEAN), the ends are trimmed and runs of spaces inside the text collapse to one
-(worksheet TRIM does that as well as trimming), then the remaining spaces
-become underscores.</p>
-<p>AscW answers a NEGATIVE number above code point 32767, so the control-code test
-guards on zero as well.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>rawName</code>: String. The value read from the variable name cell.</li>
-</ul>
-<p><strong>Returns:</strong> String. The normalised identifier.</p>
-<hr />
-<h3 id="int-uniquevarnames">UniqueVarNames <a class="anchor-link" href="#int-uniquevarnames">#</a></h3>
-<p><em>unique-var-names</em></p>
-<p><strong>Normalise variable names and force uniqueness</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub UniqueVarNames()
-</code></pre>
-<p>Trims whitespace, replaces spaces with underscores, and appends an underscore
-when two rows end up with the same identifier.</p>
-<p>Every short name is collected and reported in ONE message, and nothing is
-written when one is found. Raising on the first bad row left the rows above
-normalised and the rows below untouched, so the user was told about one row and
-handed a half-rewritten dictionary.</p>
-<hr />
-<h3 id="int-addvisibility">AddVisibility <a class="anchor-link" href="#int-addvisibility">#</a></h3>
-<p><em>add-visibility</em></p>
-<p><strong>Derive the visibility and CRF status columns</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddVisibility()
-</code></pre>
-<p>The logic mirrors the designer wizard so that prepared dictionaries behave the
-same whether produced manually or through automation. The status and control
-columns are read as two blocks and the two answers are written as two blocks.
-A row with an unhandled status keeps both cells empty, and the status is logged.</p>
-<hr />
-<h3 id="int-appendgeolines">AppendGeoLines <a class="anchor-link" href="#int-appendgeolines">#</a></h3>
-<p><em>append-geo-lines</em></p>
-<p><strong>Expand every geo control variable into twelve rows</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AppendGeoLines(ByVal geoObject As Object)
-</code></pre>
-<p>Each &quot;geo&quot; control variable becomes 12 contiguous rows:
-4 admin levels   (adm1-4) with geo1-4 controls
-4 p-codes        (pcode_adm1-4) hidden, formula-driven
-4 concatenations (concat_adm1-4) hidden, formula-driven</p>
-<p>The original geo row is modified in place to become adm1 and 11 new rows are
-inserted right after it. <code>DictEndRow()</code> is read on every pass ON PURPOSE, so
-the search range follows the rows this routine keeps inserting. Do not turn
-this into a single block read.</p>
-<p><code>geoObject.GeoNames(...)</code> is read per level; <code>LLGeo</code> holds those in its own
-cache, so the repeat costs nothing here.</p>
-<hr />
-<h3 id="int-appendhflines">AppendHFLines <a class="anchor-link" href="#int-appendhflines">#</a></h3>
-<p><em>append-hf-lines</em></p>
-<p><strong>Give every health facility variable its hidden p-code row</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AppendHFLines()
-</code></pre>
-<p>A health facility variable occupies TWO worksheet columns, and until now it
-only ever wrote one. AppendColumnIndex reserves the pair -- its <code>Case &quot;hf&quot;</code>
-advances the next variable by 2 -- and LLSpatial.HF_COLUMN_SPAN agrees the
-block is two wide. Nothing filled the second. LLSheets sizes the data table to
-<code>max(variable count, largest column index)</code>, so the table stretched over a
-header cell nobody had written and Excel named that column &quot;Column 1&quot; itself.
-A phantom column in every linelist carrying a health facility.</p>
-<p>This is the geo expansion cut to its smallest form: one inserted row rather
-than eleven, hidden the same way, controlled by &quot;formula&quot; the same way. The
-p-code is looked up on the facility column ALONE, matched against <code>hf_concat</code>
-and read out of <code>hf_pcode</code>, both of which LLGeo publishes off T_HF beside the
-four admin pairs.</p>
-<p>The variable name is used exactly as the dictionary holds it. The geo branch
-rewrites its own row to <code>adm1_&lt;name&gt;</code> and can build prefixed names from what
-it started with; no such rewrite happens to a health facility row, so the name
-in the cell is the name VarWriter puts in the header, and it is the only
-spelling that will match the column at run time.</p>
-<hr />
-<h3 id="int-appendnumbercolumn">AppendNumberColumn <a class="anchor-link" href="#int-appendnumbercolumn">#</a></h3>
-<p><em>append-number-column</em></p>
-<p><strong>Number each distinct group and sort the dictionary on it</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AppendNumberColumn(Optional ByVal onColName As String = &quot;sheet name&quot;, _
-                               Optional ByVal tablePrefix As String = &quot;table&quot;, _
-                               Optional ByVal newColumn As String = &quot;table name&quot;)
-</code></pre>
-<p>Assigns an incrementing number to each distinct sheet (or user-defined group)
-so the dictionary can later produce stable table names, sorts the whole block
-on that number, then writes the visible name column as a formula.</p>
-<p>The source column index is resolved ONCE. It used to be resolved inside the row
-loop, and <code>DataSheet.ColumnIndex</code> is a header scan plus a search, so an N-row
-pass cost N searches.</p>
-<p>The name column stays a formula write: the formula is written, autofilled and
-then flattened on purpose (<code>sortRange.Value = sortRange.Value</code>).</p>
-<hr />
-<h3 id="int-addmainsectionsort">AddMainSectionSort <a class="anchor-link" href="#int-addmainsectionsort">#</a></h3>
-<p><em>add-main-section-sort</em></p>
-<p><strong>Add the main section sort helper and order the sheet on it</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddMainSectionSort()
-</code></pre>
-<p>Writes a formula column holding &quot;<sheet name> - <main section>&quot;, or the row
-number when the main section is empty, then numbers and sorts on it through
-<code>AppendNumberColumn</code>. The formula write and its autofill stay as they are.</p>
-<hr />
-<h3 id="int-appendcolumnindex">AppendColumnIndex <a class="anchor-link" href="#int-appendcolumnindex">#</a></h3>
-<p><em>append-column-index</em></p>
-<p><strong>Compute the final column order used by the designer</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AppendColumnIndex()
-</code></pre>
-<p>Sheet-level grouping is respected and gaps are inserted for geo/hf variables
-that expand into several columns. The three source columns are read as three
-blocks and the answer is written as one block.</p>
-<hr />
-<h3 id="int-appendcrflineindex">AppendCRFLineIndex <a class="anchor-link" href="#int-appendcrflineindex">#</a></h3>
-<p><em>append-crf-line-index</em></p>
-<p><strong>Populate the CRF indices</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AppendCRFLineIndex()
-</code></pre>
-<p>Form designers map dictionary variables to the rows shown in CRF-style layouts.
-The walk goes through sections, subsections and controls to insert spacing
-exactly like the interactive designer.</p>
-<p>Five columns are read as five blocks and the two answers are written as two
-blocks. This was the heaviest loop in the class: five range reads and up to two
-writes per row.</p>
-<p>A row that needs no choices marker keeps its cell Empty. Writing an empty
-string there would count as content for the last-row scan.</p>
 <hr />
 <h2 id="int-data-exchange">Data Exchange</h2>
 <h3 id="int-import">Import <a class="anchor-link" href="#int-import">#</a></h3>
@@ -912,15 +490,11 @@ string there would count as content for the last-row scan.</p>
 <p>Replaces the current dictionary content with data copied from another
 worksheet. The incoming data is wrapped in a temporary <code>DataSheet</code> so the
 existing cleaning and formatting routines can be reused.</p>
-<p>With <code>clearSheet</code> True the whole worksheet is cleared. Sheet-level hidden names
-survive a <code>Cells.Clear</code>, and the export counter is one of them, which is why
-the source counter is read first.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>fromWksh</code>: Source worksheet</li>
 <li><code>fromStartRow</code>: Long. Start row of the source data</li>
 <li><code>fromStartcol</code>: Long. Start column of the source data</li>
-<li><code>clearSheet</code>: Optional Boolean. Clear the whole host worksheet first.</li>
 </ul>
 <hr />
 <h3 id="int-export">Export <a class="anchor-link" href="#int-export">#</a></h3>
@@ -935,12 +509,6 @@ the source counter is read first.</p>
 <p>Copies the dictionary into the destination workbook with optional filtering,
 table creation, and sheet visibility adjustments to mirror the interactive
 export workflow.</p>
-<p>The prepared marker is written from the TARGET worksheet and it is written
-whatever <code>addListObject</code> says. The copy always lands on the first cell of the
-target, so taking the row from the source put the marker four rows below the
-data for every setup workbook, whose dictionary starts at row 5, and <code>Prepared</code>
-then answered False on the copy. <code>LLExporter.AddDictionary</code> writes the same
-marker itself, at the same cell, because it could not rely on this one.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>toWkb</code>: Destination workbook</li>
@@ -955,120 +523,68 @@ marker itself, at the same cell, because it could not rely on this one.</p>
 <p><em>translate</em></p>
 <p><strong>Translate dictionary labels</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Translate(ByVal TransObject As TranslationObject)
+<pre><code class="language-vb">Public Sub Translate(ByVal TransObject As ITranslationObject)
 </code></pre>
 <p>Delegates the translation of user-facing columns (labels, notes, sections) to
 the provided translation object while protecting formula columns from direct
 text replacement.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>TransObject</code>: TranslationObject responsible for translations</li>
+<li><code>TransObject</code>: ITranslationObject responsible for translations</li>
 </ul>
-<hr />
-<h2 id="int-checkings">Checkings</h2>
-<h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
-<p><em>log-info</em></p>
-<p><strong>Record one event in the shared checking object</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, Optional ByVal scope As Byte = checkingNote)
-</code></pre>
-<p>All noteworthy events (missing columns, normalisation steps, etc.) are piped
-into the shared checking object so setup and designer screens can surface
-diagnostics to the user. The host worksheet name is read only when the checking
-object is built; it used to cost two crossings on every logged line, and <code>Clean</code>
-can log once per deleted column.</p>
-<hr />
-<h3 id="int-harvestcollaboratorcheckings">HarvestCollaboratorCheckings <a class="anchor-link" href="#int-harvestcollaboratorcheckings">#</a></h3>
-<p><em>harvest-collaborator-checkings</em></p>
-<p><strong>Fold what a collaborator filed into this dictionary's entries</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As Checking)
-</code></pre>
-<p><code>DataSheet</code> and <code>CustomTable</code> each keep a store of their own, and until
-this line nobody read either of them. An import that aborted, or a column
-name a table could not find, was filed and then dropped.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>collaboratorChecks</code>: Checking. What the collaborator filed.</li>
-</ul>
-<hr />
-<h3 id="int-mergecollaboratorcheckings">MergeCollaboratorCheckings <a class="anchor-link" href="#int-mergecollaboratorcheckings">#</a></h3>
-<p><em>merge-collaborator-checkings</em></p>
-<p><strong>Take the data sheet's entries before the report is read</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub MergeCollaboratorCheckings()
-</code></pre>
-<p>The data sheet lives as long as the dictionary does, so its entries are
-folded in when the report is asked for. The flag keeps the fold to once:
-the caller reads <code>HasCheckings</code> and then <code>CheckingValues</code>, and appending
-twice would double every line.</p>
-<hr />
-<h3 id="int-hascheckings">HasCheckings <a class="anchor-link" href="#int-hascheckings">#</a></h3>
-<p><em>has-checkings</em></p>
-<p><strong>True once something was logged</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
-</code></pre>
-<p><strong>Returns:</strong> Boolean</p>
-<hr />
-<h3 id="int-checkingvalues">CheckingValues <a class="anchor-link" href="#int-checkingvalues">#</a></h3>
-<p><em>checking-values</em></p>
-<p><strong>The logged events</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get CheckingValues() As Checking
-</code></pre>
-<p><strong>Returns:</strong> Checking</p>
-<hr />
-<h2 id="int-errors">Errors</h2>
-<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
-<p><em>throw-error</em></p>
-<p><strong>Raise a ProjectError and record it</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
-</code></pre>
-<p>The message is logged BEFORE the raise. Logging afterwards meant the line never
-ran, so every raise from this class was missing from the generation report,
-which is the one place the user sees why a build stopped.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (57 file(s))</summary>
+<summary>Used in (71 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
+<li><a href="ITableSpecs.html">ITableSpecs.cls</a></li>
 <li><a href="TableSpecs.html">TableSpecs.cls</a></li>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
+<li><a href="ILinelistBuildService.html">ILinelistBuildService.cls</a></li>
+<li><a href="LinelistBuildService.html">LinelistBuildService.cls</a></li>
+<li><a href="ILLdictionary.html">ILLdictionary.cls</a></li>
+<li><a href="ILLExport.html">ILLExport.cls</a></li>
+<li><a href="ILLSheets.html">ILLSheets.cls</a></li>
+<li><a href="ILLVariables.html">ILLVariables.cls</a></li>
+<li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="LLExport.html">LLExport.cls</a></li>
 <li><a href="LLSheets.html">LLSheets.cls</a></li>
 <li><a href="LLVariables.html">LLVariables.cls</a></li>
 <li><a href="FormulaCondition.html">FormulaCondition.cls</a></li>
 <li><a href="Formulas.html">Formulas.cls</a></li>
+<li><a href="IFormulaCondition.html">IFormulaCondition.cls</a></li>
 <li><a href="ValueOfFormula.html">ValueOfFormula.cls</a></li>
+<li><a href="ILLGeo.html">ILLGeo.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
-<li><a href="LLSpatial.html">LLSpatial.cls</a></li>
 <li><a href="EventLinelist.html">EventLinelist.cls</a></li>
+<li><a href="IEventLinelist.html">IEventLinelist.cls</a></li>
+<li><a href="ILinelist.html">ILinelist.cls</a></li>
+<li><a href="ILinelistSpecs.html">ILinelistSpecs.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
-<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
+<li><a href="ListBuilder.html">ListBuilder.cls</a></li>
 <li><a href="SectionBuilder.html">SectionBuilder.cls</a></li>
-<li><a href="SectionMap.html">SectionMap.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li><a href="EventSetup.html">EventSetup.cls</a></li>
+<li><a href="IEventSetup.html">IEventSetup.cls</a></li>
+<li><a href="ISetupErrors.html">ISetupErrors.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
-<li><a href="SetupImport.html">SetupImport.cls</a></li>
-<li><a href="ShowHide.html">ShowHide.cls</a></li>
-<li>InitTransfer.bas</li>
+<li><a href="SetupImportService.html">SetupImportService.cls</a></li>
+<li><a href="ShowHideManager.html">ShowHideManager.cls</a></li>
+<li>DesignerMain.bas</li>
+<li>LinelistEvents.bas</li>
+<li><a href="DesignerImportService.html">DesignerImportService.cls</a></li>
+<li><a href="IDesignerImportService.html">IDesignerImportService.cls</a></li>
+<li>EventsDesignerAdvanced.bas</li>
+<li>GenerationReport.bas</li>
 <li>EventsLinelistButtons.bas</li>
-<li>FormLogicAdvanced.bas</li>
 <li>MasterSetupHelpers.bas</li>
-<li>TestAnalysisOutput.bas</li>
+<li>SetupHelpers.bas</li>
 <li>TestCrossTable.bas</li>
 <li>TestCrossTableFormula.bas</li>
-<li>TestFormulaBuilder.bas</li>
-<li>TestSpatialTables.bas</li>
 <li>TestTableSpecs.bas</li>
-<li>TestLLExporter.bas</li>
-<li>TestLLImporter.bas</li>
 <li>TestLLdictionary.bas</li>
 <li>TestLLExport.bas</li>
 <li>TestLLSheets.bas</li>
@@ -1078,19 +594,20 @@ which is the one place the user sees why a build stopped.</p>
 <li>TestFormulaCondition.bas</li>
 <li>TestFormulas.bas</li>
 <li>TestValueOfFormula.bas</li>
-<li>TestGraphSeries.bas</li>
-<li>TestTimeSeriesGraphs.bas</li>
-<li>TestHeadlessLinelistBuild.bas</li>
-<li>GeoTestFixture.bas</li>
-<li>TestEventLinelistSheets.bas</li>
 <li>TestLinelist.bas</li>
-<li>TestLinelistSpecs.bas</li>
-<li>TestLLDataEntry.bas</li>
+<li>TestListBuilder.bas</li>
 <li>TestSectionBuilder.bas</li>
-<li>TestSectionMap.bas</li>
 <li>TestVarWriter.bas</li>
-<li>TestSetupImport.bas</li>
-<li>TestShowHide.bas</li>
+<li>TestShowHideManager.bas</li>
+<li><a href="AnalysisDictionaryStub.html">AnalysisDictionaryStub.cls</a></li>
+<li><a href="DictionaryMinimalStub.html">DictionaryMinimalStub.cls</a></li>
+<li><a href="LinelistSpecsWorkbookStub.html">LinelistSpecsWorkbookStub.cls</a></li>
+<li><a href="LinelistStub.html">LinelistStub.cls</a></li>
+<li><a href="LLGeoDropdownStub.html">LLGeoDropdownStub.cls</a></li>
+<li><a href="LLVarContextSpecsStub.html">LLVarContextSpecsStub.cls</a></li>
+<li><a href="LLVarContextVariablesStub.html">LLVarContextVariablesStub.cls</a></li>
+<li><a href="TableSpecsLinelistStub.html">TableSpecsLinelistStub.cls</a></li>
+<li>TestLinelistSpecs.bas</li>
 </ul>
 </details>
   </main>

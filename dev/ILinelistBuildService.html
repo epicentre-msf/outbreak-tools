@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ILinelistBuildService - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ILinelistBuildService</h1>
+<p>Defines the public contract for the LinelistBuildService class, which
+orchestrates building a linelist by exporting pass-through components
+(dictionary, choices, exports, analysis, translations, hidden names)
+directly from a setup workbook to the linelist, and exporting
+designer-sourced components (geo, passwords, formatter, language codes)
+from the designer workbook to the linelist. After all exports,
+domain manager instances targeting the linelist workbook are available
+via accessor properties.</p>
+<details open class="doc-section" id="lifecycle">
+<summary>Lifecycle</summary>
+<div class="section-body">
+<h3 id="configure">Configure <a class="anchor-link" href="#configure">#</a></h3>
+<p><strong>Bind the service to a designer workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
+</code></pre>
+<p>Sets the internal host workbook reference. Must be called before any
+other operation. Raises an error when the workbook is Nothing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The designer workbook.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="core-operations">
+<summary>Core Operations</summary>
+<div class="section-body">
+<h3 id="importsetuptolinelist">ImportSetupToLinelist <a class="anchor-link" href="#importsetuptolinelist">#</a></h3>
+<p><strong>Export pass-through components directly from setup to linelist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ImportSetupToLinelist(ByVal setupPath As String, ByVal targetBook As Workbook)
+</code></pre>
+<p>Opens the setup workbook at the supplied path (read-only), then exports
+dictionary, choices, exports, analysis, and hidden names directly into
+the target linelist workbook. The formatter is also exported from setup
+when it was not already imported via the ribbon (TAG_FORMATTER_IMPORTED).
+Translations are created directly on the linelist sheet. The setup
+workbook is always closed on exit, even when errors occur.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>setupPath</code>: String. Full path to the setup workbook (.xlsb or .xlsx).</li>
+<li><code>targetBook</code>: Workbook. The linelist workbook to receive exported data.</li>
+</ul>
+<hr />
+<h3 id="exportdesignercomponents">ExportDesignerComponents <a class="anchor-link" href="#exportdesignercomponents">#</a></h3>
+<p><strong>Export designer-sourced components to the linelist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ExportDesignerComponents(ByVal targetBook As Workbook)
+</code></pre>
+<p>Exports geo, passwords, formatter (when ribbon-imported), and language
+HiddenNames from the designer workbook into the target linelist workbook.
+These are components that the user configures via the designer ribbon
+and cannot come directly from the setup file.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetBook</code>: Workbook. The linelist workbook to receive exported data.</li>
+</ul>
+<hr />
+<h3 id="buildexportedinstances">BuildExportedInstances <a class="anchor-link" href="#buildexportedinstances">#</a></h3>
+<p><strong>Create domain manager instances from the exported linelist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub BuildExportedInstances(ByVal targetBook As Workbook)
+</code></pre>
+<p>After ImportSetupToLinelist and ExportDesignerComponents have written
+sheets into the target workbook, this method creates new domain manager
+instances pointing to those sheets. Each manager is created only when
+its corresponding sheet exists in the target workbook.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetBook</code>: Workbook. The linelist workbook containing exported data.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="exported-instances">
+<summary>Exported Instances</summary>
+<div class="section-body">
+<h3 id="exporteddictionary">ExportedDictionary <a class="anchor-link" href="#exporteddictionary">#</a></h3>
+<p><strong>Dictionary manager targeting the linelist workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedDictionary() As ILLdictionary
+</code></pre>
+<p><strong>Returns:</strong> ILLdictionary. The exported dictionary manager, or Nothing.</p>
+<hr />
+<h3 id="exportedchoices">ExportedChoices <a class="anchor-link" href="#exportedchoices">#</a></h3>
+<p><strong>Choices manager targeting the linelist workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedChoices() As ILLChoices
+</code></pre>
+<p><strong>Returns:</strong> ILLChoices. The exported choices manager, or Nothing.</p>
+<hr />
+<h3 id="exportedanalysis">ExportedAnalysis <a class="anchor-link" href="#exportedanalysis">#</a></h3>
+<p><strong>Analysis manager targeting the linelist workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedAnalysis() As IAnalysis
+</code></pre>
+<p><strong>Returns:</strong> IAnalysis. The exported analysis manager, or Nothing.</p>
+<hr />
+<h3 id="exportedexport">ExportedExport <a class="anchor-link" href="#exportedexport">#</a></h3>
+<p><strong>Export manager targeting the linelist workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedExport() As ILLExport
+</code></pre>
+<p><strong>Returns:</strong> ILLExport. The exported export manager, or Nothing.</p>
+<hr />
+<h3 id="exportedgeo">ExportedGeo <a class="anchor-link" href="#exportedgeo">#</a></h3>
+<p><strong>Geo manager targeting the linelist workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedGeo() As ILLGeo
+</code></pre>
+<p><strong>Returns:</strong> ILLGeo. The exported geo manager, or Nothing.</p>
+<hr />
+<h3 id="exportedpasswords">ExportedPasswords <a class="anchor-link" href="#exportedpasswords">#</a></h3>
+<p><strong>Passwords manager targeting the linelist workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedPasswords() As IPasswords
+</code></pre>
+<p><strong>Returns:</strong> IPasswords. The exported passwords manager, or Nothing.</p>
+<hr />
+<h3 id="exportedtranslations">ExportedTranslations <a class="anchor-link" href="#exportedtranslations">#</a></h3>
+<p><strong>Translations manager targeting the linelist workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedTranslations() As ILLTranslation
+</code></pre>
+<p><strong>Returns:</strong> ILLTranslation. The exported translations manager, or Nothing.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="state">
+<summary>State</summary>
+<div class="section-body">
+<h3 id="hostworkbook">HostWorkbook <a class="anchor-link" href="#hostworkbook">#</a></h3>
+<p><strong>The configured host (designer) workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HostWorkbook() As Workbook
+</code></pre>
+<p><strong>Returns:</strong> Workbook. The host workbook.</p>
+<hr />
+</div>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

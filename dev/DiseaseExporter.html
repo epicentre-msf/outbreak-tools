@@ -45,9 +45,9 @@
 <h3 id="int-builddiseaseworkbook">BuildDiseaseWorkbook <a class="anchor-link" href="#int-builddiseaseworkbook">#</a></h3>
 <p><strong>Populate a workbook with dictionary, choices, translations, and metadata.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function BuildDiseaseWorkbook(ByVal diseaseWksh As Worksheet, _
+<pre><code class="language-vb">Public Function BuildDiseaseWorkbook(ByVal diseaseSheet As Worksheet, _
                                      ByVal translationTable As ListObject, _
-                                     ByVal ribbonTranslations As TranslationObject, _
+                                     ByVal ribbonTranslations As ITranslationObject, _
                                      ByVal diseaseName As String, _
                                      ByVal languageTag As String, _
                                      Optional ByVal diseaseCode As String = vbNullString) As Workbook
@@ -57,9 +57,9 @@
 <p><strong>Export the disease workbook to disk and return the saved file path.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExportDisease(ByVal exportFolder As String, _
-                              ByVal diseaseWksh As Worksheet, _
+                              ByVal diseaseSheet As Worksheet, _
                               ByVal translationTable As ListObject, _
-                              ByVal ribbonTranslations As TranslationObject, _
+                              ByVal ribbonTranslations As ITranslationObject, _
                               ByVal diseaseName As String, _
                               ByVal languageTag As String, _
                               Optional ByVal diseaseCode As String = vbNullString) As String
@@ -103,7 +103,7 @@
 <h3 id="int-validatediseaseinputs">ValidateDiseaseInputs <a class="anchor-link" href="#int-validatediseaseinputs">#</a></h3>
 <p><strong>Validate disease export inputs.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ValidateDiseaseInputs(ByVal diseaseWksh As Worksheet, _
+<pre><code class="language-vb">Private Sub ValidateDiseaseInputs(ByVal diseaseSheet As Worksheet, _
                                   ByVal diseaseName As String, _
                                   ByVal languageTag As String)
 </code></pre>
@@ -124,7 +124,7 @@
 <h3 id="int-preparesheets">PrepareSheets <a class="anchor-link" href="#int-preparesheets">#</a></h3>
 <p><strong>Prepare disease export worksheets.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub PrepareSheets(ByVal targetBook As Workbook, _
+<pre><code class="language-vb">Private Sub PrepareSheets(ByVal workbook As Workbook, _
                           ByRef metadataSheet As Worksheet, _
                           ByRef dictionarySheet As Worksheet, _
                           ByRef choicesSheet As Worksheet, _
@@ -134,25 +134,25 @@
 <h3 id="int-preparemigrationsheets">PrepareMigrationSheets <a class="anchor-link" href="#int-preparemigrationsheets">#</a></h3>
 <p><strong>Prepare migration workbook worksheets.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub PrepareMigrationSheets(ByVal targetBook As Workbook)
+<pre><code class="language-vb">Private Sub PrepareMigrationSheets(ByVal workbook As Workbook)
 </code></pre>
 <hr />
 <h3 id="int-resolvediseasetable">ResolveDiseaseTable <a class="anchor-link" href="#int-resolvediseasetable">#</a></h3>
 <p><strong>Retrieve the disease table from the worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolveDiseaseTable(ByVal diseaseWksh As Worksheet) As ListObject
+<pre><code class="language-vb">Private Function ResolveDiseaseTable(ByVal diseaseSheet As Worksheet) As ListObject
 </code></pre>
 <hr />
 <h3 id="int-resolvelistobject">ResolveListObject <a class="anchor-link" href="#int-resolvelistobject">#</a></h3>
 <p><strong>Retrieve a ListObject from a named worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolveListObject(ByVal targetBook As Workbook, ByVal sheetName As String) As ListObject
+<pre><code class="language-vb">Private Function ResolveListObject(ByVal workbook As Workbook, ByVal sheetName As String) As ListObject
 </code></pre>
 <hr />
 <h3 id="int-resolvesheets">ResolveSheets <a class="anchor-link" href="#int-resolvesheets">#</a></h3>
 <p><strong>Enumerate worksheets from provided disease names.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolveSheets(ByVal targetBook As Workbook, ByVal diseaseNames As BetterArray) As Collection
+<pre><code class="language-vb">Private Function ResolveSheets(ByVal workbook As Workbook, ByVal diseaseNames As BetterArray) As Collection
 </code></pre>
 <hr />
 <h3 id="int-populatemetadata">PopulateMetadata <a class="anchor-link" href="#int-populatemetadata">#</a></h3>
@@ -199,7 +199,7 @@
 <h3 id="int-findworksheet">FindWorksheet <a class="anchor-link" href="#int-findworksheet">#</a></h3>
 <p><strong>Locate a worksheet by name without relying on implicit errors.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function FindWorksheet(ByVal targetBook As Workbook, ByVal sheetName As String) As Worksheet
+<pre><code class="language-vb">Private Function FindWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Worksheet
 </code></pre>
 <hr />
 <h3 id="int-splitchoices">SplitChoices <a class="anchor-link" href="#int-splitchoices">#</a></h3>
@@ -217,7 +217,7 @@
 <h3 id="int-populatemigrationdisease">PopulateMigrationDisease <a class="anchor-link" href="#int-populatemigrationdisease">#</a></h3>
 <p><strong>Populate a migration worksheet with disease data.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub PopulateMigrationDisease(ByVal targetSheet As Worksheet, ByVal diseaseWksh As Worksheet)
+<pre><code class="language-vb">Private Sub PopulateMigrationDisease(ByVal targetSheet As Worksheet, ByVal diseaseSheet As Worksheet)
 </code></pre>
 <hr />
 <h3 id="int-applysheetcosmetics">ApplySheetCosmetics <a class="anchor-link" href="#int-applysheetcosmetics">#</a></h3>
@@ -232,7 +232,7 @@
 <h3 id="int-applymigrationformatting">ApplyMigrationFormatting <a class="anchor-link" href="#int-applymigrationformatting">#</a></h3>
 <p><strong>Apply formatting to migration workbook sheets.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyMigrationFormatting(ByVal targetBook As Workbook)
+<pre><code class="language-vb">Private Sub ApplyMigrationFormatting(ByVal workbook As Workbook)
 </code></pre>
 <hr />
 <h3 id="int-autofitsheet">AutoFitSheet <a class="anchor-link" href="#int-autofitsheet">#</a></h3>
@@ -244,7 +244,7 @@
 <h3 id="int-ensureworksheet">EnsureWorksheet <a class="anchor-link" href="#int-ensureworksheet">#</a></h3>
 <p><strong>Ensure a worksheet exists and optionally rename the provided template.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function EnsureWorksheet(ByVal targetBook As Workbook, _
+<pre><code class="language-vb">Private Function EnsureWorksheet(ByVal workbook As Workbook, _
                                  ByVal sheetName As String, _
                                  Optional ByVal template As Worksheet = Nothing) As Worksheet
 </code></pre>
@@ -314,8 +314,10 @@
 <hr />
 </details>
 <details>
-<summary>Used in (2 file(s))</summary>
+<summary>Used in (4 file(s))</summary>
 <ul>
+<li><a href="DiseaseExporter.html">DiseaseExporter.cls</a></li>
+<li><a href="IDiseaseExporter.html">IDiseaseExporter.cls</a></li>
 <li>TestDiseaseExporter.bas</li>
 <li>TestDiseaseIntegration.bas</li>
 </ul>
