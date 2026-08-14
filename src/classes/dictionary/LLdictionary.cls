@@ -1143,8 +1143,21 @@ Public Sub Prepare(Optional ByVal preservedSheetNames As BetterArray, _
         If TypeName(geoObject) <> "LLGeo" Then
             LogInfo "Geo object should be of type LLGeo, geolines not append", checkingError
         Else
-            If Not controlRange.Find(What:="geo", lookAt:=xlWhole, MatchCase:=True) Is Nothing Then
-                If ColumnExists("control") Then AppendGeoLines geoObject
+            If ColumnExists("control") Then
+                If Not controlRange.Find(What:="geo", lookAt:=xlWhole, MatchCase:=True) Is Nothing Then
+                    AppendGeoLines geoObject
+                End If
+
+                'Read the control column again. AppendGeoLines inserts eleven
+                'rows per geo variable, and the range taken above stops where
+                'the dictionary used to end.
+                Set controlRange = DataRange("control")
+
+                If Not controlRange Is Nothing Then
+                    If Not controlRange.Find(What:="hf", lookAt:=xlWhole, MatchCase:=True) Is Nothing Then
+                        AppendHFLines
+                    End If
+                End If
             End If
         End If
     End If
@@ -1628,6 +1641,110 @@ Private Sub AppendGeoLines(ByVal geoObject As Object)
 
         'Advance past all expanded rows
         geoRow = geoRow + GEO_EXPANSION
+    Loop
+
+    ClearPreparedCache
+End Sub
+
+'@label:append-hf-lines
+'@sub-title Give every health facility variable its hidden p-code row
+'@details
+'A health facility variable occupies TWO worksheet columns, and until now it
+'only ever wrote one. AppendColumnIndex reserves the pair -- its `Case "hf"`
+'advances the next variable by 2 -- and LLSpatial.HF_COLUMN_SPAN agrees the
+'block is two wide. Nothing filled the second. LLSheets sizes the data table to
+'`max(variable count, largest column index)`, so the table stretched over a
+'header cell nobody had written and Excel named that column "Column 1" itself.
+'A phantom column in every linelist carrying a health facility.
+'
+'This is the geo expansion cut to its smallest form: one inserted row rather
+'than eleven, hidden the same way, controlled by "formula" the same way. The
+'p-code is looked up on the facility column ALONE, matched against `hf_concat`
+'and read out of `hf_pcode`, both of which LLGeo publishes off T_HF beside the
+'four admin pairs.
+'
+'The variable name is used exactly as the dictionary holds it. The geo branch
+'rewrites its own row to `adm1_<name>` and can build prefixed names from what
+'it started with; no such rewrite happens to a health facility row, so the name
+'in the cell is the name VarWriter puts in the header, and it is the only
+'spelling that will match the column at run time.
+Private Sub AppendHFLines()
+    Const HF_EXPANSION As Long = 2
+
+    Dim hostSheet As Worksheet
+    Dim controlIdx As Long
+    Dim varIdx As Long
+    Dim mainLabelIdx As Long
+    Dim registerIdx As Long
+    Dim statusIdx As Long
+    Dim positionIdx As Long
+    Dim controlDetailsIdx As Long
+    Dim endCol As Long
+    Dim hfRow As Long
+    Dim insertRow As Long
+    Dim varName As String
+    Dim varPosition As Long
+    Dim baseValues As Variant
+    Dim searchRange As Range
+    Dim foundCell As Range
+    Dim targetRange As Range
+    Dim formulaValue As String
+
+    Set hostSheet = Wksh()
+    controlIdx = ColumnIndex("control")
+    varIdx = ColumnIndex("variable name")
+    mainLabelIdx = ColumnIndex("main label")
+    registerIdx = ColumnIndex("register book")
+    statusIdx = ColumnIndex("status")
+    positionIdx = ColumnIndex("column index")
+    controlDetailsIdx = ColumnIndex("control details")
+    endCol = DictEndColumn()
+    hfRow = StartRow() + 1
+
+    Do
+        'Find the next "hf" control from the current position downward.
+        Set searchRange = hostSheet.Range( _
+            hostSheet.Cells(hfRow, controlIdx), _
+            hostSheet.Cells(DictEndRow(), controlIdx))
+        Set foundCell = searchRange.Find(What:="hf", lookAt:=xlWhole, MatchCase:=True)
+        If foundCell Is Nothing Then Exit Do
+
+        hfRow = foundCell.Row
+        varName = hostSheet.Cells(hfRow, varIdx).Value
+        varPosition = hostSheet.Cells(hfRow, positionIdx).Value
+
+        'Snapshot the row before it gains a neighbour, so the inserted row
+        'starts from the same sheet name, section and table name.
+        baseValues = hostSheet.Range( _
+            hostSheet.Cells(hfRow, StartColumn()), _
+            hostSheet.Cells(hfRow, endCol)).Value
+
+        insertRow = hfRow + 1
+        hostSheet.Rows(insertRow).Insert _
+            Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+
+        Set targetRange = hostSheet.Range( _
+            hostSheet.Cells(insertRow, StartColumn()), _
+            hostSheet.Cells(insertRow, endCol))
+        targetRange.Value = baseValues
+
+        hostSheet.Cells(insertRow, statusIdx).Value = "hidden"
+        hostSheet.Cells(insertRow, registerIdx).Value = "hidden"
+        hostSheet.Cells(insertRow, controlIdx).Value = "formula"
+        hostSheet.Cells(insertRow, mainLabelIdx).Value = "geo_pcode_hf"
+        hostSheet.Cells(insertRow, varIdx).Value = "pcode_" & varName
+        hostSheet.Cells(insertRow, positionIdx).Value = varPosition + 1
+
+        'INDEX over the named p-code column rather than T_HF with a column
+        'number. The geo rows count columns into T_ADM<n>; here the name LLGeo
+        'published is used directly, so a reordered geobase cannot silently
+        'return the wrong field.
+        formulaValue = "INDEX(hf_pcode, MATCH(" & varName & ", hf_concat, 0))"
+        hostSheet.Cells(insertRow, controlDetailsIdx).Value = _
+            "IF(ISNA(" & formulaValue & "), """", " & formulaValue & ")"
+
+        'Past the pair.
+        hfRow = hfRow + HF_EXPANSION
     Loop
 
     ClearPreparedCache
