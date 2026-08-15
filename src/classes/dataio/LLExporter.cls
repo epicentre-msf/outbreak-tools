@@ -34,6 +34,8 @@ Option Explicit
 'sheet records, ExcludedVariablesFor answers the variables a mode leaves out,
 'EpiWeekStart answers the first day of the epidemiological week, and
 'LastExportPassword answers the password the last export was saved under.
+'LastFailure answers what the last export failed on, for a caller writing the
+'failure into the log.
 '@depends LLdictionary, LLVariables, LLExport, Passwords, CustomTable
 '@depends DataSheet, AnaTabIds, LLGeo, LLChoices, HiddenNames, LLTranslation
 '@depends ShowHide, ShowHideLayout, ShowHideStore, BetterArray, Checking
@@ -106,6 +108,7 @@ Private Const PCODES_GEO_CONCAT_ADM4 As String = "geo_concat_adm4"
 Private Type TLLExporter
     sourceWkb As Workbook
     lastPassword As String
+    lastFailure As String
     activeWkb As Workbook
     sealed As Boolean
     openedSource As Boolean
@@ -346,6 +349,22 @@ Public Property Get LastExportPassword() As String
     LastExportPassword = this.lastPassword
 End Property
 
+'@label:last-failure
+'@prop-title What the last export failed on, in the words of the error itself
+'@details
+'An export that fails raises, and the caller reads a description that names
+'the method and nothing else, because the error crosses out of this class.
+'The number, the source and the text are kept here before the raise, so the
+'caller can log what actually refused.
+'
+'Every export empties this on entry, so a value here belongs to the export
+'that just ran. It is empty after an export that worked.
+'@return String. The error number, source and text, or vbNullString.
+'@export
+Public Property Get LastFailure() As String
+    LastFailure = this.lastFailure
+End Property
+
 '@label:epi-week-start
 '@prop-title First day of the epidemiological week, as the linelist holds it
 '@details
@@ -458,6 +477,7 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
 
     ExportCustom = vbNullString
     this.lastPassword = vbNullString
+    this.lastFailure = vbNullString
 
     Set expObj = ExportObject()
     nbExp = expObj.NumberOfExports()
@@ -572,6 +592,7 @@ Public Function ExportMigration(ByVal folderPath As String, _
 
     ExportMigration = vbNullString
     this.lastPassword = vbNullString
+    this.lastFailure = vbNullString
 
     Set expObj = ExportObject()
     nbExp = expObj.NumberOfExports()
@@ -648,6 +669,7 @@ Public Function ExportAnalysis(ByVal folderPath As String) As String
 
     ExportAnalysis = vbNullString
     this.lastPassword = vbNullString
+    this.lastFailure = vbNullString
 
     Set expObj = ExportObject()
     nbExp = expObj.NumberOfExports()
@@ -692,12 +714,23 @@ Public Function ExportGeo(ByVal folderPath As String, _
     Dim geo As LLGeo
     Dim geobaseName As String
     Dim filePath As String
+    Dim atStep As String
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errMessage As String
 
     ExportGeo = vbNullString
+    this.lastFailure = vbNullString
 
+    On Error GoTo RecordFailure
+
+    atStep = "reading the Geo sheet"
     Set geo = GeoObject()
+
+    atStep = "adding the output workbook"
     Set outwb = CreateOutputWorkbook()
 
+    atStep = "reading the geobase name"
     geobaseName = geo.GeoBaseName()
     If LenB(geobaseName) = 0 Then
         geobaseName = "OUTBREAK-TOOLS-GEOBASE-UNKNOWN"
@@ -709,10 +742,31 @@ Public Function ExportGeo(ByVal folderPath As String, _
     filePath = BuildFilePath(folderPath, geobaseName, "xlsx")
 
     ' Use LLGeo.ExportToFile to write the geobase data
+    atStep = "writing the geobase tables"
     geo.ExportToFile outwb, onlyHistoric
 
+    atStep = "saving " & filePath
     SaveWorkbook outwb, filePath, xlOpenXMLWorkbook, vbNullString
     ExportGeo = filePath
+    Exit Function
+
+RecordFailure:
+    'The error is kept in words here because it loses them on the way out:
+    'the caller sees the method it called and nothing of what refused.
+    errNumber = Err.Number
+    errSource = Err.Source
+    errMessage = Err.Description
+    this.lastFailure = "geo export failed " & atStep & " - error " & _
+                       errNumber & " from " & errSource & ": " & errMessage
+
+    'The same loss happens one class further in, so LLGeo keeps its own account
+    'and it is the one that names what refused.
+    If Not geo Is Nothing Then
+        If LenB(geo.LastFailure) > 0 Then _
+            this.lastFailure = this.lastFailure & " | " & geo.LastFailure
+    End If
+
+    Err.Raise errNumber, errSource, errMessage
 End Function
 
 '@label:close-all

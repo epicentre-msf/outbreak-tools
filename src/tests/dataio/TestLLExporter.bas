@@ -879,6 +879,82 @@ TestFail:
 End Sub
 
 
+'@section What a failed geo export says about itself
+'===============================================================================
+
+'@sub-title A geo export that fails keeps the error in words of its own.
+'@details
+'The description of an error raised inside the class does not survive the way
+'out, so the form that calls the export reads the name of the method and
+'nothing of what refused. Acts by exporting the geobase of a workbook with no
+'Geo worksheet, which is the first step of the walk. Asserts the raise still
+'reaches the caller and that LastFailure names the step and carries the error
+'number.
+'@TestMethod("LLExporter")
+Public Sub TestAFailedGeoExportSaysWhatItFailedOn()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAFailedGeoExportSaysWhatItFailedOn"
+    On Error GoTo TestFail
+
+    Dim exporter As LLExporter
+    Dim plainBook As Workbook
+    Dim folderPath As String
+    Dim raisedNumber As Long
+    Dim failure As String
+
+    folderPath = BuildTempFolder(ThisWorkbook, FILES_FOLDER)
+
+    Set plainBook = NewWorkbook()
+    Set exporter = LLExporter.Create(plainBook)
+
+    On Error Resume Next
+    exporter.ExportGeo folderPath
+    raisedNumber = Err.Number
+    On Error GoTo TestFail
+
+    failure = exporter.LastFailure
+    DeleteWorkbook plainBook
+    Set plainBook = Nothing
+
+    Assert.IsTrue raisedNumber <> 0, _
+                  "A geo export with no Geo worksheet still raises to its caller"
+    Assert.IsTrue LenB(failure) > 0, _
+                  "A failed geo export leaves an account of the failure behind"
+    Assert.IsTrue InStr(1, failure, "reading the Geo sheet") > 0, _
+                  "The account names the step the export was on"
+    Assert.IsTrue InStr(1, failure, CStr(raisedNumber)) > 0, _
+                  "The account carries the number the caller cannot read from the text"
+
+    Exit Sub
+TestFail:
+    On Error Resume Next
+    If Not plainBook Is Nothing Then DeleteWorkbook plainBook
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestAFailedGeoExportSaysWhatItFailedOn", Err.Number, Err.Description
+End Sub
+
+'@sub-title An export that worked leaves nothing behind to report.
+'@details
+'LastFailure is read whenever a walk lands on its error label, so a value left
+'over from an earlier export would be logged as the cause of a later one.
+'Asserts a fresh exporter has nothing to report.
+'@TestMethod("LLExporter")
+Public Sub TestAnExporterWithNoFailureReportsNothing()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAnExporterWithNoFailureReportsNothing"
+    On Error GoTo TestFail
+
+    Dim exporter As LLExporter
+
+    Set exporter = LLExporter.Create(ThisWorkbook)
+
+    Assert.AreEqual vbNullString, exporter.LastFailure, _
+                    "An exporter that has run nothing has no failure to report"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAnExporterWithNoFailureReportsNothing", Err.Number, Err.Description
+End Sub
+
+
 '@section Fixture helpers
 '===============================================================================
 
