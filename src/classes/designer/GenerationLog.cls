@@ -180,8 +180,8 @@ End Property
 'clears it and drops the render marker of the previous run so the writer
 'formats a first render. Opens a fresh writer, resets the in-memory
 'record, starts the wall clock and stamps the run header as the first
-'bundle: the start time, plus the setup path and the linelist name when
-'the caller knows them.
+'bundle: the start time and the platform of the run, plus the setup path
+'and the linelist name when the caller knows them.
 '@param setupPath Optional String. The setup file path of the run.
 '@param linelistName Optional String. The output linelist name of the run.
 Public Sub Start(Optional ByVal setupPath As String = vbNullString, _
@@ -204,11 +204,43 @@ Public Sub Start(Optional ByVal setupPath As String = vbNullString, _
     this.startedAt = Now
 
     Set header = Checking.Create(HEADER_TITLE)
-    header.Add "started", Format$(this.startedAt, "yyyy-mm-dd hh:nn:ss"), checkingInfo
+    'The platform rides on the start entry rather than taking an entry of its
+    'own. Readers of the record address its lines by position, so an extra
+    'header entry would move every one of them.
+    header.Add "started", Format$(this.startedAt, "yyyy-mm-dd hh:nn:ss") & _
+                          " on " & PlatformTag(), checkingInfo
     If LenB(setupPath) > 0 Then header.Add "setup file", setupPath, checkingInfo
     If LenB(linelistName) > 0 Then header.Add "linelist name", linelistName, checkingInfo
     Collect header
 End Sub
+
+'@label:platform-tag
+'@sub-title The platform of the run, on one tag
+'@details
+'A generation report is read on another machine and long after the run, and
+'the two platforms do not behave the same: a geobase export Windows accepts
+'has refused on a Mac. The name and the bitness come from the compile
+'constants, so they are the build that is running and cannot be misread.
+'The Excel version comes from the application.
+'@return String. Something of the shape "mac-64 excel-16.90".
+Private Function PlatformTag() As String
+    Dim osName As String
+    Dim bits As String
+
+    #If Mac Then
+        osName = "mac"
+    #Else
+        osName = "win"
+    #End If
+
+    #If Win64 Then
+        bits = "64"
+    #Else
+        bits = "32"
+    #End If
+
+    PlatformTag = osName & "-" & bits & " excel-" & Application.Version
+End Function
 
 '@label:collect
 '@sub-title Take one Checking bundle into the run

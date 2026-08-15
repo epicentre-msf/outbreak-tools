@@ -154,7 +154,12 @@ Private lastLog As String
 
 'What the last grant call did, when it did something worth saying. Read back
 'through LastAccessNote so a report can tell a broken call from a refusal.
-Private lastAccessNote As String
+'
+'The name differs from that Function on purpose. VBA ignores case, so a private
+'accessNote and a public AccessNote are ONE name and the project stops
+'compiling with "Ambiguous name detected". Every pair in this module is spelt
+'apart for that reason.
+Private accessNote As String
 
 'The options of the run being prepared, read out of the options string.
 Private optTemplate As String
@@ -186,7 +191,7 @@ Private optPassword As String
 Public Function EnsureFileAccess(ByVal paths As Variant) As Boolean
     Dim host As Object
 
-    lastAccessNote = vbNullString
+    accessNote = vbNullString
 
     On Error Resume Next
         Set host = Application
@@ -202,7 +207,7 @@ Public Function EnsureFileAccess(ByVal paths As Variant) As Boolean
         '"not confirmed" and meant "this call is broken".
         'A swallowed error reported as an ambiguous phrase hides a dead call.
         If Err.Number <> 0 Then
-            lastAccessNote = "the call FAILED, error " & CStr(Err.Number) & _
+            accessNote = "the call FAILED, error " & CStr(Err.Number) & _
                              ": " & Err.Description
             Err.Clear
         End If
@@ -226,13 +231,40 @@ Private Function AccessOutcome(ByVal granted As Boolean) As String
     End If
 End Function
 
+'@Description("The platform this build ran on, on one tag.")
+'@details
+'A build report read on another machine, or months later, says nothing about
+'where it was produced, and the two platforms do not behave the same: a geobase
+'export Windows accepts has refused on a Mac. The name and the bitness come from
+'the compile constants, so they are the build that is running and cannot be
+'misread. The Excel version comes from the application.
+'@return String. Something of the shape "mac-64 excel-16.90".
+Public Function PlatformTag() As String
+    Dim osName As String
+    Dim bits As String
+
+    #If Mac Then
+        osName = "mac"
+    #Else
+        osName = "win"
+    #End If
+
+    #If Win64 Then
+        bits = "64"
+    #Else
+        bits = "32"
+    #End If
+
+    PlatformTag = osName & "-" & bits & " excel-" & Application.Version
+End Function
+
 '@Description("Say what the last EnsureFileAccess call actually did.")
 '@details
 'Empty when the call ran. A caller writes this into its report so a broken
 'grant reads as broken instead of reading as a refusal.
 '@return String. The failure, or empty.
 Public Function LastAccessNote() As String
-    LastAccessNote = lastAccessNote
+    LastAccessNote = accessNote
 End Function
 
 
@@ -443,7 +475,11 @@ Public Function BuildLinelistFromSetup(ByVal designerPath As String, _
 Failed:
     BuildLinelistFromSetup = "ERROR " & CStr(Err.Number) & " (" & Err.Source & "): " & _
                              Err.Description
-    AddToReport "failed: (" & Err.Source & ") " & Err.Description
+    'The NUMBER goes in the narrative too. A description does not always survive
+    'a class boundary and the number does, so a line carrying only the
+    'description can read "failed: ()" and name nothing at all.
+    AddToReport "failed: " & CStr(Err.Number) & " (" & Err.Source & ") " & _
+                Err.Description
 
     'The designer copy is saved even now: its __check sheet and Main entries
     'are the record of how far the run got, and a copy closed unsaved answers
@@ -528,6 +564,7 @@ End Property
 Public Function LastBuildSummary() As String
     LastBuildSummary = "linelist=" & lastLinelist & vbLf & _
                        "log=" & lastLog & vbLf & _
+                       "platform=" & PlatformTag() & vbLf & _
                        "sheets=" & CStr(lastSheets) & vbLf & _
                        "variables=" & CStr(lastVariables) & vbLf & _
                        "components=" & CStr(lastComponents) & vbLf & _
@@ -849,8 +886,12 @@ Private Sub PrepareDesignerGeo(ByVal designerBook As Workbook)
         If Not prep Is Nothing Then prep.EnsureGeoFlags
 
         If Err.Number <> 0 Then
-            AddToReport "the designer's Geo worksheet could not be seeded (" & _
-                        Err.Description & "), so the build carries no geography"
+            'Number first. This failure is SWALLOWED, so this line is the only
+            'trace of it, and a description that arrived empty across a class
+            'boundary would leave the line naming nothing.
+            AddToReport "the designer's Geo worksheet could not be seeded " & _
+                        "(error " & CStr(Err.Number) & ": " & Err.Description & _
+                        "), so the build carries no geography"
             Err.Clear
         Else
             AddToReport "geo hidden names seeded on the designer copy"

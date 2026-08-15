@@ -90,6 +90,14 @@ Public Sub TestStartCreatesCheckSheetAndHeader()
                   "The first record line should carry the run header title."
     Assert.IsTrue InStr(1, runLog.RecordLine(2), "setup.xlsb") > 0, _
                   "The second record line should carry the setup path."
+    'The platform rides on the start line, so the record keeps its length. The
+    'check reads the name and the Excel version separately, since the version
+    'moves with the host and cannot be written down here.
+    Assert.IsTrue (InStr(1, runLog.RecordLine(1), "mac-", vbTextCompare) > 0 Or _
+                   InStr(1, runLog.RecordLine(1), "win-", vbTextCompare) > 0), _
+                  "The start line should name the platform of the run."
+    Assert.IsTrue InStr(1, runLog.RecordLine(1), "excel-", vbTextCompare) > 0, _
+                  "The start line should name the Excel version."
 
     Exit Sub
 Fail:
