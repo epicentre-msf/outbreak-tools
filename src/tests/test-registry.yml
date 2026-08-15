@@ -250,6 +250,32 @@ suites:
       # and pins that every forced tick hands it back turned off.
       - module: TestProgressBar
         covers: [ProgressBar]
+      # TestButtons drives the class that draws the linelist's command shapes:
+      # the three values the factory stores, the one shape Add puts on the
+      # sheet, the checking a repeated Add logs instead of a second shape, and
+      # the two colours Format reads off an LLFormat design. Buttons has had a
+      # class row above since the designer folder landed and this suite had
+      # none, so its four tests sat on disk and had never run. It reaches
+      # PrepareLLFormatFixture, FixtureCell and DeleteLLFormatFixture in
+      # LLFormatTestFixture under `helpers`; its other helper calls are
+      # unqualified, so they resolve to TestHelpersLite.
+      - module: TestButtons
+        covers: [Buttons]
+
+      # FOUR MODULES IN src/tests/general/ ARE OUT OF THIS LIST ON PURPOSE, and
+      # a green count here says nothing about any of them.
+      #
+      # TestManualOSFiles calls LoadFile, LoadFiles and LoadFolders, and each of
+      # those opens the real platform picker. A dialog stops a headless run on a
+      # modal, so this one is a hand check and must never be registered. Its own
+      # header says so too.
+      #
+      # TestChecking, TestCheckingOutput and TestCustomTest build their assert
+      # object with CreateObject("Rubberduck.AssertClass"), which is a COM class
+      # this host does not have. They stay on the Rubberduck runner by owner
+      # decision, so they are not registered either. Do NOT rewrite them to the
+      # CustomTest harness to get them into the loop -- that decision was taken
+      # on 2026-08-15 and is not an oversight waiting to be corrected.
 
   # --- dictionary (LLExport, LLSheets) ---------------------------------------
   # LLExport names LLdictionary, LLVariables, DataSheet, CustomTable, Passwords,
@@ -1215,7 +1241,29 @@ suites:
 # ---------------------------------------------------------------------------
 # TEMPLATE — copy per folder as coverage is added. Delete fields left empty.
 # Expansion backlog (suite folders under src/tests/ that are not yet
-# registered): mastersetup. src/tests/dataio/ joined on 2026-08-02 with five
+# registered): mastersetup, and mastersetup alone.
+#
+# It stays out by owner decision. Three of the classes its thirteen suites
+# drive do not exist anywhere in the tree -- DiseaseTranslationCache,
+# DiseaseExportWorkbook and DiseaseSheetBuilder -- and the rest live in
+# src/classes/msetup/ while the tests live in src/tests/mastersetup/, which no
+# single suite can name: a suite resolves classes AND tests against one folder.
+# EventsMasterSetupRibbon also declares LangLabel and clickLangChange, the same
+# two Public names EventsDesignerCore declares under `designer`, so registering
+# the folder has to rename one side first (the Session 51 ambiguous-name
+# lesson). None of that is a registry edit.
+#
+# src/tests/implement/ is gone as of 2026-08-15. It held TestCrossTableHelpers
+# alone -- 436 lines, 22 tests -- which built its assert object with
+# CreateObject("Rubberduck.AssertClass") and declared a GraphTablesSpecsStub
+# over a CrossTableHelpers subject. Neither name existed anywhere in the tree,
+# so the module could not have compiled, let alone run.
+#
+# src/tests/rubberduck/ is the harness itself (OBTImport, OBTHeadless,
+# OBTBootstrap, OBTGrantAccess, OBTProbeSandbox, CustomTestImplementation). It
+# carries no suite and is never registered.
+#
+# src/tests/dataio/ joined on 2026-08-02 with five
 # classes and five suites, and is whole as of 2026-08-12: FilteredData and
 # ExportButton joined with their suites. src/tests/showhide/ joined on 2026-08-01
 # with the three classes that replaced LLShowHide and ShowHideManager.
