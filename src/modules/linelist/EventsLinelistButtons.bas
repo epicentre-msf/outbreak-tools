@@ -1121,16 +1121,17 @@ ErrOpen:
     pass.Protect wb
 End Sub
 
-'@Description("Callback for click on close print, CRF or log sheet")
+'@Description("Callback for click on close worksheet: print, CRF, log or import report")
 '@EntryPoint
 Public Sub ClickCloseSheet()
-    Attribute ClickCloseSheet.VB_Description = "Callback for click on close print/crf/log sheet"
+    Attribute ClickCloseSheet.VB_Description = "Callback for click on close worksheet"
 
     Dim sh As Worksheet
     Dim shType As String
     Dim printsh As Worksheet
     Dim crfsh As Worksheet
     Dim logSheetName As String
+    Dim reportSheetName As String
     Dim actionCode As String
 
     On Error GoTo ErrClose
@@ -1141,11 +1142,14 @@ Public Sub ClickCloseSheet()
 
     shType = SheetTag(sh)
 
-    'The log sheet carries no sheet tag; its name is the mark.
+    'Neither the log nor the import report carries a sheet tag; the name is the
+    'mark for both. An import leaves its report on screen and the user is given
+    'no way to put it away, so this button knows it too.
     logSheetName = LLLog.SheetName
+    reportSheetName = ImportChecking.ReportSheetName()
 
     If shType <> "HList" And shType <> "HList Print" And shType <> "HList CRF" _
-       And sh.Name <> logSheetName Then
+       And sh.Name <> logSheetName And sh.Name <> reportSheetName Then
         WarningOnSheet "MSG_PrintCRFOrDataSheet"
         Exit Sub
     End If
@@ -1155,6 +1159,12 @@ Public Sub ClickCloseSheet()
 
     If sh.Name = logSheetName Then
         actionCode = "close-log"
+        sh.Visible = xlSheetVeryHidden
+    ElseIf sh.Name = reportSheetName Then
+        'Very hidden, like the log. ShowImportCheckings puts it back on screen
+        'on the next import, so nothing is lost by keeping it out of the tab bar
+        'and out of the unhide list.
+        actionCode = "close-import-report"
         sh.Visible = xlSheetVeryHidden
     ElseIf shType = "HList" Then
         'A linelist generated before the CRF companion was built carries the

@@ -476,7 +476,9 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
                vbOKOnly, trads.TranslatedValue("MSG_Imports")
     End If
 
-    ' Everything the import found, on one worksheet the user can close
+    ' Everything the import found, written onto a worksheet and left hidden.
+    ' The user reaches it from the button on the import report form when they
+    ' want it, so an import that went well puts no wall of text on the screen.
     ImportChecking.ShowImportCheckings sourceWkb, impObj.CheckingValues
     Exit Sub
 
@@ -492,7 +494,13 @@ RefusedImport:
     On Error GoTo 0
     MsgBox trads.TranslatedValue("MSG_AbortImport"), _
            vbExclamation + vbOKOnly, trads.TranslatedValue("MSG_Imports")
+
+    ' A REFUSAL IS SHOWN, unlike a finished import. Nothing else tells the user
+    ' why the file was turned away: the box carries one sentence, the import
+    ' report form is never offered on this path, and the worksheet holds the
+    ' reason and what to do about it.
     ImportChecking.ShowImportCheckings sourceWkb, impObj.CheckingValues
+    ImportChecking.ShowReportSheet sourceWkb
     Exit Sub
 
 EndImport:

@@ -17,6 +17,11 @@ Attribute VB_Description = "Form code-behind for F_ImportRep"
 'existed: the arrays lived in memory and died with the import object, and the
 'box that asked the user whether they wanted a report was shown with an OK
 'button, so there was nothing to answer.
+'
+'CMD_OpenImportLog opens the other half of the story. The four lists say which
+'sheets and variables did not cross; the import log worksheet says what every
+'other step decided, one line per finding. An import leaves that sheet hidden,
+'and this button is the way to it.
 
 Option Explicit
 
@@ -104,6 +109,14 @@ Private Sub UserForm_Initialize()
     Me.Height = 450
 
     LoadReportLists
+End Sub
+
+'Put the import log worksheet on screen. The form is hidden FIRST: it is shown
+'modally, so a worksheet activated behind it sits under the form and the user
+'sees nothing move. The close button of the ribbon puts the sheet away again.
+Private Sub CMD_OpenImportLog_Click()
+    Me.Hide
+    ImportChecking.ShowReportSheet ThisWorkbook
 End Sub
 
 Private Sub CMD_ImpRepQuit_Click()
