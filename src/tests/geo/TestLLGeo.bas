@@ -156,6 +156,25 @@ Private Sub ResizeTable(ByVal sh As Worksheet, ByVal Lo As ListObject, _
     GeoTestFixture.GeoFixtureResizeTable sh, Lo, dataRows
 End Sub
 
+'@sub-title Say what a GeoLevel answer actually held, for a failure message.
+'@details
+'The children assertions used to read "D2 is a child of P1" and nothing more,
+'so a red one said which value was missing and never what came back instead.
+'That is the whole cost of the fault this covers: GeoLevel reads its answer
+'through SpecialCells(xlCellTypeVisible) right after an AutoFilter, and when
+'that read comes back shifted the list is the wrong two values rather than an
+'empty one. Appending the list turns the next occurrence into a diagnosis.
+'@param answer BetterArray. The list GeoLevel returned.
+'@return String. A leading-space rendering of the list, or a note if empty.
+Private Function AnswerSeen(ByVal answer As BetterArray) As String
+    If answer Is Nothing Then
+        AnswerSeen = " - the answer was Nothing"
+        Exit Function
+    End If
+
+    AnswerSeen = " - the answer was " & answer.ToString(QuoteStrings:=True)
+End Function
+
 '@sub-title Build a geobase fixture worksheet in the test workbook.
 '@param withData Optional Boolean. True to fill the tables. Defaults to False.
 '@return Worksheet. The fully prepared geobase fixture sheet.
@@ -847,10 +866,10 @@ Public Sub TestGeoLevelReturnsTheChildrenOfOneParent()
     Set result = geo.GeoLevel(LevelAdmin2, GeoScopeAdmin, "P1")
 
     Assert.AreEqual CLng(2), result.Length, _
-                    "P1 should answer with its two admin 2 children"
-    Assert.IsTrue result.Includes("D1"), "D1 is a child of P1"
-    Assert.IsTrue result.Includes("D2"), "D2 is a child of P1"
-    Assert.IsFalse result.Includes("D3"), "D3 belongs to another parent"
+                    "P1 should answer with its two admin 2 children" & AnswerSeen(result)
+    Assert.IsTrue result.Includes("D1"), "D1 is a child of P1" & AnswerSeen(result)
+    Assert.IsTrue result.Includes("D2"), "D2 is a child of P1" & AnswerSeen(result)
+    Assert.IsFalse result.Includes("D3"), "D3 belongs to another parent" & AnswerSeen(result)
 
     Exit Sub
 TestFail:
@@ -1396,10 +1415,14 @@ Public Sub TestGeoLevelAnswersTheSameChildrenTwice()
     Set secondAnswer = geo.GeoLevel(LevelAdmin2, GeoScopeAdmin, "P1")
 
     Assert.AreEqual firstAnswer.Length, secondAnswer.Length, _
-                    "The second ask should answer as many children as the first"
-    Assert.IsTrue secondAnswer.Includes("D1"), "D1 is still a child of P1"
-    Assert.IsTrue secondAnswer.Includes("D2"), "D2 is still a child of P1"
-    Assert.IsFalse secondAnswer.Includes("D3"), "D3 still belongs to another parent"
+                    "The second ask should answer as many children as the first" & _
+                    AnswerSeen(secondAnswer)
+    Assert.IsTrue secondAnswer.Includes("D1"), _
+                  "D1 is still a child of P1" & AnswerSeen(secondAnswer)
+    Assert.IsTrue secondAnswer.Includes("D2"), _
+                  "D2 is still a child of P1" & AnswerSeen(secondAnswer)
+    Assert.IsFalse secondAnswer.Includes("D3"), _
+                   "D3 still belongs to another parent" & AnswerSeen(secondAnswer)
 
     Exit Sub
 TestFail:
