@@ -694,7 +694,7 @@ Public Sub TestExportChecksFollowExportNumber()
     Dim results As BetterArray
 
     Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
-    SetExportValue hostBook, 4, "export number", 7
+    SetExportValue hostBook, 4, "export number", "Export 7"
     SetExportValue hostBook, 4, "password", vbNullString
     SetExportValue hostBook, 4, "include personal identifiers", "yes"
 
@@ -714,6 +714,40 @@ Cleanup:
 
 Fail:
     CustomTestLogFailure Assert, "TestExportChecksFollowExportNumber", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
+'@TestMethod("SetupErrors")
+'LLExport fills the Export Number cell through ExportColumnName, so it reads
+'"Export 1". Reading that cell whole and prepending "Export " again asked the
+'dictionary for "Export Export 1", and every active export was reported as
+'missing its column.
+Public Sub TestExportNumberCarriesItsOwnLabel()
+    CustomTestSetTitles Assert, "SetupErrors", "TestExportNumberCarriesItsOwnLabel"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As SetupErrors
+    Dim results As BetterArray
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=False)
+
+    Set checker = SetupErrors.Create(hostBook)
+    checker.Run
+    Set results = checker.Checkings
+
+    Assert.IsFalse CheckingsContain(results, "the corresponding column in the dictionary is missing"), _
+                   "An active export whose column exists should not be reported as missing."
+    Assert.IsFalse CheckingsContain(results, "The Export Number Export"), _
+                   "The findings should name the export by its number alone."
+
+Cleanup:
+    Set checker = Nothing
+    DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportNumberCarriesItsOwnLabel", Err.Number, Err.Description
     Resume Cleanup
 End Sub
 
@@ -1386,7 +1420,10 @@ Private Sub ConfigureExportsSheet(ByVal hostBook As Workbook, ByVal includeIssue
     Loop
 
     For rowIndex = 1 To exportsTable.ListRows.Count
-        exportsTable.ListColumns("export number").DataBodyRange.Cells(rowIndex, 1).Value = rowIndex
+        'Written the way LLExport.ExportColumnName writes it, "Export 1" and
+        'not "1". The checks used to be exercised on a shape the setup file
+        'never holds.
+        exportsTable.ListColumns("export number").DataBodyRange.Cells(rowIndex, 1).Value = "Export " & rowIndex
         exportsTable.ListColumns("status").DataBodyRange.Cells(rowIndex, 1).Value = IIf(includeIssues And rowIndex = 1, "inactive", "active")
         exportsTable.ListColumns("label button").DataBodyRange.Cells(rowIndex, 1).Value = "Export " & rowIndex
         exportsTable.ListColumns("file format").DataBodyRange.Cells(rowIndex, 1).Value = "xlsx"

@@ -610,6 +610,85 @@ Private Function NameCount(ByVal counts As Collection, ByVal nameValue As String
     On Error GoTo 0
 End Function
 
+'@label:export-identifier-number
+'@sub-title Read the number out of one "Export Number" cell
+'@details
+'`LLExport` writes that cell through `ExportColumnName`, so it holds "Export 1"
+'rather than "1", and `LLExport.ParseExportIdentifier` reads it back the same
+'way. A bare number is taken as well, because that is what a hand-typed row
+'holds.
+'@param rawValue Variant. The value of the cell.
+'@return Long. The export number, or 0 when the text carries none.
+Private Function ExportIdentifierNumber(ByVal rawValue As Variant) As Long
+    Dim text As String
+
+    text = LCase$(Trim$(CellText(rawValue)))
+    If LenB(text) = 0 Then Exit Function
+
+    If Left$(text, 6) = "export" Then text = Trim$(Mid$(text, 7))
+    If LenB(text) = 0 Then Exit Function
+    If Not IsNumeric(text) Then Exit Function
+
+    If CDbl(text) > 0 Then ExportIdentifierNumber = CLng(CDbl(text))
+End Function
+
+'@label:export-statuses
+'@sub-title Status of every export row, keyed by the number the row carries
+'@details
+'Built once so the dictionary loop can ask about an export number without
+'searching the Exports table again for each one. A number appearing twice
+'keeps the status of its first row.
+'@param expTab CustomTable. The Exports table.
+'@return Collection. Statuses keyed by "k" & the export number.
+Private Function ExportStatuses(ByVal expTab As CustomTable) As Collection
+    Dim statuses As Collection
+    Dim numberRng As Range
+    Dim statusRng As Range
+    Dim rowCount As Long
+    Dim counter As Long
+    Dim exportNumber As Long
+
+    Set statuses = New Collection
+    Set ExportStatuses = statuses
+
+    If expTab Is Nothing Then Exit Function
+
+    Set numberRng = expTab.DataRange("Export Number", strictSearch:=True)
+    Set statusRng = expTab.DataRange("Status", strictSearch:=True)
+    If (numberRng Is Nothing) Or (statusRng Is Nothing) Then Exit Function
+
+    rowCount = numberRng.Rows.Count
+    If statusRng.Rows.Count < rowCount Then rowCount = statusRng.Rows.Count
+
+    For counter = 1 To rowCount
+        exportNumber = ExportIdentifierNumber(numberRng.Cells(counter, 1).Value)
+        If exportNumber > 0 Then
+            On Error Resume Next
+                statuses.Add CellText(statusRng.Cells(counter, 1).Value), "k" & exportNumber
+            On Error GoTo 0
+        End If
+    Next counter
+End Function
+
+'@label:export-status-of
+'@sub-title Read the status of one export number
+'@param statuses Collection. The statuses built by ExportStatuses.
+'@param exportNumber Long. The export number to read.
+'@param statusValue String. Receives the status, empty when there is no row.
+'@return Boolean. True when the Exports table holds a row for that number.
+Private Function ExportStatusOf(ByVal statuses As Collection, _
+                                ByVal exportNumber As Long, _
+                                ByRef statusValue As String) As Boolean
+    statusValue = vbNullString
+    If statuses Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Err.Clear
+        statusValue = statuses.Item("k" & exportNumber)
+        ExportStatusOf = (Err.Number = 0)
+    On Error GoTo 0
+End Function
+
 '@label:known-control
 '@sub-title Test whether a control name is one this build understands
 '@param controlValue String. The control read from the dictionary.
@@ -694,7 +773,7 @@ Private Sub CheckDictionary()
     Dim expTab As CustomTable
     Dim varRng As Range
     Dim expRng As Range
-    Dim statusCell As Range
+    Dim statusByNumber As Collection
     Dim workFun As WorksheetFunction
     Dim shDictionary As Worksheet
     Dim shExports As Worksheet
@@ -946,19 +1025,18 @@ Private Sub CheckDictionary()
     Next rowIndex
 
     expTab.Sort "Export Number"
+    Set statusByNumber = ExportStatuses(expTab)
 
     For expCounter = 1 To this.dictionary.TotalNumberOfExports()
         Set expRng = csTab.DataRange("Export " & expCounter, strictSearch:=True)
 
         If Not (expRng Is Nothing) Then
-            'Addressed by Export Number. An export number with no row in the
-            'Exports table answers Nothing, so nothing is reported for it. The
-            'old shape read the status by row position and walked off the end
-            'of the range, which reads the cell below and raises nothing.
-            Set statusCell = expTab.ValueRange("Status", CStr(expCounter))
-
-            If Not (statusCell Is Nothing) Then
-                exportStatus = CellText(statusCell.Value)
+            'Addressed by the number the Export Number cell carries, whatever
+            'the text around it. LLExport fills that cell with "Export 1", so
+            'a lookup by the bare "1" answered nothing and this check reported
+            'nothing at all. An export number with no row in the Exports table
+            'is still quiet.
+            If ExportStatusOf(statusByNumber, expCounter, exportStatus) Then
                 If (workFun.CountBlank(expRng) <> expRng.Rows.Count) And (exportStatus <> "active") Then
                     checkingCounter = checkingCounter + 1
                     keyName = "dict-export-na"
@@ -1221,6 +1299,7 @@ Private Sub CheckExports()
     Dim pwd As String
     Dim exportKeepsId As String
     Dim exportNumber As String
+    Dim exportIdNumber As Long
     Dim worksheetRow As Long
 
     Set shExports = ResolveWorksheet(SHEET_EXPORTS)
@@ -1269,9 +1348,15 @@ Private Sub CheckExports()
         worksheetRow = statusRng.Row + counter - 1
         expStatus = CellText(statusRng.Cells(counter, 1).Value)
 
-        exportNumber = vbNullString
-        If Not numberRng Is Nothing Then exportNumber = CellText(numberRng.Cells(counter, 1).Value)
-        If LenB(exportNumber) = 0 Then exportNumber = CStr(counter)
+        'The cell reads "Export 1", so the number is parsed out of it before
+        'anything is built from it. Reading the cell whole and prepending
+        '"Export " again asked the dictionary for "Export Export 1" and
+        'reported every active export as missing its column.
+        exportIdNumber = 0
+        If Not numberRng Is Nothing Then _
+            exportIdNumber = ExportIdentifierNumber(numberRng.Cells(counter, 1).Value)
+        If exportIdNumber <= 0 Then exportIdNumber = counter
+        exportNumber = CStr(exportIdNumber)
 
         pwd = vbNullString
         If Not fieldRanges(1) Is Nothing Then pwd = CellText(fieldRanges(1).Cells(counter, 1).Value)
