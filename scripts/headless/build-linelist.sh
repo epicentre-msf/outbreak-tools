@@ -44,13 +44,21 @@ GEO=""
 # .mock/designer_mock.xlsb, which is the one the project develops against.
 DESIGNER=""
 
-# THE FORMS. Empty is right for almost every run: the build merges the current
-# code from src/modules/linelistform into the exported .frm files itself, every
-# time, so the delivered linelist has its controls wired to today's handlers.
+# THE FORMS. Empty is right for almost every run.
 #
-# Set MERGE_FORMS=no ONLY with FORMS pointing at a folder of already merged
-# .frm files. Skipping the merge without one has nothing to build from: a
-# successful run clears its staging, so there is no previous copy to reuse.
+# The default build takes its forms from two FIXED folders. Neither has a flag,
+# and neither is what FORMS below points at:
+#
+#   .mock/forms/designer        the .frm shells and their binary .frx twins
+#   src/modules/linelistform    the FormLogic*.bas code merged into them
+#
+# The merge runs every time, so the delivered linelist has its controls wired to
+# today's handlers. The result lands in <OBT_HOME>/forms.
+#
+# FORMS is for the other case only: a folder of ALREADY MERGED .frm files, used
+# with MERGE_FORMS=no. Skipping the merge without one has nothing to build from,
+# since a successful run clears its staging. And a build over unmerged forms
+# ships old handlers with nothing in the file to say so.
 FORMS=""
 MERGE_FORMS="yes"
 
@@ -103,8 +111,11 @@ Every flag below is passed through to build-linelist.R.
   --geopath=<file>     Geobase workbook. Omitted -> no geography.
   --designer=<file>    Designer workbook. Default: .mock/designer_mock.xlsb
 
-  --forms=<dir>        A folder of already merged .frm files. Only meaningful
-                       with --no-merge.
+  --forms=<dir>        A folder of ALREADY MERGED .frm files. Only meaningful
+                       with --no-merge. It is NOT where the default build reads
+                       its forms from -- that is two fixed folders with no flag:
+                         .mock/forms/designer      the .frm and .frx files
+                         src/modules/linelistform  the code merged into them
   --no-merge           Do NOT merge src/modules/linelistform into the forms.
                        Needs --forms: a successful run clears its staging, so
                        there is no earlier copy to fall back on. Without the
