@@ -128,6 +128,12 @@ Private Sub CMD_OpenLog_Click()
     HandleOpenLog currwb
 End Sub
 
+'Write the user log out as a text file the user can send on
+Private Sub CMD_ExportLog_Click()
+    Me.Hide
+    HandleExportLog currwb
+End Sub
+
 'Leave the advanced form
 Private Sub CMD_ImportMigQuit_Click()
     Me.Hide
@@ -735,6 +741,86 @@ ErrHand:
     LogFailureLine "open-log", failDetail
     If Not pass Is Nothing Then pass.Protect sourceWkb
 End Sub
+
+
+' @description Write the user log out as a plain text file, so a user who hits
+' a problem can send the file on instead of describing what happened. The file
+' carries the whole Metadata worksheet above the entries, so it says which
+' linelist it came from, which designer built it and on which platform, and
+' every entry carries the platform it was written on.
+' The walk holds no busy state: a folder picker needs the screen, and the write
+' is one small file.
+' @param sourceWkb Workbook. The linelist workbook.
+Public Sub HandleExportLog(ByVal sourceWkb As Workbook)
+
+    Dim logStore As LLLog
+    Dim folderPath As String
+    Dim filePath As String
+    Dim failDetail As String
+
+    On Error GoTo ErrHand
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    folderPath = PickFolder()
+    ' A cancelled picker is an ordinary end, and it is worth a line: a user
+    ' who says the export did nothing has the record of their own cancel.
+    If LenB(folderPath) = 0 Then
+        LogWarningLine "export-log", "no folder was picked"
+        Exit Sub
+    End If
+
+    filePath = logStore.ExportText(folderPath, BaseNameOf(sourceWkb))
+
+    ' Logged before the box, so the line is on the sheet whatever the user
+    ' does with the box. It is NOT in the file just written, which is the
+    ' honest order: the file was closed before this line existed.
+    LogSuccessLine "export-log", FileNameOf(filePath)
+
+    If Not tradmess Is Nothing Then
+        MsgBox filePath, vbInformation, tradmess.TranslatedValue("MSG_Done")
+    End If
+    Exit Sub
+
+ErrHand:
+    ' Err is read before the Resume Next below clears it.
+    failDetail = Err.Description
+    On Error Resume Next
+    LogFailureLine "export-log", failDetail
+End Sub
+
+
+' @description Ask the user for the folder a written file lands in.
+' @return String. The chosen folder, or an empty string on cancel.
+Private Function PickFolder() As String
+    Dim io As OSFiles
+
+    Set io = OSFiles.Create()
+    io.LoadFolder
+    If io.HasValidFolder Then PickFolder = io.Folder()
+End Function
+
+
+' @description The workbook name without its extension, for a written file to
+' be named after. A workbook that is Nothing answers a plain name rather than
+' ending the walk, because the file is worth having either way.
+' @param wkb Workbook. The linelist workbook.
+' @return String. The name to build a file name on.
+Private Function BaseNameOf(ByVal wkb As Workbook) As String
+    Dim wkbName As String
+    Dim dotAt As Long
+
+    BaseNameOf = "linelist"
+    If wkb Is Nothing Then Exit Function
+
+    wkbName = wkb.Name
+    dotAt = InStrRev(wkbName, ".")
+    If dotAt > 1 Then wkbName = Left$(wkbName, dotAt - 1)
+    If LenB(Trim$(wkbName)) = 0 Then Exit Function
+
+    BaseNameOf = wkbName
+End Function
 
 
 ' @description Save what the user sees on every layered worksheet as one named

@@ -151,6 +151,49 @@ Private Function CountOfText(ByVal sh As Worksheet, ByVal columnIndex As Long, _
     CountOfText = total
 End Function
 
+'@sub-title Answer the first report line that contains a text.
+'@details
+'The report is read by content rather than by position, because the heading
+'block, the metadata block and the entries all grow at their own pace.
+'Answers an empty string on a miss.
+'@param lines BetterArray. The report lines.
+'@param searched String. The text to look for.
+'@return String. The first matching line, or an empty string.
+Private Function LineOfText(ByVal lines As BetterArray, _
+                            ByVal searched As String) As String
+    Dim index As Long
+
+    For index = lines.LowerBound To lines.UpperBound
+        If InStr(1, CStr(lines.Item(index)), searched, vbTextCompare) > 0 Then
+            LineOfText = CStr(lines.Item(index))
+            Exit Function
+        End If
+    Next index
+End Function
+
+'@sub-title Build a Metadata worksheet on the fixture with two rows.
+'@details
+'The shape the designer writes: the variable and value headers on row 1,
+'then one row per fact. Two rows are enough to show the block goes out
+'whole rather than a chosen few keys.
+'@return Worksheet. The built sheet.
+Private Function BuildMetadataSheet() As Worksheet
+    Dim sh As Worksheet
+
+    Set sh = FixtureWkb.Worksheets.Add( _
+        After:=FixtureWkb.Worksheets(FixtureWkb.Worksheets.Count))
+    sh.Name = "Metadata"
+
+    sh.Cells(1, 1).Value = "variable"
+    sh.Cells(1, 2).Value = "value"
+    sh.Cells(2, 1).Value = "linelist_creation_os"
+    sh.Cells(2, 2).Value = "mac-64 excel-16.90"
+    sh.Cells(3, 1).Value = "used_designer_version"
+    sh.Cells(3, 2).Value = "(not found)"
+
+    Set BuildMetadataSheet = sh
+End Function
+
 '@section Factory Tests
 '===============================================================================
 
@@ -670,4 +713,178 @@ Public Sub TestRotationClearsThePastLog()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestRotationClearsThePastLog", Err.Number, Err.Description
+End Sub
+
+'@section Text Export Tests
+'===============================================================================
+'The report is built in memory and read back in memory. Writing a file is
+'left to ExportText, which is one Open, one loop and one Close over the same
+'lines, and a file-writing test would meet the macOS file-access panel that
+'already blocks TestLLExporter.
+
+'@sub-title The report opens with the workbook and the platform.
+'@TestMethod("LLLog")
+Public Sub TestTheReportOpensWithTheWorkbookAndThePlatform()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheReportOpensWithTheWorkbookAndThePlatform"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim lines As BetterArray
+    Dim writtenLine As String
+
+    Set sut = LLLog.Create(FixtureWkb)
+    Set lines = sut.ReportLines()
+
+    Assert.IsTrue (lines.Length > 0), "The report carries lines"
+    Assert.IsTrue InStr(1, CStr(lines.Item(lines.LowerBound)), _
+                        "OutbreakTools", vbTextCompare) > 0, _
+                  "The first line names what the file is"
+    Assert.IsTrue (LenB(LineOfText(lines, FixtureWkb.Name)) > 0), _
+                  "The report names the workbook it came out of"
+
+    writtenLine = LineOfText(lines, "written")
+    Assert.IsTrue (InStr(1, writtenLine, "mac-", vbTextCompare) > 0 Or _
+                   InStr(1, writtenLine, "win-", vbTextCompare) > 0), _
+                  "The written line names the platform, read: " & writtenLine
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheReportOpensWithTheWorkbookAndThePlatform", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Every row of the Metadata worksheet reaches the report.
+'@details
+'The whole block goes out rather than a chosen few keys, so a linelist built
+'by a later designer carries whatever that designer wrote.
+'@TestMethod("LLLog")
+Public Sub TestTheReportCarriesEveryMetadataRow()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheReportCarriesEveryMetadataRow"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim lines As BetterArray
+
+    BuildMetadataSheet
+    Set sut = LLLog.Create(FixtureWkb)
+    Set lines = sut.ReportLines()
+
+    Assert.IsTrue (LenB(LineOfText(lines, "-- metadata --")) > 0), _
+                  "The report carries a metadata block"
+    Assert.AreEqual "linelist_creation_os = mac-64 excel-16.90", _
+                    LineOfText(lines, "linelist_creation_os"), _
+                    "A metadata row reads as variable = value"
+    Assert.AreEqual "used_designer_version = (not found)", _
+                    LineOfText(lines, "used_designer_version"), _
+                    "The second metadata row goes out with the first"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheReportCarriesEveryMetadataRow", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A linelist with no Metadata worksheet says so and keeps going.
+'@details
+'The log is worth sending on even when the metadata is missing, so the
+'absence is written down rather than raised.
+'@TestMethod("LLLog")
+Public Sub TestAMissingMetadataSheetIsSaidRatherThanRaised()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAMissingMetadataSheetIsSaidRatherThanRaised"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim lines As BetterArray
+
+    Set sut = LLLog.Create(FixtureWkb)
+    sut.LogSuccess "import-data", "cases.xlsx"
+    Set lines = sut.ReportLines()
+
+    Assert.IsTrue (LenB(LineOfText(lines, "carries no Metadata worksheet")) > 0), _
+                  "The report says the metadata sheet is missing"
+    Assert.IsTrue (LenB(LineOfText(lines, "cases.xlsx")) > 0), _
+                  "The entries still reach the report"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAMissingMetadataSheetIsSaidRatherThanRaised", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title The logged entries reach the report with their section and outcome.
+'@TestMethod("LLLog")
+Public Sub TestTheReportCarriesTheLoggedEntries()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheReportCarriesTheLoggedEntries"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim lines As BetterArray
+    Dim entryLine As String
+
+    Set sut = LLLog.Create(FixtureWkb)
+    sut.LogFailure "import-data", "cases.xlsx would not open"
+    Set lines = sut.ReportLines()
+
+    Assert.IsTrue (LenB(LineOfText(lines, "-- log --")) > 0), _
+                  "The report carries a log block"
+    Assert.IsTrue (LenB(LineOfText(lines, "[" & SECTION_DATAIO & "]")) > 0), _
+                  "The section opens its block in the report"
+
+    entryLine = LineOfText(lines, "cases.xlsx would not open")
+    Assert.IsTrue (LenB(entryLine) > 0), "The entry reaches the report"
+    Assert.IsTrue InStr(1, entryLine, "[Error]", vbTextCompare) > 0, _
+                  "The entry carries its outcome, read: " & entryLine
+    Assert.IsTrue InStr(1, entryLine, "import-data", vbTextCompare) > 0, _
+                  "The entry carries its action code, read: " & entryLine
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheReportCarriesTheLoggedEntries", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Exporting to no folder is refused before any file is opened.
+'@TestMethod("LLLog")
+Public Sub TestExportTextRefusesAnEmptyFolder()
+    CustomTestSetTitles Assert, TESTMODULE, "TestExportTextRefusesAnEmptyFolder"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim writtenPath As String
+    Dim errNumber As Long
+
+    Set sut = LLLog.Create(FixtureWkb)
+
+    On Error Resume Next
+        writtenPath = sut.ExportText(vbNullString)
+        errNumber = Err.Number
+    On Error GoTo 0
+
+    On Error GoTo TestFail
+    Assert.AreEqual CLng(ProjectError.InvalidArgument), errNumber, _
+                    "An empty folder is refused and the number names the reason"
+    Assert.AreEqual 0&, CLng(LenB(writtenPath)), _
+                    "Nothing is written when the folder is empty"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestExportTextRefusesAnEmptyFolder", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title The log export is filed with the other data moves.
+'@TestMethod("LLLog")
+Public Sub TestTheLogExportIsADataMove()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheLogExportIsADataMove"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+
+    Set sut = LLLog.Create(FixtureWkb)
+    Assert.AreEqual SECTION_DATAIO, sut.SectionOf("export-log"), _
+                    "Writing the log out moves data out of the workbook"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheLogExportIsADataMove", Err.Number, Err.Description
 End Sub

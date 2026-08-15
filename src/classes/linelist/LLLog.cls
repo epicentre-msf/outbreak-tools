@@ -101,6 +101,22 @@ Private Const DETAIL_SEPARATOR As String = "--"
 'written row of that column is what the rotation reads against the cap.
 Private Const OUTPUT_COLUMN As Long = 3
 
+'The two columns beside it. CheckingOutput splits a label on the separator
+'and lays the pieces across three columns: the outcome of an entry or the
+'title of a section, then the timestamp, then the action and the detail.
+'The text export reads the sheet back through these.
+Private Const STAMP_COLUMN As Long = 4
+Private Const ENTRY_COLUMN As Long = 5
+
+'What the text export is called and where it reads the metadata from
+Private Const EXPORT_SUFFIX As String = "-log.txt"
+Private Const METADATA_SHEET_NAME As String = "Metadata"
+
+'The three lines a reader of the text export finds its way by
+Private Const HEADING_TITLE As String = "OutbreakTools linelist log"
+Private Const METADATA_HEADING As String = "-- metadata --"
+Private Const ENTRIES_HEADING As String = "-- log --"
+
 'The name mirrors the private row marker CheckingOutput keeps on the log
 'sheet. Removing that marker is what makes CheckingOutput re-initialise
 'the sheet on the next render.
@@ -207,7 +223,8 @@ Public Function SectionOf(ByVal action As String) As String
         SectionOf = SECTION_OPENCLOSE
 
     Case "import-data", "import-geobase", "clear-data", _
-         "export", "export-migration", "export-other", "export-analysis"
+         "export", "export-migration", "export-other", "export-analysis", _
+         "export-log"
         SectionOf = SECTION_DATAIO
 
     Case Else
@@ -267,6 +284,111 @@ Public Sub LogInfo(ByVal action As String, Optional ByVal detail As String = vbN
     WriteEntry action, detail, checkingInfo
 End Sub
 
+'@section Export
+'===============================================================================
+'@description Writing the log out as a file a user can send on.
+
+'@label:report-lines
+'@sub-title The whole log as plain text, one line per element
+'@details
+'The text a user sends on when something goes wrong, so it stands on its
+'own: the workbook it came from and the platform it is written on, then
+'every row of the Metadata worksheet, then the log itself in the order it
+'was written.
+'The log SHEET is the record here, unlike GenerationLog which keeps its run
+'in memory, so the rows are read back off the sheet.
+'The text is built here rather than inside ExportText so what a file will
+'say can be read without a file being written. A log that cannot reach its
+'metadata still answers its entries.
+'@return BetterArray. The lines, lower bound 1.
+'@throws ProjectError.ObjectNotInitialized When the log has no worksheet.
+'@export
+Public Function ReportLines() As BetterArray
+    Dim lines As BetterArray
+    Dim sh As Worksheet
+
+    Set sh = Wksh()
+    If sh Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, _
+         "This log has no worksheet to write out"
+    End If
+
+    Set lines = New BetterArray
+    lines.LowerBound = 1
+
+    AppendHeadingTo lines, sh
+    AppendMetadataTo lines, sh.Parent
+    AppendEntriesTo lines, sh
+
+    Set ReportLines = lines
+End Function
+
+'@label:export-text
+'@sub-title Write the whole log out as a plain text file
+'@details
+'The file lands in the given folder as <baseName>-log.txt. A second export
+'of the same linelist overwrites the first, which is what a person sending
+'"the log" wants.
+'What goes into it is ReportLines. This routine only opens the file, writes
+'the lines and closes it.
+'@param folderPath String. The folder taking the file.
+'@param baseName String. The file name without its suffix. The workbook name when empty.
+'@return String. The full path of the written file.
+'@throws ProjectError.ObjectNotInitialized When the log has no worksheet.
+'@throws ProjectError.InvalidArgument When no folder is given.
+'@export
+Public Function ExportText(ByVal folderPath As String, _
+                           Optional ByVal baseName As String = vbNullString) As String
+    Dim filePath As String
+    Dim fileNumber As Long
+    Dim lines As BetterArray
+    Dim index As Long
+
+    If LenB(Trim$(folderPath)) = 0 Then
+        ThrowError ProjectError.InvalidArgument, _
+         "A folder is required to write the log out"
+    End If
+
+    'Built before the file is opened, so a fault while reading the sheets
+    'leaves no half-written file behind.
+    Set lines = ReportLines()
+
+    If LenB(Trim$(baseName)) = 0 Then baseName = Wksh().Parent.Name
+
+    filePath = folderPath
+    If Right$(filePath, 1) <> Application.PathSeparator Then
+        filePath = filePath & Application.PathSeparator
+    End If
+    filePath = filePath & baseName & EXPORT_SUFFIX
+
+    fileNumber = FreeFile
+
+    'The handler closes the file on a mid-write fault; a locked or missing
+    'folder raises to the caller with the file released.
+    On Error GoTo CloseFile
+    Open filePath For Output As #fileNumber
+    For index = lines.LowerBound To lines.UpperBound
+        Print #fileNumber, CStr(lines.Item(index))
+    Next index
+    Close #fileNumber
+    On Error GoTo 0
+
+    ExportText = filePath
+    Exit Function
+
+CloseFile:
+    Dim errNumber As Long
+    Dim errDesc As String
+    errNumber = Err.Number
+    errDesc = Err.Description
+
+    On Error Resume Next
+    Close #fileNumber
+    On Error GoTo 0
+
+    ThrowError errNumber, errDesc
+End Function
+
 '@section Internals
 '===============================================================================
 '@description Sheet resolution, entry building, and rotation.
@@ -295,6 +417,120 @@ Private Function ResolveLogSheet(ByVal wkb As Workbook) As Worksheet
     End If
 
     Set ResolveLogSheet = sh
+End Function
+
+'@label:write-heading-to
+'@sub-title The first block of the report: which workbook, and on what
+'@details
+'The platform of the export and the platform of an entry can differ, since
+'a linelist travels between machines, and both are worth having.
+'@param lines BetterArray. The lines built so far.
+'@param sh Worksheet. The log worksheet.
+Private Sub AppendHeadingTo(ByVal lines As BetterArray, ByVal sh As Worksheet)
+    Dim savedIn As String
+
+    savedIn = sh.Parent.Path
+    If LenB(savedIn) = 0 Then savedIn = "(never saved)"
+
+    lines.Push HEADING_TITLE
+    lines.Push "written  " & Format$(Now, "yyyy-mm-dd hh:mm:ss") & _
+               " on " & PlatformTag()
+    lines.Push "workbook " & sh.Parent.Name
+    lines.Push "saved in " & savedIn
+    lines.Push vbNullString
+End Sub
+
+'@label:append-metadata-to
+'@sub-title Every row of the Metadata worksheet, into the report
+'@details
+'The whole variable and value block goes out, not a chosen few rows, so a
+'linelist built by a later designer carries whatever that designer wrote
+'without this routine being touched again. The block below the creation rows
+'is the geobase metadata, and it goes out with the rest.
+'A linelist with no Metadata worksheet says so and the report goes on: a log
+'is worth having even when the metadata is missing.
+'@param lines BetterArray. The lines built so far.
+'@param wkb Workbook. The linelist workbook.
+Private Sub AppendMetadataTo(ByVal lines As BetterArray, ByVal wkb As Workbook)
+    Dim metash As Worksheet
+    Dim lastRow As Long
+    Dim rowIndex As Long
+    Dim keyText As String
+    Dim valueText As String
+
+    lines.Push METADATA_HEADING
+
+    'The worksheets collection raises 9 on a missing name, and a linelist
+    'without the sheet is an ordinary state rather than a fault.
+    Set metash = Nothing
+    On Error Resume Next
+    Set metash = wkb.Worksheets(METADATA_SHEET_NAME)
+    On Error GoTo 0
+
+    If metash Is Nothing Then
+        lines.Push "this linelist carries no " & METADATA_SHEET_NAME & " worksheet"
+        lines.Push vbNullString
+        Exit Sub
+    End If
+
+    lastRow = metash.Cells(metash.Rows.Count, 1).End(xlUp).Row
+
+    For rowIndex = 1 To lastRow
+        keyText = Trim$(CellText(metash.Cells(rowIndex, 1).Value))
+        valueText = Trim$(CellText(metash.Cells(rowIndex, 2).Value))
+        If LenB(keyText) > 0 Then lines.Push keyText & " = " & valueText
+    Next rowIndex
+
+    lines.Push vbNullString
+End Sub
+
+'@label:append-entries-to
+'@sub-title Every row of the log sheet, into the report
+'@details
+'A row carrying the title alone opens a section and reads as a heading in
+'brackets; every other written row is one entry, and it reads as the
+'timestamp, the outcome in brackets, then the action and the detail. Blank
+'rows are dropped, because CheckingOutput lays them out for the eye and they
+'say nothing.
+'@param lines BetterArray. The lines built so far.
+'@param sh Worksheet. The log worksheet.
+Private Sub AppendEntriesTo(ByVal lines As BetterArray, ByVal sh As Worksheet)
+    Dim lastRow As Long
+    Dim rowIndex As Long
+    Dim titleText As String
+    Dim stampText As String
+    Dim entryText As String
+
+    lines.Push ENTRIES_HEADING
+
+    lastRow = sh.Cells(sh.Rows.Count, OUTPUT_COLUMN).End(xlUp).Row
+
+    For rowIndex = 1 To lastRow
+        titleText = Trim$(CellText(sh.Cells(rowIndex, OUTPUT_COLUMN).Value))
+        stampText = Trim$(CellText(sh.Cells(rowIndex, STAMP_COLUMN).Value))
+        entryText = Trim$(CellText(sh.Cells(rowIndex, ENTRY_COLUMN).Value))
+
+        If LenB(stampText) = 0 And LenB(entryText) = 0 Then
+            If LenB(titleText) > 0 Then
+                lines.Push vbNullString
+                lines.Push "[" & titleText & "]"
+            End If
+        Else
+            lines.Push stampText & "  [" & titleText & "]  " & entryText
+        End If
+    Next rowIndex
+End Sub
+
+'@label:cell-text
+'@sub-title One cell as text, with an error value reading as empty
+'@details
+'A cell holding #N/A or #REF! raises 13 on CStr, and one such cell in a log
+'or on a metadata sheet must not take down the export of everything else.
+'@param cellValue Variant. The value read from a cell.
+'@return String. The value as text, or an empty string when it is an error.
+Private Function CellText(ByVal cellValue As Variant) As String
+    If IsError(cellValue) Then Exit Function
+    CellText = CStr(cellValue)
 End Function
 
 '@label:write-entry
