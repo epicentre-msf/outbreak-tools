@@ -23,6 +23,8 @@ Option Explicit
 Private linelistService As EventLinelist
 Private appScope As ApplicationState
 Private busyDepth As Long
+Private quietDepth As Long
+Private quietEvents As Boolean
 
 
 '@section Centralised BusyState
@@ -79,6 +81,53 @@ Public Sub LLExitBusyState()
 
     On Error Resume Next
     If Not appScope Is Nothing Then appScope.Restore
+    On Error GoTo 0
+End Sub
+
+
+'@section Centralised quiet state
+'===============================================================================
+'The events-only half of the busy state, for work that needs nothing else than
+'silence: the import resizing every data entry table before it reads a file, and
+'the geo form writing a place into the cells beside it. Both used to write
+'Application.EnableEvents themselves, so one flag had three owners in the
+'linelist and a run that ended between two of those lines left worksheet events
+'off for the rest of the session. This is the one owner.
+'
+'It is deliberately NOT the busy state. Screen updating, manual calculation and
+'the cursor are visible, and a form on screen writing four cells has no business
+'taking any of them.
+
+'@sub-title Turn worksheet events off for a stretch of work, counting the nesting.
+'@details
+'What was found is saved rather than assumed, so a quiet stretch that opens
+'inside a busy one puts the busy value back and lets the busy exit restore what
+'the user had. That is what makes the two safe to nest either way round.
+Public Sub LLEnterQuietState()
+    quietDepth = quietDepth + 1
+    If quietDepth > 1 Then Exit Sub
+
+    quietEvents = Application.EnableEvents
+    Application.EnableEvents = False
+End Sub
+
+'@sub-title Give worksheet events back on the outermost exit.
+'@details
+'An exit with nothing open does nothing, so a handler may call this whether or
+'not the raise happened inside the quiet stretch. Every caller of
+'LLEnterQuietState owes this one on every path it can take, error label
+'included -- that is the whole point of it being here rather than inline.
+Public Sub LLExitQuietState()
+    If quietDepth <= 0 Then
+        quietDepth = 0
+        Exit Sub
+    End If
+
+    quietDepth = quietDepth - 1
+    If quietDepth > 0 Then Exit Sub
+
+    On Error Resume Next
+    Application.EnableEvents = quietEvents
     On Error GoTo 0
 End Sub
 
@@ -149,9 +198,15 @@ Public Sub SelectionChanged(ByVal sh As Worksheet, ByVal target As Range)
     If (sh Is Nothing) Or (target Is Nothing) Then Exit Sub
 
     On Error GoTo Cleanup
-    'No busyCursor here: this runs on every arrow key press, and flipping the
-    'mouse cursor per keystroke is visible.
-    LLEnterBusyState
+    'The same cursor the change handler shows, and it is here because of the geo
+    'cascade. Landing on an admin cell refills the dropdown under it, which is
+    'the slowest thing a selection can start, and it used to run under the
+    'ordinary cursor while the edit just before it ran under the arrow. The
+    'cursor changing between the two is the flick the owner reported.
+    'This line was left out on purpose once, on the grounds that the handler
+    'runs on every arrow key. If plain movement round the sheet starts to
+    'flicker, that is this line and it comes back out.
+    LLEnterBusyState busyCursor:=xlNorthwestArrow
     Service.OnSelectionChange sh, target
 Cleanup:
     LLExitBusyState

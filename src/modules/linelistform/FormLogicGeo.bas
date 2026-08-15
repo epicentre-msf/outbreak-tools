@@ -221,7 +221,7 @@ Private Sub CMD_Copier_Click()
             tempTable.Items = Split(selectedValue, SEP)
 
             If tempTable.Length > 0 Then
-                Application.EnableEvents = False
+                LinelistEventsManager.LLEnterQuietState
                 sh.Range(cellRng, cellRng.Offset(, 3)).ClearContents
 
                 If Not (selectedRng Is Nothing) Then
@@ -235,13 +235,13 @@ Private Sub CMD_Copier_Click()
                     tempTable.ToExcelRange Destination:=cellRng, TransposeValues:=True
                 End If
 
-                Application.EnableEvents = True
+                LinelistEventsManager.LLExitQuietState
             End If
 
             geoObj.UpdateHistoric selectedValue, GeoScopeAdmin
 
         Case GeoScopeHF
-            Application.EnableEvents = False
+            LinelistEventsManager.LLEnterQuietState
 
             If Not (selectedRng Is Nothing) Then
                 nbLines = 1
@@ -253,7 +253,7 @@ Private Sub CMD_Copier_Click()
                 cellRng.Value = selectedValue
             End If
 
-            Application.EnableEvents = True
+            LinelistEventsManager.LLExitQuietState
             geoObj.UpdateHistoric selectedValue, GeoScopeHF
         End Select
 
@@ -265,9 +265,9 @@ Private Sub CMD_Copier_Click()
     Case "SPT-Analysis"
         Select Case hfOrGeo
         Case GeoScopeHF
-            Application.EnableEvents = False
+            LinelistEventsManager.LLEnterQuietState
             cellRng.Value = selectedValue
-            Application.EnableEvents = True
+            LinelistEventsManager.LLExitQuietState
 
         Case GeoScopeAdmin
             Set tempTable = New BetterArray
@@ -281,13 +281,13 @@ Private Sub CMD_Copier_Click()
                 OpeningDelimiter:=vbNullString, _
                 ClosingDelimiter:=vbNullString, QuoteStrings:=False)
 
-            Application.EnableEvents = False
+            LinelistEventsManager.LLEnterQuietState
             cellRng.Value = selectedValue
             On Error Resume Next
             cellName = cellRng.Name.Name
             On Error GoTo ErrGeo
             UpdateSpatioTemporalFormulas cellName, tempTable.Length
-            Application.EnableEvents = True
+            LinelistEventsManager.LLExitQuietState
         End Select
 
         Me.TXT_Msg.Value = vbNullString
@@ -304,11 +304,15 @@ Private Sub CMD_Copier_Click()
     End Select
 
 ErrGeo:
-    'The write branches above switch events off around the cell writes, so a
-    'raise between the two lines lands here with events off. Left that way,
-    'every worksheet event of the linelist stays dead for the session: the
-    'checkings, the dropdown cascades, the geo autofill.
-    Application.EnableEvents = True
+    'The write branches above ask the events manager for silence around the cell
+    'writes, so a raise between the two lines lands here with events off. Left
+    'that way, every worksheet event of the linelist stays dead for the session:
+    'the checkings, the dropdown cascades, the geo autofill.
+    '
+    'The exit counts, so this line is right whether the raise happened inside a
+    'quiet stretch or before one was ever opened -- with nothing open it does
+    'nothing at all.
+    LinelistEventsManager.LLExitQuietState
 
     'A handler that raises loses the message it was there to show, which is why
     'GeoFailureMessage carries the plain English fallback.

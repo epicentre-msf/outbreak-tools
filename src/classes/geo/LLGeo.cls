@@ -106,6 +106,7 @@ Private Type TGeo
     translated As Boolean
     flagsLoaded As Boolean
     lastFailure As String
+    levelMemo As Collection
     sealed As Boolean
 End Type
 
@@ -156,10 +157,19 @@ Private Const NAMES_LEVEL_COL As String = "level"
 'Worksheet-level hidden name holding the kind of a linelist sheet
 Private Const SHEET_TAG As String = "sheet_type"
 
-'Separator of the in-memory index UniqueRangeValue dedupes against. It sits on
-'both sides of every entry, so a run of short entries cannot match a longer
-'token. A Const takes a constant expression, which rules out Chr$ and ChrW$.
-Private Const UNIQUE_SEPARATOR As String = vbNullChar
+'The key UniqueRangeValue dedupes with. The prefix is load-bearing twice over:
+'a Collection refuses an empty key, and an empty cell is a real entry of a
+'geobase column, so the prefix is what lets one be held. The length cap is
+'Excel's own: a Collection key longer than 255 characters raises, and two place
+'names that agree on their first 250 characters count as one here.
+Private Const UNIQUE_KEY_PREFIX As String = "k:"
+Private Const UNIQUE_KEY_MAXLENGTH As Long = 250
+
+'How many answered levels the instance holds. The cascade asks for the same
+'parents over and over -- a column filled with one admin1, a value re-picked, a
+'typo corrected -- and each miss costs a filter of the whole geobase. The cap is
+'what keeps a long session from holding a geobase twice over.
+Private Const LEVEL_MEMO_MAX As Long = 16
 
 '@section Factory
 '===============================================================================
@@ -719,11 +729,25 @@ End Function
 '@label:unique-range-value
 '@sub-title Extract unique values from a range into a BetterArray.
 '@details
-'Reads one Variant array per area of the range and dedupes in memory against
-'a delimited string index, then pushes the values in encounter order. The
-'range handed in is the visible part of a filtered column, which on a large
-'geobase is tens of thousands of cells; one crossing per area and one InStr
-'per cell is what keeps that affordable.
+'Reads one Variant array per area of the range and dedupes in memory against a
+'keyed Collection, then pushes the values in encounter order. The range handed
+'in is the visible part of a filtered column, which on a large geobase is tens
+'of thousands of cells.
+'
+'WHY A COLLECTION AND NOT A STRING INDEX
+'-------------------------------------------------------------------------------
+'The index used to be one long string with every value already seen in it, and
+'every cell was an InStr over the whole of it. That is quadratic in the number
+'of distinct values, and the string was rebuilt on every hit, so a level with a
+'few thousand children cost far more than the filter that produced it. A
+'Collection key is hashed, so the test is flat however many values arrive.
+'Dictionary is missing on Mac Excel; a keyed Collection is the replacement this
+'project uses.
+'
+'The dedupe is now CASE INSENSITIVE, because Collection keys are. That follows
+'the AutoFilter above it, which matched these rows case insensitively in the
+'first place, so two spellings of one place name were already being treated as
+'one by the time they got here.
 '@param rng Range. The range of cells to extract unique values from.
 '@return BetterArray. Deduplicated values in encounter order.
 Private Function UniqueRangeValue(ByVal rng As Range) As BetterArray
@@ -734,30 +758,145 @@ Private Function UniqueRangeValue(ByVal rng As Range) As BetterArray
     Dim colIdx As Long
     Dim cellValue As Variant
     Dim entry As String
-    Dim seen As String
+    Dim seen As Collection
 
     Set retVal = New BetterArray
-    seen = UNIQUE_SEPARATOR
+    Set seen = New Collection
 
     For Each areaRng In rng.Areas
         block = RangeValues(areaRng)
 
+        'The suppression covers the keyed Add alone, and the raise IS the test:
+        'a Collection refuses a key it already holds. It is armed once per area
+        'rather than once per cell, because a geobase column crosses tens of
+        'thousands of cells and each arming costs.
+        On Error Resume Next
         For rowIdx = LBound(block, 1) To UBound(block, 1)
             For colIdx = LBound(block, 2) To UBound(block, 2)
                 cellValue = block(rowIdx, colIdx)
                 entry = CellText(cellValue)
 
-                If InStr(1, seen, UNIQUE_SEPARATOR & entry & UNIQUE_SEPARATOR, _
-                         vbBinaryCompare) = 0 Then
-                    seen = seen & entry & UNIQUE_SEPARATOR
-                    retVal.Push cellValue
-                End If
+                'Cleared first, so a raise from the previous Push cannot read as
+                'a duplicate key here and drop a value that belongs in the list.
+                Err.Clear
+                seen.Add entry, _
+                         UNIQUE_KEY_PREFIX & Left$(entry, UNIQUE_KEY_MAXLENGTH)
+                If Err.Number = 0 Then retVal.Push cellValue
             Next
         Next
+        On Error GoTo 0
     Next
 
     Set UniqueRangeValue = retVal
 End Function
+
+'@section Level memo
+'===============================================================================
+'One answered level per slot, so the cascade pays the AutoFilter once per set of
+'parents rather than once per keystroke. Import and Clear empty it, and the
+'whole instance is dropped by EventLinelist.ResetCaches after a geobase import,
+'so nothing here can outlive the geobase it was read from.
+
+'@label:level-memo-key
+'@sub-title The identity of one GeoLevel answer.
+'@details
+'Scope and level, then the parents that narrow it. The parents arrive as three
+'shapes -- nothing for admin 1, a scalar for admin 2, a BetterArray below that
+'-- and each becomes text here. A parent carrying the separator itself would
+'read as two parents, so the separator is a character no place name holds.
+'@param adminLevel Byte. Admin level index.
+'@param geoType Byte. GeoScopeAdmin or GeoScopeHF.
+'@param adminNames Variant. The parent selections as GeoLevel received them.
+'@return String. The key of that answer.
+Private Function LevelMemoKey(ByVal adminLevel As Byte, ByVal geoType As Byte, _
+                              ByRef adminNames As Variant) As String
+    Const KEY_SEPARATOR As String = vbNullChar
+
+    Dim key As String
+    Dim counter As Long
+
+    key = CStr(geoType) & KEY_SEPARATOR & CStr(adminLevel)
+
+    If IsObject(adminNames) Then
+        If TypeName(adminNames) = "BetterArray" Then
+            For counter = 1 To adminNames.Length
+                key = key & KEY_SEPARATOR & CStr(adminNames.Item(counter))
+            Next
+        End If
+    Else
+        key = key & KEY_SEPARATOR & CStr(adminNames)
+    End If
+
+    LevelMemoKey = key
+End Function
+
+'@label:level-memo-read
+'@sub-title The held answer for one key, as a list of its own.
+'@details
+'A fresh BetterArray every time, filled from the items held under the key. Two
+'reasons it is not the held object itself: VarWriter clears and refills what
+'GeoLevel hands it while it writes the geo1 column, so one caller would empty
+'the memo for every other; and a caller must not be able to tell a hit from a
+'miss. Setting Items on a new BetterArray adopts the bounds of what is stored,
+'so a hit answers the same shape the filter would have built.
+'@param key String. The key built by LevelMemoKey.
+'@return BetterArray. The held answer, or Nothing when the key is not held.
+Private Function LevelMemoRead(ByVal key As String) As BetterArray
+    Dim storedItems As Variant
+    Dim answer As BetterArray
+
+    If this.levelMemo Is Nothing Then Exit Function
+
+    'A Collection raises 5 on a key it does not hold, and that raise is the
+    'test. The suppression covers the read alone.
+    On Error Resume Next
+    storedItems = this.levelMemo.Item(key)
+    If Err.Number <> 0 Then
+        Err.Clear
+        On Error GoTo 0
+        Exit Function
+    End If
+    On Error GoTo 0
+
+    Set answer = New BetterArray
+    answer.Items = storedItems
+    Set LevelMemoRead = answer
+End Function
+
+'@label:level-memo-write
+'@sub-title Hold one answer under its key.
+'@details
+'The items are held rather than the BetterArray, for the reason LevelMemoRead
+'gives. An empty answer is not held: an empty list has no one array shape to
+'store, and a level with no children at all is a geobase fault rather than
+'something a user meets on the way down a column.
+'
+'A full memo is emptied whole. Dropping the oldest entry would need a second
+'structure to carry the order, and the cap is a guard against a session that
+'never ends rather than a working limit.
+'@param key String. The key built by LevelMemoKey.
+'@param values BetterArray. The answer to hold.
+Private Sub LevelMemoWrite(ByVal key As String, ByVal values As BetterArray)
+    If values Is Nothing Then Exit Sub
+    If values.Length = 0 Then Exit Sub
+
+    If this.levelMemo Is Nothing Then ResetLevelMemo
+    If this.levelMemo.Count >= LEVEL_MEMO_MAX Then ResetLevelMemo
+
+    'The key can only be there already when two calls raced the read above,
+    'which one thread cannot do; the suppression is what keeps a surprise from
+    'reaching the caller as a geobase failure.
+    On Error Resume Next
+    this.levelMemo.Add values.Items, key
+    Err.Clear
+    On Error GoTo 0
+End Sub
+
+'@label:reset-level-memo
+'@sub-title Drop every held level answer.
+Private Sub ResetLevelMemo()
+    Set this.levelMemo = New Collection
+End Sub
 
 '@label:hf-range
 '@sub-title Get the data body range for a named column in the HF table.
@@ -860,6 +999,8 @@ Public Property Get GeoLevel(ByVal adminLevel As Byte, _
     Dim errNumber As Long
     Dim errSource As String
     Dim errMessage As String
+    Dim memoKey As String
+    Dim memoAnswer As BetterArray
 
     Set sh = Wksh()
     Set outLevels = New BetterArray
@@ -878,6 +1019,16 @@ Public Property Get GeoLevel(ByVal adminLevel As Byte, _
     End If
 
     GuardLevelNames adminLevel, adminNames
+
+    'The held answer, if this level and these parents were asked for already.
+    'It sits below the guard, so a caller handing the wrong shape still hears
+    'about it rather than being answered from memory.
+    memoKey = LevelMemoKey(adminLevel, geoType, adminNames)
+    Set memoAnswer = LevelMemoRead(memoKey)
+    If Not memoAnswer Is Nothing Then
+        Set GeoLevel = memoAnswer
+        Exit Property
+    End If
 
     prevCalc = sh.EnableCalculation
     sh.EnableCalculation = False
@@ -955,6 +1106,7 @@ Public Property Get GeoLevel(ByVal adminLevel As Byte, _
     End If
 
     sh.EnableCalculation = prevCalc
+    LevelMemoWrite memoKey, outLevels
     Set GeoLevel = outLevels
     Exit Property
 
@@ -1085,6 +1237,7 @@ Public Sub Clear()
 
     SetGeoUpdatedFlag FLAG_EMPTY
     ResetNamesCache
+    ResetLevelMemo
 End Sub
 
 '@label:clear-historic
@@ -1182,6 +1335,11 @@ Public Sub Import(ByVal fromWkb As Workbook, _
 
     UpdateMetadata
     ResetNamesCache
+
+    'Every level answered before this import belongs to the geobase that has
+    'just been replaced. The historic-only path lands here too, and it costs
+    'that path one rebuild of whatever the cascade asks for next.
+    ResetLevelMemo
 End Sub
 
 '@label:import-one-table

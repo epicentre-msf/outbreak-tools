@@ -974,7 +974,7 @@ Private Sub HandleHListChange(ByRef sh As Worksheet, ByRef target As Range, _
                 Set adminTable = this.geo.GeoLevel(LevelAdmin2, _
                                                    GeoScopeAdmin, _
                                                    target.Value)
-                this.drop.Update adminTable, "admin2"
+                this.drop.Update adminTable, "admin2", removeDuplicates:=False
 
             Case "geo2"
                 this.drop.ClearList "admin3"
@@ -985,7 +985,7 @@ Private Sub HandleHListChange(ByRef sh As Worksheet, ByRef target As Range, _
                 Set adminTable = this.geo.GeoLevel(LevelAdmin3, _
                                                    GeoScopeAdmin, _
                                                    adminNames)
-                this.drop.Update adminTable, "admin3"
+                this.drop.Update adminTable, "admin3", removeDuplicates:=False
 
             Case "geo3"
                 this.drop.ClearList "admin4"
@@ -996,7 +996,7 @@ Private Sub HandleHListChange(ByRef sh As Worksheet, ByRef target As Range, _
                 Set adminTable = this.geo.GeoLevel(LevelAdmin4, _
                                                    GeoScopeAdmin, _
                                                    adminNames)
-                this.drop.Update adminTable, "admin4"
+                this.drop.Update adminTable, "admin4", removeDuplicates:=False
 
             End Select
 
@@ -1464,19 +1464,19 @@ Private Sub HandleSelectionHList(ByRef sh As Worksheet, ByRef target As Range, _
     Case "geo2"
         this.drop.ClearList "admin2"
         Set adminTable = this.geo.GeoLevel(LevelAdmin2, GeoScopeAdmin, target.Offset(, -1).Value)
-        this.drop.Update adminTable, "admin2"
+        this.drop.Update adminTable, "admin2", removeDuplicates:=False
 
     Case "geo3"
         this.drop.ClearList "admin3"
         adminNames.Push target.Offset(, -2).Value, target.Offset(, -1).Value
         Set adminTable = this.geo.GeoLevel(LevelAdmin3, GeoScopeAdmin, adminNames)
-        this.drop.Update adminTable, "admin3"
+        this.drop.Update adminTable, "admin3", removeDuplicates:=False
 
     Case "geo4"
         this.drop.ClearList "admin4"
         adminNames.Push target.Offset(, -3).Value, target.Offset(, -2).Value, target.Offset(, -1).Value
         Set adminTable = this.geo.GeoLevel(LevelAdmin4, GeoScopeAdmin, adminNames)
-        this.drop.Update adminTable, "admin4"
+        this.drop.Update adminTable, "admin4", removeDuplicates:=False
 
     End Select
 

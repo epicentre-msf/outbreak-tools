@@ -1933,11 +1933,33 @@ Public Sub ClickImportData()
     Dim csTab As CustomTable
     Dim Lo As ListObject
     Dim nbBlank As Long
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
 
     InitializeTrads
 
+    'Events stay off across the whole import. The resize below writes to every
+    'HList sheet and the import writes thousands of rows after it, and each of
+    'those writes would otherwise raise the sheet-change handler.
+    '
+    'It goes through the events manager, which is the one owner of that flag in
+    'a running linelist. This sub used to write Application.EnableEvents itself,
+    'with no handler over it, so a raise anywhere inside -- an unprotect
+    'refused, a table that would not resize, the import itself -- ended the sub
+    'with events still off, and Excel holds them off for the rest of the
+    'session. A linelist in that state answers no worksheet event at all: no geo
+    'cascade, no checking, no autofill. The user reads it as the dropdowns
+    'having stopped working.
+    '
+    'It also poisoned the scope underneath it. F_Advanced.HandleImportData opens
+    'an ApplicationState of its own, and that snapshot was taken AFTER the raw
+    'line below had already turned events off, so the form's own restore put
+    '"off" back and the only line that undid it was the last one of this sub.
+    On Error GoTo ImportFailed
+    LinelistEventsManager.LLEnterQuietState
+
     'Resize all HList tables before import (remove blank rows)
-    Application.EnableEvents = False
     For Each sh In wb.Worksheets
         If SheetTag(sh) = "HList" Then
             nbBlank = BlankRowCountOf(sh)
@@ -1947,7 +1969,7 @@ Public Sub ClickImportData()
             On Error Resume Next
             If Not (Lo.AutoFilter Is Nothing) Then Lo.AutoFilter.ShowAllData
             csTab.RemoveRows totalCount:=nbBlank
-            On Error GoTo 0
+            On Error GoTo ImportFailed
             pass.Protect sh.Name
         End If
     Next
@@ -1960,7 +1982,23 @@ Public Sub ClickImportData()
     'Update all the listAuto in the workbook
     LinelistEventsManager.UpdateAllListAuto
 
-    Application.EnableEvents = True
+ImportCleanup:
+    'Opens with a suppression because a Resume leaves the handler armed.
+    On Error Resume Next
+    LinelistEventsManager.LLExitQuietState
+    On Error GoTo 0
+
+    'The raise is carried out rather than swallowed, so an import that failed
+    'says so exactly as it did before. What changed is that the events are back
+    'on by the time it does.
+    If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
+    Exit Sub
+
+ImportFailed:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    Resume ImportCleanup
 End Sub
 
 '@Description("Import a new geobase in the linelist")
