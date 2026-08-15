@@ -725,6 +725,11 @@ Public Sub Translate(ByVal TransObject As TranslationObject)
         If csTab.HasCheckings Then HarvestCollaboratorCheckings csTab.CheckingValues
     Next lo
 
+    'Calculate ranges of analysis
+    On Error Resume Next
+        sh.UsedRange.Calculate
+    On Error GoTo 0
+    
     LogInfo "Translation completed", checkingNote
 End Sub
 

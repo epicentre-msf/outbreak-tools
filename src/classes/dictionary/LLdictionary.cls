@@ -2249,6 +2249,11 @@ Public Sub Translate(ByVal TransObject As TranslationObject)
         Set targetRange = DataRange("control details")
         TransObject.TranslateRange targetRange, containsFormula:=True
     End If
+
+    'Calculate the datarange (some computations can result into errors)
+    On Error Resume Next
+        DataRange.Calculate
+    On Error GoTo 0
 End Sub
 
 

@@ -654,6 +654,11 @@ Public Sub Translate(ByVal trads As TranslationObject)
 
     'Translate the short label
     trads.TranslateRange BodyBlock(dataObject, shortLabelColumn, shortLabelColumn)
+
+    'Calculate the data range in case we have formulas
+    On Error Resume Next
+    dataObject.DataRange.Calculate
+    On Error GoTo 0
 End Sub
 
 '@label:manage-rows
