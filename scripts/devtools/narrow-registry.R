@@ -2,7 +2,11 @@
 #
 # narrow-registry.R -- cut the test registry down to one suite folder.
 #
-#   Rscript scripts/devtools/narrow-registry.R <folder> [registry.yml]
+#   Rscript scripts/devtools/narrow-registry.R <folder>[,<folder>...] [registry.yml]
+#
+# Several folders can be named at once, separated by commas. That is what
+# reproduces a failure the folders do not show one at a time: a suite that
+# leaves state behind only reaches its victim when both are in the same run.
 #
 # A session is verified by a probe: `src/tests/test-registry.yml` narrowed to
 # the work of that session, then the usual `run-tests.R --build`. Doing that cut
@@ -31,9 +35,10 @@
 
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 1L) {
-  stop("usage: narrow-registry.R <folder> [registry.yml]", call. = FALSE)
+  stop("usage: narrow-registry.R <folder>[,<folder>...] [registry.yml]", call. = FALSE)
 }
-target <- args[1]
+targets <- trimws(strsplit(args[1], ",", fixed = TRUE)[[1]])
+targets <- targets[nzchar(targets)]
 path <- if (length(args) >= 2L) args[2] else "src/tests/test-registry.yml"
 if (!file.exists(path)) stop("no registry at ", path, call. = FALSE)
 
@@ -67,18 +72,19 @@ for (i in seq_along(lines)) {
   is_covers <- grepl("^        covers: ", line)
   if (!is_module && !is_covers) next
 
-  if (folder %in% c("helpers", target)) {
+  if (folder %in% c("helpers", targets)) {
     if (is_module) kept <- c(kept, sub("^- module: ", "", trimws(line)))
   } else {
     lines[i] <- paste0("#", line)
   }
 }
 
-if (!target %in% seen) {
-  stop("no folder `", target, "` in ", path, ". Folders: ",
-       paste(seen, collapse = ", "), call. = FALSE)
+missing <- setdiff(targets, seen)
+if (length(missing)) {
+  stop("no folder `", paste(missing, collapse = "`, `"), "` in ", path,
+       ". Folders: ", paste(seen, collapse = ", "), call. = FALSE)
 }
 
 writeLines(lines, path)
-message(sprintf("narrow-registry.R: folder=%s, %d test module(s) kept", target, length(kept)))
+message(sprintf("narrow-registry.R: folder=%s, %d test module(s) kept", paste(targets, collapse = "+"), length(kept)))
 for (k in kept) message("  ", k)
