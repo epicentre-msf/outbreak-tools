@@ -58,15 +58,15 @@ Option Explicit
 Dim Arg
 Set Arg = WScript.Arguments
 
-If Arg.Count < 10 Then
+If Arg.Count < 11 Then
     WScript.Echo "usage: cscript //nologo build-linelist.vbs <workbook> " & _
                  "<designer> <setup> <sourceRoot> <formsFolder> <outFolder> " & _
-                 "<outName> <options> <reportPath> <obtHome>"
+                 "<outName> <options> <reportPath> <obtHome> <needPick>"
     WScript.Quit 2
 End If
 
 Dim wbPath, designerPath, setupPath, sourceRoot, formsFolder
-Dim outFolder, outName, buildOptions, reportPath, obtHome
+Dim outFolder, outName, buildOptions, reportPath, obtHome, needPick
 
 wbPath       = Arg(0)
 designerPath = Arg(1)
@@ -78,6 +78,7 @@ outName      = Arg(6)
 buildOptions = Arg(7)
 reportPath   = Arg(8)
 obtHome      = Arg(9)
+needPick     = Arg(10)
 
 Dim outcomeText, summaryText, grantText
 outcomeText = ""
@@ -103,12 +104,19 @@ Set Wkb = xlsApp.Workbooks.Open(wbPath, , False)
 If Err.Number <> 0 Then Fail "Workbooks.Open"
 wbName = Wkb.Name
 
-' 0) the sandbox grant, first because every call after it reads a file. It is a
-'    no-op on this host and is called anyway, so the two triggers stay in step.
-grantText = xlsApp.Run(wbName & "!" & "OBTGrantRoot", obtHome)
-If Err.Number <> 0 Then
-    grantText = "GRANT CALL FAILED " & Err.Number & ": " & Err.Description
-    Err.Clear
+' 0) the folder pick, first because every call after it reads a file. Windows
+'    has no sandbox and MacScript is absent, so this never runs here: R only
+'    sets needPick on macOS. Kept so the two triggers read the same.
+If needPick = "1" Then
+    xlsApp.Run wbName & "!" & "OBTGrantAccess"
+    If Err.Number <> 0 Then
+        grantText = "PICKER FAILED " & Err.Number & ": " & Err.Description
+        Err.Clear
+    Else
+        grantText = "folder picker was shown for " & obtHome
+    End If
+Else
+    grantText = "step 0 skipped, no folder picker was opened"
 End If
 
 ' 1) refresh the harness modules from the run dir, so OBTImport can be iterated

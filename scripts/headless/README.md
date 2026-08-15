@@ -128,7 +128,7 @@ written.
 | `--temppath` `--geopath` `--setuplang` `--lllang` `--llpassword` | the option keys above, passed through |
 | `--no-merge` | skip step two. Skipping it is how a linelist ends up with the right buttons wired to last week's handlers |
 | `--home` | the untracked working area, same one the test harness uses |
-| `--obt-home` | **the granted root** — everything Excel touches is staged under it. Falls back to the `OBT_HOME` environment variable (an `.Renviron` line is the deployed way to set it), then to `<repo>/.headless-runner` |
+| `--obt-home` | **the granted root** — everything Excel touches is staged under it. Falls back to the `OBT_HOME` environment variable (an `.Renviron` line is the deployed way to set it), then to `<repo>/headless-runner` |
 
 It reads `src/tests/test-registry.yml` for the list of classes and modules to
 load into the driver, and **drops every test row** before staging — the driver
@@ -230,29 +230,60 @@ that looks right and behaves like last month.
 
 ## File access on macOS
 
-Every path this workflow reads has to be inside a folder Excel holds a
-security-scoped grant for. Full Disk Access does **not** provide one: the
-sandbox wants bookmarks, and TCC permissions are a different thing entirely.
+Excel for Mac is sandboxed, and reading or writing a path it holds no grant for
+pops a dialog. A dialog in a headless run is a hang.
 
-### One folder, one grant
+### The run stages itself inside Excel's own sandbox
 
-Everything Excel touches is staged under one root, `OBT_HOME`, and the trigger
-grants that one folder before its first read.
+`OBT_HOME` defaults to a folder Excel already owns:
 
-The direct reason is that **nothing granted the run dir at all**. `OBTImport`
-and `OBTHeadless` make no grant call, `OBTRefreshHarness` reads
-`run/bootstrap/*.bas` before anything else happens, and the only grant in the
-chain sat three steps later naming five paths that did not include it. One root
-granted at step 0 fixes that on its own.
+```
+~/Library/Containers/com.microsoft.Excel/Data/Documents/OBTHome
+```
 
-Whether it gets to **zero** panels rather than fewer rests on two properties of
-a folder grant that are **not established**: that it persists across an Excel
-restart, and that it cascades to files created in the tree afterwards. Microsoft
-documents `GrantAccessToMultipleFiles` as persistent; cascade has no
-documentation. A probe meant to settle both was void — it derived its root from
-`Environ$("HOME")`, which inside a sandboxed Excel answers the container home
-where no grant is needed. See `.obt/gotchas/macos-sandbox-grant.md` before
-citing either property.
+Excel needs no permission for anything there, so **nothing is granted and
+nothing is picked**. Measured 2026-08-15: a build ran in 35 seconds, showed no
+dialog, and left Excel's own grant file untouched to the byte. Excel rewrites
+that file whenever it records an answered panel, so an unchanged one is proof it
+asked for nothing.
+
+The cost is one toggle on the other side of the fence. macOS keeps Excel's
+container away from other programs, so **R** needs Full Disk Access to reach it:
+
+```
+System Settings -> Privacy & Security -> Full Disk Access
+   add the app that runs Rscript, then quit and reopen it
+```
+
+`build-linelist.R` tests this by writing a file, not by asking `dir.exists()` —
+which answers TRUE for a folder macOS will refuse to open.
+
+### The fallback, and why it is only a fallback
+
+Where R cannot reach the container, `OBT_HOME` falls back to
+`<repo>/headless-runner` and somebody has to pick that folder in Excel. **A pick
+covers one build and no more.** Measured across four runs on 2026-08-15:
+
+- A pick lets Excel write over files that were already there when it was made.
+- Excel **remakes** both output workbooks on every save — new file IDs each run.
+- So the next run creates files that did not exist at pick time, and Excel asks
+  about every one of them.
+- Excel discards the pick at quit. Its grant file returned to the same byte
+  count after every run.
+
+A pick does cover **reads** anywhere below the folder, lastingly: 139 staged
+source files are deleted and recopied every run and never asked about.
+
+Ways that do **not** work:
+
+| | |
+|---|---|
+| `Application.GrantAccessToMultipleFiles` | error 438, the member is absent on Excel for Mac. It has never done anything here. |
+| `choose folder` sent from osascript | the panel runs outside Excel's process, so Excel keeps nothing |
+| a pick driven from the automated run | the trigger must OPEN the driver workbook first, and that is already a file read |
+
+`--obt-home` and the `OBT_HOME` environment variable override the choice. A path
+that lands inside the container is treated as the container however it was set.
 
 The layout:
 
@@ -271,17 +302,25 @@ beforehand and copies the finished linelist back **out** to `--out` at the end.
 Excel is handed the staged copies and never the originals, so it sees no path
 outside the root wherever the operator keeps their setup.
 
-The trigger's **step 0** is `OBTGrantRoot`, and it runs before every other
-macro because every other macro reads a file. It lives in `OBTBootstrap` — the
-module baked into the driver — since a module that has to be read off disk
-cannot be the one that grants access to the disk. `OBTRefreshHarness` runs
-straight after it and reads `run/bootstrap/*.bas`; nothing granted that folder
-before, which is why the harness modules used to prompt on every single run.
+A successful run then **clears all five folders**, about 17 MB, every byte of it
+rebuilt by the next run. A failed run keeps the lot — `fail()` prints the run
+dir and says so, because what a broken build leaves behind is the only account
+of what went wrong.
 
-What the run reports is in `build-report.txt` as `grant=`, and
-`build-linelist.R` prints it on every run. A grant that stopped taking is
-otherwise invisible from outside: no exit code and no elapsed time can see a
-dialog.
+The run dir does not survive, so its two logs go out with the linelist:
+
+```
+<out>/<name>-import.log          every component that went into the driver
+<out>/<name>-build-report.txt    what the trigger recorded, narrative included
+```
+
+The trigger's **step 0** opens the folder picker, and `build-linelist.R` keeps
+it switched off. Inside the container there is nothing to pick; outside it, a
+pick made in an Excel driven by Apple Events does not take, so the launcher
+prints the steps and stops rather than launching Excel into a wall of panels.
+
+`build-linelist.R` prints on every run whether the staging is inside Excel's
+sandbox. Nothing else can see a dialog: no exit code and no elapsed time.
 
 ### The scratch folder still has to exist before the grant
 

@@ -75,7 +75,7 @@ obt-skill/
 obt-doc-skill/
 .claude/
 .test-runner/
-.headless-runner/
+headless-runner/
 
 #------- Rewrite workflow
 scripts/history-rewrite

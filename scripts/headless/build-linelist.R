@@ -68,22 +68,29 @@
 # never run it, and none after that.
 #
 # OBT_HOME is --obt-home, else the OBT_HOME environment variable (an .Renviron
-# entry is the deployed way to set it), else <repo>/.headless-runner. Its own
+# entry is the deployed way to set it), else <repo>/headless-runner. The name
+# carries NO LEADING DOT, and that is not cosmetic: macOS hides dot-folders in
+# the folder picker, so an operator asked to pick one cannot see it. That cost a
+# run on 2026-08-14 -- the picker opened, the folder was invisible, something
+# else got picked, and the import died with a Device I/O error.
+#
+# Its own
 # folder rather than a corner of the test harness's working area: the two runs
 # share a registry and nothing else, and keeping the headless tree separate is
 # what lets it be swept, moved or granted without touching the test loop.
 #
-# WHAT THE GRANT ACTUALLY BUYS, which is less than this once assumed. Measured
-# on 2026-08-14 (.obt/gotchas/macos-sandbox-grant.md): a grant is PER ITEM and
-# lasts for the SESSION. It does not cover subfolders and it does not survive
-# Excel being quit. So a run still meets panels; consolidating under one root
-# cuts how many and makes them nameable in one place. Excel's own container is
-# the only spot that needs no grant at all, and the launcher cannot write there
-# (TCC), which is the open problem.
+# A NOTE THAT USED TO SIT HERE said a grant is per item, lasts one session and
+# does not cover subfolders. It was wrong. It came from a probe that built its
+# paths from Environ$("HOME"), which inside a sandboxed Excel is the container,
+# where nothing needs a grant at all. The probe measured nothing. What IS
+# measured is above: one folder pick, and it holds.
 #
-# Within it the run dir is cleared and reused rather than deleted and remade,
-# and the workbook copy is overwritten in place. That predates the grant work
-# and is kept: it costs nothing and a file kept in place keeps its identity.
+# The run dir is cleared and reused rather than deleted and remade, and the
+# workbook copy is overwritten in place, so both keep the identity a grant is
+# tied to. sync_tree below is the ONE place that breaks that rule: it deletes
+# src/classes and src/modules and copies every file back fresh, on every run.
+# That is fine while the pick is on OBT_HOME itself, which is never deleted.
+# If panels ever come back naming a file under src/, this is the first suspect.
 # =============================================================================
 
 # --- args --------------------------------------------------------------------
@@ -118,27 +125,155 @@ if (!grepl("^(/|~|[A-Za-z]:)", build_home)) build_home <- file.path(repo_root, b
 workbook_src <- file.path(build_home, "unit_tests_dev.xlsb")
 scripts_dir  <- file.path(repo_root, "scripts")
 
-# THE granted root. Everything Excel reads or writes goes under it, and the
-# trigger asks the sandbox about this one path and nothing else.
+# Needed this early because the sandbox check below is macOS-only.
+on_windows <- identical(.Platform$OS.type, "windows")
+
+# THE ONE ROOT. Everything Excel reads or writes goes under it, and the best
+# place for it is INSIDE EXCEL'S OWN SANDBOX, where Excel needs no permission
+# for anything and never puts a panel on the screen.
 #
-# Sys.getenv reads .Renviron, which is how a deployed install pins it without
-# anyone having to remember a flag: one OBT_HOME=... line in the operator's
-# .Renviron and every run lands in the folder they granted.
-obt_home <- opt("obt-home", default = {
-  if (nzchar(Sys.getenv("OBT_HOME"))) Sys.getenv("OBT_HOME")
-  else file.path(repo_root, ".headless-runner")
+#   ~/Library/Containers/com.microsoft.Excel/Data/Documents/OBTHome
+#
+# Measured 2026-08-15, and it is the whole answer to the grant problem. A build
+# run there took 35 seconds, showed nothing, and left Excel's own grant file
+# untouched to the byte -- Excel rewrites that file whenever it records an
+# answered panel, so an unchanged one is proof it asked for nothing.
+#
+# The catch is on THIS side of the fence: macOS keeps Excel's container away
+# from other programs, so R can only reach it once the operator has given their
+# terminal app Full Disk Access (System Settings -> Privacy & Security). That is
+# one toggle per machine and it is the deployed install step.
+#
+# Where the operator has not done it, the run falls back to a plain folder in
+# the repo and the old rules apply: somebody picks that folder in Excel, and the
+# pick lasts exactly one build (see the note on the marker below).
+#
+# --obt-home and OBT_HOME both override, and an explicit choice is never
+# second-guessed. Sys.getenv reads .Renviron, which is how a deployed install
+# pins a folder without anyone having to remember a flag.
+excel_container_home <- function() {
+  if (on_windows) return(NA_character_)
+  root <- path.expand("~/Library/Containers/com.microsoft.Excel/Data/Documents")
+  if (!dir.exists(root)) return(NA_character_)
+  # Written rather than merely tested: dir.exists() answers TRUE for a folder
+  # macOS will refuse to open, so only a real write settles it.
+  home  <- file.path(root, "OBTHome")
+  probe <- file.path(home, ".reachable")
+  ok <- tryCatch({
+    dir.create(home, recursive = TRUE, showWarnings = FALSE)
+    writeLines("ok", probe)
+    identical(readLines(probe, warn = FALSE), "ok")
+  }, error = function(e) FALSE, warning = function(w) FALSE)
+  unlink(probe, force = TRUE)
+  if (isTRUE(ok)) home else NA_character_
+}
+
+obt_home_chosen <- opt("obt-home", default = {
+  if (nzchar(Sys.getenv("OBT_HOME"))) Sys.getenv("OBT_HOME") else ""
 })
+in_container <- FALSE
+
+if (nzchar(obt_home_chosen)) {
+  obt_home <- obt_home_chosen
+} else {
+  container <- excel_container_home()
+  if (!is.na(container)) {
+    obt_home <- container
+    in_container <- TRUE
+  } else {
+    obt_home <- file.path(repo_root, "headless-runner")
+  }
+}
 if (!grepl("^(/|~|[A-Za-z]:)", obt_home)) obt_home <- file.path(repo_root, obt_home)
 obt_home <- path.expand(obt_home)
 dir.create(obt_home, recursive = TRUE, showWarnings = FALSE)
 obt_home <- normalizePath(obt_home, mustWork = TRUE)
+
+# An overridden path can still land inside the container, and then it needs no
+# pick either. Decided on the resolved path rather than on how it was chosen.
+if (!on_windows) {
+  container_root <- path.expand("~/Library/Containers/com.microsoft.Excel/Data")
+  in_container <- startsWith(paste0(obt_home, "/"), paste0(container_root, "/"))
+}
+
+# --- the folder pick, needed only OUTSIDE the container ----------------------
+# Inside Excel's container there is nothing to grant and nothing to pick, so
+# this whole section is skipped and no marker is ever read or written.
+#
+# Outside it, Excel for Mac gets access to a folder one way: somebody PICKS it
+# in a folder dialog, in an Excel they opened themselves.
+# (Application.GrantAccessToMultipleFiles raises 438 here and has never worked.)
+#
+# THE PICK CANNOT BE DONE FROM THIS SCRIPT. Two reasons, either one enough:
+#
+#   * The trigger has to OPEN the driver workbook before it can run any macro,
+#     and opening it is itself a file read. The first panel therefore arrives
+#     before any grant code could run at all.
+#   * A pick made inside an Excel driven by Apple Events did not take. The pick
+#     that works was made by hand, F5 in the VBE, in an Excel the operator had
+#     opened. The project already knew a `choose folder` sent from OUTSIDE Excel
+#     does nothing; an Excel driven wholly from outside behaves the same way.
+#
+# AND A PICK ONLY LASTS ONE BUILD, which is why the fallback is a fallback and
+# not the design. Measured 2026-08-15 across four runs: a pick lets Excel write
+# over files that were already there when it was made, and Excel remakes both
+# output workbooks on every save, so the next run is writing files that did not
+# exist at pick time and asks about every one of them. Excel's own grant file
+# shrank back to the same byte count after each run, which is it discarding what
+# the pick had added. The marker below therefore records that somebody was told
+# what to do, not that the run will be silent.
+#
+# The marker is written by --granted and never by a finished build. A build can
+# finish green while somebody clicks through eighty panels, so success does not
+# mean access was granted.
+granted_marker <- file.path(obt_home, ".granted")
+
+if (flag("granted")) {
+  if (in_container) {
+    message("build-linelist.R: nothing to grant -- ", obt_home)
+    message("build-linelist.R: that folder is inside Excel's own sandbox, so ",
+            "no pick is needed and none is asked for.")
+  } else {
+    writeLines(c("Somebody picked this folder in Excel.",
+                 "Delete this file to be shown the steps again."), granted_marker)
+    message("build-linelist.R: wrote ", granted_marker)
+  }
+  quit(status = 0L, save = "no")
+}
+
+if (!on_windows && !in_container && !file.exists(granted_marker)) {
+  message("\n=============================================================")
+  message(" EXCEL HAS NO ACCESS TO THIS FOLDER")
+  message("")
+  message("   ", obt_home)
+  message("")
+  message(" THE BETTER FIX, and it is one toggle:")
+  message("")
+  message("   System Settings -> Privacy & Security -> Full Disk Access")
+  message("   Add the app you run this from, then quit and reopen it.")
+  message("")
+  message(" That lets the build stage itself inside Excel's own sandbox,")
+  message(" where Excel never asks for anything. No picking, ever.")
+  message("")
+  message(" OR, to keep building in the folder above, do this each time")
+  message(" -- a pick only covers ONE build:")
+  message("")
+  message("   1. Open ", workbook_src, " in Excel")
+  message("   2. Press Alt+F11 for the VBE")
+  message("   3. Put the cursor inside OBTGrantAccess and press F5")
+  message("   4. In the picker, choose the folder named above")
+  message("   5. Quit Excel from its File menu")
+  message("")
+  message("   Rscript scripts/headless/build-linelist.R --granted")
+  message("=============================================================\n")
+  quit(status = 1L, save = "no")
+}
 
 # The trigger is the only OS-specific piece. Everything above and below it is
 # the same on both hosts, which is the whole point of keeping it thin: the two
 # triggers drive the SAME entry points in the SAME order with the SAME
 # arguments, so a difference in what gets built is a difference in the VBA
 # rather than in the harness.
-on_windows <- identical(.Platform$OS.type, "windows")
 trigger <- if (on_windows) {
   file.path(scripts_dir, "headless", "windows", "build-linelist.vbs")
 } else {
@@ -204,7 +339,9 @@ for (optional in c(temp_path, geo_path)) {
   }
 }
 
-message("build-linelist.R: OBT_HOME  -> ", obt_home, " (the one granted folder)")
+message("build-linelist.R: OBT_HOME  -> ", obt_home,
+        if (in_container) "  (inside Excel's sandbox, no grant needed)"
+        else "  (outside Excel's sandbox, a pick covers ONE build)")
 message("build-linelist.R: designer  -> ", designer_path)
 message("build-linelist.R: setup     -> ", setup_path)
 message("build-linelist.R: output    -> ", file.path(dest_folder, paste0(out_name, ".xlsb")))
@@ -390,18 +527,39 @@ build_options <- paste(
 dir.create(build_out, recursive = TRUE, showWarnings = FALSE)
 dir.create(dest_folder, recursive = TRUE, showWarnings = FALSE)
 
-# The three files a build writes, cleared in BOTH places. A stale linelist left
-# in either would let a failed run report a file on disk and read as a success.
+# The three files a build writes, and the two folders get opposite treatment.
+#
+#   dest_folder  DELETED. R writes there and R needs no grant.
+#   build_out    KEPT. Excel writes there, and a file Excel has to CREATE pops a
+#                macOS panel while a file it writes OVER does not.
+#
+# Measured 2026-08-15 with the operator reading the panels: the paths on them
+# were out/<name>-designer.xlsb and out/OBTApp_/*, which is exactly what this
+# loop used to delete plus the folder Excel makes for itself. The same run
+# rebuilt all 139 staged source files from scratch and showed no panel at all,
+# because Excel only READS those. Reads under a picked folder are free; creates
+# are not.
+#
+# Deleting bought one thing worth keeping: a stale linelist left in place would
+# let a failed run report a file on disk and read as a success. So the run
+# stamps the clock here instead, and section 6 refuses any output older than it.
 build_leaves <- c(".xlsb", "-generation.txt", "-designer.xlsb")
 for (leaf in build_leaves) {
-  unlink(file.path(build_out,   paste0(out_name, leaf)), force = TRUE)
   unlink(file.path(dest_folder, paste0(out_name, leaf)), force = TRUE)
 }
+run_started <- Sys.time()
 
 # Only macOS needs this. There, `run VB macro` returns a Parameter error against
 # an Excel that is already open interactively, so the instance has to go first.
 # On Windows CreateObject("Excel.Application") makes its own instance and an
 # Excel the operator has open is none of its business.
+# --- 4b) the trigger's step 0 ------------------------------------------------
+# Kept at "0", so the trigger never opens the folder picker. Inside the
+# container there is nothing to pick. Outside it, a pick made in an Excel driven
+# by Apple Events does not take, and the picking has to be done by hand anyway
+# -- the block near the top of this file prints the steps and stops the run.
+need_pick <- "0"
+
 excel_running <- function() {
   if (on_windows) return(FALSE)
   identical(system2("pgrep", c("-x", "Microsoft Excel"),
@@ -430,7 +588,8 @@ if (excel_running()) {
 # repo, and outFolder is the root's own out/ rather than the operator's folder.
 trigger_args <- shQuote(c(
   trigger, work_copy, staged_designer, staged_setup, source_root,
-  staged_forms, build_out, out_name, build_options, report_path, obt_home
+  staged_forms, build_out, out_name, build_options, report_path, obt_home,
+  need_pick
 ))
 
 message("build-linelist.R: launching Excel via ",
@@ -476,16 +635,24 @@ field <- function(key) {
 outcome  <- field("outcome")
 built    <- field("linelist")
 grant    <- field("grant")
+platform <- field("platform")
 
 if (length(narrative)) {
   message("\nWhat the build did:")
   for (ln in narrative) if (nzchar(trimws(ln))) message("  ", ln)
 }
 
-# Printed on every run, because a grant that stopped taking is invisible from
-# here otherwise: nothing in an exit code or an elapsed time can see a dialog,
-# and the operator is the only one who can.
-if (nzchar(grant)) message("\nbuild-linelist.R: sandbox   -> ", grant)
+# Printed on every run, because a run that started prompting again is invisible
+# from here otherwise: nothing in an exit code or an elapsed time can see a
+# dialog, and the operator is the only one who can.
+message("\nbuild-linelist.R: sandbox   -> ",
+        if (in_container) "inside Excel's own sandbox, nothing to grant"
+        else "OUTSIDE Excel's sandbox, a pick covers ONE build")
+if (nzchar(grant)) message("build-linelist.R: trigger   -> ", grant)
+
+# Printed on every run so a report kept or pasted elsewhere still says which
+# platform produced it. The two do not behave the same.
+if (nzchar(platform)) message("build-linelist.R: platform  -> ", platform)
 
 message(sprintf("\nbuild-linelist.R: %s sheet(s), %s variable(s), %s component(s) re-imported.",
                 field("sheets"), field("variables"), field("components")))
@@ -497,8 +664,22 @@ if (!nzchar(built) || !file.exists(built)) {
   fail(paste0("the build answered OK and there is no file at: ", built))
 }
 
+# The output files are kept from one run to the next now (see section 4), so a
+# file being there is no longer evidence THIS run wrote it. Every output must
+# carry a timestamp later than the moment the clock was stamped, which is before
+# Excel was launched. A file left by an earlier run fails the whole run, exactly
+# as an empty out/ used to.
+checked <- unique(c(built, file.path(build_out, paste0(out_name, build_leaves))))
+stale   <- checked[file.exists(checked) & file.mtime(checked) < run_started]
+if (length(stale)) {
+  fail(paste0("the build answered OK and left ", length(stale),
+              " file(s) from an earlier run, so this run did not write them: ",
+              paste(basename(stale), collapse = ", ")))
+}
+
 message("\nbuild-linelist.R: built    -> ", built,
         " (", format(file.size(built), big.mark = ","), " bytes)")
+
 
 # --- 7) hand the files over --------------------------------------------------
 # The build wrote into the granted root because that is the only place Excel is
@@ -525,4 +706,45 @@ if (!identical(normalizePath(build_out), normalizePath(dest_folder))) {
 
 message("build-linelist.R: linelist -> ", delivered[1])
 for (extra in delivered[-1]) message("build-linelist.R:          -> ", extra)
+
+# --- 7b) the run's own record ------------------------------------------------
+# The two logs go out with the files. They live in the run dir, which is wiped
+# below, and inside Excel's container that folder is somewhere most people will
+# never look. They are also the only account of what the build actually did:
+# obt-import.log lists every component that went into the driver, and
+# build-report.txt is what the trigger recorded, narrative included.
+#
+# Named after the linelist rather than kept as bare log names, so a folder
+# holding several builds still says which run each belongs to.
+for (rec in list(c(log_path,    "-import.log"),
+                 c(report_path, "-build-report.txt"))) {
+  if (!file.exists(rec[1]) || file.size(rec[1]) == 0L) next
+  to <- file.path(dest_folder, paste0(out_name, rec[2]))
+  if (file.copy(rec[1], to, overwrite = TRUE)) {
+    message("build-linelist.R:          -> ", to)
+  } else {
+    message("build-linelist.R: WARNING, could not copy the log to ", to)
+  }
+}
+
+# --- 8) clear the staging ----------------------------------------------------
+# Only on success, and only after everything is delivered. A run stages about
+# 17 MB -- the source tree, the driver copy, the merged forms, copies of the
+# operator's designer and setup, and the built workbooks -- and every byte of it
+# is rebuilt from scratch by the next run, so keeping it buys nothing.
+#
+# A FAILED run keeps the lot. fail() prints the run dir and says so, and reading
+# what a broken build left behind is how most of this file got written. It never
+# reaches here.
+staged <- c(run_dir, staged_forms, staged_in, build_out,
+            file.path(source_root, "src"))
+unlink(staged, recursive = TRUE, force = TRUE)
+left <- staged[dir.exists(staged)]
+if (length(left)) {
+  message("build-linelist.R: WARNING, staging not fully cleared: ",
+          paste(left, collapse = ", "))
+} else {
+  message("build-linelist.R: staging cleared from ", obt_home)
+}
+
 quit(status = 0L, save = "no")

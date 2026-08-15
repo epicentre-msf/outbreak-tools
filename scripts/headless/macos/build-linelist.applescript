@@ -35,8 +35,8 @@
 -- ============================================================================
 
 on run argv
-	if (count of argv) < 10 then
-		error "build-linelist.applescript: expected 10 arguments, got " & (count of argv)
+	if (count of argv) < 11 then
+		error "build-linelist.applescript: expected 11 arguments, got " & (count of argv)
 	end if
 
 	set wbPath to item 1 of argv
@@ -49,6 +49,7 @@ on run argv
 	set buildOptions to item 8 of argv
 	set reportPath to item 9 of argv
 	set obtHome to item 10 of argv
+	set needPick to item 11 of argv
 
 	set wbName to my basename(wbPath)
 
@@ -73,33 +74,45 @@ on run argv
 			open workbook workbook file name wbPath read only false
 		end timeout
 
-		-- 0) THE SANDBOX GRANT, and it comes before every other call because
-		--    every other call reads a file. OBTRefreshHarness below is itself a
-		--    read of run/bootstrap/*.bas, and nothing used to grant that folder,
-		--    which is why the harness modules prompted on every single run.
+		-- 0) THE FOLDER PICK, and it comes before every other call because every
+		--    other call reads a file. OBTRefreshHarness below is itself a read
+		--    of run/bootstrap/*.bas, and nothing used to cover that folder,
+		--    which is why the harness modules asked on every single run.
 		--
-		--    One folder covers the whole run. A folder grant persists across
-		--    Excel being quit and relaunched AND cascades to files created
-		--    inside the tree afterwards -- both confirmed by probe with the
-		--    operator watching the screen, written up in
-		--    .obt/gotchas/macos-sandbox-grant.md. So the staged sources, the
-		--    generation log and the OBTApp_ scratch files a run invents as it
-		--    goes are all covered by this one call.
+		--    One pick covers the whole run: the staged sources, the generation
+		--    log, and the OBTApp_ files a run invents as it goes. Measured
+		--    2026-08-14 and written up in .obt/gotchas/macos-sandbox-grant.md.
+		--    Application.GrantAccessToMultipleFiles raises 438 on Excel for Mac
+		--    and has never done anything; only a picked folder counts.
 		--
-		--    It lives in OBTBootstrap, the module baked into the driver, since
-		--    a module that has to be read off disk cannot be the one that grants
-		--    access to the disk.
+		--    OBTGrantAccess is the macro that does the picking, and it is used
+		--    here BECAUSE IT NEVER CHANGES. It has been in the driver workbook
+		--    since the harness was set up. A purpose-built entry point in
+		--    OBTBootstrap was tried first and failed in the field: OBTBootstrap
+		--    is the one module nothing re-imports from disk, so changing its
+		--    signature meant the workbook held the old copy, the call errored,
+		--    and no picker ever opened. Calling a macro that is already there
+		--    cannot go stale.
 		--
-		--    Ten minutes, for the same reason as the open: on a machine that has
-		--    never run this, a person may have to click Grant once. Every run
-		--    after that is silent.
-		with timeout of 600 seconds
-			try
-				set grantText to (run VB macro (wbName & "!OBTGrantRoot") arg1 obtHome) as text
-			on error errText number errNum
-				set grantText to "GRANT CALL FAILED " & (errNum as text) & ": " & errText
-			end try
-		end timeout
+		--    needPick is "1" only when R found no <obtHome>/.granted, so this is
+		--    silent on every run after the first. R does that check because R is
+		--    not sandboxed; the same check inside Excel would pop the panel it
+		--    is trying to avoid.
+		--
+		--    Ten minutes: somebody has to pick the folder and clear the two
+		--    message boxes OBTGrantAccess shows. Every run after that skips it.
+		if needPick is "1" then
+			with timeout of 600 seconds
+				try
+					run VB macro (wbName & "!OBTGrantAccess")
+					set grantText to "folder picker was shown for " & obtHome
+				on error errText number errNum
+					set grantText to "PICKER FAILED " & (errNum as text) & ": " & errText
+				end try
+			end timeout
+		else
+			set grantText to "step 0 skipped, no folder picker was opened"
+		end if
 
 		-- One hour, the same ceiling the test trigger uses. A build is far
 		-- shorter than a full suite, but the ceiling is there to stop a wedged
