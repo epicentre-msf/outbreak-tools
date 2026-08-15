@@ -125,6 +125,7 @@ Private Type TLLLog
     writer As CheckingOutput
     store As HiddenNames
     sealed As Boolean
+    platformTag As String
 End Type
 
 Private this As TLLLog
@@ -339,19 +340,24 @@ End Sub
 '@label:entry-label
 '@sub-title Compose the dated label of one entry
 '@details
-'The label opens with the timestamp; the action code and the detail
-'follow behind the separator, so the two land in their own columns of the
-'log sheet. The action code moved here when the title became the section:
-'the sheet has three titles now, and the line has to say which action it
-'records. A separator inside the detail would push text past the last
-'written column, so it is softened to a single dash first.
+'The label opens with the timestamp and the platform; the action code and
+'the detail follow behind the separator, so the two land in their own
+'columns of the log sheet. The action code moved here when the title became
+'the section: the sheet has three titles now, and the line has to say which
+'action it records. A separator inside the detail would push text past the
+'last written column, so it is softened to a single dash first.
+'The platform rides with the timestamp rather than with the detail, because
+'the detail column is what a reader searches and what several tests read
+'whole. It is on every line on purpose: a log rotation clears the sheet, so
+'a platform written once at the top of a session would not survive one.
 '@param action String. The action code of the event.
 '@param detail String. Short free text beside the timestamp.
 '@return String. The composed label.
 Private Function EntryLabel(ByVal action As String, ByVal detail As String) As String
     Dim label As String
 
-    label = Format$(Now, "yyyy-mm-dd hh:mm:ss") & DETAIL_SEPARATOR & Trim$(action)
+    label = Format$(Now, "yyyy-mm-dd hh:mm:ss") & " " & PlatformTag() & _
+            DETAIL_SEPARATOR & Trim$(action)
 
     If LenB(Trim$(detail)) > 0 Then
         label = label & ACTION_SEPARATOR & _
@@ -359,6 +365,43 @@ Private Function EntryLabel(ByVal action As String, ByVal detail As String) As S
     End If
 
     EntryLabel = label
+End Function
+
+'@label:platform-tag
+'@sub-title The operating system, the bitness and the Excel version, on one tag
+'@details
+'A log read months later says nothing about where it was written, and the
+'same code does not behave the same on the two platforms: a geobase export
+'that Windows accepts has refused on this Mac. Every entry therefore names
+'its platform.
+'The name and the bitness come from the compile constants, so they are the
+'build that is running and cannot be misread. The Excel version comes from
+'the application and is read once, because it is the same for every line of
+'a session and the log writes a line per user action.
+'@return String. Something of the shape "mac-64 excel-16.90".
+Private Function PlatformTag() As String
+    Dim osName As String
+    Dim bits As String
+
+    If LenB(this.platformTag) > 0 Then
+        PlatformTag = this.platformTag
+        Exit Function
+    End If
+
+    #If Mac Then
+        osName = "mac"
+    #Else
+        osName = "win"
+    #End If
+
+    #If Win64 Then
+        bits = "64"
+    #Else
+        bits = "32"
+    #End If
+
+    this.platformTag = osName & "-" & bits & " excel-" & Application.Version
+    PlatformTag = this.platformTag
 End Function
 
 '@label:rotate-when-past-cap

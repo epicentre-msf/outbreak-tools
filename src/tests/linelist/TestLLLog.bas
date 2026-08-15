@@ -254,7 +254,9 @@ Public Sub TestLogSuccessWritesActionDateAndDetail()
 
     entryRow = RowOfText(sh, OUTPUT_COLUMN, "Success")
     Assert.IsTrue (entryRow > titleRow), "The outcome line sits under the section"
-    Assert.IsTrue IsDate(CStr(sh.Cells(entryRow, DATE_COLUMN).Value)), _
+    'The platform tag follows the timestamp in the same cell, so the date is
+    'read off the front of it rather than out of the whole value.
+    Assert.IsTrue IsDate(Left$(CStr(sh.Cells(entryRow, DATE_COLUMN).Value), 19)), _
                   "The entry label opens with the date"
     Assert.AreEqual "import-data: cases.xlsx", _
                     CStr(sh.Cells(entryRow, DETAIL_COLUMN).Value), _
@@ -263,6 +265,41 @@ Public Sub TestLogSuccessWritesActionDateAndDetail()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestLogSuccessWritesActionDateAndDetail", Err.Number, Err.Description
+End Sub
+
+'@sub-title Every entry names the platform it was written on.
+'@details
+'A log read months later has to say whether it came from a Mac or from
+'Windows, because the same code does not behave the same on the two: a
+'geobase export Windows accepts has refused on a Mac. The platform sits
+'beside the date. The check reads the name and the Excel version separately,
+'because the version moves with the host and cannot be written down here.
+'@TestMethod("LLLog")
+Public Sub TestEveryEntryNamesThePlatform()
+    CustomTestSetTitles Assert, TESTMODULE, "TestEveryEntryNamesThePlatform"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim sh As Worksheet
+    Dim entryRow As Long
+    Dim dateCell As String
+
+    Set sut = LLLog.Create(FixtureWkb)
+    sut.LogSuccess "import-data", "cases.xlsx"
+    Set sh = sut.Wksh()
+
+    entryRow = RowOfText(sh, OUTPUT_COLUMN, "Success")
+    dateCell = CStr(sh.Cells(entryRow, DATE_COLUMN).Value)
+
+    Assert.IsTrue (InStr(1, dateCell, "mac-", vbTextCompare) > 0 Or _
+                   InStr(1, dateCell, "win-", vbTextCompare) > 0), _
+                  "The entry names its platform, read: " & dateCell
+    Assert.IsTrue (InStr(1, dateCell, "excel-", vbTextCompare) > 0), _
+                  "The entry names its Excel version, read: " & dateCell
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestEveryEntryNamesThePlatform", Err.Number, Err.Description
 End Sub
 
 '@sub-title The action code no longer heads a block of its own.
