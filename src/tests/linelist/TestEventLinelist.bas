@@ -73,6 +73,13 @@ Private Const GEO_NAMES_TABLE As String = "T_NAMES"
 'column carries the action and the outcome word, the detail column carries
 'the text behind the date.
 Private Const LOG_SHEET As String = "__log"
+
+'The title the log writes above a block. LLLog heads a bundle with the section
+'of the action rather than the action itself, and every code these tests use
+'falls to the last case of that mapping. It is spelled out here rather than
+'read off the class, because nothing in the project reads it that way and a
+'test is the wrong place to be the first.
+Private Const LOG_SECTION_LIFECYCLE As String = "linelist lifecycle"
 Private Const LOG_OUTPUT_COLUMN As Long = 3
 Private Const LOG_DETAIL_COLUMN As Long = 5
 
@@ -1456,14 +1463,19 @@ Public Sub TestFailWritesTheFailureLine()
     sut.Fail "MSG_ErrUpdate", "some detail"
 
     Set logsh = FixtureWkb.Worksheets(LOG_SHEET)
-    titleRow = LogRowOfText(logsh, LOG_OUTPUT_COLUMN, "MSG_ErrUpdate")
+
+    'The block is headed by the SECTION of the action, and the action code
+    'itself rides on the entry line ahead of the detail. The log carries three
+    'titles for the whole sheet, so the code has to be on the line to say which
+    'event a row is.
+    titleRow = LogRowOfText(logsh, LOG_OUTPUT_COLUMN, LOG_SECTION_LIFECYCLE)
     entryRow = LogRowOfText(logsh, LOG_OUTPUT_COLUMN, "Error")
 
-    Assert.IsTrue (titleRow > 0), "The message code heads the block"
+    Assert.IsTrue (titleRow > 0), "The section of the action heads the block"
     Assert.IsTrue (entryRow > titleRow), "The failure line sits under it"
-    Assert.AreEqual "some detail", _
+    Assert.AreEqual "MSG_ErrUpdate: some detail", _
                     CStr(logsh.Cells(entryRow, LOG_DETAIL_COLUMN).Value), _
-                    "The detail rides beside the date"
+                    "The action code and the detail ride beside the date"
 
     Exit Sub
 TestFail:
@@ -1486,11 +1498,13 @@ Public Sub TestWarnWritesTheWarningLine()
     sut.Warn "MSG_NotModify"
 
     Set logsh = FixtureWkb.Worksheets(LOG_SHEET)
-    titleRow = LogRowOfText(logsh, LOG_OUTPUT_COLUMN, "MSG_NotModify")
+    titleRow = LogRowOfText(logsh, LOG_OUTPUT_COLUMN, LOG_SECTION_LIFECYCLE)
     entryRow = LogRowOfText(logsh, LOG_OUTPUT_COLUMN, "Warning")
 
-    Assert.IsTrue (titleRow > 0), "The message code heads the block"
+    Assert.IsTrue (titleRow > 0), "The section of the action heads the block"
     Assert.IsTrue (entryRow > titleRow), "The warning line sits under it"
+    Assert.IsTrue (LogRowOfText(logsh, LOG_DETAIL_COLUMN, "MSG_NotModify") > 0), _
+                  "The message code rides on the entry line"
 
     Exit Sub
 TestFail:
@@ -1522,9 +1536,9 @@ Public Sub TestWorkbookOpenWritesTheOpenLine()
 
     Assert.IsTrue (titleRow > 0), "The open action heads the block"
     Assert.IsTrue (entryRow > titleRow), "The info line sits under it"
-    Assert.AreEqual FixtureWkb.Name, _
+    Assert.AreEqual "open: " & FixtureWkb.Name, _
                     CStr(logsh.Cells(entryRow, LOG_DETAIL_COLUMN).Value), _
-                    "The detail names the workbook that opened"
+                    "The entry line names the action and the workbook that opened"
 
     Exit Sub
 TestFail:
@@ -1804,8 +1818,11 @@ Public Sub TestFilterTablesSkipAndNameABrokenSheet()
                     "The healthy pair still syncs past a broken sheet"
 
     Set logsh = FixtureWkb.Worksheets(LOG_SHEET)
-    Assert.IsTrue (LogRowOfText(logsh, LOG_OUTPUT_COLUMN, "MSG_ErrUpdate") > 0), _
-                  "The refresh failure heads a block of the user log"
+    Assert.IsTrue (LogRowOfText(logsh, LOG_OUTPUT_COLUMN, _
+                                LOG_SECTION_LIFECYCLE) > 0), _
+                  "The refresh failure sits under its section in the user log"
+    Assert.IsTrue (LogRowOfText(logsh, LOG_DETAIL_COLUMN, "MSG_ErrUpdate") > 0), _
+                  "The message code rides on the entry line"
     Assert.IsTrue (LogRowOfText(logsh, LOG_DETAIL_COLUMN, "hlist_broken") > 0), _
                   "The failure line names the sheet that was skipped"
 

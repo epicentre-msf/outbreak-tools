@@ -178,6 +178,14 @@ Private Const ROW_FILTER_HIDDENCOL As Long = 9
 Private Const ROW_GEO_CHANGE As Long = 10
 Private Const ROW_GEO_SELECTION As Long = 11
 
+'The dropdown an automatic list fills is named after the ORIGIN variable, the
+'one users type into, plus this suffix. VarWriter builds the name from the
+'control details of the list_auto variable (`lauto_man_h2` names `text_h2`
+'there) and UpdateListAutoSheet builds the same name from the column it is
+'walking, so both sides land on `text_h2_lauto`. The suffix is the constant
+'both of them carry.
+Private Const LISTAUTO_SUFFIX As String = "_lauto"
+
 'What the tests type into the sheets. Each one is unique, so a test reads its
 'own writing back out of a table every other test has also written to.
 Private Const LISTAUTO_VALUE_ONE As String = "listauto-alpha"
@@ -1331,7 +1339,7 @@ Public Sub TestAListAutoDropdownTakesTheColumnValues()
     SeedListAutoColumn
     Sut.UpdateAllListAuto
 
-    Set listValues = DropdownValues(EDITABLE_VAR)
+    Set listValues = DropdownValues(EDITABLE_VAR & LISTAUTO_SUFFIX)
 
     Assert.IsTrue CountOf(listValues, LISTAUTO_VALUE_ONE) > 0, _
                   "A value typed into a list auto column should reach its dropdown"
@@ -1353,7 +1361,8 @@ Public Sub TestAListAutoDropdownKeepsOneEntryPerValue()
     SeedListAutoColumn
     Sut.UpdateAllListAuto
 
-    Assert.AreEqual 1, CountOf(DropdownValues(EDITABLE_VAR), LISTAUTO_VALUE_ONE), _
+    Assert.AreEqual 1, CountOf(DropdownValues(EDITABLE_VAR & LISTAUTO_SUFFIX), _
+                              LISTAUTO_VALUE_ONE), _
                     "A value typed into two rows should show up once in the dropdown"
 
     Exit Sub
