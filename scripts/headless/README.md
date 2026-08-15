@@ -25,7 +25,20 @@ A caller reads that string. It never has to read a dialog.
 | `scripts/headless/vba/OBTSetupImportHeadless.bas` | injected into the setup being filled, run there, removed again |
 | `scripts/headless/merge-form-code.R` | puts the current `FormLogic*` code into the exported `.frm` files |
 | `scripts/headless/build-linelist.R` | generates a linelist from a filled setup, and runs no test |
+| `scripts/headless/build-linelist.sh` | the wrapper to run day to day: the settings for a build in one place |
 | `scripts/headless/macos/build-linelist.applescript` | the trigger behind it, thin by design |
+
+## The short way to run one
+
+```
+./scripts/headless/build-linelist.sh            build with the saved settings
+./scripts/headless/build-linelist.sh --help     every parameter, explained
+```
+
+The settings live in a block at the top of that file — which setup to build
+from, where the files go, whether it is a ribbon build or a buttons build.
+Anything passed on the command line overrides them, so a one-off run never
+means editing the file. It works from any directory.
 
 ## Step one — fill a setup
 

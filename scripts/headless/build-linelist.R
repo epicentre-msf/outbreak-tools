@@ -41,17 +41,15 @@
 #   3. Excel: refresh the harness, rebuild the Codes tables, import the source,
 #      call the build, read back what it recorded.
 #
-# ONE FOLDER, ONE GRANT
+# ONE ROOT, AND IT IS INSIDE EXCEL'S OWN SANDBOX
 # -----------------------------------------------------------------------------
-# Excel for Mac is sandboxed, and a VBA file read on a path it holds no grant
-# for pops a dialog that a headless run has nobody to answer. A probe run with
-# the operator watching the screen settled how the grant behaves (written up in
-# .obt/gotchas/macos-sandbox-grant.md): one FOLDER grant persists across Excel
-# being quit and relaunched, and it cascades to files created inside that tree
-# afterwards.
+# Excel for Mac is sandboxed, and touching a path it holds no permission for
+# pops a dialog that a headless run has nobody to answer. So the run stages
+# itself somewhere Excel already owns, where there is nothing to ask about:
 #
-# So everything Excel touches is staged under a single root, OBT_HOME, and the
-# trigger grants that one folder before its first read:
+#   ~/Library/Containers/com.microsoft.Excel/Data/Documents/OBTHome
+#
+# Everything Excel reads or writes lives under that one root, OBT_HOME:
 #
 #   <OBT_HOME>/run/      the driver copy, bootstrap/, the filtered sources,
 #                        .generated/, build-report.txt, obt-import.log
@@ -62,35 +60,32 @@
 #   <OBT_HOME>/out/      the linelist, its log, the designer used, OBTApp_/
 #
 # This script is NOT sandboxed, so it copies the operator's setup (and designer,
-# template, geobase) IN beforehand and copies the finished linelist back OUT to
-# --out afterwards. Excel never sees a path outside OBT_HOME, which is what
-# makes a packaged install click-free: one grant panel on a machine that has
-# never run it, and none after that.
+# template, geobase) IN beforehand and copies the finished files back OUT to
+# --out afterwards. A successful run then clears all five folders; a failed one
+# keeps them, because that is the only account of what went wrong.
+#
+# The catch is on THIS side of the fence: macOS keeps Excel's container away
+# from other programs, so R needs Full Disk Access to reach it. One toggle per
+# machine, and it is the deployed install step.
+#
+# WITHOUT IT the run falls back to <repo>/headless-runner and somebody has to
+# pick that folder in Excel BEFORE EVERY BUILD. A pick covers ONE build:
+# measured 2026-08-15, a pick lets Excel write over files that were already
+# there when it was made, and Excel remakes both output workbooks on every save,
+# so the next run is creating files that did not exist at pick time and Excel
+# asks about all of them. Reads are different -- a pick covers those anywhere
+# below the folder, lastingly, which is why 139 staged source files are deleted
+# and recopied every run and never prompt. Full write-up in
+# .obt/gotchas/macos-sandbox-grant.md.
+#
+# The fallback name carries NO LEADING DOT, and that is not cosmetic: macOS
+# hides dot-folders in the folder picker, so an operator asked to pick one
+# cannot see it. That cost a run on 2026-08-14 -- the picker opened, the folder
+# was invisible, something else got picked, and the import died with a Device
+# I/O error.
 #
 # OBT_HOME is --obt-home, else the OBT_HOME environment variable (an .Renviron
-# entry is the deployed way to set it), else <repo>/headless-runner. The name
-# carries NO LEADING DOT, and that is not cosmetic: macOS hides dot-folders in
-# the folder picker, so an operator asked to pick one cannot see it. That cost a
-# run on 2026-08-14 -- the picker opened, the folder was invisible, something
-# else got picked, and the import died with a Device I/O error.
-#
-# Its own
-# folder rather than a corner of the test harness's working area: the two runs
-# share a registry and nothing else, and keeping the headless tree separate is
-# what lets it be swept, moved or granted without touching the test loop.
-#
-# A NOTE THAT USED TO SIT HERE said a grant is per item, lasts one session and
-# does not cover subfolders. It was wrong. It came from a probe that built its
-# paths from Environ$("HOME"), which inside a sandboxed Excel is the container,
-# where nothing needs a grant at all. The probe measured nothing. What IS
-# measured is above: one folder pick, and it holds.
-#
-# The run dir is cleared and reused rather than deleted and remade, and the
-# workbook copy is overwritten in place, so both keep the identity a grant is
-# tied to. sync_tree below is the ONE place that breaks that rule: it deletes
-# src/classes and src/modules and copies every file back fresh, on every run.
-# That is fine while the pick is on OBT_HOME itself, which is never deleted.
-# If panels ever come back naming a file under src/, this is the first suspect.
+# entry is the deployed way to set it), else the container, else the fallback.
 # =============================================================================
 
 # --- args --------------------------------------------------------------------
@@ -381,7 +376,9 @@ if (do_merge) {
 
 if (!length(list.files(staged_forms, pattern = "\\.frm$"))) {
   stop("build-linelist.R: no merged forms at ", staged_forms,
-       " (drop --no-merge, or point --forms at a folder that has them).")
+       ".\n  A successful run CLEARS the staging, so --no-merge on its own has ",
+       "nothing left to reuse.\n  Drop --no-merge, or point --forms at a folder ",
+       "that holds the .frm files.")
 }
 
 # --- 2) the source list, filtered down to the build closure ------------------
