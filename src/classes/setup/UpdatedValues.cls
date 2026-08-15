@@ -57,8 +57,9 @@ Option Explicit
 'is missing on Mac Excel, so these are keyed Collections.
 '
 'An edit inside a watched table costs four to five COM crossings whatever the
-'registry holds, and the flag is written the first time a column flips within a
-'reset cycle.
+'registry holds, and the flag cell is written on every one of them. The index
+'answers reads; it never stands in for the cell on a write. The worksheet is
+'the record every other reader of this registry goes to.
 '
 'TWO READERS, ONE FLAG COLUMN
 '-------------------------------------------------------------------------------
@@ -775,8 +776,8 @@ End Sub
 'on that would take the registration away for good.
 '
 'The cost is four to five worksheet calls whatever the registry holds. A table
-'nobody watches is left after two of them, and the flag write happens only the
-'first time a column flips within a reset cycle.
+'nobody watches is left after two of them, and the flag cell is written every
+'time a watched column is covered.
 '@param tagReference Variant. Kept for the call shape; the table is read from Target.
 '@param Target Range. The changed cells to evaluate.
 Public Sub CheckUpdate(ByVal tagReference As Variant, ByVal Target As Range)
@@ -856,7 +857,19 @@ Private Sub MarkColumns(ByVal lo As ListObject, ByVal changed As Range)
 End Sub
 
 '@label:mark-key
-'@sub-title Write the updated flag for one watched column, the first time it changes.
+'@sub-title Write the updated flag for one watched column, on every change.
+'@details
+'THE CELL IS WRITTEN EVERY TIME, and that is the whole point of this member.
+'It used to skip the write whenever the in-memory flag already read "yes":
+'
+'    If KeyedText(this.statusByKey, key) = STATUS_UPDATED Then Exit Sub
+'
+'The flag then lived in memory and never reached the worksheet, and the
+'worksheet is what every reader of the registry actually reads.
+'SetupTranslationsTable.ProcessRegistryTable takes the status straight off the
+'cell, so a column whose flag stayed in memory was read as "not updated" and
+'its translations were skipped. The saving was one write per edit against the
+'four to five worksheet calls an edit already costs.
 Private Sub MarkKey(ByVal tableKey As String, ByVal headerText As String)
   Dim key As String
   Dim rowIndex As Long
@@ -872,7 +885,6 @@ Private Sub MarkKey(ByVal tableKey As String, ByVal headerText As String)
   '"yes". A reader that has acted on this column has to see the next edit too.
   KeyedRemove this.handled, key
 
-  If KeyedText(this.statusByKey, key) = STATUS_UPDATED Then Exit Sub
   If this.statusColumn Is Nothing Then Exit Sub
 
   this.statusColumn.Cells(rowIndex, 1).Value = STATUS_UPDATED

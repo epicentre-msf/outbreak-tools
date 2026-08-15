@@ -170,6 +170,72 @@ Fail:
     ReportTestFailure "TestCheckUpdateMarksMatchingRange"
 End Sub
 
+'@sub-title An update always reaches the worksheet cell, never the index alone.
+'@details
+'THE REPORTED ISSUE. A watched column was edited, the flag stayed in memory,
+'the registry cell on the worksheet still read "no", and the translations of
+'that column were then skipped -- SetupTranslationsTable reads the status off
+'the cell, so the cell is the only thing that counts.
+'
+'The cell is put back to "no" between the two edits WITHOUT telling the
+'instance, which is what a reset run through any other holder of this registry
+'does. The second edit has to write "yes" again. The version that skipped the
+'write whenever its in-memory flag already read "yes" leaves the cell on "no"
+'here, and no later edit in the session ever writes it either.
+'@TestMethod("UpdatedValues")
+Public Sub TestCheckUpdateAlwaysWritesTheStatusCell()
+    CustomTestSetTitles Assert, "UpdatedValues", "TestCheckUpdateAlwaysWritesTheStatusCell"
+    On Error GoTo Fail
+
+    Subject.AddColumns SourceTable
+
+    SourceTable.DataBodyRange.Cells(1, 1).Value = "Changed once"
+    Subject.CheckUpdate SOURCE_TABLE_NAME, SourceTable.DataBodyRange.Cells(1, 1)
+    Assert.AreEqual STATUS_UPDATED, RegistryStatusValue(RangeNameField), _
+        "The first edit should put yes in the registry cell"
+
+    'Straight onto the sheet, so the instance is never told the flag moved.
+    SetRegistryStatusValue RangeNameField, STATUS_DEFAULT
+    Assert.AreEqual STATUS_DEFAULT, RegistryStatusValue(RangeNameField), _
+        "The cell should be back on no before the second edit"
+
+    SourceTable.DataBodyRange.Cells(1, 1).Value = "Changed twice"
+    Subject.CheckUpdate SOURCE_TABLE_NAME, SourceTable.DataBodyRange.Cells(1, 1)
+
+    Assert.AreEqual STATUS_UPDATED, RegistryStatusValue(RangeNameField), _
+        "The second edit should write yes into the cell again, not into the index alone"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestCheckUpdateAlwaysWritesTheStatusCell"
+End Sub
+
+'@sub-title A column left alone keeps its default while its neighbour is written twice.
+'@details
+'The other half of the issue: making the write unconditional must not start
+'flagging columns the change never covered.
+'@TestMethod("UpdatedValues")
+Public Sub TestRepeatedEditLeavesOtherColumnsAlone()
+    CustomTestSetTitles Assert, "UpdatedValues", "TestRepeatedEditLeavesOtherColumnsAlone"
+    On Error GoTo Fail
+
+    Subject.AddColumns SourceTable
+
+    SourceTable.DataBodyRange.Cells(1, 1).Value = "Changed once"
+    Subject.CheckUpdate SOURCE_TABLE_NAME, SourceTable.DataBodyRange.Cells(1, 1)
+    SourceTable.DataBodyRange.Cells(1, 1).Value = "Changed twice"
+    Subject.CheckUpdate SOURCE_TABLE_NAME, SourceTable.DataBodyRange.Cells(1, 1)
+
+    Assert.AreEqual STATUS_UPDATED, RegistryStatusValue(RangeNameField), _
+        "The edited column should read yes after two edits"
+    Assert.AreEqual STATUS_DEFAULT, RegistryStatusValue(RangeNameLabel), _
+        "A column the change never covered should still read no"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestRepeatedEditLeavesOtherColumnsAlone"
+End Sub
+
 '@TestMethod("UpdatedValues")
 Public Sub TestCheckUpdateFlagsEveryTouchedColumn()
     CustomTestSetTitles Assert, "UpdatedValues", "TestCheckUpdateFlagsEveryTouchedColumn"
@@ -717,6 +783,29 @@ Private Function RegistryStatusValue(ByVal rangeName As String) As String
         End If
     Next row
 End Function
+
+'@sub-title Write one status cell straight onto the sheet, behind the watcher.
+'@details
+'The mirror of RegistryStatusValue above, and it goes through the worksheet on
+'purpose: the point is to move the flag without the instance under test being
+'told, which is the state any other holder of this registry leaves behind when
+'it resets the column.
+'@param rangeName String. The defined name in the registry row.
+'@param statusValue String. The flag to write, "yes" or "no".
+Private Sub SetRegistryStatusValue(ByVal rangeName As String, ByVal statusValue As String)
+    Dim registry As ListObject
+    Dim row As ListRow
+
+    Set registry = RegistryTable()
+    If registry Is Nothing Then Exit Sub
+
+    For Each row In registry.ListRows
+        If StrComp(CStr(row.Range.Cells(1, 2).Value), rangeName, vbTextCompare) = 0 Then
+            row.Range.Cells(1, 3).Value = statusValue
+            Exit Sub
+        End If
+    Next row
+End Sub
 
 Private Function RegistryHasRange(ByVal rangeName As String) As Boolean
     Dim registry As ListObject
