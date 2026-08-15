@@ -25,7 +25,8 @@ Option Explicit
 '(setup languages, interface languages, epiweek start, design values),
 'hides internal worksheets (VeryHidden for __pass/__formatter/__formula/
 '__dropdowns, Hidden for translation sheets), seeds workbook- and
-'worksheet-level HiddenNames flags, applies data validation to the
+'worksheet-level HiddenNames flags, carries the designer version from the
+'Dev worksheet into a workbook-level name, applies data validation to the
 'T_Multi table on the GenerateMultiple worksheet, and registers hidden
 'sheets with the development manager. Also provides methods to read and
 'write ribbon checkbox flags persisted through workbook-level hidden names.
@@ -65,6 +66,7 @@ Private Const SHEET_GEO As String = "Geo"
 Private Const SHEET_DROPDOWNS As String = "__dropdowns"
 Private Const SHEET_GENERATE_MULTIPLE As String = "GenerateMultiple"
 Private Const SHEET_MAIN As String = "Main"
+Private Const SHEET_DEV As String = "Dev"
 
 'Main worksheet named ranges for dropdown validation
 Private Const RNG_LANG_SETUP As String = "RNG_LangSetup"
@@ -80,6 +82,13 @@ Private Const TAG_LAST_OPENED As String = "RNG_LastOpenedDate"
 'The formatter flag has one home, here. The styles import sets it, loading a
 'setup file clears it, and the transfer reads it to pick the formatter source.
 Private Const TAG_FORMATTER_IMPORTED As String = "TAG_FORMATTER_IMPORTED"
+
+'The version of the designer. The owner writes it by hand on the Dev worksheet,
+'as the value name RNG_Version, and preparation copies it into the workbook-
+'scoped name below. LLGeo reads that one when it writes the metadata sheet of a
+'generated linelist.
+Private Const RNG_VERSION As String = "RNG_Version"
+Private Const TAG_DESIGNER_VERSION As String = "RNG_DesignerVersion"
 
 'Geo worksheet-level HiddenNames
 Private Const GEO_LANG_CODE As String = "RNG_GeoLangCode"
@@ -183,10 +192,12 @@ End Sub
 '   DesignerTranslation).
 '4. Seeds workbook-level HiddenNames flags (ribbon checks, language
 '   codes, last opened date).
-'5. Seeds Geo worksheet-level HiddenNames flags (geo language, name,
+'5. Copies the version from the Dev worksheet into the workbook-level
+'   RNG_DesignerVersion name.
+'6. Seeds Geo worksheet-level HiddenNames flags (geo language, name,
 '   update status).
-'6. Applies data validation to the T_Multi table on GenerateMultiple.
-'7. Applies dropdown validation to the Main named ranges (RNG_LangSetup,
+'7. Applies data validation to the T_Multi table on GenerateMultiple.
+'8. Applies dropdown validation to the Main named ranges (RNG_LangSetup,
 '   RNG_DesignLL, RNG_LLForm).
 'When devManager is provided, hidden sheets are also registered with
 'the manager for deployment.
@@ -204,6 +215,7 @@ Public Sub Prepare(ByRef devManager As Development, _
     HideWorksheets devManager
     EnsureHiddenStore
     EnsureWorkbookFlags
+    EnsureVersionName
     EnsureGeoFlags
     ApplyMultiValidations
     ApplyMainValidations
@@ -471,6 +483,65 @@ Private Sub EnsureWorkbookFlags()
     this.store.EnsureName TAG_LAST_OPENED, Format$(Now, "yyyy-mm-dd"), HiddenNameTypeString
     this.store.SetValue TAG_LAST_OPENED, Format$(Now, "yyyy-mm-dd")
 End Sub
+
+'@label:ensure-version-name
+'@sub-title Copy the designer version into a workbook-level hidden name
+'@details
+'The version is owner hand work: it is written once on the Dev worksheet, as
+'the value name RNG_Version scoped to that sheet. This copies it into the
+'workbook-scoped RNG_DesignerVersion name, which is where LLGeo reads it for
+'the metadata sheet of every generated linelist.
+'
+'The copy is what the metadata sees, so a version edited on the Dev sheet
+'reaches a linelist once the designer is initialised again.
+'
+'Three states leave the workbook name as it is: no Dev worksheet, no
+'RNG_Version on it, and an empty RNG_Version. A designer built before the name
+'existed is in one of them, and it is an ordinary designer rather than a
+'broken one: LLGeo answers "(not found)" and the build carries on.
+Private Sub EnsureVersionName()
+    Dim devSheet As Worksheet
+    Dim versionText As String
+
+    Set devSheet = ResolveWorksheet(SHEET_DEV)
+    If devSheet Is Nothing Then Exit Sub
+
+    versionText = Trim$(DevVersionText(devSheet))
+    If LenB(versionText) = 0 Then Exit Sub
+
+    EnsureHiddenStore
+    this.store.EnsureName TAG_DESIGNER_VERSION, versionText, HiddenNameTypeString
+    this.store.SetValue TAG_DESIGNER_VERSION, versionText
+End Sub
+
+'@label:dev-version-text
+'@sub-title Read the version the Dev worksheet carries
+'@details
+'RNG_Version is a value name: the version text is in the definition itself, and
+'QuickValue reads it without walking the whole Names collection of the sheet.
+'
+'A Dev worksheet that points the name at a cell instead is read from that cell,
+'so a version typed in the grid answers here too. Without that, the name would
+'be parsed as text and the metadata sheet would carry an address.
+'@param devSheet Worksheet. The Dev worksheet.
+'@return String. The version text, or an empty string when the sheet holds none.
+Private Function DevVersionText(ByVal devSheet As Worksheet) As String
+    Dim rng As Range
+    Dim cellValue As Variant
+
+    'A sheet holding no such name raises, and no name is an ordinary answer.
+    On Error Resume Next
+    Set rng = devSheet.Names(RNG_VERSION).RefersToRange
+    On Error GoTo 0
+
+    If rng Is Nothing Then
+        DevVersionText = HiddenNames.QuickValue(devSheet, RNG_VERSION)
+        Exit Function
+    End If
+
+    cellValue = rng.Cells(1, 1).Value
+    If Not IsError(cellValue) Then DevVersionText = CStr(cellValue)
+End Function
 
 '@label:ensure-geo-flags
 '@sub-title Ensure the Geo HiddenNames flags exist

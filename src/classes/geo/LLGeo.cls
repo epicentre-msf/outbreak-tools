@@ -132,8 +132,9 @@ Private Const HN_META_LANG As String = "RNG_MetaLang"
 Private Const HN_GEO_LANG_CODE As String = "RNG_GeoLangCode"
 
 'The version of the designer, held as a workbook-scoped hidden name on the
-'designer itself. Nothing writes it yet: it is set by hand, and a designer
-'that does not carry it puts VERSION_NOT_FOUND on the metadata sheet.
+'designer itself. DesignerPreparation.Prepare writes it, from the RNG_Version
+'value name the owner keeps on the Dev worksheet. A designer that carries
+'neither puts VERSION_NOT_FOUND on the metadata sheet.
 Private Const HN_DESIGNER_VERSION As String = "RNG_DesignerVersion"
 Private Const VERSION_NOT_FOUND As String = "(not found)"
 
@@ -1923,11 +1924,13 @@ End Function
 '@label:designer-version
 '@sub-title The version of the designer that built the linelist
 '@details
-'The version is a workbook-scoped hidden name on the designer, set by hand for
-'now. Nothing writes it and nothing provisions it, so a designer that does not
-'carry it is the ordinary case rather than a fault, and it answers
-'"(not found)". A name that is present but empty answers the same, because an
-'empty cell on the metadata sheet says nothing to the person reading it.
+'The version is a workbook-scoped hidden name on the designer.
+'DesignerPreparation.Prepare writes it from the RNG_Version value name the
+'owner keeps on the Dev worksheet, so a designer that was never initialised
+'with a version there does not carry it. That is the ordinary case rather than
+'a fault, and it answers "(not found)". A name that is present but empty
+'answers the same, because an empty cell on the metadata sheet says nothing to
+'the person reading it.
 '@return String. The version, or "(not found)".
 Private Function DesignerVersion() As String
     Dim store As HiddenNames

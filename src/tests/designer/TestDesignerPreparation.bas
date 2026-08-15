@@ -286,6 +286,108 @@ Fail:
 End Sub
 
 
+'@section Version Tests
+'===============================================================================
+'The version is owner hand work on the Dev worksheet, and preparation carries
+'it to the workbook-level name LLGeo reads for the metadata sheet.
+
+'@TestMethod("DesignerPreparation.Version")
+Public Sub TestPrepareCopiesDevVersion()
+    CustomTestSetTitles Assert, "DesignerPreparation", "TestPrepareCopiesDevVersion"
+    On Error GoTo Fail
+
+    'Arrange: a Dev sheet carrying the version as a value name
+    Dim devSheet As Worksheet
+    Set devSheet = EnsureWorksheet("Dev", FixtureWorkbook)
+    devSheet.Names.Add Name:="RNG_Version", RefersTo:="=""1.4.2""", Visible:=False
+
+    'Act
+    Dim subject As DesignerPreparation
+    Set subject = DesignerPreparation.Create(FixtureWorkbook)
+    subject.Prepare Nothing, TranslationsSource
+
+    'Assert
+    Assert.AreEqual "1.4.2", subject.HiddenStore.ValueAsString("RNG_DesignerVersion"), _
+                    "The workbook name should carry the version of the Dev sheet."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareCopiesDevVersion"
+End Sub
+
+'@TestMethod("DesignerPreparation.Version")
+Public Sub TestPrepareReadsVersionWrittenInACell()
+    CustomTestSetTitles Assert, "DesignerPreparation", "TestPrepareReadsVersionWrittenInACell"
+    On Error GoTo Fail
+
+    'Arrange: a Dev sheet whose RNG_Version points at a cell instead
+    Dim devSheet As Worksheet
+    Set devSheet = EnsureWorksheet("Dev", FixtureWorkbook)
+    devSheet.Range("B2").Value = "2.0.1"
+    devSheet.Names.Add Name:="RNG_Version", RefersTo:=devSheet.Range("B2"), Visible:=False
+
+    'Act
+    Dim subject As DesignerPreparation
+    Set subject = DesignerPreparation.Create(FixtureWorkbook)
+    subject.Prepare Nothing, TranslationsSource
+
+    'Assert: the cell value travels, not the address it sits at
+    Assert.AreEqual "2.0.1", subject.HiddenStore.ValueAsString("RNG_DesignerVersion"), _
+                    "A version typed in a cell should reach the workbook name."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareReadsVersionWrittenInACell"
+End Sub
+
+'@TestMethod("DesignerPreparation.Version")
+Public Sub TestPrepareSkipsVersionWhenDevSheetMissing()
+    CustomTestSetTitles Assert, "DesignerPreparation", "TestPrepareSkipsVersionWhenDevSheetMissing"
+    On Error GoTo Fail
+
+    'Arrange: do NOT create a Dev sheet
+
+    'Act: preparation should run through
+    Dim subject As DesignerPreparation
+    Set subject = DesignerPreparation.Create(FixtureWorkbook)
+    subject.Prepare Nothing, TranslationsSource
+
+    'Assert: no version name is written, which is what LLGeo reads as
+    '"(not found)"
+    Assert.IsFalse subject.HiddenStore.HasName("RNG_DesignerVersion"), _
+                   "A designer with no Dev sheet should carry no version name."
+    Assert.IsTrue subject.GetFlag("chkAlert"), _
+                  "Preparation should succeed without a Dev sheet."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareSkipsVersionWhenDevSheetMissing"
+End Sub
+
+'@TestMethod("DesignerPreparation.Version")
+Public Sub TestPrepareSkipsVersionWhenNameMissing()
+    CustomTestSetTitles Assert, "DesignerPreparation", "TestPrepareSkipsVersionWhenNameMissing"
+    On Error GoTo Fail
+
+    'Arrange: a Dev sheet with no RNG_Version on it
+    Dim devSheet As Worksheet
+    Set devSheet = EnsureWorksheet("Dev", FixtureWorkbook)
+
+    'Act
+    Dim subject As DesignerPreparation
+    Set subject = DesignerPreparation.Create(FixtureWorkbook)
+    subject.Prepare Nothing, TranslationsSource
+
+    'Assert
+    Assert.IsFalse subject.HiddenStore.HasName("RNG_DesignerVersion"), _
+                   "A Dev sheet with no RNG_Version should leave the workbook name alone."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareSkipsVersionWhenNameMissing"
+End Sub
+
+
 '@section Dropdown Tests
 '===============================================================================
 '@TestMethod("DesignerPreparation.Dropdowns")
