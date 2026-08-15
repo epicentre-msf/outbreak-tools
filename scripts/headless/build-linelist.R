@@ -557,9 +557,16 @@ run_started <- Sys.time()
 # -- the block near the top of this file prints the steps and stops the run.
 need_pick <- "0"
 
+# shQuote, and the space in the name is why. system2() hands its arguments to
+# the shell UNQUOTED, so `c("-x", "Microsoft Excel")` runs as
+# `pgrep -x Microsoft Excel` -- two operands, no match, exit 1. The guard then
+# answered FALSE against a running Excel every single time, which is worse than
+# no guard: the trigger goes on to drive the operator's own instance, where
+# `run VB macro` does nothing at all. The run then ends with an empty outcome, a
+# zero-byte obt-import.log and no file written. Measured 2026-08-15.
 excel_running <- function() {
   if (on_windows) return(FALSE)
-  identical(system2("pgrep", c("-x", "Microsoft Excel"),
+  identical(system2("pgrep", c("-x", shQuote("Microsoft Excel")),
                     stdout = FALSE, stderr = FALSE), 0L)
 }
 if (excel_running()) {

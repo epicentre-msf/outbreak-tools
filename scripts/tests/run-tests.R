@@ -240,9 +240,15 @@ message("run-tests.R: run dir assembled from src/ (classes/, tests/, .generated/
 # would auto-launch Excel just to close it).
 # macOS only. On Windows CreateObject("Excel.Application") makes its own
 # instance, and an Excel the operator has open is none of this script's business.
+# shQuote, and the space in the name is why. system2() hands its arguments to
+# the shell UNQUOTED, so `c("-x", "Microsoft Excel")` runs as
+# `pgrep -x Microsoft Excel` -- two operands, no match, exit 1. The guard
+# answered FALSE against a running Excel every single time, so nothing was ever
+# quit here and the operator had to do it by hand. Measured 2026-08-15 while
+# chasing the same line in build-linelist.R.
 excel_running <- function() {
   if (on_windows) return(FALSE)
-  identical(system2("pgrep", c("-x", "Microsoft Excel"),
+  identical(system2("pgrep", c("-x", shQuote("Microsoft Excel")),
                     stdout = FALSE, stderr = FALSE), 0L)
 }
 if (excel_running()) {
