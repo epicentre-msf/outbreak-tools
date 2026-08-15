@@ -18,6 +18,7 @@ Option Explicit
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const EXPORT_SHEET As String = "LLExportSpec"
+Private Const SOURCE_SHEET As String = "LLExportSource"
 Private Const DICT_SHEET As String = "LLExportDict"
 Private Const VLIST_SHEET As String = "vlist1D-sheet1"
 Private Const PASSWORD_SHEET As String = "LLExportPasswords"
@@ -168,6 +169,71 @@ Fail:
     On Error Resume Next
         If Not exportBook Is Nothing Then exportBook.Close SaveChanges:=False
     On Error GoTo 0
+End Sub
+
+'@sub-title Verify that ImportSpecs writes "Export 1" over an imported bare "1"
+'@details
+'A setup written before this class filled the export number column holds the
+'number alone, and ParseExportIdentifier answers 0 for it. The source carries
+'two rows against the host's one, so the second row lands below the ListObject
+'and has to be converted through the data block rather than through the table.
+'@TestMethod("LLExport")
+Public Sub TestImportSpecsTagsBareExportNumbers()
+    CustomTestSetTitles Assert, "LLExport", "TestImportSpecsTagsBareExportNumbers"
+    On Error GoTo Fail
+
+    Dim sourceSheet As Worksheet
+    Dim exportIdx As Long
+
+    exportIdx = ColumnIndexOf("export number")
+    Set sourceSheet = PrepareExportSource(1, 2)
+
+    Manager.ImportSpecs sourceSheet, 1, 1
+
+    Assert.AreEqual "Export 1", CStr(ExportSheet.Cells(2, exportIdx).Value), _
+                    "An imported bare 1 should be written as Export 1"
+    Assert.AreEqual "Export 2", CStr(ExportSheet.Cells(3, exportIdx).Value), _
+                    "A row that landed below the table should be tagged as well"
+
+Cleanup:
+    DeleteWorksheet SOURCE_SHEET
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestImportSpecsTagsBareExportNumbers", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
+'@sub-title Verify that ImportSpecs keeps the number an imported row carries
+'@details
+'The import tags a number that has no word in front of it. It gives no row a
+'different number: renumbering belongs to EnsureExportIdentifiers, which runs
+'when a row is added or deleted.
+'@TestMethod("LLExport")
+Public Sub TestImportSpecsKeepsTaggedExportNumbers()
+    CustomTestSetTitles Assert, "LLExport", "TestImportSpecsKeepsTaggedExportNumbers"
+    On Error GoTo Fail
+
+    Dim sourceSheet As Worksheet
+    Dim exportIdx As Long
+
+    exportIdx = ColumnIndexOf("export number")
+    Set sourceSheet = PrepareExportSource("Export 3", 7)
+
+    Manager.ImportSpecs sourceSheet, 1, 1
+
+    Assert.AreEqual "Export 3", CStr(ExportSheet.Cells(2, exportIdx).Value), _
+                    "A row that already carries its number should keep it"
+    Assert.AreEqual "Export 7", CStr(ExportSheet.Cells(3, exportIdx).Value), _
+                    "A bare 7 should become Export 7 rather than the next free number"
+
+Cleanup:
+    DeleteWorksheet SOURCE_SHEET
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestImportSpecsKeepsTaggedExportNumbers", Err.Number, Err.Description
+    Resume Cleanup
 End Sub
 
 '@section AddRows
@@ -932,6 +998,34 @@ Private Sub PrepareExportTable(ByVal targetSheet As Worksheet)
     targetSheet.ListObjects.Add SourceType:=xlSrcRange, _
             Source:=targetSheet.Range("A1").Resize(2, UBound(headers) + 1), XlListObjectHasHeaders:=xlYes
 End Sub
+
+'@sub-title Build a source export sheet ImportSpecs can be pointed at
+'@details
+'Two rows, so one of them lands below the single-row ListObject of the host.
+'The two export numbers are passed in, which is how one test writes them bare
+'and another writes one of them already carrying its word.
+Private Function PrepareExportSource(ByVal firstNumber As Variant, _
+                                     ByVal secondNumber As Variant) As Worksheet
+    Dim sh As Worksheet
+    Dim headers As Variant
+
+    headers = Array("export number", "status", "label button", _
+                    "file format", "file name", "password", _
+                    "include personal identifiers", "include p-codes", _
+                    "header format", "export metadata sheets", _
+                    "export analyses sheets")
+
+    Set sh = EnsureWorksheet(SOURCE_SHEET)
+    sh.Range("A1").Resize(1, UBound(headers) + 1).Value = headers
+    sh.Range("A2").Resize(1, UBound(headers) + 1).Value = _
+        Array(firstNumber, "active", "First", "xlsx", """one""", "pwd", _
+              "no", "yes", "default", "no", "no")
+    sh.Range("A3").Resize(1, UBound(headers) + 1).Value = _
+        Array(secondNumber, "active", "Second", "xlsx", """two""", "pwd", _
+              "no", "yes", "default", "no", "no")
+
+    Set PrepareExportSource = sh
+End Function
 
 '@sub-title Return the 1-based column index for a header in the export ListObject
 Private Function ColumnIndexOf(ByVal headerName As String) As Long

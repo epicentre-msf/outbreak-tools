@@ -942,6 +942,12 @@ End Function
 
 '@label:ImportSpecs
 '@prop-title Import export specifications from another worksheet
+'@details
+'A setup written before this class filled the export number column holds a
+'bare "1" where the rest of the code reads "Export 1", and
+'`ParseExportIdentifier` answers 0 for it. The column is rewritten here, at
+'the one moment an old file enters, so no later routine meets a row it cannot
+'read.
 '@param fromWksh Source worksheet containing the export table.
 '@param fromStartRow First row of the source data.
 '@param fromStartColumn First column of the source data.
@@ -958,7 +964,80 @@ Public Sub ImportSpecs(ByVal fromWksh As Worksheet, _
 
     this.expData.Import sourceData
     ResetCaches
+
+    TagImportedExportNumbers
+    DropSpecification
 End Sub
+
+'@label:TagImportedExportNumbers
+'@sub-title Write "Export 1" over an imported bare "1"
+'@details
+'The column is read once, settled in memory and written back once, and only
+'when a cell actually changed. A cell already carrying the word keeps its
+'number and comes back in the one spelling `ExportColumnName` writes. A cell
+'holding neither a number nor the word is left exactly as it arrived:
+'`EnsureExportIdentifiers` is what gives a row with no number one, and it runs
+'when a row is added or deleted.
+'
+'This reads the whole imported block through the DataSheet rather than the
+'table, so a row that landed below the ListObject is converted with the rest.
+Private Sub TagImportedExportNumbers()
+    Dim numberRng As Range
+    Dim cellValues As Variant
+    Dim written() As Variant
+    Dim total As Long
+    Dim idx As Long
+    Dim parsed As Long
+    Dim newValue As String
+    Dim changed As Boolean
+
+    Set numberRng = SpecColumnRange(COL_EXPORT_NUMBER)
+    If numberRng Is Nothing Then Exit Sub
+
+    cellValues = ColumnValues(numberRng)
+    total = UBound(cellValues)
+    If total <= 0 Then Exit Sub
+
+    ReDim written(1 To total, 1 To 1)
+
+    For idx = 1 To total
+        parsed = ParseExportIdentifier(cellValues(idx))
+        If parsed <= 0 Then parsed = BareExportNumber(cellValues(idx))
+
+        If parsed > 0 Then
+            newValue = ExportColumnName(parsed)
+            written(idx, 1) = newValue
+            If StrComp(newValue, CStr(cellValues(idx)), vbBinaryCompare) <> 0 Then changed = True
+        Else
+            written(idx, 1) = cellValues(idx)
+        End If
+    Next idx
+
+    If Not changed Then Exit Sub
+
+    numberRng.Value = written
+End Sub
+
+'@label:BareExportNumber
+'@sub-title Read an export number written as a plain number
+'@details
+'`ParseExportIdentifier` wants the word in front of the number, which is what
+'this class writes. An older setup holds the number alone, and this is the one
+'place that reads it.
+'@param rawValue Variant. The cell value.
+'@return Long. The export number, or 0 when the cell holds something else.
+Private Function BareExportNumber(ByVal rawValue As Variant) As Long
+    Dim text As String
+
+    If IsEmpty(rawValue) Then Exit Function
+    If IsError(rawValue) Then Exit Function
+
+    text = Trim$(CStr(rawValue))
+    If LenB(text) = 0 Then Exit Function
+    If Not IsNumeric(text) Then Exit Function
+
+    If CDbl(text) >= 1 Then BareExportNumber = CLng(Int(CDbl(text)))
+End Function
 
 '@label:ExportSpecs
 '@prop-title Export specifications into another workbook
