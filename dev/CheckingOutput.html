@@ -60,9 +60,10 @@ marker.</p>
 title and the blocks stand apart. A running log is the other shape. It is
 one sheet written a single entry at a time over a whole session, and the
 title of an entry has almost always been written by an earlier render.
-Compact mode writes a title only when the sheet has never carried it and
-drops the blank rows between blocks, so a session of a hundred actions
-reads as a hundred lines under a handful of titles.</p>
+Compact mode writes a title only when the sheet has never carried it, and
+writes a line at the foot of the block its title heads rather than at the
+foot of the sheet, so a session of a hundred actions reads as a handful of
+blocks, each one line per action, with a blank row between them.</p>
 <p><strong>Returns:</strong> Boolean. True when the writer is in compact mode.</p>
 <hr />
 </div>
@@ -279,7 +280,9 @@ vbNullString when the index exceeds the array bounds.</p>
 <p>Outputs headings and detail entries for individual checking bundles.</p>
 <p>Outputs the title heading (once per unique title), optional subtitle,
 and all keyed entries with their severity colour coding. Advances the
-current row counter and tracks written titles to avoid duplicates.</p>
+current row counter and tracks written titles to avoid duplicates. This
+is the render path of a checking sheet; a compact log is written by
+WriteCompactChecking instead.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>checking</code>: Checking. Bundle to render.</li>
@@ -288,32 +291,59 @@ current row counter and tracks written titles to avoid duplicates.</p>
 <li><code>sep</code>: Optional String. Separator for text fragments. Defaults to &quot;--&quot;.</li>
 </ul>
 <hr />
-<h3 id="int-blockgap">BlockGap <a class="anchor-link" href="#int-blockgap">#</a></h3>
-<p><em>block-gap</em></p>
-<p><strong>Rows left between a title and what it heads</strong></p>
+<h3 id="int-writecompactchecking">WriteCompactChecking <a class="anchor-link" href="#int-writecompactchecking">#</a></h3>
+<p><em>write-compact-checking</em></p>
+<p><strong>Write one bundle at the foot of the block its title heads</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function BlockGap() As Long
+<pre><code class="language-vb">Private Sub WriteCompactChecking(ByVal checksObject As Checking, _
+                                 ByRef bottomRow As Long, _
+                                 Optional ByVal sep As String = DEFAULT_SEPARATOR)
 </code></pre>
-<p>A checking sheet leaves a blank row under each heading. A compact log has
-one line per entry and no blank rows at all, so its entry sits directly
-under the title.</p>
-<p><strong>Returns:</strong> Long. Rows to advance after writing a title.</p>
-<hr />
-<h3 id="int-titlestandsonthesheet">TitleStandsOnTheSheet <a class="anchor-link" href="#int-titlestandsonthesheet">#</a></h3>
-<p><em>title-stands-on-the-sheet</em></p>
-<p><strong>Whether an earlier render already wrote this title</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function TitleStandsOnTheSheet(ByVal title As String) As Boolean
-</code></pre>
-<p>Answers False outside compact mode, so a checking sheet keeps writing the
-heading of every render it makes. Inside compact mode the persistent title
-store is the record of what the sheet already carries: it survives across
-renders, which is exactly the span a log has to look back over.</p>
+<p>The compact writer of a running log. A title the sheet has never carried
+opens a block of its own, one blank row under whatever stands above it. A
+title already on the sheet heads a block somewhere up the sheet, and its
+new line is opened at the foot of THAT block rather than at the foot of
+the sheet, so a section stays whole however far apart in time its actions
+were taken.</p>
+<p>Opening a line inside the sheet pushes every row under it down one, the
+end marker included, so the bottom cursor moves with each inserted line.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>title</code>: String. The title about to be written.</li>
+<li><code>checksObject</code>: Checking. Bundle to render.</li>
+<li><code>bottomRow</code>: Long. ByRef cursor on the first free row at the foot of the sheet.</li>
+<li><code>sep</code>: Optional String. Separator for text fragments. Defaults to &quot;--&quot;.</li>
 </ul>
-<p><strong>Returns:</strong> Boolean. True when the title need not be written again.</p>
+<hr />
+<h3 id="int-lastrowoftitle">LastRowOfTitle <a class="anchor-link" href="#int-lastrowoftitle">#</a></h3>
+<p><em>last-row-of-title</em></p>
+<p><strong>Last row the sheet already carries for a title</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LastRowOfTitle(ByVal title As String) As Long
+</code></pre>
+<p>The hidden title column says which block a row belongs to, and the last
+row bearing a title is the foot of that block. The column is read in one
+shot: a log runs to thousands of rows and a cell-by-cell scan would be
+felt on every single event.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>title</code>: String. The title to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The last row bearing the title, or 0 when the sheet carries none.</p>
+<hr />
+<h3 id="int-insertentrycells">InsertEntryCells <a class="anchor-link" href="#int-insertentrycells">#</a></h3>
+<p><em>insert-entry-cells</em></p>
+<p><strong>Open a line inside a block without moving the title store</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub InsertEntryCells(ByVal rowIndex As Long)
+</code></pre>
+<p>Only the hidden title column and the written columns are shifted down. The
+title store sits far to the right on rows of its own, and a whole-row
+insert would carry it down with the log and leave the filter dropdown
+reading a range the titles have walked out of.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rowIndex</code>: Long. Row the new line is opened at.</li>
+</ul>
 <hr />
 <h3 id="int-titlealreadywritten">TitleAlreadyWritten <a class="anchor-link" href="#int-titlealreadywritten">#</a></h3>
 <p><em>title-already-written</em></p>

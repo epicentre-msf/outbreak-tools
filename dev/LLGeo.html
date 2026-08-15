@@ -18,9 +18,16 @@ the hierarchy through AutoFilter cascades, AdminCode answers the code of one
 entry, and HasNoData says whether the geobase carries anything. Translate
 rewrites the level labels, Clear and ClearHistoric empty the tables, Import
 reads a geobase in, and ExportToFile and ExportToWkb write it out as flat data
-or as the full structure. Update, UpdateDict, UpdateShowHide and UpdateHistoric
-carry the translated labels across the linelist sheets, the dictionary and the
-show/hide tables, and SkippedSheets names the sheets an update left alone.</p>
+or as the full structure. Update, UpdateDict and UpdateHistoric carry the
+translated labels across the linelist sheets and the dictionary, and
+SkippedSheets names the sheets an update left alone.</p>
+<p>The show/hide form takes its geo labels from the dictionary UpdateDict
+rewrites: ShowHide composes &quot;<sub section>: <level label>&quot; itself, every time
+it is built. A third routine here used to write that same string into
+per-sheet tables on the show/hide worksheet, which is how the FIRST show/hide
+design carried it. ShowHideStore deletes those tables on sight now, so the
+routine walked a sheet holding nothing it could read and raised 91 on every
+geobase import. It went on 2026-08-14 with its one caller.</p>
 <details open class="doc-section" id="where-the-state-of-the-geobase-lives">
 <summary>WHERE THE STATE OF THE GEOBASE LIVES</summary>
 <div class="section-body">
@@ -49,7 +56,7 @@ cell, because DesignerPreparation uses it as a paste anchor.</p>
 writers are InitTransfer, which stamps the meta language picked on the
 designer's Main sheet onto the designer geo sheet just before the export, and
 the geobase import round trip.</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="CustomTable.html">CustomTable</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="Passwords.html">Passwords</a></p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="Passwords.html">Passwords</a></p>
 </div>
 </details>
 <details open class="doc-section" id="factory">
@@ -255,6 +262,18 @@ When onlyHistory is True only the HISTOGEO and HISTOHF tables are exported.</p>
 <li><code>onlyHistory</code>: Optional Boolean. True to export only historic tables. Defaults to False.</li>
 </ul>
 <hr />
+<h3 id="lastfailure">LastFailure <a class="anchor-link" href="#lastfailure">#</a></h3>
+<p><em>last-failure</em></p>
+<p><strong>What the last export of this geobase failed on</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LastFailure() As String
+</code></pre>
+<p>ExportToFile raises, and the caller reads a description that names the method
+and nothing else, because the error crosses out of this class. The step, the
+number, the source and the text are kept here before the raise, so the caller
+can log what actually refused. ExportToFile empties it on entry.</p>
+<p><strong>Returns:</strong> String. The step, error number, source and text, or vbNullString.</p>
+<hr />
 <h3 id="exporttowkb">ExportToWkb <a class="anchor-link" href="#exporttowkb">#</a></h3>
 <p><em>export-to-wkb</em></p>
 <p><strong>Export the geobase worksheet structure to a workbook.</strong></p>
@@ -265,8 +284,9 @@ When onlyHistory is True only the HISTOGEO and HISTOHF tables are exported.</p>
 </code></pre>
 <p>Copies the entire geobase worksheet to the target workbook, preserving
 ListObjects, named ranges, formulas, pcode references, concat references,
-and metadata. Creates a hidden Metadata sheet with creation metadata including
-linelist name, setup name, language, and timestamp. RNG_PastingGeoCol is
+and metadata. Creates a hidden Metadata sheet with creation metadata: the
+linelist name, the setup name, the language, the timestamp, the platform the
+build ran on and the version of the designer that ran it. RNG_PastingGeoCol is
 exported as a cell-based named range. The hidden names of the geo worksheet
 go with the sheet, and the five workbook-scoped level labels are written into
 the target workbook so CrossTable's spatial dropdown resolves them there.
@@ -331,22 +351,6 @@ translation change.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>dict</code>: LLdictionary. The linelist dictionary whose labels should be updated.</li>
-</ul>
-<hr />
-<h3 id="updateshowhide">UpdateShowHide <a class="anchor-link" href="#updateshowhide">#</a></h3>
-<p><em>update-show-hide</em></p>
-<p><strong>Update show/hide tables with the geo labels.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As LLdictionary)
-</code></pre>
-<p>Iterates all ListObjects on the show/hide worksheet, finds variables
-controlled by geo1 through geo4 and hf via the dictionary, and updates their
-main label cells to the subsection prefix followed by the level label. This
-keeps the show/hide interface labels in step with the geobase.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sh</code>: Worksheet. The show/hide worksheet containing ListObjects to update.</li>
-<li><code>dict</code>: LLdictionary. The linelist dictionary for resolving control and subsection values.</li>
 </ul>
 <hr />
 </div>
@@ -789,16 +793,91 @@ reads one shape.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function UniqueRangeValue(ByVal rng As Range) As BetterArray
 </code></pre>
-<p>Reads one Variant array per area of the range and dedupes in memory against
-a delimited string index, then pushes the values in encounter order. The
-range handed in is the visible part of a filtered column, which on a large
-geobase is tens of thousands of cells; one crossing per area and one InStr
-per cell is what keeps that affordable.</p>
+<p>Reads one Variant array per area of the range and dedupes in memory against a
+keyed Collection, then pushes the values in encounter order. The range handed
+in is the visible part of a filtered column, which on a large geobase is tens
+of thousands of cells.</p>
+<h2 id="int-why-a-collection-and-not-a-string-index">WHY A COLLECTION AND NOT A STRING INDEX</h2>
+<p>The index used to be one long string with every value already seen in it, and
+every cell was an InStr over the whole of it. That is quadratic in the number
+of distinct values, and the string was rebuilt on every hit, so a level with a
+few thousand children cost far more than the filter that produced it. A
+Collection key is hashed, so the test is flat however many values arrive.
+Dictionary is missing on Mac Excel; a keyed Collection is the replacement this
+project uses.</p>
+<p>The dedupe is now CASE INSENSITIVE, because Collection keys are. That follows
+the AutoFilter above it, which matched these rows case insensitively in the
+first place, so two spellings of one place name were already being treated as
+one by the time they got here.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>rng</code>: Range. The range of cells to extract unique values from.</li>
 </ul>
 <p><strong>Returns:</strong> BetterArray. Deduplicated values in encounter order.</p>
+<hr />
+<h2 id="int-level-memo">Level memo</h2>
+<h3 id="int-levelmemokey">LevelMemoKey <a class="anchor-link" href="#int-levelmemokey">#</a></h3>
+<p><em>level-memo-key</em></p>
+<p><strong>The identity of one GeoLevel answer.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LevelMemoKey(ByVal adminLevel As Byte, ByVal geoType As Byte, _
+                              ByRef adminNames As Variant) As String
+</code></pre>
+<p>Scope and level, then the parents that narrow it. The parents arrive as three
+shapes -- nothing for admin 1, a scalar for admin 2, a BetterArray below that
+-- and each becomes text here. A parent carrying the separator itself would
+read as two parents, so the separator is a character no place name holds.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>adminLevel</code>: Byte. Admin level index.</li>
+<li><code>geoType</code>: Byte. GeoScopeAdmin or GeoScopeHF.</li>
+<li><code>adminNames</code>: Variant. The parent selections as GeoLevel received them.</li>
+</ul>
+<p><strong>Returns:</strong> String. The key of that answer.</p>
+<hr />
+<h3 id="int-levelmemoread">LevelMemoRead <a class="anchor-link" href="#int-levelmemoread">#</a></h3>
+<p><em>level-memo-read</em></p>
+<p><strong>The held answer for one key, as a list of its own.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LevelMemoRead(ByVal key As String) As BetterArray
+</code></pre>
+<p>A fresh BetterArray every time, filled from the items held under the key. Two
+reasons it is not the held object itself: VarWriter clears and refills what
+GeoLevel hands it while it writes the geo1 column, so one caller would empty
+the memo for every other; and a caller must not be able to tell a hit from a
+miss. Setting Items on a new BetterArray adopts the bounds of what is stored,
+so a hit answers the same shape the filter would have built.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>key</code>: String. The key built by LevelMemoKey.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The held answer, or Nothing when the key is not held.</p>
+<hr />
+<h3 id="int-levelmemowrite">LevelMemoWrite <a class="anchor-link" href="#int-levelmemowrite">#</a></h3>
+<p><em>level-memo-write</em></p>
+<p><strong>Hold one answer under its key.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LevelMemoWrite(ByVal key As String, ByVal values As BetterArray)
+</code></pre>
+<p>The items are held rather than the BetterArray, for the reason LevelMemoRead
+gives. An empty answer is not held: an empty list has no one array shape to
+store, and a level with no children at all is a geobase fault rather than
+something a user meets on the way down a column.</p>
+<p>A full memo is emptied whole. Dropping the oldest entry would need a second
+structure to carry the order, and the cap is a guard against a session that
+never ends rather than a working limit.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>key</code>: String. The key built by LevelMemoKey.</li>
+<li><code>values</code>: BetterArray. The answer to hold.</li>
+</ul>
+<hr />
+<h3 id="int-resetlevelmemo">ResetLevelMemo <a class="anchor-link" href="#int-resetlevelmemo">#</a></h3>
+<p><em>reset-level-memo</em></p>
+<p><strong>Drop every held level answer.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetLevelMemo()
+</code></pre>
 <hr />
 <h3 id="int-hfrange">HFRange <a class="anchor-link" href="#int-hfrange">#</a></h3>
 <p><em>hf-range</em></p>
@@ -888,6 +967,10 @@ runs from the row under it to the last row of that used range. A source sheet
 whose first row is blank therefore imports every record it holds.</p>
 <p>The destination row numbers come from the header row of the ListObject, so a
 table that does not start on row 1 lands in the right place.</p>
+<p>The concat column is written as a formula, calculated, and then replaced by the
+values it answered. The geo worksheet therefore carries no live formula once an
+import has run. A table filled by hand afterwards gets no concat for the rows
+added, because a column of constants is no longer a calculated column.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>impsh</code>: Worksheet. The source worksheet, named after the table it feeds.</li>
@@ -909,6 +992,74 @@ answers an empty string.</p>
 <p><strong>Returns:</strong> String. The formula for the first data row, or an empty string.</p>
 <hr />
 <h2 id="int-export">Export</h2>
+<h3 id="int-exportonetable">ExportOneTable <a class="anchor-link" href="#int-exportonetable">#</a></h3>
+<p><em>export-one-table</em></p>
+<p><strong>Write one geobase table onto a sheet, a column at a time.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ExportOneTable(ByVal Lo As ListObject, _
+                            ByVal outsh As Worksheet, _
+                            ByRef atStep As String)
+</code></pre>
+<p>The header row goes out with the data, because a ListColumn range carries its
+header, and Import reads the first used row of the sheet as the header row.
+The destination starts at A1 and each column lands under its own position in
+the table, so the sheet comes out in the order of the table.
+BetterArray sizes the destination from what it read, so no row count is worked
+out here, and an empty table writes its header row and nothing else.
+The step is written back to the caller on every column, so a failure names the
+column it stopped on rather than the table.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>Lo</code>: ListObject. The geobase table to write out.</li>
+<li><code>outsh</code>: Worksheet. The sheet to write it onto.</li>
+<li><code>atStep</code>: String. Updated in place with the column being written.</li>
+</ul>
+<hr />
+<h3 id="int-sheetnamesof">SheetNamesOf <a class="anchor-link" href="#int-sheetnamesof">#</a></h3>
+<p><em>sheet-names-of</em></p>
+<p><strong>The worksheet names of a workbook with their used rows, on one line.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetNamesOf(ByVal wkb As Workbook) As String
+</code></pre>
+<p>Written for the failure account of ExportToFile. Two questions a reader has
+when a sheet will not be added: whether the name was already taken, and how
+much had already been written into the workbook. Each sheet is reported as
+name(used rows), so both are answered by one line.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>wkb</code>: Workbook. The workbook to list.</li>
+</ul>
+<p><strong>Returns:</strong> String. The sheets separated by commas, or a note when they cannot be read.</p>
+<hr />
+<h3 id="int-platformtag">PlatformTag <a class="anchor-link" href="#int-platformtag">#</a></h3>
+<p><em>platform-tag</em></p>
+<p><strong>The platform the linelist was built on, on one tag</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function PlatformTag() As String
+</code></pre>
+<p>A linelist is opened on machines that are not the one that built it, and the
+two platforms do not behave the same: a geobase export Windows accepts has
+refused on a Mac. The metadata sheet therefore names the platform of the
+build. The name and the bitness come from the compile constants, so they are
+the build that is running and cannot be misread. The Excel version comes from
+the application.</p>
+<p><strong>Returns:</strong> String. Something of the shape &quot;mac-64 excel-16.90&quot;.</p>
+<hr />
+<h3 id="int-designerversion">DesignerVersion <a class="anchor-link" href="#int-designerversion">#</a></h3>
+<p><em>designer-version</em></p>
+<p><strong>The version of the designer that built the linelist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DesignerVersion() As String
+</code></pre>
+<p>The version is a workbook-scoped hidden name on the designer.
+DesignerPreparation.Prepare writes it from the RNG_Version value name the
+owner keeps on the Dev worksheet, so a designer that was never initialised
+with a version there does not carry it. That is the ordinary case rather than
+a fault, and it answers &quot;(not found)&quot;. A name that is present but empty
+answers the same, because an empty cell on the metadata sheet says nothing to
+the person reading it.</p>
+<p><strong>Returns:</strong> String. The version, or &quot;(not found)&quot;.</p>
+<hr />
 <h3 id="int-exportlevelnames">ExportLevelNames <a class="anchor-link" href="#int-exportlevelnames">#</a></h3>
 <p><em>export-level-names</em></p>
 <p><strong>Write the five level labels into another workbook.</strong></p>
@@ -1098,7 +1249,7 @@ ProjectError values exceed the Byte range (they start at 1001+).</p>
 <hr />
 </details>
 <details>
-<summary>Used in (21 file(s))</summary>
+<summary>Used in (22 file(s))</summary>
 <ul>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
@@ -1116,6 +1267,7 @@ ProjectError values exceed the Byte range (they start at 1001+).</p>
 <li>FormLogicAdvanced.bas</li>
 <li>FormLogicGeo.bas</li>
 <li>TestLLImporter.bas</li>
+<li>TestDesignerPreparation.bas</li>
 <li>TestLLGeo.bas</li>
 <li>GeoTestFixture.bas</li>
 <li>TestEventLinelist.bas</li>

@@ -137,13 +137,26 @@ hh:mm:ss  [scope]  bundle-title  entry-label.</p>
 clears it and drops the render marker of the previous run so the writer
 formats a first render. Opens a fresh writer, resets the in-memory
 record, starts the wall clock and stamps the run header as the first
-bundle: the start time, plus the setup path and the linelist name when
-the caller knows them.</p>
+bundle: the start time and the platform of the run, plus the setup path
+and the linelist name when the caller knows them.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>setupPath</code>: Optional String. The setup file path of the run.</li>
 <li><code>linelistName</code>: Optional String. The output linelist name of the run.</li>
 </ul>
+<hr />
+<h3 id="int-platformtag">PlatformTag <a class="anchor-link" href="#int-platformtag">#</a></h3>
+<p><em>platform-tag</em></p>
+<p><strong>The platform of the run, on one tag</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function PlatformTag() As String
+</code></pre>
+<p>A generation report is read on another machine and long after the run, and
+the two platforms do not behave the same: a geobase export Windows accepts
+has refused on a Mac. The name and the bitness come from the compile
+constants, so they are the build that is running and cannot be misread.
+The Excel version comes from the application.</p>
+<p><strong>Returns:</strong> String. Something of the shape &quot;mac-64 excel-16.90&quot;.</p>
 <hr />
 <h3 id="int-collect">Collect <a class="anchor-link" href="#int-collect">#</a></h3>
 <p><em>collect</em></p>
@@ -280,10 +293,11 @@ text lines.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (7 file(s))</summary>
+<summary>Used in (8 file(s))</summary>
 <ul>
 <li><a href="CodeTransfer.html">CodeTransfer.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
+<li><a href="LLLog.html">LLLog.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>EventsDesignerMulti.bas</li>
 <li>InitTransfer.bas</li>

@@ -286,9 +286,19 @@ FormLogicEpiWeek and CustomLinelistFunctions already read and write it.</p>
 <pre><code class="language-vb">Public Sub ImportGeobase(ByVal impwb As Workbook, Optional ByVal histoOnly As Boolean = False)
 </code></pre>
 <p>Delegates to LLGeo.Import to load geobase data. When not histoOnly,
-also updates geobase headers in HList worksheets via geo.Update,
-dictionary geo labels via geo.UpdateDict, and show/hide tables for geo
-variables via geo.UpdateShowHide.</p>
+also updates geobase headers in HList worksheets via geo.Update and
+dictionary geo labels via geo.UpdateDict.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-show-hide-sheet-is-not-touched">
+<summary>THE SHOW/HIDE SHEET IS NOT TOUCHED</summary>
+<div class="section-body">
+<p>A third call used to write the geo labels into per-sheet tables on the
+show/hide worksheet. Those tables belonged to the first show/hide design and
+ShowHideStore deletes them on sight now, so the call read a sheet carrying
+only the store''s own table and raised 91 on every import. The label reaches
+the form on its own: ShowHide composes it from the dictionary main label that
+geo.UpdateDict has just rewritten, every time the form is built.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>impwb</code>: Workbook. The opened geobase workbook.</li>

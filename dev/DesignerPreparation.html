@@ -17,7 +17,8 @@ workbook, creates a dropdown worksheet with standard dropdown lists
 (setup languages, interface languages, epiweek start, design values),
 hides internal worksheets (VeryHidden for __pass/__formatter/__formula/
 __dropdowns, Hidden for translation sheets), seeds workbook- and
-worksheet-level HiddenNames flags, applies data validation to the
+worksheet-level HiddenNames flags, carries the designer version from the
+Dev worksheet into a workbook-level name, applies data validation to the
 T_Multi table on the GenerateMultiple worksheet, and registers hidden
 sheets with the development manager. Also provides methods to read and
 write ribbon checkbox flags persisted through workbook-level hidden names.</p>
@@ -82,6 +83,8 @@ __formula/__dropdowns/__check, Hidden for LinelistTranslation,
 DesignerTranslation).</li>
 <li>Seeds workbook-level HiddenNames flags (ribbon checks, language
 codes, last opened date).</li>
+<li>Copies the version from the Dev worksheet into the workbook-level
+RNG_DesignerVersion name.</li>
 <li>Seeds Geo worksheet-level HiddenNames flags (geo language, name,
 update status).</li>
 <li>Applies data validation to the T_Multi table on GenerateMultiple.</li>
@@ -316,6 +319,40 @@ not exist.</p>
 codes, and the last opened date. Checkbox flags default to &quot;Yes&quot; (on).
 Language codes default to empty strings. Last opened date is set to the
 current date.</p>
+<hr />
+<h3 id="int-ensureversionname">EnsureVersionName <a class="anchor-link" href="#int-ensureversionname">#</a></h3>
+<p><em>ensure-version-name</em></p>
+<p><strong>Copy the designer version into a workbook-level hidden name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureVersionName()
+</code></pre>
+<p>The version is owner hand work: it is written once on the Dev worksheet, as
+the value name RNG_Version scoped to that sheet. This copies it into the
+workbook-scoped RNG_DesignerVersion name, which is where LLGeo reads it for
+the metadata sheet of every generated linelist.</p>
+<p>The copy is what the metadata sees, so a version edited on the Dev sheet
+reaches a linelist once the designer is initialised again.</p>
+<p>Three states leave the workbook name as it is: no Dev worksheet, no
+RNG_Version on it, and an empty RNG_Version. A designer built before the name
+existed is in one of them, and it is an ordinary designer rather than a
+broken one: LLGeo answers &quot;(not found)&quot; and the build carries on.</p>
+<hr />
+<h3 id="int-devversiontext">DevVersionText <a class="anchor-link" href="#int-devversiontext">#</a></h3>
+<p><em>dev-version-text</em></p>
+<p><strong>Read the version the Dev worksheet carries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DevVersionText(ByVal devSheet As Worksheet) As String
+</code></pre>
+<p>RNG_Version is a value name: the version text is in the definition itself, and
+QuickValue reads it without walking the whole Names collection of the sheet.</p>
+<p>A Dev worksheet that points the name at a cell instead is read from that cell,
+so a version typed in the grid answers here too. Without that, the name would
+be parsed as text and the metadata sheet would carry an address.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>devSheet</code>: Worksheet. The Dev worksheet.</li>
+</ul>
+<p><strong>Returns:</strong> String. The version text, or an empty string when the sheet holds none.</p>
 <hr />
 <h3 id="int-ensurelevelname">EnsureLevelName <a class="anchor-link" href="#int-ensurelevelname">#</a></h3>
 <p><em>ensure-level-name</em></p>

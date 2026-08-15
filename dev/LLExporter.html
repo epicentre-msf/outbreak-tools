@@ -26,7 +26,9 @@ the workbook it opened is closed by CloseAll.</p>
 <p>ExportOptionsFor and MigrationOptions build the options line the metadata
 sheet records, ExcludedVariablesFor answers the variables a mode leaves out,
 EpiWeekStart answers the first day of the epidemiological week, and
-LastExportPassword answers the password the last export was saved under.</p>
+LastExportPassword answers the password the last export was saved under.
+LastFailure answers what the last export failed on, for a caller writing the
+failure into the log.</p>
 <p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLExport.html">LLExport</a>, <a href="Passwords.html">Passwords</a>, <a href="CustomTable.html">CustomTable</a>, <a href="DataSheet.html">DataSheet</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLChoices.html">LLChoices</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="ShowHide.html">ShowHide</a>, <a href="ShowHideLayout.html">ShowHideLayout</a>, <a href="ShowHideStore.html">ShowHideStore</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="ChoiceKeys.html">ChoiceKeys</a></p>
 </div>
 </details>
@@ -107,6 +109,20 @@ the caller already held answers False and leaves that workbook open.</p>
 empty string when no password was used. Modules display this value to
 the user after a successful export so they can share it securely.</p>
 <p><strong>Returns:</strong> String. The password, or vbNullString.</p>
+<hr />
+<h3 id="lastfailure">LastFailure <a class="anchor-link" href="#lastfailure">#</a></h3>
+<p><em>last-failure</em></p>
+<p><strong>What the last export failed on, in the words of the error itself</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LastFailure() As String
+</code></pre>
+<p>An export that fails raises, and the caller reads a description that names
+the method and nothing else, because the error crosses out of this class.
+The number, the source and the text are kept here before the raise, so the
+caller can log what actually refused.</p>
+<p>Every export empties this on entry, so a value here belongs to the export
+that just ran. It is empty after an export that worked.</p>
+<p><strong>Returns:</strong> String. The error number, source and text, or vbNullString.</p>
 <hr />
 <h3 id="epiweekstart">EpiWeekStart <a class="anchor-link" href="#epiweekstart">#</a></h3>
 <p><em>epi-week-start</em></p>

@@ -268,15 +268,20 @@ label.</p>
 <h3 id="warn">Warn <a class="anchor-link" href="#warn">#</a></h3>
 <p><strong>Tell the user why a button refused to act.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Warn(ByVal msgCode As String)
+<pre><code class="language-vb">Public Sub Warn(ByVal msgCode As String, _
+                Optional ByVal source As String = vbNullString)
 </code></pre>
 <p>The refusal is also one warning line of the user log, written before the
-box shows, with the message code as the action. Every refusal box of the
-button, ribbon and geo modules comes through here, so the log covers them
-all through this one edit.</p>
+box shows. Every refusal box of the button, ribbon and geo modules comes
+through here, so the log covers them all through this one edit.
+The line carries the sentence the user was shown, in the language they were
+shown it in, and the procedure that refused. It used to carry the message
+CODE as the action and nothing else, so a log read weeks later said
+&quot;MSG_SectionTitleCell&quot; and named neither the reason nor the button.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>msgCode</code>: String. Code of the message in the message translation table.</li>
+<li><code>source</code>: String. Optional. The procedure raising the refusal.</li>
 </ul>
 <hr />
 <h3 id="fail">Fail <a class="anchor-link" href="#fail">#</a></h3>
@@ -284,18 +289,26 @@ all through this one edit.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Fail(ByVal msgCode As String, _
                 Optional ByVal detail As String = vbNullString, _
-                Optional ByVal fallback As String = vbNullString)
+                Optional ByVal fallback As String = vbNullString, _
+                Optional ByVal source As String = vbNullString, _
+                Optional ByVal logDetail As String = vbNullString)
 </code></pre>
 <p>The failure is also one failure line of the user log, written before the
-box shows, with the message code as the action and the detail beside the
-date. Every failure box of the button, ribbon and geo modules comes
-through here, so the log covers them all through this one edit.</p>
+box shows. Every failure box of the button, ribbon and geo modules comes
+through here, so the log covers them all through this one edit.
+The line reads as the box did: the translated sentence, then the detail
+behind it, and the procedure that failed in front.
+A reason meant for the log alone goes in logDetail. A raw Err.Description is
+worth having in a log a user sends on and is worth little inside a box on a
+field machine, and several handlers have a reason of exactly that kind.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>msgCode</code>: String. Code of the message in the message translation table.</li>
-<li><code>detail</code>: String. Optional. Follows the message, for an Err.Description.</li>
+<li><code>detail</code>: String. Optional. Follows the message in the box AND the log.</li>
 <li><code>fallback</code>: String. Optional. Shown when the workbook carries no usable
 translation sheet. Leave it off to stay quiet in that state.</li>
+<li><code>source</code>: String. Optional. The procedure raising the failure.</li>
+<li><code>logDetail</code>: String. Optional. Follows the message in the log alone.</li>
 </ul>
 <hr />
 </div>
@@ -402,6 +415,34 @@ is meant to see rather than on Geo.</p>
 workbook that answers none of them opens where it was saved.</p>
 <hr />
 <h2 id="int-messages">Messages</h2>
+<h3 id="int-messagetext">MessageText <a class="anchor-link" href="#int-messagetext">#</a></h3>
+<p><strong>The sentence one message code stands for.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MessageText(ByVal msgCode As String) As String
+</code></pre>
+<p>The same reading ShowMessage makes, so the log line and the box say the
+same thing. A workbook with no usable translation sheet, and a code the
+table has no row for, both answer the code itself: a log naming a code is
+worth more than a log naming nothing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>msgCode</code>: String. Code of the message in the message translation table.</li>
+</ul>
+<p><strong>Returns:</strong> String. The translated sentence, or the code.</p>
+<hr />
+<h3 id="int-joineddetail">JoinedDetail <a class="anchor-link" href="#int-joineddetail">#</a></h3>
+<p><strong>Put the detail behind the message, the way the box does.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function JoinedDetail(ByVal message As String, _
+                              ByVal detail As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>message</code>: String. The translated sentence.</li>
+<li><code>detail</code>: String. Free text following it. May be empty.</li>
+</ul>
+<p><strong>Returns:</strong> String. The two joined, or the message alone.</p>
+<hr />
 <h3 id="int-showmessage">ShowMessage <a class="anchor-link" href="#int-showmessage">#</a></h3>
 <p><strong>Show one box, translated when a translator is there.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -419,7 +460,8 @@ stays quiet, which is what the two boxes this replaced did.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LogEventLine(ByVal scope As Byte, _
                          ByVal action As String, _
-                         ByVal detail As String)
+                         ByVal detail As String, _
+                         Optional ByVal source As String = vbNullString)
 </code></pre>
 <p>A log write must never take down the box or the walk it records, so a
 workbook whose log cannot be built stays quiet and a write that raises is
@@ -429,6 +471,7 @@ swallowed here.</p>
 <li><code>scope</code>: Byte. CheckingScope value carrying the outcome.</li>
 <li><code>action</code>: String. The action code, used as the bundle title.</li>
 <li><code>detail</code>: String. Short free text beside the timestamp.</li>
+<li><code>source</code>: String. Optional. The procedure that raised the event.</li>
 </ul>
 <hr />
 <h2 id="int-geo-spatial-udf-delegation">Geo / Spatial UDF delegation</h2>
@@ -841,7 +884,7 @@ permanent refusal to build the manager again.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (26 file(s))</summary>
+<summary>Used in (27 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
@@ -855,6 +898,7 @@ permanent refusal to build the manager again.</p>
 <li>EventsLinelistButtons.bas</li>
 <li>EventsLinelistRibbon.bas</li>
 <li>GeoModule.bas</li>
+<li>ImportChecking.bas</li>
 <li>LinelistEventsManager.bas</li>
 <li>FormLogicAdvanced.bas</li>
 <li>FormLogicEpiWeek.bas</li>
