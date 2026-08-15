@@ -17,8 +17,12 @@
 # `helpers` -- that block carries no suite of its own, so probing it alone
 # would run 0 tests, which the runner reports as a failure.
 #
-# Excel is quit between runs: `run VB macro` fails against an already-open
-# Excel, and only one test run may be in flight at a time.
+# run-tests.R quits any running Excel itself, gracefully, before it launches
+# its own. NOTHING HERE MAY `pkill` EXCEL. A killed Excel leaves its owner-lock
+# file `~$unit_tests_run.xlsb` beside the workbook, the next run meets a "file
+# in use" dialog and wedges, and every run after it is lost to a fault that
+# looks like a compile error. The loop sweeps any lock file left by an earlier
+# crash instead, which is the recovery step and not a routine one.
 #
 # Logs land in .test-runner/probe-logs/<folder>.log with a summary.txt beside
 # them. That folder is gitignored with the rest of .test-runner.
@@ -52,8 +56,9 @@ for f in "${FOLDERS[@]}"; do
     echo "$f: SKIPPED — narrowing failed, see $LOGS/$f.narrow.txt" | tee -a "$SUMMARY"
     continue
   }
-  pkill -x "Microsoft Excel" 2>/dev/null
-  sleep 3
+  # Sweep an owner-lock file left behind by an earlier crash, so this run does
+  # not meet the "file in use" dialog. run-tests.R does the Excel quit.
+  find "${OBT_TEST_HOME:-$REPO/.test-runner}" -name '~$*' -delete 2>/dev/null
 
   Rscript scripts/tests/run-tests.R --build > "$LOGS/$f.log" 2>&1
   rc=$?
@@ -71,6 +76,5 @@ for f in "${FOLDERS[@]}"; do
   echo "" | tee -a "$SUMMARY"
 done
 
-pkill -x "Microsoft Excel" 2>/dev/null
 echo "=== done $(date '+%H:%M:%S'), $red red folder(s). Logs: $LOGS ===" | tee -a "$SUMMARY"
 exit "$red"
