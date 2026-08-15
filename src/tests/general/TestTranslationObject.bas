@@ -282,8 +282,192 @@ Public Sub TestLanguagesListReturnsEmptyWhenNoAdditionalColumns()
 End Sub
 
 
+'@TestMethod("TranslationObject")
+'@sub-title Verify comparison operators survive a formula translation into French
+'@details
+'Arranges the fixture table with the six age-group labels of a real
+'CHOICE_FORMULA and their French translations, then builds a FRA translator.
+'Acts by calling TranslatedValue with containsFormula:=True on that formula.
+'Asserts the five "<" characters and the one ">" character are all still there
+'afterwards, and that the quoted labels came back in French. The formula text
+'is the one reported from the field, where the age bands read "< 6", "< 9",
+'"< 12", "< 5" and "< 15" and the upper band reads ">=15".
+Public Sub TestFormulaTranslationKeepsComparisonOperators()
+    Dim formulaText As String
+    Dim result As String
+    Dim frenchTranslator As TranslationObject
+
+    CustomTestSetTitles Assert, "TranslationObject", "TestFormulaTranslationKeepsComparisonOperators"
+
+    PrepareAgeGroupRows
+    Set frenchTranslator = TranslationObject.Create(TranslationTable, "FRA")
+
+    formulaText = "CHOICE_FORMULA(list_age_group,age_years=" & Chr$(34) & Chr$(34) & "," & Chr$(34) & Chr$(34) & _
+                  ", age_months < 6, " & Chr$(34) & "0 - 5 months" & Chr$(34) & _
+                  ", age_months < 9, " & Chr$(34) & "6 - 8 months" & Chr$(34) & _
+                  ", age_months < 12, " & Chr$(34) & "9 - 11 months" & Chr$(34) & _
+                  ", age_years < 5, " & Chr$(34) & "1 - 4 years" & Chr$(34) & _
+                  ", age_years < 15, " & Chr$(34) & "5 - 14 years" & Chr$(34) & _
+                  ", AND(age_years>=15, age_years 120) , " & Chr$(34) & "15+ years" & Chr$(34) & ")"
+
+    result = frenchTranslator.TranslatedValue(formulaText, containsFormula:=True)
+
+    Assert.AreEqual 5&, OccurrenceCount(result, "<"), _
+                     "Every '<' comparison operator should survive the translation."
+    Assert.AreEqual 1&, OccurrenceCount(result, ">"), _
+                     "The '>' comparison operator should survive the translation."
+    Assert.IsTrue InStr(1, result, Chr$(34) & "0 - 5 mois" & Chr$(34), vbBinaryCompare) > 0, _
+                   "The first age band label should come back in French."
+    Assert.IsTrue InStr(1, result, Chr$(34) & "15+ ans" & Chr$(34), vbBinaryCompare) > 0, _
+                   "The last age band label should come back in French."
+
+    Set frenchTranslator = Nothing
+End Sub
+
+
+'@TestMethod("TranslationObject")
+'@sub-title Verify text with no entry in the table comes back character for character
+'@details
+'Arranges the default ENG translator and three tags that are not in the fixture
+'table, each carrying a character the cleaner used to remove: a "<", a ">" and
+'both together. Acts by calling TranslatedValue on each. Asserts every one is
+'returned exactly as it went in. The miss path ends in the same cleaner the
+'formula path uses, so an untranslated cell was altered too, which is the wider
+'half of the same defect.
+'Each comparison is made on CodePoints rather than on the text, for the reason
+'given on that function.
+Public Sub TestUntranslatedTextIsReturnedUnchanged()
+    CustomTestSetTitles Assert, "TranslationObject", "TestUntranslatedTextIsReturnedUnchanged"
+
+    AssertSameCharacters "age_months < 6", Translator.TranslatedValue("age_months < 6"), _
+                         "An untranslated tag holding '<' should come back unchanged."
+    AssertSameCharacters "age_years >= 15", Translator.TranslatedValue("age_years >= 15"), _
+                         "An untranslated tag holding '>' should come back unchanged."
+    AssertSameCharacters "5 < x > 2", Translator.TranslatedValue("5 < x > 2"), _
+                         "An untranslated tag holding both operators should come back unchanged."
+End Sub
+
+'@TestMethod("TranslationObject")
+'@sub-title Verify the cleaner still turns a non-breaking space into an ordinary one
+'@details
+'Arranges a tag whose words are joined by ChrW$(160), U+00A0, the character the
+'cleaner is there to remove. Acts by calling TranslatedValue on it. Asserts the
+'result reads "no such tag" joined by code 32, and that no code 160 is left.
+'
+'The expected value is never written as a string holding ordinary spaces and
+'compared against a result that may hold non-breaking ones. That comparison is
+'the one the harness cannot make: Assert.AreEqual reported success on exactly
+'this pair while two code 160 characters were still in the result. Every
+'assertion here is on CodePoints instead, so a 160 can never read as a 32.
+'ChrW$ is used rather than Chr$ because Chr$ reads 160 as a byte in the
+'machine's ANSI codepage, which on this Mac is the dagger.
+Public Sub TestNonBreakingSpaceBecomesOrdinarySpace()
+    Dim result As String
+
+    CustomTestSetTitles Assert, "TranslationObject", "TestNonBreakingSpaceBecomesOrdinarySpace"
+
+    result = Translator.TranslatedValue("no" & ChrW$(160) & "such" & ChrW$(160) & "tag")
+
+    AssertSameCharacters "no such tag", result, _
+                         "A non-breaking space should be replaced by an ordinary space."
+    Assert.AreEqual 0&, OccurrenceCount(result, ChrW$(160)), _
+                     "No non-breaking space should survive the cleaner."
+    Assert.AreEqual 2&, OccurrenceCount(result, ChrW$(32)), _
+                     "Both gaps should be an ordinary space."
+End Sub
+
+
 '@section Helpers
 '===============================================================================
+
+'@sub-title Add the age-group labels of the probe formula to the fixture table
+'@details
+'Writes six extra tag rows below the three the fixture already holds, each with
+'its English label in the ENG column and its French label in the FRA column.
+'The table grows, which changes its signature, so the next translation call
+'reads it again on its own.
+Private Sub PrepareAgeGroupRows()
+    Dim tags As Variant
+    Dim english As Variant
+    Dim french As Variant
+    Dim firstRow As Long
+
+    tags = Array("0 - 5 months", "6 - 8 months", "9 - 11 months", _
+                 "1 - 4 years", "5 - 14 years", "15+ years")
+    english = tags
+    french = Array("0 - 5 mois", "6 - 8 mois", "9 - 11 mois", _
+                   "1 - 4 ans", "5 - 14 ans", "15+ ans")
+
+    firstRow = TranslationTable.Range.Row + TranslationTable.Range.Rows.Count
+
+    With TranslationSheet
+        .Cells(firstRow, 1).Resize(6, 1).Value = Application.Transpose(tags)
+        .Cells(firstRow, 2).Resize(6, 1).Value = Application.Transpose(english)
+        .Cells(firstRow, 3).Resize(6, 1).Value = Application.Transpose(french)
+    End With
+
+    TranslationTable.Resize TranslationSheet.Cells(TranslationTable.Range.Row, 1).Resize(10, 3)
+End Sub
+
+'@sub-title Assert two strings hold the same characters, code point by code point
+'@details
+'Compares CodePoints of each side rather than the strings themselves, and puts
+'the readable text in the message so a failure is still legible.
+'@param expected String. The text that should have come back.
+'@param actual String. The text that did.
+'@param message String. What the assertion is pinning.
+Private Sub AssertSameCharacters(ByVal expected As String, _
+                                 ByVal actual As String, _
+                                 ByVal message As String)
+
+    Assert.AreEqual CodePoints(expected), CodePoints(actual), _
+                     message & " (expected text: '" & expected & "', actual text: '" & actual & "')"
+End Sub
+
+'@sub-title Spell a string out as its Unicode code points, comma separated
+'@details
+'A whitespace character cannot be compared through Assert.AreEqual: it reported
+'success on "no such tag" against the same words joined by ChrW$(160), because
+'the comparison behind it does not separate a non-breaking space from an
+'ordinary one. Turning each character into its number first removes the question
+'-- 160 and 32 are different numbers, and the assertion is then made between two
+'strings of digits and commas, which hold no whitespace to be lenient about.
+'AscW is used rather than Asc so the answer is the code point and not a byte in
+'the machine's ANSI codepage.
+'@param text String. The text to spell out.
+'@return String. One number per character, comma separated.
+Private Function CodePoints(ByVal text As String) As String
+    Dim codes() As String
+    Dim idx As Long
+    Dim textLength As Long
+
+    textLength = Len(text)
+    If textLength = 0 Then Exit Function
+
+    ReDim codes(1 To textLength)
+
+    For idx = 1 To textLength
+        codes(idx) = CStr(AscW(Mid$(text, idx, 1)))
+    Next idx
+
+    CodePoints = Join(codes, ",")
+End Function
+
+'@sub-title Count how many times one character appears in a string
+'@param haystack String. The text to scan.
+'@param needle String. The character to count.
+'@return Long. The number of occurrences.
+Private Function OccurrenceCount(ByVal haystack As String, ByVal needle As String) As Long
+    Dim position As Long
+
+    If LenB(haystack) = 0 Or LenB(needle) = 0 Then Exit Function
+
+    position = InStr(1, haystack, needle, vbBinaryCompare)
+    Do While position > 0
+        OccurrenceCount = OccurrenceCount + 1
+        position = InStr(position + Len(needle), haystack, needle, vbBinaryCompare)
+    Loop
+End Function
 
 '@sub-title Build the fixture translation ListObject with Tag, ENG, and FRA columns
 '@details

@@ -311,10 +311,17 @@ End Property
 '@sub-title Clean a raw value the way the worksheet functions used to
 '@details
 'Does the same three jobs as SUBSTITUTE + CLEAN + TRIM did, in plain VBA
-'so a call no longer goes out to Excel: the '<' character becomes a space,
-'characters below code 32 are dropped, then leading, trailing and repeated
-'spaces are squeezed. Worksheet TRIM squeezes inner runs of spaces down to
-'one, which VBA Trim$ does not do, so that part is written out here.
+'so a call no longer goes out to Excel: the non-breaking space becomes an
+'ordinary space, characters below code 32 are dropped, then leading, trailing
+'and repeated spaces are squeezed. Worksheet TRIM squeezes inner runs of spaces
+'down to one, which VBA Trim$ does not do, so that part is written out here.
+'
+'This routine used to substitute Chr$(60) instead, which is '<'. Every
+'comparison operator was deleted from the text it was handed, so a translated
+'CHOICE_FORMULA came back with "age_months < 6" reading "age_months 6", and a
+'plain cell holding '<' was altered even when the tag had no translation at
+'all. The character meant here is the non-breaking space, the same one
+'Formulas.CleanString replaces.
 '@param rawValue String. The raw text.
 '@return String. Cleaned text.
 Private Function SanitizeText(ByVal rawValue As String) As String
@@ -326,7 +333,11 @@ Private Function SanitizeText(ByVal rawValue As String) As String
     Dim cleanedLength As Long
     Dim pendingSpace As Boolean
 
-    substituted = Replace(rawValue, Chr$(60), " ", Compare:=vbBinaryCompare)
+    'ChrW$(160) is U+00A0 NO-BREAK SPACE. ChrW$ reads 160 as a Unicode code
+    'point, so the answer is the same on every machine. Chr$ would read it as a
+    'byte position in the machine's ANSI codepage, which on this Mac holds the
+    'dagger, and the non-breaking spaces would all survive.
+    substituted = Replace(rawValue, ChrW$(160), " ", Compare:=vbBinaryCompare)
     If LenB(substituted) = 0 Then Exit Function
 
     cleaned = Space$(Len(substituted))
