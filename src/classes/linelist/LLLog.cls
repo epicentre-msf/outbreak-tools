@@ -28,6 +28,19 @@ Option Explicit
 'grows one line per event and the built-in status and title dropdowns of
 'the output sheet filter the log by outcome and by section.
 '
+'WHAT ONE LINE SAYS
+'-------------------------------------------------------------------------------
+'An entry line reads as the timestamp and the platform, then the procedure
+'that raised the event, then the action code and the detail:
+'
+'  2026-08-15 13:55:45 mac-64 excel-16.112  ClickShowHideSection > showhide-section: Demographics hidden on sheet1
+'
+'The procedure is named by the caller. VBA carries no call stack to read a
+'name from, and one button can raise the same refusal from four places, so
+'a line that names only the action leaves the reader guessing which press
+'wrote it. The name is optional: a caller that passes none writes the same
+'line as before, opening at the action code.
+'
 'THE THREE SECTIONS
 '-------------------------------------------------------------------------------
 'The log is read by three sections, and the title of an entry is the
@@ -80,7 +93,7 @@ Option Explicit
 'which field machines lack. LLLog leaves the worksheet code module alone;
 'the dropdowns stay plain validation cells and the filtering is reachable
 'through CheckingOutput.FilterWorksheet.
-'@version 1.0 (2026-08-12)
+'@version 1.1 (2026-08-15)
 
 
 '@section State
@@ -135,6 +148,11 @@ Private Const SECTION_LIFECYCLE As String = "linelist lifecycle"
 'What sits between the action code and the detail on an entry line. The
 'two share the last written column, so they need a mark of their own.
 Private Const ACTION_SEPARATOR As String = ": "
+
+'What sits between the procedure that raised the event and the action code.
+'The three share the last written column, and this mark is what tells the
+'name of a procedure apart from the action it took.
+Private Const SOURCE_SEPARATOR As String = " > "
 
 Private Type TLLLog
     targetSheet As Worksheet
@@ -252,36 +270,48 @@ End Property
 '@sub-title Log an action that ended well
 '@param action String. The action code, used as the bundle title.
 '@param detail Optional String. Short free text beside the timestamp.
+'@param source Optional String. The procedure that raised the event.
 '@export
-Public Sub LogSuccess(ByVal action As String, Optional ByVal detail As String = vbNullString)
-    WriteEntry action, detail, checkingSuccess
+Public Sub LogSuccess(ByVal action As String, _
+                      Optional ByVal detail As String = vbNullString, _
+                      Optional ByVal source As String = vbNullString)
+    WriteEntry action, detail, checkingSuccess, source
 End Sub
 
 '@label:log-warning
 '@sub-title Log a refusal or a degraded run
 '@param action String. The action code, used as the bundle title.
 '@param detail Optional String. Short free text beside the timestamp.
+'@param source Optional String. The procedure that raised the event.
 '@export
-Public Sub LogWarning(ByVal action As String, Optional ByVal detail As String = vbNullString)
-    WriteEntry action, detail, checkingWarning
+Public Sub LogWarning(ByVal action As String, _
+                      Optional ByVal detail As String = vbNullString, _
+                      Optional ByVal source As String = vbNullString)
+    WriteEntry action, detail, checkingWarning, source
 End Sub
 
 '@label:log-failure
 '@sub-title Log an action that failed
 '@param action String. The action code, used as the bundle title.
 '@param detail Optional String. Short free text beside the timestamp.
+'@param source Optional String. The procedure that raised the event.
 '@export
-Public Sub LogFailure(ByVal action As String, Optional ByVal detail As String = vbNullString)
-    WriteEntry action, detail, checkingError
+Public Sub LogFailure(ByVal action As String, _
+                      Optional ByVal detail As String = vbNullString, _
+                      Optional ByVal source As String = vbNullString)
+    WriteEntry action, detail, checkingError, source
 End Sub
 
 '@label:log-info
 '@sub-title Log a lifecycle line
 '@param action String. The action code, used as the bundle title.
 '@param detail Optional String. Short free text beside the timestamp.
+'@param source Optional String. The procedure that raised the event.
 '@export
-Public Sub LogInfo(ByVal action As String, Optional ByVal detail As String = vbNullString)
-    WriteEntry action, detail, checkingInfo
+Public Sub LogInfo(ByVal action As String, _
+                   Optional ByVal detail As String = vbNullString, _
+                   Optional ByVal source As String = vbNullString)
+    WriteEntry action, detail, checkingInfo, source
 End Sub
 
 '@section Export
@@ -506,7 +536,7 @@ Private Sub AppendEntriesTo(ByVal lines As BetterArray, ByVal sh As Worksheet)
     lastRow = sh.Cells(sh.Rows.Count, OUTPUT_COLUMN).End(xlUp).Row
 
     For rowIndex = 1 To lastRow
-        titleText = Trim$(CellText(sh.Cells(rowIndex, OUTPUT_COLUMN).Value))
+        titleText = PlainOutcome(Trim$(CellText(sh.Cells(rowIndex, OUTPUT_COLUMN).Value)))
         stampText = Trim$(CellText(sh.Cells(rowIndex, STAMP_COLUMN).Value))
         entryText = Trim$(CellText(sh.Cells(rowIndex, ENTRY_COLUMN).Value))
 
@@ -520,6 +550,28 @@ Private Sub AppendEntriesTo(ByVal lines As BetterArray, ByVal sh As Worksheet)
         End If
     Next rowIndex
 End Sub
+
+'@label:plain-outcome
+'@sub-title The outcome word of a row, without the picture in front of it
+'@details
+'Checking paints an outcome with a symbol before the word -- a cross for an
+'error, a tick for a success, an i in a circle for an info line -- and that
+'symbol is what the sheet shows.
+'The text export cannot carry it. Print # writes one byte per character, so
+'every one of those symbols reaches the file as a single stray mark, and a
+'log a user sends on reads "[_ Error]" and "[_ Info]" throughout. The word
+'alone is what the file wants.
+'A section title carries no symbol and comes back untouched: only a first
+'character outside plain text is taken off.
+'@param text String. The cell value, already trimmed.
+'@return String. The word alone.
+Private Function PlainOutcome(ByVal text As String) As String
+    PlainOutcome = text
+    If LenB(text) = 0 Then Exit Function
+    If AscW(Left$(text, 1)) < 128 Then Exit Function
+
+    PlainOutcome = Trim$(Mid$(text, 2))
+End Function
 
 '@label:cell-text
 '@sub-title One cell as text, with an error value reading as empty
@@ -538,15 +590,18 @@ End Function
 '@param action String. The action code, used as the bundle title.
 '@param detail String. Short free text beside the timestamp.
 '@param scope Byte. CheckingScope value carrying the outcome.
+'@param source String. The procedure that raised the event. May be empty.
 '@throws ProjectError.InvalidArgument When the action code is empty.
-Private Sub WriteEntry(ByVal action As String, ByVal detail As String, ByVal scope As Byte)
+Private Sub WriteEntry(ByVal action As String, ByVal detail As String, _
+                       ByVal scope As Byte, _
+                       Optional ByVal source As String = vbNullString)
     If LenB(Trim$(action)) = 0 Then
         ThrowError ProjectError.InvalidArgument, _
          "An action code is required to log an event"
     End If
 
     RotateWhenPastCap
-    FlushEntry action, detail, scope
+    FlushEntry action, detail, scope, source
 End Sub
 
 '@label:flush-entry
@@ -559,12 +614,15 @@ End Sub
 '@param action String. The action code, written on the entry line.
 '@param detail String. Short free text beside the timestamp.
 '@param scope Byte. CheckingScope value carrying the outcome.
-Private Sub FlushEntry(ByVal action As String, ByVal detail As String, ByVal scope As Byte)
+'@param source String. The procedure that raised the event. May be empty.
+Private Sub FlushEntry(ByVal action As String, ByVal detail As String, _
+                       ByVal scope As Byte, _
+                       Optional ByVal source As String = vbNullString)
     Dim checks As Checking
     Dim batch As BetterArray
 
     Set checks = Checking.Create(SectionOf(action))
-    checks.Add "entry", EntryLabel(action, detail), scope
+    checks.Add "entry", EntryLabel(action, detail, source), scope
 
     Set batch = New BetterArray
     batch.LowerBound = 1
@@ -576,31 +634,52 @@ End Sub
 '@label:entry-label
 '@sub-title Compose the dated label of one entry
 '@details
-'The label opens with the timestamp and the platform; the action code and
-'the detail follow behind the separator, so the two land in their own
-'columns of the log sheet. The action code moved here when the title became
-'the section: the sheet has three titles now, and the line has to say which
-'action it records. A separator inside the detail would push text past the
-'last written column, so it is softened to a single dash first.
+'The label opens with the timestamp and the platform; the procedure, the
+'action code and the detail follow behind the separator, so the two halves
+'land in their own columns of the log sheet. The action code moved here when
+'the title became the section: the sheet has three titles now, and the line
+'has to say which action it records. A separator inside the free text would
+'push it past the last written column, so it is softened to a single dash.
+'The procedure sits in front of the action because that is the order a
+'reader wants: who acted, what they did, and on what.
 'The platform rides with the timestamp rather than with the detail, because
 'the detail column is what a reader searches and what several tests read
 'whole. It is on every line on purpose: a log rotation clears the sheet, so
 'a platform written once at the top of a session would not survive one.
 '@param action String. The action code of the event.
 '@param detail String. Short free text beside the timestamp.
+'@param source String. The procedure that raised the event. May be empty.
 '@return String. The composed label.
-Private Function EntryLabel(ByVal action As String, ByVal detail As String) As String
+Private Function EntryLabel(ByVal action As String, ByVal detail As String, _
+                            Optional ByVal source As String = vbNullString) As String
     Dim label As String
 
     label = Format$(Now, "yyyy-mm-dd hh:mm:ss") & " " & PlatformTag() & _
-            DETAIL_SEPARATOR & Trim$(action)
+            DETAIL_SEPARATOR
+
+    If LenB(Trim$(source)) > 0 Then
+        label = label & Soften(source) & SOURCE_SEPARATOR
+    End If
+
+    label = label & Trim$(action)
 
     If LenB(Trim$(detail)) > 0 Then
-        label = label & ACTION_SEPARATOR & _
-                Replace(Trim$(detail), DETAIL_SEPARATOR, "-")
+        label = label & ACTION_SEPARATOR & Soften(detail)
     End If
 
     EntryLabel = label
+End Function
+
+'@label:soften
+'@sub-title Take the column separator out of a piece of free text
+'@details
+'CheckingOutput splits the label on the separator and lays the pieces across
+'three columns, so a separator inside free text would push the rest of the
+'line past the last written column and out of the sheet.
+'@param text String. The free text.
+'@return String. The text with every separator turned into a single dash.
+Private Function Soften(ByVal text As String) As String
+    Soften = Replace(Trim$(text), DETAIL_SEPARATOR, "-")
 End Function
 
 '@label:platform-tag

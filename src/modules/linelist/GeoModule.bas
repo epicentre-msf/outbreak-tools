@@ -54,11 +54,16 @@ End Sub
 '              The typed local is what call-signature-scan.R reads to check the
 '              member. A chained call is invisible to it, and this module carries
 '              no registry row, so a chain here would be checked by nothing.
-Private Sub ReportGeoError(ByVal detail As String)
+'              The caller names itself in source. VBA carries no call stack to
+'              read a name from, four procedures of this module report through
+'              here, and a log line that names none of them leaves a reader
+'              with a reason and no idea which press produced it.
+Private Sub ReportGeoError(ByVal source As String, ByVal detail As String)
     Dim linelistEvents As EventLinelist
 
     Set linelistEvents = LinelistEventsManager.EventLinelistService()
-    linelistEvents.Fail "MSG_ErrGeo", detail, "The geobase could not be read"
+    linelistEvents.Fail "MSG_ErrGeo", detail, "The geobase could not be read", _
+                        source
 End Sub
 
 ' @description The one geobase manager of the workbook. EventLinelist builds it
@@ -97,7 +102,7 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
     'to raise, so the report the user reads is asked for here.
     Set geoObj = GeoOf()
     If geoObj Is Nothing Then
-        ReportGeoError "The geobase manager could not be built"
+        ReportGeoError "LoadGeo", "The geobase manager could not be built"
         Exit Sub
     End If
 
@@ -173,7 +178,7 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
             'unknown scope used to configure nothing and show the form as the
             'previous open left it.
             LinelistEventsManager.LLExitBusyState
-            ReportGeoError "Unknown geo scope " & hfOrGeo
+            ReportGeoError "LoadGeo", "Unknown geo scope " & hfOrGeo
             Exit Sub
 
         End Select
@@ -191,7 +196,7 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
 
 ErrLoadGeo:
     LinelistEventsManager.LLExitBusyState
-    ReportGeoError Err.Description
+    ReportGeoError "LoadGeo", Err.Description
 End Sub
 
 ' @description Empty every list control of the F_Geo form, entries and
@@ -251,7 +256,7 @@ Public Sub ShowAdminList(ByVal level As Long, ByVal selectedValue As String, _
     Set geoObj = GeoOf()
     If geoObj Is Nothing Then
         Application.Cursor = xlDefault
-        ReportGeoError "The geobase manager could not be built"
+        ReportGeoError "ShowAdminList", "The geobase manager could not be built"
         Exit Sub
     End If
 
@@ -326,7 +331,7 @@ Public Sub ShowAdminList(ByVal level As Long, ByVal selectedValue As String, _
 
 ErrShowAdmin:
     Application.Cursor = xlDefault
-    ReportGeoError Err.Description
+    ReportGeoError "ShowAdminList", Err.Description
 End Sub
 
 ' @description The value of one list control, as a string. A list with
@@ -362,7 +367,7 @@ Public Sub UpdateSpTables()
 
 ErrUpdate:
     LinelistEventsManager.LLExitBusyState
-    ReportGeoError Err.Description
+    ReportGeoError "UpdateSpTables", Err.Description
 End Sub
 
 '@section Spatio-Temporal Formula Updates
@@ -430,5 +435,5 @@ ErrSPT:
     'above the UnProtect leaves a deliberately open sheet open.
     If unprotected Then pass.Protect sh, allowShapes:=True
     LinelistEventsManager.LLExitBusyState
-    ReportGeoError Err.Description
+    ReportGeoError "UpdateSpatioTemporalFormulas", Err.Description
 End Sub

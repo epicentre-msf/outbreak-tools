@@ -103,21 +103,32 @@ Private Sub InitializeTrads()
     Set wkbNames = linelistEvents.WorkbookNames()
 End Sub
 
+'Every log line of this module names the procedure that wrote it.
+'
+'VBA carries no call stack a helper could read a caller's name from, so the
+'caller names itself and the name is the first argument of every routine
+'below. It is required rather than optional on purpose: a call site that
+'forgets it stops the module compiling, which is the only way to keep the
+'names right as buttons are added.
+'
 'Tell the user why a button refused to act.
-Private Sub WarningOnSheet(ByVal msgCode As String)
+Private Sub WarningOnSheet(ByVal source As String, ByVal msgCode As String)
     Dim linelistEvents As EventLinelist
 
     Set linelistEvents = LinelistService()
-    linelistEvents.Warn msgCode
+    linelistEvents.Warn msgCode, source
 End Sub
 
-'Tell the user a button failed. The detail carries the error description.
-Private Sub FailureOnSheet(ByVal msgCode As String, _
-                           Optional ByVal detail As String = vbNullString)
+'Tell the user a button failed. The detail carries the error description and
+'shows in the box behind the message; a reason meant for the log alone goes
+'in logDetail, which keeps a raw VBA description out of a field user's way.
+Private Sub FailureOnSheet(ByVal source As String, ByVal msgCode As String, _
+                           Optional ByVal detail As String = vbNullString, _
+                           Optional ByVal logDetail As String = vbNullString)
     Dim linelistEvents As EventLinelist
 
     Set linelistEvents = LinelistService()
-    linelistEvents.Fail msgCode, detail
+    linelistEvents.Fail msgCode, detail, vbNullString, source, logDetail
 End Sub
 
 'The user log the event service holds. A workbook whose log cannot be
@@ -131,7 +142,7 @@ End Function
 
 'Write the success line of a finished walk. The write is guarded so a log
 'fault never takes down the walk it records.
-Private Sub LogSuccessLine(ByVal action As String, _
+Private Sub LogSuccessLine(ByVal source As String, ByVal action As String, _
                            Optional ByVal detail As String = vbNullString)
     Dim logStore As LLLog
 
@@ -139,12 +150,12 @@ Private Sub LogSuccessLine(ByVal action As String, _
     If logStore Is Nothing Then Exit Sub
 
     On Error Resume Next
-    logStore.LogSuccess action, detail
+    logStore.LogSuccess action, detail, source
     On Error GoTo 0
 End Sub
 
 'Write the failure line of a walk that swallows its error at its label.
-Private Sub LogFailureLine(ByVal action As String, _
+Private Sub LogFailureLine(ByVal source As String, ByVal action As String, _
                            Optional ByVal detail As String = vbNullString)
     Dim logStore As LLLog
 
@@ -152,12 +163,12 @@ Private Sub LogFailureLine(ByVal action As String, _
     If logStore Is Nothing Then Exit Sub
 
     On Error Resume Next
-    logStore.LogFailure action, detail
+    logStore.LogFailure action, detail, source
     On Error GoTo 0
 End Sub
 
 'Write the warning line of a walk that ended with refused writes.
-Private Sub LogWarningLine(ByVal action As String, _
+Private Sub LogWarningLine(ByVal source As String, ByVal action As String, _
                            Optional ByVal detail As String = vbNullString)
     Dim logStore As LLLog
 
@@ -165,7 +176,7 @@ Private Sub LogWarningLine(ByVal action As String, _
     If logStore Is Nothing Then Exit Sub
 
     On Error Resume Next
-    logStore.LogWarning action, detail
+    logStore.LogWarning action, detail, source
     On Error GoTo 0
 End Sub
 
@@ -174,30 +185,112 @@ End Sub
 'failure line. The caller reads Err into the two middle arguments before
 'any cleanup call, because a called procedure's On Error statements clear
 'Err.
-Private Sub LogOutcomeLine(ByVal action As String, ByVal errNumber As Long, _
+'The detail rides on both lines. It used to be dropped on the error path,
+'which is the path that wants it most: a walk that failed halfway names the
+'reason and says nothing about how far it got or which sheet it was on.
+Private Sub LogOutcomeLine(ByVal source As String, ByVal action As String, _
+                           ByVal errNumber As Long, _
                            ByVal errDetail As String, _
                            Optional ByVal detail As String = vbNullString)
     If errNumber = 0 Then
-        LogSuccessLine action, detail
+        LogSuccessLine source, action, detail
+        Exit Sub
+    End If
+
+    If LenB(Trim$(detail)) = 0 Then
+        LogFailureLine source, action, errDetail
     Else
-        LogFailureLine action, errDetail
+        LogFailureLine source, action, errDetail & " (" & detail & ")"
     End If
 End Sub
 
 'The show/hide line carries the writes Excel refused, read off the layout.
-'A count above zero is a warning naming the sheet and the count, which is
+'A count above zero is a warning naming what moved and the count, which is
 'what surfaces a protected sheet or a position that is gone.
-Private Sub LogShowHideLine(ByVal action As String, _
+'
+'The detail is built by the caller and says what actually moved -- which
+'section, on which sheet, and which way. It used to be the sheet name alone,
+'so seven presses on seven sections wrote seven identical lines.
+Private Sub LogShowHideLine(ByVal source As String, ByVal action As String, _
                             ByVal layout As ShowHideLayout, _
-                            ByVal sheetName As String)
+                            ByVal detail As String)
     If layout Is Nothing Then Exit Sub
 
     If layout.FailureCount > 0 Then
-        LogWarningLine action, sheetName & ": " & layout.FailureCount & " refused writes"
+        LogWarningLine source, action, _
+                       detail & ", " & layout.FailureCount & " refused writes"
     Else
-        LogSuccessLine action, sheetName
+        LogSuccessLine source, action, detail
     End If
 End Sub
+
+'What one section press did, in the words the log wants: the section by name,
+'which way it went, and the sheet it is on.
+'
+'SectionDisplayName is what the sections form lists, so a run of variables the
+'dictionary left with no main section reads the same in both places instead of
+'reaching the log as an empty name.
+Private Function SectionMoveText(ByVal sections As SectionShowHide, _
+                                 ByVal sectionIdx As Long, _
+                                 ByVal hideIt As Boolean, _
+                                 ByVal sheetName As String) As String
+    Dim movedWay As String
+
+    movedWay = IIf(hideIt, "hidden", "shown")
+
+    If sections Is Nothing Then
+        SectionMoveText = "section " & sectionIdx & " " & movedWay & _
+                          " on " & sheetName
+        Exit Function
+    End If
+
+    SectionMoveText = SectionDisplayName(sections.SectionNameAt(sectionIdx)) & _
+                      " " & movedWay & " on " & sheetName
+End Function
+
+'How much of a sheet a show/hide session left standing. The form moves any
+'number of variables before it closes, so a count is what its one log line
+'can honestly say.
+Private Function EntryCountText(ByVal entries As ShowHide, _
+                                ByVal sheetName As String) As String
+    Dim counter As Long
+    Dim hiddenCount As Long
+
+    If entries Is Nothing Then
+        EntryCountText = sheetName
+        Exit Function
+    End If
+
+    For counter = 1 To entries.EntryCount
+        If entries.IsHidden(counter) Then hiddenCount = hiddenCount + 1
+    Next counter
+
+    EntryCountText = hiddenCount & " of " & entries.EntryCount & _
+                     " variables hidden on " & sheetName
+End Function
+
+'How much of a sheet the sections form left standing. The form moves any
+'number of sections in one session, so the count is what its log line can
+'honestly say; naming them one by one would be a line per click.
+Private Function SectionCountText(ByVal sections As SectionShowHide, _
+                                  ByVal sheetName As String) As String
+    Dim counter As Long
+    Dim hiddenCount As Long
+
+    If sections Is Nothing Then
+        SectionCountText = sheetName
+        Exit Function
+    End If
+
+    For counter = 1 To sections.Count
+        If sections.CanChange(counter) Then
+            If sections.IsHidden(counter) Then hiddenCount = hiddenCount + 1
+        End If
+    Next counter
+
+    SectionCountText = hiddenCount & " of " & sections.Count & _
+                       " sections hidden on " & sheetName
+End Function
 
 'Resolve the ShowHideWorksheetLayer from a sheet tag
 Private Function ResolveShowHideLayer(ByVal shType As String) As Byte
@@ -494,7 +587,7 @@ Public Sub ClickShowHide()
 
     If (shType <> "HList" And shType <> "HList Print" And shType <> "VList" _
        And shType <> "HList CRF") Then
-        WarningOnSheet "MSG_PrintOrDataSheet"
+        WarningOnSheet "ClickShowHide", "MSG_PrintOrDataSheet"
         Exit Sub
     End If
 
@@ -528,7 +621,8 @@ Public Sub ClickShowHide()
     'session: every option click landed on this layout, so its refused-write
     'count is the count of the session.
     SaveShowHideState showHideEntries, activeLayout
-    LogShowHideLine "showhide", activeLayout, sh.Name
+    LogShowHideLine "ClickShowHide", "showhide", activeLayout, _
+                    EntryCountText(showHideEntries, sh.Name)
     Set activeShowHideForm = Nothing
 
     ProtectAfterShowHide sh
@@ -612,7 +706,7 @@ Public Sub ClickShowHideSection()
     'companion carries the same columns and the CRF its own rows, and
     'SectionBuilder writes a map for neither.
     If (shType <> "HList") And (shType <> "VList") Then
-        WarningOnSheet "MSG_DataSheet"
+        WarningOnSheet "ClickShowHideSection", "MSG_DataSheet"
         Exit Sub
     End If
 
@@ -620,7 +714,7 @@ Public Sub ClickShowHideSection()
 
     Set sections = SectionContextFor(sh, shType)
     If sections Is Nothing Then
-        WarningOnSheet "MSG_SectionTitleCell"
+        WarningOnSheet "ClickShowHideSection", "MSG_SectionTitleCell"
         Exit Sub
     End If
 
@@ -637,12 +731,12 @@ Public Sub ClickShowHideSection()
     End If
 
     If sectionIdx = 0 Then
-        WarningOnSheet "MSG_SectionTitleCell"
+        WarningOnSheet "ClickShowHideSection", "MSG_SectionTitleCell"
         GoTo CleanUp
     End If
 
     If Not sections.CanChange(sectionIdx) Then
-        WarningOnSheet "MSG_SectionTitleCell"
+        WarningOnSheet "ClickShowHideSection", "MSG_SectionTitleCell"
         GoTo CleanUp
     End If
 
@@ -665,10 +759,15 @@ Public Sub ClickShowHideSection()
         If Not titleRng Is Nothing Then titleRng.Select
     End If
 
-    LogShowHideLine "showhide-section", activeLayout, sh.Name
+    'Named while the section context is still standing: the CleanUp label below
+    'drops it, and a log line reading "showhide-section: sheet1" is the same
+    'line whichever of a dozen sections the user just collapsed.
+    LogShowHideLine "ClickShowHideSection", "showhide-section", activeLayout, _
+                    SectionMoveText(sections, sectionIdx, hideIt, sh.Name)
 
 ErrHand:
-    If Err.Number <> 0 Then LogFailureLine "showhide-section", Err.Description
+    If Err.Number <> 0 Then LogFailureLine "ClickShowHideSection", "showhide-section", _
+                                           Err.Description
     LinelistEventsManager.LLExitBusyState
     ProtectAfterShowHide sh
 
@@ -783,13 +882,13 @@ Public Sub ClickOpenShowHideSections()
 
     'Sections are laid out on the data entry sheets alone.
     If (shType <> "HList") And (shType <> "VList") Then
-        WarningOnSheet "MSG_DataSheet"
+        WarningOnSheet "ClickOpenShowHideSections", "MSG_DataSheet"
         Exit Sub
     End If
 
     Set activeSections = SectionContextFor(sh, shType)
     If activeSections Is Nothing Then
-        WarningOnSheet "MSG_SectionTitleCell"
+        WarningOnSheet "ClickOpenShowHideSections", "MSG_SectionTitleCell"
         Exit Sub
     End If
 
@@ -808,8 +907,8 @@ Public Sub ClickOpenShowHideSections()
     On Error GoTo ErrHand
 
     If activeSectionsForm Is Nothing Then
-        LogWarningLine "showhide-sections", "no form named F_ShowHideSections"
-        WarningOnSheet "MSG_NoSectionsForm"
+        LogWarningLine "ClickOpenShowHideSections", "showhide-sections", "no form named F_ShowHideSections"
+        WarningOnSheet "ClickOpenShowHideSections", "MSG_NoSectionsForm"
         Exit Sub
     End If
 
@@ -819,7 +918,10 @@ Public Sub ClickOpenShowHideSections()
     'Every option click has already written to the sheet, so the save at the
     'foot records the state the user is looking at.
     SaveShowHideState showHideEntries, activeLayout
-    LogShowHideLine "showhide-sections", activeLayout, sh.Name
+    'The form moves any number of sections in one session, so the line says how
+    'much of the sheet is left standing rather than naming one of them.
+    LogShowHideLine "ClickOpenShowHideSections", "showhide-sections", activeLayout, _
+                    SectionCountText(activeSections, sh.Name)
     ProtectAfterShowHide sh
 
     'The show/hide form underneath lists the variables one by one, and a whole
@@ -827,7 +929,7 @@ Public Sub ClickOpenShowHideSections()
     If Not activeShowHideForm Is Nothing Then PopulateShowHideList activeShowHideForm
 
 ErrHand:
-    If Err.Number <> 0 Then LogFailureLine "showhide-sections", Err.Description
+    If Err.Number <> 0 Then LogFailureLine "ClickOpenShowHideSections", "showhide-sections", Err.Description
 
     'UserForms.Add builds a fresh instance and Hide keeps it alive, so the
     'instance is unloaded here. Two opens would otherwise leave two of them
@@ -909,7 +1011,7 @@ Public Sub ClickOptionsShowHideSections(ByVal Index As Long)
     On Error GoTo 0
 
 ErrHand:
-    If Err.Number <> 0 Then LogFailureLine "showhide-sections", Err.Description
+    If Err.Number <> 0 Then LogFailureLine "ClickOptionsShowHideSections", "showhide-sections", Err.Description
     LinelistEventsManager.LLExitBusyState
 End Sub
 
@@ -1044,6 +1146,7 @@ Public Sub ClickOpenPrint()
     Dim sh As Worksheet
     Dim printsh As Worksheet
     Dim shType As String
+    Dim openedName As String
 
     On Error GoTo ErrOpen
 
@@ -1053,11 +1156,17 @@ Public Sub ClickOpenPrint()
     InitializeTrads
 
     If shType <> "HList" Then
-        WarningOnSheet "MSG_DataSheet"
+        WarningOnSheet "ClickOpenPrint", "MSG_DataSheet"
         Exit Sub
     End If
 
     Set printsh = wb.Worksheets(PRINTPREFIX & sh.Name)
+
+    'Held as text. The log line below is reached on the error path too, where
+    'the sheet may never have been resolved, and reading .Name off Nothing
+    'there would raise 91 inside the handler.
+    openedName = printsh.Name
+
     'UnProtect current workbook
     pass.UnProtect wb
     'Unhide the linelist Print
@@ -1065,7 +1174,8 @@ Public Sub ClickOpenPrint()
     printsh.Activate
 
 ErrOpen:
-    LogOutcomeLine "open-print", Err.Number, Err.Description
+    LogOutcomeLine "ClickOpenPrint", "open-print", Err.Number, Err.Description, _
+                   openedName
     pass.Protect wb
 End Sub
 
@@ -1078,6 +1188,7 @@ Public Sub ClickOpenCRF()
     Dim sh As Worksheet
     Dim crfsh As Worksheet
     Dim shType As String
+    Dim openedName As String
 
     Set sh = ActiveSheet
     shType = SheetTag(sh)
@@ -1085,7 +1196,7 @@ Public Sub ClickOpenCRF()
     InitializeTrads
 
     If shType <> "HList" Then
-        WarningOnSheet "MSG_DataSheet"
+        WarningOnSheet "ClickOpenCRF", "MSG_DataSheet"
         Exit Sub
     End If
 
@@ -1103,10 +1214,12 @@ Public Sub ClickOpenCRF()
     'MSG_NoCRFSheet, because the user IS standing on a data entry sheet and
     'MSG_DataSheet told them to go and find one. The sheet is what is missing.
     If crfsh Is Nothing Then
-        LogWarningLine "open-crf", "no worksheet named " & CRFPREFIX & sh.Name
-        WarningOnSheet "MSG_NoCRFSheet"
+        LogWarningLine "ClickOpenCRF", "open-crf", "no worksheet named " & CRFPREFIX & sh.Name
+        WarningOnSheet "ClickOpenCRF", "MSG_NoCRFSheet"
         Exit Sub
     End If
+
+    openedName = crfsh.Name
 
     On Error GoTo ErrOpen
 
@@ -1117,7 +1230,8 @@ Public Sub ClickOpenCRF()
     crfsh.Activate
 
 ErrOpen:
-    LogOutcomeLine "open-crf", Err.Number, Err.Description
+    LogOutcomeLine "ClickOpenCRF", "open-crf", Err.Number, Err.Description, _
+                   openedName
     pass.Protect wb
 End Sub
 
@@ -1133,10 +1247,12 @@ Public Sub ClickCloseSheet()
     Dim logSheetName As String
     Dim reportSheetName As String
     Dim actionCode As String
+    Dim closedName As String
 
     On Error GoTo ErrClose
     actionCode = "close-print"
     Set sh = ActiveSheet
+    closedName = sh.Name
 
     InitializeTrads
 
@@ -1150,7 +1266,7 @@ Public Sub ClickCloseSheet()
 
     If shType <> "HList" And shType <> "HList Print" And shType <> "HList CRF" _
        And sh.Name <> logSheetName And sh.Name <> reportSheetName Then
-        WarningOnSheet "MSG_PrintCRFOrDataSheet"
+        WarningOnSheet "ClickCloseSheet", "MSG_PrintCRFOrDataSheet"
         Exit Sub
     End If
 
@@ -1187,7 +1303,11 @@ Public Sub ClickCloseSheet()
 
 
 ErrClose:
-    LogOutcomeLine actionCode, Err.Number, Err.Description
+    'A press on a data entry sheet puts its print and CRF companions away, so
+    'the line names the sheet the press was made on rather than what went
+    'hidden: that one name is what the reader can act on.
+    LogOutcomeLine "ClickCloseSheet", actionCode, Err.Number, Err.Description, _
+                   closedName
     pass.Protect wb
 End Sub
 
@@ -1211,7 +1331,7 @@ Public Sub ClickRotateAll()
     InitializeTrads
 
     If shType <> "HList" And shType <> "HList Print" Then
-        WarningOnSheet "MSG_PrintOrDataSheet"
+        WarningOnSheet "ClickRotateAll", "MSG_PrintOrDataSheet"
         Exit Sub
     End If
 
@@ -1238,7 +1358,8 @@ Public Sub ClickRotateAll()
     Next
 
 ErrHand:
-    LogOutcomeLine "rotate", Err.Number, Err.Description
+    LogOutcomeLine "ClickRotateAll", "rotate", Err.Number, Err.Description, _
+                   openedSheetName
     ReprotectOpenedSheet openedSheetName
     LinelistEventsManager.LLExitBusyState
 End Sub
@@ -1277,7 +1398,7 @@ Public Sub ClickRowHeight()
     shType = SheetTag(sh)
 
     If shType <> "HList" And shType <> "HList Print" Then
-        WarningOnSheet "MSG_PrintOrDataSheet"
+        WarningOnSheet "ClickRowHeight", "MSG_PrintOrDataSheet"
         Exit Sub
     End If
 
@@ -1314,10 +1435,11 @@ Public Sub ClickRowHeight()
     On Error GoTo 0
 
     'The success line sits above the label so a cancelled ask logs nothing.
-    LogSuccessLine "row-height", inputValue
+    LogSuccessLine "ClickRowHeight", "row-height", _
+                   inputValue & " on " & openedSheetName
 
 ErrHand:
-    If Err.Number <> 0 Then LogFailureLine "row-height", Err.Description
+    If Err.Number <> 0 Then LogFailureLine "ClickRowHeight", "row-height", Err.Description
     ReprotectOpenedSheet openedSheetName
     LinelistEventsManager.LLExitBusyState
 End Sub
@@ -1336,7 +1458,7 @@ Public Sub ClickRemoveFilters()
     shType = SheetTag(sh)
 
     If shType <> "HList" And shType <> "HList Print" Then
-        WarningOnSheet "MSG_PrintOrDataSheet"
+        WarningOnSheet "ClickRemoveFilters", "MSG_PrintOrDataSheet"
         Exit Sub
     End If
 
@@ -1352,12 +1474,12 @@ Public Sub ClickRemoveFilters()
         Lo.AutoFilter.ShowAllData
         pass.Protect "_active"
         LinelistEventsManager.LLExitBusyState
-        LogSuccessLine "remove-filters", sh.Name
+        LogSuccessLine "ClickRemoveFilters", "remove-filters", sh.Name
     End If
     Exit Sub
 
 ErrHand:
-    LogFailureLine "remove-filters", Err.Description
+    LogFailureLine "ClickRemoveFilters", "remove-filters", Err.Description
     pass.Protect "_active"
     LinelistEventsManager.LLExitBusyState
 End Sub
@@ -1372,6 +1494,7 @@ Public Sub ClickAddRows()
     Dim sh As Worksheet
     Dim shType As String
     Dim nbRows As Long
+    Dim failureDetail As String
 
     On Error GoTo errAddRows
     LinelistEventsManager.LLEnterBusyState busyCursor:=xlNorthwestArrow
@@ -1383,7 +1506,7 @@ Public Sub ClickAddRows()
     'Warning if not on print or hlist worksheet. The busy state is already on,
     'so the refusal leaves through the cleanup label below.
     If shType <> "HList" And shType <> "HList Print" Then
-        WarningOnSheet "MSG_PrintOrDataSheet"
+        WarningOnSheet "ClickAddRows", "MSG_PrintOrDataSheet"
         GoTo Cleanup
     End If
 
@@ -1394,7 +1517,7 @@ Public Sub ClickAddRows()
     Set csTab = CustomTable.Create(Lo)
     nbRows = IIf(shType = "HList", 199, 10)
     csTab.AddRows nbRows:=nbRows
-    LogSuccessLine "add-rows", nbRows & " rows on " & sh.Name
+    LogSuccessLine "ClickAddRows", "add-rows", nbRows & " rows on " & sh.Name
 
 Cleanup:
     'Whichever of the two sheets was opened is closed again. The test used to
@@ -1405,10 +1528,15 @@ Cleanup:
     Exit Sub
 
 errAddRows:
+    'The reason is copied first. The two cleanup calls below carry On Error
+    'statements of their own, and those clear Err, so a reason read after them
+    'is always empty and the log line said only that the button failed.
+    failureDetail = Err.Description
+
     On Error Resume Next
     If shType = "HList" Or shType = "HList Print" Then pass.Protect "_active"
     LinelistEventsManager.LLExitBusyState
-    FailureOnSheet "MSG_ErrAddRows"
+    FailureOnSheet "ClickAddRows", "MSG_ErrAddRows", logDetail:=failureDetail
     On Error GoTo 0
 End Sub
 
@@ -1422,6 +1550,7 @@ Public Sub ClickResize()
     Dim sh As Worksheet
     Dim shType As String
     Dim nbBlank As Long
+    Dim failureDetail As String
 
     On Error GoTo errDelRows
     LinelistEventsManager.LLEnterBusyState busyCursor:=xlWait
@@ -1433,7 +1562,7 @@ Public Sub ClickResize()
     'Warning if not on print or hlist worksheet. The busy state is already on,
     'so the refusal leaves through the cleanup label below.
     If shType <> "HList" And shType <> "HList Print" Then
-        WarningOnSheet "MSG_PrintOrDataSheet"
+        WarningOnSheet "ClickResize", "MSG_PrintOrDataSheet"
         GoTo Cleanup
     End If
 
@@ -1445,7 +1574,8 @@ Public Sub ClickResize()
     Set csTab = CustomTable.Create(Lo)
 
     csTab.RemoveRows totalCount:=nbBlank
-    LogSuccessLine "resize", sh.Name
+    LogSuccessLine "ClickResize", "resize", _
+                   nbBlank & " blank rows kept on " & sh.Name
 
 Cleanup:
     'Protected whatever the sheet turned out to be. The test used to read
@@ -1460,10 +1590,14 @@ Cleanup:
     Exit Sub
 
 errDelRows:
+    'Copied before the cleanup calls below, whose own On Error statements
+    'clear Err.
+    failureDetail = Err.Description
+
     On Error Resume Next
     pass.Protect "_active"
     LinelistEventsManager.LLExitBusyState
-    FailureOnSheet "MSG_ErrDelRows"
+    FailureOnSheet "ClickResize", "MSG_ErrDelRows", logDetail:=failureDetail
     On Error GoTo 0
 
 End Sub
@@ -1488,6 +1622,7 @@ Public Sub ClickExport()
     Dim topPosition As Single
     Dim expObj As LLExport
     Dim expsh As Worksheet
+    Dim failureDetail As String
 
     'initialize translations
     InitializeTrads
@@ -1550,14 +1685,20 @@ Public Sub ClickExport()
     'The form takes its own buttons off on both ways out, and SetupExportForm
     'clears whatever is left before it adds any. Reading F_Export here would
     'build the instance back up when the user closed it with the window box.
-    LogSuccessLine "export"
+    'This button opens the form and takes it down again; the exports themselves
+    'are logged by the form. The line therefore records the session, and names
+    'the sheet the export list was read from.
+    LogSuccessLine "ClickExport", "export", "export form closed on " & expsh.Name
 
     Exit Sub
 
 errLoadExp:
+    'Copied before the teardown below, whose own On Error statement clears Err.
+    failureDetail = Err.Description
+
     On Error Resume Next
     F_Export.TeardownExportForm
-    FailureOnSheet "MSG_ErrLoadExport"
+    FailureOnSheet "ClickExport", "MSG_ErrLoadExport", logDetail:=failureDetail
     On Error GoTo 0
 End Sub
 
@@ -1578,7 +1719,7 @@ Public Sub ClickGeoApp()
     shType = SheetTag(sh)
 
     If (shType <> "HList") And (shType <> "SPT-Analysis") Then
-        WarningOnSheet "MSG_DataOrSpatioSheet"
+        WarningOnSheet "ClickGeoApp", "MSG_DataOrSpatioSheet"
         Exit Sub
     End If
 
@@ -1608,10 +1749,10 @@ Public Sub ClickGeoApp()
             Case "hf"
                 LoadGeo GeoScopeHF
             Case Else
-                WarningOnSheet "MSG_WrongCells"
+                WarningOnSheet "ClickGeoApp", "MSG_WrongCells"
             End Select
         Else
-            WarningOnSheet "MSG_WrongCells"
+            WarningOnSheet "ClickGeoApp", "MSG_WrongCells"
         End If
 
     Case "SPT-Analysis"
@@ -1635,6 +1776,7 @@ Public Sub ClickCalculate()
     Dim sheetName As String
     Dim anaSheetsList As BetterArray
     Dim counter As Long
+    Dim doneCount As Long
 
     'A guard used to sit here to skip a second click that came soon after the
     'first. It never once skipped anything: it read
@@ -1665,10 +1807,15 @@ Public Sub ClickCalculate()
         'the whole linelist, and the second pass over columns A to E was inside
         'the first. HandleAnalysisChange calculates the same sheets this way.
         sh.calculate
+        doneCount = doneCount + 1
     Next
 
 ErrHand:
-    LogOutcomeLine "calculate", Err.Number, Err.Description
+    'The count is what a failure line needs read beside it: a raise on the
+    'third of the four sheets leaves the first two calculated, and the number
+    'says which state the workbook is in.
+    LogOutcomeLine "ClickCalculate", "calculate", Err.Number, Err.Description, _
+                   doneCount & " analysis sheets calculated"
     LinelistEventsManager.LLExitBusyState
 End Sub
 
@@ -1690,7 +1837,7 @@ Public Sub ClickPrintLL()
 
     'Warning if not on print or hlist worksheet
     If shType <> "HList Print" And shType <> "HList" Then
-        WarningOnSheet "MSG_PrintOrDataSheet"
+        WarningOnSheet "ClickPrintLL", "MSG_PrintOrDataSheet"
         Exit Sub
     End If
 
@@ -1766,7 +1913,7 @@ Public Sub ClickPrintLL()
 
     sh.PrintPreview
 
-    LogSuccessLine "print-preview", sh.Name
+    LogSuccessLine "ClickPrintLL", "print-preview", sh.Name
     pass.Protect sh.Name
     Exit Sub
 
@@ -1782,8 +1929,8 @@ ErrPrint:
         Application.PrintCommunication = True
     On Error GoTo 0
 
-    LogFailureLine "print-preview", failureDetail
-    FailureOnSheet "MSG_PrintFailed", failureDetail
+    LogFailureLine "ClickPrintLL", "print-preview", failureDetail
+    FailureOnSheet "ClickPrintLL", "MSG_PrintFailed", failureDetail
     On Error Resume Next
         pass.Protect sh.Name
     On Error GoTo 0
@@ -1830,7 +1977,7 @@ Public Sub ClickOpenVarLab()
     Exit Sub
 
 ErrHand:
-    LogFailureLine "open-varlab", Err.Description
+    LogFailureLine "ClickOpenVarLab", "open-varlab", Err.Description
 End Sub
 
 
@@ -1858,7 +2005,7 @@ Public Sub ClickSortTable()
     shType = SheetTag(sh)
 
     If shType <> "HList" Then
-        WarningOnSheet "MSG_DataSheet"
+        WarningOnSheet "ClickSortTable", "MSG_DataSheet"
         Exit Sub
     End If
 
@@ -1901,12 +2048,15 @@ Public Sub ClickSortTable()
         On Error GoTo 0
         pass.Protect "_active"
         LinelistEventsManager.LLExitBusyState
-        LogSuccessLine "sort", headerName
+        LogSuccessLine "ClickSortTable", "sort", _
+                       headerName & " " & _
+                       IIf(sortOrder = xlAscending, "ascending", "descending") & _
+                       " on " & sh.Name
     End If
     Exit Sub
 
 ErrHand:
-    LogFailureLine "sort", Err.Description
+    LogFailureLine "ClickSortTable", "sort", Err.Description
     LinelistEventsManager.LLExitBusyState
 End Sub
 
@@ -2025,7 +2175,7 @@ Public Sub ClickResetColumns()
     F_Advanced.HandleResetColumns wb, pass
 
 ErrHand:
-    LogOutcomeLine "reset-columns", Err.Number, Err.Description
+    LogOutcomeLine "ClickResetColumns", "reset-columns", Err.Number, Err.Description
     LinelistEventsManager.LLExitBusyState
 End Sub
 
@@ -2075,10 +2225,14 @@ Public Sub ClickShowHideMinimal()
     End If
 
     'The success line sits above the label so a declined confirm logs nothing.
-    LogShowHideLine "showhide-minimal", activeLayout, sh.Name
+    'showOptional is what the flag said BEFORE the toggle, so the line reads
+    'the way the button just went.
+    LogShowHideLine "ClickShowHideMinimal", "showhide-minimal", activeLayout, _
+                    "optional variables " & _
+                    IIf(showOptional, "hidden", "shown") & " on " & sh.Name
 
 ErrHand:
-    If Err.Number <> 0 Then LogFailureLine "showhide-minimal", Err.Description
+    If Err.Number <> 0 Then LogFailureLine "ClickShowHideMinimal", "showhide-minimal", Err.Description
     LinelistEventsManager.LLExitBusyState
 End Sub
 
@@ -2178,10 +2332,11 @@ Public Sub ClickMatchLinelistShowHide()
     End If
 
     'The success line sits above the label so a declined confirm logs nothing.
-    LogShowHideLine "showhide-match", printLayout, printsh.Name
+    LogShowHideLine "ClickMatchLinelistShowHide", "showhide-match", printLayout, _
+                    printsh.Name & " matched to " & sheetName
 
 ErrHand:
-    If Err.Number <> 0 Then LogFailureLine "showhide-match", Err.Description
+    If Err.Number <> 0 Then LogFailureLine "ClickMatchLinelistShowHide", "showhide-match", Err.Description
     LinelistEventsManager.LLExitBusyState
 End Sub
 
@@ -2206,7 +2361,7 @@ Public Sub clickAutoFit()
     'is the sheet whose widths a user actually wants to settle before printing.
     'It used to be refused here, so autofit worked on the data sheet alone.
     If shType <> "HList" And shType <> "HList Print" Then
-        WarningOnSheet "MSG_PrintOrDataSheet"
+        WarningOnSheet "clickAutoFit", "MSG_PrintOrDataSheet"
         Exit Sub
     End If
 
@@ -2232,7 +2387,7 @@ Public Sub clickAutoFit()
     Next
 ErrHand:
     'Err is read before the Resume Next below clears it.
-    LogOutcomeLine "autofit", Err.Number, Err.Description, sh.Name
+    LogOutcomeLine "clickAutoFit", "autofit", Err.Number, Err.Description, sh.Name
     On Error Resume Next
     ReprotectOpenedSheet openedSheetName
     LinelistEventsManager.LLExitBusyState

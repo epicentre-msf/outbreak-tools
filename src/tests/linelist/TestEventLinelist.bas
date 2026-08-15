@@ -1464,18 +1464,23 @@ Public Sub TestFailWritesTheFailureLine()
 
     Set logsh = FixtureWkb.Worksheets(LOG_SHEET)
 
-    'The block is headed by the SECTION of the action, and the action code
-    'itself rides on the entry line ahead of the detail. The log carries three
-    'titles for the whole sheet, so the code has to be on the line to say which
+    'The block is headed by the SECTION of the action, and the action itself
+    'rides on the entry line ahead of the detail. The log carries three titles
+    'for the whole sheet, so the action has to be on the line to say which
     'event a row is.
+    'The action is the plain word "failed"; the message and the detail follow
+    'it. The message CODE used to fill the action slot, which put a lookup key
+    'where every other line carries an action. This fixture has no translation
+    'sheet, so the message reads as the code itself, which is the documented
+    'fallback of a workbook that cannot translate.
     titleRow = LogRowOfText(logsh, LOG_OUTPUT_COLUMN, LOG_SECTION_LIFECYCLE)
     entryRow = LogRowOfText(logsh, LOG_OUTPUT_COLUMN, "Error")
 
     Assert.IsTrue (titleRow > 0), "The section of the action heads the block"
     Assert.IsTrue (entryRow > titleRow), "The failure line sits under it"
-    Assert.AreEqual "MSG_ErrUpdate: some detail", _
+    Assert.AreEqual "failed: MSG_ErrUpdate: some detail", _
                     CStr(logsh.Cells(entryRow, LOG_DETAIL_COLUMN).Value), _
-                    "The action code and the detail ride beside the date"
+                    "The action, the message and the detail ride beside the date"
 
     Exit Sub
 TestFail:
@@ -1503,12 +1508,77 @@ Public Sub TestWarnWritesTheWarningLine()
 
     Assert.IsTrue (titleRow > 0), "The section of the action heads the block"
     Assert.IsTrue (entryRow > titleRow), "The warning line sits under it"
-    Assert.IsTrue (LogRowOfText(logsh, LOG_DETAIL_COLUMN, "MSG_NotModify") > 0), _
-                  "The message code rides on the entry line"
+    Assert.AreEqual "refused: MSG_NotModify", _
+                    CStr(logsh.Cells(entryRow, LOG_DETAIL_COLUMN).Value), _
+                    "The refusal reads as an action and the message behind it"
 
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestWarnWritesTheWarningLine", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A refusal names the procedure that raised it.
+'@details
+'The reported log had four different refusals inside ClickShowHideSection all
+'writing the same line. VBA carries no call stack, so the caller names itself
+'and the name opens the entry.
+'@TestMethod("EventLinelist")
+Public Sub TestWarnCarriesTheProcedureThatRefused()
+    CustomTestSetTitles Assert, TESTMODULE, "TestWarnCarriesTheProcedureThatRefused"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim logsh As Worksheet
+    Dim entryRow As Long
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+    sut.Warn "MSG_SectionTitleCell", "ClickShowHideSection"
+
+    Set logsh = FixtureWkb.Worksheets(LOG_SHEET)
+    entryRow = LogRowOfText(logsh, LOG_OUTPUT_COLUMN, "Warning")
+
+    Assert.AreEqual "ClickShowHideSection > refused: MSG_SectionTitleCell", _
+                    CStr(logsh.Cells(entryRow, LOG_DETAIL_COLUMN).Value), _
+                    "The procedure, the refusal and the message read in that order"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestWarnCarriesTheProcedureThatRefused", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A reason meant for the log alone reaches the log and not the box.
+'@details
+'Three handlers of the buttons module hold a raw Err.Description. It is worth
+'having in a log a user sends on and worth little inside a box on a field
+'machine, so it goes in logDetail and the box argument is left empty.
+'The box stays quiet here for the fixture's own reason -- no translation
+'sheet -- so what this test can hold is that the reason reaches the line.
+'@TestMethod("EventLinelist")
+Public Sub TestFailLogsAReasonKeptOutOfTheBox()
+    CustomTestSetTitles Assert, TESTMODULE, "TestFailLogsAReasonKeptOutOfTheBox"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim logsh As Worksheet
+    Dim entryRow As Long
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+    sut.Fail "MSG_ErrAddRows", fallback:=vbNullString, _
+             source:="ClickAddRows", logDetail:="Application-defined error"
+
+    Set logsh = FixtureWkb.Worksheets(LOG_SHEET)
+    entryRow = LogRowOfText(logsh, LOG_OUTPUT_COLUMN, "Error")
+
+    Assert.AreEqual _
+        "ClickAddRows > failed: MSG_ErrAddRows: Application-defined error", _
+        CStr(logsh.Cells(entryRow, LOG_DETAIL_COLUMN).Value), _
+        "The log-only reason rides behind the message"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestFailLogsAReasonKeptOutOfTheBox", _
                          Err.Number, Err.Description
 End Sub
 

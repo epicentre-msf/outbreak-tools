@@ -73,6 +73,14 @@ Private this As TEventLinelist
 Private Const CLASSNAME         As String = "EventLinelist"
 Private Const GOTOSECCODE       As String = "go_to_section"
 
+'The action code every refusal box and every failure box is logged under.
+'The message code used to fill this slot, which put a lookup key where every
+'other line of the log carries an action. The sentence the user was shown
+'reads better beside the timestamp, so it moved to the detail and these two
+'plain words took its place.
+Private Const REFUSED_ACTION    As String = "refused"
+Private Const FAILED_ACTION     As String = "failed"
+
 'The tag a variable carries when an automatic list is collected FROM it, and
 'the suffix of the table that list lives in. Both are written by the
 'generation -- the tag by LinelistSpecs, the suffix by VarWriter -- and a
@@ -600,13 +608,18 @@ End Sub
 '@sub-title Tell the user why a button refused to act.
 '@details
 'The refusal is also one warning line of the user log, written before the
-'box shows, with the message code as the action. Every refusal box of the
-'button, ribbon and geo modules comes through here, so the log covers them
-'all through this one edit.
+'box shows. Every refusal box of the button, ribbon and geo modules comes
+'through here, so the log covers them all through this one edit.
+'The line carries the sentence the user was shown, in the language they were
+'shown it in, and the procedure that refused. It used to carry the message
+'CODE as the action and nothing else, so a log read weeks later said
+'"MSG_SectionTitleCell" and named neither the reason nor the button.
 '@param msgCode String. Code of the message in the message translation table.
+'@param source String. Optional. The procedure raising the refusal.
 '@export
-Public Sub Warn(ByVal msgCode As String)
-    LogEventLine checkingWarning, msgCode, vbNullString
+Public Sub Warn(ByVal msgCode As String, _
+                Optional ByVal source As String = vbNullString)
+    LogEventLine checkingWarning, REFUSED_ACTION, MessageText(msgCode), source
     ShowMessage msgCode, vbOKOnly + vbExclamation, vbNullString, vbNullString
 End Sub
 
@@ -614,20 +627,72 @@ End Sub
 '@sub-title Tell the user an operation failed.
 '@details
 'The failure is also one failure line of the user log, written before the
-'box shows, with the message code as the action and the detail beside the
-'date. Every failure box of the button, ribbon and geo modules comes
+'box shows. Every failure box of the button, ribbon and geo modules comes
 'through here, so the log covers them all through this one edit.
+'The line reads as the box did: the translated sentence, then the detail
+'behind it, and the procedure that failed in front.
+'A reason meant for the log alone goes in logDetail. A raw Err.Description is
+'worth having in a log a user sends on and is worth little inside a box on a
+'field machine, and several handlers have a reason of exactly that kind.
 '@param msgCode String. Code of the message in the message translation table.
-'@param detail String. Optional. Follows the message, for an Err.Description.
+'@param detail String. Optional. Follows the message in the box AND the log.
 '@param fallback String. Optional. Shown when the workbook carries no usable
 'translation sheet. Leave it off to stay quiet in that state.
+'@param source String. Optional. The procedure raising the failure.
+'@param logDetail String. Optional. Follows the message in the log alone.
 '@export
 Public Sub Fail(ByVal msgCode As String, _
                 Optional ByVal detail As String = vbNullString, _
-                Optional ByVal fallback As String = vbNullString)
-    LogEventLine checkingError, msgCode, detail
+                Optional ByVal fallback As String = vbNullString, _
+                Optional ByVal source As String = vbNullString, _
+                Optional ByVal logDetail As String = vbNullString)
+    Dim loggedReason As String
+
+    loggedReason = detail
+    If LenB(Trim$(logDetail)) > 0 Then loggedReason = logDetail
+
+    LogEventLine checkingError, FAILED_ACTION, _
+                 JoinedDetail(MessageText(msgCode), loggedReason), source
     ShowMessage msgCode, vbOKOnly + vbCritical, detail, fallback
 End Sub
+
+
+'@sub-title The sentence one message code stands for.
+'@details
+'The same reading ShowMessage makes, so the log line and the box say the
+'same thing. A workbook with no usable translation sheet, and a code the
+'table has no row for, both answer the code itself: a log naming a code is
+'worth more than a log naming nothing.
+'@param msgCode String. Code of the message in the message translation table.
+'@return String. The translated sentence, or the code.
+Private Function MessageText(ByVal msgCode As String) As String
+    MessageText = msgCode
+
+    EnsureTranslation
+    If this.tradmess Is Nothing Then Exit Function
+
+    Dim translated As String
+
+    'TranslatedValue reads a table and answers the code itself for a row it
+    'cannot find; a raise here must not cost the caller its box.
+    On Error Resume Next
+    translated = this.tradmess.TranslatedValue(msgCode)
+    On Error GoTo 0
+
+    If LenB(Trim$(translated)) > 0 Then MessageText = translated
+End Function
+
+
+'@sub-title Put the detail behind the message, the way the box does.
+'@param message String. The translated sentence.
+'@param detail String. Free text following it. May be empty.
+'@return String. The two joined, or the message alone.
+Private Function JoinedDetail(ByVal message As String, _
+                              ByVal detail As String) As String
+    JoinedDetail = message
+    If LenB(Trim$(detail)) = 0 Then Exit Function
+    JoinedDetail = message & ": " & detail
+End Function
 
 
 '@sub-title Show one box, translated when a translator is there.
@@ -667,9 +732,11 @@ End Sub
 '@param scope Byte. CheckingScope value carrying the outcome.
 '@param action String. The action code, used as the bundle title.
 '@param detail String. Short free text beside the timestamp.
+'@param source String. Optional. The procedure that raised the event.
 Private Sub LogEventLine(ByVal scope As Byte, _
                          ByVal action As String, _
-                         ByVal detail As String)
+                         ByVal detail As String, _
+                         Optional ByVal source As String = vbNullString)
     Dim heldLog As LLLog
 
     Set heldLog = UserLog()
@@ -678,13 +745,13 @@ Private Sub LogEventLine(ByVal scope As Byte, _
     On Error Resume Next
     Select Case scope
         Case checkingError
-            heldLog.LogFailure action, detail
+            heldLog.LogFailure action, detail, source
         Case checkingWarning
-            heldLog.LogWarning action, detail
+            heldLog.LogWarning action, detail, source
         Case checkingInfo
-            heldLog.LogInfo action, detail
+            heldLog.LogInfo action, detail, source
         Case Else
-            heldLog.LogSuccess action, detail
+            heldLog.LogSuccess action, detail, source
     End Select
     On Error GoTo 0
 End Sub

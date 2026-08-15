@@ -14,6 +14,14 @@ Option Explicit
 'across two flushes, the outcome colours, the rotation past the row cap
 'and the separator guard on the detail.
 '
+'WHO RAISED THE EVENT
+'-------------------------------------------------------------------------------
+'An entry can name the procedure that raised it, in front of the action code.
+'Five tests hold it: the order the three parts read in, a caller that names
+'none writing the line it always wrote, the separator guard reaching the name
+'as well as the detail, the section still being read off the action alone,
+'and the name surviving the read back into the text report.
+'
 'THE THREE SECTIONS
 '-------------------------------------------------------------------------------
 'The title of an entry is the section of its action, and the writer is in
@@ -648,6 +656,150 @@ TestFail:
     CustomTestLogFailure Assert, "TestSeparatorInDetailStaysInTheLastColumn", Err.Number, Err.Description
 End Sub
 
+'@sub-title The procedure that raised an event opens the entry column.
+'@details
+'The reported log had seven show/hide lines reading "showhide-section:
+'hlist2D-sheet1" and one warning reading "MSG_SectionTitleCell", and neither
+'said which of the four places in ClickShowHideSection had written it. VBA
+'carries no call stack, so the caller names itself and the name lands in
+'front of the action code.
+'@TestMethod("LLLog")
+Public Sub TestTheSourceOpensTheEntryColumn()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheSourceOpensTheEntryColumn"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim sh As Worksheet
+    Dim entryRow As Long
+
+    Set sut = LLLog.Create(FixtureWkb)
+    sut.LogSuccess "showhide-section", "Demographics hidden on sheet1", _
+                   "ClickShowHideSection"
+    Set sh = sut.Wksh()
+
+    entryRow = RowOfText(sh, OUTPUT_COLUMN, "Success")
+    Assert.AreEqual _
+        "ClickShowHideSection > showhide-section: Demographics hidden on sheet1", _
+        CStr(sh.Cells(entryRow, DETAIL_COLUMN).Value), _
+        "The procedure, the action and the detail read in that order"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheSourceOpensTheEntryColumn", Err.Number, Err.Description
+End Sub
+
+'@sub-title A caller that names no procedure writes the line it always wrote.
+'@details
+'The source is optional, so every call written before it existed keeps its
+'own shape: the entry column opens at the action code.
+'@TestMethod("LLLog")
+Public Sub TestAnUnnamedSourceLeavesTheLineAlone()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAnUnnamedSourceLeavesTheLineAlone"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim sh As Worksheet
+    Dim entryRow As Long
+
+    Set sut = LLLog.Create(FixtureWkb)
+    sut.LogSuccess "add-rows", "199 rows on sheet1"
+    Set sh = sut.Wksh()
+
+    entryRow = RowOfText(sh, OUTPUT_COLUMN, "Success")
+    Assert.AreEqual "add-rows: 199 rows on sheet1", _
+                    CStr(sh.Cells(entryRow, DETAIL_COLUMN).Value), _
+                    "With no procedure named the line opens at the action"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAnUnnamedSourceLeavesTheLineAlone", Err.Number, Err.Description
+End Sub
+
+'@sub-title A separator inside the procedure name stays in the last column.
+'@details
+'The detail is softened against the column separator and the procedure name
+'has to be too: CheckingOutput splits the label on it, so an unsoftened name
+'would push the action and the detail off the end of the sheet.
+'@TestMethod("LLLog")
+Public Sub TestSeparatorInSourceStaysInTheLastColumn()
+    CustomTestSetTitles Assert, TESTMODULE, "TestSeparatorInSourceStaysInTheLastColumn"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim sh As Worksheet
+    Dim entryRow As Long
+
+    Set sut = LLLog.Create(FixtureWkb)
+    sut.LogFailure "calculate", "no range", "Click--Calculate"
+    Set sh = sut.Wksh()
+
+    entryRow = RowOfText(sh, OUTPUT_COLUMN, "Error")
+    Assert.AreEqual "Click-Calculate > calculate: no range", _
+                    CStr(sh.Cells(entryRow, DETAIL_COLUMN).Value), _
+                    "The softened name sits whole in the last column"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSeparatorInSourceStaysInTheLastColumn", Err.Number, Err.Description
+End Sub
+
+'@sub-title The section is still read off the action, never off the procedure.
+'@details
+'The title of an entry is the section of its ACTION. A procedure name in
+'front of it must not reach that reading, or a data move raised from a
+'procedure whose name says nothing would land under linelist lifecycle.
+'@TestMethod("LLLog")
+Public Sub TestTheSourceDoesNotMoveTheSection()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheSourceDoesNotMoveTheSection"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim sh As Worksheet
+
+    Set sut = LLLog.Create(FixtureWkb)
+    sut.LogSuccess "import-data", "400 rows", "ClickImportData"
+    Set sh = sut.Wksh()
+
+    Assert.IsTrue (RowOfText(sh, OUTPUT_COLUMN, SECTION_DATAIO) > 0), _
+                  "The import still opens the data input/output block"
+    Assert.AreEqual 0&, RowOfText(sh, OUTPUT_COLUMN, SECTION_LIFECYCLE), _
+                    "The procedure name does not send it to lifecycle"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheSourceDoesNotMoveTheSection", Err.Number, Err.Description
+End Sub
+
+'@sub-title The report carries the procedure with the entry it wrote.
+'@details
+'The text file is what a user sends on when something goes wrong, so the
+'procedure has to survive the read back off the sheet.
+'@TestMethod("LLLog")
+Public Sub TestTheReportCarriesTheSource()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheReportCarriesTheSource"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim lines As BetterArray
+    Dim entryLine As String
+
+    Set sut = LLLog.Create(FixtureWkb)
+    sut.LogWarning "refused", "Please stand on a section title cell", _
+                   "ClickShowHideSection"
+
+    Set lines = sut.ReportLines()
+    entryLine = LineOfText(lines, "ClickShowHideSection")
+
+    Assert.IsTrue (LenB(entryLine) > 0), _
+                  "The procedure reaches the report"
+    Assert.IsTrue (InStr(1, entryLine, "Please stand on a section title cell") > 0), _
+                  "The message reads on the same line as the procedure"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheReportCarriesTheSource", Err.Number, Err.Description
+End Sub
+
 '@sub-title An empty action code is refused, and the number says why.
 '@TestMethod("LLLog")
 Public Sub TestEmptyActionIsRefused()
@@ -840,6 +992,63 @@ Public Sub TestTheReportCarriesTheLoggedEntries()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestTheReportCarriesTheLoggedEntries", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title The outcome reaches the report as a word, with no picture in front.
+'@details
+'The sheet paints an outcome with a symbol before the word. Print # writes one
+'byte per character, so the symbol reaches the file as a stray mark and the
+'exported log the user sent in read "[_ Error]" and "[_ Info]" on every line.
+'@TestMethod("LLLog")
+Public Sub TestTheReportOutcomeCarriesNoSymbol()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheReportOutcomeCarriesNoSymbol"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim lines As BetterArray
+    Dim entryLine As String
+
+    Set sut = LLLog.Create(FixtureWkb)
+    sut.LogInfo "open", "headless_linelist.xlsb"
+    Set lines = sut.ReportLines()
+
+    entryLine = LineOfText(lines, "headless_linelist.xlsb")
+
+    Assert.IsTrue (LenB(entryLine) > 0), "The entry reaches the report"
+    Assert.IsTrue InStr(1, entryLine, "[Info]", vbBinaryCompare) > 0, _
+                  "The outcome reads as the bare word, read: " & entryLine
+    Assert.AreEqual 0&, CLng(InStr(1, entryLine, "[_ ", vbBinaryCompare)), _
+                    "No stray mark stands in front of it, read: " & entryLine
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheReportOutcomeCarriesNoSymbol", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A section title reaches the report whole.
+'@details
+'Only a first character outside plain text is taken off, so a section title,
+'which carries no symbol, must come back untouched.
+'@TestMethod("LLLog")
+Public Sub TestTheReportKeepsTheSectionTitleWhole()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheReportKeepsTheSectionTitleWhole"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim lines As BetterArray
+
+    Set sut = LLLog.Create(FixtureWkb)
+    sut.LogSuccess "import-data", "400 rows"
+    Set lines = sut.ReportLines()
+
+    Assert.IsTrue (LenB(LineOfText(lines, "[" & SECTION_DATAIO & "]")) > 0), _
+                  "The section title heads its block with its own name whole"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheReportKeepsTheSectionTitleWhole", _
                          Err.Number, Err.Description
 End Sub
 
