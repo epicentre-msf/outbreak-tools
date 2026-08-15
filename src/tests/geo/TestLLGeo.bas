@@ -1363,3 +1363,155 @@ Public Sub TestUpdateReportsAnHListSheetWithNoPrintPartner()
 TestFail:
     CustomTestLogFailure Assert, "TestUpdateReportsAnHListSheetWithNoPrintPartner", Err.Number, Err.Description
 End Sub
+
+
+'@section The held level answers
+'===============================================================================
+'GeoLevel filters the whole geobase to answer one level, and the cascade asks it
+'again for the same parents on every keystroke -- a column filled with one admin
+'1, a value re-picked, a typo corrected. The instance holds the last few answers
+'so those repeats cost nothing. Import and Clear empty what is held, and
+'EventLinelist.ResetCaches drops the whole instance after a geobase import, so
+'no answer can outlive the geobase it was read from.
+
+'@sub-title The same parents answer the same children twice.
+'@details
+'Arranges a filled geobase. Acts by asking for the children of P1 twice on one
+'instance. Asserts the second answer is the first, which is what a held answer
+'has to be for the cascade to be allowed to use it.
+'@TestMethod("LLGeo")
+Public Sub TestGeoLevelAnswersTheSameChildrenTwice()
+    CustomTestSetTitles Assert, "LLGeo", "TestGeoLevelAnswersTheSameChildrenTwice"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim geo As LLGeo
+    Dim firstAnswer As BetterArray
+    Dim secondAnswer As BetterArray
+
+    Set sh = BuildGeoFixture(withData:=True)
+    Set geo = LLGeo.Create(sh)
+
+    Set firstAnswer = geo.GeoLevel(LevelAdmin2, GeoScopeAdmin, "P1")
+    Set secondAnswer = geo.GeoLevel(LevelAdmin2, GeoScopeAdmin, "P1")
+
+    Assert.AreEqual firstAnswer.Length, secondAnswer.Length, _
+                    "The second ask should answer as many children as the first"
+    Assert.IsTrue secondAnswer.Includes("D1"), "D1 is still a child of P1"
+    Assert.IsTrue secondAnswer.Includes("D2"), "D2 is still a child of P1"
+    Assert.IsFalse secondAnswer.Includes("D3"), "D3 still belongs to another parent"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestGeoLevelAnswersTheSameChildrenTwice", Err.Number, Err.Description
+End Sub
+
+'@sub-title A caller emptying its answer does not empty the next one.
+'@details
+'VarWriter clears and refills what GeoLevel hands it while it writes the geo1
+'column, so an answer handed back as the held object itself would let one caller
+'empty what every later caller reads. Arranges a filled geobase, acts by asking
+'for a level and clearing the answer, then asks again. Asserts the second ask
+'still carries the children.
+'@TestMethod("LLGeo")
+Public Sub TestGeoLevelSurvivesACallerClearingItsAnswer()
+    CustomTestSetTitles Assert, "LLGeo", "TestGeoLevelSurvivesACallerClearingItsAnswer"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim geo As LLGeo
+    Dim answer As BetterArray
+
+    Set sh = BuildGeoFixture(withData:=True)
+    Set geo = LLGeo.Create(sh)
+
+    Set answer = geo.GeoLevel(LevelAdmin2, GeoScopeAdmin, "P1")
+    answer.Clear
+
+    Set answer = geo.GeoLevel(LevelAdmin2, GeoScopeAdmin, "P1")
+
+    Assert.AreEqual CLng(2), answer.Length, _
+                    "The children should come back after a caller emptied its own copy"
+    Assert.IsTrue answer.Includes("D1"), "D1 survives a caller clearing an earlier answer"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestGeoLevelSurvivesACallerClearingItsAnswer", Err.Number, Err.Description
+End Sub
+
+'@sub-title An emptied geobase answers nothing, whatever was asked before it.
+'@details
+'Arranges a filled geobase and asks for a level, so there is something held.
+'Acts by clearing the geobase. Asserts the same ask now answers empty, which is
+'the state a linelist is in between a Clear and the import that follows it.
+'@TestMethod("LLGeo")
+Public Sub TestGeoLevelForgetsWhatClearDropped()
+    CustomTestSetTitles Assert, "LLGeo", "TestGeoLevelForgetsWhatClearDropped"
+    On Error GoTo TestFail
+
+    Dim wb As Workbook
+    Dim sh As Worksheet
+    Dim geo As LLGeo
+    Dim answer As BetterArray
+
+    'A workbook of its own, because Clear empties every table of the sheet and
+    'rewrites the level names of the workbook that owns it. Against the shared
+    'fixture it takes the rest of the harness down with it.
+    Set wb = BuildGeoWorkbook(withData:=True)
+    Set sh = wb.Worksheets(GEO_SHEET_NAME)
+    Set geo = LLGeo.Create(sh)
+
+    Set answer = geo.GeoLevel(LevelAdmin2, GeoScopeAdmin, "P1")
+    Assert.AreEqual CLng(2), answer.Length, "P1 has two children before the clear"
+
+    geo.Clear
+
+    Set answer = geo.GeoLevel(LevelAdmin2, GeoScopeAdmin, "P1")
+    Assert.AreEqual CLng(0), answer.Length, _
+                    "An emptied geobase should answer no children at all"
+
+    DeleteWorkbook wb
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestGeoLevelForgetsWhatClearDropped", Err.Number, Err.Description
+End Sub
+
+'@sub-title Two spellings of one place name count once.
+'@details
+'The dedupe behind GeoLevel keys on a Collection, and Collection keys ignore
+'case. The AutoFilter above it already matched these rows without regard to
+'case, so this states what the pair of them does rather than a new rule.
+'Arranges a geobase whose second admin 2 value under P1 is D1 in capitals. Acts
+'by asking for the children of P1. Asserts one child comes back.
+'@TestMethod("LLGeo")
+Public Sub TestGeoLevelCountsTwoSpellingsOfOneNameOnce()
+    CustomTestSetTitles Assert, "LLGeo", "TestGeoLevelCountsTwoSpellingsOfOneNameOnce"
+    On Error GoTo TestFail
+
+    Dim wb As Workbook
+    Dim sh As Worksheet
+    Dim geo As LLGeo
+    Dim answer As BetterArray
+
+    'A workbook of its own, because this writes into the geobase itself and
+    'every other test of the suite reads the shared fixture.
+    Set wb = BuildGeoWorkbook(withData:=True)
+    Set sh = wb.Worksheets(GEO_SHEET_NAME)
+
+    'Row 2 of T_ADM2 is the second child of P1, which the fixture fills with D2.
+    'Column offset 1 is adm2_name, and 0 is the parent it hangs under.
+    WriteTableCell sh, sh.ListObjects("T_ADM2"), 2, 1, "d1"
+
+    Set geo = LLGeo.Create(sh)
+    Set answer = geo.GeoLevel(LevelAdmin2, GeoScopeAdmin, "P1")
+
+    Assert.AreEqual CLng(1), answer.Length, _
+                    "D1 and d1 are one place, so P1 should answer one child"
+
+    DeleteWorkbook wb
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestGeoLevelCountsTwoSpellingsOfOneNameOnce", Err.Number, Err.Description
+End Sub

@@ -1815,3 +1815,123 @@ TestFail:
                          "TestFilterTablesSkipAndNameABrokenSheet", _
                          Err.Number, Err.Description
 End Sub
+
+
+'@section The quiet state of the events manager
+'===============================================================================
+'LinelistEventsManager owns Application.EnableEvents for a running linelist.
+'The quiet state is the events-only half of it, for work that needs silence and
+'nothing else: the import resizing every data entry table, the geo form writing
+'a place into the cells beside it. Both used to write the flag themselves, and a
+'run that ended between the two lines left worksheet events dead for the whole
+'session -- no dropdown cascade, no checking, no autofill.
+'
+'The four tests below state the whole contract. What none of them can reach is a
+'VBA state reset, which empties the counter and leaves Excel as the work left
+'it; there is no way to make VBA drop its state from inside a test.
+
+'@sub-title The quiet state takes the events and gives them back.
+'@TestMethod("EventLinelist")
+Public Sub TestQuietStateTakesTheEventsAndGivesThemBack()
+    CustomTestSetTitles Assert, TESTMODULE, "TestQuietStateTakesTheEventsAndGivesThemBack"
+    On Error GoTo TestFail
+
+    LinelistEventsManager.LLEnterQuietState
+    Assert.IsFalse Application.EnableEvents, _
+                   "A quiet stretch should silence the worksheet events"
+
+    LinelistEventsManager.LLExitQuietState
+    Assert.IsTrue Application.EnableEvents, _
+                  "The end of the stretch should give the events back"
+
+    Exit Sub
+TestFail:
+    Application.EnableEvents = True
+    CustomTestLogFailure Assert, _
+                         "TestQuietStateTakesTheEventsAndGivesThemBack", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Only the outermost exit gives the events back.
+'@details
+'The import opens a stretch and the walk inside it opens another. An inner exit
+'that handed the events back would raise the sheet-change handler on every row
+'the outer work still had to write.
+'@TestMethod("EventLinelist")
+Public Sub TestQuietStateGivesTheEventsBackOnTheOutermostExitOnly()
+    CustomTestSetTitles Assert, TESTMODULE, "TestQuietStateGivesTheEventsBackOnTheOutermostExitOnly"
+    On Error GoTo TestFail
+
+    LinelistEventsManager.LLEnterQuietState
+    LinelistEventsManager.LLEnterQuietState
+
+    LinelistEventsManager.LLExitQuietState
+    Assert.IsFalse Application.EnableEvents, _
+                   "An inner exit should leave the events where the outer work put them"
+
+    LinelistEventsManager.LLExitQuietState
+    Assert.IsTrue Application.EnableEvents, _
+                  "The outermost exit is what gives the events back"
+
+    Exit Sub
+TestFail:
+    Application.EnableEvents = True
+    CustomTestLogFailure Assert, _
+                         "TestQuietStateGivesTheEventsBackOnTheOutermostExitOnly", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title An exit with nothing open changes nothing.
+'@details
+'FormLogicGeo calls the exit from its error label, which is reached whether or
+'not the raise happened inside a stretch. An exit that wrote the flag blind
+'would turn events on in the middle of somebody else's work.
+'@TestMethod("EventLinelist")
+Public Sub TestQuietStateExitWithNothingOpenChangesNothing()
+    CustomTestSetTitles Assert, TESTMODULE, "TestQuietStateExitWithNothingOpenChangesNothing"
+    On Error GoTo TestFail
+
+    Application.EnableEvents = False
+    LinelistEventsManager.LLExitQuietState
+
+    Assert.IsFalse Application.EnableEvents, _
+                   "An exit with no stretch open should write nothing at all"
+
+    Application.EnableEvents = True
+
+    Exit Sub
+TestFail:
+    Application.EnableEvents = True
+    CustomTestLogFailure Assert, _
+                         "TestQuietStateExitWithNothingOpenChangesNothing", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title The quiet state puts back what it found, not what it assumed.
+'@details
+'This is what makes it safe under the busy state. A stretch that opens while the
+'events are already off must hand that back and let whoever turned them off
+'decide when they return. A stretch that assumed True would hand the events to
+'the user in the middle of a generation.
+'@TestMethod("EventLinelist")
+Public Sub TestQuietStatePutsBackWhatItFound()
+    CustomTestSetTitles Assert, TESTMODULE, "TestQuietStatePutsBackWhatItFound"
+    On Error GoTo TestFail
+
+    Application.EnableEvents = False
+
+    LinelistEventsManager.LLEnterQuietState
+    LinelistEventsManager.LLExitQuietState
+
+    Assert.IsFalse Application.EnableEvents, _
+                   "The stretch should hand back the events it was given"
+
+    Application.EnableEvents = True
+
+    Exit Sub
+TestFail:
+    Application.EnableEvents = True
+    CustomTestLogFailure Assert, _
+                         "TestQuietStatePutsBackWhatItFound", _
+                         Err.Number, Err.Description
+End Sub
