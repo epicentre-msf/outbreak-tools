@@ -261,10 +261,13 @@ Public Sub ManageRows(ByVal targetSheet As Worksheet, ByVal addRows As Boolean)
             rowCount = IIf(addRows, 0, 10)
     End Select
 
+    'The handler is armed ABOVE ApplyBusyState. That call writes screen
+    'updating and alerts before the settings that can refuse, so a raise
+    'there leaves the screen off and has to reach Cleanup.
+    On Error GoTo Handler
+
     Set scope = ApplicationState.Create(Application)
     scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
-
-    On Error GoTo Handler
 
     UnProtectMasterSetupSheet targetSheet, sheetTag
 
@@ -280,6 +283,9 @@ Public Sub ManageRows(ByVal targetSheet As Worksheet, ByVal addRows As Boolean)
     ProtectMasterSetupSheet targetSheet, sheetTag
 
 Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Restore would
+    'come straight back to this label and raise again.
+    On Error Resume Next
     If Not scope Is Nothing Then scope.Restore
     Exit Sub
 
@@ -295,10 +301,14 @@ Public Sub ClearMasterSheetFilters(ByVal targetSheet As Worksheet)
     Dim scope As ApplicationState
 
     If targetSheet Is Nothing Then Exit Sub
-    
+
+    'The Handler below was never armed, so every raise in this procedure walked
+    'out unhandled and left the screen off. Arm it above ApplyBusyState, which
+    'writes screen updating and alerts before the settings that can refuse.
+    On Error GoTo Handler
+
     Set scope = ApplicationState.Create(Application)
     scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
-
 
     UnProtectMasterSetupSheet targetSheet, vbNullString
 
@@ -306,7 +316,7 @@ Public Sub ClearMasterSheetFilters(ByVal targetSheet As Worksheet)
         If Not lo.AutoFilter Is Nothing Then
             On Error Resume Next
                 lo.AutoFilter.ShowAllData
-            On Error GoTo 0
+            On Error GoTo Handler
         End If
     Next lo
 
@@ -317,6 +327,9 @@ Public Sub ClearMasterSheetFilters(ByVal targetSheet As Worksheet)
     ProtectMasterSetupSheet targetSheet, vbNullString
 
 Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Restore would
+    'come straight back to this label and raise again.
+    On Error Resume Next
     If Not scope Is Nothing Then scope.Restore
     Exit Sub
 

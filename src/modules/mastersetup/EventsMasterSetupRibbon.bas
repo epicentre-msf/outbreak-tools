@@ -64,6 +64,9 @@ Public Sub clickRibbonSortTable(ByRef ribbonControl As IRibbonControl)
     MasterSetupHelpers.SortMasterVariablesTables targetSheet
 
 Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Restore
+    'would come straight back to this label and raise again.
+    On Error Resume Next
     If Not scope Is Nothing Then scope.Restore
     Exit Sub
 
@@ -133,6 +136,9 @@ Public Sub clickAddSheet(ByRef ribbonControl As IRibbonControl)
     MsgBox MasterSetupHelpers.TranslateValue(translations, "done", "Done!"), vbInformation + vbOKOnly, confirmTitle
 
 Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Restore
+    'would come straight back to this label and raise again.
+    On Error Resume Next
     If Not scope Is Nothing Then scope.Restore
     Exit Sub
 
@@ -195,6 +201,9 @@ Public Sub clickRemSheet(ByRef ribbonControl As IRibbonControl)
     RefreshDropdownCaches
 
 Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Restore
+    'would come straight back to this label and raise again.
+    On Error Resume Next
     If Not scope Is Nothing Then scope.Restore
     Exit Sub
 
@@ -250,6 +259,9 @@ Public Sub clickClearSheet(ByRef ribbonControl As IRibbonControl)
     passManager.Protect targetSheet.Name
 
 Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Restore
+    'would come straight back to this label and raise again.
+    On Error Resume Next
     If Not scope Is Nothing Then scope.Restore
     Exit Sub
 
@@ -328,6 +340,9 @@ Public Sub clickAddTrans(ByRef ribbonControl As IRibbonControl)
     If Not updater Is Nothing Then updater.SwitchTagsToNo
 
 Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Restore
+    'would come straight back to this label and raise again.
+    On Error Resume Next
     If Not scope Is Nothing Then scope.Restore
     Exit Sub
 
@@ -395,6 +410,9 @@ Public Sub clickAddLang(ByRef ribbonControl As IRibbonControl, ByRef text As Str
     RefreshDropdownCaches
 
 Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Restore
+    'would come straight back to this label and raise again.
+    On Error Resume Next
     If Not scope Is Nothing Then scope.Restore
     Exit Sub
 
@@ -430,6 +448,9 @@ Public Sub clickLangChange(ByRef ribbonControl As IRibbonControl, ByVal langId A
     On Error GoTo 0
 
 Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Restore
+    'would come straight back to this label and raise again.
+    On Error Resume Next
     If Not scope Is Nothing Then scope.Restore
     Exit Sub
 
@@ -472,6 +493,9 @@ Public Sub clickExpSheet(ByRef ribbonControl As IRibbonControl)
     Exports.ExportToSetup
 
 Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Restore
+    'would come straight back to this label and raise again.
+    On Error Resume Next
     If Not scope Is Nothing Then scope.Restore
     Exit Sub
 
@@ -494,6 +518,9 @@ Public Sub clickExp(ByRef ribbonControl As IRibbonControl)
     Exports.ExportForMigration
 
 Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Restore
+    'would come straight back to this label and raise again.
+    On Error Resume Next
     If Not scope Is Nothing Then scope.Restore
     Exit Sub
 
@@ -516,6 +543,9 @@ Public Sub clickImp(ByRef ribbonControl As IRibbonControl)
     Exports.ImportFlatFile
 
 Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Restore
+    'would come straight back to this label and raise again.
+    On Error Resume Next
     If Not scope Is Nothing Then scope.Restore
     Exit Sub
 

@@ -260,7 +260,11 @@ End Sub
 Private Sub RestoreApplicationState(ByVal silent As Boolean)
     If this.appScope Is Nothing Then Exit Sub
 
-    If Not this.appScope.IsBusy Then
+    'The snapshot decides, not the busy flag. A failed ApplyBusyState clears
+    'IsBusy after it has already written screen updating and alerts, so a scope
+    'that reads idle can still be holding the screen off. Restore whenever
+    'there is something to put back; it is safe to call on an idle scope.
+    If Not this.appScope.HasSnapshot Then
         Set this.appScope = Nothing
         Exit Sub
     End If
