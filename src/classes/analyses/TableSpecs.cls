@@ -1249,6 +1249,14 @@ End Function
 'and references valid variables for its analysis type. Called once on first
 'access of ValidTable to populate the Boolean cache. Each branch resolves
 'only the variables its own rule needs.
+'
+'The same rules run on both sides. The designer asks after
+'LLdictionary.Prepare, where a geo variable has become adm1_<var>; the setup
+'error checks ask before it, where the variable still carries its own name and
+'its "geo" or "hf" control. The two spatial branches read the control on an
+'unprepared dictionary and the prefixed name on a prepared one, so the setup
+'stops calling a spatial row invalid without letting a row through that the
+'analysis build would then fail to draw.
 '@return Boolean. True if the table specification meets all requirements.
 '@throws ErrorUnexpectedState When the table scope is unmapped.
 '@depends LLVariables
@@ -1312,20 +1320,33 @@ Private Function ComputeValidTable() As Boolean
                   (rowType = "date")
 
     Case ScopeSpatial
+        ' The prefixed names only exist once LLdictionary.Prepare has run, and
+        ' the setup workbook checks its own rows before that. There the row
+        ' variable is the one the setup dropdown offered, still carrying the
+        ' control "geo" or "hf" it was written with. The control is read on an
+        ' unprepared dictionary ONLY: past Prepare the prefixed name is what
+        ' the analysis build goes on to look for, and a row that has no
+        ' prefixed name is a row that build cannot draw.
+        rowControl = vars.Value(colName:=VARIABLE_CONTROL, varName:=rowVar)
         colControl = vars.Value(colName:=VARIABLE_CONTROL, varName:=colVar)
         isValid = (cachedDict.VariableExists(PREFIX_ADMIN & rowVar) Or _
-                   cachedDict.VariableExists(PREFIX_HEALTH_FACILITY & rowVar)) And _
+                   cachedDict.VariableExists(PREFIX_HEALTH_FACILITY & rowVar) Or _
+                   ((Not cachedDict.Prepared) And _
+                    ((rowControl = "geo") Or (rowControl = "hf")))) And _
                   (colVar = vbNullString Or _
                    colControl = "choice_manual" Or _
                    colControl = "choice_formula")
 
     Case ScopeSpatioTemporal
         ' LLdictionary.AppendGeoLines rewrites a geo control to geo1..geo4
-        ' during Prepare and leaves hf alone, so "hf" is the one control
-        ' value still readable here.
+        ' during Prepare and leaves hf alone, so "hf" is the one control value
+        ' still readable here. "geo" is the same variable on the setup side,
+        ' before the geo rows are expanded and adm1_<var> exists, and it is
+        ' accepted there only.
         rowType = vars.Value(colName:=VARIABLE_TYPE, varName:=rowVar)
         colControl = vars.Value(colName:=VARIABLE_CONTROL, varName:=colVar)
         isValid = ((colControl = "hf") Or _
+                   ((Not cachedDict.Prepared) And (colControl = "geo")) Or _
                    cachedDict.VariableExists(PREFIX_ADMIN & colVar) Or _
                    cachedDict.VariableExists(PREFIX_HEALTH_FACILITY & colVar)) And _
                   (rowType = "date")

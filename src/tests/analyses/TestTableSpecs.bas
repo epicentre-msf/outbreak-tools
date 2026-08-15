@@ -1253,6 +1253,36 @@ TestFail:
     CustomTestLogFailure Assert, "TestValidTableSpatial", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify a spatial row is valid on an unprepared dictionary.
+'@details
+'The setup workbook checks its analysis rows before LLdictionary.Prepare has
+'expanded the geo lines, so adm1_<var> does not exist yet. The row variable
+'there is the one the setup dropdown offered, with its "geo" or "hf" control.
+'@TestMethod("TableSpecs")
+Public Sub TestValidTableSpatialOnSetupControls()
+    CustomTestSetTitles Assert, "TableSpecs", "TestValidTableSpatialOnSetupControls"
+    On Error GoTo TestFail
+
+    BuildFixture TABLE_SPATIAL, SpatialHeader(), _
+                 SpatialRow("geo_h2", "", "5", "no", "no", "no")
+    Assert.IsTrue CreateSpecs(1).ValidTable, _
+                  "A spatial row over an unexpanded geo control is valid"
+
+    BuildFixture TABLE_SPATIAL, SpatialHeader(), _
+                 SpatialRow("hf_h2", "choi_v1", "5", "no", "no", "no")
+    Assert.IsTrue CreateSpecs(1).ValidTable, _
+                  "A spatial row over an hf control crossed by a choice is valid"
+
+    BuildFixture TABLE_SPATIAL, SpatialHeader(), _
+                 SpatialRow("geo_h2", "date_v1", "5", "no", "no", "no")
+    Assert.IsFalse CreateSpecs(1).ValidTable, _
+                   "A geo control crossed by a date is still invalid"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestValidTableSpatialOnSetupControls", Err.Number, Err.Description
+End Sub
+
 '@sub-title Verify spatio-temporal validity needs a date row and a geo column.
 '@TestMethod("TableSpecs")
 Public Sub TestValidTableSpatioTemporal()
@@ -1270,9 +1300,19 @@ Public Sub TestValidTableSpatioTemporal()
                   "A spatio-temporal row over a geo variable is valid"
 
     BuildFixture TABLE_SPATIOTEMPORAL, SpatioTemporalHeader(), _
+                 SpatioTemporalRow("date_v1", "geo_h2", "5", "no")
+    Assert.IsTrue CreateSpecs(1).ValidTable, _
+                  "A spatio-temporal row over an unexpanded geo control is valid"
+
+    BuildFixture TABLE_SPATIOTEMPORAL, SpatioTemporalHeader(), _
                  SpatioTemporalRow("choi_v1", "hf_h2", "5", "no")
     Assert.IsFalse CreateSpecs(1).ValidTable, _
                    "A spatio-temporal row whose row variable is not a date is invalid"
+
+    BuildFixture TABLE_SPATIOTEMPORAL, SpatioTemporalHeader(), _
+                 SpatioTemporalRow("date_v1", "choi_v1", "5", "no")
+    Assert.IsFalse CreateSpecs(1).ValidTable, _
+                   "A spatio-temporal row whose column variable is a choice is invalid"
 
     Exit Sub
 TestFail:
