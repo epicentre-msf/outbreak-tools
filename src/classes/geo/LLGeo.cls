@@ -84,7 +84,8 @@ End Enum
 'writers are InitTransfer, which stamps the meta language picked on the
 'designer's Main sheet onto the designer geo sheet just before the export, and
 'the geobase import round trip.
-'@depends BetterArray, DropdownLists, HiddenNames, LLdictionary, Passwords
+'@depends BetterArray, DropdownLists, HiddenNames, LLdictionary
+'@depends Passwords
 
 '@section State
 '===============================================================================
@@ -104,6 +105,7 @@ Private Type TGeo
     geoUpdated As String
     translated As Boolean
     flagsLoaded As Boolean
+    lastFailure As String
     sealed As Boolean
 End Type
 
@@ -127,6 +129,12 @@ Private Const HN_GEO_TRANSLATED As String = "RNG_GeoTranslated"
 Private Const HN_GEO_NAME As String = "RNG_GeoName"
 Private Const HN_META_LANG As String = "RNG_MetaLang"
 Private Const HN_GEO_LANG_CODE As String = "RNG_GeoLangCode"
+
+'The version of the designer, held as a workbook-scoped hidden name on the
+'designer itself. Nothing writes it yet: it is set by hand, and a designer
+'that does not carry it puts VERSION_NOT_FOUND on the metadata sheet.
+Private Const HN_DESIGNER_VERSION As String = "RNG_DesignerVersion"
+Private Const VERSION_NOT_FOUND As String = "(not found)"
 
 'The two values RNG_GeoUpdated takes
 Private Const FLAG_EMPTY As String = "empty"
@@ -1185,6 +1193,11 @@ End Sub
 '
 'The destination row numbers come from the header row of the ListObject, so a
 'table that does not start on row 1 lands in the right place.
+'
+'The concat column is written as a formula, calculated, and then replaced by the
+'values it answered. The geo worksheet therefore carries no live formula once an
+'import has run. A table filled by hand afterwards gets no concat for the rows
+'added, because a column of constants is no longer a calculated column.
 '@param impsh Worksheet. The source worksheet, named after the table it feeds.
 Private Sub ImportOneTable(ByVal impsh As Worksheet)
     Dim sh As Worksheet
@@ -1203,6 +1216,7 @@ Private Sub ImportOneTable(ByVal impsh As Worksheet)
     Dim colName As String
     Dim colIdx As Long
     Dim concatFormula As String
+    Dim concatRng As Range
 
     Set sh = Wksh()
     Set Lo = sh.ListObjects("T_" & impsh.Name)
@@ -1247,13 +1261,26 @@ Private Sub ImportOneTable(ByVal impsh As Worksheet)
     Lo.Resize sh.Range(sh.Cells(headerRow, hRng.Column), _
                        sh.Cells(lastDataRow, concatCol))
 
-    'Write the formula over the whole data column. A ListObject fills a
+
+    '---------------------------------------------------------------------------
+    'The formula goes over the whole data column, because a ListObject fills a
     'calculated column down on its own only while
-    'Application.AutoCorrect.AutoFillFormulasInLists is on, and a user can
-    'switch that off.
+    'Application.AutoCorrect.AutoFillFormulasInLists is on and a user can switch
+    'that off. It is then calculated and replaced by what it answered, so the geo
+    'worksheet ends with one value per row and no live formula.
+    '
+    'WHY THE EXPLICIT Calculate: every walk that imports a geobase applies a busy
+    'state, and that state asks for manual calculation. Reading Value straight
+    'after writing the formula would answer unevaluated cells and store zeros
+    'over the whole geobase. Calculate on the range itself evaluates it whatever
+    'mode the application is in, and the concat formula reads only constants
+    'written into the same rows above, so the range is the whole dependency.
     If LenB(concatFormula) > 0 Then
-        sh.Range(sh.Cells(firstDataRow, concatCol), _
-                 sh.Cells(lastDataRow, concatCol)).Formula = concatFormula
+        Set concatRng = sh.Range(sh.Cells(firstDataRow, concatCol), _
+                                 sh.Cells(lastDataRow, concatCol))
+        concatRng.Formula = concatFormula
+        concatRng.Calculate
+        concatRng.Value = concatRng.Value
     End If
 End Sub
 
@@ -1319,18 +1346,44 @@ Public Sub ExportToFile(ByVal outputWkb As Workbook, _
 
     Dim sh As Worksheet
     Dim tabl As BetterArray
-    Dim outputRng As Range
-    Dim inputRng As Range
     Dim sheetName As String
     Dim loName As String
     Dim counter As Long
     Dim wasTranslated As Boolean
+    Dim atStep As String
+    Dim priorCalc As Long
+    Dim calcHeld As Boolean
     Dim errNumber As Long
     Dim errSource As String
     Dim errMessage As String
 
+    this.lastFailure = vbNullString
+
+    'CALCULATION IS HELD HERE, BY THIS ROUTINE
+    '---------------------------------------------------------------------------
+    'Adding a worksheet recalculates. ImportOneTable now leaves the concat column
+    'as values, so a geobase imported by the current code brings no formulas with
+    'it -- but a linelist filled before that change carries one concat formula per
+    'row of every table, hundreds of thousands of them on a real geobase, and this
+    'routine has to be safe over those files too.
+    'ApplicationState.ApplyBusyState already asks for manual, but it asks inside
+    'an On Error Resume Next and reports success either way, so a caller cannot
+    'know the mode it got. This holds the mode itself and does not depend on that.
+    priorCalc = Application.Calculation
+    On Error Resume Next
+    Application.Calculation = xlCalculationManual
+    On Error GoTo 0
+    calcHeld = (Application.Calculation = xlCalculationManual)
+
+    'The handler covers the whole routine. A failure before the headers are
+    'reverted leaves wasTranslated False, so the restore below does nothing,
+    'which is what an untouched header row wants.
+    On Error GoTo RestoreHeaders
+
+    atStep = "reading the geo worksheet"
     Set sh = Wksh()
 
+    atStep = "listing the tables to export"
     If onlyHistory Then
         Set tabl = New BetterArray
         tabl.Push "T_" & HISTOGEO, "T_" & HISTOHF
@@ -1338,65 +1391,170 @@ Public Sub ExportToFile(ByVal outputWkb As Workbook, _
         Set tabl = TableNames()
     End If
 
+    atStep = "putting the raw names back on the headers"
     wasTranslated = IsTranslated()
     Translate rawNames:=True
 
-    On Error GoTo RestoreHeaders
-
     With outputWkb
-        'Export metadata sheet first
+        atStep = "naming the Metadata sheet"
         .Worksheets(1).Name = METADATASHEET
-        Set inputRng = sh.ListObjects("T_" & METADATA).Range
 
-        With .Worksheets(METADATASHEET)
-            Set outputRng = .Range(.Cells(1, 1), _
-                .Cells(inputRng.Rows.Count, inputRng.Columns.Count))
-        End With
-        outputRng.Value = inputRng.Value
+        'EVERY SHEET IS ADDED BEFORE ANY DATA IS WRITTEN
+        '-----------------------------------------------------------------------
+        'Adding a worksheet recalculates. Adding one between block writes pays
+        'that over everything written so far, and on a geobase of a few hundred
+        'thousand rows the add is where the export used to stop.
         sheetName = METADATASHEET
-
-        'Export each table to its own sheet
         For counter = tabl.LowerBound To tabl.UpperBound
             loName = tabl.Item(counter)
-            Set inputRng = sh.ListObjects(loName).Range
+
+            atStep = "adding the sheet " & Replace(loName, "T_", vbNullString) & _
+                     " after " & sheetName & " (the workbook holds " & _
+                     SheetNamesOf(outputWkb) & ")"
             .Worksheets.Add(After:=.Worksheets(sheetName)).Name = _
                 Replace(loName, "T_", vbNullString)
             sheetName = Replace(loName, "T_", vbNullString)
+        Next
 
-            With .Worksheets(sheetName)
-                Set outputRng = .Range(.Cells(1, 1), _
-                    .Cells(inputRng.Rows.Count, inputRng.Columns.Count))
-            End With
-            outputRng.Value = inputRng.Value
+        'THE DATA GOES OUT THROUGH BetterArray, ONE COLUMN AT A TIME
+        '-----------------------------------------------------------------------
+        'BetterArray reads a range into memory and writes it back, and it sizes
+        'the destination from what it read, so nothing here counts rows.
+        'ExportOneTable does one column per pass. A table read whole holds the
+        'same cells three times at once, and on T_ADM4 that is a few million
+        'cells of each. A column is a seventh of that.
+        ExportOneTable sh.ListObjects("T_" & METADATA), _
+                       .Worksheets(METADATASHEET), atStep
+
+        For counter = tabl.LowerBound To tabl.UpperBound
+            loName = tabl.Item(counter)
+            sheetName = Replace(loName, "T_", vbNullString)
+            ExportOneTable sh.ListObjects(loName), .Worksheets(sheetName), atStep
         Next
 
         'The hidden names go onto the Metadata sheet, and Import reads them
+        atStep = "writing the hidden names onto the Metadata sheet"
         GeoHiddenStore().ExportNames .Worksheets(METADATASHEET)
     End With
 
+    atStep = "putting the labels back on the headers"
     If wasTranslated Then Translate rawNames:=False
+
+    On Error Resume Next
+    Application.Calculation = priorCalc
+    On Error GoTo 0
     Exit Sub
 
 RestoreHeaders:
     errNumber = Err.Number
     errSource = Err.Source
     errMessage = Err.Description
+    'Kept in words, because the raise below loses them on the way out of this
+    'class: the caller reads the name of the method and nothing of what refused.
+    'The calculation mode rides along, because a mode that would not go manual
+    'is the difference between a geobase that exports and one that does not.
+    this.lastFailure = "geobase export failed " & atStep & " - error " & _
+                       errNumber & " from " & errSource & ": " & errMessage & _
+                       " (calculation " & IIf(calcHeld, "held manual", _
+                       "NOT manual, mode " & Application.Calculation) & ")"
     Resume RaiseAfterRestore
 
 RaiseAfterRestore:
     On Error Resume Next
     If wasTranslated Then Translate rawNames:=False
+    Application.Calculation = priorCalc
     On Error GoTo 0
     Err.Raise errNumber, errSource, errMessage
 End Sub
+
+'@label:export-one-table
+'@sub-title Write one geobase table onto a sheet, a column at a time.
+'@details
+'The header row goes out with the data, because a ListColumn range carries its
+'header, and Import reads the first used row of the sheet as the header row.
+'The destination starts at A1 and each column lands under its own position in
+'the table, so the sheet comes out in the order of the table.
+'BetterArray sizes the destination from what it read, so no row count is worked
+'out here, and an empty table writes its header row and nothing else.
+'The step is written back to the caller on every column, so a failure names the
+'column it stopped on rather than the table.
+'@param Lo ListObject. The geobase table to write out.
+'@param outsh Worksheet. The sheet to write it onto.
+'@param atStep String. Updated in place with the column being written.
+Private Sub ExportOneTable(ByVal Lo As ListObject, _
+                            ByVal outsh As Worksheet, _
+                            ByRef atStep As String)
+
+    Dim arr As BetterArray
+    Dim colIndex As Long
+    Dim colCount As Long
+    Dim rowCount As Long
+
+    colCount = Lo.ListColumns.Count
+    rowCount = Lo.Range.Rows.Count
+
+    For colIndex = 1 To colCount
+        atStep = "writing column " & colIndex & " of " & colCount & ", " & _
+                 Lo.ListColumns(colIndex).Name & ", of " & Lo.Name & _
+                 " onto " & outsh.Name & " (" & rowCount & " rows)"
+
+        'A new BetterArray per column, so no bound or type of the column before
+        'it is still in place when this one is read.
+        Set arr = New BetterArray
+        arr.FromExcelRange Lo.ListColumns(colIndex).Range
+        arr.ToExcelRange outsh.Cells(1, colIndex)
+    Next
+
+End Sub
+
+'@label:sheet-names-of
+'@sub-title The worksheet names of a workbook with their used rows, on one line.
+'@details
+'Written for the failure account of ExportToFile. Two questions a reader has
+'when a sheet will not be added: whether the name was already taken, and how
+'much had already been written into the workbook. Each sheet is reported as
+'name(used rows), so both are answered by one line.
+'@param wkb Workbook. The workbook to list.
+'@return String. The sheets separated by commas, or a note when they cannot be read.
+Private Function SheetNamesOf(ByVal wkb As Workbook) As String
+    Dim sh As Worksheet
+    Dim names As String
+    Dim usedRows As String
+
+    On Error Resume Next
+    For Each sh In wkb.Worksheets
+        usedRows = "?"
+        usedRows = CStr(sh.UsedRange.Rows.Count)
+        If LenB(names) > 0 Then names = names & ", "
+        names = names & sh.Name & "(" & usedRows & ")"
+    Next
+    On Error GoTo 0
+
+    If LenB(names) = 0 Then names = "no readable sheet names"
+    SheetNamesOf = names
+End Function
+
+'@label:last-failure
+'@prop-title What the last export of this geobase failed on
+'@details
+'ExportToFile raises, and the caller reads a description that names the method
+'and nothing else, because the error crosses out of this class. The step, the
+'number, the source and the text are kept here before the raise, so the caller
+'can log what actually refused. ExportToFile empties it on entry.
+'@return String. The step, error number, source and text, or vbNullString.
+'@export
+Public Property Get LastFailure() As String
+    LastFailure = this.lastFailure
+End Property
 
 '@label:export-to-wkb
 '@sub-title Export the geobase worksheet structure to a workbook.
 '@details
 'Copies the entire geobase worksheet to the target workbook, preserving
 'ListObjects, named ranges, formulas, pcode references, concat references,
-'and metadata. Creates a hidden Metadata sheet with creation metadata including
-'linelist name, setup name, language, and timestamp. RNG_PastingGeoCol is
+'and metadata. Creates a hidden Metadata sheet with creation metadata: the
+'linelist name, the setup name, the language, the timestamp, the platform the
+'build ran on and the version of the designer that ran it. RNG_PastingGeoCol is
 'exported as a cell-based named range. The hidden names of the geo worksheet
 'go with the sheet, and the five workbook-scoped level labels are written into
 'the target workbook so CrossTable's spatial dropdown resolves them there.
@@ -1510,12 +1668,21 @@ Public Sub ExportToWkb(ByVal outputWkb As Workbook, _
     Set metaKeys = New BetterArray
     Set metaValues = New BetterArray
 
+    'The platform and the designer version sit beside the four rows that were
+    'already here. A linelist is read on a machine that is not the one that
+    'built it, and the two platforms do not behave the same, so the file has to
+    'say which one made it and which designer did it.
+    'The anchor below is placed off metaKeys.Length, so both blocks move down
+    'on their own and nothing here counts rows.
     metaKeys.Push "variable", "language", "linelist_creation_date", _
-                  "linelist_creation_name", "used_setup_name", "used_designer_name"
+                  "linelist_creation_name", "linelist_creation_os", _
+                  "used_setup_name", "used_designer_name", _
+                  "used_designer_version"
 
     metaValues.Push "value", GeoHiddenStore().ValueAsString(HN_META_LANG), _
                     Format(Now(), "yyyy-mm-dd Hh:Nn"), _
-                    llName, setupName, ThisWorkbook.Name
+                    llName, PlatformTag(), setupName, ThisWorkbook.Name, _
+                    DesignerVersion()
 
     With outsh
         metaKeys.ToExcelRange .Cells(1, 1)
@@ -1565,6 +1732,66 @@ RaiseAfterRestore:
     On Error GoTo 0
     Err.Raise errNumber, errSource, errMessage
 End Sub
+
+'@label:platform-tag
+'@sub-title The platform the linelist was built on, on one tag
+'@details
+'A linelist is opened on machines that are not the one that built it, and the
+'two platforms do not behave the same: a geobase export Windows accepts has
+'refused on a Mac. The metadata sheet therefore names the platform of the
+'build. The name and the bitness come from the compile constants, so they are
+'the build that is running and cannot be misread. The Excel version comes from
+'the application.
+'@return String. Something of the shape "mac-64 excel-16.90".
+Private Function PlatformTag() As String
+    Dim osName As String
+    Dim bits As String
+
+    #If Mac Then
+        osName = "mac"
+    #Else
+        osName = "win"
+    #End If
+
+    #If Win64 Then
+        bits = "64"
+    #Else
+        bits = "32"
+    #End If
+
+    PlatformTag = osName & "-" & bits & " excel-" & Application.Version
+End Function
+
+'@label:designer-version
+'@sub-title The version of the designer that built the linelist
+'@details
+'The version is a workbook-scoped hidden name on the designer, set by hand for
+'now. Nothing writes it and nothing provisions it, so a designer that does not
+'carry it is the ordinary case rather than a fault, and it answers
+'"(not found)". A name that is present but empty answers the same, because an
+'empty cell on the metadata sheet says nothing to the person reading it.
+'@return String. The version, or "(not found)".
+Private Function DesignerVersion() As String
+    Dim store As HiddenNames
+    Dim versionText As String
+
+    DesignerVersion = VERSION_NOT_FOUND
+
+    'The designer is the workbook this code runs from, the same one
+    'used_designer_name is taken from. A workbook that refuses a name store
+    'leaves the answer at "(not found)" rather than taking down the build.
+    On Error Resume Next
+    Set store = HiddenNames.Create(ThisWorkbook)
+    On Error GoTo 0
+    If store Is Nothing Then Exit Function
+
+    If Not store.HasName(HN_DESIGNER_VERSION) Then Exit Function
+
+    versionText = Trim$(store.ValueAsString(HN_DESIGNER_VERSION))
+    If LenB(versionText) = 0 Then Exit Function
+
+    DesignerVersion = versionText
+End Function
 
 '@label:export-level-names
 '@sub-title Write the five level labels into another workbook.
