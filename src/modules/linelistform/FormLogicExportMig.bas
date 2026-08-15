@@ -116,6 +116,20 @@ Private Function PathsOnOneLine(ByVal savedPaths As String) As String
 End Function
 
 
+' @description The detail line of a failed walk. An error raised inside the
+' exporter reaches here as the name of the method and nothing else, so the
+' exporter's own account of the failure is preferred whenever it has one.
+' @param exporter LLExporter. The exporter of the walk, Nothing when it never got made.
+' @param errDetail String. The description the walk's handler read.
+' @return String. What to write into the log.
+Private Function ExporterDetail(ByVal exporter As LLExporter, _
+                                ByVal errDetail As String) As String
+    ExporterDetail = errDetail
+    If exporter Is Nothing Then Exit Function
+    If LenB(exporter.LastFailure) > 0 Then ExporterDetail = exporter.LastFailure
+End Function
+
+
 '@section The other-linelist choice
 '===============================================================================
 
@@ -297,6 +311,7 @@ ErrHand:
     ' Err is read before the Resume Next below clears it.
     failDetail = Err.Description
     On Error Resume Next
+    failDetail = ExporterDetail(exporter, failDetail)
     LogFailureLine "export-migration", failDetail
     MsgBox tradmess.TranslatedValue("MSG_ErrHandExport"), _
            vbOKOnly + vbCritical, tradmess.TranslatedValue("MSG_Error")
@@ -394,6 +409,7 @@ ErrHand:
     ' Err is read before the Resume Next below clears it.
     failDetail = Err.Description
     On Error Resume Next
+    failDetail = ExporterDetail(exporter, failDetail)
     LogFailureLine "export-other", failDetail
     If Not exporter Is Nothing Then exporter.CloseAll
     If Not appState Is Nothing Then appState.Restore
