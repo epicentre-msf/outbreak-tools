@@ -113,7 +113,8 @@ End Function
 '@param lookupSheetName String. Name of the worksheet hosting the lookup table.
 '@param colLookupIndex Long. 1-based column index in the ListObject for the key.
 '@param colValueIndex Long. 1-based column index in the ListObject for the result.
-'@return Variant. Matched value, or vbNullString when not found.
+'@return Variant. Matched value, keeping its stored type. A key with no match
+'answers vbNullString, and so does a match whose value cell is blank.
 '@EntryPoint
 Public Function VALUE_OF(rng As Range, lookupSheetName As String, colLookupIndex As Long, colValueIndex As Long) As Variant
     Application.Volatile
@@ -142,6 +143,12 @@ Public Function VALUE_OF(rng As Range, lookupSheetName As String, colLookupIndex
     ' the position Match answers indexes the value array directly.
     matchPos = Application.Match(lookupValue, valueOfKeys(slot), 0)
     If IsError(matchPos) Then Exit Function
+
+    ' A blank value cell reads back as an Empty variant, and a worksheet
+    ' function answering Empty is shown as 0 in the cell. The formula cell
+    ' shows an empty string for it. A stored 0, a date and a text keep their
+    ' own type through the Variant return.
+    If IsEmpty(valueOfValues(slot)(matchPos)) Then Exit Function
 
     VALUE_OF = valueOfValues(slot)(matchPos)
     Exit Function

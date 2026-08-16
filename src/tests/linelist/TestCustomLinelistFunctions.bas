@@ -51,6 +51,9 @@ Private Const WEEK_TAG_NAME As String = "RNG_Week"
 Private Const TIMEUNIT_LIST_NAME As String = "dropdown_time_unit"
 Private Const TIMEUNIT_SHEET As String = "CLFTimeUnit"
 
+' The sheet holding the lookup table the VALUE_OF tests read.
+Private Const VALUEOF_SHEET As String = "CLFValueOf"
+
 Private Assert As CustomTest
 
 
@@ -348,6 +351,90 @@ TestFail:
     DropTimeUnitList
     CustomTestLogFailure Assert, "TestAnUnknownTimeUnitFallsBackToTheWeek", _
                          Err.Number, Err.Description
+End Sub
+
+
+'@section VALUE_OF
+'===============================================================================
+
+'@sub-title A matched value keeps its own type, and a blank one answers nothing.
+'@details
+'The value column of a lookup table holds dates, numbers and blanks side by
+'side. A blank cell used to come back as an Empty variant, which the formula
+'cell shows as 0, so every unfilled row of the lookup table read as a zero. A
+'stored 0 still answers 0, and a date stays a date.
+'@TestMethod("CustomLinelistFunctions")
+Public Sub TestValueOfKeepsTheTypeAndAnswersNothingOnBlank()
+    CustomTestSetTitles Assert, TESTMODULE, "TestValueOfKeepsTheTypeAndAnswersNothingOnBlank"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim keyRng As Range
+    Dim result As Variant
+
+    Set sh = BuildValueOfTable()
+    Set keyRng = sh.Range("F1")
+
+    keyRng.Value = "with_date"
+    result = VALUE_OF(keyRng, VALUEOF_SHEET, 1, 2)
+    Assert.IsTrue IsDate(result), "A stored date comes back as a date"
+    Assert.AreEqual CLng(DateSerial(2026, 3, 10)), CLng(CDate(result)), _
+                    "and it is the stored one"
+
+    keyRng.Value = "with_zero"
+    result = VALUE_OF(keyRng, VALUEOF_SHEET, 1, 2)
+    Assert.IsTrue IsNumeric(result), "A stored 0 comes back as a number"
+    Assert.AreEqual 0#, CDbl(result), "and it is 0"
+
+    keyRng.Value = "with_blank"
+    result = VALUE_OF(keyRng, VALUEOF_SHEET, 1, 2)
+    Assert.AreEqual vbNullString, result, _
+                    "A blank value cell answers an empty string. It used to " & _
+                    "come back Empty, which the formula cell shows as 0"
+
+    keyRng.Value = "no_such_key"
+    result = VALUE_OF(keyRng, VALUEOF_SHEET, 1, 2)
+    Assert.AreEqual vbNullString, result, _
+                    "A key with no match answers an empty string"
+
+    DropValueOfTable
+    Exit Sub
+TestFail:
+    DropValueOfTable
+    CustomTestLogFailure Assert, "TestValueOfKeepsTheTypeAndAnswersNothingOnBlank", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Build the lookup table the VALUE_OF tests read.
+'@details
+'One ListObject on its own sheet: a key column and a value column holding a
+'date, a 0 and a blank. The cache slot of the sheet is dropped first, so a
+'previous test run cannot answer for this one.
+'@return Worksheet. The sheet holding the table.
+Private Function BuildValueOfTable() As Worksheet
+    Dim sh As Worksheet
+
+    Set sh = EnsureWorksheet(VALUEOF_SHEET, clearSheet:=True, visibility:=xlSheetHidden)
+
+    sh.Range("A1").Value = "key"
+    sh.Range("B1").Value = "value"
+    sh.Range("A2").Value = "with_date"
+    sh.Range("B2").Value = DateSerial(2026, 3, 10)
+    sh.Range("A3").Value = "with_zero"
+    sh.Range("B3").Value = 0
+    sh.Range("A4").Value = "with_blank"
+
+    sh.ListObjects.Add(xlSrcRange, sh.Range("A1:B4"), , xlYes).Name = "CLFValueOfTable"
+
+    CustomLinelistFunctions.ResetValueOfCache VALUEOF_SHEET
+
+    Set BuildValueOfTable = sh
+End Function
+
+'@sub-title Take the lookup table and its worksheet away again.
+Private Sub DropValueOfTable()
+    CustomLinelistFunctions.ResetValueOfCache VALUEOF_SHEET
+    DeleteWorksheet VALUEOF_SHEET
 End Sub
 
 
