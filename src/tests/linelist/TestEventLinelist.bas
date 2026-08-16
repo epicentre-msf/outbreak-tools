@@ -988,6 +988,52 @@ TestFail:
 End Sub
 
 
+'@section Workbook open
+'===============================================================================
+
+'@sub-title Opening the workbook parks the pointer on the north-west arrow.
+'@details
+'The arrow is the standing cursor of a linelist session. Every busy state of
+'the events shows the same arrow and ApplicationState restores the cursor it
+'snapshots, so this one write at open is what keeps the pointer still while
+'the user moves over a data entry sheet. The snapshot used to hold the default
+'cursor, and every selection flicked the pointer twice.
+'@TestMethod("EventLinelist")
+Public Sub TestOpeningTheWorkbookParksThePointerOnTheArrow()
+    CustomTestSetTitles Assert, TESTMODULE, "TestOpeningTheWorkbookParksThePointerOnTheArrow"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim heldCalculation As Long
+
+    heldCalculation = Application.Calculation
+    Application.Cursor = xlDefault
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+    sut.OnWorkbookOpen
+
+    Assert.AreEqual CLng(xlNorthwestArrow), CLng(Application.Cursor), _
+                    "The open parks the pointer on the north-west arrow"
+
+    RestoreAfterOpen heldCalculation
+    Exit Sub
+TestFail:
+    RestoreAfterOpen heldCalculation
+    CustomTestLogFailure Assert, "TestOpeningTheWorkbookParksThePointerOnTheArrow", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Put back what OnWorkbookOpen changed on the application.
+'@param heldCalculation Long. The calculation mode found before the call.
+Private Sub RestoreAfterOpen(ByVal heldCalculation As Long)
+    On Error Resume Next
+    Application.Cursor = xlDefault
+    If heldCalculation <> 0 Then Application.Calculation = heldCalculation
+    Application.OnKey "^+g"
+    On Error GoTo 0
+End Sub
+
+
 '@section Double click routing
 '===============================================================================
 

@@ -180,6 +180,12 @@ End Sub
 'The workbook opens on the sheet it was saved on, and a linelist saved by the
 'generation lands on Geo. LandOnInstructions puts the user on the instruction
 'sheet instead, every open.
+'
+'The pointer is parked on the north-west arrow at open. That arrow is the
+'cursor every busy state of the session shows, and ApplicationState restores
+'the cursor it snapshots, so with the standing cursor equal to the busy one an
+'event leaves no visible pointer change. The snapshot used to hold the default
+'cursor, and every selection on a data entry sheet flicked the pointer twice.
 '@export
 Public Sub OnWorkbookOpen()
     On Error Resume Next
@@ -187,6 +193,7 @@ Public Sub OnWorkbookOpen()
     Application.Calculation = xlCalculationManual
     Application.EnableEvents = True
     Application.FormatStaleValues = False
+    Application.Cursor = xlNorthwestArrow
     On Error GoTo 0
 
     LandOnInstructions

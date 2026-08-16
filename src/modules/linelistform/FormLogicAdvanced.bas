@@ -250,7 +250,7 @@ DebugFailed:
     failDetail = Err.Description
     On Error Resume Next
     LinelistEventsManager.LLExitBusyState
-    Application.Cursor = xlDefault
+    Application.Cursor = xlNorthwestArrow
     LogFailureLine "enter-debug-mode", failDetail
     On Error GoTo 0
     MsgBox "Unable to enter debug mode.", vbCritical + vbOKOnly, DEBUG_TITLE

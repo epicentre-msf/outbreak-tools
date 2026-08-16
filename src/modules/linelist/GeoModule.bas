@@ -255,7 +255,7 @@ Public Sub ShowAdminList(ByVal level As Long, ByVal selectedValue As String, _
     'every click.
     Set geoObj = GeoOf()
     If geoObj Is Nothing Then
-        Application.Cursor = xlDefault
+        Application.Cursor = xlNorthwestArrow
         ReportGeoError "ShowAdminList", "The geobase manager could not be built"
         Exit Sub
     End If
@@ -326,11 +326,14 @@ Public Sub ShowAdminList(ByVal level As Long, ByVal selectedValue As String, _
         End If
     End With
 
-    Application.Cursor = xlDefault
+    'The arrow is the standing cursor of a linelist session, set at open by
+    'EventLinelist.OnWorkbookOpen. Leaving the default cursor here made the
+    'pointer change under the geo form.
+    Application.Cursor = xlNorthwestArrow
     Exit Sub
 
 ErrShowAdmin:
-    Application.Cursor = xlDefault
+    Application.Cursor = xlNorthwestArrow
     ReportGeoError "ShowAdminList", Err.Description
 End Sub
 
