@@ -1034,6 +1034,103 @@ Private Sub RestoreAfterOpen(ByVal heldCalculation As Long)
 End Sub
 
 
+'@section Geobase recalculation
+'===============================================================================
+
+'@sub-title The geobase columns recalculate on demand and nothing else moves.
+'@details
+'The workbook runs on manual calculation, so a geobase import leaves the
+'concat and p-code columns of the data entry sheets, and the admin level
+'labels under ADM_UNIT_LIST, holding the values of the geobase before.
+'RecalculateGeoColumns is what the import handler calls to refresh them. The
+'plain column of the fixture keeps its stale value, which is what says the
+'pass covers the geobase cells alone.
+'@TestMethod("EventLinelist")
+Public Sub TestRecalculateGeoColumnsRefreshesTheGeobaseCells()
+    CustomTestSetTitles Assert, TESTMODULE, "TestRecalculateGeoColumnsRefreshesTheGeobaseCells"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim sh As Worksheet
+    Dim heldCalculation As Long
+
+    heldCalculation = Application.Calculation
+    Application.Calculation = xlCalculationManual
+
+    Set sh = SeedGeoColumnSheet()
+
+    'The three helper cells the formulas read, settled once.
+    sh.Cells(1, 8).Value = 1
+    sh.Cells(2, 8).Value = 2
+    sh.Cells(3, 8).Value = 3
+    sh.Calculate
+
+    'The helper cells move, the way a geobase import moves the level tables.
+    'Under manual calculation the formula cells hold their old values.
+    sh.Cells(1, 8).Value = 10
+    sh.Cells(2, 8).Value = 20
+    sh.Cells(3, 8).Value = 30
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+    sut.RecalculateGeoColumns
+
+    Assert.AreEqual 10#, CDbl(sh.Cells(9, 3).Value), _
+                    "The concat column recalculates"
+    Assert.AreEqual 20#, CDbl(sh.Cells(9, 4).Value), _
+                    "The p-code column recalculates"
+    Assert.AreEqual 3#, CDbl(sh.Cells(9, 5).Value), _
+                    "The plain column keeps its value: the pass covers the " & _
+                    "geobase cells alone"
+    Assert.AreEqual 10#, CDbl(sh.Cells(1, 6).Value), _
+                    "The admin level labels under ADM_UNIT_LIST recalculate"
+
+    Application.Calculation = heldCalculation
+    Exit Sub
+TestFail:
+    On Error Resume Next
+    Application.Calculation = heldCalculation
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestRecalculateGeoColumnsRefreshesTheGeobaseCells", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Build an HList sheet carrying geobase formula columns.
+'@details
+'A data table with its header on row 8: an admin column, a concat column, a
+'p-code column and a plain one, each formula column reading one helper cell in
+'column H. Column F carries the four label cells the ADM_UNIT_LIST name
+'covers, the first one a formula on the same helper cell as the concat.
+'@return Worksheet. The seeded sheet.
+Private Function SeedGeoColumnSheet() As Worksheet
+    Dim sh As Worksheet
+    Dim store As HiddenNames
+
+    Set sh = FixtureWkb.Worksheets(1)
+
+    sh.Cells(8, 2).Value = "adm1_geo"
+    sh.Cells(8, 3).Value = "concat_adm1_geo"
+    sh.Cells(8, 4).Value = "pcode_adm1_geo"
+    sh.Cells(8, 5).Value = "plain_var"
+    sh.Cells(9, 2).Value = "P1"
+    sh.Cells(9, 3).Formula = "=$H$1"
+    sh.Cells(9, 4).Formula = "=$H$2"
+    sh.Cells(9, 5).Formula = "=$H$3"
+
+    sh.ListObjects.Add(SourceType:=xlSrcRange, _
+                       Source:=sh.Range(sh.Cells(8, 2), sh.Cells(9, 5)), _
+                       XlListObjectHasHeaders:=xlYes).Name = "geotable"
+
+    sh.Cells(1, 6).Formula = "=$H$1"
+    FixtureWkb.Names.Add Name:="ADM_UNIT_LIST", _
+                         RefersTo:="='" & sh.Name & "'!$F$1:$F$4"
+
+    Set store = HiddenNames.Create(sh)
+    store.EnsureName "sheet_type", "HList", HiddenNameTypeString
+
+    Set SeedGeoColumnSheet = sh
+End Function
+
+
 '@section Double click routing
 '===============================================================================
 

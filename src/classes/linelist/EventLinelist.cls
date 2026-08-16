@@ -436,6 +436,86 @@ Public Sub UpdateAllListAuto()
 End Sub
 
 
+'@sub-title Recalculate every cell whose formula reads the geobase.
+'@details
+'A geobase import rewrites the Geo sheet while the workbook runs on manual
+'calculation, so the cells built on it keep the values of the geobase before.
+'Three families of cells do: the concat columns of the data entry sheets, the
+'p-code columns beside them, and the four admin level labels the spatial
+'analysis dropdowns list. The geobase import handler calls this once the Geo
+'sheet is rewritten and the caches are dropped.
+'
+'The label cells matter twice over. They are what the dropdown shows, and
+'LLGeo.AdminCode matches the picked label against the fresh level names, so a
+'stale label resolves to no level and stops every admin level change on the
+'sheet.
+'@export
+Public Sub RecalculateGeoColumns()
+    Dim sh As Worksheet
+    Dim admList As Range
+
+    If this.hostBook Is Nothing Then Exit Sub
+
+    For Each sh In this.hostBook.Worksheets
+        If SheetTag(sh) = "HList" Then RecalculateGeoColumnsOfSheet sh
+    Next
+
+    'The four cells under ADM_UNIT_LIST hold "= RNG_ADM1NAME" formulas.
+    On Error Resume Next
+    Set admList = this.hostBook.Names("ADM_UNIT_LIST").RefersToRange
+    On Error GoTo 0
+
+    If Not admList Is Nothing Then admList.Calculate
+End Sub
+
+
+'@sub-title Recalculate the geobase columns of one data entry sheet.
+'@details
+'Walks the header row of the data table and recalculates the data body of
+'every concat and p-code column. The concat columns go first: the p-code
+'lookups match on them. A sheet with no table or no data row is left alone.
+'@param sh Worksheet. The HList worksheet.
+Private Sub RecalculateGeoColumnsOfSheet(ByVal sh As Worksheet)
+    Dim Lo As ListObject
+    Dim hdrRng As Range
+    Dim headerValue As String
+    Dim colIdx As Long
+    Dim concatCols As Collection
+    Dim pcodeCols As Collection
+    Dim held As Variant
+
+    On Error Resume Next
+    Set Lo = sh.ListObjects(1)
+    On Error GoTo 0
+    If Lo Is Nothing Then Exit Sub
+    If Lo.DataBodyRange Is Nothing Then Exit Sub
+
+    Set concatCols = New Collection
+    Set pcodeCols = New Collection
+    Set hdrRng = Lo.HeaderRowRange
+
+    For colIdx = 1 To hdrRng.Columns.Count
+        headerValue = vbNullString
+        If Not IsError(hdrRng.Cells(1, colIdx).Value) Then _
+            headerValue = CStr(hdrRng.Cells(1, colIdx).Value)
+
+        If headerValue Like "concat_adm#_*" Then
+            concatCols.Add colIdx
+        ElseIf headerValue Like "pcode_*" Then
+            pcodeCols.Add colIdx
+        End If
+    Next colIdx
+
+    For Each held In concatCols
+        Lo.ListColumns(CLng(held)).DataBodyRange.Calculate
+    Next held
+
+    For Each held In pcodeCols
+        Lo.ListColumns(CLng(held)).DataBodyRange.Calculate
+    Next held
+End Sub
+
+
 '@sub-title The one translation helper of the workbook.
 '@details
 'The button, ribbon and geo modules each used to build their own. LLTranslation

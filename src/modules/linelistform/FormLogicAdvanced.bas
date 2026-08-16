@@ -272,6 +272,18 @@ Private Sub ResetEventCaches()
     linelistEvents.ResetCaches
 End Sub
 
+' @description Recalculate the cells whose formulas read the geobase. The
+'              walk itself lives on EventLinelist, where the harness measures
+'              it; this keeps the form side to one guarded call.
+Private Sub RecalculateGeoCells()
+    Dim linelistEvents As EventLinelist
+
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    If linelistEvents Is Nothing Then Exit Sub
+
+    linelistEvents.RecalculateGeoColumns
+End Sub
+
 
 ' @description The one geobase manager of the workbook, held by the event
 ' service and dropped by ResetCaches. The answer lives in a procedure-local:
@@ -659,6 +671,12 @@ Public Sub HandleImportGeobase(ByVal sourceWkb As Workbook, _
 
     ' The import rewrote the Geo sheet the held geo manager was built over
     ResetEventCaches
+
+    ' The workbook runs on manual calculation, so the p-code and concat
+    ' columns of the data entry sheets, and the admin level labels of the
+    ' spatial dropdowns, keep the values of the geobase before until they are
+    ' recalculated. A historic-only import leaves the level tables alone.
+    If Not histoOnly Then RecalculateGeoCells
     LogSuccessLine "import-geobase", _
                    FileNameOf(filePath) & IIf(histoOnly, " (historic only)", vbNullString)
 
