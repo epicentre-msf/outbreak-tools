@@ -781,6 +781,52 @@ TestFail:
     CustomTestLogFailure Assert, "TestStartRowIsNamedAndStable", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify a new table starts below the charts already on the sheet.
+'@details
+'Arranges the univariate fixture and a chart object reaching row 40, well
+'under the last used cell of column C. Acts by reading StartRow. Asserts the
+'table starts below the chart. The row used to come off the used cells alone,
+'and a chart hangs right of its table with no cell under it, so a short table
+'put the next one level with the chart before it and the two charts overlapped.
+'@TestMethod("CrossTable")
+Public Sub TestStartRowClearsTheChartsAlreadyDrawn()
+    CustomTestSetTitles Assert, "CrossTable", "TestStartRowClearsTheChartsAlreadyDrawn"
+    On Error GoTo TestFail
+
+    Dim tabl As CrossTable
+    Dim sh As Worksheet
+    Dim co As ChartObject
+    Dim chartBottom As Long
+
+    BuildFixture TABLE_UNIVARIATE, UnivariateHeader(), _
+                 UnivariateRows(ROW_CHOICE_VARIABLE, "no", "no")
+    Set sh = OutputSheet()
+
+    Set co = sh.ChartObjects.Add(Left:=sh.Columns(6).Left, _
+                                 Top:=sh.Rows(4).Top, _
+                                 Width:=200, _
+                                 Height:=sh.Rows(40).Top - sh.Rows(4).Top)
+    chartBottom = co.BottomRightCell.Row
+
+    Set tabl = CrossTable.Create(CreateSpecs(1), sh, lData)
+
+    Assert.IsTrue chartBottom >= 39, _
+                  "The fixture chart reaches row 39 or lower, and its bottom reads " & _
+                  chartBottom
+    Assert.IsTrue tabl.StartRow > chartBottom, _
+                  "The table starts below the chart. It read row " & tabl.StartRow & _
+                  " against a chart bottom of " & chartBottom
+
+    co.Delete
+    Exit Sub
+TestFail:
+    On Error Resume Next
+    If Not co Is Nothing Then co.Delete
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestStartRowClearsTheChartsAlreadyDrawn", _
+                         Err.Number, Err.Description
+End Sub
+
 '@section Global summary
 '===============================================================================
 

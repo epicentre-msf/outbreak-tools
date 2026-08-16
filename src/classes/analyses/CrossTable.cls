@@ -493,6 +493,7 @@ Private Function ComputeStartRow() As Long
             ' New section or non-temporal: compute from last used row
             strtRow = .Cells(.Rows.Count, STANDARD_START_COL).End(xlUp).Row + 1
             strtRow = IIf(strtRow = 2, 6, strtRow)
+            strtRow = ClearOfCharts(strtRow)
 
             strtRow = Switch(TableScope() = ScopeSpatial, strtRow + 6, _
                              TableScope() = ScopeGlobalSummary, strtRow, _
@@ -523,6 +524,7 @@ Private Function ComputeStartRow() As Long
                 ' Previous table was never built (invalid); treat as de-facto new section
                 strtRow = .Cells(.Rows.Count, STANDARD_START_COL).End(xlUp).Row + 1
                 strtRow = IIf(strtRow = 2, 6, strtRow)
+                strtRow = ClearOfCharts(strtRow)
                 strtRow = strtRow + 4
                 .Cells(strtRow, STANDARD_START_COL).Name = startRowName
             End If
@@ -540,6 +542,36 @@ Private Function ComputeStartRow() As Long
 
         ComputeStartRow = strtRow
     End With
+End Function
+
+'@label:clear-of-charts
+'@sub-title Push a candidate start row below the charts already on the sheet.
+'@details
+'The last used cell of column C says where the tables end and nothing about
+'the charts, which hang right of their table and reach lower whenever the
+'table is short. A table placed off the used cells alone started level with
+'the chart of the table before, and its own chart was drawn over that one.
+'The charts of a temporal sheet are drawn after every table of the sheet, so
+'this walk finds nothing there and the temporal layout stands as it was.
+'@param candidate Long. The row the used cells answer.
+'@return Long. The first row below every chart, or the candidate when it
+'already clears them.
+Private Function ClearOfCharts(ByVal candidate As Long) As Long
+    Dim co As ChartObject
+    Dim bottomRow As Long
+
+    ClearOfCharts = candidate
+
+    For Each co In Wksh().ChartObjects
+        bottomRow = 0
+        'BottomRightCell raises on some hosts while the sheet is mid-build,
+        'and a chart this cannot read is a chart this cannot clear.
+        On Error Resume Next
+        bottomRow = co.BottomRightCell.Row
+        On Error GoTo 0
+
+        If bottomRow + 1 > ClearOfCharts Then ClearOfCharts = bottomRow + 1
+    Next
 End Function
 
 '@label:previous
