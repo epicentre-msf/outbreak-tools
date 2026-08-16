@@ -38,6 +38,7 @@ Private Const OTHER_SHEET As String = "GraphsOther"
 ' The named ranges the fixture writes.
 Private Const SERIES_NAME As String = "GraphSeriesData"
 Private Const SECOND_SERIES_NAME As String = "GraphSeriesSecondary"
+Private Const SPARSE_SERIES_NAME As String = "GraphSeriesSparse"
 Private Const CATEGORY_NAME As String = "GraphCategoryData"
 Private Const LABEL_NAME As String = "GraphLabelValue"
 Private Const TITLE_NAME As String = "GraphTitleValue"
@@ -425,9 +426,10 @@ End Sub
 
 '@sub-title Verify AddSeries attaches one series carrying the values of its range.
 '@details
-'The values used to be written twice: SeriesCollection.Add takes a Source, which
-'fills them, and the line below resolved the same name again and pushed the same
-'data across. This test is what says the single write is enough.
+'AddSeries hands SeriesCollection.Add its Source and then writes the values
+'over the fresh series once more, from the range it already holds. The second
+'write is deliberate: Add guesses how to split a Source whose cells are mostly
+'empty, and the sparse-column test below is what that guess used to break.
 '@TestMethod("Graphs")
 Public Sub TestAddSeriesAttachesTheValuesOfItsRange()
     CustomTestSetTitles Assert, "Graphs", "TestAddSeriesAttachesTheValuesOfItsRange"
@@ -457,6 +459,48 @@ Public Sub TestAddSeriesAttachesTheValuesOfItsRange()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestAddSeriesAttachesTheValuesOfItsRange", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify a series over a mostly empty column keeps its whole range.
+'@details
+'A time series column holds one number per period with data, so a young
+'linelist carries a column that is empty in every row but one.
+'SeriesCollection.Add guesses how to split such a Source and used to keep the
+'one filled cell as the whole series: the chart showed a single bar over the
+'first period whatever the period axis said. The explicit values write in
+'AddSeries is what this test measures.
+'@TestMethod("Graphs")
+Public Sub TestASparseColumnKeepsItsWholeRange()
+    CustomTestSetTitles Assert, "Graphs", "TestASparseColumnKeepsItsWholeRange"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim gr As Graphs
+    Dim co As ChartObject
+    Dim seriesValues As Variant
+
+    Set sh = BuildFixture()
+
+    'Five cells with one number in the last row alone.
+    sh.Range("F1:F4").ClearContents
+    sh.Range("F5").Value = 199
+    AssignName sh, SPARSE_SERIES_NAME, sh.Range("F1:F5")
+
+    Set gr = BuildGraph(sh)
+    gr.AddSeries SPARSE_SERIES_NAME, "bar"
+
+    Set co = FirstChart(sh)
+    Assert.AreEqual 1&, CLng(co.Chart.SeriesCollection.Count), "One series is attached"
+
+    seriesValues = co.Chart.SeriesCollection(1).Values
+    Assert.AreEqual 5&, CLng(UBound(seriesValues) - LBound(seriesValues) + 1), _
+                    "The series carries all five cells of its range. Add used to " & _
+                    "keep the one filled cell alone"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestASparseColumnKeepsItsWholeRange", _
                          Err.Number, Err.Description
 End Sub
 

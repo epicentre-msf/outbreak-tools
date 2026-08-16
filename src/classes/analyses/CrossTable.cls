@@ -2168,8 +2168,17 @@ Private Sub FormatHeaders(ByVal desFormat As LLFormat, ByVal hn As HiddenNames)
                 desFormat.ApplyFormat .Range("LABEL_ROW_CATEGORIES_" & tabId), _
                                       scope:=AnalysisCategoriesLabelRow
             End If
+            'The title strip runs from the STARTCOL cell to the last column of
+            'THIS table, and the scope merges it. A table that took no column
+            'of its own answers an EndColumn left of its STARTCOL cell, and
+            'Excel reads such a backward range right to left: the strip then
+            'covered the table before, the two merges glued into one, and
+            'every title cell swallowed by the union went blank -- which is
+            'what left the go-to-header entries of a whole run of tables
+            'finding nothing. Such a table keeps its one cell.
             Set rng = .Range("STARTCOL_" & tabId)
-            Set rng = .Range(.Cells(rng.Row, rng.Column), .Cells(rng.Row, EndColumn()))
+            If EndColumn() > rng.Column Then _
+                Set rng = .Range(.Cells(rng.Row, rng.Column), .Cells(rng.Row, EndColumn()))
             desFormat.ApplyFormat rng, scope:=AnalysisTimeSeriesHeader
         End Select
     End With

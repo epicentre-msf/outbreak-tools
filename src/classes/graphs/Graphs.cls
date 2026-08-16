@@ -342,12 +342,9 @@ Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, _
         Case Else: customType = xlColumnClustered
     End Select
 
-    'Add with a Source already fills the values of the series. The class used
-    'to push the same data across a second line below, which cost one name
-    'resolution and one chart recalculation per series.
     co.Chart.SeriesCollection.Add _
         Source:=seriesRng, RowCol:=xlColumns, _
-        CategoryLabels:=False, Replace:=False
+        SeriesLabels:=False, CategoryLabels:=False, Replace:=False
 
     Set srs = LastSeries()
     If srs Is Nothing Then
@@ -355,6 +352,14 @@ Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, _
                 ", so this series is left out of the graph", checkingWarning
         Exit Sub
     End If
+
+    'The values are written again, on purpose. Add guesses how to split a
+    'Source whose cells are mostly empty, whatever the two label arguments
+    'say, and a time series column with data in its last row alone came out
+    'as a one-cell series: the chart showed one bar over the first period.
+    'This line pins the whole range as the data. The range is already in
+    'hand, so the write costs one chart recalculation and no name resolution.
+    srs.Values = seriesRng
 
     'Add a right axis if required
     If axisPos = "right" Then
