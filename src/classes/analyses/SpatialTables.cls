@@ -526,9 +526,15 @@ Public Sub Add(ByVal formObject As Formulas)
                     GeoPopulationFunction(adminName, _
                         cellRng.Cells(2, 1).Address(RowAbsolute:=False)), False
 
+                'The population lookup answers 0 for a unit the geobase does
+                'not carry, and a bare division by it left #DIV/0! in the
+                'attack rate. An error value outranks every number when the
+                'table is ordered on this column, so such a unit took rank 1.
+                'The 0 puts it last instead.
                 Builder.WriteFormula cellRng.Cells(2, 4), _
+                    "IFERROR(" & _
                     cellRng.Cells(2, 2).Address(RowAbsolute:=False) & "/" & _
-                    cellRng.Cells(2, 3).Address(RowAbsolute:=False), False
+                    cellRng.Cells(2, 3).Address(RowAbsolute:=False) & ", 0)", False
             End If
 
             'Create the ListObject

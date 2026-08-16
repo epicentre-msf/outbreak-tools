@@ -107,12 +107,6 @@ Private Const FILTERED_SHEET As String = "filtered_sheet"
 Private Const TABLE_NAME As String = "table_name"
 Private Const CONTROL_SUFFIX As String = " -- control"
 
-' How wide one dictionary control is on an HList sheet. LLdictionary expands a
-' geo control into 12 contiguous columns — 4 levels, 4 pcodes and 4 concats —
-' and an hf control into 2, the facility and its pcode.
-Private Const GEO_COLUMN_SPAN As Long = 12
-Private Const HF_COLUMN_SPAN As Long = 2
-
 ' The separator of the de-duplication index. It sits on both sides of every
 ' entry, so a short entry cannot match inside a longer one. A Const takes a
 ' constant expression, which rules out a Chr$ or ChrW$ call.
@@ -122,6 +116,11 @@ Private Const KEY_SEPARATOR As String = vbNullChar
 ' goes into the cell of the worksheet function, so the reader sees why the cell
 ' is not a value.
 Private Const NO_TABLE_ID As String = "#missing table id"
+
+' An empty string literal as a formula carries it: two doubled quotes. The
+' population wrap writes it as the IFERROR answer and the revert takes the
+' same text back off.
+Private Const EMPTY_TEXT As String = """"""
 
 ' The named ranges of one spatial analysis table. CrossTable and AnalysisOutput
 ' write them at build time, and the formula rewriting below resolves each of
@@ -470,9 +469,18 @@ End Sub
 '@label:update-one-hlist
 '@sub-title Fill the spatial tables of the variables of one HList sheet
 '@details
-'The columns of one variable sit side by side, so a geo column is followed by
-'the eleven columns of its expansion and a facility column by its pcode. A sheet
-'with no filtered companion, no table name or no first table is left alone.
+'Walks every header cell of the variable row, from the _START anchor to the
+'last used column, one column at a time. A geo1 or an hf control names a
+'variable to update and every other header is passed over. The walk used to
+'jump the width one geo expansion is expected to take, and a sheet whose
+'columns sat closer than that landed the jump past the next geo variable, so
+'its spatial tables were never filled and FindTopAdmin answered nothing for
+'them. It also used to stop on the first empty header cell, and a variable the
+'writer skipped leaves exactly that gap. The header row is read in one
+'crossing.
+'
+'A sheet with no filtered companion, no table name or no first table is left
+'alone.
 '@param sh Worksheet. The HList worksheet.
 '@param wb Workbook. The workbook holding the sheet.
 '@param shHn HiddenNames. The hidden name store of that sheet.
@@ -486,6 +494,10 @@ Private Sub UpdateOneHList(ByVal sh As Worksheet, ByVal wb As Workbook, _
     Dim tableName As String
     Dim varName As String
     Dim controlValue As String
+    Dim headerTexts As Variant
+    Dim headerValue As String
+    Dim lastCol As Long
+    Dim colIdx As Long
 
     On Error Resume Next
     Set filtsh = wb.Worksheets(shHn.ValueAsString(FILTERED_SHEET))
@@ -506,11 +518,21 @@ Private Sub UpdateOneHList(ByVal sh As Worksheet, ByVal wb As Workbook, _
     On Error GoTo 0
     If cellRng Is Nothing Then Exit Sub
 
-    Do While Not IsEmpty(cellRng)
-        controlValue = shHn.ValueAsString(cellRng.Value & CONTROL_SUFFIX)
+    lastCol = sh.Cells(cellRng.Row, sh.Columns.Count).End(xlToLeft).Column
+    If lastCol < cellRng.Column Then Exit Sub
+
+    headerTexts = RangeValues(sh.Range(cellRng, sh.Cells(cellRng.Row, lastCol)))
+
+    For colIdx = 1 To UBound(headerTexts, 2)
+        headerValue = vbNullString
+        If Not IsError(headerTexts(1, colIdx)) Then _
+            headerValue = CStr(headerTexts(1, colIdx))
+        If LenB(headerValue) = 0 Then GoTo NextColumn
+
+        controlValue = shHn.ValueAsString(headerValue & CONTROL_SUFFIX)
 
         If controlValue = "geo1" Then
-            varName = NameWithoutPrefix(cellRng.Value, ADMIN & "1_")
+            varName = NameWithoutPrefix(headerValue, ADMIN & "1_")
             Set spatialNames = ListOfExistingVarNames(varName)
 
             If spatialNames.Length > 0 Then
@@ -518,22 +540,18 @@ Private Sub UpdateOneHList(ByVal sh As Worksheet, ByVal wb As Workbook, _
                 If Not rng Is Nothing Then UpdateSpatialValue rng, spatialNames
             End If
 
-            Set cellRng = cellRng.Offset(, GEO_COLUMN_SPAN - 1)
-
         ElseIf controlValue = HF Then
-            varName = NameWithoutPrefix(cellRng.Value, HF & "_")
+            varName = NameWithoutPrefix(headerValue, HF & "_")
             Set spatialNames = ListOfExistingVarNames(varName)
 
             If spatialNames.Length > 0 Then
                 Set rng = ColumnBodyOrNothing(Lo, HF & "_" & varName)
                 If Not rng Is Nothing Then UpdateSpatialValue rng, spatialNames, isHF:=True
             End If
-
-            Set cellRng = cellRng.Offset(, HF_COLUMN_SPAN - 1)
         End If
 
-        Set cellRng = cellRng.Offset(, 1)
-    Loop
+NextColumn:
+    Next colIdx
 End Sub
 
 '@label:name-without-prefix
@@ -846,6 +864,12 @@ End Sub
 'new one, writes the new level back, and recalculates the block. The caller
 'reads the dropdown and turns its label into an admin code, because that
 'answer needs the geo sheet and this class holds none.
+'
+'The rewrite reaches the FindTopAdmin and FindTopPop formulas of the block
+'too, and moves the level inside their quoted variable argument with the
+'rest. That is why EventLinelist.BareSpatialName strips the concat tag at any
+'level: it used to know the adm1 spelling alone, so the first level change
+'broke every ranked lookup of the table.
 '@param sh Worksheet. The spatial analysis sheet.
 '@param tabId String. The identifier of the analysis table.
 '@param newAdmin String. The admin code to move to, "adm1" to "adm4" or "hf".
@@ -993,12 +1017,15 @@ End Function
 '@details
 'Walks the OUTER_VALUES_ block and rewraps each formula that reads the concat
 'column of the given admin code. The first application wraps the formula as
-'"factor * formula / population cell", a later one swaps the old factor for
-'the new, and revertBack unwraps both pieces. The factor comes from the
-'POPFACT_ cell and falls back to 100 when that cell does not read as a number.
-'The tables are reordered on the attack rate while the division is on, and on
-'the plain value once it is off. The factor applied is written into the
-'POPPREVFACT_ cell, so the next call knows what to swap or unwrap.
+'"IFERROR(factor * formula / population cell, "")", so a row whose population
+'cell holds 0 or nothing shows an empty cell. The division used to be written
+'bare, and every such row showed #DIV/0!. A later application swaps the old
+'factor for the new, and revertBack unwraps the whole thing, the bare shape an
+'older linelist wrote included. The factor comes from the POPFACT_ cell and
+'falls back to 100 when that cell does not read as a number. The tables are
+'reordered on the attack rate while the division is on, and on the plain value
+'once it is off. The factor applied is written into the POPPREVFACT_ cell, so
+'the next call knows what to swap or unwrap.
 '@param sh Worksheet. The spatial analysis sheet.
 '@param tabId String. The identifier of the analysis table.
 '@param adminName String. The admin code the formulas read, "adm1" to "adm4" or "hf".
@@ -1040,13 +1067,26 @@ Public Sub ApplyPopulationFactor(ByVal sh As Worksheet, ByVal tabId As String, _
             popAddress = sh.Cells(cellRng.Row, rowRng.Column - 1).Address
 
             If (Not revertBack) And (prevFact = 0) Then
-                formulaText = Replace(formulaText, "=", vbNullString)
-                formulaText = "= " & factorMult & "*" & formulaText & _
-                              "/" & popAddress
+                'Only the leading equal sign comes off. Replacing every "=" in
+                'the text also broke the comparisons a formula can carry.
+                formulaText = Trim$(formulaText)
+                If Left$(formulaText, 1) = "=" Then _
+                    formulaText = Trim$(Mid$(formulaText, 2))
+                formulaText = "=IFERROR(" & factorMult & "*" & formulaText & _
+                              "/" & popAddress & "," & EMPTY_TEXT & ")"
             ElseIf (Not revertBack) And (prevFact <> 0) Then
-                formulaText = Replace(formulaText, CStr(prevFact), _
-                                      CStr(factorMult))
+                'The star ties the match to the factor. A bare number also
+                'matched the digits of the population cell address.
+                formulaText = Replace(formulaText, CStr(prevFact) & "*", _
+                                      CStr(factorMult) & "*")
             ElseIf prevFact <> 0 Then
+                'The IFERROR pieces come off first, and the bare "/ population
+                'cell" replace below still unwraps the shape an older linelist
+                'wrote.
+                formulaText = Replace(formulaText, "=IFERROR(", "=")
+                formulaText = Replace(formulaText, _
+                                      "/" & popAddress & "," & EMPTY_TEXT & ")", _
+                                      vbNullString)
                 formulaText = Replace(formulaText, CStr(prevFact) & "*", _
                                       vbNullString)
                 formulaText = Replace(formulaText, "/" & popAddress, _

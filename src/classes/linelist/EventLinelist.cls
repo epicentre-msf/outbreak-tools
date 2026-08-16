@@ -127,8 +127,11 @@ Private Const GEOSCOPENONE      As Long = -1
 
 ' The tags TableSpecs.SpatialConcatVariableName writes in front of the bare
 ' variable name when it authors the spatial formulas. BareSpatialName takes
-' them back off.
-Private Const CONCATADMPREFIX   As String = "concat_adm1_"
+' them back off. The concat tag is a Like pattern: the formulas are written
+' on the adm1 spelling, and LLSpatial.ChangeAdminLevel moves the level inside
+' the quoted argument whenever the user picks another one, so the tag comes
+' in carrying any of the four digits.
+Private Const CONCATADMPATTERN  As String = "concat_adm#_"
 Private Const HFPREFIX          As String = "hf_"
 
 ' The cell beside each spatial admin dropdown, holding the admin level that
@@ -823,19 +826,23 @@ End Function
 '@sub-title Take the authored spatial tag off a variable name.
 '@details
 'The spatial formulas carry the dictionary variable the tables were summed
-'over -- "concat_adm1_" in front of a geographic name, "hf_" in front of a
+'over -- "concat_adm<n>_" in front of a geographic name, "hf_" in front of a
 'facility one -- and the spatial tables are keyed on the bare name. The tag
 'comes off whole, so a bare name carrying underscores of its own survives; a
 'name with no tag passes through unchanged, and the table lookup then answers
-'its usual empty string. The delegates below used to split on "_" and count
-'characters instead, which cut an underscored name short and raised on a name
-'shorter than the tag.
+'its usual empty string.
+'
+'The geographic tag is matched at every level. The formulas are authored on
+'the adm1 spelling, and LLSpatial.ChangeAdminLevel rewrites the level inside
+'the quoted argument when the user picks another one. The strip used to know
+'"concat_adm1_" alone, so the first level change left the tag on, the table
+'lookup missed, and FindTopAdmin answered nothing for the rest of the session.
 '@param varName String. Variable name as the formula carries it.
 '@return String. The bare variable name.
 '@export
 Public Function BareSpatialName(ByVal varName As String) As String
-    If Left$(varName, Len(CONCATADMPREFIX)) = CONCATADMPREFIX Then
-        BareSpatialName = Mid$(varName, Len(CONCATADMPREFIX) + 1)
+    If varName Like CONCATADMPATTERN & "*" Then
+        BareSpatialName = Mid$(varName, Len(CONCATADMPATTERN) + 1)
     ElseIf Left$(varName, Len(HFPREFIX)) = HFPREFIX Then
         BareSpatialName = Mid$(varName, Len(HFPREFIX) + 1)
     Else

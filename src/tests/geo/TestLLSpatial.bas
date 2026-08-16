@@ -276,11 +276,15 @@ End Function
 'companion, and one column per variable name given. Row 8 holds the variable
 'name and the _START cell, and each column carries its control value under the
 'key VarWriter writes: "<variable> -- control". The columns of one geo variable
-'take twelve places on the sheet, so the next one starts twelve columns along.
+'take twelve places on a generated sheet, and columnStep places them that far
+'apart by default. A test hands in a smaller step to lay the variables closer,
+'which is the shape the update walk used to jump past.
 '@param wb Workbook. The workbook to add it to.
 '@param columnNames Variant. The header value of each geo column, "adm1_<variable>".
+'@param columnStep Optional Long. Columns between two variables. Defaults to 12.
 '@return Worksheet. The HList worksheet.
-Private Function AddHListSheet(ByVal wb As Workbook, ByVal columnNames As Variant) As Worksheet
+Private Function AddHListSheet(ByVal wb As Workbook, ByVal columnNames As Variant, _
+                               Optional ByVal columnStep As Long = 12) As Worksheet
     Dim sh As Worksheet
     Dim store As HiddenNames
     Dim counter As Long
@@ -303,11 +307,27 @@ Private Function AddHListSheet(ByVal wb As Workbook, ByVal columnNames As Varian
 
         If counter = LBound(columnNames) Then sh.Cells(8, colIndex).Name = START_NAME
 
-        colIndex = colIndex + 12
+        colIndex = colIndex + columnStep
     Next
 
     Set AddHListSheet = sh
 End Function
+
+'@sub-title Grow the filtered companion with the concat columns of "deaths".
+'@details
+'Four more columns on the same ListObject. Q1 appears twice, so a correct
+'update writes two distinct rows for the first level. The deaths rows stop one
+'short of the cases rows, which leaves a blank the update has to drop.
+'@param filtSh Worksheet. The filtered companion sheet.
+Private Sub AddDeathsColumns(ByVal filtSh As Worksheet)
+    WriteRow filtSh.Cells(1, 5), "concat_adm1_deaths", "concat_adm2_deaths", _
+                                 "concat_adm3_deaths", "concat_adm4_deaths"
+    WriteRow filtSh.Cells(2, 5), "Q1", "Q1D1", "Q1D1S1", "Q1D1S1V1"
+    WriteRow filtSh.Cells(3, 5), "Q2", "Q2D1", "Q2D1S1", "Q2D1S1V1"
+    WriteRow filtSh.Cells(4, 5), "Q1", "Q1D1", "Q1D1S1", "Q1D1S1V1"
+
+    filtSh.ListObjects(1).Resize filtSh.Range(filtSh.Cells(1, 1), filtSh.Cells(6, 8))
+End Sub
 
 '@sub-title The column a new spatial table starts in.
 '@details
@@ -674,6 +694,54 @@ Public Sub TestUpdateFillsTheAdminTable()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestUpdateFillsTheAdminTable", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify Update reaches a second geo variable past a column gap.
+'@details
+'Arranges two geo variables three columns apart, with empty header cells
+'between them, and spatial tables for both. Acts by calling Update. Asserts
+'the tables of both variables are filled. The walk used to jump the width of
+'one full geo expansion after a geo1 column and stopped on the first empty
+'header cell, so a sheet whose columns sat closer than the expansion left
+'every later geo variable with empty tables, and FindTopAdmin answered
+'nothing for them.
+'@TestMethod("LLSpatial")
+Public Sub TestUpdateReachesASecondGeoVariablePastAColumnGap()
+    CustomTestSetTitles Assert, "LLSpatial", "TestUpdateReachesASecondGeoVariablePastAColumnGap"
+    On Error GoTo TestFail
+
+    Dim wb As Workbook
+    Dim sh As Worksheet
+    Dim filtSh As Worksheet
+    Dim sp As LLSpatial
+
+    Set wb = BuildSpatialWorkbook(withRegistry:=True)
+    Set sh = wb.Worksheets(SPATIAL_SHEET)
+    Set filtSh = AddFilteredSheet(wb)
+    AddDeathsColumns filtSh
+    AddHListSheet wb, Array("adm1_cases", "adm1_deaths"), columnStep:=3
+    RegisterSpatialVar sh, "cases_sp1"
+    RegisterSpatialVar sh, "deaths_sp1"
+    AddSpatialTables sh, "cases_sp1", filtSh
+    AddSpatialTables sh, "deaths_sp1", Nothing
+
+    Set sp = LLSpatial.Create(sh)
+    sp.Update
+
+    Assert.AreEqual CLng(3), RowCountOf(sh, "spatial_adm1_cases_sp1"), _
+                    "The first variable is filled the way it always was"
+    Assert.AreEqual CLng(2), RowCountOf(sh, "spatial_adm1_deaths_sp1"), _
+                    "The second variable is filled too. The walk used to " & _
+                    "jump past it"
+    Assert.AreEqual CLng(2), RowCountOf(sh, "spatial_adm4_deaths_sp1"), _
+                    "and its admin 4 table is filled from the fourth concat column"
+
+    DeleteWorkbook wb
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestUpdateReachesASecondGeoVariablePastAColumnGap", _
+                         Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify Update puts no blank row in a spatial table.
@@ -1507,6 +1575,8 @@ Public Sub TestApplyPopulationFactorDividesThenReverts()
                   "The applied formula should carry the factor"
     Assert.IsTrue (InStr(1, sh.Range("C2").Formula, "/$A$2") > 0), _
                   "The applied formula should divide by the population cell"
+    Assert.IsTrue (InStr(1, sh.Range("C2").Formula, "IFERROR") > 0), _
+                  "The applied formula should catch the division errors"
     Assert.AreEqual 50, CLng(sh.Range("POPPREVFACT_tstf").Value), _
                     "The applied factor should be recorded"
 
@@ -1522,6 +1592,95 @@ Public Sub TestApplyPopulationFactorDividesThenReverts()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestApplyPopulationFactorDividesThenReverts", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify a divided row with no population shows an empty cell.
+'@details
+'Arranges a data cell summing a real named range, with the population cell of
+'its row holding 0. Acts by applying the division. Asserts the cell shows an
+'empty string, and shows the divided value once the population cell holds a
+'number. The division used to be written bare, and every row whose population
+'read 0 showed #DIV/0!.
+'@TestMethod("LLSpatial")
+Public Sub TestADividedRowWithNoPopulationShowsEmpty()
+    CustomTestSetTitles Assert, "LLSpatial", "TestADividedRowWithNoPopulationShowsEmpty"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim sp As LLSpatial
+
+    Set sh = BuildAnalysisFixture("tstp")
+    sh.Names.Add Name:="concat_adm1_cases", RefersTo:=sh.Range("H2:H3")
+    sh.Range("H2").Value = 3
+    sh.Range("H3").Value = 4
+    sh.Range("C2").Formula = "=SUM(concat_adm1_cases)"
+    sh.Range("A2").Value = 0
+    sh.Range("POPFACT_tstp").Value = 100
+    sh.Range("POPPREVFACT_tstp").Value = 0
+
+    Set sp = LLSpatial.Create(BuildSpatialFixture())
+    sp.ApplyPopulationFactor sh, "tstp", "adm1"
+
+    Assert.AreEqual vbNullString, CStr(sh.Range("C2").Value), _
+                    "A population of 0 shows an empty cell. It used to show #DIV/0!"
+
+    sh.Range("A2").Value = 700
+    sh.Range("C2").Calculate
+
+    Assert.AreEqual 1#, CDbl(sh.Range("C2").Value), _
+                    "A real population divides: 100 * 7 / 700 is 1"
+
+    DropFixtureName sh, "concat_adm1_cases"
+    Exit Sub
+TestFail:
+    DropFixtureName sh, "concat_adm1_cases"
+    CustomTestLogFailure Assert, "TestADividedRowWithNoPopulationShowsEmpty", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Delete one sheet-scoped name a test added.
+'@param sh Worksheet. The sheet carrying the name.
+'@param fixtureName String. The name to remove.
+Private Sub DropFixtureName(ByVal sh As Worksheet, ByVal fixtureName As String)
+    If sh Is Nothing Then Exit Sub
+    On Error Resume Next
+    sh.Names(fixtureName).Delete
+    On Error GoTo 0
+End Sub
+
+'@sub-title Verify revertBack unwraps the shape an older linelist wrote.
+'@details
+'Arranges a data cell holding the bare wrap written before the IFERROR one:
+'"= factor*formula/population cell". Acts by reverting. Asserts the formula
+'comes back free of the factor and the population cell, so a linelist divided
+'by an older version reverts cleanly under the new code.
+'@TestMethod("LLSpatial")
+Public Sub TestRevertUnwrapsTheShapeAnOlderLinelistWrote()
+    CustomTestSetTitles Assert, "LLSpatial", "TestRevertUnwrapsTheShapeAnOlderLinelistWrote"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim sp As LLSpatial
+
+    Set sh = BuildAnalysisFixture("tstq")
+    sh.Range("C2").Formula = "= 50*SUM(concat_adm1_cases)/$A$2"
+    sh.Range("POPFACT_tstq").Value = 50
+    sh.Range("POPPREVFACT_tstq").Value = 50
+
+    Set sp = LLSpatial.Create(BuildSpatialFixture())
+    sp.ApplyPopulationFactor sh, "tstq", "adm1", revertBack:=True
+
+    Assert.IsTrue (InStr(1, sh.Range("C2").Formula, "50*") = 0), _
+                  "The reverted formula should hold no factor"
+    Assert.IsTrue (InStr(1, sh.Range("C2").Formula, "/$A$2") = 0), _
+                  "The reverted formula should hold no population cell"
+    Assert.AreEqual 0, CLng(sh.Range("POPPREVFACT_tstq").Value), _
+                    "The revert should clear the recorded factor"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestRevertUnwrapsTheShapeAnOlderLinelistWrote", _
+                         Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify FormatPopulationFactor shows and hides the factor cells.

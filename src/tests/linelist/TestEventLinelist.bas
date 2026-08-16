@@ -1281,6 +1281,12 @@ Public Sub TestBareSpatialNameTakesTheTagOffWhole()
                     "The geo tag comes off the front"
     Assert.AreEqual "case_zone", sut.BareSpatialName("concat_adm1_case_zone"), _
                     "A bare name carrying underscores survives whole"
+    Assert.AreEqual "myvar", sut.BareSpatialName("concat_adm4_myvar"), _
+                    "The geo tag comes off at every level. ChangeAdminLevel " & _
+                    "rewrites the level inside the quoted argument, and the " & _
+                    "strip used to know the adm1 spelling alone"
+    Assert.AreEqual "myvar", sut.BareSpatialName("concat_adm2_myvar"), _
+                    "and level 2 strips the same way"
     Assert.AreEqual "facility", sut.BareSpatialName("hf_facility"), _
                     "The facility tag comes off the front"
     Assert.AreEqual "health_post", sut.BareSpatialName("hf_health_post"), _
@@ -1321,6 +1327,8 @@ Public Sub TestBareSpatialNamePassesUntaggedNamesThrough()
                     "A name with no tag passes through unchanged"
     Assert.AreEqual vbNullString, sut.BareSpatialName("concat_adm1_"), _
                     "A tag with nothing behind it answers empty"
+    Assert.AreEqual "concat_admin_myvar", sut.BareSpatialName("concat_admin_myvar"), _
+                    "A name whose tag carries no level digit passes through unchanged"
 
     Exit Sub
 TestFail:

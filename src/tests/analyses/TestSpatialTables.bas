@@ -892,6 +892,10 @@ Public Sub TestGeoWritesThePopulationAndAttackRate()
     Assert.IsTrue IsFormula(attackFormula), _
                   "The attack rate divides the value by the population, and it holds [" & _
                   attackFormula & "]"
+    Assert.IsTrue (InStr(1, attackFormula, "IFERROR") > 0), _
+                  "The attack rate answers 0 when the population reads 0. The bare " & _
+                  "division left #DIV/0!, and an error outranks every number when " & _
+                  "the table is ordered on this column"
 
     Exit Sub
 TestFail:
