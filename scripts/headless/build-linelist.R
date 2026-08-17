@@ -632,7 +632,8 @@ excel_running <- function() {
   identical(system2("pgrep", c("-x", shQuote("Microsoft Excel")),
                     stdout = FALSE, stderr = FALSE), 0L)
 }
-if (excel_running()) {
+clear_excel <- function() {
+  if (!excel_running()) return(invisible(TRUE))
   # `quit`, never pkill. The sandbox grant is a bookmark Excel holds and writes
   # out on normal termination; a killed Excel can lose it, and losing it costs
   # the operator the grant panel again on the next run.
@@ -647,7 +648,9 @@ if (excel_running()) {
   if (excel_running()) {
     stop("build-linelist.R: Excel would not quit; close it by hand before re-running.")
   }
+  invisible(TRUE)
 }
+clear_excel()
 
 # --- 5) build ----------------------------------------------------------------
 # Every path here is inside obt_home, which is the last argument and the only
@@ -659,12 +662,92 @@ trigger_args <- shQuote(c(
   need_pick
 ))
 
-message("build-linelist.R: launching Excel via ",
-        if (on_windows) "cscript" else "osascript", " ...")
-trigger_rc <- if (on_windows) {
-  system2("cscript", c("//nologo", trigger_args))
-} else {
-  system2("osascript", trigger_args)
+# ONE RETRY, AND ONLY ON THE TWO FAILURES THAT ARE KNOWN TO BE FLAKY.
+# -----------------------------------------------------------------------------
+# Two failures on this platform come and go on a configuration that is otherwise
+# byte-identical:
+#
+#   ERROR 51, Excel's own "internal error", raised while a data entry sheet is
+#   being built. Measured 1 run in 16, and four runs with the same arguments
+#   passed either side of it.
+#
+#   No report at all, which is Excel dying or wedging between the import and the
+#   end of the build. The trigger then reads a dead connection and osascript
+#   comes back -609, Connection is invalid.
+#
+# Neither is something this script can prevent and neither says anything is
+# wrong with the setup, the designer or the source. A single re-run turns a
+# 1-in-16 flake into roughly 1-in-250, which is the difference between a build
+# an operator can trust and one they have to babysit.
+#
+# The retry is deliberately narrow. A real fault -- a missing setup, a geobase
+# Excel refuses, a compile error, anything the build itself reports -- is NOT
+# retried: it would fail again and the second run would only cost four minutes
+# and blur the evidence. A wedge that repeats also stops after the second go.
+MAX_ATTEMPTS <- 2L
+report_lines <- character(0)
+fields       <- character(0)
+narrative    <- character(0)
+outcome      <- ""
+trigger_rc   <- -1L
+retried      <- FALSE
+
+for (attempt in seq_len(MAX_ATTEMPTS)) {
+  clear_excel()
+
+  # The previous attempt's report is removed rather than written over, so a
+  # second attempt that produces nothing can never be read against the first
+  # attempt's answer.
+  unlink(report_path, force = TRUE)
+
+  # Re-stamped per attempt, so the staleness check below judges each attempt
+  # against its own clock rather than against the start of the run.
+  run_started <- Sys.time()
+
+  message("build-linelist.R: launching Excel via ",
+          if (on_windows) "cscript" else "osascript",
+          if (attempt > 1L) paste0(" (attempt ", attempt, " of ", MAX_ATTEMPTS, ")") else "",
+          " ...")
+  trigger_rc <- if (on_windows) {
+    system2("cscript", c("//nologo", trigger_args))
+  } else {
+    system2("osascript", trigger_args)
+  }
+
+  have_report <- file.exists(report_path) && file.size(report_path) > 0L
+  if (have_report) {
+    report_lines <- readLines(report_path, warn = FALSE)
+    marker    <- match("--report--", report_lines)
+    fields    <- if (is.na(marker)) report_lines else report_lines[seq_len(marker - 1L)]
+    narrative <- if (is.na(marker)) character(0) else report_lines[-seq_len(marker)]
+    hit       <- grep("^outcome=", fields, value = TRUE)
+    outcome   <- if (!length(hit)) "" else sub("^outcome=", "", hit[1])
+  } else {
+    report_lines <- character(0)
+    fields       <- character(0)
+    narrative    <- character(0)
+    outcome      <- ""
+  }
+
+  flaky <- if (!have_report) {
+    sprintf("the trigger wrote no report (osascript returned %d)", trigger_rc)
+  } else if (grepl("ERROR 51", outcome, fixed = TRUE)) {
+    paste0("the build answered ", outcome)
+  } else {
+    ""
+  }
+
+  if (!nzchar(flaky) || attempt == MAX_ATTEMPTS) break
+
+  retried <- TRUE
+  message("\nbuild-linelist.R: ", flaky, ".")
+  message("build-linelist.R: that failure is a known flake on this platform, ",
+          "running it once more.\n")
+}
+
+if (retried) {
+  message("build-linelist.R: NOTE, this run needed a second attempt. ",
+          "The first one hit a known flake.")
 }
 
 # --- 6) read back ------------------------------------------------------------
@@ -697,15 +780,11 @@ fail <- function(msg) {
   quit(status = 1L, save = "no")
 }
 
-if (!file.exists(report_path) || file.size(report_path) == 0L) {
-  fail(sprintf("the trigger wrote no report (osascript returned %d; Excel may have wedged on a dialog).",
+if (!length(fields)) {
+  fail(sprintf(paste0("the trigger wrote no report on either attempt (osascript returned %d; ",
+                      "Excel may have wedged on a dialog)."),
                trigger_rc))
 }
-
-report_lines <- readLines(report_path, warn = FALSE)
-marker <- match("--report--", report_lines)
-fields <- if (is.na(marker)) report_lines else report_lines[seq_len(marker - 1L)]
-narrative <- if (is.na(marker)) character(0) else report_lines[-seq_len(marker)]
 
 field <- function(key) {
   hit <- grep(paste0("^", key, "="), fields, value = TRUE)
