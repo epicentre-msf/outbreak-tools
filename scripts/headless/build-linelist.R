@@ -567,6 +567,43 @@ dir.create(dest_folder, recursive = TRUE, showWarnings = FALSE)
 # let a failed run report a file on disk and read as a success. So the run
 # stamps the clock here instead, and section 6 refuses any output older than it.
 build_leaves <- c(".xlsb", "-generation.txt", "-designer.xlsb")
+
+# THE PREVIOUS RUN'S FILES ARE MOVED ASIDE, NOT DROPPED.
+# -----------------------------------------------------------------------------
+# Every delivered name is built from --name, so two runs sharing a --name write
+# over each other's whole output set: the linelist, the designer copy and all
+# four logs. The default --name in the wrapper made that the normal case, and it
+# cost real evidence -- a run investigating a failure destroyed the artefacts of
+# the failure it was investigating, and the only reason its Excel version was
+# ever recovered is that one earlier run happened to use a different name.
+#
+# So the set is moved into <name>-previous/ first. One generation, overwritten
+# each time, which is the generation that matters: the run before this one is
+# what a failure gets compared against. Disk use stays bounded, and a rebuild
+# loop needs no extra flag.
+archive_leaves <- c(build_leaves, "-import.log", "-build-report.txt", "-trace.txt")
+prev_folder <- file.path(dest_folder, paste0(out_name, "-previous"))
+same_folder <- identical(normalizePath(dest_folder, mustWork = FALSE),
+                         normalizePath(build_out, mustWork = FALSE))
+
+if (!same_folder) {
+  standing <- file.path(dest_folder, paste0(out_name, archive_leaves))
+  standing <- standing[file.exists(standing)]
+  if (length(standing)) {
+    unlink(prev_folder, recursive = TRUE, force = TRUE)
+    dir.create(prev_folder, recursive = TRUE, showWarnings = FALSE)
+    for (from in standing) {
+      to <- file.path(prev_folder, basename(from))
+      # Renamed where it can be, copied where it cannot: --out on another volume
+      # makes a rename fail, and losing the file to a tidy-up is the one outcome
+      # this block exists to prevent.
+      if (!file.rename(from, to)) file.copy(from, to, overwrite = TRUE)
+    }
+    message("build-linelist.R: previous -> ", length(standing),
+            " file(s) moved to ", prev_folder)
+  }
+}
+
 for (leaf in build_leaves) {
   unlink(file.path(dest_folder, paste0(out_name, leaf)), force = TRUE)
 }
