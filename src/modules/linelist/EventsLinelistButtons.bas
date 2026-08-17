@@ -575,6 +575,22 @@ End Sub
 
 '@Description("Callback for click on show/hide in a linelist worksheet on a button")
 '@EntryPoint
+'
+'WHY THE WHOLE SESSION RUNS QUIET
+'-------------------------------------------------------------------------------
+'The store sheet and the user log are both worksheets of this workbook, so every
+'read that has to build the store table, every save at the foot, and every log
+'line writes a cell and raises Workbook_SheetChange. That handler takes the busy
+'state with the northwest arrow, which sets the mouse pointer and turns screen
+'updating off, and gives both back a moment later. Opening the form, closing it,
+'and stepping into the sections form each paid that round trip, and the pointer
+'flipping and the screen repainting is what the user sees.
+'
+'Worksheet events have nothing to answer during a show/hide session. The form is
+'modal, so no cell can be touched while it is up, and the column writes the form
+'makes -- hidden, width, orientation -- raise no event of their own. The quiet
+'state is the events-only half of the busy state, so it leaves the pointer, the
+'screen and the calculation mode exactly as the user had them.
 Public Sub ClickShowHide()
     Attribute ClickShowHide.VB_Description = "Callback for click on show/hide in a linelist worksheet on a button"
 
@@ -591,9 +607,15 @@ Public Sub ClickShowHide()
         Exit Sub
     End If
 
+    'The label below owes the exit on every path from here on, the raise inside
+    'the form included. Worksheet events left off would follow the user for the
+    'rest of the session.
+    On Error GoTo CleanUp
+    LinelistEventsManager.LLEnterQuietState
+
     InitializeTrads
 
-    If Not OpenShowHideFor(sh) Then Exit Sub
+    If Not OpenShowHideFor(sh) Then GoTo CleanUp
 
     'Read the choices of the last session and put the sheet in step with them.
     'With nothing saved yet, the sheet is the record: read it into the entries, so
@@ -623,9 +645,13 @@ Public Sub ClickShowHide()
     SaveShowHideState showHideEntries, activeLayout
     LogShowHideLine "ClickShowHide", "showhide", activeLayout, _
                     EntryCountText(showHideEntries, sh.Name)
-    Set activeShowHideForm = Nothing
 
+CleanUp:
+    If Err.Number <> 0 Then LogFailureLine "ClickShowHide", "showhide", Err.Description
+    Set activeShowHideForm = Nothing
     ProtectAfterShowHide sh
+    LinelistEventsManager.LLRestPointer
+    LinelistEventsManager.LLExitQuietState
 End Sub
 
 'Put the sheet back under protection once a show/hide session ends.
@@ -867,6 +893,13 @@ Public Sub ClickOpenShowHideSections()
 
     On Error GoTo ErrHand
 
+    'The same quiet stretch ClickShowHide opens, and for the same reason: the
+    'load below, the save at the foot and the log line all write a cell of this
+    'workbook. The nesting is counted, so this is right whether the press came
+    'from the show/hide form -- which already has one open -- or from the ribbon
+    'on its own.
+    LinelistEventsManager.LLEnterQuietState
+
     'The show/hide form is open on top of its own sheet, and that is the sheet
     'the sections belong to. ActiveSheet answers the same thing while the form
     'is up, and it is what a press from the ribbon has.
@@ -883,13 +916,13 @@ Public Sub ClickOpenShowHideSections()
     'Sections are laid out on the data entry sheets alone.
     If (shType <> "HList") And (shType <> "VList") Then
         WarningOnSheet "ClickOpenShowHideSections", "MSG_DataSheet"
-        Exit Sub
+        GoTo ErrHand
     End If
 
     Set activeSections = SectionContextFor(sh, shType)
     If activeSections Is Nothing Then
         WarningOnSheet "ClickOpenShowHideSections", "MSG_SectionTitleCell"
-        Exit Sub
+        GoTo ErrHand
     End If
 
     'The form is reached by name rather than written into the code.
@@ -909,7 +942,7 @@ Public Sub ClickOpenShowHideSections()
     If activeSectionsForm Is Nothing Then
         LogWarningLine "ClickOpenShowHideSections", "showhide-sections", "no form named F_ShowHideSections"
         WarningOnSheet "ClickOpenShowHideSections", "MSG_NoSectionsForm"
-        Exit Sub
+        GoTo ErrHand
     End If
 
     PopulateSectionsList activeSectionsForm
@@ -940,6 +973,8 @@ ErrHand:
 
     Set activeSections = Nothing
     Set activeSectionsForm = Nothing
+    LinelistEventsManager.LLRestPointer
+    LinelistEventsManager.LLExitQuietState
 End Sub
 
 '@Description("Callback for click on the list of the sections form")
@@ -2243,13 +2278,19 @@ End Sub
 Public Sub ClickShowHideLayouts()
     Attribute ClickShowHideLayouts.VB_Description = "Callback for click on the layouts button of the show/hide form"
 
+    'The saved layouts live on a worksheet, so the form writes cells and so does
+    'the read below. Quiet keeps Workbook_SheetChange out of it, and with it the
+    'busy state that flips the mouse pointer and repaints the screen.
+    On Error GoTo CleanUp
+    LinelistEventsManager.LLEnterQuietState
+
     F_ShowHideSave.Show
 
     'The show/hide form hides itself before this runs, but ClickShowHide still
     'saves the pair once the click handler returns. The pair is read back from
     'the store here, so that save records what the sheets now show rather than
     'the choices from before a restore.
-    If showHideEntries Is Nothing Then Exit Sub
+    If showHideEntries Is Nothing Then GoTo CleanUp
 
     If LoadShowHideState(showHideEntries, activeLayout) > 0 Then
         showHideEntries.Apply activeLayout
@@ -2260,6 +2301,11 @@ Public Sub ClickShowHideLayouts()
     If Not activeShowHideForm Is Nothing Then
         PopulateShowHideList activeShowHideForm
     End If
+
+CleanUp:
+    If Err.Number <> 0 Then LogFailureLine "ClickShowHideLayouts", "showhide-layouts", Err.Description
+    LinelistEventsManager.LLRestPointer
+    LinelistEventsManager.LLExitQuietState
 End Sub
 
 '@Description("Match the show/hide state in the linelist from the print sheet")

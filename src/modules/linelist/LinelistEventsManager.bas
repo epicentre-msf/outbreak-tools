@@ -132,6 +132,32 @@ Public Sub LLExitQuietState()
 End Sub
 
 
+'@section The resting pointer
+'===============================================================================
+
+'@sub-title Put the mouse pointer back on the arrow the session rests on.
+'@details
+'OnWorkbookOpen parks the pointer on the north-west arrow, and every busy state
+'of the session shows that same arrow. The two being equal is what makes an
+'event leave no visible pointer change: ApplicationState snapshots the standing
+'cursor and puts it back, so arrow follows arrow and the user sees nothing.
+'
+'A modal form breaks that. Excel hands the pointer back on the default cursor
+'once the form closes, so the standing cursor is no longer the arrow, and from
+'there every selection on a data entry sheet flicks the pointer twice -- to the
+'arrow on the way in and to the default on the way out. The form is gone by
+'then, so the flicking outlives the thing that caused it.
+'
+'One call on the way out of a form session puts the invariant back. It is here
+'rather than inline because the arrow is the manager's own answer, and a caller
+'naming xlNorthwestArrow itself would be a second owner of it.
+Public Sub LLRestPointer()
+    On Error Resume Next
+    Application.Cursor = xlNorthwestArrow
+    On Error GoTo 0
+End Sub
+
+
 '@section Service Lifecycle
 '===============================================================================
 

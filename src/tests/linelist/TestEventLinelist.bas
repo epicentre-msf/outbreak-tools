@@ -2173,3 +2173,121 @@ TestFail:
                          "TestQuietStatePutsBackWhatItFound", _
                          Err.Number, Err.Description
 End Sub
+
+'@sub-title The quiet state takes the events and nothing else.
+'@details
+'This is what the show/hide session runs under. The form is modal and its own
+'writes raise no worksheet event, so all it needs is silence -- and the busy
+'state would give it far more than that. The busy state turns the screen off and
+'sets the pointer to the arrow, and giving both back at the end of every store
+'write and every log line is what made the form flicker on open, on close and on
+'the step into the sections form.
+'
+'The pointer and the screen are read on both sides of the stretch. A quiet state
+'that touched either would put that flicker straight back.
+'@TestMethod("EventLinelist")
+Public Sub TestQuietStateLeavesThePointerAndTheScreenAlone()
+    CustomTestSetTitles Assert, TESTMODULE, "TestQuietStateLeavesThePointerAndTheScreenAlone"
+    On Error GoTo TestFail
+
+    Dim pointerBefore As XlMousePointer
+
+    pointerBefore = Application.Cursor
+    Application.Cursor = xlWait
+    Application.ScreenUpdating = True
+
+    LinelistEventsManager.LLEnterQuietState
+    Assert.AreEqual CLng(xlWait), CLng(Application.Cursor), _
+                     "A quiet stretch has no business with the pointer"
+    Assert.IsTrue Application.ScreenUpdating, _
+                  "A quiet stretch has no business with the screen"
+
+    LinelistEventsManager.LLExitQuietState
+    Assert.AreEqual CLng(xlWait), CLng(Application.Cursor), _
+                     "And it leaves the pointer where it found it on the way out"
+    Assert.IsTrue Application.ScreenUpdating, _
+                  "And the screen with it"
+
+    Application.Cursor = pointerBefore
+
+    Exit Sub
+TestFail:
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    Application.Cursor = xlDefault
+    CustomTestLogFailure Assert, _
+                         "TestQuietStateLeavesThePointerAndTheScreenAlone", _
+                         Err.Number, Err.Description
+End Sub
+
+
+'@section The resting pointer
+'===============================================================================
+'OnWorkbookOpen parks the pointer of a generated linelist on the north-west
+'arrow, and every busy state of the session shows that same arrow. The two being
+'equal is what makes an event leave no visible change: ApplicationState
+'snapshots the standing pointer and puts it back, so arrow follows arrow.
+'
+'A modal form breaks it. Excel hands the pointer back on the default cursor once
+'the form closes, so the standing pointer is no longer the arrow, and from there
+'every selection on a data entry sheet flicks it twice -- to the arrow going in
+'and to the default coming out. The form is long gone by then. LLRestPointer is
+'called on the way out of each form session to put the invariant back.
+
+'@sub-title The rest call parks the pointer on the arrow.
+'@TestMethod("EventLinelist")
+Public Sub TestRestPointerParksThePointerOnTheArrow()
+    CustomTestSetTitles Assert, TESTMODULE, "TestRestPointerParksThePointerOnTheArrow"
+    On Error GoTo TestFail
+
+    Dim pointerBefore As XlMousePointer
+
+    pointerBefore = Application.Cursor
+
+    'What a closed modal form leaves behind.
+    Application.Cursor = xlDefault
+
+    LinelistEventsManager.LLRestPointer
+    Assert.AreEqual CLng(xlNorthwestArrow), CLng(Application.Cursor), _
+                     "The rest call should put the pointer back on the arrow"
+
+    Application.Cursor = pointerBefore
+
+    Exit Sub
+TestFail:
+    Application.Cursor = xlDefault
+    CustomTestLogFailure Assert, _
+                         "TestRestPointerParksThePointerOnTheArrow", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Calling it on a pointer already at rest changes nothing.
+'@details
+'The three show/hide handlers call it from a label every path reaches, the path
+'that opened no form included. It has to be safe to call when there is nothing
+'to put right.
+'@TestMethod("EventLinelist")
+Public Sub TestRestPointerIsSafeWhenThePointerIsAlreadyAtRest()
+    CustomTestSetTitles Assert, TESTMODULE, "TestRestPointerIsSafeWhenThePointerIsAlreadyAtRest"
+    On Error GoTo TestFail
+
+    Dim pointerBefore As XlMousePointer
+
+    pointerBefore = Application.Cursor
+
+    Application.Cursor = xlNorthwestArrow
+    LinelistEventsManager.LLRestPointer
+    LinelistEventsManager.LLRestPointer
+
+    Assert.AreEqual CLng(xlNorthwestArrow), CLng(Application.Cursor), _
+                     "A pointer already at rest should stay where it is"
+
+    Application.Cursor = pointerBefore
+
+    Exit Sub
+TestFail:
+    Application.Cursor = xlDefault
+    CustomTestLogFailure Assert, _
+                         "TestRestPointerIsSafeWhenThePointerIsAlreadyAtRest", _
+                         Err.Number, Err.Description
+End Sub
