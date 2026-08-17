@@ -663,7 +663,16 @@ Private Sub RunGeneration(ByVal designerBook As Workbook, _
 
     AddToReport "writing the analyses"
     Set anaOut = AnalysisOutput.Create(specs.AnalysisObject.Wksh(), ll)
+
+    'The handler keeps the analyses' own entries when the stage raises. Without
+    'it a stage that died took them with it, and the generation log said nothing
+    'about which scope or which table refused -- see the same note in
+    'EventsDesignerAdvanced.GenerateOne, where a Windows type mismatch showed
+    'exactly that.
+    On Error GoTo AnalysesFailed
     anaOut.WriteAnalysis AnalysisBuildStageAll
+    On Error GoTo 0
+
     If anaOut.HasCheckings Then CollectInto runLog, anaOut.CheckingValues
     AddToReport "analyses written"
 
@@ -678,6 +687,29 @@ Private Sub RunGeneration(ByVal designerBook As Workbook, _
         runLog.Finish "Headless linelist built", lastSheets, lastVariables
         lastLog = runLog.ExportText(outputFolder, outputName)
     End If
+    Exit Sub
+
+AnalysesFailed:
+    Dim anaErrNumber As Long
+    Dim anaErrDesc As String
+
+    anaErrNumber = Err.Number
+    anaErrDesc = Err.Description
+
+    'Silently, and the log is written out here as well: the caller turns this
+    'raise into the run's outcome and never reaches the export below, so an
+    'unexported log is a log nobody can read.
+    On Error Resume Next
+    If anaOut.HasCheckings Then CollectInto runLog, anaOut.CheckingValues
+    If Not runLog Is Nothing Then
+        runLog.Finish "Failed writing the analyses: " & anaErrDesc, _
+                      lastSheets, lastVariables
+        lastLog = runLog.ExportText(outputFolder, outputName)
+    End If
+    On Error GoTo 0
+
+    AddToReport "failed writing the analyses: " & anaErrDesc
+    Err.Raise anaErrNumber, "HeadlessBuild.RunGeneration", anaErrDesc
 End Sub
 
 '@Description("Build one data entry sheet and take what it filed into the log.")

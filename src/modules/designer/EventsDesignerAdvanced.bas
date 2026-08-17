@@ -651,7 +651,22 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, _
     ' tables, so the generated linelist carried no time series chart, no
     ' navigation dropdown on that sheet, and two empty sheets where the spatial
     ' and spatio-temporal analyses belong.
+    '
+    'THE HANDLER IS HERE SO A FAILED STAGE STILL FILES ITS OWN LOG.
+    '
+    'WriteAnalysis catches everything and re-raises it, and the flush on the
+    'next line never ran when it did, so the analyses took their entries with
+    'them. AnalysisOutput logs the scope it reached and the table that refused;
+    'losing that leaves the report saying only "Failed: <description>", which
+    'names nothing. A type mismatch on a Windows build read exactly that way: an
+    'error box carrying a description, no analyses on the sheet, and no record
+    'of which table or which scope raised it.
+    '
+    'The comment on this function promises the report of a build that dies
+    'carries the phases that finished. This is the phase that did not keep it.
+    On Error GoTo AnalysesFailed
     anaOut.WriteAnalysis AnalysisBuildStageAll
+    On Error GoTo 0
 
     'Flush Phase 3: analysis checkings
     If anaOut.HasCheckings Then CollectIntoLog anaOut.CheckingValues
@@ -663,6 +678,26 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, _
     'The path SaveLL wrote, read from the same values it read
     GenerateOne = specs.Value("lldir") & Application.PathSeparator & _
                   specs.Value("llname") & ".xlsb"
+    Exit Function
+
+AnalysesFailed:
+    Dim anaErrNumber As Long
+    Dim anaErrDesc As String
+
+    anaErrNumber = Err.Number
+    anaErrDesc = Err.Description
+
+    'Silently: the analyses fault is the one worth reporting, and a flush that
+    'raises on top of it would replace the description the caller is about to
+    'show with its own.
+    On Error Resume Next
+    If anaOut.HasCheckings Then CollectIntoLog anaOut.CheckingValues
+    On Error GoTo 0
+
+    'Re-raised unchanged, so the caller's handler keeps the behaviour it had:
+    'the bar resets on the description, the log closes over it, and
+    'Linelist.ErrorManage offers the incomplete workbook.
+    Err.Raise anaErrNumber, "EventsDesignerAdvanced.GenerateOne", anaErrDesc
 End Function
 
 '@Description("Move the progress displays one milestone forward.")
