@@ -516,6 +516,155 @@ TestFail:
     CustomTestLogFailure Assert, "TestSizeWhenShownReadsThroughAHiddenColumn", Err.Number, Err.Description
 End Sub
 
+'@section The screen the protection bracket holds
+'===============================================================================
+'Hiding a column repaints the sheet. Every write of the class comes through
+'UnprotectSheet and ReprotectSheet, so those two hold the screen as well as the
+'protection and a run of writes repaints once at the end instead of once per
+'position. Applying a saved layout writes every entry in turn and SizeWhenShown
+'shows a column and hides it again to measure it, and both used to flash.
+'
+'BeginBatch and EndBatch are the public face of that bracket, so the four tests
+'below reach it without naming a private.
+'
+'Each test puts Application.ScreenUpdating back on both paths. A test that left
+'the screen off would take the rest of the run with it: CustomTest.PrintResults
+'raises 1004 when something else holds the screen.
+
+'@sub-title A batch takes the screen and gives it back.
+'@TestMethod("ShowHide")
+Public Sub TestABatchHoldsTheScreenAndGivesItBack()
+    CustomTestSetTitles Assert, TESTMODULE, "TestABatchHoldsTheScreenAndGivesItBack"
+    If Not FixtureReady("TestABatchHoldsTheScreenAndGivesItBack") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim layout As ShowHideLayout
+
+    Set layout = ShowHideLayout.Create(ScratchSheet(), ShowHideLayerHList)
+
+    Application.ScreenUpdating = True
+
+    layout.BeginBatch
+    Assert.IsFalse Application.ScreenUpdating, _
+                   "An open bracket should hold the screen"
+
+    layout.EndBatch
+    Assert.IsTrue Application.ScreenUpdating, _
+                  "Closing the bracket should give the screen back"
+
+    Exit Sub
+TestFail:
+    Application.ScreenUpdating = True
+    CustomTestLogFailure Assert, "TestABatchHoldsTheScreenAndGivesItBack", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Only the outermost close gives the screen back.
+'@details
+'Apply opens a batch and calls SetHidden inside it, and SetHidden opens the
+'bracket again. An inner close that released the screen would repaint on every
+'entry, which is the flicker the batch exists to remove.
+'@TestMethod("ShowHide")
+Public Sub TestOnlyTheOutermostCloseGivesTheScreenBack()
+    CustomTestSetTitles Assert, TESTMODULE, "TestOnlyTheOutermostCloseGivesTheScreenBack"
+    If Not FixtureReady("TestOnlyTheOutermostCloseGivesTheScreenBack") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim layout As ShowHideLayout
+
+    Set layout = ShowHideLayout.Create(ScratchSheet(), ShowHideLayerHList)
+
+    Application.ScreenUpdating = True
+
+    layout.BeginBatch
+    layout.BeginBatch
+
+    layout.EndBatch
+    Assert.IsFalse Application.ScreenUpdating, _
+                   "An inner close should leave the screen where the outer work put it"
+
+    layout.EndBatch
+    Assert.IsTrue Application.ScreenUpdating, _
+                  "The outermost close is what gives the screen back"
+
+    Exit Sub
+TestFail:
+    Application.ScreenUpdating = True
+    CustomTestLogFailure Assert, "TestOnlyTheOutermostCloseGivesTheScreenBack", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title The bracket hands back the screen it was given, not the screen it wants.
+'@details
+'This is what makes the class safe inside a busy state. A generation runs with
+'the screen off from end to end, and a layout that turned it back on halfway
+'would repaint the whole build.
+'@TestMethod("ShowHide")
+Public Sub TestTheBracketHandsBackTheScreenItWasGiven()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheBracketHandsBackTheScreenItWasGiven"
+    If Not FixtureReady("TestTheBracketHandsBackTheScreenItWasGiven") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim layout As ShowHideLayout
+
+    Set layout = ShowHideLayout.Create(ScratchSheet(), ShowHideLayerHList)
+
+    Application.ScreenUpdating = False
+
+    layout.BeginBatch
+    layout.EndBatch
+
+    Assert.IsFalse Application.ScreenUpdating, _
+                   "A caller that had the screen off should still have it off"
+
+    Application.ScreenUpdating = True
+
+    Exit Sub
+TestFail:
+    Application.ScreenUpdating = True
+    CustomTestLogFailure Assert, "TestTheBracketHandsBackTheScreenItWasGiven", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A write with no batch around it puts the screen back by itself.
+'@details
+'The option buttons of the show/hide form call SetHidden and SetSize one at a
+'time, with no batch. Each opens and closes the bracket on its own, so each owes
+'the screen back.
+'@TestMethod("ShowHide")
+Public Sub TestASingleWritePutsTheScreenBack()
+    CustomTestSetTitles Assert, TESTMODULE, "TestASingleWritePutsTheScreenBack"
+    If Not FixtureReady("TestASingleWritePutsTheScreenBack") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim layout As ShowHideLayout
+
+    Set sh = ScratchSheet()
+    Set layout = ShowHideLayout.Create(sh, ShowHideLayerHList)
+
+    Application.ScreenUpdating = True
+
+    layout.SetHidden 6, True
+    Assert.IsTrue Application.ScreenUpdating, _
+                  "SetHidden should leave the screen on"
+    Assert.IsTrue sh.Columns(6).Hidden, _
+                  "And the write itself should have landed"
+
+    layout.SetSize 7, 22
+    Assert.IsTrue Application.ScreenUpdating, _
+                  "SetSize should leave the screen on"
+
+    layout.SetHidden 6, False
+
+    Exit Sub
+TestFail:
+    Application.ScreenUpdating = True
+    CustomTestLogFailure Assert, "TestASingleWritePutsTheScreenBack", _
+                         Err.Number, Err.Description
+End Sub
+
+
 '@TestMethod("ShowHide")
 Public Sub TestApplyPutsTheSheetInStepWithTheEntries()
     CustomTestSetTitles Assert, TESTMODULE, "TestApplyPutsTheSheetInStepWithTheEntries"

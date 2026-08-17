@@ -79,6 +79,7 @@ Private Type TShowHideLayout
     baseTableName As String
     lockDepth As Long
     failures As Long
+    heldScreenUpdating As Boolean   'ScreenUpdating as it was when the bracket opened
 End Type
 
 Private this As TShowHideLayout
@@ -454,9 +455,27 @@ End Function
 '@details
 'Not called Unlock. Lock and Unlock are VBA file statements, so a line holding
 'nothing but the word Unlock is read as one of those and the compile breaks.
+'
+'THE SCREEN IS HELD HERE TOO
+'-------------------------------------------------------------------------------
+'Hiding a column repaints the sheet. Every write in this class comes through
+'this bracket, so the screen is held from the moment the sheet opens until the
+'moment it closes again, and a run of writes repaints once at the end instead of
+'once per position. That is what made the show/hide forms flicker: applying a
+'saved layout writes every entry in turn, and SizeWhenShown deliberately shows a
+'column and hides it again to measure it, which was a visible flash per column.
+'
+'The value the bracket opened on is what gets put back, so a caller that had
+'already turned the screen off keeps it off when the bracket closes.
 Private Sub UnprotectSheet()
     this.lockDepth = this.lockDepth + 1
     If this.lockDepth > 1 Then Exit Sub
+
+    On Error Resume Next
+    this.heldScreenUpdating = Application.ScreenUpdating
+    Application.ScreenUpdating = False
+    On Error GoTo 0
+
     If this.pass Is Nothing Then Exit Sub
 
     On Error Resume Next
@@ -465,16 +484,23 @@ Private Sub UnprotectSheet()
 End Sub
 
 '@label:reprotect-sheet
-'@sub-title Protect the sheet once the outermost bracket closes
+'@sub-title Protect the sheet and release the screen once the outermost bracket closes
 Private Sub ReprotectSheet()
     this.lockDepth = this.lockDepth - 1
     If this.lockDepth > 0 Then Exit Sub
 
     this.lockDepth = 0
-    If this.pass Is Nothing Then Exit Sub
 
+    If Not this.pass Is Nothing Then
+        On Error Resume Next
+        this.pass.Protect this.sh.Name
+        On Error GoTo 0
+    End If
+
+    'Last, so the one repaint the user sees happens with the sheet already
+    'protected and every position already written.
     On Error Resume Next
-    this.pass.Protect this.sh.Name
+    Application.ScreenUpdating = this.heldScreenUpdating
     On Error GoTo 0
 End Sub
 
