@@ -24,13 +24,13 @@ set -euo pipefail
 
 # THE SETUP WORKBOOK. Required, and the one thing with no default. This is the
 # filled setup that says which variables, sheets and choices the linelist gets.
-SETUP=".obt/draft/demo_setup_filled.xlsb"
+SETUP=".obt/draft/headless-measles/setup_measles.xlsb"
 
 # WHERE THE FILES GO, and what they are called. The build writes
 # <NAME>.xlsb, <NAME>-designer.xlsb, <NAME>-generation.txt, <NAME>-import.log
 # and <NAME>-build-report.txt into this folder.
-OUT=".obt/draft"
-NAME="headless_linelist"
+OUT=".obt/draft/headless-measles"
+NAME="ll-measles-headless"
 
 # THE RIBBON TEMPLATE. Given, the linelist gets a ribbon tab. Left empty, it
 # gets action buttons on the sheets and an Admin sheet instead. The two builds
@@ -38,11 +38,11 @@ NAME="headless_linelist"
 TEMPLATE="ribbons/_ribbontemplate_dev.xlsb"
 
 # THE GEOBASE workbook, for linelists with geography. Empty means no geobase.
-GEO=""
+GEO=".obt/draft/headless-measles/OUTBREAK-TOOLS-GEOBASE-TCD-2026-08-16.xlsx"
 
 # THE DESIGNER workbook the linelist is built from. Empty uses
 # .mock/designer_mock.xlsb, which is the one the project develops against.
-DESIGNER=""
+DESIGNER=".obt/draft/headless-measles/designer_measles.xlsb"
 
 # THE FORMS. Empty is right for almost every run.
 #
@@ -59,7 +59,7 @@ DESIGNER=""
 # with MERGE_FORMS=no. Skipping the merge without one has nothing to build from,
 # since a successful run clears its staging. And a build over unmerged forms
 # ships old handlers with nothing in the file to say so.
-FORMS=""
+FORMS=".mock/forms/designer"
 MERGE_FORMS="yes"
 
 # LANGUAGE AND PASSWORD.
@@ -68,8 +68,8 @@ MERGE_FORMS="yes"
 #   LL_LANG      the language of the delivered linelist, e.g. ENG. Empty keeps
 #                the designer's own entry.
 #   LL_PASSWORD  password applied to the linelist. Empty leaves it unprotected.
-SETUP_LANG=""
-LL_LANG=""
+SETUP_LANG="English"
+LL_LANG="ENG-English"
 LL_PASSWORD=""
 
 # THE STAGING ROOT. Empty is right unless something is wrong. The build stages
@@ -202,4 +202,18 @@ fi
 
 echo "build-linelist.sh: Rscript scripts/headless/build-linelist.R ${args[*]}"
 echo
+
+# NO DEVELOPER PROFILE, FOR THE BUILD OR FOR ANY CHILD OF IT.
+# -----------------------------------------------------------------------------
+# Rscript sources an .Rprofile from the working directory before a single line of
+# the build runs. This repo's root holds one, untracked and ignored, that loads
+# pacman and the tidyverse. On a machine without those installed R dies at
+# startup, over packages the build never asked for, and the failure reads as the
+# build being broken.
+#
+# Exported rather than set for one command, so the registry step and the
+# form-merge step inherit it: they are separate Rscript processes started from
+# the same folder and each one would source the profile again.
+export R_PROFILE_USER=/dev/null
+
 exec Rscript scripts/headless/build-linelist.R "${args[@]}"

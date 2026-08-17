@@ -49,6 +49,16 @@ for (loc in c("en_US.UTF-8", "C.UTF-8", "UTF-8")) {
   if (nzchar(suppressWarnings(Sys.setlocale("LC_CTYPE", loc)))) break
 }
 
+# THE TWO PACKAGES ARE INSTALLED HERE IF THEY ARE ABSENT, matching what
+# build-registry.R does for yaml. A bare library() call assumes the machine
+# running the build is a developer machine that happens to have them, and this
+# script runs as a step of the headless build: a missing package stops the whole
+# build before Excel is launched, and the message names a package nobody asked
+# for rather than the build.
+used_packages <- c("fs", "cli")
+to_install <- setdiff(used_packages, rownames(installed.packages()))
+if (length(to_install)) install.packages(to_install, repos = "https://cloud.r-project.org")
+
 suppressWarnings(suppressMessages({
   library(fs)
   library(cli)
