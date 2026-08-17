@@ -20,6 +20,28 @@
 #       for how this fits the harness.
 # =============================================================================
 
+# --- a text locale, whatever the shell arrived with --------------------------
+# THE REGISTRY IS UTF-8 AND THE SHELL MAY NOT BE.
+# -----------------------------------------------------------------------------
+# `read_yaml` goes through `readLines`, and in the C locale `readLines` cannot
+# decode a multi-byte character: it warns "invalid input found on input
+# connection", hands back a mangled line, the YAML then parses to nothing, and
+# this script stops with "no `suites:` found" on a file whose `suites:` is
+# sitting there in plain sight. Measured on the same file: C locale gives 0
+# suites, en_US.UTF-8 gives 15.
+#
+# Shells that arrive with LC_CTYPE=C or nothing at all: a Terminal profile
+# without "Set locale environment variables on startup", cron, CI runners, an
+# editor's task shell, an ssh session forwarding nothing.
+#
+# Three candidate names because no single one exists on every machine. All
+# three resolve on macOS. `fileEncoding = "UTF-8"` on the read was tried and
+# does NOT work -- in a C locale the conversion target cannot hold the
+# character either.
+for (loc in c("en_US.UTF-8", "C.UTF-8", "UTF-8")) {
+  if (nzchar(suppressWarnings(Sys.setlocale("LC_CTYPE", loc)))) break
+}
+
 # --- deps --------------------------------------------------------------------
 used_packages <- "yaml"
 to_install <- setdiff(used_packages, rownames(installed.packages()))

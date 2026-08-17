@@ -1,16 +1,16 @@
-# OutbreakTools — Test Registry
+# OutbreakTools -- Test Registry
 # =============================================================================
 # Single source of truth for the test suite AND the Codes-worksheet ListObjects.
 #
 # A generator reads this file and:
-#   1. (re)creates and populates the Codes-sheet ListObjects — "tests modules",
-#      "general classes", "tests classes", etc. — through Development class.
+#   1. (re)creates and populates the Codes-sheet ListObjects -- "tests modules",
+#      "general classes", "tests classes", etc. -- through Development class.
 #   2. rebuilds the worksheet-scoped Name `ModulesForTesting`, which the test
 #      runner (CustomTestImplementation.clickRibbonTests) iterates to decide
 #      which modules to execute.
 #
 # A test module therefore runs only once it appears here AND the generator has
-# repopulated the workbook. Add suites progressively — that is by design.
+# repopulated the workbook. Add suites progressively -- that is by design.
 #
 # ----------------------------------------------------------------------------
 # `folder` is the subfolder shared by every base path. For a suite folder F,
@@ -1239,7 +1239,7 @@ suites:
         covers: [LLImporter]
 
 # ---------------------------------------------------------------------------
-# TEMPLATE — copy per folder as coverage is added. Delete fields left empty.
+# TEMPLATE -- copy per folder as coverage is added. Delete fields left empty.
 # Expansion backlog (suite folders under src/tests/ that are not yet
 # registered): mastersetup, and mastersetup alone.
 #
@@ -1268,7 +1268,7 @@ suites:
 # ExportButton joined with their suites. src/tests/showhide/ joined on 2026-08-01
 # with the three classes that replaced LLShowHide and ShowHideManager.
 # src/tests/tables/ is gone as of
-# 2026-07-31 — it held TestCustomPivotTable alone, whose class lives in
+# 2026-07-31 -- it held TestCustomPivotTable alone, whose class lives in
 # src/classes/analyses/, so no suite could ever name both. The module moved to
 # src/tests/analyses/ and is registered there. src/tests/geo/ is fully
 # registered as of 2026-07-31, and so is src/tests/linelist/: TestCodeTransfer,

@@ -88,6 +88,23 @@
 # entry is the deployed way to set it), else the container, else the fallback.
 # =============================================================================
 
+# --- a text locale, whatever the shell arrived with --------------------------
+# EVERY FILE THIS BUILD READS BACK CAN CARRY A NON-ASCII CHARACTER, and in the C
+# locale `readLines` cannot decode one: it warns, hands back a mangled line, and
+# whatever was reading that line draws its conclusion from the wreckage. The
+# generation log carries Excel's own error text, which on a French install is
+# accented, and this script reads that log to judge whether the run was good.
+# The registry the child script parses is UTF-8 as well, and a C locale there
+# stops the build before Excel is ever launched.
+#
+# Shells that arrive with LC_CTYPE=C or nothing at all: a Terminal profile
+# without "Set locale environment variables on startup", cron, CI runners, an
+# editor's task shell, an ssh session forwarding nothing. Set here as well as in
+# the wrapper, because the wrapper is optional and this file is not.
+for (loc in c("en_US.UTF-8", "C.UTF-8", "UTF-8")) {
+  if (nzchar(suppressWarnings(Sys.setlocale("LC_CTYPE", loc)))) break
+}
+
 # --- args --------------------------------------------------------------------
 args <- commandArgs(trailingOnly = TRUE)
 

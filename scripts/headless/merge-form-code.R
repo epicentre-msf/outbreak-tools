@@ -38,6 +38,17 @@
 # exactly that reason; only the binary .frx is copied byte for byte.
 # =============================================================================
 
+# A TEXT LOCALE, WHATEVER THE SHELL ARRIVED WITH.
+# -----------------------------------------------------------------------------
+# The .frm files and the FormLogic modules are read as text and written back out
+# as the VBA source the designer imports. A comment or a form caption holding an
+# accented character is normal here, and in the C locale `readLines` cannot
+# decode one: it warns and hands back a mangled line, which this script then
+# copies into the merged form. That ships corrupted source into the build.
+for (loc in c("en_US.UTF-8", "C.UTF-8", "UTF-8")) {
+  if (nzchar(suppressWarnings(Sys.setlocale("LC_CTYPE", loc)))) break
+}
+
 suppressWarnings(suppressMessages({
   library(fs)
   library(cli)
