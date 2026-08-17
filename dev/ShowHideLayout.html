@@ -320,10 +320,19 @@ carries no print_ prefix. The header the reader sees is the line above it.</p>
 </code></pre>
 <p>Not called Unlock. Lock and Unlock are VBA file statements, so a line holding
 nothing but the word Unlock is read as one of those and the compile breaks.</p>
+<h2 id="int-the-screen-is-held-here-too">THE SCREEN IS HELD HERE TOO</h2>
+<p>Hiding a column repaints the sheet. Every write in this class comes through
+this bracket, so the screen is held from the moment the sheet opens until the
+moment it closes again, and a run of writes repaints once at the end instead of
+once per position. That is what made the show/hide forms flicker: applying a
+saved layout writes every entry in turn, and SizeWhenShown deliberately shows a
+column and hides it again to measure it, which was a visible flash per column.</p>
+<p>The value the bracket opened on is what gets put back, so a caller that had
+already turned the screen off keeps it off when the bracket closes.</p>
 <hr />
 <h3 id="int-reprotectsheet">ReprotectSheet <a class="anchor-link" href="#int-reprotectsheet">#</a></h3>
 <p><em>reprotect-sheet</em></p>
-<p><strong>Protect the sheet once the outermost bracket closes</strong></p>
+<p><strong>Protect the sheet and release the screen once the outermost bracket closes</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ReprotectSheet()
 </code></pre>

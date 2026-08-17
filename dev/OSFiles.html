@@ -419,6 +419,53 @@ Workbook-level Name used to persist the last used folder path.</p>
 <pre><code class="language-vb">Private Function BuildAppleScriptList(ByVal entries As Variant) As String
 </code></pre>
 <hr />
+<h3 id="int-filterextensions">FilterExtensions <a class="anchor-link" href="#int-filterextensions">#</a></h3>
+<p><em>filter-extensions</em></p>
+<p><strong>Split a filter string into its bare extensions</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FilterExtensions(ByVal filters As String) As Variant
+</code></pre>
+<p>Callers write the filter in whichever shape reads well at the call site:
+&quot;<em>.xlsx&quot;, &quot;</em>.xlsb;<em>.xlsx&quot;, &quot;</em>.xlsb, <em>.xlsx&quot;. They all mean the same thing, so
+the separator is read as either a semicolon or a comma and the &quot;</em>.&quot; is dropped.</p>
+<p>This used to be a Select Case over the whole string, which meant a filter had
+to be spelled exactly as one of the listed literals or it fell to the Else
+branch and answered xlsx alone. <code>clickLoadFileDic</code> asks for &quot;<em>.xlsb;</em>.xlsx&quot;
+and the branch it needed was written &quot;*.xlsb, *.xlsx&quot;, so loading a setup on
+macOS offered xlsx files and hid every .xlsb.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>filters</code>: String. The filter string as the caller wrote it.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. Zero-based array of lower case extensions, without the dot.</p>
+<hr />
+<h3 id="int-utiforextension">UtiForExtension <a class="anchor-link" href="#int-utiforextension">#</a></h3>
+<p><em>uti-for-extension</em></p>
+<p><strong>The macOS uniform type identifier of one Excel extension</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function UtiForExtension(ByVal extension As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>extension</code>: String. Lower case extension without the dot.</li>
+</ul>
+<p><strong>Returns:</strong> String. The UTI, or an empty string when it is not one we handle.</p>
+<hr />
+<h3 id="int-buildwindowsfilter">BuildWindowsFilter <a class="anchor-link" href="#int-buildwindowsfilter">#</a></h3>
+<p><em>build-windows-filter</em></p>
+<p><strong>Rewrite a filter string in the shape Excel's FileDialog documents</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildWindowsFilter(ByVal filters As String) As String
+</code></pre>
+<p>FileDialogFilters.Add takes its extensions separated by a comma and a space.
+A caller writing them with a semicolon is saying the same thing, so the string
+is rebuilt here rather than passed on as typed.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>filters</code>: String. The filter string as the caller wrote it.</li>
+</ul>
+<p><strong>Returns:</strong> String. &quot;*.xlsb, *.xlsx&quot;, or the original when nothing could be read.</p>
+<hr />
 <h3 id="int-buildmacfilterlist">BuildMacFilterList <a class="anchor-link" href="#int-buildmacfilterlist">#</a></h3>
 <p><em>build-mac-filter-list</em></p>
 <p><strong>Construct the UTI list for the AppleScript file picker</strong></p>
@@ -426,6 +473,12 @@ Workbook-level Name used to persist the last used folder path.</p>
 <pre><code class="language-vb">Private Function BuildMacFilterList(ByVal filters As String, _
                                     ByVal customMacFilter As String) As String
 </code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>filters</code>: String. The filter string as the caller wrote it.</li>
+<li><code>customMacFilter</code>: String. A UTI to use instead, when the caller has one.</li>
+</ul>
+<p><strong>Returns:</strong> String. An AppleScript list of UTIs.</p>
 <hr />
 <h3 id="int-parsemacselectionresult">ParseMacSelectionResult <a class="anchor-link" href="#int-parsemacselectionresult">#</a></h3>
 <p><em>parse-mac-selection-result</em></p>
