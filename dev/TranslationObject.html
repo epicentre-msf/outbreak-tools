@@ -217,10 +217,16 @@ translation table through anything other than this object.</p>
 <pre><code class="language-vb">Private Function SanitizeText(ByVal rawValue As String) As String
 </code></pre>
 <p>Does the same three jobs as SUBSTITUTE + CLEAN + TRIM did, in plain VBA
-so a call no longer goes out to Excel: the '&lt;' character becomes a space,
-characters below code 32 are dropped, then leading, trailing and repeated
-spaces are squeezed. Worksheet TRIM squeezes inner runs of spaces down to
-one, which VBA Trim$ does not do, so that part is written out here.</p>
+so a call no longer goes out to Excel: the non-breaking space becomes an
+ordinary space, characters below code 32 are dropped, then leading, trailing
+and repeated spaces are squeezed. Worksheet TRIM squeezes inner runs of spaces
+down to one, which VBA Trim$ does not do, so that part is written out here.</p>
+<p>This routine used to substitute Chr$(60) instead, which is '&lt;'. Every
+comparison operator was deleted from the text it was handed, so a translated
+CHOICE_FORMULA came back with &quot;age_months &lt; 6&quot; reading &quot;age_months 6&quot;, and a
+plain cell holding '&lt;' was altered even when the tag had no translation at
+all. The character meant here is the non-breaking space, the same one
+Formulas.CleanString replaces.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>rawValue</code>: String. The raw text.</li>

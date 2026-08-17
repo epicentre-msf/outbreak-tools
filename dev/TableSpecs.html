@@ -847,6 +847,13 @@ and the same in the mock, in the shipped file and in every release build.</p>
 and references valid variables for its analysis type. Called once on first
 access of ValidTable to populate the Boolean cache. Each branch resolves
 only the variables its own rule needs.</p>
+<p>The same rules run on both sides. The designer asks after
+LLdictionary.Prepare, where a geo variable has become adm1_<var>; the setup
+error checks ask before it, where the variable still carries its own name and
+its &quot;geo&quot; or &quot;hf&quot; control. The two spatial branches read the control on an
+unprepared dictionary and the prefixed name on a prepared one, so the setup
+stops calling a spatial row invalid without letting a row through that the
+analysis build would then fail to draw.</p>
 <p><strong>Returns:</strong> Boolean. True if the table specification meets all requirements.</p>
 <p><strong>Throws:</strong></p>
 <ul>

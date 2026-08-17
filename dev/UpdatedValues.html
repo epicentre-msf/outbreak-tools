@@ -47,8 +47,9 @@ and a flag, an alias map answers IsUpdated, and a table set lets the change
 handler leave an unwatched table without reading anything. Scripting.Dictionary
 is missing on Mac Excel, so these are keyed Collections.</p>
 <p>An edit inside a watched table costs four to five COM crossings whatever the
-registry holds, and the flag is written the first time a column flips within a
-reset cycle.</p>
+registry holds, and the flag cell is written on every one of them. The index
+answers reads; it never stands in for the cell on a write. The worksheet is
+the record every other reader of this registry goes to.</p>
 </div>
 </details>
 <details open class="doc-section" id="two-readers-one-flag-column">
@@ -393,8 +394,8 @@ AddSheet, which run at build time: a defined name can fail to resolve for a
 moment while a source table resizes or a sheet is renamed, and deleting a row
 on that would take the registration away for good.</p>
 <p>The cost is four to five worksheet calls whatever the registry holds. A table
-nobody watches is left after two of them, and the flag write happens only the
-first time a column flips within a reset cycle.</p>
+nobody watches is left after two of them, and the flag cell is written every
+time a watched column is covered.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>tagReference</code>: Variant. Kept for the call shape; the table is read from Target.</li>
@@ -423,10 +424,19 @@ call to read anyway.</p>
 <hr />
 <h3 id="int-markkey">MarkKey <a class="anchor-link" href="#int-markkey">#</a></h3>
 <p><em>mark-key</em></p>
-<p><strong>Write the updated flag for one watched column, the first time it changes.</strong></p>
+<p><strong>Write the updated flag for one watched column, on every change.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub MarkKey(ByVal tableKey As String, ByVal headerText As String)
 </code></pre>
+<p>THE CELL IS WRITTEN EVERY TIME, and that is the whole point of this member.
+It used to skip the write whenever the in-memory flag already read &quot;yes&quot;:</p>
+<p>If KeyedText(this.statusByKey, key) = STATUS_UPDATED Then Exit Sub</p>
+<p>The flag then lived in memory and never reached the worksheet, and the
+worksheet is what every reader of the registry actually reads.
+SetupTranslationsTable.ProcessRegistryTable takes the status straight off the
+cell, so a column whose flag stayed in memory was read as &quot;not updated&quot; and
+its translations were skipped. The saving was one write per edit against the
+four to five worksheet calls an edit already costs.</p>
 <hr />
 <h2 id="int-cleanuphelpers">CleanupHelpers</h2>
 <h3 id="int-clearup">ClearUp <a class="anchor-link" href="#int-clearup">#</a></h3>

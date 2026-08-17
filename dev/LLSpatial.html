@@ -220,6 +220,11 @@ every formula of the OUTER_VALUES_ block from the old concat column to the
 new one, writes the new level back, and recalculates the block. The caller
 reads the dropdown and turns its label into an admin code, because that
 answer needs the geo sheet and this class holds none.</p>
+<p>The rewrite reaches the FindTopAdmin and FindTopPop formulas of the block
+too, and moves the level inside their quoted variable argument with the
+rest. That is why EventLinelist.BareSpatialName strips the concat tag at any
+level: it used to know the adm1 spelling alone, so the first level change
+broke every ranked lookup of the table.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The spatial analysis sheet.</li>
@@ -298,12 +303,15 @@ used range twice on the path it does reach.</p>
 </code></pre>
 <p>Walks the OUTER_VALUES_ block and rewraps each formula that reads the concat
 column of the given admin code. The first application wraps the formula as
-&quot;factor * formula / population cell&quot;, a later one swaps the old factor for
-the new, and revertBack unwraps both pieces. The factor comes from the
-POPFACT_ cell and falls back to 100 when that cell does not read as a number.
-The tables are reordered on the attack rate while the division is on, and on
-the plain value once it is off. The factor applied is written into the
-POPPREVFACT_ cell, so the next call knows what to swap or unwrap.</p>
+&quot;IFERROR(factor * formula / population cell, &quot;&quot;)&quot;, so a row whose population
+cell holds 0 or nothing shows an empty cell. The division used to be written
+bare, and every such row showed #DIV/0!. A later application swaps the old
+factor for the new, and revertBack unwraps the whole thing, the bare shape an
+older linelist wrote included. The factor comes from the POPFACT_ cell and
+falls back to 100 when that cell does not read as a number. The tables are
+reordered on the attack rate while the division is on, and on the plain value
+once it is off. The factor applied is written into the POPPREVFACT_ cell, so
+the next call knows what to swap or unwrap.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The spatial analysis sheet.</li>
@@ -559,9 +567,17 @@ cross-tables.</p>
 <pre><code class="language-vb">Private Sub UpdateOneHList(ByVal sh As Worksheet, ByVal wb As Workbook, _
                            ByVal shHn As HiddenNames)
 </code></pre>
-<p>The columns of one variable sit side by side, so a geo column is followed by
-the eleven columns of its expansion and a facility column by its pcode. A sheet
-with no filtered companion, no table name or no first table is left alone.</p>
+<p>Walks every header cell of the variable row, from the _START anchor to the
+last used column, one column at a time. A geo1 or an hf control names a
+variable to update and every other header is passed over. The walk used to
+jump the width one geo expansion is expected to take, and a sheet whose
+columns sat closer than that landed the jump past the next geo variable, so
+its spatial tables were never filled and FindTopAdmin answered nothing for
+them. It also used to stop on the first empty header cell, and a variable the
+writer skipped leaves exactly that gap. The header row is read in one
+crossing.</p>
+<p>A sheet with no filtered companion, no table name or no first table is left
+alone.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The HList worksheet.</li>

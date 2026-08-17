@@ -67,6 +67,11 @@ the log sees where each working session started.</p>
 <p>The workbook opens on the sheet it was saved on, and a linelist saved by the
 generation lands on Geo. LandOnInstructions puts the user on the instruction
 sheet instead, every open.</p>
+<p>The pointer is parked on the north-west arrow at open. That arrow is the
+cursor every busy state of the session shows, and ApplicationState restores
+the cursor it snapshots, so with the standing cursor equal to the busy one an
+event leaves no visible pointer change. The snapshot used to hold the default
+cursor, and every selection on a data entry sheet flicked the pointer twice.</p>
 <hr />
 <h3 id="onsheetchange">OnSheetChange <a class="anchor-link" href="#onsheetchange">#</a></h3>
 <p><strong>Handle worksheet change events.</strong></p>
@@ -154,6 +159,22 @@ and column passes that used to follow it.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub UpdateAllListAuto()
 </code></pre>
+<hr />
+<h3 id="recalculategeocolumns">RecalculateGeoColumns <a class="anchor-link" href="#recalculategeocolumns">#</a></h3>
+<p><strong>Recalculate every cell whose formula reads the geobase.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RecalculateGeoColumns()
+</code></pre>
+<p>A geobase import rewrites the Geo sheet while the workbook runs on manual
+calculation, so the cells built on it keep the values of the geobase before.
+Three families of cells do: the concat columns of the data entry sheets, the
+p-code columns beside them, and the four admin level labels the spatial
+analysis dropdowns list. The geobase import handler calls this once the Geo
+sheet is rewritten and the caches are dropped.</p>
+<p>The label cells matter twice over. They are what the dropdown shows, and
+LLGeo.AdminCode matches the picked label against the fresh level names, so a
+stale label resolves to no level and stops every admin level change on the
+sheet.</p>
 <hr />
 <h3 id="translation">Translation <a class="anchor-link" href="#translation">#</a></h3>
 <p><strong>The one translation helper of the workbook.</strong></p>
@@ -334,13 +355,16 @@ translation sheet. Leave it off to stay quiet in that state.</li>
 <pre><code class="language-vb">Public Function BareSpatialName(ByVal varName As String) As String
 </code></pre>
 <p>The spatial formulas carry the dictionary variable the tables were summed
-over -- &quot;concat_adm1_&quot; in front of a geographic name, &quot;hf_&quot; in front of a
+over -- &quot;concat_adm<n><em>&quot; in front of a geographic name, &quot;hf</em>&quot; in front of a
 facility one -- and the spatial tables are keyed on the bare name. The tag
 comes off whole, so a bare name carrying underscores of its own survives; a
 name with no tag passes through unchanged, and the table lookup then answers
-its usual empty string. The delegates below used to split on &quot;_&quot; and count
-characters instead, which cut an underscored name short and raised on a name
-shorter than the tag.</p>
+its usual empty string.</p>
+<p>The geographic tag is matched at every level. The formulas are authored on
+the adm1 spelling, and LLSpatial.ChangeAdminLevel rewrites the level inside
+the quoted argument when the user picks another one. The strip used to know
+&quot;concat_adm1_&quot; alone, so the first level change left the tag on, the table
+lookup missed, and FindTopAdmin answered nothing for the rest of the session.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>varName</code>: String. Variable name as the formula carries it.</li>
@@ -413,6 +437,19 @@ the sheet very hidden, and the fallback then lands on the first sheet the user
 is meant to see rather than on Geo.</p>
 <p>Nothing here is worth an error box on open. Every step is guarded and a
 workbook that answers none of them opens where it was saved.</p>
+<hr />
+<h3 id="int-recalculategeocolumnsofsheet">RecalculateGeoColumnsOfSheet <a class="anchor-link" href="#int-recalculategeocolumnsofsheet">#</a></h3>
+<p><strong>Recalculate the geobase columns of one data entry sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RecalculateGeoColumnsOfSheet(ByVal sh As Worksheet)
+</code></pre>
+<p>Walks the header row of the data table and recalculates the data body of
+every concat and p-code column. The concat columns go first: the p-code
+lookups match on them. A sheet with no table or no data row is left alone.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The HList worksheet.</li>
+</ul>
 <hr />
 <h2 id="int-messages">Messages</h2>
 <h3 id="int-messagetext">MessageText <a class="anchor-link" href="#int-messagetext">#</a></h3>

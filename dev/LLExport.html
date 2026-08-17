@@ -482,6 +482,11 @@ given and searches with matchCase False. Both sides have to keep that true.</p>
                        ByVal fromStartRow As Long, _
                        ByVal fromStartColumn As Long)
 </code></pre>
+<p>A setup written before this class filled the export number column holds a
+bare &quot;1&quot; where the rest of the code reads &quot;Export 1&quot;, and
+<code>ParseExportIdentifier</code> answers 0 for it. The column is rewritten here, at
+the one moment an old file enters, so no later routine meets a row it cannot
+read.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>fromWksh</code>: Source worksheet containing the export table.</li>
@@ -492,6 +497,34 @@ given and searches with matchCase False. Both sides have to keep that true.</p>
 <ul>
 <li>ProjectError.ObjectNotInitialized when the source worksheet is missing.</li>
 </ul>
+<hr />
+<h3 id="int-tagimportedexportnumbers">TagImportedExportNumbers <a class="anchor-link" href="#int-tagimportedexportnumbers">#</a></h3>
+<p><strong>Write &quot;Export 1&quot; over an imported bare &quot;1&quot;</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub TagImportedExportNumbers()
+</code></pre>
+<p>The column is read once, settled in memory and written back once, and only
+when a cell actually changed. A cell already carrying the word keeps its
+number and comes back in the one spelling <code>ExportColumnName</code> writes. A cell
+holding neither a number nor the word is left exactly as it arrived:
+<code>EnsureExportIdentifiers</code> is what gives a row with no number one, and it runs
+when a row is added or deleted.</p>
+<p>This reads the whole imported block through the DataSheet rather than the
+table, so a row that landed below the ListObject is converted with the rest.</p>
+<hr />
+<h3 id="int-bareexportnumber">BareExportNumber <a class="anchor-link" href="#int-bareexportnumber">#</a></h3>
+<p><strong>Read an export number written as a plain number</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BareExportNumber(ByVal rawValue As Variant) As Long
+</code></pre>
+<p><code>ParseExportIdentifier</code> wants the word in front of the number, which is what
+this class writes. An older setup holds the number alone, and this is the one
+place that reads it.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rawValue</code>: Variant. The cell value.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The export number, or 0 when the cell holds something else.</p>
 <hr />
 <h3 id="int-exportspecs">ExportSpecs <a class="anchor-link" href="#int-exportspecs">#</a></h3>
 <p><strong>Export specifications into another workbook</strong></p>

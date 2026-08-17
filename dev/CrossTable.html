@@ -705,6 +705,25 @@ from that point on the value is fixed for the life of the instance.</p>
 <li>ErrorUnexpectedState When no branch could resolve a row.</li>
 </ul>
 <hr />
+<h3 id="int-clearofcharts">ClearOfCharts <a class="anchor-link" href="#int-clearofcharts">#</a></h3>
+<p><em>clear-of-charts</em></p>
+<p><strong>Push a candidate start row below the charts already on the sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ClearOfCharts(ByVal candidate As Long) As Long
+</code></pre>
+<p>The last used cell of column C says where the tables end and nothing about
+the charts, which hang right of their table and reach lower whenever the
+table is short. A table placed off the used cells alone started level with
+the chart of the table before, and its own chart was drawn over that one.
+The charts of a temporal sheet are drawn after every table of the sheet, so
+this walk finds nothing there and the temporal layout stands as it was.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>candidate</code>: Long. The row the used cells answer.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The first row below every chart, or the candidate when it
+already clears them.</p>
+<hr />
 <h3 id="int-previous">Previous <a class="anchor-link" href="#int-previous">#</a></h3>
 <p><em>previous</em></p>
 <p><strong>Previous cross-table in the same section.</strong></p>

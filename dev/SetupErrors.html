@@ -392,6 +392,53 @@ without regard to case, which is how CountIf compared too.</p>
 </ul>
 <p><strong>Returns:</strong> Long. The number of rows holding that name.</p>
 <hr />
+<h3 id="int-exportidentifiernumber">ExportIdentifierNumber <a class="anchor-link" href="#int-exportidentifiernumber">#</a></h3>
+<p><em>export-identifier-number</em></p>
+<p><strong>Read the number out of one &quot;Export Number&quot; cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExportIdentifierNumber(ByVal rawValue As Variant) As Long
+</code></pre>
+<p><code>LLExport</code> writes that cell through <code>ExportColumnName</code>, so it holds &quot;Export 1&quot;
+rather than &quot;1&quot;, and <code>LLExport.ParseExportIdentifier</code> reads it back the same
+way. A bare number is taken as well, because that is what a hand-typed row
+holds.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rawValue</code>: Variant. The value of the cell.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The export number, or 0 when the text carries none.</p>
+<hr />
+<h3 id="int-exportstatuses">ExportStatuses <a class="anchor-link" href="#int-exportstatuses">#</a></h3>
+<p><em>export-statuses</em></p>
+<p><strong>Status of every export row, keyed by the number the row carries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExportStatuses(ByVal expTab As CustomTable) As Collection
+</code></pre>
+<p>Built once so the dictionary loop can ask about an export number without
+searching the Exports table again for each one. A number appearing twice
+keeps the status of its first row.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>expTab</code>: CustomTable. The Exports table.</li>
+</ul>
+<p><strong>Returns:</strong> Collection. Statuses keyed by &quot;k&quot; &amp; the export number.</p>
+<hr />
+<h3 id="int-exportstatusof">ExportStatusOf <a class="anchor-link" href="#int-exportstatusof">#</a></h3>
+<p><em>export-status-of</em></p>
+<p><strong>Read the status of one export number</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExportStatusOf(ByVal statuses As Collection, _
+                                ByVal exportNumber As Long, _
+                                ByRef statusValue As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>statuses</code>: Collection. The statuses built by ExportStatuses.</li>
+<li><code>exportNumber</code>: Long. The export number to read.</li>
+<li><code>statusValue</code>: String. Receives the status, empty when there is no row.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the Exports table holds a row for that number.</p>
+<hr />
 <h3 id="int-knowncontrol">KnownControl <a class="anchor-link" href="#int-knowncontrol">#</a></h3>
 <p><em>known-control</em></p>
 <p><strong>Test whether a control name is one this build understands</strong></p>
