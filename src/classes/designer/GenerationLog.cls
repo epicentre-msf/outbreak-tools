@@ -364,16 +364,54 @@ Public Sub Finish(ByVal outcome As String, _
     closing.Add "elapsed", CStr(DateDiff("s", this.startedAt, Now)) & " seconds", checkingInfo
     Collect closing
 
-    'Show the report so the user can read it. The sheet is created very
-    'hidden, and Activate raises on a hidden sheet, so the visibility
-    'write comes first.
-    On Error Resume Next
-    this.writer.Wksh.Visible = xlSheetVisible
-    this.writer.Wksh.Activate
-    On Error GoTo 0
+    'Show the report so the user can read it.
+    ShowReport
 
     Set this.writer = Nothing
 End Sub
+
+'@label:show-report
+'@sub-title Bring the report worksheet to the front
+'@details
+'The one owner of showing the report. Finish calls it at the end of a run and
+'the ribbon calls it whenever the user asks for the last report, so a report
+'opened either way opens the same way.
+'
+'WHY THE WORKBOOK IS ACTIVATED FIRST
+'-------------------------------------------------------------------------------
+'Worksheet.Activate raises 1004 when the sheet belongs to a workbook that is not
+'the active one. A generation ends with the built linelist open and in front, so
+'the activation Finish used to do raised every time and its On Error Resume Next
+'swallowed it. That is why the report never appeared at the end of a run.
+'
+'The sheet is created very hidden and Activate raises on a hidden sheet, so the
+'visibility write comes before it.
+'
+'An empty sheet is not a report. A designer that has never generated anything
+'carries __check as a blank very hidden sheet, and showing that would leave the
+'user looking at an empty grid with no way back.
+'@return Boolean. True when a report was found and brought to the front.
+'@export
+Public Function ShowReport() As Boolean
+    Dim sh As Worksheet
+
+    If this.designerBook Is Nothing Then Exit Function
+
+    On Error Resume Next
+    Set sh = this.designerBook.Worksheets(SHEET_CHECKING)
+    On Error GoTo 0
+
+    If sh Is Nothing Then Exit Function
+    If Application.WorksheetFunction.CountA(sh.UsedRange) = 0 Then Exit Function
+
+    On Error Resume Next
+    this.designerBook.Activate
+    sh.Visible = xlSheetVisible
+    sh.Activate
+    On Error GoTo 0
+
+    ShowReport = (sh.Visible = xlSheetVisible)
+End Function
 
 '@label:export-text
 '@sub-title Write the whole record to a text file

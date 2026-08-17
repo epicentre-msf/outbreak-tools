@@ -285,6 +285,130 @@ Fail:
 End Sub
 
 
+'@section ShowReport Tests
+'===============================================================================
+'Finish used to activate the report sheet itself, under On Error Resume Next.
+'Worksheet.Activate raises 1004 when the sheet belongs to a workbook that is not
+'the active one, and a generation ends with the built linelist open and in
+'front, so that call raised on every real run and the raise was swallowed. The
+'report never appeared at the end of a generation.
+'
+'The first test below is that run, in miniature: another workbook holds the
+'screen when the report is asked for.
+
+'@TestMethod("GenerationLog.ShowReport")
+Public Sub TestShowReportComesUpFromUnderAnotherWorkbook()
+    CustomTestSetTitles Assert, "GenerationLog", "TestShowReportComesUpFromUnderAnotherWorkbook"
+    On Error GoTo Fail
+
+    'Arrange: a finished run on the fixture workbook
+    Dim runLog As GenerationLog
+    Set runLog = GenerationLog.Create(FixtureWorkbook)
+    runLog.Start
+    runLog.Finish "built"
+
+    'Act: another workbook takes the screen, then the report is asked for
+    ThisWorkbook.Activate
+    Dim shown As Boolean
+    shown = runLog.ShowReport()
+
+    'Assert
+    Assert.IsTrue shown, _
+                  "ShowReport should answer True when it has a report to show."
+    Assert.AreEqual SHEET_CHECKING, ActiveSheet.Name, _
+                    "The report sheet should be the active sheet, whatever held the screen."
+
+    ThisWorkbook.Activate
+
+    Exit Sub
+Fail:
+    ThisWorkbook.Activate
+    CustomTestLogFailure Assert, "TestShowReportComesUpFromUnderAnotherWorkbook", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("GenerationLog.ShowReport")
+Public Sub TestShowReportWorksAfterFinishReleasedTheWriter()
+    CustomTestSetTitles Assert, "GenerationLog", "TestShowReportWorksAfterFinishReleasedTheWriter"
+    On Error GoTo Fail
+
+    'Arrange: a run that is over, and its report put away again
+    Dim runLog As GenerationLog
+    Set runLog = GenerationLog.Create(FixtureWorkbook)
+    runLog.Start
+    runLog.Finish "built"
+    FixtureWorkbook.Worksheets(SHEET_CHECKING).Visible = xlSheetVeryHidden
+
+    'Act: the ribbon button, pressed some time after the run
+    Dim shown As Boolean
+    shown = runLog.ShowReport()
+
+    'Assert: the sheet outlives the writer Finish released
+    Assert.IsTrue shown, _
+                  "A report should still open after the run that wrote it has closed."
+    Assert.AreEqual CLng(xlSheetVisible), _
+                    CLng(FixtureWorkbook.Worksheets(SHEET_CHECKING).Visible), _
+                    "ShowReport should bring the sheet back out of hiding."
+
+    ThisWorkbook.Activate
+
+    Exit Sub
+Fail:
+    ThisWorkbook.Activate
+    CustomTestLogFailure Assert, "TestShowReportWorksAfterFinishReleasedTheWriter", Err.Number, Err.Description
+End Sub
+
+'@sub-title A workbook that has never generated anything has no report.
+'@details
+'The ribbon button builds a log over ThisWorkbook when no run has been opened
+'this session, so it asks this question on a designer that was just opened. An
+'answer of True there would show the user an empty grid.
+'@TestMethod("GenerationLog.ShowReport")
+Public Sub TestShowReportAnswersFalseWithNoReportSheet()
+    CustomTestSetTitles Assert, "GenerationLog", "TestShowReportAnswersFalseWithNoReportSheet"
+    On Error GoTo Fail
+
+    Dim runLog As GenerationLog
+    Set runLog = GenerationLog.Create(FixtureWorkbook)
+
+    Assert.IsFalse runLog.ShowReport(), _
+                   "A workbook with no " & SHEET_CHECKING & " sheet has no report to show."
+    Assert.IsFalse WorksheetExists(SHEET_CHECKING, FixtureWorkbook), _
+                   "And asking should not have created one."
+
+    Exit Sub
+Fail:
+    ThisWorkbook.Activate
+    CustomTestLogFailure Assert, "TestShowReportAnswersFalseWithNoReportSheet", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("GenerationLog.ShowReport")
+Public Sub TestShowReportAnswersFalseOnAnEmptyReportSheet()
+    CustomTestSetTitles Assert, "GenerationLog", "TestShowReportAnswersFalseOnAnEmptyReportSheet"
+    On Error GoTo Fail
+
+    'Arrange: the sheet is there but nothing was ever written on it, which is
+    'what a run that raised before its first flush leaves behind
+    Dim sh As Worksheet
+    Set sh = FixtureWorkbook.Worksheets.Add
+    sh.Name = SHEET_CHECKING
+    sh.Cells.Clear
+    sh.Visible = xlSheetVeryHidden
+
+    Dim runLog As GenerationLog
+    Set runLog = GenerationLog.Create(FixtureWorkbook)
+
+    Assert.IsFalse runLog.ShowReport(), _
+                   "An empty sheet is not a report."
+    Assert.AreEqual CLng(xlSheetVeryHidden), CLng(sh.Visible), _
+                    "And it should be left where it was."
+
+    Exit Sub
+Fail:
+    ThisWorkbook.Activate
+    CustomTestLogFailure Assert, "TestShowReportAnswersFalseOnAnEmptyReportSheet", Err.Number, Err.Description
+End Sub
+
+
 '@section Export Tests
 '===============================================================================
 '@TestMethod("GenerationLog.Export")
