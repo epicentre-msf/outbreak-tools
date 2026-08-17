@@ -774,6 +774,64 @@ for (rec in list(c(log_path,    "-import.log"),
   }
 }
 
+# --- 7c) the generation log has the last word --------------------------------
+# THE BUILD SAYING OK IS NOT THE SAME AS THE BUILD BEING GOOD.
+# -----------------------------------------------------------------------------
+# `outcome=OK` means BuildLinelistFromSetup ran to the end without raising. It
+# says nothing about what the generation recorded on the way. A geobase Excel
+# refuses is the case that proved it: the geo import logs an error, the build
+# carries on, saves a linelist with no geographic data at all, answers OK, and
+# exits 0. The operator gets a file that looks right and is missing a quarter of
+# its content, and the only sign is a log line in a file they have no reason to
+# open.
+#
+# Checked here, at the very end, so the linelist and every log are already in the
+# operator's own folder before the run is failed. The evidence stays put: the run
+# dir is kept as well, because fail() quits before the staging is cleared.
+gen_path <- file.path(build_out, paste0(out_name, "-generation.txt"))
+
+# Read as bytes and converted from latin1, which cannot fail. This log is
+# Excel's own text and Excel for Mac writes it in a single-byte encoding: a
+# French install puts a raw 0xE9 in it for the accented word in its own error
+# messages, and that is not valid UTF-8. `readLines` would warn and hand back a
+# mangled line. Every tag being ASCII, the scan is exact either way.
+read_generation <- function(p) {
+  if (!file.exists(p) || file.size(p) == 0L) return(character(0))
+  txt <- rawToChar(readBin(p, "raw", file.size(p)))
+  Encoding(txt) <- "latin1"
+  strsplit(enc2utf8(txt), "\r\n|\n|\r")[[1]]
+}
+
+gen_lines <- read_generation(gen_path)
+
+if (!length(gen_lines)) {
+  fail(paste0("the build answered OK and wrote no generation log at: ", gen_path))
+}
+
+# A geobase that was asked for and is not in the log as imported. Checked on its
+# own, because a future failure that logs nothing at all would slip past the
+# error scan below while still shipping a linelist with no geography.
+if (nzchar(geo_path)) {
+  if (!any(grepl("was imported", gen_lines, fixed = TRUE))) {
+    fail(paste0("a geobase was given (", geo_path,
+                ") and the generation log never says it was imported, so the ",
+                "linelist carries no geographic data."))
+  }
+  message("build-linelist.R: geobase  -> imported")
+}
+
+gen_errors <- grep("[Error]", gen_lines, fixed = TRUE, value = TRUE)
+if (length(gen_errors)) {
+  message("\n       --- the ", length(gen_errors), " error line(s) the generation recorded ---")
+  for (ln in gen_errors) message("       ", ln)
+  message("       --- end ---")
+  fail(paste0("the build answered OK and the generation recorded ",
+              length(gen_errors), " error(s). The files were delivered, ",
+              "and they are not trustworthy."))
+}
+
+message("build-linelist.R: log      -> no errors recorded")
+
 # --- 8) clear the staging ----------------------------------------------------
 # Only on success, and only after everything is delivered. A run stages about
 # 17 MB -- the source tree, the driver copy, the merged forms, copies of the
