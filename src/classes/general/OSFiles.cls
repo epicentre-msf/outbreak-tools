@@ -637,11 +637,110 @@ Private Function BuildAppleScriptList(ByVal entries As Variant) As String
     BuildAppleScriptList = "{" & builder & "}"
 End Function
 
+'@label:filter-extensions
+'@sub-title Split a filter string into its bare extensions
+'@details
+'Callers write the filter in whichever shape reads well at the call site:
+'"*.xlsx", "*.xlsb;*.xlsx", "*.xlsb, *.xlsx". They all mean the same thing, so
+'the separator is read as either a semicolon or a comma and the "*." is dropped.
+'
+'This used to be a Select Case over the whole string, which meant a filter had
+'to be spelled exactly as one of the listed literals or it fell to the Else
+'branch and answered xlsx alone. `clickLoadFileDic` asks for "*.xlsb;*.xlsx"
+'and the branch it needed was written "*.xlsb, *.xlsx", so loading a setup on
+'macOS offered xlsx files and hid every .xlsb.
+'@param filters String. The filter string as the caller wrote it.
+'@return Variant. Zero-based array of lower case extensions, without the dot.
+Private Function FilterExtensions(ByVal filters As String) As Variant
+    Dim normalised As String
+    Dim parts() As String
+    Dim results() As String
+    Dim count As Long
+    Dim idx As Long
+    Dim entry As String
+
+    normalised = Replace(filters, ";", ",")
+    parts = Split(normalised, ",")
+
+    ReDim results(0 To UBound(parts) - LBound(parts))
+
+    For idx = LBound(parts) To UBound(parts)
+        entry = LCase$(Trim$(parts(idx)))
+        If Left$(entry, 2) = "*." Then entry = Mid$(entry, 3)
+        If Left$(entry, 1) = "." Then entry = Mid$(entry, 2)
+        If LenB(entry) > 0 Then
+            results(count) = entry
+            count = count + 1
+        End If
+    Next idx
+
+    If count = 0 Then
+        FilterExtensions = Array()
+        Exit Function
+    End If
+
+    ReDim Preserve results(0 To count - 1)
+    FilterExtensions = results
+End Function
+
+'@label:uti-for-extension
+'@sub-title The macOS uniform type identifier of one Excel extension
+'@param extension String. Lower case extension without the dot.
+'@return String. The UTI, or an empty string when it is not one we handle.
+Private Function UtiForExtension(ByVal extension As String) As String
+    Select Case extension
+        Case "xls"
+            UtiForExtension = "com.microsoft.Excel.xls"
+        Case "xlsx"
+            UtiForExtension = "org.openxmlformats.spreadsheetml.sheet"
+        Case "xlsm"
+            UtiForExtension = "org.openxmlformats.spreadsheetml.sheet.macroenabled"
+        Case "xlsb"
+            UtiForExtension = "com.microsoft.Excel.sheet.binary.macroenabled"
+        Case "csv"
+            UtiForExtension = "public.comma-separated-values-text"
+    End Select
+End Function
+
+'@label:build-windows-filter
+'@sub-title Rewrite a filter string in the shape Excel's FileDialog documents
+'@details
+'FileDialogFilters.Add takes its extensions separated by a comma and a space.
+'A caller writing them with a semicolon is saying the same thing, so the string
+'is rebuilt here rather than passed on as typed.
+'@param filters String. The filter string as the caller wrote it.
+'@return String. "*.xlsb, *.xlsx", or the original when nothing could be read.
+Private Function BuildWindowsFilter(ByVal filters As String) As String
+    Dim extensions As Variant
+    Dim parts() As String
+    Dim idx As Long
+
+    extensions = FilterExtensions(filters)
+    If UBound(extensions) < LBound(extensions) Then
+        BuildWindowsFilter = filters
+        Exit Function
+    End If
+
+    ReDim parts(LBound(extensions) To UBound(extensions))
+    For idx = LBound(extensions) To UBound(extensions)
+        parts(idx) = "*." & extensions(idx)
+    Next idx
+
+    BuildWindowsFilter = Join(parts, ", ")
+End Function
+
 '@label:build-mac-filter-list
 '@sub-title Construct the UTI list for the AppleScript file picker
+'@param filters String. The filter string as the caller wrote it.
+'@param customMacFilter String. A UTI to use instead, when the caller has one.
+'@return String. An AppleScript list of UTIs.
 Private Function BuildMacFilterList(ByVal filters As String, _
                                     ByVal customMacFilter As String) As String
-    Dim filterEntries As Variant
+    Dim extensions As Variant
+    Dim entries() As String
+    Dim count As Long
+    Dim idx As Long
+    Dim uti As String
 
     'Construct the UTI list consumed by the AppleScript choose-file command.
     If customMacFilter <> vbNullString Then
@@ -649,21 +748,27 @@ Private Function BuildMacFilterList(ByVal filters As String, _
         Exit Function
     End If
 
-    Select Case filters
-        Case "*.xls"
-            filterEntries = Array("com.microsoft.Excel.xls")
-        Case "*.xlsx"
-            filterEntries = Array("org.openxmlformats.spreadsheetml.sheet")
-        Case "*.xlsb"
-            filterEntries = Array("com.microsoft.Excel.sheet.binary.macroenabled")
-        Case "*.xlsb, *.xlsx"
-            filterEntries = Array("org.openxmlformats.spreadsheetml.sheet", _
-                                  "com.microsoft.Excel.sheet.binary.macroenabled")
-        Case Else
-            filterEntries = Array("org.openxmlformats.spreadsheetml.sheet")
-    End Select
+    extensions = FilterExtensions(filters)
+    If UBound(extensions) >= LBound(extensions) Then
+        ReDim entries(LBound(extensions) To UBound(extensions))
+        For idx = LBound(extensions) To UBound(extensions)
+            uti = UtiForExtension(CStr(extensions(idx)))
+            If LenB(uti) > 0 Then
+                entries(count) = uti
+                count = count + 1
+            End If
+        Next idx
+    End If
 
-    BuildMacFilterList = BuildAppleScriptList(filterEntries)
+    'An unreadable or unknown filter still has to offer something, and the
+    'open format is the one every caller here can read.
+    If count = 0 Then
+        BuildMacFilterList = BuildAppleScriptList(Array("org.openxmlformats.spreadsheetml.sheet"))
+        Exit Function
+    End If
+
+    ReDim Preserve entries(0 To count - 1)
+    BuildMacFilterList = BuildAppleScriptList(entries)
 End Function
 
 '@label:parse-mac-selection-result
@@ -1050,7 +1155,7 @@ Private Function SelectFilesOnWindows(ByVal filters As String) As Variant
         .AllowMultiSelect = True
         .title = "Chose your files"              'MSG_ChooseFiles
         .filters.Clear
-        .filters.Add "Excel Sheet", filters
+        .filters.Add "Excel Sheet", BuildWindowsFilter(filters)
 
         If .Show = True Then
             On Error Resume Next
@@ -1108,7 +1213,7 @@ Private Function SelectFileOnWindows(ByVal filters As String) As String
         .AllowMultiSelect = False
         .title = "Chose your file"               'MSG_ChooseFile
         .filters.Clear
-        .filters.Add "Excel Sheet", filters      '"*.xlsx" ', *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile
+        .filters.Add "Excel Sheet", BuildWindowsFilter(filters)
 
         If .Show = True Then
             SelectFileOnWindows = .SelectedItems(1)
