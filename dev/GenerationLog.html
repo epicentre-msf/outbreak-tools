@@ -55,6 +55,36 @@ later, through Start.</p>
 <hr />
 </div>
 </details>
+<details open class="doc-section" id="run-lifecycle">
+<summary>Run lifecycle</summary>
+<div class="section-body">
+<h3 id="showreport">ShowReport <a class="anchor-link" href="#showreport">#</a></h3>
+<p><em>show-report</em></p>
+<p><strong>Bring the report worksheet to the front</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ShowReport() As Boolean
+</code></pre>
+<p>The one owner of showing the report. Finish calls it at the end of a run and
+the ribbon calls it whenever the user asks for the last report, so a report
+opened either way opens the same way.</p>
+</div>
+</details>
+<details open class="doc-section" id="why-the-workbook-is-activated-first">
+<summary>WHY THE WORKBOOK IS ACTIVATED FIRST</summary>
+<div class="section-body">
+<p>Worksheet.Activate raises 1004 when the sheet belongs to a workbook that is not
+the active one. A generation ends with the built linelist open and in front, so
+the activation Finish used to do raised every time and its On Error Resume Next
+swallowed it. That is why the report never appeared at the end of a run.</p>
+<p>The sheet is created very hidden and Activate raises on a hidden sheet, so the
+visibility write comes before it.</p>
+<p>An empty sheet is not a report. A designer that has never generated anything
+carries __check as a blank very hidden sheet, and showing that would leave the
+user looking at an empty grid with no way back.</p>
+<p><strong>Returns:</strong> Boolean. True when a report was found and brought to the front.</p>
+<hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
