@@ -161,6 +161,13 @@ Private lastLog As String
 'apart for that reason.
 Private accessNote As String
 
+'Where the narrative is mirrored, line by line, as the run goes. The in-memory
+'narrative above is read back at the END of a run, and a run that takes Excel
+'down with it never gets there: the caller reads a dead connection and has no
+'idea which phase was on screen. This file is opened, written and closed on
+'every line, so whatever reached it survives anything.
+Private tracePath As String
+
 'The options of the run being prepared, read out of the options string.
 Private optTemplate As String
 Private optGeo As String
@@ -397,6 +404,13 @@ Public Function BuildLinelistFromSetup(ByVal designerPath As String, _
     'component in there.
     EnsureFolder JoinPath(outputFolder, SCRATCH_FOLDER)
 
+    'The trace, started fresh here so a run is never read against the lines of
+    'the one before it. Everything AddToReport records from now on is on disk a
+    'line at a time.
+    tracePath = JoinPath(outputFolder, outputName & "-trace.txt")
+    DeleteFile tracePath
+    AddToReport "build started, output " & outputFolder & " as " & outputName
+
     'ONE grant when the launcher gave a root, because a folder grant persists
     'across Excel sessions and covers files created inside it afterwards --
     'proven by probe, written up in .obt/gotchas/macos-sandbox-grant.md. The
@@ -437,6 +451,7 @@ Public Function BuildLinelistFromSetup(ByVal designerPath As String, _
     workingPath = JoinPath(outputFolder, outputName & "-designer.xlsb")
     DeleteFile workingPath
     FileCopy designerPath, workingPath
+    AddToReport "designer copied to " & workingPath
 
     'Events off before the open: a designer carries a Workbook_Open handler and
     'this run has no screen for whatever it would put there.
@@ -448,19 +463,26 @@ Public Function BuildLinelistFromSetup(ByVal designerPath As String, _
     'setup itself, the way clickLoadFileDic reads it. An empty language is a
     'translation column nothing can resolve.
     ResolveLanguages setupPath
+    AddToReport "languages resolved, setup " & optSetupLang
 
     Set designerBook = Application.Workbooks.Open(fileName:=workingPath, ReadOnly:=False)
+    AddToReport "designer copy opened"
 
     RefreshSourceCode designerBook, sourceRoot, formsFolder
 
     'The linelist language needs the designer open: it is settled against the
     'translation table's own column headers rather than against the setup.
     ResolveInterfaceLanguage designerBook
+    AddToReport "interface language resolved: " & optLinelistLang
 
     PrepareDesignerGeo designerBook
+    AddToReport "designer geo prepared"
+
     WriteDesignerEntries designerBook, setupPath, outputFolder, outputName
+    AddToReport "designer entries written"
 
     RunGeneration designerBook, setupPath, outputFolder, outputName
+    AddToReport "generation finished, saving the designer copy"
 
     'The designer is saved with the source it carried, so a run that produced a
     'surprising linelist can be read back rather than guessed at.
@@ -625,18 +647,21 @@ Private Sub RunGeneration(ByVal designerBook As Workbook, _
     Set sheetInfo = ll.SheetInfoManager
 
     For counter = sheetList.LowerBound To sheetList.UpperBound
+        AddToReport "building data entry sheet " & CStr(sheetList.Item(counter))
         BuildOneDataSheet ll, sheetInfo, CStr(sheetList.Item(counter)), runLog
     Next
 
     AddToReport "built " & CStr(lastSheets) & " data entry sheet(s), " & _
                 CStr(lastVariables) & " variable(s)"
 
+    AddToReport "writing the dropdown stores"
     Set store = ll.Dropdown(1)
     If store.HasCheckings Then CollectInto runLog, store.CheckingValues
 
     Set store = ll.Dropdown(2)
     If store.HasCheckings Then CollectInto runLog, store.CheckingValues
 
+    AddToReport "writing the analyses"
     Set anaOut = AnalysisOutput.Create(specs.AnalysisObject.Wksh(), ll)
     anaOut.WriteAnalysis AnalysisBuildStageAll
     If anaOut.HasCheckings Then CollectInto runLog, anaOut.CheckingValues
@@ -645,6 +670,7 @@ Private Sub RunGeneration(ByVal designerBook As Workbook, _
     'The path is read before SaveLL, because the save closes the workbook and
     'drops both references to it.
     lastLinelist = JoinPath(specs.Value("lldir"), specs.Value("llname") & ".xlsb")
+    AddToReport "saving the linelist to " & lastLinelist
     ll.SaveLL
     AddToReport "saved: " & lastLinelist
 
@@ -757,7 +783,9 @@ Private Sub RefreshSourceCode(ByVal target As Workbook, _
                               ByVal formsFolder As String)
     lastComponents = 0
 
+    AddToReport "stripping the designer copy's own project"
     StripProject target
+    AddToReport "project stripped, importing the source"
 
     ImportNamedFolders target, JoinPath(sourceRoot, CLASSES_FOLDER), _
                        TRANSFER_CLASS_FOLDERS, "*.cls"
@@ -1242,6 +1270,7 @@ End Function
 '@Description("Clear what the previous run recorded.")
 Private Sub ResetRunState()
     runNarrative = vbNullString
+    tracePath = vbNullString
     lastSheets = 0
     lastVariables = 0
     lastComponents = 0
@@ -1250,10 +1279,34 @@ Private Sub ResetRunState()
 End Sub
 
 '@Description("Add one line to the narrative of the run.")
+'@details
+'The line also goes to the trace file when the run has one, and it is opened
+'and closed around each line rather than held open. A held handle loses its
+'buffer when the process dies, which is the one case the trace exists for.
 '@param messageText String. What happened.
 Private Sub AddToReport(ByVal messageText As String)
     If LenB(runNarrative) > 0 Then runNarrative = runNarrative & vbLf
     runNarrative = runNarrative & messageText
+    WriteTrace messageText
+End Sub
+
+'@Description("Mirror one narrative line into the trace file on disk.")
+'@details
+'Silent about its own failures: a trace that cannot be written is not a reason
+'to stop a build, and the caller has the in-memory narrative either way.
+'@param messageText String. The line to append.
+Private Sub WriteTrace(ByVal messageText As String)
+    Dim handle As Integer
+
+    If LenB(tracePath) = 0 Then Exit Sub
+
+    On Error Resume Next
+        handle = FreeFile
+        Open tracePath For Append As #handle
+        Print #handle, Format$(Now, "hh:nn:ss") & "  " & messageText
+        Close #handle
+        Err.Clear
+    On Error GoTo 0
 End Sub
 
 

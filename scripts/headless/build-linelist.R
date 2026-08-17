@@ -488,19 +488,28 @@ sync_tree(file.path(repo_root, "src", "modules"), file.path(source_root, "src", 
 # the granted root no matter where the operator keeps their setup.
 dir.create(staged_in, recursive = TRUE, showWarnings = FALSE)
 
-stage_in <- function(from, leaf) {
+#
+# THE EXTENSION IS THE OPERATOR'S, never a fixed one. A staged name used to end
+# in .xlsb whatever arrived, and a geobase kept as .xlsx was handed to Excel
+# under a name that said "binary workbook". Excel for Mac DIES on that file
+# rather than refusing it: the build lost its whole process mid-run, the
+# AppleScript read a dead connection and reported -609, and the phase it died in
+# moved from run to run because it is whenever the geobase is first read.
+stage_in <- function(from, stem) {
   if (!nzchar(from)) return("")
-  to <- file.path(staged_in, leaf)
+  ext <- sub("^.*\\.", "", basename(from))
+  if (identical(ext, basename(from)) || !nzchar(ext)) ext <- "xlsb"
+  to <- file.path(staged_in, paste0(stem, ".", tolower(ext)))
   if (!file.copy(from, to, overwrite = TRUE)) {
     stop("build-linelist.R: failed to stage ", from, " into ", staged_in)
   }
   to
 }
 
-staged_designer <- stage_in(designer_path, "designer.xlsb")
-staged_setup    <- stage_in(setup_path,    "setup.xlsb")
-staged_template <- stage_in(temp_path,     "template.xlsb")
-staged_geo      <- stage_in(geo_path,      "geo.xlsb")
+staged_designer <- stage_in(designer_path, "designer")
+staged_setup    <- stage_in(setup_path,    "setup")
+staged_template <- stage_in(temp_path,     "template")
+staged_geo      <- stage_in(geo_path,      "geo")
 
 # Built from the STAGED paths, so a ribbon template or geobase the operator
 # keeps on their Desktop is read from inside the root like everything else.
@@ -613,8 +622,21 @@ show_import_log <- function() {
   }
 }
 
+# The build writes this one line at a time as it goes, so it is the only account
+# of a run that took Excel down with it: the report carries the narrative the
+# build HANDED BACK, and a build whose process died never handed anything back.
+trace_path <- file.path(build_out, paste0(out_name, "-trace.txt"))
+
+show_trace <- function() {
+  if (!file.exists(trace_path) || file.size(trace_path) == 0L) return(invisible(NULL))
+  message("\n       --- what the build reached, last line first ---")
+  for (ln in rev(readLines(trace_path, warn = FALSE))) message("       ", ln)
+  message("       --- end trace ---")
+}
+
 fail <- function(msg) {
   message("\n[FAIL] ", msg)
+  show_trace()
   show_import_log()
   message("\n       Run dir kept for inspection:")
   message("       ", run_dir)
@@ -721,9 +743,13 @@ for (extra in delivered[-1]) message("build-linelist.R:          -> ", extra)
 # Named after the linelist rather than kept as bare log names, so a folder
 # holding several builds still says which run each belongs to.
 for (rec in list(c(log_path,    "-import.log"),
-                 c(report_path, "-build-report.txt"))) {
+                 c(report_path, "-build-report.txt"),
+                 c(trace_path,  "-trace.txt"))) {
   if (!file.exists(rec[1]) || file.size(rec[1]) == 0L) next
   to <- file.path(dest_folder, paste0(out_name, rec[2]))
+  # The trace is already written under the output name, so a run whose --out IS
+  # the build folder would copy the file onto itself and empty it.
+  if (identical(normalizePath(rec[1]), normalizePath(to, mustWork = FALSE))) next
   if (file.copy(rec[1], to, overwrite = TRUE)) {
     message("build-linelist.R:          -> ", to)
   } else {
