@@ -733,6 +733,13 @@ for (attempt in seq_len(MAX_ATTEMPTS)) {
     sprintf("the trigger wrote no report (osascript returned %d)", trigger_rc)
   } else if (grepl("ERROR 51", outcome, fixed = TRUE)) {
     paste0("the build answered ", outcome)
+  } else if (grepl("^TRIGGER ERROR", outcome)) {
+    # The trigger catches its own errors and writes them as an outcome, so this
+    # arm exists because the first version of the retry never fired: a lost
+    # connection DOES leave a report, saying `TRIGGER ERROR -609: Connection is
+    # invalid`, which read as a perfectly ordinary answer. That is the wedge the
+    # `no report` arm above was meant to catch.
+    paste0("the trigger itself failed: ", outcome)
   } else {
     ""
   }
