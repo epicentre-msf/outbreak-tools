@@ -45,12 +45,12 @@
 ' limit of that choice. Writing BOM-less UTF-8 from VBScript needs the
 ' ADODB.Stream binary-copy dance, and it buys nothing until a path needs it.
 '
-' STATUS: never executed against a real Windows Excel, exactly like
-' run-tests.vbs beside it. The Windows path is a trigger-file watcher (a
-' scheduled task polling the shared repo for a .trigger, then calling this
-' script); host->guest SSH and prlctl are out. Left as a faithful sibling so
-' the contract — open copy -> refresh -> build tables -> import -> build ->
-' report file -> quit — is written down for whoever implements the guest side.
+' STATUS: run against a real Windows Excel for the first time on 2026-08-17,
+' and green. Excel 16.0.20228 on Windows 11, the measles setup, 2 data entry
+' sheets, 128 variables, the geobase imported, zero error lines in the
+' generation log, 2,797,064 bytes delivered in about 60 seconds. The contract
+' it drives is open copy -> refresh -> build tables -> import -> build ->
+' report file -> quit.
 ' ============================================================================
 
 Option Explicit
@@ -90,8 +90,30 @@ Dim xlsApp, Wkb, wbName
 Set xlsApp = Nothing
 Set Wkb = Nothing
 
+' EXCEL STAYS ON SCREEN, AND THE BUILD NEEDS IT THERE.
+' ----------------------------------------------------------------------------
+' A hidden Excel refuses Window.FreezePanes with error 1004, "Unable to set the
+' FreezePanes property of the Window class". LLDataEntry freezes the header of
+' every data entry sheet, so the run stopped on the first one and delivered
+' nothing.
+'
+' Measured 2026-08-17 on Excel 16.0.20228, same source, same setup, one line
+' changed: hidden, the trace ends at `building data entry sheet Info`; on
+' screen, the same build writes 2 sheets, 128 variables and a 2,797,064 byte
+' linelist with the geobase in it.
+'
+' A plain Workbooks.Add in a hidden Excel takes the freeze without complaint,
+' so the refusal needs the build's own conditions to show up and a small probe
+' will say everything is fine. Trust the build.
+'
+' The macOS sibling has always left Excel on screen -- AppleScript's `open
+' workbook` shows it -- so this also keeps the two triggers driving one Excel
+' in one state, which is the whole reason they are written as siblings.
+'
+' The cost is that the run takes over the screen for its minute. Excel is its
+' own instance, so anything the operator has open is untouched.
 Set xlsApp = CreateObject("Excel.Application")
-xlsApp.Visible = False
+xlsApp.Visible = True
 xlsApp.DisplayAlerts = False
 xlsApp.ScreenUpdating = False
 

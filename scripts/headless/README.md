@@ -27,6 +27,7 @@ A caller reads that string. It never has to read a dialog.
 | `scripts/headless/build-linelist.R` | generates a linelist from a filled setup, and runs no test |
 | `scripts/headless/build-linelist.sh` | the wrapper to run day to day: the settings for a build in one place |
 | `scripts/headless/macos/build-linelist.applescript` | the trigger behind it, thin by design |
+| `scripts/headless/windows/build-linelist.vbs` | the same trigger for Windows, driving Excel through COM |
 
 ## The short way to run one
 
@@ -355,7 +356,59 @@ belt and braces rather than load-bearing, and it costs nothing.
 
 On Windows the sandbox does not exist, `GrantAccessToMultipleFiles` is absent,
 `OBTGrantRoot` answers "not available on this host", and `EnsureFileAccess`
-silently answers False. All correct there.
+silently answers False. All correct there. The trace still prints that 438 on
+every Windows run, and what it says is that the API is missing.
+
+## Running it on Windows
+
+Same command, same arguments. `build-linelist.R` picks
+`windows/build-linelist.vbs` and drives it with `cscript //nologo`, and that
+script makes its own Excel through COM.
+
+```
+Rscript scripts/headless/build-linelist.R --setup=<filled setup.xlsb> \
+  --out=<dir> --name=<stem> --temppath=ribbons/_ribbontemplate_dev.xlsb \
+  --designer=<designer.xlsb> --setuplang=English --lllang=ENG-English \
+  --geopath=<geobase.xlsx>
+```
+
+First run on a real Windows Excel: 2026-08-17, Excel 16.0.20228 on Windows 11,
+green in about 60 seconds. Four things are worth knowing before the first one.
+
+**Excel comes up on screen for the length of the run.** A hidden Excel refuses
+`Window.FreezePanes` with error 1004, and the build freezes the header of every
+data entry sheet, so a hidden run stops on the first sheet and delivers nothing.
+The trigger is Excel's own instance, so anything already open is untouched.
+
+**Trust access to the VBA project object model has to be on.** The run imports
+78 components into the driver through `VBProject`, and Excel refuses that call
+outright without it. Trust Center -> Macro Settings -> "Trust access to the VBA
+project object model". To read it without opening Excel:
+
+```powershell
+Get-ItemProperty HKCU:\Software\Microsoft\Office\16.0\Excel\Security |
+  Select-Object AccessVBOM      # 1 = on
+```
+
+**The staging root is a plain folder.** Excel reads and writes it freely, so the
+`<repo>/headless-runner` fallback is all a run needs. `--obt-home` still works
+for putting it somewhere else.
+
+**Watch for an `.Rprofile` in the repo root.** `Rscript` sources it before the
+build's first line, and the one that has been sitting there loads `pacman` and
+the tidyverse, so R dies at startup over packages the build never asked for.
+`build-linelist.sh` exports `R_PROFILE_USER=/dev/null` to stop that, and it runs
+under Git Bash on Windows:
+
+```sh
+bash scripts/headless/build-linelist.sh --name=<stem> --out=<dir>
+```
+
+Calling `Rscript` directly wants the same thing set by hand:
+
+```sh
+R_PROFILE_USER=nonexistent Rscript scripts/headless/build-linelist.R --setup=...
+```
 
 ## Running the suites
 

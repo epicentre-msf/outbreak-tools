@@ -339,8 +339,8 @@ dest_folder <- abs_path(opt("out", file.path(build_home, "build")))
 forms_source <- abs_path(opt("forms", ""))
 
 if (on_windows) {
-  message("build-linelist.R: NOTE - the Windows trigger has never been run ",
-          "against a real Windows Excel. Read what it reports with that in mind.")
+  message("build-linelist.R: NOTE - Excel comes up on screen for the length of ",
+          "the run. A hidden Excel refuses to freeze the header panes.")
 }
 for (needed in c(workbook_src, trigger, designer_path, setup_path, registry_r)) {
   if (!file.exists(needed)) stop("build-linelist.R: not found: ", needed)
