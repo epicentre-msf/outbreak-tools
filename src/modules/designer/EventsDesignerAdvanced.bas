@@ -105,6 +105,49 @@ Public Sub FinishRunLog(ByVal outcome As String)
     heldLog.Finish outcome, builtSheets, builtVariables
 End Sub
 
+'@Description("Bring the generation report to the front. Answers False when there is none to show.")
+'@details
+'The report of the run that just ended, or of the last run of a previous
+'session: the sheet outlives the log object, so this builds a log over
+'ThisWorkbook when no run has been opened yet and asks it for the same
+'sheet. That is what lets the ribbon button work on a designer that was
+'just opened.
+'@return Boolean. True when a report was found and shown.
+Public Function ShowRunLog() As Boolean
+    Dim reportLog As GenerationLog
+
+    Set reportLog = heldLog
+    If reportLog Is Nothing Then
+        On Error Resume Next
+        Set reportLog = GenerationLog.Create(ThisWorkbook)
+        On Error GoTo 0
+    End If
+
+    If reportLog Is Nothing Then Exit Function
+
+    ShowRunLog = reportLog.ShowReport()
+End Function
+
+'@Description("Callback for the ribbon button that opens the generation report.")
+'@EntryPoint
+Public Sub clickOpenLog(ByRef ribbonControl As IRibbonControl)
+    Dim entry As DesignerEntry
+
+    On Error GoTo Cleanup
+
+    If ShowRunLog() Then Exit Sub
+
+    'Nothing has been generated yet in this workbook, so there is no report
+    'to open. Saying so beats leaving the press with no answer at all.
+    Set entry = EventsDesignerCore.EntryManager()
+    MsgBox entry.TranslateMessage("MSG_NoRunLog"), _
+           vbInformation + vbOKOnly, PROMPT_TITLE
+    Exit Sub
+
+Cleanup:
+    Debug.Print "clickOpenLog: "; Err.Number; Err.Description
+End Sub
+
 
 '@section Dev group callbacks
 '===============================================================================
@@ -437,6 +480,9 @@ Public Sub clickGenerate()
         entry.AddInfo entry.TranslateMessage("MSG_NotReady"), "edition"
         FinishRunLog entry.TranslateMessage("MSG_NotReady")
         appScope.Restore
+        'The report names which entry is not ready, so it is the thing the
+        'user has to read here.
+        ShowRunLog
         MsgBox entry.TranslateMessage("MSG_NotReady"), _
                vbExclamation + vbOKOnly, PROMPT_TITLE
         Exit Sub
@@ -465,6 +511,12 @@ Public Sub clickGenerate()
     If Not bar Is Nothing Then bar.Complete entry.TranslateMessage("MSG_LLCreated")
 
     appScope.Restore
+
+    'The report, last of all. FinishRunLog shows it too, but the three calls
+    'above run after it and the built linelist is in front by then, so the
+    'user was left looking at the new workbook and never saw the report. This
+    'is the call that lands, with the screen already back on.
+    ShowRunLog
     MsgBox entry.TranslateMessage("MSG_LLCreated"), vbInformation + vbOKOnly, PROMPT_TITLE
     Exit Sub
 
@@ -482,6 +534,10 @@ Cleanup:
     FinishRunLog "Failed: " & errDesc
     If Not appScope Is Nothing Then appScope.Restore
     Application.Cursor = xlDefault
+    'A run that failed is the run whose report is worth most: it names the
+    'phase that raised. ErrorManage below may put the half-built workbook in
+    'front on the user's say-so, and that is their choice to make.
+    ShowRunLog
     On Error GoTo 0
 
     If errNumber <> 0 Then
