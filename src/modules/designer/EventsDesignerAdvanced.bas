@@ -569,11 +569,16 @@ End Sub
 'entries; the multi driver runs it per row after the row's values land
 'on Main.
 '@param entry DesignerEntry. The entry manager over the Main worksheet.
+'@param faults Checking. Answers what the checks filed, for a caller that
+'                shows the fault where the user is looking. The multi
+'                driver writes the names into the row's result cell.
 '@return Boolean. True when every entry passes and the build may start.
-Public Function ValidateEntries(ByVal entry As DesignerEntry) As Boolean
+Public Function ValidateEntries(ByVal entry As DesignerEntry, _
+                                Optional ByRef faults As Checking = Nothing) As Boolean
     Dim entryChecks As Checking
 
     Set entryChecks = entry.Validate()
+    Set faults = entryChecks
 
     If entryChecks.Length = 0 Then
         ValidateEntries = True

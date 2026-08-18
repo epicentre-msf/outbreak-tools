@@ -32,7 +32,7 @@ Option Explicit
 '-------------------------------------------------------------------------------
 'A test module runs from the staging copy of the driver workbook, so a
 'relative path resolves against the run directory rather than the repository.
-'REPO_ROOT is the one place that assumption lives; HeadlessBuild itself takes
+'RepoFolder is the one place that assumption lives; HeadlessBuild itself takes
 'every path as a parameter and holds none.
 '@depends HeadlessBuild, CustomTest
 
@@ -40,14 +40,21 @@ Private Assert As CustomTest
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
-Private Const REPO_ROOT As String = _
+'THE ROOT IS FOUND AT RUN TIME. It used to be an absolute constant, true on
+'one machine: a checkout anywhere else, or on the other host, left every path
+'below pointing at nothing and every test of this module failing for a reason
+'that had nothing to do with the code. TestHelpersLite.RepoRoot walks up from
+'the running workbook to the folder holding src/tests/test-registry.yml, and
+'answers the constant below when it finds none.
+Private Const FALLBACK_ROOT As String = _
     "/Users/komlaviamevoin/Unsync-Working-Folders/outbreak-tools"
 
-Private Const EMPTY_SETUP As String = REPO_ROOT & "/src/bin/setup/setup_dev.xlsb"
-Private Const GENERIC_SETUP As String = REPO_ROOT & "/src/bin/test-files/generic-test-setup.xlsb"
-Private Const INJECTED_MODULE As String = REPO_ROOT & "/scripts/headless/vba/OBTSetupImportHeadless.bas"
-Private Const FILLED_SETUP As String = REPO_ROOT & "/.obt/draft/demo_setup_filled.xlsb"
+Private RepoFolder As String
 
+Private EMPTY_SETUP As String
+Private GENERIC_SETUP As String
+Private INJECTED_MODULE As String
+Private FILLED_SETUP As String
 Private Const DICTIONARY_SHEET As String = "Dictionary"
 
 Private Outcome As String
@@ -63,8 +70,23 @@ Private SetupMessage As String
 '@details
 'This routine is Public because the harness calls it by name through
 'Application.Run.
+'@sub-title Settle every path of this module against the repository root.
+'@details
+'Called first by ModuleInitialize. The paths are variables rather than
+'constants because a constant cannot be built from a function call, and the
+'root is now answered by one.
+Private Sub ResolvePaths()
+    RepoFolder = RepoRoot(FALLBACK_ROOT)
+
+    EMPTY_SETUP = RepoFolder & "/src/bin/setup/setup_dev.xlsb"
+    GENERIC_SETUP = RepoFolder & "/src/bin/test-files/generic-test-setup.xlsb"
+    INJECTED_MODULE = RepoFolder & "/scripts/headless/vba/OBTSetupImportHeadless.bas"
+    FILLED_SETUP = RepoFolder & "/.obt/draft/demo_setup_filled.xlsb"
+End Sub
+
 '@ModuleInitialize
 Public Sub ModuleInitialize()
+    ResolvePaths
     BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
@@ -76,7 +98,7 @@ Public Sub ModuleInitialize()
 
     'One grant for everything this suite touches, before its first Dir$. An
     'already-granted machine sees no dialog.
-    HeadlessBuild.EnsureFileAccess Array(REPO_ROOT)
+    HeadlessBuild.EnsureFileAccess Array(RepoFolder)
 
     On Error Resume Next
         FillTheSetup

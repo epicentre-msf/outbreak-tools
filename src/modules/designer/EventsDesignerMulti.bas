@@ -17,7 +17,15 @@ Option Explicit
 'importing all fill only the blank ID cells with the next free numbers,
 'through EnsureRowIds. The per-row language dropdown is named after the
 'row ID (<id>_lang), so a rewritten ID would detach its row from the
-'dropdown the validation points at.
+'dropdown the validation points at. SafeDropdownName is what turns the
+'ID into that name: an ID reads "Operation- 1" and Excel refuses a name
+'carrying a dash.
+'
+'EVERY BUTTON OF THE GROUP WORKS ON ONE WORKSHEET
+'-------------------------------------------------------------------------------
+'A press answers nothing at all unless the GenerateMultiple sheet of this
+'workbook is the one in front. OnMultiSheet is the guard, and it opens
+'every callback here.
 '
 'A step that gets skipped is reported: the callbacks collect one line
 'per skipped step and show them in one message after the busy state is
@@ -62,6 +70,14 @@ Private Const SHEET_DROPDOWNS As String = "__dropdowns"
 Private Const DROPDOWN_PREFIX As String = "dropdown_"
 Private Const LANG_SUFFIX As String = "_lang"
 
+'The three dropdowns the designer already registers for its own Main
+'entries, in DesignerPreparation. The dictionary language is read off each
+'row's setup file and so has a list per row; these three are one list for
+'the whole workbook, and the rows take them as they are.
+Private Const DROP_INTERFACE_LANGUAGES As String = "__interface_languages"
+Private Const DROP_EPIWEEK_START As String = "__epiweek_start"
+Private Const DROP_DESIGN_VALUES As String = "__design_values"
+
 Private Const MSG_PLACE_DATA As String = "Please place the cursor inside the table data area."
 
 'Progress bar over the rows. The two names live on the GenerateMultiple
@@ -87,6 +103,8 @@ Public Sub clickFolderMulti(ByRef ribbonControl As IRibbonControl)
     Dim appScope As ApplicationState
     Dim skipped As BetterArray
     Dim startRow As Long
+
+    If Not OnMultiSheet() Then Exit Sub
 
     Set lo = ResolveMultiTable()
     If lo Is Nothing Then
@@ -153,6 +171,9 @@ Public Sub clickFolderMulti(ByRef ribbonControl As IRibbonControl)
         LoadOutputFolder lo, io.Folder(), startRow, skipped
     End Select
 
+    'The rows the load just added take the shared lists too
+    WireSharedColumns lo, ResolveDropdownManager()
+
 Cleanup:
     Dim errNumber As Long
     Dim errDesc As String
@@ -182,6 +203,8 @@ Public Sub clickDupMulti(ByRef ribbonControl As IRibbonControl)
     Dim destRow As Range
     Dim idCol As ListColumn
     Dim idMissing As Boolean
+
+    If Not OnMultiSheet() Then Exit Sub
 
     Set lo = ResolveMultiTable()
     If lo Is Nothing Then
@@ -229,6 +252,8 @@ Public Sub clickDupMulti(ByRef ribbonControl As IRibbonControl)
         EnsureRowIds lo
     End If
 
+    WireSharedColumns lo, ResolveDropdownManager()
+
 Cleanup:
     Dim errNumber As Long
     Dim errDesc As String
@@ -256,6 +281,8 @@ Public Sub clickAddRowsMulti(ByRef ribbonControl As IRibbonControl)
     Dim appScope As ApplicationState
     Dim hasIdColumn As Boolean
 
+    If Not OnMultiSheet() Then Exit Sub
+
     hasIdColumn = True
 
     Set lo = ResolveMultiTable()
@@ -271,6 +298,8 @@ Public Sub clickAddRowsMulti(ByRef ribbonControl As IRibbonControl)
     Set table = CustomTable.Create(lo)
     table.AddRows nbRows:=10, insertShift:=False, includeIds:=False
     hasIdColumn = EnsureRowIds(lo)
+
+    WireSharedColumns lo, ResolveDropdownManager()
 
 Cleanup:
     Dim errNumber As Long
@@ -299,6 +328,8 @@ Public Sub clickResizeMulti(ByRef ribbonControl As IRibbonControl)
     Dim appScope As ApplicationState
     Dim hasIdColumn As Boolean
 
+    If Not OnMultiSheet() Then Exit Sub
+
     hasIdColumn = True
 
     Set lo = ResolveMultiTable()
@@ -311,9 +342,17 @@ Public Sub clickResizeMulti(ByRef ribbonControl As IRibbonControl)
     Set appScope = ApplicationState.Create(Application)
     appScope.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
 
+    'THE THRESHOLD COUNTS THE ID. RemoveRows drops a row whose filled cell
+    'count is at or below the number it is given, and 0 asks it to work that
+    'number out from the formula columns. T_Multi carries none, so the answer
+    'was 0 and a row had to hold nothing at all to go. Every row carries an
+    'ID, written once and never rewritten, so no row was ever that empty and
+    'the button did nothing.
     Set table = CustomTable.Create(lo)
-    table.RemoveRows totalCount:=0, includeIds:=False, forceShift:=False
+    table.RemoveRows totalCount:=1, includeIds:=False, forceShift:=False
     hasIdColumn = EnsureRowIds(lo)
+
+    WireSharedColumns lo, ResolveDropdownManager()
 
 Cleanup:
     Dim errNumber As Long
@@ -345,6 +384,8 @@ Public Sub clickImpMulti(ByRef ribbonControl As IRibbonControl)
     Dim sourceTable As CustomTable
     Dim targetTable As CustomTable
     Dim hasIdColumn As Boolean
+
+    If Not OnMultiSheet() Then Exit Sub
 
     hasIdColumn = True
 
@@ -392,6 +433,8 @@ Public Sub clickImpMulti(ByRef ribbonControl As IRibbonControl)
     targetTable.Import sourceTable
     hasIdColumn = EnsureRowIds(targetLo)
 
+    WireSharedColumns targetLo, ResolveDropdownManager()
+
 Cleanup:
     Dim errNumber As Long
     Dim errDesc As String
@@ -425,6 +468,8 @@ Public Sub clickExportMulti(ByRef ribbonControl As IRibbonControl)
     Dim exportSheet As Worksheet
     Dim folderPath As String
     Dim exportPath As String
+
+    If Not OnMultiSheet() Then Exit Sub
 
     'Show folder picker before entering busy state
     Set io = OSFiles.Create()
@@ -500,6 +545,8 @@ Public Sub clickGenerateMulti(ByRef ribbonControl As IRibbonControl)
     Dim buildRows As Long
     Dim builtCount As Long
     Dim failedCount As Long
+
+    If Not OnMultiSheet() Then Exit Sub
 
     Set lo = ResolveMultiTable()
     If lo Is Nothing Then
@@ -719,11 +766,16 @@ Private Function BuildRow(ByVal entry As DesignerEntry, _
                           ByRef outcomeText As String, _
                           Optional ByVal statusTarget As Range = Nothing) As Boolean
     Dim ll As Linelist
+    Dim faults As Checking
 
     On Error GoTo Fail
 
-    If Not EventsDesignerAdvanced.ValidateEntries(entry) Then
-        outcomeText = "Refused by the entry checks. Open the generation report."
+    If Not EventsDesignerAdvanced.ValidateEntries(entry, faults) Then
+        'The names of the entries that failed, in the cell the user reads.
+        'The line used to say only that the row was refused, which sent
+        'somebody to the report to learn that a column of the row in front
+        'of them was empty.
+        outcomeText = "Refused: " & FaultList(faults)
         Exit Function
     End If
 
@@ -881,6 +933,89 @@ End Function
 
 '@section Table and dropdown resolution
 '===============================================================================
+
+'@Description("Put the designer's shared dropdowns on the columns that have no picker.")
+'@details
+'THE ENTRY CHECKS REFUSE A ROW MISSING ANY REQUIRED ENTRY, so a column
+'with no way to fill it is a row that cannot build. Three of them were in
+'that state: the interface language, the design and the epiweek start.
+'The buttons of this group fill setups, geobases and output folders, and
+'the dictionary language gets a list per row off its own setup file.
+'
+'The designer already registers all three lists for its own Main entries
+'in DesignerPreparation, so the rows take the same ones. The validation
+'goes on the whole column, which is why one call after a shape change
+'covers every row the table now holds.
+'
+'The output file name stays typed by hand. It is the one required entry
+'that is different per row and comes from nowhere but the user.
+'@param lo ListObject. The T_Multi ListObject.
+'@param drop DropdownLists. The dropdown manager of the host workbook.
+Private Sub WireSharedColumns(ByVal lo As ListObject, ByVal drop As DropdownLists)
+    Dim table As CustomTable
+
+    If lo Is Nothing Then Exit Sub
+    If drop Is Nothing Then Exit Sub
+    If lo.DataBodyRange Is Nothing Then Exit Sub
+
+    Set table = CustomTable.Create(lo)
+
+    'A list the designer has never registered stops its own column alone,
+    'and the other two still land.
+    On Error Resume Next
+    table.SetValidation COL_LANG_INTERFACE, drop, DROP_INTERFACE_LANGUAGES
+    table.SetValidation COL_DESIGN, drop, DROP_DESIGN_VALUES
+    table.SetValidation COL_EPIWEEK_START, drop, DROP_EPIWEEK_START
+    Err.Clear
+    On Error GoTo 0
+End Sub
+
+'@Description("True when the designer's GenerateMultiple worksheet is the one in front.")
+'@details
+'Every button of the Multi group works on the table of that one
+'worksheet, and three of them write at the cursor row. A press made
+'anywhere else has nothing to act on, so it does nothing at all: no
+'dialog, no message, no write.
+'
+'A press from another workbook answers False too. A designer open beside
+'a generated linelist shares one ribbon, and the group stays pressable
+'over the other file.
+'@return Boolean. True when the press may go on.
+Private Function OnMultiSheet() As Boolean
+    Dim current As Object
+
+    If Application.ActiveWorkbook Is Nothing Then Exit Function
+    If Not Application.ActiveWorkbook Is ThisWorkbook Then Exit Function
+
+    Set current = Application.ActiveSheet
+    If current Is Nothing Then Exit Function
+    If Not TypeOf current Is Worksheet Then Exit Function
+
+    OnMultiSheet = (StrComp(current.Name, SHEET_GENERATE_MULTIPLE, vbTextCompare) = 0)
+End Function
+
+'@Description("The entry names one row was refused on, in one line.")
+'@details
+'The keys of the entry checks ARE the entry names -- "setup path",
+'"setup language", "design" -- so the row's result cell can name what to
+'fill without anybody opening the report.
+'@param faults Checking. What the entry checks filed.
+'@return String. The names, comma separated.
+Private Function FaultList(ByVal faults As Checking) As String
+    Dim faultKeys As BetterArray
+    Dim counter As Long
+
+    If faults Is Nothing Then Exit Function
+
+    Set faultKeys = faults.ListOfKeys
+    If faultKeys Is Nothing Then Exit Function
+    If faultKeys.Length = 0 Then Exit Function
+
+    For counter = faultKeys.LowerBound To faultKeys.UpperBound
+        If LenB(FaultList) > 0 Then FaultList = FaultList & ", "
+        FaultList = FaultList & CStr(faultKeys.Item(counter))
+    Next counter
+End Function
 
 '@Description("Resolve the T_Multi ListObject from the GenerateMultiple worksheet.")
 '@param targetBook Optional Workbook. The workbook to resolve on. Defaults to this workbook.
@@ -1053,7 +1188,12 @@ Public Sub LoadSetupFiles(ByVal lo As ListObject, _
         Exit Sub
     End If
 
-    'For each setup file, extract languages and wire a per-row dropdown
+    'For each setup file, extract languages and wire a per-row dropdown.
+    'THE OPEN AND THE CLOSE ARE OWNED HERE, and the work between them is a
+    'routine that raises nothing. A fault used to leave the setup workbook
+    'sitting open on the screen: it reached the caller's handler, which has
+    'no reference to close it with, and the message read "Unable to load
+    'files" over a file the user could still see.
     currentRow = startRow
     For idx = filePaths.LowerBound To filePaths.UpperBound
         filePath = CStr(filePaths.Item(idx))
@@ -1067,43 +1207,131 @@ Public Sub LoadSetupFiles(ByVal lo As ListObject, _
         If setupBook Is Nothing Then
             skipped.Push "This setup file failed to open: " & filePath
         Else
-            'Resolve the Translations worksheet
-            Set tradSheet = Nothing
-            On Error Resume Next
-            Set tradSheet = setupBook.Worksheets(SHEET_TRANSLATIONS)
-            On Error GoTo 0
-
-            If tradSheet Is Nothing Then
-                skipped.Push "This setup file has no " & SHEET_TRANSLATIONS & _
-                             " sheet: " & filePath
-            Else
-                Set langValues = EventsDesignerAdvanced.SetupLanguages(tradSheet)
-                If langValues.Length = 0 Then
-                    skipped.Push "No language was found in: " & filePath
-                Else
-                    'The dropdown is named after the row ID
-                    rowId = CStr(lo.Parent.Cells(currentRow, idCol.Range.Column).Value)
-                    dropName = rowId & LANG_SUFFIX
-
-                    'Add or update the dropdown with extracted languages
-                    If drop.Exists(dropName) Then
-                        drop.Update langValues, dropName
-                    Else
-                        drop.Add langValues, dropName
-                    End If
-
-                    'Apply validation on the language cell using the dropdown
-                    Set langCell = lo.Parent.Cells(currentRow, langCol.Range.Column)
-                    drop.SetValidation langCell, dropName
-                End If
-            End If
-
-            setupBook.Close saveChanges:=False
-            Set setupBook = Nothing
+            WireRowLanguage lo, setupBook, filePath, currentRow, idCol, langCol, _
+                            drop, skipped
+            CloseQuietly setupBook
         End If
 
         currentRow = currentRow + 1
     Next idx
+End Sub
+
+'@Description("Build the language dropdown of one row from its own setup file.")
+'@details
+'Every fault is collected as a skip line and none is raised, because the
+'caller holds the open setup workbook and is what closes it. A raise here
+'would carry past the close.
+'@param lo ListObject. The T_Multi ListObject.
+'@param setupBook Workbook. The setup file, already open.
+'@param filePath String. The path, for the skip lines.
+'@param currentRow Long. Worksheet row number of the row being wired.
+'@param idCol ListColumn. The ID column.
+'@param langCol ListColumn. The dictionary language column.
+'@param drop DropdownLists. The dropdown manager of the host workbook.
+'@param skipped BetterArray. Collects one line per skipped step.
+Private Sub WireRowLanguage(ByVal lo As ListObject, _
+                            ByVal setupBook As Workbook, _
+                            ByVal filePath As String, _
+                            ByVal currentRow As Long, _
+                            ByVal idCol As ListColumn, _
+                            ByVal langCol As ListColumn, _
+                            ByVal drop As DropdownLists, _
+                            ByVal skipped As BetterArray)
+    Dim tradSheet As Worksheet
+    Dim langValues As BetterArray
+    Dim rowId As String
+    Dim dropName As String
+    Dim langCell As Range
+
+    On Error GoTo Failed
+
+    On Error Resume Next
+    Set tradSheet = setupBook.Worksheets(SHEET_TRANSLATIONS)
+    On Error GoTo Failed
+
+    If tradSheet Is Nothing Then
+        skipped.Push "This setup file has no " & SHEET_TRANSLATIONS & _
+                     " sheet: " & filePath
+        Exit Sub
+    End If
+
+    Set langValues = EventsDesignerAdvanced.SetupLanguages(tradSheet)
+    If langValues.Length = 0 Then
+        skipped.Push "No language was found in: " & filePath
+        Exit Sub
+    End If
+
+    'The dropdown is named after the row ID, in the shape Excel takes
+    rowId = CStr(lo.Parent.Cells(currentRow, idCol.Range.Column).Value)
+    dropName = SafeDropdownName(rowId)
+
+    'Add or update the dropdown with extracted languages
+    If drop.Exists(dropName) Then
+        drop.Update langValues, dropName
+    Else
+        drop.Add langValues, dropName
+    End If
+
+    'Apply validation on the language cell using the dropdown
+    Set langCell = lo.Parent.Cells(currentRow, langCol.Range.Column)
+    drop.SetValidation langCell, dropName
+    Exit Sub
+
+Failed:
+    skipped.Push "The language dropdown of row " & rowId & " was not built (" & _
+                 filePath & "): " & Err.Description
+End Sub
+
+'@Description("The dropdown name of one row, in the shape Excel accepts.")
+'@details
+'The dropdown is named after the row ID, and an ID reads "Operation- 1".
+'DropdownLists builds the workbook name dropdown_Operation-_1_lang out of
+'that, and Excel refuses a name carrying a dash: "The syntax of this name
+'isn't correct". The raise came back to the user as "Unable to load files"
+'and it left the setup workbook open, so loading setups had never wired a
+'single dropdown.
+'
+'Letters, digits and underscores are kept and every other character
+'becomes an underscore, so one ID still answers one name and two rows
+'still answer two.
+'@param rowId String. The ID cell of the row.
+'@return String. The dropdown name.
+Private Function SafeDropdownName(ByVal rowId As String) As String
+    Dim charIdx As Long
+    Dim oneChar As String
+    Dim cleanText As String
+
+    For charIdx = 1 To Len(rowId)
+        oneChar = Mid$(rowId, charIdx, 1)
+        If oneChar Like "[A-Za-z0-9_]" Then
+            cleanText = cleanText & oneChar
+        Else
+            cleanText = cleanText & "_"
+        End If
+    Next charIdx
+
+    'A name starts with a letter or an underscore. An ID somebody typed as
+    'a bare number would otherwise build one starting with a digit.
+    If LenB(cleanText) = 0 Then cleanText = "row"
+    If Left$(cleanText, 1) Like "[0-9]" Then cleanText = "_" & cleanText
+
+    SafeDropdownName = cleanText & LANG_SUFFIX
+End Function
+
+'@Description("Close a workbook without saving and without raising.")
+'@details
+'Used on every path out of a step that opened a file. A close that raises
+'would replace the fault the caller is about to report with its own.
+'@param book Workbook. The workbook to close. Nothing is left alone.
+Private Sub CloseQuietly(ByRef book As Workbook)
+    If book Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    book.Close saveChanges:=False
+    Err.Clear
+    On Error GoTo 0
+
+    Set book = Nothing
 End Sub
 
 '@Description("Write geobase paths into the geobases column.")

@@ -682,6 +682,42 @@ Public Function ParentFolder(ByVal targetPath As String) As String
     End If
 End Function
 
+'@label RepoRoot
+'@fun-title The repository root, found from the running workbook.
+'@details
+'A test module runs from the staging copy of the driver workbook, so a
+'relative path resolves against the run directory. A suite that reads real
+'files off the tree used to carry the root as an absolute constant, which
+'is true on one machine alone: a checkout anywhere else, or on the other
+'host, left every path it built pointing at nothing.
+'
+'The walk goes up from the workbook looking for the folder holding
+'src/tests/test-registry.yml. That file is what the harness itself is
+'built from, so it is always there. Eight levels is well past the four the
+'staging copy sits at, and the walk stops at the drive root on its own
+'because ParentFolder answers empty there.
+'@param fallbackRoot Optional String. Answered when the walk finds nothing.
+'@return String the repository root, with no trailing separator.
+Public Function RepoRoot(Optional ByVal fallbackRoot As String = vbNullString) As String
+    Dim probe As String
+    Dim counter As Long
+
+    probe = ThisWorkbook.Path
+
+    For counter = 1 To 8
+        If LenB(probe) = 0 Then Exit For
+
+        If LenB(Dir$(JoinPath(probe, "src", "tests", "test-registry.yml"))) > 0 Then
+            RepoRoot = probe
+            Exit Function
+        End If
+
+        probe = ParentFolder(probe)
+    Next counter
+
+    RepoRoot = fallbackRoot
+End Function
+
 '@label ComponentExtensionName
 '@fun-title File extension matching a VBComponent kind.
 '@param componentType Long. VBComponent Type value.

@@ -53,7 +53,7 @@ Option Explicit
 'THE PATHS ARE ABSOLUTE, AND THAT IS A KNOWN LIMIT
 '-------------------------------------------------------------------------------
 'A test module runs from the staging copy of the driver workbook, so a relative
-'path resolves against the run directory rather than the repository. REPO_ROOT
+'path resolves against the run directory rather than the repository. RepoFolder
 'is the one place that assumption lives; HeadlessBuild itself takes every path
 'as a parameter and holds none.
 '@depends HeadlessBuild, CustomTest
@@ -62,18 +62,25 @@ Private Assert As CustomTest
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
-Private Const REPO_ROOT As String = _
+'THE ROOT IS FOUND AT RUN TIME. It used to be an absolute constant, true on
+'one machine: a checkout anywhere else, or on the other host, left every path
+'below pointing at nothing and every test of this module failing for a reason
+'that had nothing to do with the code. TestHelpersLite.RepoRoot walks up from
+'the running workbook to the folder holding src/tests/test-registry.yml, and
+'answers the constant below when it finds none.
+Private Const FALLBACK_ROOT As String = _
     "/Users/komlaviamevoin/Unsync-Working-Folders/outbreak-tools"
 
-Private Const DESIGNER_FILE As String = REPO_ROOT & "/.mock/designer_mock.xlsb"
-Private Const EMPTY_SETUP As String = REPO_ROOT & "/src/bin/setup/setup_dev.xlsb"
-Private Const GENERIC_SETUP As String = REPO_ROOT & "/src/bin/test-files/generic-test-setup.xlsb"
-Private Const INJECTED_MODULE As String = REPO_ROOT & "/scripts/headless/vba/OBTSetupImportHeadless.bas"
-Private Const FILLED_SETUP As String = REPO_ROOT & "/.obt/draft/demo_setup_filled.xlsb"
-Private Const MERGED_FORMS As String = REPO_ROOT & "/.test-runner/forms/merged"
-Private Const RIBBON_TEMPLATE As String = REPO_ROOT & "/ribbons/_ribbontemplate_dev.xlsb"
+Private RepoFolder As String
 
-Private Const OUTPUT_FOLDER As String = REPO_ROOT & "/.obt/draft"
+Private DESIGNER_FILE As String
+Private EMPTY_SETUP As String
+Private GENERIC_SETUP As String
+Private INJECTED_MODULE As String
+Private FILLED_SETUP As String
+Private MERGED_FORMS As String
+Private RIBBON_TEMPLATE As String
+Private OUTPUT_FOLDER As String
 Private Const OUTPUT_NAME As String = "headless_linelist"
 
 'Three of the 55 components the transfer moves, one of each kind. A workbook
@@ -105,8 +112,27 @@ Private CurrentStep As String
 '@details
 'This routine is Public because the harness calls it by name through
 'Application.Run.
+'@sub-title Settle every path of this module against the repository root.
+'@details
+'Called first by ModuleInitialize. The paths are variables rather than
+'constants because a constant cannot be built from a function call, and the
+'root is now answered by one.
+Private Sub ResolvePaths()
+    RepoFolder = RepoRoot(FALLBACK_ROOT)
+
+    DESIGNER_FILE = RepoFolder & "/.mock/designer_mock.xlsb"
+    EMPTY_SETUP = RepoFolder & "/src/bin/setup/setup_dev.xlsb"
+    GENERIC_SETUP = RepoFolder & "/src/bin/test-files/generic-test-setup.xlsb"
+    INJECTED_MODULE = RepoFolder & "/scripts/headless/vba/OBTSetupImportHeadless.bas"
+    FILLED_SETUP = RepoFolder & "/.obt/draft/demo_setup_filled.xlsb"
+    MERGED_FORMS = RepoFolder & "/.test-runner/forms/merged"
+    RIBBON_TEMPLATE = RepoFolder & "/ribbons/_ribbontemplate_dev.xlsb"
+    OUTPUT_FOLDER = RepoFolder & "/.obt/draft"
+End Sub
+
 '@ModuleInitialize
 Public Sub ModuleInitialize()
+    ResolvePaths
     BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
@@ -119,7 +145,7 @@ Public Sub ModuleInitialize()
     'One grant for everything this suite and the build touch. The repo root
     'covers src/, .mock, ribbons, .obt and .test-runner in a single dialog on
     'the first run of a machine, and no dialog after that.
-    HeadlessBuild.EnsureFileAccess Array(REPO_ROOT)
+    HeadlessBuild.EnsureFileAccess Array(RepoFolder)
 
     On Error Resume Next
         BuildTheLinelist
@@ -196,7 +222,7 @@ Private Sub BuildTheLinelist()
     DropPreviousOutput
 
     Outcome = HeadlessBuild.BuildLinelistFromSetup( _
-                  DESIGNER_FILE, FILLED_SETUP, REPO_ROOT, MERGED_FORMS, _
+                  DESIGNER_FILE, FILLED_SETUP, RepoFolder, MERGED_FORMS, _
                   OUTPUT_FOLDER, OUTPUT_NAME, BuildOptions())
 
     CurrentStep = "read what the build recorded"
