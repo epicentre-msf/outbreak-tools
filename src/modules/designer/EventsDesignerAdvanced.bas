@@ -66,10 +66,16 @@ Private builtVariables As Long
 'own header bundle.
 '@param setupPath String. The setup file path of the run. Empty skips the header entry.
 '@param linelistName String. The output linelist name. Empty skips the header entry.
+'@param designerBook Workbook. The designer holding the __check sheet. Nothing reads ThisWorkbook.
 '@return GenerationLog. The opened log.
 Public Function StartRunLog(Optional ByVal setupPath As String = vbNullString, _
-                            Optional ByVal linelistName As String = vbNullString) As GenerationLog
-    Set heldLog = GenerationLog.Create(ThisWorkbook)
+                            Optional ByVal linelistName As String = vbNullString, _
+                            Optional ByVal designerBook As Workbook = Nothing) As GenerationLog
+    'A designer press logs on itself. The headless build runs this code from
+    'the driver workbook, which carries no __check sheet, so it hands over
+    'the designer copy and the report lands beside the linelist.
+    If designerBook Is Nothing Then Set designerBook = ThisWorkbook
+    Set heldLog = GenerationLog.Create(designerBook)
     heldLog.Start setupPath, linelistName
     builtSheets = 0
     builtVariables = 0
@@ -614,12 +620,21 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, _
     Dim sheetLists As BetterArray
     Dim counter As Long
     Dim anaOut As AnalysisOutput
+    Dim designerBook As Workbook
 
     setupPath = entry.ValueOf("setuppath")
 
+    'The designer is the workbook the entry sits on. A ribbon press builds
+    'the entry over ThisWorkbook.Worksheets("Main"), so a designer press
+    'reads the same workbook it always did. A caller from outside the
+    'designer -- the headless build -- hands over an entry on the Main
+    'sheet of the designer copy, and the specifications then read that copy
+    'instead of the workbook this code is running inside.
+    Set designerBook = entry.HostSheet.Parent
+
     'Prepare creates the output workbook and hands it to InitTransfer,
     'which fills it from the setup file and from this designer.
-    Set specs = LinelistSpecs.Create(ThisWorkbook)
+    Set specs = LinelistSpecs.Create(designerBook)
     specs.Prepare setupPath
 
     'Flush Phase 1: specification checkings (dictionary, choices, exports,

@@ -61,12 +61,12 @@ Set Arg = WScript.Arguments
 If Arg.Count < 11 Then
     WScript.Echo "usage: cscript //nologo build-linelist.vbs <workbook> " & _
                  "<designer> <setup> <sourceRoot> <formsFolder> <outFolder> " & _
-                 "<outName> <options> <reportPath> <obtHome> <needPick>"
+                 "<outName> <options> <reportPath> <obtHome> <needPick> [<rows>]"
     WScript.Quit 2
 End If
 
 Dim wbPath, designerPath, setupPath, sourceRoot, formsFolder
-Dim outFolder, outName, buildOptions, reportPath, obtHome, needPick
+Dim outFolder, outName, buildOptions, reportPath, obtHome, needPick, rowsSpec
 
 wbPath       = Arg(0)
 designerPath = Arg(1)
@@ -79,6 +79,20 @@ buildOptions = Arg(7)
 reportPath   = Arg(8)
 obtHome      = Arg(9)
 needPick     = Arg(10)
+
+' THE TWELFTH ARGUMENT PICKS THE ENTRY POINT.
+' ----------------------------------------------------------------------------
+' Empty, or absent, and this drives BuildLinelistFromSetup over <setup>, which
+' is every run this script did before. Filled, it carries the rows of a
+' multiple generation and the run goes through BuildMultipleFromTable instead:
+' the designer's own T_Multi loop, one linelist per row, over a designer copy.
+' <setup> is then unread, because each row names its own.
+'
+' One trigger for both, so the two entry points share the four steps around
+' them -- refresh, tables, import, report -- and a difference between a single
+' build and a multi build stays a difference in the VBA.
+rowsSpec = ""
+If Arg.Count >= 12 Then rowsSpec = Arg(11)
 
 Dim outcomeText, summaryText, grantText
 outcomeText = ""
@@ -158,9 +172,15 @@ If Err.Number <> 0 Then Fail "OBTSilentImport"
 
 ' 4) the build. A raise here is RECORDED rather than fatal, so the report file
 '    still says how far the run got instead of leaving only an exit code.
-outcomeText = xlsApp.Run(wbName & "!" & "HeadlessBuild.BuildLinelistFromSetup", _
-                         designerPath, setupPath, sourceRoot, formsFolder, _
-                         outFolder, outName, buildOptions, obtHome)
+If rowsSpec = "" Then
+    outcomeText = xlsApp.Run(wbName & "!" & "HeadlessBuild.BuildLinelistFromSetup", _
+                             designerPath, setupPath, sourceRoot, formsFolder, _
+                             outFolder, outName, buildOptions, obtHome)
+Else
+    outcomeText = xlsApp.Run(wbName & "!" & "HeadlessBuild.BuildMultipleFromTable", _
+                             designerPath, rowsSpec, sourceRoot, formsFolder, _
+                             outFolder, outName, buildOptions, obtHome)
+End If
 If Err.Number <> 0 Then
     outcomeText = "TRIGGER ERROR " & Err.Number & ": " & Err.Description
     Err.Clear

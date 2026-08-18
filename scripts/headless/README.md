@@ -410,6 +410,94 @@ Calling `Rscript` directly wants the same thing set by hand:
 R_PROFILE_USER=nonexistent Rscript scripts/headless/build-linelist.R --setup=...
 ```
 
+## Generating several linelists in one run
+
+Give `--setup` more than once and the run becomes a **multiple generation**:
+
+```
+Rscript scripts/headless/build-linelist.R \
+  --setup=<a.xlsb> --name=<a> \
+  --setup=<b.xlsb> --name=<b> \
+  --run-name=<run> --out=<dir> \
+  --temppath=ribbons/_ribbontemplate_dev.xlsb --designer=<designer.xlsb> \
+  --setuplang=English --lllang=ENG-English --geopath=<geobase.xlsx>
+```
+
+```vb
+outcome = HeadlessBuild.BuildMultipleFromTable( _
+              designerPath, rowsSpec, sourceRoot, formsFolder, _
+              outputFolder, runName, options, grantRoot)
+```
+
+**This runs the designer's own loop.** `EventsDesignerMulti.GenerateMultipleRows`
+is the body behind the Generate Multiple button: it walks `T_Multi`, writes each
+row onto `Main` through the shared `DesignerEntry`, runs the entry checks, calls
+`GenerateOne`, writes the row's outcome into the `result` column, and keeps going
+when a row fails. The headless entry point hands that loop the `T_Multi` and the
+`Main` of a **designer copy**, so a run measures the code a user presses.
+
+Two seams made the loop reachable from outside the designer, and both are small:
+
+| | |
+|---|---|
+| `GenerateOne` | takes its designer from `entry.HostSheet.Parent`. A ribbon press builds the entry over `ThisWorkbook.Worksheets("Main")`, so a designer press reads the workbook it always did. |
+| `StartRunLog` | takes the designer that carries `__check`. The driver workbook this code runs inside carries none. |
+
+### What a row owns, and what the run owns
+
+A row carries its setup, its geobase, its output name, its two passwords, its two
+languages, its epiweek and its design. Anything it leaves empty falls back to the
+run's own option, and then to what the copied designer holds — which is why one
+`--lllang` serves every row.
+
+The run carries the designer, the source, the forms, the output folder and the
+**ribbon template**: `T_Multi` has no template column, so the template entry is
+written on `Main` once and every row builds with it.
+
+### What lands in the output folder
+
+```
+<name>.xlsb                    one per row
+<run>-designer.xlsb            the designer copy the run used
+<run>-generation.txt           ONE report, every row in it, headed by row ID
+<run>-import.log               every component that went into the driver
+<run>-build-report.txt         what the trigger recorded
+<run>-trace.txt                what the build reached, line by line
+```
+
+The report is one file because the log is one log: `StartRunLog` opens it bare
+and each row files its own header bundle, the way a designer multi press does.
+
+### How the run is judged
+
+`outcome=OK` means the loop ran to the end. A row that failed leaves the loop
+running, so the launcher checks that **every** `<name>.xlsb` is on disk and
+carries a timestamp later than the moment Excel was launched. A missing file
+fails the run and is named. Each row's own outcome is in the narrative, read
+back off the `result` column:
+
+```
+row 1 -> OK  [<out>/ll-multi-a.xlsb]
+row 2 -> OK  [<out>/ll-multi-b.xlsb]
+```
+
+A run where no row built answers `ERROR 0: no row built`, because a caller that
+read `OK` over nothing would deliver an empty folder.
+
+The rows reach the trigger as one string, rows joined by `~~` and the fields of a
+row by `|`:
+
+```
+setup=<path>|outname=<stem>|geo=<path>|setuplang=<column>|lllang=<code>|
+password=<text>|debugpassword=<text>|epiweek=<value>|design=<name>
+```
+
+Only `setup` and `outname` have to be there. The twelfth trigger argument carries
+that string, and it is what picks the entry point: empty drives
+`BuildLinelistFromSetup`, filled drives `BuildMultipleFromTable`. One trigger per
+platform drives both, so the four steps around the build — refresh, tables,
+import, report — stay shared.
+
 ## Running the suites
 
 Both steps have a suite under `src/tests/headless/`, registered under

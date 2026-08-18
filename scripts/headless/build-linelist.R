@@ -8,6 +8,19 @@
 #           [--temppath=<ribbon.xlsb>] [--geopath=<geo.xlsb>] \
 #           [--setuplang=<column>] [--lllang=<code>] [--llpassword=<pass>]
 #
+# GENERATE SEVERAL AT ONCE by giving --setup more than once:
+#
+#   Rscript scripts/headless/build-linelist.R \
+#           --setup=<a.xlsb> --name=<a> --setup=<b.xlsb> --name=<b> \
+#           --run-name=<run> [--geopath=<geo.xlsx>] ...
+#
+# That runs the designer's OWN multiple generation, the loop behind the
+# Generate Multiple button: the rows land in the T_Multi table of a designer
+# copy and EventsDesignerMulti.GenerateMultipleRows walks them. Each row writes
+# its own <name>.xlsb; the designer copy, the generation report and the trace
+# are written once for the run and named after --run-name. A row that fails
+# leaves the loop running, so the run is judged on the files, one per row.
+#
 # This is the build lifted out of the test harness. It used to happen only as a
 # side effect of running TestHeadlessLinelistBuild, which meant generating a
 # file took a test run, and the paths it generated from were constants compiled
@@ -112,6 +125,13 @@ opt <- function(key, default = NULL) {
   hit <- grep(paste0("^--", key, "="), args, value = TRUE)
   if (!length(hit)) return(default)
   sub(paste0("^--", key, "="), "", hit[1])
+}
+# Every value given for one key, in the order they were typed. --setup and
+# --name are the two that repeat: a second --setup is what turns the run into a
+# multiple generation, and the Nth --name is the Nth row's output file.
+opts_all <- function(key) {
+  hit <- grep(paste0("^--", key, "="), args, value = TRUE)
+  sub(paste0("^--", key, "="), "", hit)
 }
 flag <- function(key) paste0("--", key) %in% args
 
@@ -318,16 +338,59 @@ abs_path <- function(p) {
   normalizePath(p, mustWork = FALSE)
 }
 
-setup_path <- opt("setup")
-if (is.null(setup_path) || !nzchar(setup_path)) {
+setup_paths <- opts_all("setup")
+if (!length(setup_paths) || !all(nzchar(setup_paths))) {
   stop("build-linelist.R: --setup=<path> is required (the filled setup workbook to generate from).")
 }
-setup_path <- abs_path(setup_path)
+setup_paths <- vapply(setup_paths, abs_path, character(1), USE.NAMES = FALSE)
+setup_path  <- setup_paths[1]
 
 designer_path <- abs_path(opt("designer", file.path(repo_root, ".mock", "designer_mock.xlsb")))
 temp_path     <- abs_path(opt("temppath", ""))
-geo_path      <- abs_path(opt("geopath",  ""))
-out_name      <- opt("name", "linelist")
+geo_paths     <- vapply(opts_all("geopath"), abs_path, character(1), USE.NAMES = FALSE)
+geo_path      <- if (length(geo_paths)) geo_paths[1] else ""
+
+# TWO OR MORE SETUPS MAKE IT A MULTIPLE GENERATION.
+# -----------------------------------------------------------------------------
+# The designer builds several linelists from one press through the T_Multi table
+# on its GenerateMultiple sheet, and HeadlessBuild.BuildMultipleFromTable runs
+# that same loop over a designer copy. So a second --setup is the whole switch:
+# each one becomes a row, the Nth --name is the Nth row's output file, and the
+# Nth --geopath is the Nth row's geobase.
+#
+# A row falls back to the run's own value for anything it does not carry, which
+# is why one --geopath, one --setuplang and one --lllang still serve every row.
+out_names <- opts_all("name")
+multi     <- length(setup_paths) > 1
+
+if (multi) {
+  if (!length(out_names)) {
+    out_names <- paste0("linelist-", seq_along(setup_paths))
+  }
+  if (length(out_names) != length(setup_paths)) {
+    stop("build-linelist.R: ", length(setup_paths), " --setup value(s) and ",
+         length(out_names), " --name value(s). Give one --name per --setup, ",
+         "or none at all.")
+  }
+  if (length(geo_paths) > 1 && length(geo_paths) != length(setup_paths)) {
+    stop("build-linelist.R: ", length(geo_paths), " --geopath value(s) for ",
+         length(setup_paths), " row(s). Give one for the whole run, or one per row.")
+  }
+  if (anyDuplicated(out_names)) {
+    stop("build-linelist.R: two rows share the name '",
+         out_names[anyDuplicated(out_names)],
+         "'. Every row writes <name>.xlsb into one folder, so the names differ.")
+  }
+} else {
+  out_names <- if (length(out_names)) out_names[1] else "linelist"
+}
+
+# What names the RUN, as against what names a linelist. The designer copy, the
+# trace and the generation report are written once per run. A single build has
+# one of each and they take the linelist's name, the way they always have; a
+# multi run names them after the run.
+run_name <- if (multi) opt("run-name", "multi") else out_names[1]
+out_name <- out_names[1]
 
 # Where the OPERATOR wants the three files. Excel never writes here: it builds
 # into <OBT_HOME>/out and this script copies the result across at the end.
@@ -342,10 +405,10 @@ if (on_windows) {
   message("build-linelist.R: NOTE - Excel comes up on screen for the length of ",
           "the run. A hidden Excel refuses to freeze the header panes.")
 }
-for (needed in c(workbook_src, trigger, designer_path, setup_path, registry_r)) {
+for (needed in c(workbook_src, trigger, designer_path, setup_paths, registry_r)) {
   if (!file.exists(needed)) stop("build-linelist.R: not found: ", needed)
 }
-for (optional in c(temp_path, geo_path)) {
+for (optional in c(temp_path, geo_paths)) {
   if (nzchar(optional) && !file.exists(optional)) {
     stop("build-linelist.R: not found: ", optional)
   }
@@ -355,8 +418,19 @@ message("build-linelist.R: OBT_HOME  -> ", obt_home,
         if (in_container) "  (inside Excel's sandbox, no grant needed)"
         else "  (outside Excel's sandbox, a pick covers ONE build)")
 message("build-linelist.R: designer  -> ", designer_path)
-message("build-linelist.R: setup     -> ", setup_path)
-message("build-linelist.R: output    -> ", file.path(dest_folder, paste0(out_name, ".xlsb")))
+if (multi) {
+  message("build-linelist.R: run       -> multiple generation, ",
+          length(setup_paths), " row(s), named ", run_name)
+  for (i in seq_along(setup_paths)) {
+    message("build-linelist.R:   row ", i, "   -> ", out_names[i], ".xlsb  from  ",
+            basename(setup_paths[i]))
+  }
+  message("build-linelist.R: output    -> ", dest_folder)
+} else {
+  message("build-linelist.R: setup     -> ", setup_path)
+  message("build-linelist.R: output    -> ",
+          file.path(dest_folder, paste0(out_name, ".xlsb")))
+}
 message("build-linelist.R: ",
         if (nzchar(opt("temppath", ""))) {
           paste0("ribbon build, template ", opt("temppath", ""))
@@ -524,9 +598,32 @@ stage_in <- function(from, stem) {
 }
 
 staged_designer <- stage_in(designer_path, "designer")
-staged_setup    <- stage_in(setup_path,    "setup")
 staged_template <- stage_in(temp_path,     "template")
-staged_geo      <- stage_in(geo_path,      "geo")
+
+# One staged name per row, so two rows built from two different setups keep two
+# different files inside the root. A single build keeps the bare "setup" name it
+# has always had, which leaves the folder of a single run unchanged.
+if (multi) {
+  staged_setups <- vapply(seq_along(setup_paths),
+                          function(i) stage_in(setup_paths[i], paste0("setup-", i)),
+                          character(1))
+  staged_geos <- if (length(geo_paths) > 1) {
+    vapply(seq_along(geo_paths),
+           function(i) stage_in(geo_paths[i], paste0("geo-", i)), character(1))
+  } else {
+    character(0)
+  }
+} else {
+  staged_setups <- character(0)
+  staged_geos   <- character(0)
+}
+
+staged_setup <- if (multi) staged_setups[1] else stage_in(setup_path, "setup")
+
+# The run's own geobase. With one --geopath it serves every row through the
+# fallback inside the build; with one per row the rows carry their own and this
+# stays empty so nothing is applied twice.
+staged_geo <- if (length(staged_geos)) "" else stage_in(geo_path, "geo")
 
 # Built from the STAGED paths, so a ribbon template or geobase the operator
 # keeps on their Desktop is read from inside the root like everything else.
@@ -543,6 +640,24 @@ build_options <- paste(
   paste0("llpassword=", opt("llpassword", "")),
   sep = "|"
 )
+
+# THE ROWS OF A MULTIPLE GENERATION, and the argument that picks the entry
+# point. Empty is a single build, which is every run this script did before.
+#
+# Rows are joined by "~~" and the fields of a row by "|", the same pair the VBA
+# splits on. Only the staged setup and the output name are written here: every
+# other field falls back to the run option above, then to what the copied
+# designer holds, so the string stays short and one --lllang serves the run.
+rows_spec <- ""
+if (multi) {
+  row_lines <- vapply(seq_along(staged_setups), function(i) {
+    fields <- c(paste0("setup=",   staged_setups[i]),
+                paste0("outname=", out_names[i]))
+    if (length(staged_geos)) fields <- c(fields, paste0("geo=", staged_geos[i]))
+    paste(fields, collapse = "|")
+  }, character(1))
+  rows_spec <- paste(row_lines, collapse = "~~")
+}
 
 # --- 4) clear the way --------------------------------------------------------
 # Excel builds into the root; the operator's folder is filled from there at the
@@ -568,6 +683,26 @@ dir.create(dest_folder, recursive = TRUE, showWarnings = FALSE)
 # stamps the clock here instead, and section 6 refuses any output older than it.
 build_leaves <- c(".xlsb", "-generation.txt", "-designer.xlsb")
 
+# THE FILE NAMES OF THE RUN, which is where a multi run stops looking like a
+# single one. A single build writes three files, all named after the linelist.
+# A multi run writes one linelist per row, and ONE designer copy, ONE generation
+# report and ONE trace for the whole run, all named after the run. Every list
+# below is built from these two so the archive, the clear, the staleness check
+# and the delivery all walk the same set.
+if (multi) {
+  linelist_files <- paste0(out_names, ".xlsb")
+  run_files      <- paste0(run_name, c("-generation.txt", "-designer.xlsb"))
+  build_files    <- c(linelist_files, run_files)
+  archive_files  <- c(build_files,
+                      paste0(run_name, c("-import.log", "-build-report.txt",
+                                         "-trace.txt")))
+} else {
+  linelist_files <- paste0(out_name, ".xlsb")
+  build_files    <- paste0(out_name, build_leaves)
+  archive_files  <- paste0(out_name, c(build_leaves, "-import.log",
+                                       "-build-report.txt", "-trace.txt"))
+}
+
 # THE PREVIOUS RUN'S FILES ARE MOVED ASIDE, NOT DROPPED.
 # -----------------------------------------------------------------------------
 # Every delivered name is built from --name, so two runs sharing a --name write
@@ -581,13 +716,12 @@ build_leaves <- c(".xlsb", "-generation.txt", "-designer.xlsb")
 # each time, which is the generation that matters: the run before this one is
 # what a failure gets compared against. Disk use stays bounded, and a rebuild
 # loop needs no extra flag.
-archive_leaves <- c(build_leaves, "-import.log", "-build-report.txt", "-trace.txt")
-prev_folder <- file.path(dest_folder, paste0(out_name, "-previous"))
+prev_folder <- file.path(dest_folder, paste0(run_name, "-previous"))
 same_folder <- identical(normalizePath(dest_folder, mustWork = FALSE),
                          normalizePath(build_out, mustWork = FALSE))
 
 if (!same_folder) {
-  standing <- file.path(dest_folder, paste0(out_name, archive_leaves))
+  standing <- file.path(dest_folder, archive_files)
   standing <- standing[file.exists(standing)]
   if (length(standing)) {
     unlink(prev_folder, recursive = TRUE, force = TRUE)
@@ -604,9 +738,7 @@ if (!same_folder) {
   }
 }
 
-for (leaf in build_leaves) {
-  unlink(file.path(dest_folder, paste0(out_name, leaf)), force = TRUE)
-}
+unlink(file.path(dest_folder, build_files), force = TRUE)
 run_started <- Sys.time()
 
 # Only macOS needs this. There, `run VB macro` returns a Parameter error against
@@ -656,10 +788,15 @@ clear_excel()
 # Every path here is inside obt_home, which is the last argument and the only
 # one the sandbox is asked about. sourceRoot is the staged tree rather than the
 # repo, and outFolder is the root's own out/ rather than the operator's folder.
+#
+# The twelfth argument is the rows of a multiple generation, and it is what
+# picks the entry point inside the trigger: empty drives BuildLinelistFromSetup
+# over <setup>, filled drives BuildMultipleFromTable over the rows. The eighth
+# is the name of the RUN, which a single build takes from its linelist.
 trigger_args <- shQuote(c(
   trigger, work_copy, staged_designer, staged_setup, source_root,
-  staged_forms, build_out, out_name, build_options, report_path, obt_home,
-  need_pick
+  staged_forms, build_out, run_name, build_options, report_path, obt_home,
+  need_pick, rows_spec
 ))
 
 # ONE RETRY, AND ONLY ON THE TWO FAILURES THAT ARE KNOWN TO BE FLAKY.
@@ -769,7 +906,7 @@ show_import_log <- function() {
 # The build writes this one line at a time as it goes, so it is the only account
 # of a run that took Excel down with it: the report carries the narrative the
 # build HANDED BACK, and a build whose process died never handed anything back.
-trace_path <- file.path(build_out, paste0(out_name, "-trace.txt"))
+trace_path <- file.path(build_out, paste0(run_name, "-trace.txt"))
 
 show_trace <- function() {
   if (!file.exists(trace_path) || file.size(trace_path) == 0L) return(invisible(NULL))
@@ -820,13 +957,31 @@ if (nzchar(grant)) message("build-linelist.R: trigger   -> ", grant)
 # platform produced it. The two do not behave the same.
 if (nzchar(platform)) message("build-linelist.R: platform  -> ", platform)
 
-message(sprintf("\nbuild-linelist.R: %s sheet(s), %s variable(s), %s component(s) re-imported.",
-                field("sheets"), field("variables"), field("components")))
+if (multi) {
+  message(sprintf("\nbuild-linelist.R: %s row(s) built, %s failed.",
+                  field("built"), field("failed")))
+} else {
+  message(sprintf("\nbuild-linelist.R: %s sheet(s), %s variable(s), %s component(s) re-imported.",
+                  field("sheets"), field("variables"), field("components")))
+}
 
 if (!identical(outcome, "OK")) {
   fail(paste0("the build answered: ", outcome))
 }
-if (!nzchar(built) || !file.exists(built)) {
+
+# EVERY ROW HAS TO HAVE WRITTEN ITS FILE. The multi loop keeps running past a
+# row that fails, so it answers OK for a run where one row of three delivered
+# nothing, and the count in the report is the only place that shows. Naming the
+# missing files is what makes the failure readable.
+expected <- file.path(build_out, linelist_files)
+missing  <- expected[!file.exists(expected)]
+if (length(missing)) {
+  fail(paste0("the build answered OK and ", length(missing),
+              " of ", length(expected), " linelist(s) are missing: ",
+              paste(basename(missing), collapse = ", "),
+              ". Read the row outcomes above."))
+}
+if (!multi && (!nzchar(built) || !file.exists(built))) {
   fail(paste0("the build answered OK and there is no file at: ", built))
 }
 
@@ -835,7 +990,8 @@ if (!nzchar(built) || !file.exists(built)) {
 # carry a timestamp later than the moment the clock was stamped, which is before
 # Excel was launched. A file left by an earlier run fails the whole run, exactly
 # as an empty out/ used to.
-checked <- unique(c(built, file.path(build_out, paste0(out_name, build_leaves))))
+checked <- unique(c(built, expected, file.path(build_out, build_files)))
+checked <- checked[nzchar(checked)]
 stale   <- checked[file.exists(checked) & file.mtime(checked) < run_started]
 if (length(stale)) {
   fail(paste0("the build answered OK and left ", length(stale),
@@ -843,8 +999,10 @@ if (length(stale)) {
               paste(basename(stale), collapse = ", ")))
 }
 
-message("\nbuild-linelist.R: built    -> ", built,
-        " (", format(file.size(built), big.mark = ","), " bytes)")
+for (one in expected) {
+  message("\nbuild-linelist.R: built    -> ", one,
+          " (", format(file.size(one), big.mark = ","), " bytes)")
+}
 
 
 # --- 7) hand the files over --------------------------------------------------
@@ -856,17 +1014,17 @@ message("\nbuild-linelist.R: built    -> ", built,
 # in their folder and there is none there, whatever is sitting in the root.
 delivered <- character(0)
 if (!identical(normalizePath(build_out), normalizePath(dest_folder))) {
-  for (leaf in build_leaves) {
-    from <- file.path(build_out, paste0(out_name, leaf))
+  for (leaf in build_files) {
+    from <- file.path(build_out, leaf)
     if (!file.exists(from)) next
-    to <- file.path(dest_folder, paste0(out_name, leaf))
+    to <- file.path(dest_folder, leaf)
     if (!file.copy(from, to, overwrite = TRUE)) {
       fail(paste0("the build succeeded and the file could not be copied out to ", to))
     }
     delivered <- c(delivered, to)
   }
 } else {
-  delivered <- file.path(dest_folder, paste0(out_name, build_leaves))
+  delivered <- file.path(dest_folder, build_files)
   delivered <- delivered[file.exists(delivered)]
 }
 
@@ -886,7 +1044,7 @@ for (rec in list(c(log_path,    "-import.log"),
                  c(report_path, "-build-report.txt"),
                  c(trace_path,  "-trace.txt"))) {
   if (!file.exists(rec[1]) || file.size(rec[1]) == 0L) next
-  to <- file.path(dest_folder, paste0(out_name, rec[2]))
+  to <- file.path(dest_folder, paste0(run_name, rec[2]))
   # The trace is already written under the output name, so a run whose --out IS
   # the build folder would copy the file onto itself and empty it.
   if (identical(normalizePath(rec[1]), normalizePath(to, mustWork = FALSE))) next
@@ -911,7 +1069,7 @@ for (rec in list(c(log_path,    "-import.log"),
 # Checked here, at the very end, so the linelist and every log are already in the
 # operator's own folder before the run is failed. The evidence stays put: the run
 # dir is kept as well, because fail() quits before the staging is cleared.
-gen_path <- file.path(build_out, paste0(out_name, "-generation.txt"))
+gen_path <- file.path(build_out, paste0(run_name, "-generation.txt"))
 
 # Read as bytes and converted from latin1, which cannot fail. This log is
 # Excel's own text and Excel for Mac writes it in a single-byte encoding: a

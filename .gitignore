@@ -5,6 +5,11 @@
 # --- OS / editor cruft -------------------------------------------------------
 .DS_Store
 **/.todo
+#   AppleDouble sidecars. macOS writes a "._<name>" file beside a real one to
+#   hold the resource fork whenever a folder is copied to a non-Mac filesystem,
+#   so they appear in pairs all over the tree after a copy through a share or a
+#   USB disk. None of them is ours and none carries anything a build reads.
+._*
 
 # --- Binaries: stored in the GitHub Release asset store, NOT in git -----------
 #   The working binaries live on the 'working-binaries' GitHub Release.

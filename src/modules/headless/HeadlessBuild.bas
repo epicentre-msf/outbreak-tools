@@ -65,9 +65,16 @@ Option Explicit
 'from it, and an export reads text. That is why importing all of src/ into a
 'workbook holding a stale designer is safe here and would not be safe in a
 'workbook that had to run.
+'THE HEADLESS WORKFLOW, STEP THREE: BUILDING SEVERAL AT ONCE.
+'-------------------------------------------------------------------------------
+'BuildMultipleFromTable runs the designer's OWN multiple generation loop,
+'EventsDesignerMulti.GenerateMultipleRows, over the T_Multi table of a designer
+'copy. The loop is the one a ribbon press runs, so a run here measures the code
+'a user presses instead of a second copy of it written for the harness.
 '@depends BetterArray, Checking, ApplicationState, LinelistSpecs, Linelist
 '@depends LLDataEntry, LLSheets, AnalysisOutput, DropdownLists, GenerationLog
-'@depends InitTransfer, EventsDesignerAdvanced, DesignerPreparation
+'@depends InitTransfer, EventsDesignerAdvanced, EventsDesignerMulti
+'@depends DesignerEntry, DesignerPreparation
 
 'The module injected into the target setup, and the entry point it carries.
 Private Const INJECTED_MODULE As String = "OBTSetupImportHeadless"
@@ -93,6 +100,39 @@ Private Const RNG_PATH_GEO As String = "RNG_PathGeo"
 Private Const RNG_LANG_SETUP As String = "RNG_LangSetup"
 Private Const RNG_LL_FORM As String = "RNG_LLForm"
 Private Const RNG_LL_PWD_OPEN As String = "RNG_LLPwdOpen"
+
+'The two Main entries a multi row falls back to when it names neither.
+'Both are read off the copied designer, so a run says nothing about a
+'design or an epiweek and still builds what the designer would have built.
+Private Const RNG_DESIGN_LL As String = "RNG_DesignLL"
+Private Const RNG_EPIWEEK As String = "RNG_DefaultEpiWeek"
+
+'The multiple generation table, and the twelve columns the driver reads.
+'The names are repeated from EventsDesignerMulti because the constants are
+'Private there. They are the headers of a shipped worksheet, so a change to
+'one is a change to the designer binaries as well.
+Private Const SHEET_GENERATE_MULTIPLE As String = "GenerateMultiple"
+Private Const TABLE_MULTI As String = "T_Multi"
+Private Const COL_MULTI_SETUPS As String = "setups"
+Private Const COL_MULTI_GEOBASES As String = "geobases"
+Private Const COL_MULTI_OUTPUT_FOLDERS As String = "output folders"
+Private Const COL_MULTI_OUTPUT_FILES As String = "output files"
+Private Const COL_MULTI_PASSWORD As String = "output file password"
+Private Const COL_MULTI_DEBUG_PASSWORD As String = "output file debugging password"
+Private Const COL_MULTI_LANG_DICTIONARY As String = "language of the dictionary"
+Private Const COL_MULTI_LANG_INTERFACE As String = "language of the interface"
+Private Const COL_MULTI_EPIWEEK_START As String = "epiweek start"
+Private Const COL_MULTI_DESIGN As String = "design"
+Private Const COL_MULTI_RESULT As String = "result"
+
+'What the multi driver writes into the result column of a row that built.
+Private Const RESULT_BUILT As String = "OK"
+
+'What separates the rows of a multi run in the spec string. The fields
+'inside one row are separated by the same pipe the options use, so a
+'second separator is needed for the rows themselves. A path can hold a
+'space and a dash; two tildes together belong to nothing on either host.
+Private Const ROW_SEPARATOR As String = "~~"
 
 'The source folders holding the components Linelist.TransferAllCode moves, and
 'nothing else. Nine of the folders under src/ carry all of them; msetup,
@@ -151,6 +191,12 @@ Private lastVariables As Long
 Private lastComponents As Long
 Private lastLinelist As String
 Private lastLog As String
+
+'How many rows of a multi run built and how many failed. A single build
+'leaves both at zero, and the summary carries them on every run so one
+'reader serves both entry points.
+Private lastBuilt As Long
+Private lastFailed As Long
 
 'What the last grant call did, when it did something worth saying. Read back
 'through LastAccessNote so a report can tell a broken call from a refusal.
@@ -527,6 +573,497 @@ Failed:
 End Function
 
 
+'@section The multiple generation, headless
+'===============================================================================
+
+'@Description("Build one linelist per row of the designer's T_Multi table, with no dialog.")
+'@details
+'THE MULTI DRIVER ITSELF RUNS HERE, and that is the whole point of this
+'entry point. EventsDesignerMulti.GenerateMultipleRows is the loop a
+'designer press runs: it walks T_Multi, writes each row onto Main through
+'the shared DesignerEntry, runs the entry checks, calls the single-build
+'core, writes the row's outcome into the result column, and keeps going
+'when a row fails. This hands that same loop the T_Multi and the Main of
+'a DESIGNER COPY, so the run measures the code a user presses.
+'
+'Two things made the loop reachable from outside the designer.
+'GenerateOne reads its designer off the entry's own host sheet, so an
+'entry built over the copy's Main builds the copy's specifications.
+'StartRunLog takes the designer that carries the __check sheet, because
+'the driver workbook this code runs inside carries none.
+'
+'ONE LOG FOR THE RUN, ONE REPORT FILE
+'-------------------------------------------------------------------------------
+'Every row flushes its own bundles into the one run log, headed by the
+'row ID, which is what a designer multi press produces. The text file is
+'written once, as <outputName>-generation.txt, and it holds every row.
+'
+'WHAT EACH ROW OWNS AND WHAT THE RUN OWNS
+'-------------------------------------------------------------------------------
+'A row carries its setup, its geobase, its output name, its two
+'passwords, its two languages, its epiweek and its design. The run
+'carries the designer, the source, the forms, the output folder and the
+'ribbon template: T_Multi has no template column, so the template entry
+'is written on Main once and every row builds with it.
+'@param designerPath String. The designer workbook to copy, as a full path.
+'@param rowsSpec String. The rows to build. See FillMultiTable for the shape.
+'@param sourceRoot String. The repository root holding src/classes and src/modules.
+'@param formsFolder String. The folder of merged .frm files.
+'@param outputFolder String. Where every linelist and the run report land.
+'@param outputName String. The name of the RUN: the designer copy, the trace and the report.
+'@param options String. Pipe-separated key=value pairs, the same keys the single build reads.
+'@param grantRoot String. The ONE folder every path above sits under, for the sandbox grant.
+'@return String. OUTCOME_OK, or "ERROR <number>: <description>".
+Public Function BuildMultipleFromTable(ByVal designerPath As String, _
+                                       ByVal rowsSpec As String, _
+                                       ByVal sourceRoot As String, _
+                                       ByVal formsFolder As String, _
+                                       ByVal outputFolder As String, _
+                                       ByVal outputName As String, _
+                                       Optional ByVal options As String = vbNullString, _
+                                       Optional ByVal grantRoot As String = vbNullString) As String
+    Dim designerBook As Workbook
+    Dim workingPath As String
+    Dim appScope As ApplicationState
+    Dim missingPath As String
+    Dim accessGranted As Boolean
+    Dim multiTable As ListObject
+    Dim entry As DesignerEntry
+    Dim rowCount As Long
+
+    ResetRunState
+
+    EnsureFolder JoinPath(outputFolder, SCRATCH_FOLDER)
+
+    tracePath = JoinPath(outputFolder, outputName & "-trace.txt")
+    DeleteFile tracePath
+    AddToReport "multi build started, output " & outputFolder & " as " & outputName
+
+    If LenB(Trim$(grantRoot)) > 0 Then
+        accessGranted = EnsureFileAccess(Array(grantRoot))
+        AddToReport "file access: one root, " & AccessOutcome(accessGranted) & _
+                    " - " & grantRoot
+    Else
+        accessGranted = EnsureFileAccess(Array(sourceRoot, formsFolder, outputFolder, _
+                                               designerPath))
+        AddToReport "file access: four paths, " & AccessOutcome(accessGranted) & _
+                    " - no grant root was given"
+    End If
+
+    missingPath = FirstMissingMultiPath(designerPath, rowsSpec, sourceRoot, formsFolder)
+    If LenB(missingPath) > 0 Then
+        BuildMultipleFromTable = "ERROR 0: " & missingPath
+        Exit Function
+    End If
+
+    If LenB(Trim$(outputName)) = 0 Then
+        BuildMultipleFromTable = "ERROR 0: the run needs a name"
+        Exit Function
+    End If
+
+    On Error GoTo Failed
+
+    ReadOptions options
+
+    workingPath = JoinPath(outputFolder, outputName & "-designer.xlsb")
+    DeleteFile workingPath
+    FileCopy designerPath, workingPath
+    AddToReport "designer copied to " & workingPath
+
+    Set appScope = ApplicationState.Create(Application)
+    appScope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+
+    'The setup language of the run, read off the FIRST row's setup. A row
+    'that names its own language overrides it below.
+    ResolveLanguages RowSpecValue(FirstRowSpec(rowsSpec), "setup")
+    AddToReport "languages resolved, setup " & optSetupLang
+
+    Set designerBook = Application.Workbooks.Open(fileName:=workingPath, ReadOnly:=False)
+    AddToReport "designer copy opened"
+
+    RefreshSourceCode designerBook, sourceRoot, formsFolder
+
+    ResolveInterfaceLanguage designerBook
+    AddToReport "interface language resolved: " & optLinelistLang
+
+    PrepareDesignerGeo designerBook
+    AddToReport "designer geo prepared"
+
+    'The template rides on Main for the whole run. It is written even when
+    'the option is empty, because an empty template is the buttons build
+    'and the copied designer's own value would otherwise decide it.
+    WriteEntry designerBook.Worksheets(SHEET_MAIN), RNG_LL_TEMPLATE, optTemplate
+    AddToReport "template entry written: " & _
+                IIf(LenB(optTemplate) = 0, "(none, buttons build)", optTemplate)
+
+    Set multiTable = EventsDesignerMulti.ResolveMultiTable(designerBook)
+    If multiTable Is Nothing Then
+        ThrowError ProjectError.ElementNotFound, _
+                   "The designer copy carries no " & TABLE_MULTI & " table on the " & _
+                   SHEET_GENERATE_MULTIPLE & " worksheet, so there is no multi run to make."
+    End If
+
+    rowCount = FillMultiTable(multiTable, rowsSpec, designerBook, outputFolder)
+    AddToReport "T_Multi filled with " & CStr(rowCount) & " row(s)"
+
+    'The entry over the COPY's Main. Everything the loop writes per row
+    'lands here, and GenerateOne reads its designer back off this sheet.
+    Set entry = DesignerEntry.Create(designerBook.Worksheets(SHEET_MAIN))
+
+    'One log for the run, on the copy's __check sheet. The multi driver
+    'opens it bare: every row files its own header bundle.
+    EventsDesignerAdvanced.StartRunLog vbNullString, vbNullString, designerBook
+    AddToReport "run log opened on the designer copy"
+
+    EventsDesignerMulti.GenerateMultipleRows multiTable, entry, Nothing, _
+                                             lastBuilt, lastFailed
+    AddToReport "loop finished: " & CStr(lastBuilt) & " built, " & _
+                CStr(lastFailed) & " failed"
+
+    EventsDesignerAdvanced.FinishRunLog CStr(lastBuilt) & " linelist(s) built, " & _
+                                        CStr(lastFailed) & " failed"
+
+    'The one text report of the run, named after the run.
+    On Error Resume Next
+        lastLog = EventsDesignerAdvanced.RunLog().ExportText(outputFolder, outputName)
+        Err.Clear
+    On Error GoTo Failed
+
+    ReadRowOutcomes multiTable
+
+    designerBook.Save
+    designerBook.Close SaveChanges:=False
+    Set designerBook = Nothing
+
+    appScope.Restore
+
+    'A run where every row failed answers its own fault. The rows each
+    'carry their reason in the result column and in the report, and a
+    'caller that read OK over nothing built would deliver an empty folder.
+    If lastBuilt = 0 Then
+        BuildMultipleFromTable = "ERROR 0: no row built. " & CStr(lastFailed) & _
+                                 " row(s) failed; read the generation report."
+        Exit Function
+    End If
+
+    BuildMultipleFromTable = OUTCOME_OK
+    Exit Function
+
+Failed:
+    BuildMultipleFromTable = "ERROR " & CStr(Err.Number) & " (" & Err.Source & "): " & _
+                             Err.Description
+    AddToReport "failed: " & CStr(Err.Number) & " (" & Err.Source & ") " & _
+                Err.Description
+
+    On Error Resume Next
+        If Not designerBook Is Nothing Then
+            designerBook.Save
+            designerBook.Close SaveChanges:=False
+        End If
+
+        Dim orphanBook As Workbook
+        Set orphanBook = Application.Workbooks("__temp.xlsb")
+        If Not orphanBook Is Nothing Then orphanBook.Close SaveChanges:=False
+
+        If Not appScope Is Nothing Then appScope.Restore
+        Err.Clear
+    On Error GoTo 0
+End Function
+
+'@Description("Write the rows of a run into the designer copy's T_Multi table.")
+'@details
+'THE SHAPE OF rowsSpec. Rows are separated by "~~" and the fields of one
+'row by "|", each field a key=value pair:
+'
+'    setup=<path>|outname=<stem>|geo=<path>|setuplang=<column>|
+'    lllang=<code>|password=<text>|debugpassword=<text>|
+'    epiweek=<value>|design=<name>
+'
+'Only `setup` and `outname` have to be there. Every other field falls
+'back to the run's own option, and then to what the copied designer
+'already holds, so a caller names the language once for the whole run
+'and a row that wants its own says so.
+'
+'The output folder of every row is the run's output folder. Excel writes
+'inside the granted root and nowhere else, and the launcher copies the
+'finished files out afterwards.
+'
+'The table's own rows go first. A designer ships T_Multi with rows in it,
+'and a leftover row carrying a setup path would build a linelist nobody
+'asked for.
+'@param multiTable ListObject. The T_Multi table on the designer copy.
+'@param rowsSpec String. The rows to build.
+'@param designerBook Workbook. The designer copy, read for the fallback entries.
+'@param outputFolder String. Where every row writes its linelist.
+'@return Long. The number of rows written.
+Private Function FillMultiTable(ByVal multiTable As ListObject, _
+                                ByVal rowsSpec As String, _
+                                ByVal designerBook As Workbook, _
+                                ByVal outputFolder As String) As Long
+    Dim rowSpecs() As String
+    Dim counter As Long
+    Dim rowIdx As Long
+    Dim oneSpec As String
+    Dim defaultDesign As String
+    Dim defaultEpiweek As String
+
+    defaultDesign = ReadMainEntry(designerBook, RNG_DESIGN_LL)
+    defaultEpiweek = ReadMainEntry(designerBook, RNG_EPIWEEK)
+
+    rowSpecs = Split(rowsSpec, ROW_SEPARATOR)
+
+    'Every row the designer shipped goes, so the run builds what the
+    'caller asked for and nothing else.
+    Do While multiTable.ListRows.Count > 0
+        multiTable.ListRows(1).Delete
+    Loop
+
+    For counter = LBound(rowSpecs) To UBound(rowSpecs)
+        oneSpec = Trim$(rowSpecs(counter))
+        If LenB(oneSpec) > 0 Then
+            multiTable.ListRows.Add
+            rowIdx = multiTable.ListRows.Count
+
+            SetRowCell multiTable, rowIdx, COL_MULTI_SETUPS, _
+                       RowSpecValue(oneSpec, "setup")
+            SetRowCell multiTable, rowIdx, COL_MULTI_OUTPUT_FILES, _
+                       RowSpecValue(oneSpec, "outname")
+            SetRowCell multiTable, rowIdx, COL_MULTI_OUTPUT_FOLDERS, outputFolder
+            SetRowCell multiTable, rowIdx, COL_MULTI_GEOBASES, _
+                       FallbackValue(RowSpecValue(oneSpec, "geo"), optGeo)
+            SetRowCell multiTable, rowIdx, COL_MULTI_LANG_DICTIONARY, _
+                       FallbackValue(RowSpecValue(oneSpec, "setuplang"), optSetupLang)
+            SetRowCell multiTable, rowIdx, COL_MULTI_LANG_INTERFACE, _
+                       FallbackValue(RowSpecValue(oneSpec, "lllang"), optLinelistLang)
+            SetRowCell multiTable, rowIdx, COL_MULTI_PASSWORD, _
+                       FallbackValue(RowSpecValue(oneSpec, "password"), optPassword)
+            SetRowCell multiTable, rowIdx, COL_MULTI_DEBUG_PASSWORD, _
+                       RowSpecValue(oneSpec, "debugpassword")
+            SetRowCell multiTable, rowIdx, COL_MULTI_EPIWEEK_START, _
+                       FallbackValue(RowSpecValue(oneSpec, "epiweek"), defaultEpiweek)
+            SetRowCell multiTable, rowIdx, COL_MULTI_DESIGN, _
+                       FallbackValue(RowSpecValue(oneSpec, "design"), defaultDesign)
+            SetRowCell multiTable, rowIdx, COL_MULTI_RESULT, vbNullString
+
+            AddToReport "row " & CStr(rowIdx) & ": " & _
+                        RowSpecValue(oneSpec, "outname") & " from " & _
+                        BaseName(RowSpecValue(oneSpec, "setup"))
+        End If
+    Next
+
+    'The IDs the log headers name each row by. The multi module owns this
+    'rule, so the fill asks it rather than numbering the rows itself.
+    EventsDesignerMulti.EnsureRowIds multiTable
+
+    FillMultiTable = multiTable.ListRows.Count
+End Function
+
+'@Description("Take every row's outcome into the narrative of the run.")
+'@details
+'The result column is what the loop wrote per row, and it is the only
+'account of a row that failed while the run as a whole answered OK. A
+'caller outside the process reads the narrative and never opens the
+'designer copy.
+'@param multiTable ListObject. The T_Multi table after the run.
+Private Sub ReadRowOutcomes(ByVal multiTable As ListObject)
+    Dim rowIdx As Long
+    Dim outName As String
+    Dim outcomeText As String
+
+    If multiTable.DataBodyRange Is Nothing Then Exit Sub
+
+    For rowIdx = 1 To multiTable.ListRows.Count
+        outName = ReadRowCell(multiTable, rowIdx, COL_MULTI_OUTPUT_FILES)
+        outcomeText = ReadRowCell(multiTable, rowIdx, COL_MULTI_RESULT)
+
+        AddToReport "row " & CStr(rowIdx) & " -> " & outcomeText & _
+                    "  [" & outName & "]"
+
+        'The first written path is what the summary carries, so a caller
+        'holding one path has a real file to look at.
+        If LenB(lastLinelist) = 0 Then
+            If StrComp(outcomeText, RESULT_BUILT, vbTextCompare) = 0 Then
+                lastLinelist = outName
+            End If
+        End If
+    Next
+End Sub
+
+'@Description("Read one value out of a row spec. An absent key answers empty.")
+'@param oneSpec String. One row of the spec.
+'@param keyName String. The field to read.
+'@return String. The value.
+Private Function RowSpecValue(ByVal oneSpec As String, _
+                              ByVal keyName As String) As String
+    Dim fields() As String
+    Dim counter As Long
+    Dim oneField As String
+    Dim signAt As Long
+
+    If LenB(oneSpec) = 0 Then Exit Function
+
+    fields = Split(oneSpec, "|")
+
+    For counter = LBound(fields) To UBound(fields)
+        oneField = Trim$(fields(counter))
+        signAt = InStr(1, oneField, "=")
+
+        If signAt > 0 Then
+            If StrComp(Trim$(Left$(oneField, signAt - 1)), keyName, vbTextCompare) = 0 Then
+                RowSpecValue = Trim$(Mid$(oneField, signAt + 1))
+                Exit Function
+            End If
+        End If
+    Next
+End Function
+
+'@Description("The first row of a spec, for the values the whole run reads once.")
+'@param rowsSpec String. The rows of the run.
+'@return String. The first row, empty when there is none.
+Private Function FirstRowSpec(ByVal rowsSpec As String) As String
+    Dim rowSpecs() As String
+
+    If LenB(Trim$(rowsSpec)) = 0 Then Exit Function
+
+    rowSpecs = Split(rowsSpec, ROW_SEPARATOR)
+    FirstRowSpec = Trim$(rowSpecs(LBound(rowSpecs)))
+End Function
+
+'@Description("The first value when it carries something, the second otherwise.")
+'@param wanted String. What the row asked for.
+'@param fallback String. What the run holds.
+'@return String. The value to write.
+Private Function FallbackValue(ByVal wanted As String, _
+                               ByVal fallback As String) As String
+    If LenB(Trim$(wanted)) > 0 Then
+        FallbackValue = wanted
+    Else
+        FallbackValue = fallback
+    End If
+End Function
+
+'@Description("Write one cell of a T_Multi row by column header. A missing column is skipped.")
+'@param multiTable ListObject. The T_Multi table.
+'@param rowIdx Long. The ListRows position.
+'@param colName String. The column header.
+'@param cellValue String. What to write.
+Private Sub SetRowCell(ByVal multiTable As ListObject, _
+                       ByVal rowIdx As Long, _
+                       ByVal colName As String, _
+                       ByVal cellValue As String)
+    Dim target As Range
+
+    Set target = RowCellOf(multiTable, rowIdx, colName)
+    If target Is Nothing Then
+        AddToReport "T_Multi carries no column named " & colName
+        Exit Sub
+    End If
+
+    target.Value = cellValue
+End Sub
+
+'@Description("Read one cell of a T_Multi row by column header.")
+'@param multiTable ListObject. The T_Multi table.
+'@param rowIdx Long. The ListRows position.
+'@param colName String. The column header.
+'@return String. The trimmed cell text, empty when the column is missing.
+Private Function ReadRowCell(ByVal multiTable As ListObject, _
+                             ByVal rowIdx As Long, _
+                             ByVal colName As String) As String
+    Dim target As Range
+
+    Set target = RowCellOf(multiTable, rowIdx, colName)
+    If target Is Nothing Then Exit Function
+    ReadRowCell = Trim$(CStr(target.Value))
+End Function
+
+'@Description("The one cell of a T_Multi row by column header.")
+'@param multiTable ListObject. The T_Multi table.
+'@param rowIdx Long. The ListRows position.
+'@param colName String. The column header.
+'@return Range. The cell, or Nothing when the column is missing.
+Private Function RowCellOf(ByVal multiTable As ListObject, _
+                           ByVal rowIdx As Long, _
+                           ByVal colName As String) As Range
+    Dim col As ListColumn
+
+    On Error Resume Next
+        Set col = multiTable.ListColumns(colName)
+        Err.Clear
+    On Error GoTo 0
+
+    If col Is Nothing Then Exit Function
+    Set RowCellOf = multiTable.ListRows(rowIdx).Range.Cells(1, col.Index)
+End Function
+
+'@Description("The first path of a multi run that is not on disk.")
+'@details
+'Every row's setup is checked here rather than inside the loop. A run
+'that would fail its third row on a path typo is worth stopping before
+'Excel spends four minutes on the first two.
+'@param designerPath String. The designer workbook.
+'@param rowsSpec String. The rows of the run.
+'@param sourceRoot String. The repository root.
+'@param formsFolder String. The merged forms folder.
+'@return String. The complaint, empty when everything is there.
+Private Function FirstMissingMultiPath(ByVal designerPath As String, _
+                                       ByVal rowsSpec As String, _
+                                       ByVal sourceRoot As String, _
+                                       ByVal formsFolder As String) As String
+    Dim rowSpecs() As String
+    Dim counter As Long
+    Dim oneSpec As String
+    Dim setupPath As String
+
+    If Len(Dir$(designerPath)) = 0 Then
+        FirstMissingMultiPath = "no designer workbook at " & designerPath
+        Exit Function
+    End If
+
+    If LenB(Trim$(rowsSpec)) = 0 Then
+        FirstMissingMultiPath = "the run carries no rows, so there is nothing to build"
+        Exit Function
+    End If
+
+    If Not IsFolder(JoinPath(sourceRoot, CLASSES_FOLDER)) Then
+        FirstMissingMultiPath = "no " & CLASSES_FOLDER & " folder under " & sourceRoot
+        Exit Function
+    End If
+
+    If Not IsFolder(formsFolder) Then
+        FirstMissingMultiPath = "no merged forms folder at " & formsFolder & _
+                                " - run scripts/headless/merge-form-code.R first"
+        Exit Function
+    End If
+
+    rowSpecs = Split(rowsSpec, ROW_SEPARATOR)
+
+    For counter = LBound(rowSpecs) To UBound(rowSpecs)
+        oneSpec = Trim$(rowSpecs(counter))
+        If LenB(oneSpec) > 0 Then
+            setupPath = RowSpecValue(oneSpec, "setup")
+
+            If LenB(setupPath) = 0 Then
+                FirstMissingMultiPath = "row " & CStr(counter + 1) & " names no setup"
+                Exit Function
+            End If
+
+            If Len(Dir$(setupPath)) = 0 Then
+                FirstMissingMultiPath = "row " & CStr(counter + 1) & _
+                                        ": no setup workbook at " & setupPath
+                Exit Function
+            End If
+
+            If LenB(RowSpecValue(oneSpec, "outname")) = 0 Then
+                FirstMissingMultiPath = "row " & CStr(counter + 1) & _
+                                        " names no output file"
+                Exit Function
+            End If
+        End If
+    Next
+End Function
+
+
 '@section What the last run did
 '===============================================================================
 '@description
@@ -590,6 +1127,8 @@ Public Function LastBuildSummary() As String
                        "sheets=" & CStr(lastSheets) & vbLf & _
                        "variables=" & CStr(lastVariables) & vbLf & _
                        "components=" & CStr(lastComponents) & vbLf & _
+                       "built=" & CStr(lastBuilt) & vbLf & _
+                       "failed=" & CStr(lastFailed) & vbLf & _
                        "--report--" & vbLf & runNarrative
 End Function
 
@@ -1308,6 +1847,8 @@ Private Sub ResetRunState()
     lastComponents = 0
     lastLinelist = vbNullString
     lastLog = vbNullString
+    lastBuilt = 0
+    lastFailed = 0
 End Sub
 
 '@Description("Add one line to the narrative of the run.")

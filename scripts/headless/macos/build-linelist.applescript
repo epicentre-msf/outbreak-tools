@@ -51,6 +51,15 @@ on run argv
 	set obtHome to item 10 of argv
 	set needPick to item 11 of argv
 
+	-- THE TWELFTH ARGUMENT PICKS THE ENTRY POINT.
+	-- Empty, or absent, and the run drives BuildLinelistFromSetup over
+	-- <setup>, which is every run this script did before. Filled, it carries
+	-- the rows of a multiple generation and the run goes through
+	-- BuildMultipleFromTable: the designer's own T_Multi loop, one linelist
+	-- per row. <setup> is then unread, because each row names its own.
+	set rowsSpec to ""
+	if (count of argv) ≥ 12 then set rowsSpec to item 12 of argv
+
 	set wbName to my basename(wbPath)
 
 	set outcomeText to ""
@@ -137,7 +146,11 @@ on run argv
 			--    under the output folder and re-grants the root before doing so,
 			--    which costs nothing once step 0 has already granted it.
 			try
-				set outcomeText to (run VB macro (wbName & "!HeadlessBuild.BuildLinelistFromSetup") arg1 designerPath arg2 setupPath arg3 sourceRoot arg4 formsFolder arg5 outFolder arg6 outName arg7 buildOptions arg8 obtHome) as text
+				if rowsSpec is "" then
+					set outcomeText to (run VB macro (wbName & "!HeadlessBuild.BuildLinelistFromSetup") arg1 designerPath arg2 setupPath arg3 sourceRoot arg4 formsFolder arg5 outFolder arg6 outName arg7 buildOptions arg8 obtHome) as text
+				else
+					set outcomeText to (run VB macro (wbName & "!HeadlessBuild.BuildMultipleFromTable") arg1 designerPath arg2 rowsSpec arg3 sourceRoot arg4 formsFolder arg5 outFolder arg6 outName arg7 buildOptions arg8 obtHome) as text
+				end if
 			on error errText number errNum
 				set outcomeText to "TRIGGER ERROR " & (errNum as text) & ": " & errText
 			end try
