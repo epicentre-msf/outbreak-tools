@@ -780,9 +780,9 @@ Private Sub SetTitleFromName(ByVal titleObj As Object, ByVal nameOrText As Strin
     End If
 
     If LenB(nameOrText) > 0 Then _
-        LogInfo "Title " & nameOrText & " was asked for as a reference and worksheet " & _
-                Wksh().Name & " carries no such name, so the text is written as it stands", _
-                checkingWarning
+        LogInfo "Graph title " & nameOrText & " was asked for as a reference and worksheet " & _
+                Wksh().Name & " carries no such referenced name, so the text is written as it stands", _
+                checkingInfo
 
     titleObj.Caption = nameOrText
 End Sub

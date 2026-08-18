@@ -570,9 +570,9 @@ Public Function ColumnExists(ByVal colName As String, Optional ByVal checkValidi
     If exists And checkValidity Then
         EnsureColumnsInitialized
         exists = this.allowedColumns.Includes(colName) Or (Split(colName, " ")(0) = "export")
-        If Not exists Then LogInfo "Column " & colName & " exists but is not part of the allowed dictionary columns", checkingWarning
+        If Not exists Then LogInfo "Column " & colName & " exists but is not part of the allowed dictionary columns", checkingInfo
     ElseIf (Not exists) And checkValidity Then
-        LogInfo "Column " & colName & " is missing from dictionary", checkingWarning
+        LogInfo "Column " & colName & " is missing from dictionary", checkingError
     End If
 
     ColumnExists = exists
