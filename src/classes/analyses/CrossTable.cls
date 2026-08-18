@@ -635,8 +635,8 @@ End Property
 'temporal section, the start column is the constant STANDARD_START_COL
 '(column C, index 3). For non-new-section temporal tables (time series
 'and spatio-temporal), the start column is determined by finding the
-'last used column in the row immediately below StartRow via
-'End(xlToLeft). This produces the side-by-side horizontal layout where
+'last filled column in the row immediately below StartRow, hidden columns
+'included. This produces the side-by-side horizontal layout where
 'each successive temporal table in a section is placed to the right of
 'the previous one. The computed column is persisted as the named range
 'STARTCOL_{tableId} so that subsequent calls are idempotent.
@@ -669,27 +669,73 @@ End Property
 '@sub-title Work out which column this table starts in.
 '@details
 'A temporal table continuing a section sits to the right of the one before it,
-'which is what the End(xlToLeft) scan finds. Every other table, and the table
+'which is what the scan of the label row finds. Every other table, and the table
 'that opens a temporal section, starts at the standard column.
+'
+'WHY THE SCAN IS NOT End(xlToLeft)
+'-------------------------------------------------------------------------------
+'Range.End SKIPS HIDDEN COLUMNS, and HideUnrequestedTotals hides the total pair
+'of every temporal table whose percentage forced a total the user never asked
+'for. The scan then answered the column BEFORE that pair, so the next table of
+'the section was laid two columns too far left, on top of the hidden total. Its
+'title strip overlapped the strip before it, Excel welded the two merges into
+'one and a whole run of tables ended up under a single title; its
+'COLUMN_CATEGORIES_ range overlapped too, which is what left the time series
+'charts looking for column headings that had been overwritten. The walk below
+'reads values and is blind to whether a column is hidden.
 '@return Long. The 1-based start column.
 Private Function ComputeStartColumn() As Long
-    Dim sh As Worksheet
-
-    Set sh = Wksh()
+    Dim strtCol As Long
 
     If ((TableScope() = ScopeTimeSeries) Or (TableScope() = ScopeSpatioTemporal)) And _
        (Not Specifications.IsNewSection()) Then
-        ComputeStartColumn = sh.Cells(StartRow + 1, sh.Columns.Count).End(xlToLeft).Column
+        strtCol = LastFilledColumn(StartRow + 1)
+        ComputeStartColumn = IIf(strtCol < STANDARD_START_COL, STANDARD_START_COL, strtCol)
     Else
         ComputeStartColumn = STANDARD_START_COL
     End If
+End Function
+
+'@label:last-filled-column
+'@sub-title The rightmost filled cell of one row, hidden columns included.
+'@details
+'Reads the row in one crossing and walks it backwards. A cell counts as filled
+'when it is not empty, which is the rule End(xlToLeft) applies too: the space
+'BivariateColumns writes under a summary-only column counts, and so does a cell
+'holding an error value.
+'@param rowNum Long. The 1-based worksheet row to scan.
+'@return Long. The 1-based column of the rightmost filled cell, or 0 when the
+'row holds nothing.
+Private Function LastFilledColumn(ByVal rowNum As Long) As Long
+    Dim sh As Worksheet
+    Dim rowRng As Range
+    Dim rowValues As Variant
+    Dim counter As Long
+
+    Set sh = Wksh()
+    Set rowRng = Application.Intersect(sh.Rows(rowNum), sh.UsedRange)
+    If rowRng Is Nothing Then Exit Function
+
+    If rowRng.Cells.Count = 1 Then
+        If Not IsEmpty(rowRng.Value2) Then LastFilledColumn = rowRng.Column
+        Exit Function
+    End If
+
+    rowValues = rowRng.Value2
+
+    For counter = UBound(rowValues, 2) To LBound(rowValues, 2) Step -1
+        If Not IsEmpty(rowValues(1, counter)) Then
+            LastFilledColumn = rowRng.Column + counter - LBound(rowValues, 2)
+            Exit Function
+        End If
+    Next
 End Function
 
 '@label:ensure-start-column
 '@sub-title Fix this table's start column on the worksheet.
 '@details
 'Writes STARTCOL_<tableId> once. It has to run before AddColumns, because the
-'End(xlToLeft) scan behind a continuation table's column answers something else
+'row scan behind a continuation table's column answers something else
 'as soon as that table's own columns are on the sheet, and because AddColumns
 'writes the column label into the named cell. Build calls it straight after
 'AddHeader; AddRows and AddColumns call it too, so a caller driving the phases
@@ -1267,7 +1313,7 @@ Private Sub BivariateColumns(ByVal startRw As Long, ByVal specs As TableSpecs, _
             labData.Push colLab
             NumberOfColumns = 1
             labData.ToExcelRange .Cells(startRw, StartColumn + 1), TransposeValues:=True
-            ' Placeholder for End(xlToLeft) detection in next table's StartColumn
+            ' Placeholder for the row scan behind the next table's StartColumn
             .Cells(startRw + 1, StartColumn + 1).Value = " "
         End If
 

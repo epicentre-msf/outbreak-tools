@@ -188,6 +188,19 @@ Private Function TimeSeriesRows(ByVal total As String) As Variant
               "Second table", "no", "", "Cases", "", "", total, "2"))
 End Function
 
+'@sub-title Two time series rows whose row percentage forces a hidden total.
+'@details
+'"Add percentage" set to row makes HasTotal true while "Add total" is left at
+'no, and that pair is what has a temporal table write a total column and then
+'hide it. Where the row after it lands is what this fixture is for.
+Private Function TimeSeriesPercentageRows() As Variant
+    TimeSeriesPercentageRows = Array( _
+        Array("Series 1", "S1", DATE_VARIABLE, COL_CHOICE_VARIABLE, _
+              "First table", "no", "", "Cases", "", "row", "no", "1"), _
+        Array("Series 2", "S1", DATE_VARIABLE, COL_CHOICE_VARIABLE, _
+              "Second table", "no", "", "Cases", "", "row", "no", "2"))
+End Function
+
 '@sub-title One spatial row with the row variable and geo count the caller passes.
 Private Function SpatialRows(ByVal rowVar As String, _
                              ByVal geoMax As String) As Variant
@@ -3339,5 +3352,64 @@ Public Sub TestATemporalTableWithATotalShowsTheTotalRow()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestATemporalTableWithATotalShowsTheTotalRow", _
+                         Err.Number, Err.Description
+End Sub
+
+'@section Issue 339 - a hidden total column and the table after it
+'===============================================================================
+'@description
+'The total column a row percentage forces is hidden when the user asked for no
+'total, and the next table of the section is laid out after that has happened.
+'Range.End skips hidden columns, so the scan that used to place it answered the
+'column before the hidden pair and the table was written on top of it. What
+'followed was one welded title strip over a whole run of tables and column
+'category ranges that overlapped, which is what the time series charts then
+'failed to read.
+
+'@sub-title A hidden total column does not pull the next temporal table left.
+'@TestMethod("CrossTable")
+Public Sub TestAHiddenTotalDoesNotMoveTheNextTemporalTable()
+    Dim firstTable As CrossTable
+    Dim secondTable As CrossTable
+    Dim sh As Worksheet
+    Dim designFormat As LLFormat
+    Dim firstId As String
+    Dim secondId As String
+
+    CustomTestSetTitles Assert, "CrossTable", _
+                        "TestAHiddenTotalDoesNotMoveTheNextTemporalTable"
+    On Error GoTo TestFail
+
+    BuildFixture TABLE_TIMESERIES, TimeSeriesHeader(), TimeSeriesPercentageRows()
+    Set sh = OutputSheet()
+    Set firstTable = BuildTable(sh, 1)
+    firstId = firstTable.Specifications.TableId
+    Set designFormat = LLFormat.Create(PrepareLLFormatFixture(FORMAT_SHEET))
+
+    ' Format is what hides the column, and AnalysisOutput formats each table
+    ' before it builds the next one, so the second table is built after it here.
+    firstTable.Format designFormat
+
+    Assert.IsTrue firstTable.Specifications.HasTotal, _
+                  "A row percentage forces the total column"
+    Assert.IsTrue (Not firstTable.Specifications.TotalRequested), _
+                  "And the row asked for no total"
+    Assert.IsTrue sh.Range("TOTAL_COL_" & firstId).EntireColumn.Hidden, _
+                  "So the total column of the first table is hidden"
+
+    Set secondTable = BuildTable(sh, 2)
+    secondId = secondTable.Specifications.TableId
+
+    Assert.AreEqual firstTable.EndColumn + 1, _
+                    CLng(sh.Range("STARTCOL_" & secondId).Column), _
+                    "The second table starts right of the first, hidden total included"
+    Assert.IsTrue (Application.Intersect( _
+                       sh.Range("COLUMN_CATEGORIES_" & firstId), _
+                       sh.Range("COLUMN_CATEGORIES_" & secondId)) Is Nothing), _
+                  "The two tables of the section share no column"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAHiddenTotalDoesNotMoveTheNextTemporalTable", _
                          Err.Number, Err.Description
 End Sub
