@@ -451,19 +451,15 @@ End Sub
 '@param devManager Development. Development manager for deployment registration, or Nothing.
 Private Sub HideWorksheets(ByRef devManager As Development)
     SetSheetVisibility SHEET_PASS, xlSheetVeryHidden
-    SetSheetVisibility SHEET_FORMATTER, xlSheetVeryHidden
     SetSheetVisibility SHEET_FORMULA, xlSheetVeryHidden
     SetSheetVisibility SHEET_DROPDOWNS, xlSheetVeryHidden
-    SetSheetVisibility SHEET_CHECKING, xlSheetHidden
     SetSheetVisibility SHEET_LL_TRANSLATION, xlSheetHidden
     SetSheetVisibility SHEET_DES_TRANSLATION, xlSheetHidden
 
     If Not devManager Is Nothing Then
         RegisterHiddenSheet devManager, SHEET_PASS
-        RegisterHiddenSheet devManager, SHEET_FORMATTER
         RegisterHiddenSheet devManager, SHEET_FORMULA
         RegisterHiddenSheet devManager, SHEET_DROPDOWNS
-        RegisterHiddenSheet devManager, SHEET_CHECKING
         RegisterHiddenSheet devManager, SHEET_LL_TRANSLATION
         RegisterHiddenSheet devManager, SHEET_DES_TRANSLATION
     End If
