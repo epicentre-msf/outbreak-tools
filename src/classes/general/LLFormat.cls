@@ -1170,6 +1170,7 @@ Private Sub ApplyRangeFormat(ByVal baseRng As Range, _
 
     Dim rng As Range
     Dim cellRng As Range
+    Dim areaRng As Range
     Dim sh As Worksheet
 
     Dim fontColorValue As Variant
@@ -1452,8 +1453,15 @@ Private Sub ApplyRangeFormat(ByVal baseRng As Range, _
 
         If scope = AnalysisMissingRow Then
             'Straight to the range formatter: the object kind and the base font
-            'size were both settled on the way in
-            ApplyRangeFormat baseRng.Cells(1, 0), AnalysisOneCellLeft, 0
+            'size were both settled on the way in.
+            '
+            'The label sits one column left of the band, so a range handed in as
+            'several areas has one label per area. Cells(1, 0) reads against the
+            'first area alone, which left every other band's label unformatted
+            'once the caller started grouping its ranges.
+            For Each areaRng In baseRng.Areas
+                ApplyRangeFormat areaRng.Cells(1, 0), AnalysisOneCellLeft, 0
+            Next
         End If
 
     Case AnalysisOneCell, AnalysisOneCellLeft, AnalysisOneCellCenter

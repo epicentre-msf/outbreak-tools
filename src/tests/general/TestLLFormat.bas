@@ -1032,3 +1032,47 @@ Public Sub TestExportThrowsInvalidArgumentWhenWorkbookIsNothing()
 TestFail:
     CustomTestLogFailure Assert, "TestExportThrowsInvalidArgumentWhenWorkbookIsNothing", Err.Number, Err.Description
 End Sub
+
+'===============================================================================
+'@section Multi-area Range Tests
+'===============================================================================
+
+'@TestMethod("LLFormat")
+'@description A range of several areas takes the format on every one of them.
+' @sub-title TestApplyFormatFramesEveryAreaOfAUnion
+' @details The analysis table formatting calls ApplyFormat once per named range,
+'   and the border writes are most of what one call costs. Handing it the union
+'   of several ranges instead is only worth doing if Excel frames each area on
+'   its own, so this asks it directly: two separate blocks are unioned, the
+'   union is formatted once, and the SECOND block has to come back carrying the
+'   double frame the scope draws. The first block is checked too, so a pass
+'   cannot come from the format having gone nowhere at all.
+Public Sub TestApplyFormatFramesEveryAreaOfAUnion()
+    CustomTestSetTitles Assert, "LLFormat", "TestApplyFormatFramesEveryAreaOfAUnion"
+    On Error GoTo TestFail
+
+    Dim firstBlock As Range
+    Dim secondBlock As Range
+    Dim bothBlocks As Range
+
+    Set firstBlock = FormatSheet.Range("B12:B14")
+    Set secondBlock = FormatSheet.Range("E12:E14")
+    Set bothBlocks = Application.Union(firstBlock, secondBlock)
+
+    Assert.AreEqual 2&, CLng(bothBlocks.Areas.Count), "The union carries two areas"
+
+    FormatUnderTest.ApplyFormat bothBlocks, scope:=AnalysisOneCell
+
+    Assert.AreEqual CLng(xlDouble), CLng(firstBlock.Cells(1, 1).Borders(xlEdgeTop).LineStyle), _
+                    "The first area is framed"
+    Assert.AreEqual CLng(xlDouble), CLng(secondBlock.Cells(1, 1).Borders(xlEdgeTop).LineStyle), _
+                    "And so is the second, which is what makes a union worth passing"
+    Assert.AreEqual CLng(firstBlock.Cells(1, 1).Interior.color), _
+                    CLng(secondBlock.Cells(1, 1).Interior.color), _
+                    "Both areas take the same interior"
+
+    Exit Sub
+
+TestFail:
+    CustomTestLogFailure Assert, "TestApplyFormatFramesEveryAreaOfAUnion", Err.Number, Err.Description
+End Sub
