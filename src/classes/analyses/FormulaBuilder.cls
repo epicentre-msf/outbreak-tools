@@ -392,13 +392,13 @@ End Sub
 '@export
 Public Function WriteFormula(ByVal target As Range, ByVal frm As String, _
                              Optional ByVal asArray As Boolean = True) As Boolean
-    Dim targetAddress As String
     Dim failureReason As String
 
-    targetAddress = target.Address(RowAbsolute:=False, ColumnAbsolute:=False)
-
+    'The address is read only when a message carries it. Reading it up front
+    'cost one host call per written formula on the path that never fails.
     If LenB(frm) = 0 Then
-        LogInfo "No formula could be built for cell " & targetAddress & _
+        LogInfo "No formula could be built for cell " & _
+                target.Address(RowAbsolute:=False, ColumnAbsolute:=False) & _
                 " of table " & this.contextId, checkingError
         Exit Function
     End If
@@ -422,7 +422,8 @@ Public Function WriteFormula(ByVal target As Range, ByVal frm As String, _
 WriteCleanup:
     On Error Resume Next
     target.ClearContents
-    LogInfo "Excel refused the formula of cell " & targetAddress & " of table " & _
+    LogInfo "Excel refused the formula of cell " & _
+            target.Address(RowAbsolute:=False, ColumnAbsolute:=False) & " of table " & _
             this.contextId & ": " & failureReason, checkingError
     On Error GoTo 0
     Exit Function

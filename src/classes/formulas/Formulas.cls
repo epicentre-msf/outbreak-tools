@@ -419,6 +419,11 @@ Public Property Get ParsedAnalysisFormula(ByVal formCond As FormulaCondition, _
 
     Set vars = VariablesProvider()
 
+    'Every formula arrives with a fresh condition object. Handing it the
+    'helper this instance already holds keeps each formula from reading the
+    'dictionary sheet again for the same table.
+    formCond.AdoptVariablesHelper vars, this.dict
+
     idx = this.tokens.LowerBound
     upperBound = this.tokens.UpperBound
 

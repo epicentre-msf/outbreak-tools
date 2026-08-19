@@ -375,6 +375,26 @@ Private Function VariablesProvider(ByVal dict As LLdictionary) As LLVariables
     Set VariablesProvider = this.varsHelper
 End Function
 
+'@label:adopt-variables-helper
+'@sub-title Take the helper the owner already holds for this dictionary
+'@details
+'A fresh instance of this class is built for every analysis formula, and each
+'one used to read the dictionary sheet again to build its own LLVariables:
+'several block reads per formula, repeated for every column of every table.
+'Formulas holds one helper per table and hands it in here before Valid runs,
+'so VariablesProvider finds the pair already bound. The helper handed in must
+'have been built over dict; the caller owns that pairing.
+'@param varsHelper LLVariables. The helper to reuse.
+'@param dict LLdictionary. The dictionary the helper was built over.
+'@export
+Public Sub AdoptVariablesHelper(ByVal varsHelper As LLVariables, ByVal dict As LLdictionary)
+    If varsHelper Is Nothing Then Exit Sub
+    If dict Is Nothing Then Exit Sub
+
+    Set this.varsHelper = varsHelper
+    Set this.varsHelperDict = dict
+End Sub
+
 '@section FormulaRendering
 '===============================================================================
 '@description Produce Excel-ready predicates and wrapper formulas.

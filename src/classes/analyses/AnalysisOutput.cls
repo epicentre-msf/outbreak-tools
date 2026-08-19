@@ -886,7 +886,8 @@ Private Sub WriteTable(ByVal loName As String, _
         ' mix their sections into one dropdown.
         If isNewSection Then sectionsList.Push goToSectionLabel & ": " & specs.Value("section")
 
-        Set tabl = CrossTable.Create(specs, outsh, lData, previousTable:=prevTable)
+        Set tabl = CrossTable.Create(specs, outsh, lData, previousTable:=prevTable, _
+                                     outputNames:=outshHn)
         tabl.Build
         Set prevTable = tabl
         Set tabform = CrossTableFormula.Create(tabl, formData)

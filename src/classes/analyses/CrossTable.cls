@@ -78,6 +78,7 @@ Private Type TCrossTable
     startRw As Long                              'Cached StartRow, valid after AddHeader
     startRwRead As Boolean
     phase As Byte                                'How far Build has gone
+    hn As HiddenNames                            'Metadata reader of the output sheet
 End Type
 
 Private this As TCrossTable
@@ -146,6 +147,10 @@ Private checkCounter As Long
 '@param previousTable Optional CrossTable. The table this one continues, when the
 'caller already holds it. A caller that walks the setup rows in order builds every
 'ancestor anyway, so handing the last one in saves this instance rebuilding it.
+'@param outputNames Optional HiddenNames. The metadata reader of the output
+'worksheet, when the caller already holds one. Creating a reader walks every
+'tracked name on the sheet, so a caller writing many tables hands one reader to
+'all of them. Left out, this instance builds its own on first use.
 '@return CrossTable. A fully initialized CrossTable ready for Build or individual step calls.
 '@throws InvalidArgument When specs is Nothing.
 '@throws InvalidArgument When outputWksh is Nothing.
@@ -154,7 +159,8 @@ Private checkCounter As Long
 Public Function Create(ByVal specs As TableSpecs, _
                        ByVal outputWksh As Worksheet, _
                        ByVal lData As Object, _
-                       Optional ByVal previousTable As CrossTable) As CrossTable
+                       Optional ByVal previousTable As CrossTable, _
+                       Optional ByVal outputNames As HiddenNames) As CrossTable
 
     If specs Is Nothing Then ThrowError InvalidArgument, "Table specifications not defined"
     If outputWksh Is Nothing Then ThrowError InvalidArgument, "Output worksheet not defined"
@@ -166,6 +172,7 @@ Public Function Create(ByVal specs As TableSpecs, _
     Set instance.Wksh = outputWksh
     Set instance.LinelistData = lData
     If Not previousTable Is Nothing Then Set instance.PreviousTable = previousTable
+    If Not outputNames Is Nothing Then Set instance.OutputNames = outputNames
     instance.Seal
     Set Create = instance
 End Function
@@ -195,6 +202,22 @@ Public Property Set PreviousTable(ByVal tabl As CrossTable)
     GuardNotSealed "PreviousTable"
     Set this.prevTable = tabl
 End Property
+
+'@label:output-names-set
+'@prop-title Assign the metadata reader of the output worksheet.
+'@param namesObj HiddenNames. The reader, bound to the output worksheet.
+Public Property Set OutputNames(ByVal namesObj As HiddenNames)
+    GuardNotSealed "OutputNames"
+    Set this.hn = namesObj
+End Property
+
+'@label:metadata-names
+'@sub-title The metadata reader of the output sheet, built when nobody handed one in.
+'@return HiddenNames. The reader bound to the output worksheet.
+Private Function MetadataNames() As HiddenNames
+    If this.hn Is Nothing Then Set this.hn = HiddenNames.Create(Wksh())
+    Set MetadataNames = this.hn
+End Function
 
 '@label:guard-not-sealed
 '@sub-title Guard a setup setter against post-creation writes.
@@ -556,22 +579,66 @@ End Function
 '@param candidate Long. The row the used cells answer.
 '@return Long. The first row below every chart, or the candidate when it
 'already clears them.
+'@remarks A placed chart never moves, so the walk covers only the charts added
+'since the last one, and the answer so far is kept in two hidden names on the
+'sheet. Walking every chart for every table read a layout off each one, and the
+'cost grew with the square of the chart count.
 Private Function ClearOfCharts(ByVal candidate As Long) As Long
-    Dim co As ChartObject
+    Dim sh As Worksheet
+    Dim hn As HiddenNames
+    Dim nbCharts As Long
+    Dim scanned As Long
+    Dim knownBottom As Long
+    Dim storedScanned As Long
+    Dim storedBottom As Long
     Dim bottomRow As Long
+    Dim counter As Long
+    Dim unreadHit As Boolean
 
     ClearOfCharts = candidate
 
-    For Each co In Wksh().ChartObjects
+    Set sh = Wksh()
+    nbCharts = sh.ChartObjects.Count
+    If nbCharts = 0 Then Exit Function
+
+    Set hn = MetadataNames()
+    storedScanned = hn.ValueAsLong("CHARTWALK_COUNT", 0)
+    storedBottom = hn.ValueAsLong("CHARTWALK_BOTTOM", 0)
+
+    'A chart count below the walked count means charts went away; nothing on
+    'this path removes one, so the held answer is dropped rather than trusted.
+    If storedScanned > nbCharts Then
+        storedScanned = 0
+        storedBottom = 0
+    End If
+
+    scanned = storedScanned
+    knownBottom = storedBottom
+
+    For counter = storedScanned + 1 To nbCharts
         bottomRow = 0
         'BottomRightCell raises on some hosts while the sheet is mid-build,
         'and a chart this cannot read is a chart this cannot clear.
         On Error Resume Next
-        bottomRow = co.BottomRightCell.Row
+        bottomRow = sh.ChartObjects(counter).BottomRightCell.Row
         On Error GoTo 0
 
-        If bottomRow + 1 > ClearOfCharts Then ClearOfCharts = bottomRow + 1
+        If bottomRow > knownBottom Then knownBottom = bottomRow
+
+        'The walked count stops before the first unreadable chart, so the
+        'next table reads it again.
+        If bottomRow = 0 Then unreadHit = True
+        If Not unreadHit Then scanned = counter
     Next
+
+    If scanned <> storedScanned Or knownBottom <> storedBottom Then
+        hn.EnsureName "CHARTWALK_COUNT", scanned, HiddenNameTypeLong
+        hn.SetValue "CHARTWALK_COUNT", scanned
+        hn.EnsureName "CHARTWALK_BOTTOM", knownBottom, HiddenNameTypeLong
+        hn.SetValue "CHARTWALK_BOTTOM", knownBottom
+    End If
+
+    If knownBottom + 1 > ClearOfCharts Then ClearOfCharts = knownBottom + 1
 End Function
 
 '@label:previous
@@ -930,21 +997,19 @@ Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean
     End With
 End Property
 
-'@label:value-exists
-'@sub-title Check whether a value exists in a given range.
+'@label:find-label-cell
+'@sub-title Find the cell holding a label in a given range.
 '@details
-'Checks whether a specific string value exists anywhere within the given
-'Range by performing an exact, case-sensitive, whole-cell match using
-'Excel's Range.Find method. This is used internally by RowRange and
-'ColumnRange to verify that a category label is present before
-'attempting to locate its row or column position.
+'Exact, case-sensitive, whole-cell match through Excel's Range.Find, so
+'"total" will NOT match "Total"; translated labels carry their own
+'capitalization. RowRange and ColumnRange read the row or the column off the
+'answer. Each used to ask twice, once to know the label was there and once for
+'where, and every Find is a host search over the category band.
 '@param rng Range. The Range to search within, typically RowsCategoriesRange or HeaderRange.
-'@param searchValue String. The exact string to look for (case-sensitive, whole-cell match).
-'@return Boolean. True if at least one cell in rng contains exactly searchValue; False otherwise.
-'@remarks Uses xlWhole and MatchCase:=True, so "total" will NOT match "Total". This is
-'important because translated labels may have specific capitalization.
-Private Function ValueExists(ByVal rng As Range, ByVal searchValue As String) As Boolean
-    ValueExists = (Not rng.Find(What:=searchValue, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
+'@param searchValue String. The exact string to look for.
+'@return Range. The first cell holding exactly searchValue, or Nothing.
+Private Function FindLabelCell(ByVal rng As Range, ByVal searchValue As String) As Range
+    Set FindLabelCell = rng.Find(What:=searchValue, LookAt:=xlWhole, MatchCase:=True)
 End Function
 
 '@label:row-range
@@ -953,7 +1018,7 @@ End Function
 'Finds a row in the cross-table by its category label value and returns
 'a horizontal Range spanning that entire row from the start column to the
 'end column. The search is performed within RowsCategoriesRange using an
-'exact case-sensitive match via ValueExists/Find. If the value is found,
+'exact case-sensitive match via FindLabelCell. If the value is found,
 'the returned range includes either the full row from StartColumn (with
 'the row-label cell) or from StartColumn + 1 (data cells only), depending
 'on the includeHeaders parameter. If the value is not found, Nothing is
@@ -967,6 +1032,7 @@ End Function
 Public Property Get RowRange(ByVal rowVal As String, _
                               Optional ByVal includeHeaders As Boolean = True) As Range
     Dim rng As Range
+    Dim foundCell As Range
     Dim valueRow As Long
     Dim startCol As Long
     Dim sh As Worksheet
@@ -974,8 +1040,9 @@ Public Property Get RowRange(ByVal rowVal As String, _
     Set rng = RowsCategoriesRange()
     Set sh = Wksh()
 
-    If ValueExists(rng, rowVal) Then
-        valueRow = rng.Find(What:=rowVal, LookAt:=xlWhole, MatchCase:=True).Row
+    Set foundCell = FindLabelCell(rng, rowVal)
+    If Not foundCell Is Nothing Then
+        valueRow = foundCell.Row
         If includeHeaders Then
             startCol = StartColumn
         Else
@@ -993,7 +1060,7 @@ End Property
 'Finds a column in the cross-table by its header label value and returns
 'a vertical Range spanning that entire column from the first data row to
 'the end row. The search is performed within HeaderRange using an exact
-'case-sensitive match via ValueExists/Find. The start row of the
+'case-sensitive match via FindLabelCell. The start row of the
 'returned range varies by table scope. The end row can be trimmed to
 'exclude footer rows when onlyCategories is True. The includeHeaders
 'parameter extends the range one row upward to include the column header
@@ -1008,6 +1075,7 @@ Public Property Get ColumnRange(ByVal colVal As String, _
                                  Optional ByVal onlyCategories As Boolean = False, _
                                  Optional ByVal includeHeaders As Boolean = False) As Range
     Dim rng As Range
+    Dim foundCell As Range
     Dim valueColumn As Long
     Dim startRw As Long
     Dim endRw As Long
@@ -1032,8 +1100,9 @@ Public Property Get ColumnRange(ByVal colVal As String, _
 
     If includeHeaders Then startRw = startRw - 1
 
-    If ValueExists(rng, colVal) Then
-        valueColumn = rng.Find(What:=colVal, LookAt:=xlWhole, MatchCase:=True).Column
+    Set foundCell = FindLabelCell(rng, colVal)
+    If Not foundCell Is Nothing Then
+        valueColumn = foundCell.Column
         With sh
             Set ColumnRange = .Range(.Cells(startRw, valueColumn), .Cells(endRw, valueColumn))
         End With
@@ -1476,7 +1545,6 @@ Private Sub AddTitleAndSectionHeader()
     Dim sh As Worksheet
     Dim startRw As Long
     Dim tabId As String
-    Dim counter As Long
     Dim sectionRng As Range
 
     Set sh = Wksh()
@@ -1488,9 +1556,11 @@ Private Sub AddTitleAndSectionHeader()
         .Cells(startRw - 2, STANDARD_START_COL).Name = "TITLE_" & tabId
 
         If Specifications.IsNewSection() And (Not RangeExists("SECTION_" & tabId)) Then
-            For counter = 1 To 3
-                .Rows(startRw - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
-            Next
+            'One block insert. Inserting the rows one at a time made Excel
+            'shift the sheet and rebind every name and chart anchor on it
+            'once per row.
+            .Rows(startRw - 2 & ":" & startRw).Insert _
+                Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
             Set sectionRng = .Range("TITLE_" & tabId).Cells(-1, 1)
             sectionRng.Value = ValueOf("section")
             sectionRng.Name = "SECTION_" & tabId
@@ -1506,7 +1576,6 @@ End Sub
 Private Sub AddGlobalSummaryHeader()
     Dim sh As Worksheet
     Dim startRw As Long
-    Dim counter As Long
 
     If RangeExists("ROWGS_SET") Then Exit Sub
 
@@ -1514,9 +1583,8 @@ Private Sub AddGlobalSummaryHeader()
     startRw = StartRow
 
     With sh
-        For counter = 1 To 3
-            .Rows(startRw - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
-        Next
+        .Rows(startRw - 2 & ":" & startRw).Insert _
+            Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
         .Cells(startRw - 2, STANDARD_START_COL).Value = Translations().TranslatedValue("MSG_GlobalSummary")
         .Cells(startRw - 2, STANDARD_START_COL).Name = "ROWGS_SET"
     End With
@@ -1532,7 +1600,6 @@ Private Sub AddTemporalHeader()
     Dim sh As Worksheet
     Dim startRw As Long
     Dim tabId As String
-    Dim counter As Long
     Dim nGeo As Long
     Dim nbShift As Long
     Dim anchorRng As Range
@@ -1554,9 +1621,10 @@ Private Sub AddTemporalHeader()
             nbShift = 7
         End If
 
-        For counter = 1 To nbShift
-            .Rows(startRw - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
-        Next
+        'One block insert for the whole section header; see
+        'AddTitleAndSectionHeader for why the per-row loop went.
+        .Rows(startRw - 2 & ":" & startRw - 3 + nbShift).Insert _
+            Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
 
         .Cells(startRw - 2, StartColumn).Value = ValueOf("section")
         .Cells(startRw - 2, StartColumn).Name = "SECTION_" & tabId
@@ -1677,7 +1745,6 @@ Private Sub AddSpatialHeader()
     Dim sh As Worksheet
     Dim startRw As Long
     Dim tabId As String
-    Dim counter As Long
     Dim rng As Range
     Dim cellRng As Range
     Dim listRng As Range
@@ -1754,9 +1821,10 @@ Private Sub AddSpatialHeader()
         End If
 
         If Specifications.IsNewSection() Then
-            For counter = 1 To 3
-                .Rows(rng.Row - 1).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
-            Next
+            'One block insert; see AddTitleAndSectionHeader for why the
+            'per-row loop went.
+            .Rows(rng.Row - 1 & ":" & rng.Row + 1).Insert _
+                Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
             rng.Cells(-3, 1).Value = ValueOf("section")
             rng.Cells(-3, 1).Name = "SECTION_" & tabId
         End If
@@ -2101,7 +2169,10 @@ Public Sub Format(ByVal desFormat As LLFormat)
     Dim hn As HiddenNames
 
     RequirePhase PHASE_NAMES, "Format"
-    Set hn = HiddenNames.Create(Wksh())
+
+    'The reader the owner handed in, or this instance's own. Creating a fresh
+    'one here walked the sheet's whole name collection once per table.
+    Set hn = MetadataNames()
 
     FormatSectionAndTitle desFormat, hn
     FormatSpatialDropdown desFormat
