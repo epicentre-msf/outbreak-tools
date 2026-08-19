@@ -248,6 +248,34 @@ for (i in seq_len(nrow(pairs))) {
   copy_tree_in_place(found, file.path(run_base, basename(found)))
 }
 
+# THE RUN DIR HOLDS EVERY SOURCE FOLDER, NOT ONLY THE ONES THE MANIFEST NAMES.
+# A session narrows the registry to the suite it is probing, and a narrowed
+# registry drops every other suite's `- module:` rows, so those folders leave
+# code-tables.tsv and the loop above never copies them. The run dir then holds
+# only the folders the last few narrowings happened to name -- four of nineteen,
+# when this was found. The next run under a DIFFERENT narrowing created that
+# suite's files from nothing, which gave every one of them a new inode, and
+# macOS asked the operator for access to each file again. That is why the grant
+# prompts kept coming back after the run dir itself was made stable: the folder
+# was stable, the files inside it were not.
+#
+# So every folder is copied every run, whatever the manifest says. It costs a
+# few hundred small files and nothing else, for the reason already given above:
+# Development.ImportAll imports what the manifest names, never what the folder
+# holds, so a folder that is not under probe is copied, ignored and never run.
+copy_every_subfolder <- function(bases, run_base) {
+  for (b in bases) {
+    if (!dir.exists(b)) next
+    for (sub in list.dirs(b, full.names = TRUE, recursive = FALSE)) {
+      dir.create(run_base, recursive = TRUE, showWarnings = FALSE)
+      copy_tree_in_place(sub, file.path(run_base, basename(sub)))
+    }
+  }
+}
+for (tag in names(tag_srcs)) {
+  copy_every_subfolder(tag_srcs[[tag]], tag_runs[[tag]])
+}
+
 dir.create(file.path(run_dir, ".generated"), showWarnings = FALSE)
 for (f in c("code-tables.tsv", "modules-for-testing.txt")) {  # manifest (built above)
   src_f <- file.path(generated, f)
