@@ -152,12 +152,41 @@ log_path  <- file.path(run_dir, "obt-import.log")     # written by OBTImport
 
 keep <- c(basename(work_copy), basename(csv_path), basename(log_path))
 
+# The SOURCE TREE is kept for the identity reason above, and it is the reason
+# the operator was asked for access over and over. These folders were swept and
+# re-copied every run, so every .cls and .bas inside them was a brand new file
+# with a brand new inode, and the grants Excel had been given the run before
+# covered none of them. The grant store held 144 per-file entries and still
+# prompted, because the files they named no longer existed.
+#
+# They are refreshed in place instead, by copy_tree_in_place below. A file that
+# left src/ is left behind here, which costs nothing: Development.ImportAll
+# imports what the code-tables manifest names, never what the folder happens to
+# hold, so a stale file is never imported and never runs.
+keep_dirs <- c("classes", "modules", "tests", "bootstrap", ".generated")
+
 if (dir.exists(run_dir)) {
   stale <- list.files(run_dir, all.files = TRUE, full.names = TRUE, no.. = TRUE)
-  stale <- stale[!(basename(stale) %in% keep)]
+  stale <- stale[!(basename(stale) %in% c(keep, keep_dirs))]
   unlink(stale, recursive = TRUE, force = TRUE)
 } else {
   dir.create(run_dir, recursive = TRUE, showWarnings = FALSE)
+}
+
+# Copy every file of a tree over the one already there, keeping the destination
+# files themselves. file.copy(overwrite = TRUE) truncates and rewrites, which
+# preserves the inode, so a grant on the file survives the refresh. Copying the
+# FOLDER instead -- file.copy(from_dir, to_dir, recursive = TRUE) -- is what
+# used to replace the whole subtree.
+copy_tree_in_place <- function(from_dir, to_dir) {
+  rels <- list.files(from_dir, recursive = TRUE, all.files = TRUE, no.. = TRUE)
+  for (rel in rels) {
+    src <- file.path(from_dir, rel)
+    if (dir.exists(src)) next
+    dst <- file.path(to_dir, rel)
+    dir.create(dirname(dst), recursive = TRUE, showWarnings = FALSE)
+    file.copy(src, dst, overwrite = TRUE)
+  }
 }
 
 if (!file.copy(workbook_src, work_copy, overwrite = TRUE)) {
@@ -216,7 +245,7 @@ for (i in seq_len(nrow(pairs))) {
     next
   }
   dir.create(run_base, recursive = TRUE, showWarnings = FALSE)
-  file.copy(found, run_base, recursive = TRUE)
+  copy_tree_in_place(found, file.path(run_base, basename(found)))
 }
 
 dir.create(file.path(run_dir, ".generated"), showWarnings = FALSE)
