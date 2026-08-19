@@ -424,12 +424,12 @@ End Sub
 '@section Series
 '===============================================================================
 
-'@sub-title Verify AddSeries attaches one series carrying the values of its range.
+'@sub-title Verify a committed series carries the values of its range.
 '@details
-'AddSeries hands SeriesCollection.Add its Source and then writes the values
-'over the fresh series once more, from the range it already holds. The second
-'write is deliberate: Add guesses how to split a Source whose cells are mostly
-'empty, and the sparse-column test below is what that guess used to break.
+'AddSeries queues the range and CommitSeries hands the queue to the chart as one
+'Source. Excel splits that Source itself, and the sparse-column test below is
+'what its guess used to break, so the values on the chart are read back here
+'rather than assumed from the range that went in.
 '@TestMethod("Graphs")
 Public Sub TestAddSeriesAttachesTheValuesOfItsRange()
     CustomTestSetTitles Assert, "Graphs", "TestAddSeriesAttachesTheValuesOfItsRange"
@@ -445,6 +445,8 @@ Public Sub TestAddSeriesAttachesTheValuesOfItsRange()
     gr.AddSeries SERIES_NAME, "bar"
 
     Assert.AreEqual 1&, CLng(sh.ChartObjects.Count), "AddSeries draws the chart when there is none"
+
+    gr.CommitSeries
 
     Set co = FirstChart(sh)
     Assert.AreEqual 1&, CLng(co.Chart.SeriesCollection.Count), "One series is attached"
@@ -466,10 +468,11 @@ End Sub
 '@details
 'A time series column holds one number per period with data, so a young
 'linelist carries a column that is empty in every row but one.
-'SeriesCollection.Add guesses how to split such a Source and used to keep the
-'one filled cell as the whole series: the chart showed a single bar over the
-'first period whatever the period axis said. The explicit values write in
-'AddSeries is what this test measures.
+'Excel guesses how to split the Source it is handed and used to keep the one
+'filled cell as the whole series: the chart showed a single bar over the first
+'period whatever the period axis said. CommitSeries counts the series Excel made
+'against the series it asked for and attaches them one at a time when the two
+'differ, and that is what this test measures.
 '@TestMethod("Graphs")
 Public Sub TestASparseColumnKeepsItsWholeRange()
     CustomTestSetTitles Assert, "Graphs", "TestASparseColumnKeepsItsWholeRange"
@@ -489,6 +492,7 @@ Public Sub TestASparseColumnKeepsItsWholeRange()
 
     Set gr = BuildGraph(sh)
     gr.AddSeries SPARSE_SERIES_NAME, "bar"
+    gr.CommitSeries
 
     Set co = FirstChart(sh)
     Assert.AreEqual 1&, CLng(co.Chart.SeriesCollection.Count), "One series is attached"
@@ -519,6 +523,7 @@ Public Sub TestASeriesOnTheRightMovesToTheSecondaryAxis()
     gr.Add
     gr.AddSeries SERIES_NAME, "bar"
     gr.AddSeries SECOND_SERIES_NAME, "line", "right"
+    gr.CommitSeries
 
     Set co = FirstChart(sh)
 
@@ -550,6 +555,7 @@ Public Sub TestAnUnknownChartTypeIsDrawnAsBars()
     Set sh = BuildFixture()
     Set gr = BuildGraph(sh)
     gr.AddSeries SERIES_NAME, "sunburst"
+    gr.CommitSeries
 
     Set co = FirstChart(sh)
     Assert.AreEqual CLng(xlColumnClustered), CLng(co.Chart.SeriesCollection(1).chartType), _
@@ -573,6 +579,7 @@ Public Sub TestASeriesWithNoRangeIsLeftOutAndReported()
     Set gr = BuildGraph(sh)
     gr.Add
     gr.AddSeries ABSENT_NAME, "bar"
+    gr.CommitSeries
 
     Assert.AreEqual 0&, CLng(FirstChart(sh).Chart.SeriesCollection.Count), _
                     "A name the worksheet does not carry attaches no series"
@@ -611,6 +618,7 @@ Public Sub TestAFailedSeriesLeavesThePreviousOneLabelledAsItWas()
 
     gr.AddSeries ABSENT_NAME, "bar"
     gr.AddLabels CATEGORY_NAME, LABEL_NAME, "Second", prefixOnly:=True
+    gr.CommitSeries
 
     Set co = FirstChart(sh)
 
@@ -623,6 +631,79 @@ Public Sub TestAFailedSeriesLeavesThePreviousOneLabelledAsItWas()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestAFailedSeriesLeavesThePreviousOneLabelledAsItWas", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify series queued out of sheet order keep their own values.
+'@details
+'CommitSeries hands the chart one Source and Excel plots it in the order the
+'sheet holds it, so a queue that runs right to left cannot be read back by
+'index. The series are attached one at a time instead, and this test is what
+'says so: the second column is queued first, and each series has to come back
+'carrying the numbers of the column it was asked for.
+'@TestMethod("Graphs")
+Public Sub TestSeriesQueuedOutOfOrderCarryTheirOwnValues()
+    CustomTestSetTitles Assert, "Graphs", "TestSeriesQueuedOutOfOrderCarryTheirOwnValues"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim gr As Graphs
+    Dim co As ChartObject
+    Dim firstValues As Variant
+    Dim secondValues As Variant
+
+    Set sh = BuildFixture()
+    Set gr = BuildGraph(sh)
+
+    'Column C first, column B second.
+    gr.AddSeries SECOND_SERIES_NAME, "bar"
+    gr.AddSeries SERIES_NAME, "bar"
+    gr.CommitSeries
+
+    Set co = FirstChart(sh)
+    Assert.AreEqual 2&, CLng(co.Chart.SeriesCollection.Count), "Both series are drawn"
+
+    firstValues = co.Chart.SeriesCollection(1).Values
+    secondValues = co.Chart.SeriesCollection(2).Values
+
+    Assert.AreEqual 1, firstValues(LBound(firstValues)), _
+                    "The series queued first carries the column it named"
+    Assert.AreEqual 10, secondValues(LBound(secondValues)), _
+                    "And the one queued second carries its own"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSeriesQueuedOutOfOrderCarryTheirOwnValues", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify a second commit draws nothing more.
+'@details
+'Format commits the queue, and a caller that read the chart before formatting
+'has committed it already. The second call has an empty queue and has to leave
+'the chart alone.
+'@TestMethod("Graphs")
+Public Sub TestCommittingTwiceDrawsTheSeriesOnce()
+    CustomTestSetTitles Assert, "Graphs", "TestCommittingTwiceDrawsTheSeriesOnce"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim gr As Graphs
+
+    Set sh = BuildFixture()
+    Set gr = BuildGraph(sh)
+    gr.AddSeries SERIES_NAME, "bar"
+
+    gr.CommitSeries
+    gr.CommitSeries
+
+    Assert.AreEqual 1&, CLng(FirstChart(sh).Chart.SeriesCollection.Count), _
+                    "The series is on the chart once"
+    Assert.AreEqual 1&, CLng(sh.ChartObjects.Count), "And there is still one chart"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestCommittingTwiceDrawsTheSeriesOnce", _
                          Err.Number, Err.Description
 End Sub
 
@@ -642,6 +723,7 @@ Public Sub TestTheLegendEntryJoinsThePrefixAndTheLabelCell()
     Set sh = BuildFixture()
     Set gr = GraphWithOneSeries(sh)
     gr.AddLabels CATEGORY_NAME, LABEL_NAME, "FY24"
+    gr.CommitSeries
 
     Set co = FirstChart(sh)
 
@@ -667,6 +749,7 @@ Public Sub TestAPrefixOnlyLabelIsTheWholeLegendEntry()
     Set sh = BuildFixture()
     Set gr = GraphWithOneSeries(sh)
     gr.AddLabels CATEGORY_NAME, LABEL_NAME, "Week 12", prefixOnly:=True
+    gr.CommitSeries
 
     Assert.AreEqual "Week 12", FirstChart(sh).Chart.SeriesCollection(1).Name, _
                     "The prefix alone names the series"
@@ -692,6 +775,7 @@ Public Sub TestADynamicLabelReadsTheCellItPointsAt()
     Set sh = BuildFixture()
     Set gr = GraphWithOneSeries(sh)
     gr.AddLabels CATEGORY_NAME, LABEL_NAME, hardCodeLabels:=False
+    gr.CommitSeries
 
     Assert.AreEqual LABEL_TEXT, FirstChart(sh).Chart.SeriesCollection(1).Name, _
                     "The legend entry shows the text of the cell it references"
@@ -715,6 +799,7 @@ Public Sub TestLabelsBeforeAnySeriesAreReported()
     Set gr = BuildGraph(sh)
     gr.Add
     gr.AddLabels CATEGORY_NAME, LABEL_NAME
+    gr.CommitSeries
 
     Assert.AreEqual 0&, CLng(FirstChart(sh).Chart.SeriesCollection.Count), _
                     "Labels on their own attach no series"

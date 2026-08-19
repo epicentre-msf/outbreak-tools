@@ -599,8 +599,11 @@ Private Function ClearOfCharts(ByVal candidate As Long) As Long
 
     Set sh = Wksh()
     nbCharts = sh.ChartObjects.Count
-    If nbCharts = 0 Then Exit Function
 
+    'The store is read whether or not a chart is on the sheet. AnalysisOutput
+    'draws the charts of a pass after its tables and reserves their rows here
+    'meanwhile, so an empty sheet still owes room and exiting on the count
+    'alone would place every table over the charts to come.
     Set hn = MetadataNames()
     storedScanned = hn.ValueAsLong("CHARTWALK_COUNT", 0)
     storedBottom = hn.ValueAsLong("CHARTWALK_BOTTOM", 0)
@@ -640,6 +643,30 @@ Private Function ClearOfCharts(ByVal candidate As Long) As Long
 
     If knownBottom + 1 > ClearOfCharts Then ClearOfCharts = knownBottom + 1
 End Function
+
+'@label:reserve-chart-space
+'@sub-title Hold rows for a chart that has not been drawn yet.
+'@details
+'ComputeStartRow places a table below the charts already on the sheet, which it
+'learns by reading them. A caller that draws its charts after all its tables
+'has no chart to be read at that moment, so it says here how far down the chart
+'will reach and the next table is placed below that line all the same.
+'The answer is held in the same worksheet name ClearOfCharts reads, and the
+'larger of the two wins, so a reservation and a drawn chart cannot undercut
+'each other.
+'@param bottomRow Long. The last row the chart will cover.
+'@export
+Public Sub ReserveChartSpace(ByVal bottomRow As Long)
+    Dim hn As HiddenNames
+
+    If bottomRow < 1 Then Exit Sub
+
+    Set hn = MetadataNames()
+    If bottomRow <= hn.ValueAsLong("CHARTWALK_BOTTOM", 0) Then Exit Sub
+
+    hn.EnsureName "CHARTWALK_BOTTOM", bottomRow, HiddenNameTypeLong
+    hn.SetValue "CHARTWALK_BOTTOM", bottomRow
+End Sub
 
 '@label:previous
 '@prop-title Previous cross-table in the same section.

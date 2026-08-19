@@ -613,6 +613,10 @@ Private Sub ApplyFormat(ByVal gr As Graphs, ByRef values As Variant, _
     Dim rowIndex As Long
     Dim scopeValue As Byte
 
+    'Graphs queues its series and draws them when it formats. A chart with no
+    'format row is never formatted, so it is told to draw them here.
+    gr.CommitSeries
+
     rowIndex = FormatRowIndex(values, scope, graphId)
     If rowIndex = 0 Then Exit Sub
 

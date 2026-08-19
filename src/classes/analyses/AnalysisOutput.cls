@@ -797,19 +797,18 @@ Private Sub WriteTable(ByVal loName As String, _
     Dim outsh As Worksheet
     Dim tabRng As Range
     Dim hRng As Range
-    Dim seriesCounter As Long
     Dim tabl As CrossTable
     Dim tabform As CrossTableFormula
-    Dim gr As Graphs
     Dim lo As ListObject
     Dim specs As TableSpecs
     Dim lData As LinelistSpecs
     Dim trads As TranslationObject
     Dim formData As FormulaData
-    Dim cellRng As Range
-    Dim grSeries As GraphSeries
-    Dim buffer As SeriesBuffer
     Dim tabId As String
+
+    ' The tables of this pass that are owed a chart, in the order they were
+    ' written. DrawPendingCharts empties it once the last table is on the sheet.
+    Dim pendingCharts As Collection
     Dim tabType As Byte
     Dim design As LLFormat
     Dim anchorRng As Range
@@ -837,7 +836,6 @@ Private Sub WriteTable(ByVal loName As String, _
     Dim rowVar As String
     Dim dict As LLdictionary
     Dim vars As LLVariables
-    Dim grHeight As Long
     Dim isNewSection As Boolean
 
     Set sh = Wksh()
@@ -852,6 +850,7 @@ Private Sub WriteTable(ByVal loName As String, _
     Set namObj = NamesObject()
     Set outshHn = OutputNames(scope)
     Set section = TemporalSection.Create()
+    Set pendingCharts = New Collection
 
     goToSectionLabel = trads.TranslatedValue("MSG_GoToSec")
     goToHeaderLabel = trads.TranslatedValue("MSG_GoToHead")
@@ -919,45 +918,13 @@ Private Sub WriteTable(ByVal loName As String, _
             hasTable = True
         End If
 
-        ' Non-temporal charts
+        ' Non-temporal charts are not drawn here. The table is remembered and
+        ' every chart of this pass is drawn together once the loop ends; see
+        ' DrawPendingCharts for what that buys. The rows the chart will cover
+        ' are held now, because the next table is placed below them.
         If specs.HasGraph() And (Not containsTimeSeries) Then
-            ' GeoCount carries the default of 5 and clamps to 1..20. Reading
-            ' the cell raw raised type mismatch 13 on an empty one.
-            grHeight = specs.GeoCount()
-
-            Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
-            If tabType = ScopeSpatial Then Set cellRng = cellRng.Offset(, 2)
-
-            Set grSeries = GraphSeries.Create(tabl)
-            Set buffer = grSeries.Series()
-
-            ' And the series builder's. It decides to build fewer series than
-            ' the setup asked for in four places, and every one of them was
-            ' silent until this line.
-            If grSeries.HasCheckings Then HarvestCollaboratorCheckings grSeries.CheckingValues
-
-            Set gr = Graphs.Create(outsh, cellRng)
-            gr.Add
-
-            For seriesCounter = 1 To buffer.Count
-                AddGraphSeries gr:=gr, namObj:=namObj, scope:=scope, graphId:=tabId, _
-                               seriesName:=buffer.RangeName(seriesCounter), _
-                               seriesType:=buffer.ChartType(seriesCounter), _
-                               seriesPos:=buffer.AxisSide(seriesCounter), _
-                               seriesLabel:=buffer.CategoryRange(seriesCounter), _
-                               seriesColumnLabel:=buffer.LegendRange(seriesCounter), _
-                               hardCodeLabels:=False, _
-                               outRangeAddress:=cellRng.Address
-            Next
-
-            FinishGraph gr:=gr, namObj:=namObj, scope:=scope, graphId:=tabId, _
-                        catTitle:="LABEL_ROW_CATEGORIES_" & tabId, _
-                        valuesTitle:=specs.Value("label"), _
-                        hardCodeLabels:=False, heightFactor:=grHeight, _
-                        plotTitle:=vbNullString
-
-            LogMilestone "chart of table " & tabId & " written on " & outsh.Name
-            this.graphsWritten = this.graphsWritten + 1
+            pendingCharts.Add tabl
+            ReserveChartRows tabl, outsh, scope
         End If
 
         ' Time series and spatio-temporal section tracking
@@ -1004,12 +971,148 @@ ContinueLoop:
         Set tabRng = tabRng.Offset(1)
     Loop While tabRng.Row <= anchorRng.Row
 
+    ' Every chart this pass owes, drawn in one go now that no table is being
+    ' written beside it.
+    DrawPendingCharts pendingCharts, outsh, namObj, scope
+
     ' The last section of the sheet, and the anchor its charts hang from.
     If section.IsOpen() Then
         lastSecId = section.SectionId()
         CloseTemporalSection outsh, section, scope, goToHeaderLabel
         NameGraphStart outsh, lastSecId, scope
     End If
+End Sub
+
+'@label:chart-anchor-of
+'@sub-title The cell a table's chart hangs from.
+'@details
+'Two rows above the table and two columns past its last one, which is where the
+'chart used to be placed inline. A spatial table carries two more columns of
+'controls, so its chart starts further right.
+'The table's own geometry is read from the instance, which holds it once Build
+'has run, so this answers the same cell whether it is asked during the table
+'pass or after it.
+'@param tabl CrossTable. The built table.
+'@param outsh Worksheet. The output worksheet.
+'@return Range. The anchor cell.
+Private Function ChartAnchorOf(ByVal tabl As CrossTable, _
+                               ByVal outsh As Worksheet) As Range
+    Dim cellRng As Range
+
+    Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
+    If tabl.Specifications.TableScope() = ScopeSpatial Then _
+        Set cellRng = cellRng.Offset(, 2)
+
+    Set ChartAnchorOf = cellRng
+End Function
+
+'@label:reserve-chart-rows
+'@sub-title Hold the rows a deferred chart will cover.
+'@details
+'The next table is placed below the charts of the tables above it, and those
+'charts are no longer there to be measured when the placing happens. Graphs
+'answers how tall the chart will be in rows of this sheet, and the table keeps
+'the line.
+'@param tabl CrossTable. The table whose chart is owed.
+'@param outsh Worksheet. The output worksheet.
+'@param scope Byte. A constant from the AnalysisScope enum.
+Private Sub ReserveChartRows(ByVal tabl As CrossTable, ByVal outsh As Worksheet, _
+                             ByVal scope As Byte)
+    Dim anchorCell As Range
+    Dim nbRows As Long
+
+    Set anchorCell = ChartAnchorOf(tabl, outsh)
+    nbRows = Graphs.HeightInRows(outsh, GraphScopeOf(scope), _
+                                 tabl.Specifications.GeoCount())
+
+    tabl.ReserveChartSpace anchorCell.Row + nbRows - 1
+End Sub
+
+'@label:draw-pending-charts
+'@sub-title Draw every chart the table pass put off, in one pass.
+'@details
+'The charts used to be drawn one per table, in the middle of writing the
+'tables. Excel 16.112 dies on the FIRST of them: the table before it is
+'complete, the chart takes both its series, and the host falls over on the next
+'call. Drawing them together keeps every chart operation out of the table
+'writing, which is the thing being tested.
+'
+'A table carries everything a chart needs -- its own geometry and its
+'specification -- so the pass holds cross-tables and reads the rest back here.
+'
+'Each chart is guarded on its own. The inline block sat inside the per-table
+'handler, so a chart that failed cost its table and nothing more; the same has
+'to be true here, or one bad chart would cost every chart after it.
+'@param pending Collection. The CrossTable instances owed a chart, in table order.
+'@param outsh Worksheet. The output worksheet.
+'@param namObj AnaTabIds. The registry the export reads back.
+'@param scope Byte. A constant from the AnalysisScope enum.
+Private Sub DrawPendingCharts(ByVal pending As Collection, ByVal outsh As Worksheet, _
+                              ByVal namObj As AnaTabIds, ByVal scope As Byte)
+    Dim tabl As CrossTable
+    Dim specs As TableSpecs
+    Dim gr As Graphs
+    Dim grSeries As GraphSeries
+    Dim buffer As SeriesBuffer
+    Dim cellRng As Range
+    Dim tabId As String
+    Dim grHeight As Long
+    Dim seriesCounter As Long
+
+    If pending Is Nothing Then Exit Sub
+    If pending.Count = 0 Then Exit Sub
+
+    For Each tabl In pending
+        tabId = "(unknown)"
+        On Error GoTo ChartError
+
+        Set specs = tabl.Specifications
+        tabId = specs.TableId()
+
+        ' GeoCount carries the default of 5 and clamps to 1..20. Reading
+        ' the cell raw raised type mismatch 13 on an empty one.
+        grHeight = specs.GeoCount()
+        Set cellRng = ChartAnchorOf(tabl, outsh)
+
+        Set grSeries = GraphSeries.Create(tabl)
+        Set buffer = grSeries.Series()
+
+        ' The series builder decides to build fewer series than the setup asked
+        ' for in four places, and every one of them was silent until this line.
+        If grSeries.HasCheckings Then HarvestCollaboratorCheckings grSeries.CheckingValues
+
+        Set gr = Graphs.Create(outsh, cellRng)
+        gr.Add
+
+        For seriesCounter = 1 To buffer.Count
+            AddGraphSeries gr:=gr, namObj:=namObj, scope:=scope, graphId:=tabId, _
+                           seriesName:=buffer.RangeName(seriesCounter), _
+                           seriesType:=buffer.ChartType(seriesCounter), _
+                           seriesPos:=buffer.AxisSide(seriesCounter), _
+                           seriesLabel:=buffer.CategoryRange(seriesCounter), _
+                           seriesColumnLabel:=buffer.LegendRange(seriesCounter), _
+                           hardCodeLabels:=False, _
+                           outRangeAddress:=cellRng.Address
+        Next
+
+        FinishGraph gr:=gr, namObj:=namObj, scope:=scope, graphId:=tabId, _
+                    catTitle:="LABEL_ROW_CATEGORIES_" & tabId, _
+                    valuesTitle:=specs.Value("label"), _
+                    hardCodeLabels:=False, heightFactor:=grHeight, _
+                    plotTitle:=vbNullString
+
+        LogMilestone "chart of table " & tabId & " written on " & outsh.Name
+        this.graphsWritten = this.graphsWritten + 1
+
+        On Error GoTo 0
+        GoTo ContinueCharts
+
+ChartError:
+        LogInfo "The chart of table " & tabId & " failed: " & Err.Description, checkingError
+        Resume ContinueCharts
+
+ContinueCharts:
+    Next
 End Sub
 
 '@section Graph Creation

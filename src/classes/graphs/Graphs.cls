@@ -19,10 +19,10 @@ Option Explicit
 '@class Graphs
 '@description
 'Wraps one Excel ChartObject on an analysis worksheet. Add draws the chart at a
-'caller-supplied Range, AddSeries attaches one data series from a named range,
-'AddLabels gives that series its category and legend labels, and Format applies
-'the look the GraphScope calls for. Entries filed along the way leave through
-'HasCheckings and CheckingValues.
+'caller-supplied Range, AddSeries queues one data series from a named range,
+'AddLabels gives that series its category and legend labels, and Format draws
+'the queue and applies the look the GraphScope calls for. Entries filed along
+'the way leave through HasCheckings and CheckingValues.
 '
 'THE PHASE ORDER
 '-------------------------------------------------------------------------------
@@ -31,9 +31,16 @@ Option Explicit
 'per time series graph, and AnaTabIds replays both from its tracking tables
 'when a linelist is exported.
 '
+'THE SERIES ARE QUEUED AND DRAWN IN ONE CALL
+'-------------------------------------------------------------------------------
+'AddSeries and AddLabels write to a queue and leave the chart alone. CommitSeries
+'unions the queued ranges and hands the chart one SetSourceData, then walks the
+'series it made to give each its type, its axis and its labels. Format calls
+'CommitSeries; a caller that reads the chart before it formats calls it itself.
+'
 'A SERIES THAT FAILS TAKES ITS LABELS WITH IT
 '-------------------------------------------------------------------------------
-'AddSeries answers a missing named range by filing a warning and adding no
+'AddSeries answers a missing named range by filing a warning and queueing no
 'series. The labels that follow belong to that series, so AddLabels reads the
 'flag AddSeries leaves and skips them.
 '
@@ -61,6 +68,7 @@ Private Type TGraph
     sealed As Boolean
     checkCounter As Long
     internalChecks As Checking
+    pending As Collection
 End Type
 
 '@description Every number Format applies that depends on the graph scope.
@@ -97,6 +105,18 @@ Private Const PLOT_HEIGHT As Double = 178
 'decides that, and the secondary axis follows it.
 Private Const PERCENT_AXIS_MAX As Double = 1
 Private Const PERCENT_AXIS_STEP As Double = 0.1
+
+'What one queued series holds until CommitSeries draws it. AddSeries writes the
+'first three, AddLabels the rest.
+Private Const PENDING_RANGE As Long = 0
+Private Const PENDING_TYPE As Long = 1
+Private Const PENDING_AXIS As Long = 2
+Private Const PENDING_HAS_LABELS As Long = 3
+Private Const PENDING_CAT As Long = 4
+Private Const PENDING_LABEL As Long = 5
+Private Const PENDING_PREFIX As Long = 6
+Private Const PENDING_PREFIX_ONLY As Long = 7
+Private Const PENDING_HARDCODE As Long = 8
 
 'Type sizes and the theme font used across every chart.
 Private Const TICK_FONT_SIZE As Long = 10
@@ -244,30 +264,6 @@ Private Property Get graphChart() As ChartObject
     Set graphChart = this.co
 End Property
 
-'@label:series-count
-'@sub-title How many series the chart carries
-'@details
-'The chart's own SeriesCollection is the truth. The class used to keep a counter
-'beside it and add one per AddSeries call, which drifted from the chart the
-'moment a series was left out.
-'@return Long. The number of series on the chart, 0 when there is no chart.
-Private Function SeriesCount() As Long
-    If this.co Is Nothing Then Exit Function
-    SeriesCount = this.co.Chart.SeriesCollection.Count
-End Function
-
-'@label:last-series
-'@sub-title The series added most recently
-'@return Series. The last series of the chart, or Nothing when there is none.
-Private Function LastSeries() As Series
-    Dim ind As Long
-
-    ind = SeriesCount()
-    If ind = 0 Then Exit Function
-
-    Set LastSeries = this.co.Chart.SeriesCollection(ind)
-End Function
-
 
 '@section Operations
 '===============================================================================
@@ -279,12 +275,19 @@ End Function
 'Creates an empty graph on a worksheet, ready for data to be
 'attached to the graph. The graph is empty at creation, so the legend and the
 'plot area are left to Format, which owns both and runs once the series exist.
+'
+'The frame comes from Shapes.AddChart2 rather than ChartObjects.Add. AddChart2
+'builds the chart in one host call where the older one builds a frame and then
+'takes its style, its type and its plot area in several. It plots whatever range
+'is selected when it runs, so the series it invents are deleted here and the
+'chart starts empty either way.
 '@export
 Public Sub Add()
 
     Dim co As ChartObject
     Dim sh As Worksheet
     Dim rng As Range
+    Dim shp As Shape
     Dim anchorLeft As Double
     Dim anchorTop As Double
 
@@ -293,7 +296,13 @@ Public Sub Add()
     anchorLeft = rng.Left
     anchorTop = rng.Top
 
-    Set co = sh.ChartObjects.Add(anchorLeft, anchorTop, CHART_WIDTH, CHART_HEIGHT)
+    Set shp = sh.Shapes.AddChart2(-1, xlColumnClustered, anchorLeft, anchorTop, _
+                                  CHART_WIDTH, CHART_HEIGHT, False)
+    Set co = sh.ChartObjects(shp.Name)
+
+    Do While co.Chart.SeriesCollection.Count > 0
+        co.Chart.SeriesCollection(1).Delete
+    Loop
 
     Set this.co = co
 End Sub
@@ -303,9 +312,13 @@ End Sub
 '@details
 'One graph can have multiple series added. Series are referenced using
 'named ranges on the graph object worksheet. If the named range does not
-'exist, the method files a warning, adds no series, and marks the attempt as
+'exist, the method files a warning, queues no series, and marks the attempt as
 'failed so the labels that follow are skipped too. If no chart exists
-'yet, Add is called lazily before attaching the series.
+'yet, Add is called lazily before the first series is queued.
+'
+'The series is queued, not drawn. CommitSeries hands the whole queue to the
+'chart in one SetSourceData call, and Format calls it. A caller that wants to
+'read the chart before it formats calls CommitSeries itself.
 '@param rngName String. Named range containing the series values.
 '@param chrtType String. Chart type: "line", "point", "bar", or "hbar". Defaults to "bar" for unknown values.
 '@param axisPos Optional String. Axis position: "right" adds a secondary axis; any other value uses the primary axis. Defaults to vbNullString.
@@ -313,10 +326,8 @@ End Sub
 Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, _
                     Optional ByVal axisPos As String = vbNullString)
 
-    Dim co As ChartObject
-    Dim srs As Series
     Dim seriesRng As Range
-    Dim customType As XlChartType
+    Dim entry As Variant
 
     this.lastSeriesOk = False
 
@@ -328,49 +339,38 @@ Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, _
     End If
 
     'If no graph exists, add one first
-    Set co = graphChart()
-    If co Is Nothing Then
-        Add
-        Set co = graphChart()
-    End If
+    If graphChart() Is Nothing Then Add
 
-    Select Case chrtType
-        Case "line": customType = xlLineMarkers
-        Case "point": customType = xlXYScatter
-        Case "bar": customType = xlColumnClustered
-        Case "hbar": customType = xlBarClustered
-        Case Else: customType = xlColumnClustered
-    End Select
+    'The fields are in the order the PENDING_ constants name.
+    entry = Array(rngName, chrtType, axisPos, False, _
+                  vbNullString, vbNullString, vbNullString, False, True)
 
-    co.Chart.SeriesCollection.Add _
-        Source:=seriesRng, RowCol:=xlColumns, _
-        SeriesLabels:=False, CategoryLabels:=False, Replace:=False
-
-    Set srs = LastSeries()
-    If srs Is Nothing Then
-        LogInfo "Excel accepted no series for " & rngName & _
-                ", so this series is left out of the graph", checkingWarning
-        Exit Sub
-    End If
-
-    'The values are written again, on purpose. Add guesses how to split a
-    'Source whose cells are mostly empty, whatever the two label arguments
-    'say, and a time series column with data in its last row alone came out
-    'as a one-cell series: the chart showed one bar over the first period.
-    'This line pins the whole range as the data. The range is already in
-    'hand, so the write costs one chart recalculation and no name resolution.
-    srs.Values = seriesRng
-
-    'Add a right axis if required
-    If axisPos = "right" Then
-        co.Chart.HasAxis(xlValue, xlSecondary) = True
-        srs.AxisGroup = xlSecondary
-    End If
-
-    srs.chartType = customType
+    PendingSeries.Add entry
 
     this.lastSeriesOk = True
 End Sub
+
+'@label:pending-series
+'@sub-title The queue of series waiting to be drawn
+'@return Collection. The queue, created empty on first use.
+Private Function PendingSeries() As Collection
+    If this.pending Is Nothing Then Set this.pending = New Collection
+    Set PendingSeries = this.pending
+End Function
+
+'@label:chart-type-of
+'@sub-title The Excel chart type one series name stands for
+'@param chrtType String. Chart type: "line", "point", "bar", or "hbar".
+'@return XlChartType. The matching type, clustered columns for anything else.
+Private Function ChartTypeOf(ByVal chrtType As String) As XlChartType
+    Select Case chrtType
+        Case "line": ChartTypeOf = xlLineMarkers
+        Case "point": ChartTypeOf = xlXYScatter
+        Case "bar": ChartTypeOf = xlColumnClustered
+        Case "hbar": ChartTypeOf = xlBarClustered
+        Case Else: ChartTypeOf = xlColumnClustered
+    End Select
+End Function
 
 
 '@label:addlabels
@@ -396,11 +396,8 @@ Public Sub AddLabels(ByVal catName As String, _
                      Optional ByVal prefixOnly As Boolean = False, _
                      Optional ByVal hardCodeLabels As Boolean = True)
 
-    Dim srs As Series
-    Dim labelsObj As DataLabels
-    Dim catRng As Range
-    Dim lblRng As Range
-    Dim hasLabelRange As Boolean
+    Dim entry As Variant
+    Dim ind As Long
 
     If graphChart() Is Nothing Then
         LogInfo "Labels " & catName & " were asked for before any chart was made", _
@@ -408,8 +405,8 @@ Public Sub AddLabels(ByVal catName As String, _
         Exit Sub
     End If
 
-    Set srs = LastSeries()
-    If srs Is Nothing Then
+    ind = PendingSeries.Count
+    If ind = 0 Then
         LogInfo "Labels " & catName & " were asked for and this graph carries no series", _
                 checkingWarning
         Exit Sub
@@ -421,17 +418,271 @@ Public Sub AddLabels(ByVal catName As String, _
         Exit Sub
     End If
 
-    hasLabelRange = TryRange(lblName, lblRng)
+    'The labels join the series they belong to, in the queue. A Collection has
+    'no way to write an item back, so the entry leaves the end of the queue and
+    'returns to it filled in.
+    entry = PendingSeries.Item(ind)
+    entry(PENDING_HAS_LABELS) = True
+    entry(PENDING_CAT) = catName
+    entry(PENDING_LABEL) = lblName
+    entry(PENDING_PREFIX) = prefix
+    entry(PENDING_PREFIX_ONLY) = prefixOnly
+    entry(PENDING_HARDCODE) = hardCodeLabels
 
-    If TryRange(catName, catRng) Then srs.XValues = catRng
+    PendingSeries.Remove ind
+    PendingSeries.Add entry
+End Sub
+
+'@label:commit-series
+'@sub-title Draw every queued series in one call to the chart
+'@details
+'The queued ranges are the columns of one analysis table, so their union is a
+'single Source Excel splits back into the same series, in the same order. One
+'SetSourceData replaces the two data writes each series used to cost: the older
+'path added a series from its own Source and then wrote the values over it,
+'because SeriesCollection.Add guesses how to split a Source whose cells are
+'mostly empty and a column with data in its last row alone came out as a
+'one-cell series.
+'
+'Excel still does the splitting here, so the count it made is checked against
+'the count that was asked for. When the two differ, or SetSourceData refuses the
+'Source outright, the series are attached one at a time and the values pinned
+'range by range. The look of a series -- its type, its axis, its labels -- is
+'applied afterwards either way.
+'
+'Format calls this. A caller that reads the chart before it formats calls it
+'itself. Calling it twice costs nothing: the queue is empty the second time.
+'@export
+Public Sub CommitSeries()
+
+    Dim co As ChartObject
+    Dim live As Collection
+    Dim rngs As Collection
+    Dim seriesRng As Range
+    Dim allRng As Range
+    Dim entry As Variant
+    Dim ind As Long
+    Dim sourceTaken As Boolean
+
+    If PendingSeries.Count = 0 Then Exit Sub
+
+    Set co = graphChart()
+    If co Is Nothing Then
+        Set this.pending = Nothing
+        Exit Sub
+    End If
+
+    'A name can go between the queueing and the drawing. Only the series whose
+    'range still resolves are drawn, and they are the ones counted.
+    Set live = New Collection
+    Set rngs = New Collection
+
+    For ind = 1 To PendingSeries.Count
+        entry = PendingSeries.Item(ind)
+        If TryRange(CStr(entry(PENDING_RANGE)), seriesRng) Then
+            live.Add entry
+            rngs.Add seriesRng
+            If allRng Is Nothing Then
+                Set allRng = seriesRng
+            Else
+                Set allRng = Application.Union(allRng, seriesRng)
+            End If
+        Else
+            LogInfo "The range named " & CStr(entry(PENDING_RANGE)) & " went away " & _
+                    "before the chart was drawn, so this series is left out", checkingWarning
+        End If
+    Next
+
+    Set this.pending = Nothing
+    If live.Count = 0 Then Exit Sub
+
+    On Error Resume Next
+        co.Chart.SetSourceData Source:=allRng, PlotBy:=xlColumns
+        sourceTaken = (Err.Number = 0)
+        Err.Clear
+    On Error GoTo 0
+
+    If sourceTaken Then sourceTaken = InSheetOrder(rngs)
+    If sourceTaken Then sourceTaken = (co.Chart.SeriesCollection.Count = live.Count)
+    If sourceTaken Then sourceTaken = PointsMatch(co, rngs.Item(1))
+
+    If Not sourceTaken Then
+        'Filed as information, not as a warning. Nothing is wrong with the chart
+        'and nothing is asked of the person reading the report: it says which of
+        'the two paths drew the series.
+        LogInfo "Graph " & GraphKey() & " did not take its series in one call, " & _
+                "so they are attached one at a time", checkingInfo
+        AttachOneByOne co, rngs
+    End If
+
+    StyleSeries co, live
+End Sub
+
+'@label:in-sheet-order
+'@sub-title Whether the queued ranges run left to right down the sheet
+'@details
+'A Source is plotted in the order the sheet holds it, and the styling that
+'follows walks the series by index against the queue. The two agree only while
+'the queue is in sheet order, and the analysis tables name their columns that
+'way: CrossTable writes VALUES_COL_1, PERC_COL_1, VALUES_COL_2 across the table
+'as GraphSeries queues them.
+'
+'A queue that arrives in some other order is not wrong, it just cannot be read
+'back by index, so those series are attached one at a time instead. Nothing here
+'guesses: it compares the column and the row each range starts at.
+'@param rngs Collection. The series ranges, in the order they were queued.
+'@return Boolean. True when each range starts at or after the one before it.
+Private Function InSheetOrder(ByVal rngs As Collection) As Boolean
+    Dim ind As Long
+    Dim thisCol As Long
+    Dim thisRow As Long
+    Dim lastCol As Long
+    Dim lastRow As Long
+
+    InSheetOrder = True
+
+    For ind = 1 To rngs.Count
+        thisCol = rngs.Item(ind).Column
+        thisRow = rngs.Item(ind).Row
+
+        If ind > 1 Then
+            If thisCol < lastCol Then
+                InSheetOrder = False
+                Exit Function
+            End If
+            If (thisCol = lastCol) And (thisRow < lastRow) Then
+                InSheetOrder = False
+                Exit Function
+            End If
+        End If
+
+        lastCol = thisCol
+        lastRow = thisRow
+    Next
+End Function
+
+'@label:points-match
+'@sub-title Whether the chart plotted a whole column and not part of one
+'@details
+'The series count alone does not say the split was right. A column holding one
+'number in its last row and nothing above it comes back as a one-point series,
+'and one series is what was asked for, so the count agrees while the chart shows
+'a single bar over the first period. The points of the first series are counted
+'against the cells of its range, which is the same layout every other series of
+'the chart has.
+'
+'A range wider than one column is left alone: its points were never meant to
+'match its cells, and a count that far off is caught before this runs.
+'@param co ChartObject. The chart that took the Source.
+'@param firstRng Range. The range the first series was asked for.
+'@return Boolean. True when the first series carries one point per cell.
+Private Function PointsMatch(ByVal co As ChartObject, ByVal firstRng As Range) As Boolean
+    Dim plotted As Variant
+
+    PointsMatch = True
+    If firstRng.Columns.Count > 1 Then Exit Function
+
+    On Error Resume Next
+        plotted = co.Chart.SeriesCollection(1).Values
+        If Err.Number <> 0 Then
+            Err.Clear
+            PointsMatch = False
+            Exit Function
+        End If
+    On Error GoTo 0
+
+    If Not IsArray(plotted) Then
+        PointsMatch = False
+        Exit Function
+    End If
+
+    PointsMatch = (UBound(plotted) - LBound(plotted) + 1 = firstRng.Cells.Count)
+End Function
+
+'@label:attach-one-by-one
+'@sub-title Give the chart one series per range, values pinned
+'@details
+'The fallback of CommitSeries. Whatever Excel made of the single Source goes,
+'and each range becomes an empty series with its values written once.
+'@param co ChartObject. The chart being filled.
+'@param rngs Collection. The series ranges, in order.
+Private Sub AttachOneByOne(ByVal co As ChartObject, ByVal rngs As Collection)
+    Dim ind As Long
+    Dim srs As Series
+
+    Do While co.Chart.SeriesCollection.Count > 0
+        co.Chart.SeriesCollection(1).Delete
+    Loop
+
+    For ind = 1 To rngs.Count
+        Set srs = co.Chart.SeriesCollection.NewSeries
+        srs.Values = rngs.Item(ind)
+    Next
+End Sub
+
+'@label:style-series
+'@sub-title Give every drawn series its type, its axis and its labels
+'@details
+'The Series objects are taken before the first type is written. Turning one
+'series into a scatter moves it between chart groups, and an index read after
+'that can answer a different series than the one the queue describes.
+'@param co ChartObject. The chart carrying the series.
+'@param live Collection. The queue entries that were drawn, in order.
+Private Sub StyleSeries(ByVal co As ChartObject, ByVal live As Collection)
+    Dim ind As Long
+    Dim drawn() As Series
+    Dim entry As Variant
+
+    If co.Chart.SeriesCollection.Count < live.Count Then
+        LogInfo "Graph " & GraphKey() & " carries " & co.Chart.SeriesCollection.Count & _
+                " series where " & live.Count & " were asked for", checkingWarning
+        Exit Sub
+    End If
+
+    ReDim drawn(1 To live.Count)
+    For ind = 1 To live.Count
+        Set drawn(ind) = co.Chart.SeriesCollection(ind)
+    Next
+
+    For ind = 1 To live.Count
+        entry = live.Item(ind)
+
+        'Add a right axis if required
+        If CStr(entry(PENDING_AXIS)) = "right" Then
+            co.Chart.HasAxis(xlValue, xlSecondary) = True
+            drawn(ind).AxisGroup = xlSecondary
+        End If
+
+        drawn(ind).chartType = ChartTypeOf(CStr(entry(PENDING_TYPE)))
+
+        If CBool(entry(PENDING_HAS_LABELS)) Then ApplySeriesLabels drawn(ind), entry
+    Next
+End Sub
+
+'@label:apply-series-labels
+'@sub-title Write the category values, the legend entry and the data labels
+'@param srs Series. The series being labelled.
+'@param entry Variant. The queue entry describing it.
+Private Sub ApplySeriesLabels(ByVal srs As Series, ByRef entry As Variant)
+
+    Dim labelsObj As DataLabels
+    Dim catRng As Range
+    Dim lblRng As Range
+    Dim hasLabelRange As Boolean
+
+    hasLabelRange = TryRange(CStr(entry(PENDING_LABEL)), lblRng)
+
+    If TryRange(CStr(entry(PENDING_CAT)), catRng) Then srs.XValues = catRng
 
     'Labels can be hardcoded or dynamic; by default, they are hardcoded
-    If (Not hardCodeLabels) And hasLabelRange Then
+    If (Not CBool(entry(PENDING_HARDCODE))) And hasLabelRange Then
         'The user can modify by changing values in the range, so the legend
         'entry is written as a reference
         srs.Name = "=" & QualifiedAddress(lblRng)
     Else
-        srs.Name = LegendText(prefix, prefixOnly, hasLabelRange, lblRng)
+        srs.Name = LegendText(CStr(entry(PENDING_PREFIX)), _
+                              CBool(entry(PENDING_PREFIX_ONLY)), _
+                              hasLabelRange, lblRng)
     End If
 
     srs.ApplyDataLabels xlDataLabelsShowValue, False
@@ -502,6 +753,8 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
     Dim co As ChartObject
     Dim layout As TGraphLayout
 
+    CommitSeries
+
     Set co = graphChart()
     If Not ReadyToFormat(co) Then Exit Sub
 
@@ -545,6 +798,51 @@ Private Function KnownScope(ByVal scope As Byte) As Byte
                 "so the standard layout is used", checkingWarning
         KnownScope = GraphScopeNormal
     End Select
+End Function
+
+'@label:height-in-rows
+'@sub-title How many worksheet rows a chart of this scope covers
+'@details
+'A caller that draws its charts after its tables still has to leave room for
+'them while the tables are placed, and the chart is not there to be measured
+'yet. This answers the height the chart WILL have, in rows of the sheet it will
+'sit on, from the same SizeForScope policy Format applies.
+'
+'The scope is sanitised here rather than through KnownScope, because that one
+'files a checking and this is called on the predeclared instance, which owns no
+'report. An unknown scope takes the standard layout, the same answer.
+'
+'The row height comes from the sheet. Analysis output sheets are left at the
+'standard height -- the row-height rules in LLFormat belong to the HList print
+'and pivot sheets -- so a division answers the same row a drawn chart would
+'reach. One row is added rather than rounding, so the reservation is never
+'short.
+'@param sh Worksheet. The sheet the chart will be drawn on.
+'@param scope Byte. A GraphScope value.
+'@param heightFactor Long. The geographic unit count, 1 or more.
+'@return Long. The number of rows to reserve, or 0 when sh is Nothing.
+'@export
+Public Function HeightInRows(ByVal sh As Worksheet, ByVal scope As Byte, _
+                             ByVal heightFactor As Long) As Long
+    Dim layout As TGraphLayout
+    Dim rowHeight As Double
+    Dim safeScope As Byte
+
+    If sh Is Nothing Then Exit Function
+
+    safeScope = scope
+    Select Case safeScope
+    Case GraphScopeTimeSeries, GraphScopeSpatial, GraphScopeNormal
+    Case Else
+        safeScope = GraphScopeNormal
+    End Select
+
+    layout = SizeForScope(safeScope, heightFactor)
+
+    rowHeight = sh.StandardHeight
+    If rowHeight <= 0 Then rowHeight = 15
+
+    HeightInRows = Int(layout.chartHeight / rowHeight) + 1
 End Function
 
 '@label:size-for-scope
