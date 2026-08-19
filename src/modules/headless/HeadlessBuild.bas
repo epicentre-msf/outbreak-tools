@@ -562,9 +562,18 @@ Failed:
         'template copy as __temp.xlsb and closes it itself when IT fails; a
         'failure in any phase after Prepare leaves that workbook open and
         'unsaved, and the next save or quit then hangs headless on the
-        'save-changes prompt.
+        'save-changes prompt. Found by walking the collection rather than by
+        'indexing on the name: the index raises 9 when the workbook is not
+        'there, and under Break-on-All-Errors trapping that raise stops the
+        'run with a dialog nobody is there to answer.
         Dim orphanBook As Workbook
-        Set orphanBook = Application.Workbooks("__temp.xlsb")
+        Dim openBook As Workbook
+        For Each openBook In Application.Workbooks
+            If openBook.Name = "__temp.xlsb" Then
+                Set orphanBook = openBook
+                Exit For
+            End If
+        Next
         If Not orphanBook Is Nothing Then orphanBook.Close SaveChanges:=False
 
         If Not appScope Is Nothing Then appScope.Restore
@@ -761,8 +770,17 @@ Failed:
             designerBook.Close SaveChanges:=False
         End If
 
+        'Same non-raising lookup as BuildLinelistFromSetup's handler: indexing
+        'Workbooks by a missing name raises 9, and a raise inside this handler
+        'can stop a headless run with a dialog.
         Dim orphanBook As Workbook
-        Set orphanBook = Application.Workbooks("__temp.xlsb")
+        Dim openBook As Workbook
+        For Each openBook In Application.Workbooks
+            If openBook.Name = "__temp.xlsb" Then
+                Set orphanBook = openBook
+                Exit For
+            End If
+        Next
         If Not orphanBook Is Nothing Then orphanBook.Close SaveChanges:=False
 
         If Not appScope Is Nothing Then appScope.Restore
