@@ -66,7 +66,8 @@ for the life of the instance.</p>
 <pre><code class="language-vb">Public Function Create(ByVal specs As TableSpecs, _
                        ByVal outputWksh As Worksheet, _
                        ByVal lData As Object, _
-                       Optional ByVal previousTable As CrossTable) As CrossTable
+                       Optional ByVal previousTable As CrossTable, _
+                       Optional ByVal outputNames As HiddenNames) As CrossTable
 </code></pre>
 <p>Factory method that creates and returns a new CrossTable instance from
 the given table specifications. A cross-table is a structured analysis
@@ -88,6 +89,10 @@ and Categories, are resolved at run time.</li>
 <li><code>previousTable</code>: Optional CrossTable. The table this one continues, when the
 caller already holds it. A caller that walks the setup rows in order builds every
 ancestor anyway, so handing the last one in saves this instance rebuilding it.</li>
+<li><code>outputNames</code>: Optional HiddenNames. The metadata reader of the output
+worksheet, when the caller already holds one. Creating a reader walks every
+tracked name on the sheet, so a caller writing many tables hands one reader to
+all of them. Left out, this instance builds its own on first use.</li>
 </ul>
 <p><strong>Returns:</strong> CrossTable. A fully initialized CrossTable ready for Build or individual step calls.</p>
 <p><strong>Throws:</strong></p>
@@ -122,6 +127,29 @@ headers, row labels, column labels, and data cells.</p>
 this cross-table. Provides access to table scope, variable names,
 category lists, and validation flags.</p>
 <p><strong>Returns:</strong> TableSpecs. The backing table specification.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="position-properties">
+<summary>Position Properties</summary>
+<div class="section-body">
+<h3 id="reservechartspace">ReserveChartSpace <a class="anchor-link" href="#reservechartspace">#</a></h3>
+<p><em>reserve-chart-space</em></p>
+<p><strong>Hold rows for a chart that has not been drawn yet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ReserveChartSpace(ByVal bottomRow As Long)
+</code></pre>
+<p>ComputeStartRow places a table below the charts already on the sheet, which it
+learns by reading them. A caller that draws its charts after all its tables
+has no chart to be read at that moment, so it says here how far down the chart
+will reach and the next table is placed below that line all the same.
+The answer is held in the same worksheet name ClearOfCharts reads, and the
+larger of the two wins, so a reservation and a drawn chart cannot undercut
+each other.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>bottomRow</code>: Long. The last row the chart will cover.</li>
+</ul>
 <hr />
 </div>
 </details>
@@ -192,7 +220,7 @@ have row categories.</li>
 <p>Finds a row in the cross-table by its category label value and returns
 a horizontal Range spanning that entire row from the start column to the
 end column. The search is performed within RowsCategoriesRange using an
-exact case-sensitive match via ValueExists/Find. If the value is found,
+exact case-sensitive match via FindLabelCell. If the value is found,
 the returned range includes either the full row from StartColumn (with
 the row-label cell) or from StartColumn + 1 (data cells only), depending
 on the includeHeaders parameter. If the value is not found, Nothing is
@@ -220,7 +248,7 @@ ALL row category cells including footer rows.</li>
 <p>Finds a column in the cross-table by its header label value and returns
 a vertical Range spanning that entire column from the first data row to
 the end row. The search is performed within HeaderRange using an exact
-case-sensitive match via ValueExists/Find. The start row of the
+case-sensitive match via FindLabelCell. The start row of the
 returned range varies by table scope. The end row can be trimmed to
 exclude footer rows when onlyCategories is True. The includeHeaders
 parameter extends the range one row upward to include the column header
@@ -439,6 +467,25 @@ here instead of once per phase.</p>
 <ul>
 <li><code>tabl</code>: CrossTable. The preceding cross-table.</li>
 </ul>
+<hr />
+<h3 id="int-outputnames">OutputNames <a class="anchor-link" href="#int-outputnames">#</a></h3>
+<p><em>output-names-set</em></p>
+<p><strong>Assign the metadata reader of the output worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set OutputNames(ByVal namesObj As HiddenNames)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>namesObj</code>: HiddenNames. The reader, bound to the output worksheet.</li>
+</ul>
+<hr />
+<h3 id="int-metadatanames">MetadataNames <a class="anchor-link" href="#int-metadatanames">#</a></h3>
+<p><em>metadata-names</em></p>
+<p><strong>The metadata reader of the output sheet, built when nobody handed one in.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MetadataNames() As HiddenNames
+</code></pre>
+<p><strong>Returns:</strong> HiddenNames. The reader bound to the output worksheet.</p>
 <hr />
 <h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
 <p><em>guard-not-sealed</em></p>
@@ -723,6 +770,13 @@ this walk finds nothing there and the temporal layout stands as it was.</p>
 </ul>
 <p><strong>Returns:</strong> Long. The first row below every chart, or the candidate when it
 already clears them.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>A placed chart never moves, so the walk covers only the charts added
+since the last one, and the answer so far is kept in two hidden names on the
+sheet. Walking every chart for every table read a layout off each one, and the
+cost grew with the square of the chart count.</li>
+</ul>
 <hr />
 <h3 id="int-previous">Previous <a class="anchor-link" href="#int-previous">#</a></h3>
 <p><em>previous</em></p>
@@ -927,28 +981,23 @@ Non-temporal table scopes never set this property.</li>
 <li><code>headerText</code>: String. The full header string to cache.</li>
 </ul>
 <hr />
-<h3 id="int-valueexists">ValueExists <a class="anchor-link" href="#int-valueexists">#</a></h3>
-<p><em>value-exists</em></p>
-<p><strong>Check whether a value exists in a given range.</strong></p>
+<h3 id="int-findlabelcell">FindLabelCell <a class="anchor-link" href="#int-findlabelcell">#</a></h3>
+<p><em>find-label-cell</em></p>
+<p><strong>Find the cell holding a label in a given range.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ValueExists(ByVal rng As Range, ByVal searchValue As String) As Boolean
+<pre><code class="language-vb">Private Function FindLabelCell(ByVal rng As Range, ByVal searchValue As String) As Range
 </code></pre>
-<p>Checks whether a specific string value exists anywhere within the given
-Range by performing an exact, case-sensitive, whole-cell match using
-Excel's Range.Find method. This is used internally by RowRange and
-ColumnRange to verify that a category label is present before
-attempting to locate its row or column position.</p>
+<p>Exact, case-sensitive, whole-cell match through Excel's Range.Find, so
+&quot;total&quot; will NOT match &quot;Total&quot;; translated labels carry their own
+capitalization. RowRange and ColumnRange read the row or the column off the
+answer. Each used to ask twice, once to know the label was there and once for
+where, and every Find is a host search over the category band.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>rng</code>: Range. The Range to search within, typically RowsCategoriesRange or HeaderRange.</li>
-<li><code>searchValue</code>: String. The exact string to look for (case-sensitive, whole-cell match).</li>
+<li><code>searchValue</code>: String. The exact string to look for.</li>
 </ul>
-<p><strong>Returns:</strong> Boolean. True if at least one cell in rng contains exactly searchValue; False otherwise.</p>
-<p><strong>Remarks:</strong></p>
-<ul>
-<li>Uses xlWhole and MatchCase:=True, so &quot;total&quot; will NOT match &quot;Total&quot;. This is
-important because translated labels may have specific capitalization.</li>
-</ul>
+<p><strong>Returns:</strong> Range. The first cell holding exactly searchValue, or Nothing.</p>
 <hr />
 <h2 id="int-addrows">AddRows</h2>
 <h3 id="int-writetemporalrowgrid">WriteTemporalRowGrid <a class="anchor-link" href="#int-writetemporalrowgrid">#</a></h3>
@@ -1263,6 +1312,50 @@ both questions at once.</p>
 <li><code>desFormat</code>: LLFormat. The formatting provider.</li>
 </ul>
 <hr />
+<h3 id="int-grouptoformat">GroupToFormat <a class="anchor-link" href="#int-grouptoformat">#</a></h3>
+<p><em>group-to-format</em></p>
+<p><strong>Hold a range against the format it takes, to be drawn with its like</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GroupToFormat(ByVal groups As Collection, ByVal rng As Range, _
+                          ByVal scope As Byte, ByVal desFormat As LLFormat)
+</code></pre>
+<p>Formatting is what the analyses stage spends its time on, and the spending is
+per CALL, not per cell: one ApplyFormat writes about five properties through
+FormatRange and up to forty more through the two border walks, whether it is
+handed one cell or twenty. Measured on the measles build, this one pass cost
+5.34s of the 17.5s the tables take, and 5.25s of that was the calls -- the same
+pass with the calls taken out and its twenty-eight name lookups left in ran in
+0.09s.</p>
+<p>So the ranges are held here and drawn a scope at a time, which turns about
+twenty calls per table into about eight. Excel formats each area of a range on
+its own -- TestLLFormat proves it frames every area of a union -- so a grouped
+call leaves the same table behind as the calls it replaces.</p>
+<h2 id="int-order-is-kept-and-that-is-what-the-intersect-is-for">ORDER IS KEPT, AND THAT IS WHAT THE INTERSECT IS FOR</h2>
+<p>Two of these lists name the same cell: POPFACT_ and POPFACTLABEL_ are single
+cells AND hidden cells, and each info cell takes two scopes in a row. Where
+formats overlap, the last one written is the one seen, so a range landing on a
+held group of another scope draws everything held first and starts the queue
+again. A range that touches nothing simply joins its own scope's group.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>groups</code>: Collection. The queue of held groups, in the order they are drawn.</li>
+<li><code>rng</code>: Range. The range to format.</li>
+<li><code>scope</code>: Byte. A FormatScope constant.</li>
+<li><code>desFormat</code>: LLFormat. The formatting provider, for a flush.</li>
+</ul>
+<hr />
+<h3 id="int-drawgroupedformats">DrawGroupedFormats <a class="anchor-link" href="#int-drawgroupedformats">#</a></h3>
+<p><em>draw-grouped-formats</em></p>
+<p><strong>Draw every held group and empty the queue</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub DrawGroupedFormats(ByVal groups As Collection, ByVal desFormat As LLFormat)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>groups</code>: Collection. The queue of held groups.</li>
+<li><code>desFormat</code>: LLFormat. The formatting provider.</li>
+</ul>
+<hr />
 <h3 id="int-formatpercentagecolumns">FormatPercentageColumns <a class="anchor-link" href="#int-formatpercentagecolumns">#</a></h3>
 <p><em>format-percentage-columns</em></p>
 <p><strong>Format every percentage column and the corner cells beside them.</strong></p>
@@ -1377,7 +1470,7 @@ providing a consistent stack trace across all methods in this class.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (18 file(s))</summary>
+<summary>Used in (19 file(s))</summary>
 <ul>
 <li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
@@ -1387,6 +1480,7 @@ providing a consistent stack trace across all methods in this class.</p>
 <li><a href="DesignerPreparation.html">DesignerPreparation.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
 <li><a href="LLSpatial.html">LLSpatial.cls</a></li>
+<li><a href="Graphs.html">Graphs.cls</a></li>
 <li><a href="GraphSeries.html">GraphSeries.cls</a></li>
 <li><a href="EventLinelist.html">EventLinelist.cls</a></li>
 <li>FormLogicGeo.bas</li>

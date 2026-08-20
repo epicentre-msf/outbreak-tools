@@ -634,6 +634,69 @@ output sheet receives the tables.</li>
 <li>Exits early when the ListObject has no data row.</li>
 </ul>
 <hr />
+<h3 id="int-chartanchorof">ChartAnchorOf <a class="anchor-link" href="#int-chartanchorof">#</a></h3>
+<p><em>chart-anchor-of</em></p>
+<p><strong>The cell a table's chart hangs from.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ChartAnchorOf(ByVal tabl As CrossTable, _
+                               ByVal outsh As Worksheet) As Range
+</code></pre>
+<p>Two rows above the table and two columns past its last one, which is where the
+chart used to be placed inline. A spatial table carries two more columns of
+controls, so its chart starts further right.
+The table's own geometry is read from the instance, which holds it once Build
+has run, so this answers the same cell whether it is asked during the table
+pass or after it.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tabl</code>: CrossTable. The built table.</li>
+<li><code>outsh</code>: Worksheet. The output worksheet.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The anchor cell.</p>
+<hr />
+<h3 id="int-reservechartrows">ReserveChartRows <a class="anchor-link" href="#int-reservechartrows">#</a></h3>
+<p><em>reserve-chart-rows</em></p>
+<p><strong>Hold the rows a deferred chart will cover.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ReserveChartRows(ByVal tabl As CrossTable, ByVal outsh As Worksheet, _
+                             ByVal scope As Byte)
+</code></pre>
+<p>The next table is placed below the charts of the tables above it, and those
+charts are no longer there to be measured when the placing happens. Graphs
+answers how tall the chart will be in rows of this sheet, and the table keeps
+the line.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tabl</code>: CrossTable. The table whose chart is owed.</li>
+<li><code>outsh</code>: Worksheet. The output worksheet.</li>
+<li><code>scope</code>: Byte. A constant from the AnalysisScope enum.</li>
+</ul>
+<hr />
+<h3 id="int-drawpendingcharts">DrawPendingCharts <a class="anchor-link" href="#int-drawpendingcharts">#</a></h3>
+<p><em>draw-pending-charts</em></p>
+<p><strong>Draw every chart the table pass put off, in one pass.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub DrawPendingCharts(ByVal pending As Collection, ByVal outsh As Worksheet, _
+                              ByVal namObj As AnaTabIds, ByVal scope As Byte)
+</code></pre>
+<p>The charts used to be drawn one per table, in the middle of writing the
+tables. Excel 16.112 dies on the FIRST of them: the table before it is
+complete, the chart takes both its series, and the host falls over on the next
+call. Drawing them together keeps every chart operation out of the table
+writing, which is the thing being tested.</p>
+<p>A table carries everything a chart needs -- its own geometry and its
+specification -- so the pass holds cross-tables and reads the rest back here.</p>
+<p>Each chart is guarded on its own. The inline block sat inside the per-table
+handler, so a chart that failed cost its table and nothing more; the same has
+to be true here, or one bad chart would cost every chart after it.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>pending</code>: Collection. The CrossTable instances owed a chart, in table order.</li>
+<li><code>outsh</code>: Worksheet. The output worksheet.</li>
+<li><code>namObj</code>: AnaTabIds. The registry the export reads back.</li>
+<li><code>scope</code>: Byte. A constant from the AnalysisScope enum.</li>
+</ul>
+<hr />
 <h2 id="int-graph-creation">Graph Creation</h2>
 <h3 id="int-addgraphseries">AddGraphSeries <a class="anchor-link" href="#int-addgraphseries">#</a></h3>
 <p><em>add-graph-series</em></p>

@@ -12,10 +12,10 @@
   <main>
 <h1>Graphs</h1>
 <p>Wraps one Excel ChartObject on an analysis worksheet. Add draws the chart at a
-caller-supplied Range, AddSeries attaches one data series from a named range,
-AddLabels gives that series its category and legend labels, and Format applies
-the look the GraphScope calls for. Entries filed along the way leave through
-HasCheckings and CheckingValues.</p>
+caller-supplied Range, AddSeries queues one data series from a named range,
+AddLabels gives that series its category and legend labels, and Format draws
+the queue and applies the look the GraphScope calls for. Entries filed along
+the way leave through HasCheckings and CheckingValues.</p>
 <details open class="doc-section" id="the-phase-order">
 <summary>THE PHASE ORDER</summary>
 <div class="section-body">
@@ -25,10 +25,19 @@ per time series graph, and AnaTabIds replays both from its tracking tables
 when a linelist is exported.</p>
 </div>
 </details>
+<details open class="doc-section" id="the-series-are-queued-and-drawn-in-one-call">
+<summary>THE SERIES ARE QUEUED AND DRAWN IN ONE CALL</summary>
+<div class="section-body">
+<p>AddSeries and AddLabels write to a queue and leave the chart alone. CommitSeries
+unions the queued ranges and hands the chart one SetSourceData, then walks the
+series it made to give each its type, its axis and its labels. Format calls
+CommitSeries; a caller that reads the chart before it formats calls it itself.</p>
+</div>
+</details>
 <details open class="doc-section" id="a-series-that-fails-takes-its-labels-with-it">
 <summary>A SERIES THAT FAILS TAKES ITS LABELS WITH IT</summary>
 <div class="section-body">
-<p>AddSeries answers a missing named range by filing a warning and adding no
+<p>AddSeries answers a missing named range by filing a warning and queueing no
 series. The labels that follow belong to that series, so AddLabels reads the
 flag AddSeries leaves and skips them.</p>
 </div>
@@ -96,6 +105,11 @@ from another, with the legend references qualified by the wrong sheet name.</p>
 <p>Creates an empty graph on a worksheet, ready for data to be
 attached to the graph. The graph is empty at creation, so the legend and the
 plot area are left to Format, which owns both and runs once the series exist.</p>
+<p>The frame comes from Shapes.AddChart2 rather than ChartObjects.Add. AddChart2
+builds the chart in one host call where the older one builds a frame and then
+takes its style, its type and its plot area in several. It plots whatever range
+is selected when it runs, so the series it invents are deleted here and the
+chart starts empty either way.</p>
 <hr />
 <h3 id="addseries">AddSeries <a class="anchor-link" href="#addseries">#</a></h3>
 <p><em>addseries</em></p>
@@ -106,15 +120,71 @@ plot area are left to Format, which owns both and runs once the series exist.</p
 </code></pre>
 <p>One graph can have multiple series added. Series are referenced using
 named ranges on the graph object worksheet. If the named range does not
-exist, the method files a warning, adds no series, and marks the attempt as
+exist, the method files a warning, queues no series, and marks the attempt as
 failed so the labels that follow are skipped too. If no chart exists
-yet, Add is called lazily before attaching the series.</p>
+yet, Add is called lazily before the first series is queued.</p>
+<p>The series is queued, not drawn. CommitSeries hands the whole queue to the
+chart in one SetSourceData call, and Format calls it. A caller that wants to
+read the chart before it formats calls CommitSeries itself.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>rngName</code>: String. Named range containing the series values.</li>
 <li><code>chrtType</code>: String. Chart type: &quot;line&quot;, &quot;point&quot;, &quot;bar&quot;, or &quot;hbar&quot;. Defaults to &quot;bar&quot; for unknown values.</li>
 <li><code>axisPos</code>: Optional String. Axis position: &quot;right&quot; adds a secondary axis; any other value uses the primary axis. Defaults to vbNullString.</li>
 </ul>
+<hr />
+<h3 id="commitseries">CommitSeries <a class="anchor-link" href="#commitseries">#</a></h3>
+<p><em>commit-series</em></p>
+<p><strong>Draw every queued series in one call to the chart</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub CommitSeries()
+</code></pre>
+<p>The queued ranges are the columns of one analysis table, so their union is a
+single Source Excel splits back into the same series, in the same order. One
+SetSourceData replaces the two data writes each series used to cost: the older
+path added a series from its own Source and then wrote the values over it,
+because SeriesCollection.Add guesses how to split a Source whose cells are
+mostly empty and a column with data in its last row alone came out as a
+one-cell series.</p>
+<p>Excel still does the splitting here, so the count it made is checked against
+the count that was asked for. When the two differ, or SetSourceData refuses the
+Source outright, the series are attached one at a time and the values pinned
+range by range. The look of a series -- its type, its axis, its labels -- is
+applied afterwards either way.</p>
+<p>Format calls this. A caller that reads the chart before it formats calls it
+itself. Calling it twice costs nothing: the queue is empty the second time.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="layout">
+<summary>Layout</summary>
+<div class="section-body">
+<h3 id="heightinrows">HeightInRows <a class="anchor-link" href="#heightinrows">#</a></h3>
+<p><em>height-in-rows</em></p>
+<p><strong>How many worksheet rows a chart of this scope covers</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function HeightInRows(ByVal sh As Worksheet, ByVal scope As Byte, _
+                             ByVal heightFactor As Long) As Long
+</code></pre>
+<p>A caller that draws its charts after its tables still has to leave room for
+them while the tables are placed, and the chart is not there to be measured
+yet. This answers the height the chart WILL have, in rows of the sheet it will
+sit on, from the same SizeForScope policy Format applies.</p>
+<p>The scope is sanitised here rather than through KnownScope, because that one
+files a checking and this is called on the predeclared instance, which owns no
+report. An unknown scope takes the standard layout, the same answer.</p>
+<p>The row height comes from the sheet. Analysis output sheets are left at the
+standard height -- the row-height rules in LLFormat belong to the HList print
+and pivot sheets -- so a division answers the same row a drawn chart would
+reach. One row is added rather than rounding, so the reservation is never
+short.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The sheet the chart will be drawn on.</li>
+<li><code>scope</code>: Byte. A GraphScope value.</li>
+<li><code>heightFactor</code>: Long. The geographic unit count, 1 or more.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The number of rows to reserve, or 0 when sh is Nothing.</p>
 <hr />
 </div>
 </details>
@@ -239,26 +309,27 @@ chart on the worksheet.</p>
 Nothing again after Format removes an empty frame.</p>
 <p><strong>Returns:</strong> ChartObject. The underlying Excel chart object.</p>
 <hr />
-<h3 id="int-seriescount">SeriesCount <a class="anchor-link" href="#int-seriescount">#</a></h3>
-<p><em>series-count</em></p>
-<p><strong>How many series the chart carries</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SeriesCount() As Long
-</code></pre>
-<p>The chart's own SeriesCollection is the truth. The class used to keep a counter
-beside it and add one per AddSeries call, which drifted from the chart the
-moment a series was left out.</p>
-<p><strong>Returns:</strong> Long. The number of series on the chart, 0 when there is no chart.</p>
-<hr />
-<h3 id="int-lastseries">LastSeries <a class="anchor-link" href="#int-lastseries">#</a></h3>
-<p><em>last-series</em></p>
-<p><strong>The series added most recently</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function LastSeries() As Series
-</code></pre>
-<p><strong>Returns:</strong> Series. The last series of the chart, or Nothing when there is none.</p>
-<hr />
 <h2 id="int-operations">Operations</h2>
+<h3 id="int-pendingseries">PendingSeries <a class="anchor-link" href="#int-pendingseries">#</a></h3>
+<p><em>pending-series</em></p>
+<p><strong>The queue of series waiting to be drawn</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function PendingSeries() As Collection
+</code></pre>
+<p><strong>Returns:</strong> Collection. The queue, created empty on first use.</p>
+<hr />
+<h3 id="int-charttypeof">ChartTypeOf <a class="anchor-link" href="#int-charttypeof">#</a></h3>
+<p><em>chart-type-of</em></p>
+<p><strong>The Excel chart type one series name stands for</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ChartTypeOf(ByVal chrtType As String) As XlChartType
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>chrtType</code>: String. Chart type: &quot;line&quot;, &quot;point&quot;, &quot;bar&quot;, or &quot;hbar&quot;.</li>
+</ul>
+<p><strong>Returns:</strong> XlChartType. The matching type, clustered columns for anything else.</p>
+<hr />
 <h3 id="int-addlabels">AddLabels <a class="anchor-link" href="#int-addlabels">#</a></h3>
 <p><em>addlabels</em></p>
 <p><strong>Assign category and legend labels to the current series</strong></p>
@@ -284,6 +355,88 @@ onto series n-1.</p>
 <li><code>prefix</code>: Optional String. Display prefix prepended to the legend name. Defaults to vbNullString.</li>
 <li><code>prefixOnly</code>: Optional Boolean. When True, uses only the prefix as the legend entry. Defaults to False.</li>
 <li><code>hardCodeLabels</code>: Optional Boolean. When True, legend text is literal; when False, references the named range. Defaults to True.</li>
+</ul>
+<hr />
+<h3 id="int-insheetorder">InSheetOrder <a class="anchor-link" href="#int-insheetorder">#</a></h3>
+<p><em>in-sheet-order</em></p>
+<p><strong>Whether the queued ranges run left to right down the sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function InSheetOrder(ByVal rngs As Collection) As Boolean
+</code></pre>
+<p>A Source is plotted in the order the sheet holds it, and the styling that
+follows walks the series by index against the queue. The two agree only while
+the queue is in sheet order, and the analysis tables name their columns that
+way: CrossTable writes VALUES_COL_1, PERC_COL_1, VALUES_COL_2 across the table
+as GraphSeries queues them.</p>
+<p>A queue that arrives in some other order is not wrong, it just cannot be read
+back by index, so those series are attached one at a time instead. Nothing here
+guesses: it compares the column and the row each range starts at.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rngs</code>: Collection. The series ranges, in the order they were queued.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when each range starts at or after the one before it.</p>
+<hr />
+<h3 id="int-pointsmatch">PointsMatch <a class="anchor-link" href="#int-pointsmatch">#</a></h3>
+<p><em>points-match</em></p>
+<p><strong>Whether the chart plotted a whole column and not part of one</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function PointsMatch(ByVal co As ChartObject, ByVal firstRng As Range) As Boolean
+</code></pre>
+<p>The series count alone does not say the split was right. A column holding one
+number in its last row and nothing above it comes back as a one-point series,
+and one series is what was asked for, so the count agrees while the chart shows
+a single bar over the first period. The points of the first series are counted
+against the cells of its range, which is the same layout every other series of
+the chart has.</p>
+<p>A range wider than one column is left alone: its points were never meant to
+match its cells, and a count that far off is caught before this runs.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>co</code>: ChartObject. The chart that took the Source.</li>
+<li><code>firstRng</code>: Range. The range the first series was asked for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the first series carries one point per cell.</p>
+<hr />
+<h3 id="int-attachonebyone">AttachOneByOne <a class="anchor-link" href="#int-attachonebyone">#</a></h3>
+<p><em>attach-one-by-one</em></p>
+<p><strong>Give the chart one series per range, values pinned</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AttachOneByOne(ByVal co As ChartObject, ByVal rngs As Collection)
+</code></pre>
+<p>The fallback of CommitSeries. Whatever Excel made of the single Source goes,
+and each range becomes an empty series with its values written once.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>co</code>: ChartObject. The chart being filled.</li>
+<li><code>rngs</code>: Collection. The series ranges, in order.</li>
+</ul>
+<hr />
+<h3 id="int-styleseries">StyleSeries <a class="anchor-link" href="#int-styleseries">#</a></h3>
+<p><em>style-series</em></p>
+<p><strong>Give every drawn series its type, its axis and its labels</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub StyleSeries(ByVal co As ChartObject, ByVal live As Collection)
+</code></pre>
+<p>The Series objects are taken before the first type is written. Turning one
+series into a scatter moves it between chart groups, and an index read after
+that can answer a different series than the one the queue describes.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>co</code>: ChartObject. The chart carrying the series.</li>
+<li><code>live</code>: Collection. The queue entries that were drawn, in order.</li>
+</ul>
+<hr />
+<h3 id="int-applyserieslabels">ApplySeriesLabels <a class="anchor-link" href="#int-applyserieslabels">#</a></h3>
+<p><em>apply-series-labels</em></p>
+<p><strong>Write the category values, the legend entry and the data labels</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplySeriesLabels(ByVal srs As Series, ByRef entry As Variant)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>srs</code>: Series. The series being labelled.</li>
+<li><code>entry</code>: Variant. The queue entry describing it.</li>
 </ul>
 <hr />
 <h3 id="int-legendtext">LegendText <a class="anchor-link" href="#int-legendtext">#</a></h3>

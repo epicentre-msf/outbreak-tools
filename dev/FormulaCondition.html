@@ -133,6 +133,24 @@ dictionary back to a caller asking about another one.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when validation succeeds.</p>
 <hr />
+<h3 id="adoptvariableshelper">AdoptVariablesHelper <a class="anchor-link" href="#adoptvariableshelper">#</a></h3>
+<p><em>adopt-variables-helper</em></p>
+<p><strong>Take the helper the owner already holds for this dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AdoptVariablesHelper(ByVal varsHelper As LLVariables, ByVal dict As LLdictionary)
+</code></pre>
+<p>A fresh instance of this class is built for every analysis formula, and each
+one used to read the dictionary sheet again to build its own LLVariables:
+several block reads per formula, repeated for every column of every table.
+Formulas holds one helper per table and hands it in here before Valid runs,
+so VariablesProvider finds the pair already bound. The helper handed in must
+have been built over dict; the caller owns that pairing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varsHelper</code>: LLVariables. The helper to reuse.</li>
+<li><code>dict</code>: LLdictionary. The dictionary the helper was built over.</li>
+</ul>
+<hr />
 </div>
 </details>
 <details open class="doc-section" id="formularendering">
