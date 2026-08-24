@@ -48,7 +48,7 @@ Option Explicit
 'import. Both routines unhide every column before they write and hide the same
 'columns again after.
 '@depends BetterArray, Checking, HiddenNames, DropdownLists
-'@version 1.1 (2026-07-28)
+'@version 1.2 (2026-08-24)
 
 
 Private Type TCustomTable
@@ -1073,32 +1073,49 @@ End Function
 '@label:remove-empty-data-rows
 '@sub-title Delete data rows that are effectively empty
 '@details
-'Scans from the bottom so deletions do not disturb subsequent indexes.
-'A row is considered empty when its non-empty cell count is at or below
-'totalRowCount. Deletes entire worksheet rows when the shift tracker is
-'active or forceShift is True; otherwise removes ListRows directly.
-'Always preserves the first data row to keep formulas and templates.
+'A row is empty when its non-empty cell count is at or below totalRowCount.
+'The first data row is always kept: it carries the formulas and the formats
+'every new row is built from.
+'
+'The body is read once and every row is answered once, into a flag array both
+'branches below read.
+'
+'WHICH BRANCH RUNS
+'-------------------------------------------------------------------------------
+'With the shift tracker on, or forceShift, the empty rows go as ENTIRE
+'worksheet rows, so a table stacked under this one is pulled up with them.
+'Without it the table closes over its own rows and nothing outside its columns
+'moves. That difference is the promise each branch carries and the two stacked
+'table tests pin it.
+'
+'WHY THE TABLE BRANCH LOOKS AT THE BOTTOM FIRST
+'-------------------------------------------------------------------------------
+'The rows a resize drops sit at the bottom of the table nearly every time: Add
+'rows pads 199 at a time and a resize takes the pad back. Shrinking the table
+'over that block and clearing it is one operation. Deleting the same block a
+'ListRow at a time is one Excel call per row, measured at about 2.5 ms a row on
+'macOS -- 1.2 s for 500 rows, and a pad of a few thousand was the whole of the
+'wait a user felt on the linelist Resize button. Column count, formulas,
+'dropdowns, conditional formatting and other sheets reading the table all left
+'that figure where it was, so the per-row calls were the cost and nothing else
+'was. Rows left empty between filled ones still go one at a time, and there are
+'seldom many.
 '@param lo ListObject. The table to clean.
 '@param totalRowCount Optional Long. Non-empty cell threshold.
 '@param forceShift Optional Boolean. When True, forces worksheet row deletion.
 Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, _
                                 Optional ByVal totalRowCount As Long, _
                                 Optional ByVal forceShift As Boolean)
-    'Scan from the bottom so deletions do not disturb subsequent indexes.
-    Dim rowIndex As Long
-    Dim columnIndex As Long
-    Dim filledCells As Long
+
+    Dim rowCount As Long
     Dim tabRowCount As Long
     Dim tabColumnCount As Long
-    Dim rowCount As Long
     Dim bodyRng As Range
     Dim bodyValues As Variant
     Dim sh As Worksheet
     Dim deleteWholeRow As Boolean
-    Dim deleteError As Long
-    Dim deadRows As Range
-    Dim thisRow As Range
     Dim firstBodyRow As Long
+    Dim lastKeptRow As Long
 
     If totalRowCount = 0 Then
         rowCount = GetTotalFormulaColumns()
@@ -1112,56 +1129,218 @@ Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, _
     If bodyRng Is Nothing Then Exit Sub
 
     tabRowCount = bodyRng.Rows.Count
-    'Keep the first data row: it carries the formulas and the formats every
-    'new row is built from.
     If tabRowCount <= 1 Then Exit Sub
 
     tabColumnCount = bodyRng.Columns.Count
+    firstBodyRow = bodyRng.Row
 
     'Read the body once. The old loop re-fetched DataBodyRange and ran CountA
     'per row, about three round trips a row before anything was deleted.
     bodyValues = bodyRng.Value
 
-    'Hoisted out of the loop: the sheet was resolved again on every deletion.
+    'Hoisted out of the loops: the sheet was resolved again on every deletion.
     Set sh = Wksh()
 
-    'The ListRows delete leaves the rest of the worksheet row where it is, so
-    'it cannot be batched and takes the walk below.
-    If Not deleteWholeRow Then
-        DeleteRowsThroughTable lo, bodyValues, tabRowCount, tabColumnCount, rowCount
+    If deleteWholeRow Then
+        DeleteWorksheetRows lo, sh, bodyValues, tabRowCount, _
+                            tabColumnCount, rowCount, firstBodyRow
         Exit Sub
     End If
 
-    'The empty rows are gathered first and deleted in ONE call. Deleting them
-    'one at a time made Excel shift the whole sheet up once per row, and a
-    'sheet holding a few thousand spare rows spent minutes on it. A multi-area
-    'range costs a single shift however many areas it carries.
-    Set deadRows = Nothing
-    firstBodyRow = bodyRng.Row
+    lastKeptRow = LastKeptRowOf(bodyValues, tabRowCount, tabColumnCount, rowCount)
+
+    If lastKeptRow < tabRowCount Then
+        If DropTrailingRows(lo, firstBodyRow, lastKeptRow, tabRowCount, tabColumnCount) Then
+            'The block is gone in one operation. What is left of the table is
+            'the rows above it, and the flags and the values still describe
+            'them, because nothing moved.
+            tabRowCount = lastKeptRow
+        End If
+    End If
+
+    If tabRowCount > 1 Then
+        DeleteRowsThroughTable lo, bodyValues, tabRowCount, tabColumnCount, rowCount
+    End If
+End Sub
+
+'@label:row-is-empty
+'@sub-title Whether one row of the block counts as empty
+'@details
+'Counts the filled cells of the row and compares the count with the threshold.
+'The count stops as soon as it passes the threshold, so a filled row costs a
+'few cells rather than the whole width.
+'
+'What counts as filled is exactly what CountA counted: a formula that returns
+'"" reads back from a block as "", not as Empty, so it counts on both sides.
+'@param bodyValues Variant. The body block read by the caller.
+'@param rowIndex Long. Which row of that block to answer for.
+'
+'THE BLOCK COMES IN BY REFERENCE ON PURPOSE
+'-------------------------------------------------------------------------------
+'A Variant holding an array is COPIED when it is passed ByVal, and this is
+'called once per row. Measured with ByVal, a trim of 597 rows over 60 columns
+'took 0.160 s where the same work takes 0.016 s here, and the whole-row branch
+'came out slower than the row-by-row delete it replaced. Every routine that
+'reads the block takes it ByRef for that reason.
+'@param tabColumnCount Long. Columns in the block.
+'@param rowCount Long. Filled-cell threshold at or under which a row is empty.
+'@return Boolean. True when the row counts as empty.
+Private Function RowIsEmpty(ByRef bodyValues As Variant, ByVal rowIndex As Long, _
+                            ByVal tabColumnCount As Long, _
+                            ByVal rowCount As Long) As Boolean
+    Dim columnIndex As Long
+    Dim filledCells As Long
+
+    For columnIndex = 1 To tabColumnCount
+        If Not IsEmpty(bodyValues(rowIndex, columnIndex)) Then
+            filledCells = filledCells + 1
+            'Past the threshold the row is filled, and the rest of the width
+            'cannot change that answer.
+            If filledCells > rowCount Then Exit Function
+        End If
+    Next columnIndex
+
+    RowIsEmpty = True
+End Function
+
+'@label:last-kept-row
+'@sub-title The last row of the block that stays
+'@details
+'Answers the highest row that does not count as empty, and 1 when every row
+'under the first is empty. Everything after it is the trailing block.
+'@param bodyValues Variant. The body block read by the caller.
+'@param tabRowCount Long. Rows in the block.
+'@param tabColumnCount Long. Columns in the block.
+'@param rowCount Long. Filled-cell threshold.
+'@return Long. A row index between 1 and tabRowCount.
+Private Function LastKeptRowOf(ByRef bodyValues As Variant, ByVal tabRowCount As Long, _
+                               ByVal tabColumnCount As Long, _
+                               ByVal rowCount As Long) As Long
+    Dim rowIndex As Long
+
+    LastKeptRowOf = 1
 
     For rowIndex = tabRowCount To 2 Step -1
-        filledCells = 0
-        For columnIndex = 1 To tabColumnCount
-            'This counts exactly what CountA counted: a formula that returns
-            '"" reads back from a block as "", not as Empty, so it counts on
-            'both sides.
-            If Not IsEmpty(bodyValues(rowIndex, columnIndex)) Then
-                filledCells = filledCells + 1
-            End If
-        Next
-
-        If filledCells <= rowCount Then
-            'Read off the block rather than the ListObject. Asking the table
-            'for row N cost a round trip an iteration, and the answer is the
-            'body's first row plus the offset in every case.
-            Set thisRow = sh.rows(firstBodyRow + rowIndex - 1)
-            If deadRows Is Nothing Then
-                Set deadRows = thisRow
-            Else
-                Set deadRows = Application.Union(deadRows, thisRow)
-            End If
+        If Not RowIsEmpty(bodyValues, rowIndex, tabColumnCount, rowCount) Then
+            LastKeptRowOf = rowIndex
+            Exit Function
         End If
     Next rowIndex
+End Function
+
+'@label:drop-trailing-rows
+'@sub-title Shrink the table over its trailing empty rows in one operation
+'@details
+'Resizes the ListObject to the rows that stay and clears the block it let go.
+'The cells keep their values, their formats and their dropdowns until they are
+'cleared, and the row-by-row delete this replaces took all three, so the clear
+'is what makes the two the same. Nothing outside the table columns moves, which
+'is the promise the table branch carries.
+'
+'Answers False when Excel refuses the resize, and the caller then walks the
+'rows one at a time exactly as before. A refused clear does not turn the answer
+'back: the table has already let the rows go by then, and walking them again
+'would delete rows that are no longer inside it.
+'@param lo ListObject. The table to shrink.
+'@param firstBodyRow Long. Worksheet row of the first data row.
+'@param lastKeptRow Long. Last data row that stays, 1-based in the block.
+'@param tabRowCount Long. Rows in the block.
+'@param tabColumnCount Long. Columns in the block.
+'@return Boolean. True when the table was shrunk.
+Private Function DropTrailingRows(ByVal lo As ListObject, ByVal firstBodyRow As Long, _
+                                  ByVal lastKeptRow As Long, ByVal tabRowCount As Long, _
+                                  ByVal tabColumnCount As Long) As Boolean
+    Dim headerRng As Range
+    Dim keptRange As Range
+    Dim tailRange As Range
+    Dim firstColumn As Long
+    Dim headerRow As Long
+    Dim dropError As Long
+
+    Set headerRng = lo.HeaderRowRange
+    headerRow = headerRng.Row
+    firstColumn = headerRng.Column
+
+    Set keptRange = SheetBlock(headerRow, firstColumn, _
+                               headerRow + lastKeptRow, _
+                               firstColumn + tabColumnCount - 1)
+    Set tailRange = SheetBlock(firstBodyRow + lastKeptRow, firstColumn, _
+                               firstBodyRow + tabRowCount - 1, _
+                               firstColumn + tabColumnCount - 1)
+
+    dropError = 0
+    On Error Resume Next
+        lo.Resize keptRange
+        dropError = Err.Number
+        Err.Clear
+    On Error GoTo 0
+
+    If dropError <> 0 Then Exit Function
+
+    On Error Resume Next
+        tailRange.Clear
+        Err.Clear
+    On Error GoTo 0
+
+    'A ListObject cannot be left with no data row. When every row under the
+    'first one was empty the resize lands on a block that is blank throughout,
+    'and Excel can answer that with a header-only table. DeleteRowsAt puts a
+    'row back the same way.
+    If lo.ListRows.Count < 1 Then lo.ListRows.Add
+
+    DropTrailingRows = True
+End Function
+
+'@label:delete-worksheet-rows
+'@sub-title Delete the empty rows as entire worksheet rows, in one call
+'@details
+'The empty rows are gathered and deleted in ONE call. Deleting them one at a
+'time made Excel shift the whole sheet up once per row, and a sheet holding a
+'few thousand spare rows spent minutes on it. A multi-area range costs a single
+'shift however many areas it carries.
+'
+'What goes into the Union is a RUN of touching rows rather than a row. Union
+'grows dearer as the range it already holds grows, and the rows a resize drops
+'are one run nearly every time, so the old shape paid thousands of Union calls
+'to build a single area.
+'
+'The walk runs from the bottom so a deletion does not move the rows still to
+'come. When Excel refuses the delete, the fallback walks the table itself,
+'which is what a stacked layout sometimes needs. It is slow and it only runs
+'when the one-shot delete was refused.
+'@param lo ListObject. The table being trimmed.
+'@param sh Worksheet. The sheet holding it.
+'@param bodyValues Variant. The body block, for the fallback.
+'@param tabRowCount Long. Rows in that block.
+'@param tabColumnCount Long. Columns in that block.
+'@param rowCount Long. Filled-cell threshold, for the fallback.
+'@param firstBodyRow Long. Worksheet row of the first data row.
+Private Sub DeleteWorksheetRows(ByVal lo As ListObject, ByVal sh As Worksheet, _
+                                ByRef bodyValues As Variant, _
+                                ByVal tabRowCount As Long, ByVal tabColumnCount As Long, _
+                                ByVal rowCount As Long, ByVal firstBodyRow As Long)
+    Dim rowIndex As Long
+    Dim runEnd As Long
+    Dim deadRows As Range
+    Dim deleteError As Long
+
+    Set deadRows = Nothing
+    runEnd = 0
+
+    For rowIndex = tabRowCount To 2 Step -1
+        If RowIsEmpty(bodyValues, rowIndex, tabColumnCount, rowCount) Then
+            If runEnd = 0 Then runEnd = rowIndex
+        ElseIf runEnd <> 0 Then
+            AppendRowRun deadRows, sh, firstBodyRow + rowIndex, firstBodyRow + runEnd - 1
+            runEnd = 0
+        End If
+    Next rowIndex
+
+    'The run that reaches the top of the block leaves the loop unflushed. It
+    'stops at the second row, because the first one always stays.
+    If runEnd <> 0 Then
+        AppendRowRun deadRows, sh, firstBodyRow + 1, firstBodyRow + runEnd - 1
+    End If
 
     If deadRows Is Nothing Then Exit Sub
 
@@ -1172,11 +1351,27 @@ Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, _
         Err.Clear
     On Error GoTo 0
 
-    'The fallback walks the table itself, which is what a stacked layout
-    'sometimes needs. It is slow and it only runs when the one-shot delete was
-    'refused.
     If deleteError <> 0 Then DeleteRowsThroughTable lo, bodyValues, _
                                                     tabRowCount, tabColumnCount, rowCount
+End Sub
+
+'@label:append-row-run
+'@sub-title Add one run of touching worksheet rows to the range being gathered
+'@param deadRows Range. The range gathered so far, Nothing on the first call.
+'@param sh Worksheet. The sheet holding the rows.
+'@param firstRow Long. First worksheet row of the run.
+'@param lastRow Long. Last worksheet row of the run.
+Private Sub AppendRowRun(ByRef deadRows As Range, ByVal sh As Worksheet, _
+                         ByVal firstRow As Long, ByVal lastRow As Long)
+    Dim runRange As Range
+
+    Set runRange = sh.Rows(firstRow).Resize(lastRow - firstRow + 1)
+
+    If deadRows Is Nothing Then
+        Set deadRows = runRange
+    Else
+        Set deadRows = Application.Union(deadRows, runRange)
+    End If
 End Sub
 
 '@label:delete-rows-through-table
@@ -1191,7 +1386,7 @@ End Sub
 '@param tabColumnCount Long. Columns in that block.
 '@param rowCount Long. Filled-cell threshold at or under which a row is empty.
 '@throws ProjectError.SomethingWentWrong When the table refuses a delete.
-Private Sub DeleteRowsThroughTable(ByVal lo As ListObject, ByVal bodyValues As Variant, _
+Private Sub DeleteRowsThroughTable(ByVal lo As ListObject, ByRef bodyValues As Variant, _
                                    ByVal tabRowCount As Long, ByVal tabColumnCount As Long, _
                                    ByVal rowCount As Long)
     Dim rowIndex As Long

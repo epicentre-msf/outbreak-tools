@@ -217,6 +217,16 @@ suites:
         covers: [DataSheet]
       - module: TestCustomTable
         covers: [CustomTable]
+      # TestCustomTableTiming is a MEASURING TOOL, not a behaviour suite, and it
+      # stays out of the loop on purpose. Every test in it times a call and logs
+      # the seconds into the results, so it reports numbers rather than pass or
+      # fail, and the numbers move with whatever else the machine is doing.
+      # Uncomment the row below to measure, read the TIMING lines out of the
+      # run CSV, then comment it back out. It answered where the wait went when
+      # a resize on an HList sheet was slow: one Excel call per blank row, about
+      # 2.5 ms each.
+#      - module: TestCustomTableTiming
+#        covers: [CustomTable]
       - module: TestApplicationState
         covers: [ApplicationState]
       - module: TestLLFormat

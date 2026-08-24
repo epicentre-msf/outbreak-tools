@@ -1557,3 +1557,244 @@ Public Sub TestSortOnFirstHandlesNonStringValues()
 Fail:
     CustomTestLogFailure Assert, "TestSortOnFirstHandlesNonStringValues", Err.Number, Err.Description
 End Sub
+
+'@section Trimming empty rows
+'===============================================================================
+'RemoveRows drops its trailing block by shrinking the table over it rather than
+'deleting a ListRow at a time. These tests hold both halves of the promise: the
+'right rows go, and what sits below the table moves only on the branch that is
+'supposed to move it.
+
+'@sub-title Builds a one-table fixture from a pattern of filled and empty rows
+'@details filledFlags is an array of Booleans, one per data row. A True row
+'   carries a value in both columns, a False row carries nothing, which is what
+'   RemoveRows with totalCount:=0 reads as empty.
+'@param filledFlags Variant. Array of Booleans, one per data row.
+'@return ListObject. The fixture table.
+Private Function PrepareTrimTable(ByVal filledFlags As Variant) As ListObject
+
+    Dim hostSheet As Worksheet
+    Dim listRange As Range
+    Dim trimTable As ListObject
+    Dim rowIndex As Long
+    Dim rowNumber As Long
+
+    Set hostSheet = EnsureWorksheet(TRIM_SHEETNAME)
+    ClearWorksheet hostSheet
+
+    hostSheet.Range("A1").Resize(1, 2).Value = Array("ID", "Name")
+
+    For rowIndex = LBound(filledFlags) To UBound(filledFlags)
+        rowNumber = rowIndex - LBound(filledFlags) + 1
+        If filledFlags(rowIndex) Then
+            hostSheet.Cells(rowNumber + 1, 1).Value = "row " & rowNumber
+            hostSheet.Cells(rowNumber + 1, 2).Value = "name " & rowNumber
+        End If
+    Next rowIndex
+
+    Set listRange = hostSheet.Range("A1").Resize(rowNumber + 1, 2)
+    Set trimTable = hostSheet.ListObjects.Add(SourceType:=xlSrcRange, _
+                                              Source:=listRange, _
+                                              XlListObjectHasHeaders:=xlYes)
+    trimTable.Name = TRIM_TABLE_NAME
+
+    Set PrepareTrimTable = trimTable
+End Function
+
+'@sub-title Builds a table with trailing empty rows and a second table under it
+'@details The top table holds filledRows filled rows followed by blankRows
+'   empty ones. A gap row separates it from a one-row bottom table. Built by
+'   hand rather than through AddRows, because AddRows with a shift would set
+'   the tracker and send RemoveRows down the other branch.
+'@param topTable ListObject. Out. The table to trim.
+'@param bottomTable ListObject. Out. The table stacked under it.
+'@param filledRows Long. Filled rows in the top table.
+'@param blankRows Long. Empty rows under them.
+Private Sub PrepareStackedTrimFixture(ByRef topTable As ListObject, _
+                                      ByRef bottomTable As ListObject, _
+                                      ByVal filledRows As Long, _
+                                      ByVal blankRows As Long)
+
+    Dim hostSheet As Worksheet
+    Dim topRange As Range
+    Dim bottomRange As Range
+    Dim bottomHeaderRow As Long
+    Dim rowIndex As Long
+
+    Set hostSheet = EnsureWorksheet(MULTITABLESHEET)
+    ClearWorksheet hostSheet
+
+    hostSheet.Range("A1").Resize(1, 2).Value = Array("ID", "Name")
+
+    For rowIndex = 1 To filledRows
+        hostSheet.Cells(rowIndex + 1, 1).Value = "row " & rowIndex
+        hostSheet.Cells(rowIndex + 1, 2).Value = "name " & rowIndex
+    Next rowIndex
+
+    Set topRange = hostSheet.Range("A1").Resize(1 + filledRows + blankRows, 2)
+    Set topTable = hostSheet.ListObjects.Add(SourceType:=xlSrcRange, _
+                                             Source:=topRange, _
+                                             XlListObjectHasHeaders:=xlYes)
+    topTable.Name = "tblTop"
+
+    bottomHeaderRow = 1 + filledRows + blankRows + 2
+    hostSheet.Cells(bottomHeaderRow, 1).Resize(1, 2).Value = Array("ID", "Name")
+    hostSheet.Cells(bottomHeaderRow + 1, 1).Resize(1, 2).Value = Array("row A", "Gamma")
+
+    Set bottomRange = hostSheet.Cells(bottomHeaderRow, 1).Resize(2, 2)
+    Set bottomTable = hostSheet.ListObjects.Add(SourceType:=xlSrcRange, _
+                                                Source:=bottomRange, _
+                                                XlListObjectHasHeaders:=xlYes)
+    bottomTable.Name = "tblBottom"
+End Sub
+
+'@sub-title Verifies that trailing empty rows go and the table below stays put
+'@details The branch an HList sheet takes: no shift tracker and no forceShift.
+'   The top table loses its five empty rows, and the stacked table under it is
+'   left exactly where it was, because the table closes over its own rows.
+'@TestMethod("CustomTable")
+Public Sub TestRemoveRowsTrimsTrailingAndLeavesStackedTable()
+    CustomTestSetTitles Assert, "CustomTable", "TestRemoveRowsTrimsTrailingAndLeavesStackedTable"
+    On Error GoTo Fail
+
+    Dim topLo As ListObject
+    Dim bottomLo As ListObject
+    Dim topTable As CustomTable
+    Dim originalBottomHeaderRow As Long
+
+    PrepareStackedTrimFixture topLo, bottomLo, 2, 5
+    originalBottomHeaderRow = bottomLo.HeaderRowRange.Row
+
+    Set topTable = CustomTable.Create(topLo)
+    topTable.RemoveRows totalCount:=0, includeIds:=False
+
+    Assert.AreEqual 2&, topLo.ListRows.Count, _
+                    "The trailing empty rows should be gone"
+    Assert.AreEqual originalBottomHeaderRow, bottomLo.HeaderRowRange.Row, _
+                    "A trim without a shift should leave the stacked table where it was"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestRemoveRowsTrimsTrailingAndLeavesStackedTable", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verifies that forceShift still pulls the stacked table up
+'@details The other branch, and the one the analyses use. The five empty rows
+'   go as entire worksheet rows, so the table under them moves up by five.
+'@TestMethod("CustomTable")
+Public Sub TestRemoveRowsForceShiftPullsStackedTableUp()
+    CustomTestSetTitles Assert, "CustomTable", "TestRemoveRowsForceShiftPullsStackedTableUp"
+    On Error GoTo Fail
+
+    Dim topLo As ListObject
+    Dim bottomLo As ListObject
+    Dim topTable As CustomTable
+    Dim originalBottomHeaderRow As Long
+
+    PrepareStackedTrimFixture topLo, bottomLo, 2, 5
+    originalBottomHeaderRow = bottomLo.HeaderRowRange.Row
+
+    Set topTable = CustomTable.Create(topLo)
+    topTable.RemoveRows totalCount:=0, includeIds:=False, forceShift:=True
+
+    Assert.AreEqual 2&, topLo.ListRows.Count, _
+                    "The trailing empty rows should be gone"
+    Assert.AreEqual originalBottomHeaderRow - 5, bottomLo.HeaderRowRange.Row, _
+                    "ForceShift should pull the stacked table up by the rows it deleted"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestRemoveRowsForceShiftPullsStackedTableUp", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verifies that empty rows between filled ones go as well
+'@details The trailing block is shrunk away in one operation and the gaps
+'   inside the table are closed one row at a time. The rows that stay keep
+'   their order.
+'@TestMethod("CustomTable")
+Public Sub TestRemoveRowsClosesInteriorGaps()
+    CustomTestSetTitles Assert, "CustomTable", "TestRemoveRowsClosesInteriorGaps"
+    On Error GoTo Fail
+
+    Dim trimLo As ListObject
+    Dim trimTable As CustomTable
+
+    'Filled, empty, filled, empty, empty: one gap inside and two rows trailing.
+    Set trimLo = PrepareTrimTable(Array(True, False, True, False, False))
+    Set trimTable = CustomTable.Create(trimLo)
+
+    trimTable.RemoveRows totalCount:=0, includeIds:=False
+
+    Assert.AreEqual 2&, trimLo.ListRows.Count, _
+                    "Only the filled rows should be left"
+    Assert.AreEqual "row 1", CStr(trimLo.DataBodyRange.Cells(1, 1).Value), _
+                    "The first filled row should stay first"
+    Assert.AreEqual "row 3", CStr(trimLo.DataBodyRange.Cells(2, 1).Value), _
+                    "The row after the gap should follow it"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestRemoveRowsClosesInteriorGaps", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verifies that the first data row is kept even when it is empty
+'@details A ListObject cannot live with no data row, and the first one carries
+'   the formulas and the formats every new row is built from.
+'@TestMethod("CustomTable")
+Public Sub TestRemoveRowsKeepsTheFirstRowWhenAllAreEmpty()
+    CustomTestSetTitles Assert, "CustomTable", "TestRemoveRowsKeepsTheFirstRowWhenAllAreEmpty"
+    On Error GoTo Fail
+
+    Dim trimLo As ListObject
+    Dim trimTable As CustomTable
+
+    Set trimLo = PrepareTrimTable(Array(False, False, False, False))
+    Set trimTable = CustomTable.Create(trimLo)
+
+    trimTable.RemoveRows totalCount:=0, includeIds:=False
+
+    Assert.AreEqual 1&, trimLo.ListRows.Count, _
+                    "The table should be left with its first data row"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestRemoveRowsKeepsTheFirstRowWhenAllAreEmpty", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verifies that the cells the table let go are cleared
+'@details Shrinking the table leaves its old cells on the sheet, and a
+'   row-by-row delete would have taken their values, their formats and their
+'   dropdowns with it. The clear is what makes the two the same, so the cell
+'   under the trimmed table has to read as empty.
+'@TestMethod("CustomTable")
+Public Sub TestRemoveRowsClearsTheCellsItLetGo()
+    CustomTestSetTitles Assert, "CustomTable", "TestRemoveRowsClearsTheCellsItLetGo"
+    On Error GoTo Fail
+
+    Dim trimLo As ListObject
+    Dim trimTable As CustomTable
+    Dim hostSheet As Worksheet
+    Dim firstDroppedRow As Long
+
+    Set trimLo = PrepareTrimTable(Array(True, True, False, False))
+    Set hostSheet = ThisWorkbook.Worksheets(TRIM_SHEETNAME)
+
+    'The rows are written before the trim so a leftover would be visible.
+    hostSheet.Cells(4, 1).Value = "stale"
+    hostSheet.Cells(5, 1).Value = "stale"
+    firstDroppedRow = 4
+
+    Set trimTable = CustomTable.Create(trimLo)
+    trimTable.RemoveRows totalCount:=1, includeIds:=False
+
+    Assert.AreEqual 2&, trimLo.ListRows.Count, _
+                    "The two rows holding one value each should be gone"
+    Assert.IsTrue IsEmpty(hostSheet.Cells(firstDroppedRow, 1).Value), _
+                  "The cell under the trimmed table should be cleared"
+    Assert.IsTrue IsEmpty(hostSheet.Cells(firstDroppedRow + 1, 1).Value), _
+                  "Every cell of the block the table let go should be cleared"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestRemoveRowsClearsTheCellsItLetGo", Err.Number, Err.Description
+End Sub
