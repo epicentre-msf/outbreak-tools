@@ -36,7 +36,7 @@ Option Explicit
 'LastExportPassword answers the password the last export was saved under.
 'LastFailure answers what the last export failed on, for a caller writing the
 'failure into the log.
-'@depends LLdictionary, LLVariables, LLExport, Passwords, CustomTable
+'@depends LLdictionary, LLVariables, LLExport, Passwords, CustomTable, LLLog
 '@depends DataSheet, AnaTabIds, LLGeo, LLChoices, HiddenNames, LLTranslation
 '@depends ShowHide, ShowHideLayout, ShowHideStore, BetterArray, Checking
 '@depends DropdownLists, ChoiceKeys
@@ -112,6 +112,10 @@ Private Type TLLExporter
     activeWkb As Workbook
     sealed As Boolean
     openedSource As Boolean
+    passObj As Passwords
+    triedPass As Boolean
+    userLog As LLLog
+    triedLog As Boolean
 End Type
 
 Private this As TLLExporter
@@ -474,14 +478,25 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
     Dim prevSheetName As String
     Dim firstSheetName As String
     Dim nbExp As Long
+    Dim atStep As String
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errMessage As String
 
     ExportCustom = vbNullString
     this.lastPassword = vbNullString
     this.lastFailure = vbNullString
 
+    On Error GoTo RecordFailure
+
+    atStep = "reading the Exports sheet"
     Set expObj = ExportObject()
     nbExp = expObj.NumberOfExports()
+
+    atStep = "reading the dictionary"
     Set dict = SourceDictionary(nbExp)
+
+    atStep = "reading the passwords"
     Set pass = PasswordsObject()
     expName = "export " & CStr(exportNumber)
 
@@ -533,12 +548,14 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
     withAnalysis = (expObj.ColumnValue(exportNumber, "export analyses sheets") = "yes")
     If withAnalysis Then AddAnalysisSheets outwb, prevSheetName
 
-    ' Delete the placeholder first sheet
+    ' Delete the placeholder first sheet. The handler is re-armed rather than
+    ' cleared, so the rest of the walk still records what it refused on.
     On Error Resume Next
     outwb.Worksheets(firstSheetName).Delete
-    On Error GoTo 0
+    On Error GoTo RecordFailure
 
     ' Export data to each sheet
+    atStep = "writing the data"
     headerFormat = expObj.ColumnValue(exportNumber, "header format")
     useLabels = (headerFormat = HEADER_LABELS) Or _
                 (headerFormat = HEADER_NAMES_LABELS)
@@ -553,11 +570,24 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
     fileFormat = IIf(fileExt = "xlsb", xlExcel12, xlOpenXMLWorkbook)
     filePath = BuildFilePath(folderPath, fileName, fileExt)
 
-    addPassword = (expObj.ColumnValue(exportNumber, "password") = "yes")
+    'No passwords object means no private key, so a row asking for a password
+    'gets a file without one. PasswordsObject has already logged why.
+    addPassword = (expObj.ColumnValue(exportNumber, "password") = "yes") And _
+                  Not (pass Is Nothing)
     If addPassword Then this.lastPassword = pass.Value("privatekey")
 
+    atStep = "saving " & filePath
     SaveWorkbook outwb, filePath, fileFormat, this.lastPassword
     ExportCustom = filePath
+    Exit Function
+
+RecordFailure:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errMessage = Err.Description
+    RecordExportFailure "custom export " & CStr(exportNumber), atStep, _
+                        errNumber, errSource, errMessage
+    Err.Raise errNumber, errSource, errMessage
 End Function
 
 '@label:export-migration
@@ -589,40 +619,65 @@ Public Function ExportMigration(ByVal folderPath As String, _
     Dim prevSheetName As String
     Dim firstSheetName As String
     Dim nbExp As Long
+    Dim atStep As String
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errMessage As String
 
     ExportMigration = vbNullString
     this.lastPassword = vbNullString
     this.lastFailure = vbNullString
 
+    On Error GoTo RecordFailure
+
+    atStep = "reading the Exports sheet"
     Set expObj = ExportObject()
     nbExp = expObj.NumberOfExports()
+
+    atStep = "reading the dictionary"
     Set dict = SourceDictionary(nbExp)
+
+    atStep = "reading the passwords"
     Set pass = PasswordsObject()
 
     ' A migration carries the whole dictionary, so it excludes nothing.
     Set excluded = New BetterArray
 
     ' Write full dictionary to temp sheet (no filtering)
+    atStep = "writing the dictionary to the temp sheet"
     PrepareTempDictionary dict, vbNullString, True, excluded
 
+    atStep = "reading the dictionary back off the temp sheet"
     Set expDict = ExportDictionaryFromTemp(nbExp)
 
     ' Create output workbook
+    atStep = "adding the output workbook"
     Set outwb = CreateOutputWorkbook()
     firstSheetName = outwb.Worksheets(1).Name
 
     ' Add metadata sheets
+    atStep = "adding the metadata sheets"
     AddMetadataSheets outwb, dict, nbExp
+
+    atStep = "adding the custom dropdowns"
     AddCustomDropdowns outwb
+
+    atStep = "adding the dictionary"
     AddDictionary outwb, dict, nbExp, "__all__", excluded
+
+    atStep = "adding the metadata tags"
     AddMetadataTags outwb, ExportScopeMigration, 0, includeShowHide, keepLabels, False
 
     ' Add show/hide with column widths if requested
-    If includeShowHide Then AddShowHide outwb
+    If includeShowHide Then
+        atStep = "adding the show/hide choices"
+        AddShowHide outwb
+    End If
 
     prevSheetName = METADATASHEET
 
     ' Add data worksheets
+    atStep = "adding one worksheet per data sheet"
     Set sheetNames = expDict.UniqueValues("sheet name")
     For counter = sheetNames.LowerBound To sheetNames.UpperBound
         outwb.Worksheets.Add(After:=outwb.Worksheets(prevSheetName)).Name = _
@@ -630,20 +685,34 @@ Public Function ExportMigration(ByVal folderPath As String, _
         prevSheetName = sheetNames.Item(counter)
     Next counter
 
-    ' Delete the placeholder first sheet
+    ' Delete the placeholder first sheet. The handler is re-armed rather than
+    ' cleared: On Error GoTo 0 here would leave the rest of the walk with no
+    ' handler at all, and the account below would never be written.
     On Error Resume Next
     outwb.Worksheets(firstSheetName).Delete
-    On Error GoTo 0
+    On Error GoTo RecordFailure
 
     ' Export all data (no filtering, no labels)
+    atStep = "writing the data"
     AddDataSheets outwb, expDict, False, 1, False
 
     ' Save as xlsx (no password for migration)
+    atStep = "building the file name"
     fileName = expObj.ExportFileName(0, dict, pass, exportAll:=True)
     filePath = BuildFilePath(folderPath, fileName, "xlsx")
+
+    atStep = "saving " & filePath
     SaveWorkbook outwb, filePath, xlOpenXMLWorkbook, vbNullString
 
     ExportMigration = filePath
+    Exit Function
+
+RecordFailure:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errMessage = Err.Description
+    RecordExportFailure "migration export", atStep, errNumber, errSource, errMessage
+    Err.Raise errNumber, errSource, errMessage
 End Function
 
 '@label:export-analysis
@@ -666,34 +735,59 @@ Public Function ExportAnalysis(ByVal folderPath As String) As String
     Dim filePath As String
     Dim firstSheetName As String
     Dim nbExp As Long
+    Dim atStep As String
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errMessage As String
 
     ExportAnalysis = vbNullString
     this.lastPassword = vbNullString
     this.lastFailure = vbNullString
 
+    On Error GoTo RecordFailure
+
+    atStep = "reading the Exports sheet"
     Set expObj = ExportObject()
     nbExp = expObj.NumberOfExports()
+
+    atStep = "reading the dictionary"
     Set dict = SourceDictionary(nbExp)
+
+    atStep = "reading the passwords"
     Set pass = PasswordsObject()
 
     ' Create output workbook
+    atStep = "adding the output workbook"
     Set outwb = CreateOutputWorkbook()
     firstSheetName = outwb.Worksheets(1).Name
 
     ' Add analysis sheets
+    atStep = "adding the analysis sheets"
     AddAnalysisSheets outwb, firstSheetName
 
-    ' Delete the placeholder first sheet
+    ' Delete the placeholder first sheet. The handler is re-armed rather than
+    ' cleared, so the rest of the walk still records what it refused on.
     On Error Resume Next
     outwb.Worksheets(firstSheetName).Delete
-    On Error GoTo 0
+    On Error GoTo RecordFailure
 
     ' Save
+    atStep = "building the file name"
     fileName = expObj.ExportFileName(0, dict, pass, exportAll:=True)
     filePath = BuildFilePath(folderPath, fileName & "_analysis", "xlsx")
+
+    atStep = "saving " & filePath
     SaveWorkbook outwb, filePath, xlOpenXMLWorkbook, vbNullString
 
     ExportAnalysis = filePath
+    Exit Function
+
+RecordFailure:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errMessage = Err.Description
+    RecordExportFailure "analysis export", atStep, errNumber, errSource, errMessage
+    Err.Raise errNumber, errSource, errMessage
 End Function
 
 '@label:export-geo
@@ -745,19 +839,22 @@ Public Function ExportGeo(ByVal folderPath As String, _
     atStep = "writing the geobase tables"
     geo.ExportToFile outwb, onlyHistoric
 
+    'A geobase export that WORKED can still have left the headers alone, and
+    'LLGeo says so in its own account. That class is hand-exported into the
+    'designer and reaches no log on purpose, so the log entry is written here,
+    'where one is already held.
+    ReportGeoWarning geo
+
     atStep = "saving " & filePath
     SaveWorkbook outwb, filePath, xlOpenXMLWorkbook, vbNullString
     ExportGeo = filePath
     Exit Function
 
 RecordFailure:
-    'The error is kept in words here because it loses them on the way out:
-    'the caller sees the method it called and nothing of what refused.
     errNumber = Err.Number
     errSource = Err.Source
     errMessage = Err.Description
-    this.lastFailure = "geo export failed " & atStep & " - error " & _
-                       errNumber & " from " & errSource & ": " & errMessage
+    RecordExportFailure "geo export", atStep, errNumber, errSource, errMessage
 
     'The same loss happens one class further in, so LLGeo keeps its own account
     'and it is the one that names what refused.
@@ -823,15 +920,153 @@ End Function
 '@label:passwords-object
 '@sub-title Get passwords from the source workbook
 '@return Passwords. Passwords instance from the __pass sheet.
+'@details
+'Built once and held, and answering Nothing rather than raising when the file
+'will not take one.
+'
+'A LINELIST OLDER THAN THE PROTECTION MATRIX
+'-------------------------------------------------------------------------------
+'Passwords.Create validates the sheet and demands T_ProtectedSheets, a table
+'this version added. A linelist generated before it carries T_Keys, the five
+'named ranges and no protection matrix, so the factory refuses a password sheet
+'that is complete for everything an export wants from it. The class itself is
+'not loosened -- it is baked into the workbook rather than imported, so a change
+'there reaches nothing until every workbook is re-pasted by hand. The tolerance
+'lives here instead, in a class that imports.
+'
+'What the absence costs is small and bounded. An export-all file name is
+'composed without a passwords object at all; a numbered export loses its version
+'suffix and cannot be given the private key. Both are guarded where they read.
+'@return Passwords. The held handler, or Nothing when the file carries none.
 Private Function PasswordsObject() As Passwords
-    Set PasswordsObject = Passwords.Create(this.sourceWkb.Worksheets(PASSWORDSHEET))
+
+    Dim refusal As String
+
+    If this.triedPass Then
+        Set PasswordsObject = this.passObj
+        Exit Function
+    End If
+
+    this.triedPass = True
+
+    On Error Resume Next
+        Set this.passObj = Passwords.Create(this.sourceWkb.Worksheets(PASSWORDSHEET))
+        refusal = Err.Description
+    On Error GoTo 0
+
+    If this.passObj Is Nothing Then ReportPasswordsRefusal refusal
+
+    Set PasswordsObject = this.passObj
+End Function
+
+'@label:report-geo-warning
+'@sub-title Log what the geobase export got past rather than stopped on
+'@details
+'Read after an export that succeeded. LLGeo fills its LastFailure on a refusal
+'it carried on from -- the headers it could not put back -- and leaves it empty
+'otherwise, so a value here is a warning and never the reason for a failure.
+'On a failure the RecordFailure handler already folds the same account into
+'this class''s own, so nothing is said twice.
+'@param geo LLGeo. The manager that just wrote the geobase.
+Private Sub ReportGeoWarning(ByVal geo As LLGeo)
+
+    Dim detail As String
+    Dim logStore As LLLog
+
+    If geo Is Nothing Then Exit Sub
+
+    detail = geo.LastFailure
+    If LenB(detail) = 0 Then Exit Sub
+
+    Set logStore = UserLog()
+    If logStore Is Nothing Then Exit Sub
+
+    'A log that will not take the entry is not worth losing the export over.
+    On Error Resume Next
+    logStore.LogWarning "export-geo", detail, "LLGeo.Translate"
+    On Error GoTo 0
+End Sub
+
+'@label:report-passwords-refusal
+'@sub-title Say in the workbook''s log that this file carries no usable passwords
+'@details
+'Written as a warning rather than a failure: the export goes on to write its
+'file, and the user needs to know why the name lost its version suffix and why
+'no export of this file can be password protected.
+'@param refusal String. What Passwords.Create said when it refused.
+Private Sub ReportPasswordsRefusal(ByVal refusal As String)
+
+    Dim detail As String
+    Dim logStore As LLLog
+
+    detail = "This file carries no usable password sheet: " & refusal & _
+             ". The export runs without one, so its file name has no version " & _
+             "suffix and no export of this file can be password protected."
+
+    Set logStore = UserLog()
+    If logStore Is Nothing Then Exit Sub
+
+    'A log that will not take the entry is not worth losing the export over.
+    On Error Resume Next
+    logStore.LogWarning "export-passwords", detail, "LLExporter.PasswordsObject"
+    On Error GoTo 0
+End Sub
+
+'@label:user-log
+'@sub-title The log of the workbook being exported, built once
+'@details
+'Built on first use and held, the way FilteredData and LLGeo hold theirs. A
+'workbook that will not take a log answers Nothing, and the Nothing is the
+'state rather than a raise.
+'@return LLLog. The held log, or Nothing.
+Private Function UserLog() As LLLog
+
+    If Not this.triedLog Then
+        this.triedLog = True
+        On Error Resume Next
+        Set this.userLog = LLLog.Create(this.sourceWkb)
+        On Error GoTo 0
+    End If
+
+    Set UserLog = this.userLog
 End Function
 
 '@label:geo-object
 '@sub-title Get the geo object from the source workbook
 '@return LLGeo. Geo instance from the Geo sheet.
+'@label:record-export-failure
+'@sub-title Keep in words what an export refused on, before the raise leaves
+'@details
+'An error loses its words on the way out of this class: the caller reads the
+'name of the method it called and nothing of what actually refused. Every
+'export therefore records its own account here, and the caller reads it back
+'through LastFailure.
+'
+'ExportGeo carried this alone for a while, which is why a failing migration
+'answered an empty LastFailure and the form had nothing to log.
+'@param what String. Which export this is, for the opening words.
+'@param atStep String. The step the export was on.
+'@param errNumber Long. The error number.
+'@param errSource String. The error source.
+'@param errMessage String. The error description.
+Private Sub RecordExportFailure(ByVal what As String, ByVal atStep As String, _
+                                ByVal errNumber As Long, _
+                                ByVal errSource As String, _
+                                ByVal errMessage As String)
+
+    this.lastFailure = what & " failed " & atStep & " - error " & _
+                       errNumber & " from " & errSource & ": " & errMessage
+End Sub
+
 Private Function GeoObject() As LLGeo
-    Set GeoObject = LLGeo.Create(this.sourceWkb.Worksheets(GEOSHEET))
+    'The checks are off here on purpose. A linelist older than the hidden name
+    'store keeps its geo metadata in plain named ranges, and HiddenNames tracks
+    'a name only when it is hidden, so those four names read as absent and the
+    'factory refuses a geobase whose tables are all present. An export reads the
+    'tables and writes them out; what the file cannot answer fails at the read
+    'that wants it, and that read names the missing piece.
+    Set GeoObject = LLGeo.Create(this.sourceWkb.Worksheets(GEOSHEET), _
+                                 runChecks:=False)
 End Function
 
 
@@ -1176,7 +1411,6 @@ Private Sub AddMetadataSheets(ByVal outwb As Workbook, ByVal dict As LLdictionar
     Dim sh As Worksheet
     Dim counter As Long
     Dim sheetName As String
-    Dim translations As LLTranslation
 
     Set sheetNames = New BetterArray
     sheetNames.Push METADATASHEET, CHOICESSHEET
@@ -1188,10 +1422,98 @@ Private Sub AddMetadataSheets(ByVal outwb As Workbook, ByVal dict As LLdictionar
         csData.Export toWkb:=outwb, Hide:=xlSheetVisible
     Next counter
 
-    ' Export dictionary translations via LLTranslation
-    Set translations = LLTranslation.Create( _
-        this.sourceWkb.Worksheets(LINELISTTRANSLATIONSHEET))
-    translations.ExportDictionary outwb
+    ' Export dictionary translations, from whichever layout the file uses
+    AddDictionaryTranslations outwb
+End Sub
+
+'@label:add-dictionary-translations
+'@sub-title Put the dictionary translations into the output, either layout
+'@details
+'The current layout keeps them in Tab_Translations on the LinelistTranslation
+'sheet, and LLTranslation.ExportDictionary writes them out from there onto a
+'sheet called Translations.
+'
+'THE LAYOUT BEFORE THAT ONE
+'-------------------------------------------------------------------------------
+'A linelist older than that table keeps its dictionary translations on a
+'worksheet of its own, already called Translations, and carries no
+'Tab_Translations at all. LLTranslation.Create demands that table and refuses
+'the whole sheet without it, so the export used to stop here.
+'
+'Skipping is not the answer: the Translations sheet of an export file is what
+'carries every translated label to whatever reads the file back, and an export
+'without one loses all of them silently. So the older layout is read where it
+'actually sits and copied straight across, the same way Metadata and Choices
+'are copied above.
+'@param outwb Workbook. The output workbook being built.
+Private Sub AddDictionaryTranslations(ByVal outwb As Workbook)
+
+    Dim translations As LLTranslation
+    Dim refusal As String
+
+    On Error Resume Next
+        Set translations = LLTranslation.Create( _
+            this.sourceWkb.Worksheets(LINELISTTRANSLATIONSHEET))
+        refusal = Err.Description
+    On Error GoTo 0
+
+    If Not translations Is Nothing Then
+        translations.ExportDictionary outwb
+        Exit Sub
+    End If
+
+    CopyOldTranslationsSheet outwb, refusal
+End Sub
+
+'@label:copy-old-translations-sheet
+'@sub-title Copy the dictionary translations of an older linelist across
+'@details
+'The destination name is the one ExportDictionary would have used, so a file
+'built this way is shaped like every other export and needs nothing special to
+'read it back.
+'@param outwb Workbook. The output workbook being built.
+'@param refusal String. What LLTranslation.Create said when it refused.
+Private Sub CopyOldTranslationsSheet(ByVal outwb As Workbook, _
+                                     ByVal refusal As String)
+
+    Dim oldSh As Worksheet
+    Dim csData As DataSheet
+
+    On Error Resume Next
+    Set oldSh = this.sourceWkb.Worksheets(DICTTRANSLATIONSHEET)
+    On Error GoTo 0
+
+    If oldSh Is Nothing Then
+        ReportTranslationsWarning "This file carries no dictionary translations " & _
+            "in either layout: " & refusal & ", and it has no " & _
+            DICTTRANSLATIONSHEET & " worksheet either. The exported file goes " & _
+            "out with no translated labels."
+        Exit Sub
+    End If
+
+    Set csData = DataSheet.Create(oldSh, 1, 1)
+    csData.Export toWkb:=outwb, Hide:=xlSheetVisible
+
+    ReportTranslationsWarning "The dictionary translations were read from the " & _
+        DICTTRANSLATIONSHEET & " worksheet, the layout used before " & _
+        "Tab_Translations: " & refusal & ". The exported file carries them " & _
+        "on its " & DICTTRANSLATIONSHEET & " sheet as usual."
+End Sub
+
+'@label:report-translations-warning
+'@sub-title Log which layout the dictionary translations came from
+'@param detail String. What to tell the user.
+Private Sub ReportTranslationsWarning(ByVal detail As String)
+
+    Dim logStore As LLLog
+
+    Set logStore = UserLog()
+    If logStore Is Nothing Then Exit Sub
+
+    'A log that will not take the entry is not worth losing the export over.
+    On Error Resume Next
+    logStore.LogWarning "export-translations", detail, "LLExporter.AddDictionaryTranslations"
+    On Error GoTo 0
 End Sub
 
 '@label:add-dictionary
@@ -1785,9 +2107,9 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As LLdictionary
             End If
 
             Set csTab = CustomTable.Create(lo)
-            pass.UnProtect inpsh.Name
+            If Not pass Is Nothing Then pass.UnProtect inpsh.Name
             csTab.Export outsh, headersList, startLine
-            pass.Protect inpsh.Name
+            If Not pass Is Nothing Then pass.Protect inpsh.Name
 
             ' Add label row if configured. The export skips a header the table
             ' has no column for and leaves its output column where it was, so
