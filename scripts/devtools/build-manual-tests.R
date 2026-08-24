@@ -112,11 +112,23 @@ flatten_kind <- function(areas, where) {
       if (is.list(entry)) {
         text <- entry$test
         note <- if (is.null(entry$note)) NA_character_ else as.character(entry$note)
+        # A test line holding a colon and a space is read by YAML as a key, so
+        # it arrives here as a list with no `test`. Say that, rather than
+        # "the line is empty", which is what it looks like from in here.
+        if (is.null(text)) {
+          stop(
+            where, ", area ", area, ": this line has no `test:` --\n  ",
+            paste(names(entry), collapse = ", "),
+            "\n  A colon and a space make YAML read the line as a key. ",
+            "Wrap the whole sentence in double quotes.",
+            call. = FALSE
+          )
+        }
       } else {
         text <- entry
         note <- NA_character_
       }
-      if (is.null(text) || !nzchar(trimws(as.character(text)))) {
+      if (!nzchar(trimws(as.character(text)))) {
         stop(where, ", area ", area, ": a test line is empty", call. = FALSE)
       }
       rows[[length(rows) + 1L]] <- list(
