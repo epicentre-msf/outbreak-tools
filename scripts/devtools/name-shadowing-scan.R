@@ -1,6 +1,27 @@
 #!/usr/bin/env Rscript
 #
-# name-shadowing-scan.R -- a variable must not be named after a type.
+# name-shadowing-scan.R -- a variable must not be named after a type, and it
+# must not be named after a procedure of its own module either.
+#
+# TWO FAULTS, ONE CAUSE
+# -----------------------------------------------------------------------------
+# VBA is not case sensitive and it resolves an identifier to the nearest scope.
+# So a local can take the name of something the module already has, and every
+# later mention of that name means the local. The first half of this scan is
+# about names of TYPES. The second is about names of PROCEDURES, which fails the
+# same way and reads even more innocently:
+#
+#   Public Function Create(ByVal sh As Worksheet, _
+#                          Optional ByVal checkRequirements As Boolean = True)
+#       ...
+#       If checkRequirements Then CheckRequirements sh, geoStore, levelStore
+#
+# CheckRequirements is a Private Sub of that class. The parameter has taken its
+# name, so the second CheckRequirements on that line is the PARAMETER, and the
+# statement becomes an index into a Boolean rather than a call. It compiles. At
+# run time the checks never run, or the line raises somewhere that reads as
+# unrelated. This one cost a wedged headless run: no results file at all,
+# because the module died before its cleanup.
 #
 # VBA is not case sensitive. `Dim passwords As Passwords` therefore declares a
 # variable whose name IS the class name, and from that point on, inside that
@@ -28,16 +49,27 @@
 #
 # HOW BAD EACH HIT IS
 # -----------------------------------------------------------------------------
-#   breaking  the shadowed name is used as a qualifier (`Name.Member`) or after
+#   breaking  the shadowed TYPE is used as a qualifier (`Name.Member`) or after
 #             `New` inside the scope the shadow covers. This one is live: the
 #             read reaches the variable. Error 91 at run time.
+#   calling   the shadowed PROCEDURE is called by name inside the scope the
+#             shadow covers. Also live: the call reaches the variable instead of
+#             the procedure, and the procedure silently never runs.
 #   error     a shadow of a name this project defines, with no such read found.
 #             Nothing is broken today and the next line added breaks it.
+#   procname  a shadow of a procedure of the same module, with no such call
+#             found in the scope. Same rule, waiting for the next line.
 #   builtin   a shadow of a host type (Workbook, Range, ListObject). Same rule,
 #             lower blast radius, and there are many.
 #   member    a User Defined Type field. A field name is scoped to the type, so
 #             `this.passwords` and `Passwords.Create` coexist. Banned anyway --
 #             it reads as a shadow to everyone who meets it.
+#
+# WHY THE PROCEDURE CHECK IS PER MODULE
+# -----------------------------------------------------------------------------
+# A procedure of ANOTHER class is reached through an object, so it cannot be
+# shadowed by a local here. Only the module's own procedures are in scope
+# unqualified, so only those are collected, once per file.
 #
 # SCOPE, AND WHY IT MATTERS FOR THE VERDICT
 # -----------------------------------------------------------------------------
@@ -48,14 +80,23 @@
 # Usage:
 #   Rscript scripts/devtools/name-shadowing-scan.R
 #   Rscript scripts/devtools/name-shadowing-scan.R --quiet      # findings only
-#   Rscript scripts/devtools/name-shadowing-scan.R --breaking   # severity filter
+#   Rscript scripts/devtools/name-shadowing-scan.R --breaking   # live findings only
+#                                                               # (breaking + calling)
 #   Rscript scripts/devtools/name-shadowing-scan.R --path src/modules/linelist
+#   Rscript scripts/devtools/name-shadowing-scan.R --strict     # procname gates too
 #
 # Exit code 1 when a finding is reported at the requested severity or above.
+#
+# `procname` is PRINTED but does not set the exit code unless --strict is given.
+# There are dozens of them and none is broken today, and this file already says
+# why that matters: a scan that always reports findings is a scan people stop
+# reading. The gate stays on the classes that were gating before, plus `calling`
+# -- the live one, the one that costs a run.
 
 args <- commandArgs(trailingOnly = TRUE)
 quiet <- "--quiet" %in% args
 only_breaking <- "--breaking" %in% args
+strict <- "--strict" %in% args
 
 repo_root <- normalizePath(file.path(dirname(sub("^--file=", "", grep(
   "^--file=", commandArgs(trailingOnly = FALSE), value = TRUE
@@ -241,6 +282,18 @@ for (f in files) {
 
   # Where the module's declaration section ends: the first procedure header.
   proc_starts <- which(grepl(RX_PROC, ln, perl = TRUE))
+
+  # The procedures THIS module declares. Only these can be reached unqualified
+  # from inside it, so only these can be shadowed by a local. Property Get, Let
+  # and Set repeat one name, hence the unique.
+  own_procs <- character(0)
+  for (i in proc_starts) {
+    nm <- captured(ln[i], paste0(RX_PROC, "([A-Za-z_][A-Za-z0-9_]*)"), 5)
+    if (length(nm) > 0) own_procs <- c(own_procs, nm)
+  }
+  own_procs <- unique(own_procs)
+  proc_canonical <- setNames(own_procs, tolower(own_procs))
+  own_procs_l <- tolower(own_procs)
   first_proc <- if (length(proc_starts) > 0) min(proc_starts) else n + 1
   proc_ends <- which(grepl("(?i)^\\s*End\\s+(Sub|Function|Property)\\b",
                            ln, perl = TRUE))
@@ -287,20 +340,63 @@ for (f in files) {
     any(grepl(rx, ln[rows], perl = TRUE))
   }
 
+  # The shadow is LIVE when the scope it covers calls the procedure by the
+  # spelling the PROCEDURE is written in. Casing is the test, for the same
+  # reason it is the test for types: to VBA the two spellings are one
+  # identifier, so ignoring case would call every ordinary read of the variable
+  # a symptom. A call is any unqualified mention -- `Foo x, y` as a statement,
+  # `Foo(x)` as a function, `Call Foo`, `Then Foo` -- so the pattern asks only
+  # that the name stand alone and not follow a dot.
+  calls_proc <- function(name, from, to, skip) {
+    spelling <- proc_canonical[[tolower(name)]]
+    if (is.null(spelling)) return(FALSE)
+    # Spelled exactly like the procedure: casing separates nothing and every
+    # read of the variable would count. Still a shadow, just not callable live
+    # from the page.
+    if (identical(name, spelling)) return(FALSE)
+    header_rx <- paste0(RX_PROC, spelling, "\\b")
+    call_rx <- paste0("(^|[^A-Za-z0-9_.])", spelling, "\\s*(\\(|,|\\s|$)")
+    rows <- setdiff(seq(from, to), skip)
+    # The procedure's own header spells its name by definition.
+    if (length(rows) > 0) rows <- rows[!grepl(header_rx, ln[rows], perl = TRUE)]
+    if (length(rows) == 0) return(FALSE)
+    any(grepl(call_rx, ln[rows], perl = TRUE))
+  }
+
   report <- function(i, name, kind) {
     key <- tolower(name)
-    if (!key %in% forbidden_l) return()
+    in_types <- key %in% forbidden_l
+    # A procedure cannot shadow itself, and a Type field is scoped to its type.
+    in_procs <- (key %in% own_procs_l) && !(kind %in% c("procedure", "member"))
+    if (!in_types && !in_procs) return()
     if (paste0(rel, ":", name) %in% ALLOWED) {
       allowed_seen <<- allowed_seen + 1L
       return()
     }
-    sev <- if (kind == "member") "member"
-           else if (key %in% project_l) "error" else "builtin"
-    if (sev != "member") {
-      sc <- scope_of(i)
-      if (reads_type(name, sc[1], sc[2], i)) sev <- "breaking"
+
+    sc <- if (kind == "member") NULL else scope_of(i)
+
+    # A live procedure shadow is reported ahead of any type verdict: the call
+    # that is quietly not happening is the worse of the two faults, and it is
+    # the one that names the fix.
+    if (in_procs && !is.null(sc) && calls_proc(name, sc[1], sc[2], i)) {
+      add(file = rel, line = i, name = name, kind = kind, sev = "calling",
+          text = trimws(ln[i]))
+      return()
     }
-    add(file = rel, line = i, name = name, kind = kind, sev = sev,
+
+    if (in_types) {
+      sev <- if (kind == "member") "member"
+             else if (key %in% project_l) "error" else "builtin"
+      if (sev != "member") {
+        if (reads_type(name, sc[1], sc[2], i)) sev <- "breaking"
+      }
+      add(file = rel, line = i, name = name, kind = kind, sev = sev,
+          text = trimws(ln[i]))
+      return()
+    }
+
+    add(file = rel, line = i, name = name, kind = kind, sev = "procname",
         text = trimws(ln[i]))
   }
 
@@ -367,7 +463,8 @@ for (f in files) {
 # Report
 # ---------------------------------------------------------------------------
 
-order_of <- c(breaking = 1, error = 2, builtin = 3, member = 4)
+order_of <- c(breaking = 1, calling = 2, error = 3, procname = 4,
+              builtin = 5, member = 6)
 if (length(findings) > 0) {
   sev <- vapply(findings, function(x) x$sev, character(1))
   findings <- findings[order(order_of[sev],
@@ -375,21 +472,26 @@ if (length(findings) > 0) {
                              vapply(findings, function(x) x$line, numeric(1)))]
 }
 
+# --breaking means "the live ones". A shadowed procedure that is actually
+# called is as live as a shadowed type that is actually read.
 if (only_breaking) {
-  findings <- Filter(function(x) x$sev == "breaking", findings)
+  findings <- Filter(function(x) x$sev %in% c("breaking", "calling"), findings)
 }
 
 counts <- table(vapply(findings, function(x) x$sev, character(1)))
 
 if (length(findings) == 0) {
   say("")
-  say("No variable is named after a type.  (", allowed_seen, " allowed collision(s) skipped)")
+  say("No variable is named after a type or after a procedure of its module.",
+      "  (", allowed_seen, " allowed collision(s) skipped)")
   quit(status = 0)
 }
 
 headline <- c(
-  breaking = "BREAKING -- the shadowed name is read in this scope, so the read reaches the variable (error 91 at run time)",
+  breaking = "BREAKING -- the shadowed TYPE is read in this scope, so the read reaches the variable (error 91 at run time)",
+  calling  = "CALLING -- the shadowed PROCEDURE is called in this scope, so the call reaches the variable and the procedure never runs",
   error    = "ERROR -- shadows a name this project defines",
+  procname = "PROCNAME -- shadows a procedure of the same module, with no call to it found in this scope",
   builtin  = "BUILTIN -- shadows a host type",
   member   = "MEMBER -- a Type field named after its own type; scoped, so it works, and it is still banned"
 )
@@ -410,4 +512,14 @@ cat("\n", strrep("=", 79), "\n", sep = "")
 cat("findings: ",
     paste(sprintf("%s=%d", names(counts), as.integer(counts)), collapse = "  "),
     "\n", sep = "")
+
+# What actually gates. Without --strict, a run whose only findings are procname
+# is reported and passes: nothing there is broken, and failing on all of them
+# would retire the scan as a pre-flight the day this check was added.
+gating <- Filter(function(x) strict || x$sev != "procname", findings)
+if (length(gating) == 0) {
+  cat("gate: pass -- every finding is procname, which is latent. ",
+      "Run with --strict to gate on those too.\n", sep = "")
+  quit(status = 0)
+}
 quit(status = 1)
