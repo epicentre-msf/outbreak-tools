@@ -9,7 +9,7 @@ $Repo   = if ($env:OBT_REPO) { $env:OBT_REPO } else { "epicentre-msf/outbreak-to
 $Tag    = "working-binaries"
 $Bundle = Join-Path ([System.IO.Path]::GetTempPath()) "working-binaries.tar.gz"
 $Paths  = @("src/bin", ".mock", "ribbons/_ribbontemplate_main.xlsb", "ribbons/_ribbontemplate_dev.xlsb",
-            "trads/designer_translations*.xlsx")
+            "trads/designer_translations*.xlsx", "src/tests/.input")
 
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { throw "gh CLI not found." }
 

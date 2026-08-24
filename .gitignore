@@ -26,6 +26,10 @@ ribbons/_ribbontemplate_dev.xlsb
 #   tables the designer copies into a generated file.
 trads/designer_translations*.xlsx
 
+# tests input xlsb, xlsx files
+src/tests/.input/*.xlsb
+src/tests/input/*.xlsx
+
 # --- VS Code: commit project tasks/snippets, ignore personal settings --------
 #   tasks.json + snippets are shared; settings.json is per-developer.
 #   (.gitattributes already enforces CRLF for *.cls/*.bas, so settings.json is

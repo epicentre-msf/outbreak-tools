@@ -14,7 +14,7 @@ BUNDLE_NAME="working-binaries.tar.gz"
 # Binary paths to store (whole dirs, the two ribbon templates, the translation
 # workbooks). A glob that matches nothing stays literal and is skipped below.
 PATHS=( src/bin .mock ribbons/_ribbontemplate_main.xlsb ribbons/_ribbontemplate_dev.xlsb
-        trads/designer_translations*.xlsx )
+        trads/designer_translations*.xlsx src/tests/.input)
 
 command -v gh >/dev/null 2>&1 || { echo "ERROR: gh CLI not found (brew install gh)." >&2; exit 1; }
 
