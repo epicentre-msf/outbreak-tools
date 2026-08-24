@@ -1,0 +1,170 @@
+# OutbreakTools -- Manual test list
+# =============================================================================
+# The tests a person runs by hand, in the order a person runs them. This file
+# is the source; the workbook is built from it:
+#
+#     Rscript scripts/devtools/build-manual-tests.R
+#         src/tests/manual-tests.yml  ->  src/tests/.input/manual_tests_list.xlsx
+#
+# EDIT THIS FILE, NEVER THE WORKBOOK. The build overwrites the .xlsx whole, so
+# a line typed into Excel is gone at the next run. The Response column is the
+# one thing the workbook holds that this file does not -- see below.
+#
+# ---------------------------------------------------------------------------
+# THE HIERARCHY
+#
+#     workbook   setups | designer | linelist       -> one worksheet each
+#       kind     functionalities | features         -> one table each
+#         area   Dictionary, Choices, Exports, ...  -> the first column
+#           test one line, one thing to check       -> one row
+#
+# `functionalities` are the old behaviour we keep. A red row there is a
+# regression: something that used to work stopped working.
+#
+# `features` are what this development version added. A red row there is a new
+# thing that is not finished.
+#
+# `area` groups the tests of one kind and fixes their order. It is written into
+# the first column of the table, so the autofilter can cut the list down to one
+# area.
+#
+# ---------------------------------------------------------------------------
+# A TEST LINE
+#
+# Usually the sentence on its own:
+#
+#     - You can add rows to Dictionary
+#
+# With a note, which becomes a cell comment on the test in the workbook:
+#
+#     - test: Resizing the Export removes added columns to the Dictionary
+#       note: Check that the correct columns were removed, not just the last ones.
+#
+# ---------------------------------------------------------------------------
+# THE RESPONSE COLUMN
+#
+# Left empty by the build. The person running the tests picks from the dropdown:
+#
+#     (empty)   not run yet   no colour
+#     Yes       passed        green
+#     No        FAILED        red
+#
+# So red is always a real failure, never a test nobody has reached yet. Fill in
+# a copy of the workbook; the next build starts from empty again.
+# =============================================================================
+
+response:
+  values: ["Yes", "No"]
+  pass: "Yes"
+  fail: "No"
+
+workbooks:
+
+  # ===========================================================================
+  # SETUPS -- the configuration workbook
+  # ===========================================================================
+  - sheet: setups
+    functionalities:
+
+      - area: Tables
+        tests:
+          - New empty lines appear at the bottom when you start typing on the last line
+
+      - area: Dictionary
+        tests:
+          - You can add rows to Dictionary
+          - You can resize the Dictionary (it should delete empty rows at the bottom and middle)
+
+      - area: Choices
+        tests:
+          - You can add rows to Choices
+          - You can resize the Choices
+
+      - area: Exports
+        tests:
+          - You can add rows to Exports
+          - You can resize the Exports
+          - The number of exports in Exports worksheet is equal to the number of "Export columns" in Dictionary
+          - test: Adding rows to Export adds new columns to Dictionary
+            note: A reason why we repeat "adding rows to export" ?
+          - test: Resizing the Export removes added columns to the Dictionary
+            note: Check that the correct columns were removed, not just the last ones.
+
+      - area: Analysis
+        tests:
+          - You can add rows to all the tables of Analysis
+          - You can add rows to only Global Summary
+          - You can add rows to only Time Series
+          - You can resize all the tables of Analysis
+          - You can resize only Time Series Analysis
+          - You can add rows to Bivariate Analysis
+          - You can delete one row of table Bivariate Analysis
+          - You can delete mutiple rows of table Bivariate Analysis
+          - You can insert rows to any table of Analysis
+          - Dropdown of "Group by variable" of Bivariate Analysis has values
+          - When selecting a series and a graph on Graph on Time Series, values are updated on the same line
+          - You can insert rows in Spatial Analysis table
+          - You can fill one row of Spatial Analysis table after insertion
+
+      - area: Import
+        tests:
+          - You can import a previous setup using "import from setup" in the ribbon
+          - After import, all the worksheets are protected
+          - You can sort Dictionary after import
+          - You can sort Choices after import
+          - You can sort the Choices after import
+          - You can sort the Exports after import
+          - You can add rows to Exports after an import
+          - You can add rows to all the tables of Analysis after an import
+
+      - area: Translations
+        tests:
+          - You can update the translation table after import
+          - You can add multiple languages to translations separated by a ";"
+
+      - area: Checking
+        tests:
+          - You can check the current setup for errors
+          - On the _CheckRep worksheet, selecting status/title filters the worksheet
+
+    features:
+
+      - area: Migration
+        tests:
+          - You can export the current setup for migration
+          - You can import back the previously exported file into the setup
+
+      - area: Clear data
+        tests:
+          - You can clean all the data in the current setup
+
+      - area: Debugging
+        tests:
+          - By clicking a certain amount of times on the Clear form, you are prompted for a debugging password
+          - Adding Debugging password 1234 unprotects all the worksheets
+          - You can close the setup after all the worksheets are unprotected
+          - When reopening the setup, all the worksheets are protected
+
+      - area: Translations
+        tests:
+          - You can update translations table after import
+          - You can translate the setup to a new language
+          - You can't translate the setup to a new language if there are missing translations in the language you picked (error message)
+          - You can't translate the setup to a new language if there are duplicated translations in the language you pick (error message)
+
+  # ===========================================================================
+  # DESIGNER -- the workbook that builds a linelist
+  # ===========================================================================
+  #  Nothing written down yet. `.obt/plans/designer-mock-manual-todos.md`
+  #  Part D ("The checks owed by eye") is a list of the same shape and is the
+  #  place to draw these from.
+  - sheet: designer
+    functionalities: []
+    features: []
+
+  # ===========================================================================
+  # LINELIST -- the generated workbook
+  # ===========================================================================
+  - sheet: linelist
+    functionalities: []
+    features: []

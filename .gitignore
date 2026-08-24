@@ -28,7 +28,7 @@ trads/designer_translations*.xlsx
 
 # tests input xlsb, xlsx files
 src/tests/.input/*.xlsb
-src/tests/input/*.xlsx
+src/tests/.input/*.xlsx
 
 # --- VS Code: commit project tasks/snippets, ignore personal settings --------
 #   tasks.json + snippets are shared; settings.json is per-developer.
