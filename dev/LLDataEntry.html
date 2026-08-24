@@ -302,6 +302,30 @@ routine, which protects the sheet, puts screen updating back, files the
 failure for the generation report and re-raises what it caught.</p>
 <hr />
 <h2 id="int-helpers">Helpers</h2>
+<h3 id="int-protectcompanion">ProtectCompanion <a class="anchor-link" href="#int-protectcompanion">#</a></h3>
+<p><em>protect-companion</em></p>
+<p><strong>Protect a print or CRF companion with every cell left editable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ProtectCompanion(ByVal companionSh As Worksheet, ByVal pass As Passwords)
+</code></pre>
+<p>Private utilities shared by both build modes.</p>
+<p>The two companions hold no data of their own. The print sheet is a view of
+the table beside it and the CRF is a form to fill in on paper, so a user who
+wants to retype a header, widen a column or drop a row on one of them should
+never be stopped. Every cell is unlocked before the sheet is protected, which
+leaves nothing for Contents to guard.</p>
+<p>The protect call is still made, and it is made for the UserInterfaceOnly flag
+it carries. That flag is what lets the show/hide bracket, the import walk and
+the export walk write to the companion, and it is also what puts a row for the
+companion into the protection matrix. The two flags the matrix records --
+shapes and row deletion -- are both asked for as yes, so the row it writes
+says both are allowed and LeaveDebugMode restores the sheet the same way.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>companionSh</code>: Worksheet. The print or CRF sheet. Nothing is skipped.</li>
+<li><code>pass</code>: Passwords. The protection keys. Nothing is skipped.</li>
+</ul>
+<hr />
 <h3 id="int-freezeheader">FreezeHeader <a class="anchor-link" href="#int-freezeheader">#</a></h3>
 <p><em>freeze-header</em></p>
 <p><strong>Freeze the header of a data entry sheet</strong></p>
@@ -309,7 +333,6 @@ failure for the generation report and re-raises what it caught.</p>
 <pre><code class="language-vb">Private Sub FreezeHeader(ByVal sh As Worksheet, ByVal splitRow As Long, _
                          Optional ByVal splitColumn As Long = 0)
 </code></pre>
-<p>Private utilities shared by both build modes.</p>
 <p>ActiveWindow belongs to whichever sheet is active, so the activation is tested
 before the three writes. A sheet that refuses to activate - a hidden one, or a
 workbook whose structure is protected - used to have the freeze applied to
