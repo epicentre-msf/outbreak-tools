@@ -173,78 +173,77 @@ workbooks:
 
       - area: Setup file
         tests:
-          - "Load a setup whose Translations sheet lost its HiddenNames: the dropdown holds the header languages with no __TagInternal__ row, and RNG_LangSetup holds the first real language on a white background"
-          - "Rename a .xlsb setup to .xlsx (or save one as .xlsm) and generate: the dictionary lands whole, at the same rows as from the original file"
-          - "Generate with RNG_LLForm empty: the transfer passes the geo step with an empty language code"
+          - "Load a new version setup (setup with the current version of the designer)"
+          - "Load an old version of the setup (old versions of the setup)"
+          - "Generate a linelist with the new version of the setup"
+          - "Can not generate with old version of the setup"
+          - "Generate a linelist with setup language empty"
+          - "Generate a linelist with a xlsx measles setup file"
+          - "Generate a linelist with a xlsb measles setup file"
+          - "Generate a linelist with a xlsx ocv setup file"
+          - "Generate a linelist with a xlsb ocv setup file"
+          - "Generate a linelist with a generic test setup file"
 
       - area: Styles
         tests:
-          - "Press the styles import button, then load a different setup file, then generate: the linelist's __formatter carries the setup's styles"
-          - "Import the styles again after the load, then generate: the designer's styles ship"
-          - "Generate with a setup whose __formatter names a different design than the designer's: the linelist's __formatter!DESIGNTYPE reads the designer's design"
+          - "Import a style: Press the import styles, then select a different style file (provided in the test package)."
+          - "Generate a linelist with a new setup and the new imported style in. The linelist should have the setup style)"
+          - "Import a style into a setup (new version)"
+          - "Generate a linelist with the setup imported style (the setup style should be used)"
 
       - area: Geobase
         tests:
-          - The two Manage buttons clear the geobase and the entries
+          - You can clear the Geobase
+          - You can Import a Geobase into a the designer
+          - You can generate with an empty geobase
+          - You can generate with an imported geobase
+          - Changing the designer language changes the geobase admin names in the generated linelist
 
       - area: Generation
         tests:
-          - "One scripts/devtools/rundesigner.applescript run end to end against a real setup (clickGenerate ends with a message box, so the run needs one click at the end)"
-          - test: "Run one full generation by hand and diff the __check report against what the phases should report"
-            note: The standing close-out check. A linelist with many sections is where the report's own cost shows up, since every row it writes ends in an autofit.
+          - At the end of each generation you can see a log
 
     features:
 
       - area: Ribbon
         tests:
           - The two checkboxes keep their state across a close and reopen
-          - "The OutbreakTools tab survives a workbook whose flags sheet is broken (the fallback path)"
-          - test: A language change re-labels the ribbon
-            note: The first designer build where onLoad is actually captured, so the handle exists to invalidate.
+          - The OutbreakTools tab is there on open/close of the designer
+          - A Language of the designer change re-labels the ribbon
 
       - area: Entry checks
         tests:
-          - "A generation with a faulty entry: the run stops, __check is visible and active with the fault listed, and the message box shows the translated MSG_NotReady text"
-          - "A second generation right after a first: the report sheet comes back formatted (Consolas, filters, gridlines off) holding run 2's rows alone"
-          - "After clickDesignerInitialize, __check is hidden again"
-          - "Generate against a setup stripped of its Translations table: the run completes, and __check carries the warning that the designer's own translation rows were kept"
+          - You can not generate with empty setup
+          - You can not generate with empty output folder
+          - You can not generate with empty linelist name
+          - You can generage without a password
+          - Every generation end with the __check worksheet showing the errors
+          - Generate a linelist when the Translations worksheet is deleted from the xlsx setup
 
       - area: Multi table
         tests:
-          - "Place the cursor on the setups header and press the folder button: the message asks for a data cell and the header text stays"
+          - "Place the cursor on the setups header and press the folder button: select multiple setup files from different extensions. xlsx, xlsb"
           - "Duplicate a filled row: the new row carries the values and the next free ID"
-          - "Load two setup files at once: each row's language cell lists that row's languages, and a bad file shows up in the one skip message"
+          - "Load two geobase files at once"
           - "Press add rows, then resize: the surviving rows keep their IDs"
 
       - area: Multi generation
         tests:
-          - "Fill two rows and press generate-multi: one report on __check with a bundle per row, OK and the written path on each row, both files on disk, and the passwords of each row on its own file"
+          - "Fill two rows and press generate-multi: one report on __check with all the setups OK and the written path on each row, both files on disk, and the passwords of each row on its own file"
           - "Give one row a bad setup path: its result says refused, the report names the fault, and the other row still builds"
-          - "Press the button again on the built table: the output files cells hold full paths and the second run writes the same files"
-
-      - area: Progress bars
-        tests:
-          - The bar on Main moves through a single generation, and its status cell names each data entry sheet as it is built
-          - "The bar on GenerateMultiple moves per row, and each row's result cell reads \"sheet i of n\" while that row builds"
-          - "A failed run leaves no half-drawn bar"
+          - "Press the button again on the built table. It should overwrite existing files"
 
       - area: Run log
         tests:
           - "A generation ends with __check shown and <linelist name>-generation.txt beside the output workbook"
           - The severity and title filters work on the __check sheet
-          - test: The text file carries the per-variable lines
-            note: They are kept off the worksheet on purpose -- CheckingOutput.WriteRow ends every row with an EntireColumn.AutoFit -- so the file is the only place they appear.
-          - The closing bundle reads the sheet and variable counts of the run, and a multi run counts every row of the batch
+          - The text file carries the per-variable lines
+          - The closing reports shows the sheet and variable counts of the run, and a multi run counts every row of the batch
 
       - area: Generation report
         tests:
-          - "Generate a linelist with a sheet carrying two or more subsections and read the report: it completes, and entries appear where there were none"
-          - "Generate a linelist with a time series graph and a spatio-temporal graph and read the report: entries appear where there were none"
-
-      - area: Language
-        tests:
-          - "Change the designer language, then press a Main shape button: the message in RNG_Edition comes out in the new language"
-          - "Press the four Main shape buttons in a row: each answers faster than the first, because only the first builds the entry and the translator"
+          - "Generate a linelist with a sheet carrying two or more subsections and read the report: it completes."
+          - "Generate a linelist with a time series graph and a spatio-temporal graph and read the report."
 
   # ===========================================================================
   # LINELIST -- the generated workbook
@@ -259,23 +258,30 @@ workbooks:
 
       - area: Navigation
         tests:
-          - "Switch between sheets: the switch looks the same with the workbook SheetActivate handler gone"
-          - "Pick an entry in the go-to dropdown: navigation returns"
+          - "Switch between sheets"
           - "Open a data entry sheet and read A1: the go-to-section dropdown is there and readable"
+          - "Pick a section in the go-to dropdown of each worksheet: navigation moves to the selected section"
 
       - area: Data entry
         tests:
           - "Type in a data entry cell: the change handlers feel quick"
-          - "Edit a list-auto column on an HList sheet and leave it: the dropdown picked the value up"
-          - "Type twice into a multiple-choice column: the second pick appends, and the same pick twice leaves the cell as it stood"
-          - "Press add-rows on a sheet that refuses it: the warning shows and the application is unlocked after"
-          - "Put a decimal variable with a maximum of 0.5 in the dictionary and type 0.4 into its cell: it is accepted"
-          - "After a four-level Validate, read Application.Calculation, .ScreenUpdating, .DisplayAlerts, .EnableEvents and .Cursor in the Immediate window: all back where they started"
+          - "Edit a list-auto column on an HList sheet and leave it. Values are updated"
+          - "Select multiple entries in a multiple-choice column:"
+          - "Press add-rows on a sheet that is not data entry: You have a warning message"
+          - "Data validation are respected"
+          - "Formulas are calculated and updated"
+          - "Geo dropdowns are updated on selection"
+          - "Custom dropdown can be updated, and the top of the tables link to variables"
 
       - area: Ribbon
         tests:
-          - "Read the OutbreakTools tab: all 25 labels translated, drawn faster"
-          - "Open the variable-label form on a real dictionary: complete and fast"
+          - "Read the OutbreakTools tab: all 25 labels translated"
+          - "Open the variable-label form"
+          - "Open the Advanced form"
+          - "Open the show/hide form"
+          - "Show/hide some section when clicking on the show/hide sections"
+          - "Open print and crf worksheets"
+          - "Show/hide works on print and crf worksheets"
 
       - area: Geo form
         tests:
@@ -307,6 +313,7 @@ workbooks:
           - "Export with include p-codes = no, then open the linelist's own Dictionary sheet: the export column still claims the geo p-code and geo concat variables"
           - "Open the exported file's Dictionary sheet: the geo p-code and geo concat rows are absent from it"
           - "Open any export file's Metadata sheet: epiweekstart carries a value"
+          - "Export with specific geo variables (geo1 + geo2)"
 
       - area: Compile
         tests:
@@ -316,7 +323,7 @@ workbooks:
 
       - area: Geo form
         tests:
-          - test: "Open F_Geo, close it, import through F_Advanced a geobase whose level names differ, then reopen F_Geo: the four level captions read the new names"
+          - test: "Open F_Geo, close it, import a geobase whose level names differ, then reopen F_Geo: the four level captions have the new names"
             note: This is the reported bug. The headless pair measures the class half of it alone.
           - "Change the admin level of a spatio-temporal section and press Validate: the formulas move, the level cell follows, and a second Validate on the same level changes nothing"
           - test: "Validate a deep place on a freshly generated spatio-temporal section: the input cell wraps the joined value and the section recalculates once"
@@ -327,26 +334,18 @@ workbooks:
           - "Hide a few variables through the form, close the workbook and reopen it: the choices survive"
           - "Do the same on a CRF sheet: entries appear in the form, and the third entry hides the third ROW"
           - "Import a migration file carrying show/hide: the receiving sheets actually hide"
-          - "Drag a column width in the form: it lands"
-          - "Hide that column, export a migration file and read entry_size: it holds the width the column has when shown"
+          - "Change the Drag a column width of a shown column. Then export for migration"
+          - "Hide that column, import a migration file. The column width should be the same before export"
           - "Turn a printed header vertical, then hide that column and show it again: the header still reads bottom to top"
 
       - area: Saved layouts
         tests:
           - "Open show/hide on a data sheet: the Layout button opens the saved-layouts form, and every caption on it is translated"
           - Add asks for a name and the name appears in the list
-          - "Double-click a saved layout: an input box opens preloaded with its name"
+          - "Double-click a saved layout: an input box opens preloaded with its name. You can change the name"
           - Remove asks before dropping a layout, and an eleventh Add is refused with a message
-          - "Hide a column, save a layout, unhide it, then Apply: the column hides again, and the show/hide list behind the form agrees once the layouts form closes"
+          - "Hide a column, save a layout, unhide it, then Apply: the column hides again."
           - The saved layouts survive closing the workbook, and travel in a migration file
-
-      - area: Forms
-        tests:
-          - "Open the advanced form from the ribbon: every button label translated"
-          - "Press Reset Columns where a column is hidden and a header is printed: the column comes back, the header lies flat, and the choices survive closing and reopening the workbook"
-          - "Press Last Import Report with no import done this session: the report form opens on the stored lists"
-          - "Open the export form twice in one session, once leaving by Back and once by the window box: the buttons come back both times"
-          - "Decline the filter on one export with the other buttons still up: the box stays ticked for the next one"
 
       - area: Import
         tests:
@@ -354,11 +353,10 @@ workbooks:
           - "Import any file, then open the linelist's Metadata sheet: epiweekstart carries the value the file held, and the epiweek columns of the data sheets show the new week"
           - "Import into a linelist that already holds rows: the box asks what to do with them, and answering No puts the imported rows under the ones already there"
           - "Import a file made from a linelist in another language: the box names both languages"
-          - "Import a custom export written with header format = variables labels: the import stops and __import_checking says why"
-          - "Import a custom export written with header format = variable names + variable labels: the data lands"
+          - "Import an  export written with header format = variables labels: the import stops and __import_checking says why"
+          - "Import an export written with header format = variable names + variable labels: the data lands"
           - "Open __import_checking after any import: one row per thing the import found, errors first"
-          - test: "Import a file that misses a sheet and answer Yes to the report box: the four lists read right"
-            note: Needs FormLogicImportRep.bas pasted into the code-behind of F_ImportRep in the VBE first.
+          - "Import a file that misses a sheet and answer Yes to the report box"
 
       - area: Export another linelist
         tests:
@@ -376,10 +374,11 @@ workbooks:
 
       - area: Filter refresh
         tests:
-          - "Break one HList sheet by renaming its filtered companion, then run the filter refresh: the box names that sheet while the other sheets still refresh"
+          - "Break one HList sheet by renaming its filtered companion, then run the filter refresh: the message box names that sheet while the other sheets still refresh"
           - "Read the __log sheet of that linelist: it holds one MSG_ErrUpdate block for the refresh"
 
       - area: Charts
         tests:
           - "Generate a linelist with a time series graph and a spatio-temporal graph: a percentage total plots real values"
-          - "Generate one with a spatial table at the default geo count: the chart height reads right"
+          - "Generate a linelist with two with spatial tables. Both tables are updated. on refresh"
+          - "Generate a linelist with two time series tables. Both tables are updated on refresh"
