@@ -369,10 +369,27 @@ DEFAULT_NAME_PATTERN <- paste0(
 # unchecked.
 FORM_FOLDERS <- c(".mock/forms/designer", ".test-runner/forms/merged")
 
-# The form's own name is a tag only where the code asks for it. Nine of the
-# eleven FormLogic modules run `Me.Caption = TranslatedValue(Me.Name)`; the two
-# that do not leave their form with its design-time caption in every language,
-# so a table row keyed on those form names is a row nothing reads.
+# The form's own name is a tag only where the code asks for it. A FormLogic
+# module that runs `Me.Caption = TranslatedValue(Me.Name)` reads the row keyed
+# on its form name; one that does not leaves the form with its design-time
+# caption in every language, and that row is a row nothing reads.
+#
+# The form name is read from the module's own @ModuleDescription, because two
+# file names do not carry it: FormLogicShowHide belongs to F_ShowHideLL, and
+# FormLogicEpiWeek's description names no form, so that one falls back to the
+# file name. Deriving every name from the file name reported F_ShowHideLL as a
+# dead row while its caption was being translated.
+# scripts/headless/merge-form-code.R states the same pairing.
+form_of_module <- function(path) {
+  lines <- readLines(path, warn = FALSE)
+  described <- grep("@ModuleDescription", lines, value = TRUE)
+  named <- regmatches(described, regexpr("F_[A-Za-z0-9_]+", described))
+  if (length(named)) {
+    return(named[1])
+  }
+  paste0("F_", sub("^FormLogic", "", sub("\\.bas$", "", basename(path))))
+}
+
 forms_that_translate_their_caption <- function() {
   modules <- list.files(
     "src/modules/linelistform",
@@ -386,7 +403,7 @@ forms_that_translate_their_caption <- function() {
     },
     modules
   )
-  paste0("F_", sub("^FormLogic", "", sub("\\.bas$", "", basename(asking))))
+  sort(unique(vapply(asking, form_of_module, character(1), USE.NAMES = FALSE)))
 }
 
 read_form_tags <- function() {

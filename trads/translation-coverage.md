@@ -1,6 +1,6 @@
 # Translation coverage
 
-Written by `scripts/devtools/translation-coverage.R` on 2026-08-24 12:30.
+Written by `scripts/devtools/translation-coverage.R` on 2026-08-24 17:00.
 
 Workbook read: `trads/designer_translations.xlsx`.
 
@@ -11,8 +11,8 @@ Workbook read: `trads/designer_translations.xlsx`.
 | table | rows | missing | dead | oracle |
 | --- | --- | --- | --- | --- |
 | t_tradllshapes | 10 | see the message list | 2 | VBA string literals |
-| t_tradllmsg | 175 | see the message list | 58 | VBA string literals |
-| t_tradllforms | 125 | 0 | 29 | control names in `.mock/forms/designer` |
+| t_tradllmsg | 175 | see the message list | 52 | VBA string literals |
+| t_tradllforms | 125 | 0 | 27 | control names in `.mock/forms/designer` |
 | t_tradllribbon | 38 | 0 | 11 | getLabel ids in the linelist ribbon templates |
 | t_tradmsg | 78 | 0 | 49 | VBA literals + getLabel ids in the designer ribbon |
 | t_tradrange | 14 | 2 to check | 1 | defined names in designer.xlsb |
@@ -59,7 +59,6 @@ _Nothing._
 - `MSG_CloseImportFile`
 - `MSG_CustomTableSheet`
 - `MSG_Debug`
-- `MSG_DesHidden`
 - `MSG_ErrClearHistoric`
 - `MSG_ErrDebug`
 - `MSG_ErrExportData`
@@ -72,7 +71,6 @@ _Nothing._
 - `MSG_FinishImportHistoricGeo`
 - `MSG_FinishedClear`
 - `MSG_From`
-- `MSG_Hidden`
 - `MSG_Hide`
 - `MSG_HideAllOptional`
 - `MSG_ImportDone`
@@ -96,10 +94,6 @@ _Nothing._
 - `MSG_SelectSection`
 - `MSG_Show`
 - `MSG_ShowAllOptional`
-- `MSG_ShowHoriz`
-- `MSG_ShowMandatory`
-- `MSG_ShowVerti`
-- `MSG_Shown`
 - `MSG_To`
 - `MSG_UnableShowHide`
 - `MSG_UnableToAgg`
@@ -137,8 +131,6 @@ _Nothing._
 - `CMD_Retour`
 - `CMD_SaveToFilter`
 - `F_Filters`
-- `F_ShowHideLL`
-- `F_ShowHidePrint`
 - `FRM_Geo`
 - `LBL_EmptySection`
 - `LBL_FilterName`
