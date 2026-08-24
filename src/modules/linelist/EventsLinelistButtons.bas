@@ -18,9 +18,20 @@ Private Const CRFPREFIX As String = "crf_"
 Private Const CONTROL_SUFFIX As String = " -- control"
 
 'The translation code the sections list shows for a block of variables the
-'dictionary gave no `main section`. It sits in the forms table beside the two
-'the status column reads, so the whole list speaks one language.
+'dictionary gave no `main section`. It names a control of the sections form, so
+'it sits in the forms table.
 Private Const EMPTY_SECTION_TAG As String = "LBL_EmptySection"
+
+'The six words the status column of a show/hide list shows. They name the state
+'an entry is in, so they live in the messages table rather than the forms table.
+'See ShowHideStatusTag below for which entry gets which, and ShowHideStatusText
+'for why the option button captions are the wrong rows to read.
+Private Const STATUS_SHOWN_TAG     As String = "MSG_Shown"
+Private Const STATUS_HIDDEN_TAG    As String = "MSG_Hidden"
+Private Const STATUS_HORIZ_TAG     As String = "MSG_ShowHoriz"
+Private Const STATUS_VERTI_TAG     As String = "MSG_ShowVerti"
+Private Const STATUS_MANDATORY_TAG As String = "MSG_ShowMandatory"
+Private Const STATUS_LOCKED_TAG    As String = "MSG_DesHidden"
 
 'The pair the show/hide form is open on: which variables the sheet offers, and
 'the sheet itself. Both are rebuilt each time the form opens.
@@ -498,44 +509,139 @@ Private Function ShowHideListOf(ByVal frm As Object) As Object
     On Error GoTo 0
 End Function
 
-'The word the status column shows for one entry. The two words are the captions
-'of the form's own option buttons, so the column reads in the language the rest
-'of the form reads in. A form opened before the translators are built falls back
-'to the tag itself.
-Private Function ShowHideStatusText(ByVal hidden As Boolean) As String
-    Dim tagName As String
-
-    tagName = IIf(hidden, "OPT_Hide", "OPT_Show")
-    ShowHideStatusText = tagName
-
-    If tradsform Is Nothing Then Exit Function
+'Whether one show/hide form is the printed sheet's.
+'
+'The same test ShowHideListOf makes, and it has to stay the same one: the CRF
+'opens F_ShowHideLL as well, so the layer the sheet belongs to does not answer
+'this. The form that carries the two direction buttons is the form whose status
+'column can name a direction.
+Private Function IsPrintShowHideForm(ByVal frm As Object) As Boolean
+    If frm Is Nothing Then Exit Function
 
     On Error Resume Next
-    ShowHideStatusText = tradsform.TranslatedValue(tagName)
+    IsPrintShowHideForm = (frm.Name <> "F_ShowHideLL")
     On Error GoTo 0
+End Function
+
+'Whether the printed header of one entry is turned on its side right now.
+'
+'The live sheet answers this, not the dictionary: AuthoredVertical is where the
+'variable started, and the user may have turned it since.
+Private Function EntryIsVertical(ByVal entryIdx As Long) As Boolean
+    If showHideEntries Is Nothing Then Exit Function
+    If activeLayout Is Nothing Then Exit Function
+
+    On Error Resume Next
+    EntryIsVertical = activeLayout.IsVertical(showHideEntries.PositionIndex(entryIdx))
+    On Error GoTo 0
+End Function
+
+'The messages row naming the state of one entry.
+'
+'Five states, and the entry list already knows which one an entry is in. They
+'are read in this order because the first two overrule everything under them:
+'
+'   IsMandatory    the user cannot hide it       MSG_ShowMandatory
+'   IsLocked       the user cannot show it       MSG_DesHidden
+'   IsHidden       off the sheet right now       MSG_Hidden
+'   on screen, printed sheet                     MSG_ShowHoriz / MSG_ShowVerti
+'   on screen, anywhere else                     MSG_Shown
+'
+'IsMandatory and IsLocked are built to exclude each other -- IsLockedStatus in
+'ShowHide leaves a mandatory entry alone -- so the order of those two settles a
+'case that cannot arise, and reads the way the class does.
+'
+'IsLocked covers two causes. A variable the dictionary marks "always hidden" is
+'one. A calculated column or an automatic list on a printed sheet or a CRF is
+'the other: both layers hold those hidden whatever the dictionary says. Both are
+'held hidden by the design of the linelist, which is what MSG_DesHidden names.
+Private Function ShowHideStatusTag(ByVal entryIdx As Long, _
+                                   ByVal onPrintForm As Boolean) As String
+
+    If showHideEntries Is Nothing Then Exit Function
+
+    If showHideEntries.IsMandatory(entryIdx) Then
+        ShowHideStatusTag = STATUS_MANDATORY_TAG
+        Exit Function
+    End If
+
+    If showHideEntries.IsLocked(entryIdx) Then
+        ShowHideStatusTag = STATUS_LOCKED_TAG
+        Exit Function
+    End If
+
+    If showHideEntries.IsHidden(entryIdx) Then
+        ShowHideStatusTag = STATUS_HIDDEN_TAG
+        Exit Function
+    End If
+
+    If Not onPrintForm Then
+        ShowHideStatusTag = STATUS_SHOWN_TAG
+        Exit Function
+    End If
+
+    ShowHideStatusTag = IIf(EntryIsVertical(entryIdx), STATUS_VERTI_TAG, STATUS_HORIZ_TAG)
+End Function
+
+'Read one status row in the language of the workbook.
+'
+'The column says what the entry is right now. The option buttons beside it give
+'the user an order: press me and the variable goes away. English writes both
+'senses as the one word "Hide", so reading the button captions into the column
+'looked right and hid the mistake. French writes them apart. OPT_Hide is
+'"Masquer", an order, and a variable already off the sheet was labelled with it.
+'
+'The MSG_ rows carry the state sense in all five languages. They name no
+'control, so they sit in the messages table and are read through tradsmess. A
+'form opened before the translators are built falls back to the tag itself.
+Private Function StatusWord(ByVal tagName As String) As String
+    StatusWord = tagName
+
+    If LenB(tagName) = 0 Then Exit Function
+    If tradsmess Is Nothing Then Exit Function
+
+    On Error Resume Next
+    StatusWord = tradsmess.TranslatedValue(tagName)
+    On Error GoTo 0
+End Function
+
+'The word the status column shows for one entry of a show/hide list.
+Private Function ShowHideStatusText(ByVal entryIdx As Long, _
+                                    ByVal onPrintForm As Boolean) As String
+    ShowHideStatusText = StatusWord(ShowHideStatusTag(entryIdx, onPrintForm))
+End Function
+
+'The word the status column shows for one section.
+'
+'A section is a span rather than a variable, so the four flags an entry carries
+'do not describe it. The sections list offers the two words it can answer for
+'and writes nothing for a section the user cannot change.
+Private Function SectionStatusText(ByVal hidden As Boolean) As String
+    SectionStatusText = StatusWord(IIf(hidden, STATUS_HIDDEN_TAG, STATUS_SHOWN_TAG))
 End Function
 
 'Populate a show/hide form's list control from the entry list
 '
 'The list carries three columns: the label the user reads, the variable name the
-'dictionary spells, and whether the entry is shown or hidden right now. Only the
-'first column was ever written, so the two beside it stayed blank on every open.
+'dictionary spells, and the state the entry is in right now. Only the first
+'column was ever written, so the two beside it stayed blank on every open.
 'ColumnCount is set before the rows go in, because writing List(row, 1) on a one
 'column control is refused.
+'
+'The status word is worked out per row. It used to be two words read once and
+'picked between, which was cheaper and could only ever say shown or hidden.
 Private Sub PopulateShowHideList(ByVal frm As Object)
     Dim listCtrl As Object
     Dim counter As Long
     Dim rowIdx As Long
-    Dim shownText As String
-    Dim hiddenText As String
+    Dim onPrintForm As Boolean
 
     If showHideEntries Is Nothing Then Exit Sub
 
     Set listCtrl = ShowHideListOf(frm)
     If listCtrl Is Nothing Then Exit Sub
 
-    shownText = ShowHideStatusText(False)
-    hiddenText = ShowHideStatusText(True)
+    onPrintForm = IsPrintShowHideForm(frm)
 
     On Error Resume Next
     listCtrl.ColumnCount = 3
@@ -550,8 +656,7 @@ Private Sub PopulateShowHideList(ByVal frm As Object)
         'two writes, and the label column is what the user needs most.
         On Error Resume Next
         listCtrl.List(rowIdx, 1) = showHideEntries.FieldKey(counter)
-        listCtrl.List(rowIdx, 2) = IIf(showHideEntries.IsHidden(counter), _
-                                       hiddenText, shownText)
+        listCtrl.List(rowIdx, 2) = ShowHideStatusText(counter, onPrintForm)
         On Error GoTo 0
     Next
 End Sub
@@ -569,7 +674,7 @@ Private Sub RefreshShowHideRow(ByVal entryIdx As Long)
 
     On Error Resume Next
     listCtrl.List(entryIdx - 1, 2) = _
-        ShowHideStatusText(showHideEntries.IsHidden(entryIdx))
+        ShowHideStatusText(entryIdx, IsPrintShowHideForm(activeShowHideForm))
     On Error GoTo 0
 End Sub
 
@@ -877,7 +982,7 @@ Private Sub PopulateSectionsList(ByVal frm As Object)
         On Error Resume Next
         If activeSections.CanChange(counter) Then
             listCtrl.List(rowIdx, 1) = _
-                ShowHideStatusText(activeSections.IsHidden(counter))
+                SectionStatusText(activeSections.IsHidden(counter))
         End If
         On Error GoTo 0
     Next
@@ -1041,7 +1146,7 @@ Public Sub ClickOptionsShowHideSections(ByVal Index As Long)
     Set listCtrl = activeSectionsForm.Controls("LST_Sections")
     If Not listCtrl Is Nothing Then
         listCtrl.List(sectionIdx - 1, 1) = _
-            ShowHideStatusText(activeSections.IsHidden(sectionIdx))
+            SectionStatusText(activeSections.IsHidden(sectionIdx))
     End If
     On Error GoTo 0
 
@@ -1069,7 +1174,7 @@ Public Sub ClickListShowHide(ByVal Index As Long)
     'question the buttons ask is whether the entry is free.
     canChange = showHideEntries.IsFree(entryIdx)
 
-    If activeShowHideForm.Name = "F_ShowHideLL" Then
+    If Not IsPrintShowHideForm(activeShowHideForm) Then
         If showHideEntries.IsHidden(entryIdx) Then
             activeShowHideForm.OPT_Hide.Value = True
         Else
@@ -1078,10 +1183,7 @@ Public Sub ClickListShowHide(ByVal Index As Long)
         activeShowHideForm.OPT_Show.Enabled = canChange
         activeShowHideForm.OPT_Hide.Enabled = canChange
     Else
-        isVertical = False
-        If Not activeLayout Is Nothing Then
-            isVertical = activeLayout.IsVertical(showHideEntries.PositionIndex(entryIdx))
-        End If
+        isVertical = EntryIsVertical(entryIdx)
 
         If showHideEntries.IsHidden(entryIdx) Then
             activeShowHideForm.OPT_Hide.Value = True
