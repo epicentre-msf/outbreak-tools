@@ -91,6 +91,132 @@
             "type": "shell",
             "command": "Rscript scripts/devtools/match-designertranslations.R",
             "problemMatcher": []
+        },
+        {
+            "label": "translations: coverage report",
+            "type": "shell",
+            "command": "Rscript scripts/devtools/translation-coverage.R",
+            "problemMatcher": []
+        },
+        {
+            "label": "translations: add rows",
+            "type": "shell",
+            "command": "Rscript scripts/devtools/add-translation-rows.R --workbook '${input:tradWorkbook}' --rows '${input:tradRows}'",
+            "problemMatcher": []
+        },
+        {
+            "label": "tests: build manual tests workbook",
+            "type": "shell",
+            "command": "Rscript scripts/devtools/build-manual-tests.R",
+            "problemMatcher": []
+        },
+        {
+            "label": "tests: narrow registry",
+            "type": "shell",
+            "command": "Rscript scripts/devtools/narrow-registry.R '${input:registryFolders}'",
+            "problemMatcher": []
+        },
+        {
+            "label": "tests: probe folders",
+            "type": "shell",
+            "command": "bash scripts/devtools/probe-folders.sh ${input:probeFolders}",
+            "problemMatcher": []
+        },
+        {
+            "label": "scan: name shadowing",
+            "type": "shell",
+            "command": "Rscript scripts/devtools/name-shadowing-scan.R",
+            "problemMatcher": []
+        },
+        {
+            "label": "scan: call signatures",
+            "type": "shell",
+            "command": "Rscript scripts/devtools/call-signature-scan.R --tests",
+            "problemMatcher": []
+        },
+        {
+            "label": "scan: linelist components",
+            "type": "shell",
+            "command": "Rscript scripts/devtools/linelist-components-scan.R",
+            "problemMatcher": []
+        },
+        {
+            "label": "scan: transferred code",
+            "type": "shell",
+            "command": "Rscript scripts/devtools/transferred-code-scan.R",
+            "problemMatcher": []
+        },
+        {
+            "label": "scan: interface guard",
+            "type": "shell",
+            "command": "bash scripts/devtools/interface-guard.sh",
+            "problemMatcher": []
+        },
+        {
+            "label": "scan: mock import drift",
+            "type": "shell",
+            "command": "bash scripts/devtools/mock-import-drift.sh ${input:driftTarget}",
+            "problemMatcher": []
+        },
+        {
+            "label": "comments: harvest",
+            "type": "shell",
+            "command": "Rscript scripts/devtools/harvest-comments.R",
+            "problemMatcher": []
+        },
+        {
+            "label": "comments: update (dry run)",
+            "type": "shell",
+            "command": "Rscript scripts/devtools/update-comments.R --input all-comments.txt --dry-run",
+            "problemMatcher": []
+        },
+        {
+            "label": "comments: update",
+            "type": "shell",
+            "command": "Rscript scripts/devtools/update-comments.R --input all-comments.txt",
+            "problemMatcher": []
+        },
+        {
+            "label": "ribbon: doctor",
+            "type": "shell",
+            "command": "bash scripts/devtools/ribbon-doctor.sh '${input:ribbonWorkbook}'",
+            "problemMatcher": []
+        },
+        {
+            "label": "ribbon: extract",
+            "type": "shell",
+            "command": "bash scripts/devtools/ribbon-extract.sh '${input:ribbonWorkbook}'",
+            "problemMatcher": []
+        },
+        {
+            "label": "ribbon: pack",
+            "type": "shell",
+            "command": "bash scripts/devtools/ribbon-pack.sh '${input:ribbonDir}' --out '${input:ribbonOut}' --overwrite",
+            "problemMatcher": []
+        },
+        {
+            "label": "ribbon: envelope (2007)",
+            "type": "shell",
+            "command": "bash scripts/devtools/ribbon-envelope.sh '${input:ribbonWorkbook}'",
+            "problemMatcher": []
+        },
+        {
+            "label": "inspect: linelist",
+            "type": "shell",
+            "command": "Rscript scripts/devtools/linelist-inspect.R '${input:linelistPath}'",
+            "problemMatcher": []
+        },
+        {
+            "label": "inspect: vba project",
+            "type": "shell",
+            "command": "Rscript scripts/devtools/vba-inspect.R '${input:vbaBinPath}' ${input:vbaMode} src",
+            "problemMatcher": []
+        },
+        {
+            "label": "names: show folder",
+            "type": "shell",
+            "command": "bash scripts/devtools/show-names.sh ${input:namesKind} ${input:namesArgs}",
+            "problemMatcher": []
         }
     ],
     "inputs": [
@@ -98,6 +224,97 @@
             "id": "docClassName",
             "type": "promptString",
             "description": "Class or interface name to document (without the .cls extension)"
+        },
+        {
+            "id": "tradWorkbook",
+            "type": "promptString",
+            "description": "Translations workbook to grow",
+            "default": "trads/designer_translations.xlsx"
+        },
+        {
+            "id": "tradRows",
+            "type": "promptString",
+            "description": "CSV of rows to add (first column = table name, then the row starting with the message code)",
+            "default": "trads/new-rows.csv"
+        },
+        {
+            "id": "registryFolders",
+            "type": "promptString",
+            "description": "Suite folder(s) to keep in the registry, comma separated (e.g. dataio,helpers)"
+        },
+        {
+            "id": "probeFolders",
+            "type": "promptString",
+            "description": "Folders to probe one at a time, space separated; empty walks every registry folder except helpers",
+            "default": ""
+        },
+        {
+            "id": "driftTarget",
+            "type": "pickString",
+            "description": "Which mock workbook(s) to check against the source files",
+            "options": [
+                "all",
+                "setup",
+                "designer",
+                "unit_test",
+                "mastersetup"
+            ],
+            "default": "all"
+        },
+        {
+            "id": "ribbonWorkbook",
+            "type": "promptString",
+            "description": "Workbook carrying the ribbon (e.g. .mock/setup_mock.xlsb)",
+            "default": ".mock/setup_mock.xlsb"
+        },
+        {
+            "id": "ribbonDir",
+            "type": "promptString",
+            "description": "Ribbon folder produced by ribbon-extract.sh (e.g. ribbons/setup_mock)",
+            "default": "ribbons/setup_mock"
+        },
+        {
+            "id": "ribbonOut",
+            "type": "promptString",
+            "description": "Workbook to write the packed ribbon into (overwritten)",
+            "default": ".mock/setup_mock.xlsb"
+        },
+        {
+            "id": "linelistPath",
+            "type": "promptString",
+            "description": "Delivered linelist to inspect (.xlsb)"
+        },
+        {
+            "id": "vbaBinPath",
+            "type": "promptString",
+            "description": "Path to the vbaProject.bin to read"
+        },
+        {
+            "id": "vbaMode",
+            "type": "pickString",
+            "description": "list = name the components; content = also compare their source with src/",
+            "options": [
+                "list",
+                "content"
+            ],
+            "default": "list"
+        },
+        {
+            "id": "namesKind",
+            "type": "pickString",
+            "description": "Which source tree to list",
+            "options": [
+                "--classes",
+                "--modules",
+                "--tests"
+            ],
+            "default": "--classes"
+        },
+        {
+            "id": "namesArgs",
+            "type": "promptString",
+            "description": "Extra arguments: --folder=<name>, --folders, --ext, --paths; empty lists every name in the tree",
+            "default": "--folder=dataio"
         }
     ]
 }

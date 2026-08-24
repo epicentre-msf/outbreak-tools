@@ -1,6 +1,6 @@
 # Translation coverage
 
-Written by `scripts/devtools/translation-coverage.R` on 2026-08-24 10:24.
+Written by `scripts/devtools/translation-coverage.R` on 2026-08-24 12:30.
 
 Workbook read: `trads/designer_translations.xlsx`.
 
