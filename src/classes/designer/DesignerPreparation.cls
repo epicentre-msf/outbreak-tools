@@ -23,8 +23,8 @@ Option Explicit
 'preparation sequence imports translation tables from a user-selected
 'workbook, creates a dropdown worksheet with standard dropdown lists
 '(setup languages, interface languages, epiweek start, design values),
-'hides internal worksheets (VeryHidden for __pass/__formatter/__formula/
-'__dropdowns, Hidden for translation sheets), seeds workbook- and
+'hides internal worksheets (VeryHidden for __pass/__formula/__dropdowns,
+'Hidden for translation sheets), seeds workbook- and
 'worksheet-level HiddenNames flags, carries the designer version from the
 'Dev worksheet into a workbook-level name, applies data validation to the
 'T_Multi table on the GenerateMultiple worksheet, and registers hidden
@@ -187,9 +187,9 @@ End Sub
 '   translation tables into LinelistTranslation and DesignerTranslation.
 '2. Creates the dropdown worksheet and registers all standard dropdown
 '   lists (setup languages, interface languages, epiweek start, design).
-'3. Hides internal worksheets (VeryHidden for __pass/__formatter/
-'   __formula/__dropdowns/__check, Hidden for LinelistTranslation,
-'   DesignerTranslation).
+'3. Hides internal worksheets (VeryHidden for __pass/__formula/
+'   __dropdowns, Hidden for LinelistTranslation, DesignerTranslation).
+'   __formatter and __check are left alone: the designer works with both.
 '4. Seeds workbook-level HiddenNames flags (ribbon checks, language
 '   codes, last opened date).
 '5. Copies the version from the Dev worksheet into the workbook-level
@@ -440,10 +440,11 @@ End Sub
 '@label:hide-worksheets
 '@sub-title Hide internal worksheets and register them with the dev manager
 '@details
-'Sets __pass, __formatter, __formula, __dropdowns and __check to
-'xlSheetVeryHidden. The __check sheet holds the generation report and
-'FinaliseReport shows it after a run, so a prepared designer ships it
-'hidden again. Sets LinelistTranslation and DesignerTranslation to
+'Sets __pass, __formula and __dropdowns to xlSheetVeryHidden. __formatter
+'and __check are deliberately left as they are: __formatter carries the
+'formats a user picks and __check carries the generation report, so a
+'prepared designer keeps both on screen. Sets LinelistTranslation and
+'DesignerTranslation to
 'xlSheetHidden (visible in the VBA editor for developers). When a
 'development manager is provided, all sheets are also registered via
 'AddHiddenSheet for deployment. Silently skips any worksheet that does

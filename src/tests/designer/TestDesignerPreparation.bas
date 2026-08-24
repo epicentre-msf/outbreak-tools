@@ -102,7 +102,7 @@ Public Sub TestPrepareHidesInternalSheets()
 
     'Arrange: create the internal sheets on the fixture workbook. The
     '__check sheet starts visible, the way a finished generation run
-    'leaves it.
+    'leaves it, and Prepare is expected to leave it that way.
     Dim passSheet As Worksheet
     Dim formatterSheet As Worksheet
     Dim formulaSheet As Worksheet
@@ -118,11 +118,15 @@ Public Sub TestPrepareHidesInternalSheets()
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing, TranslationsSource
 
-    'Assert: internal sheets should be VeryHidden
+    'Assert: the sheets nobody edits by hand go away, and the two the
+    'designer works with stay on screen. __formatter carries the formats a
+    'user picks and __check carries the generation report, so Prepare leaves
+    'both visible. That is what "Unhide some designer worksheet at
+    'preparation" set, and it is the behaviour this test now holds.
     Assert.AreEqual CLng(xlSheetVeryHidden), CLng(passSheet.Visible), "__pass should be VeryHidden."
-    Assert.AreEqual CLng(xlSheetVeryHidden), CLng(formatterSheet.Visible), "__formatter should be VeryHidden."
     Assert.AreEqual CLng(xlSheetVeryHidden), CLng(formulaSheet.Visible), "__formula should be VeryHidden."
-    Assert.AreEqual CLng(xlSheetVeryHidden), CLng(checkSheet.Visible), "__check should be VeryHidden."
+    Assert.AreEqual CLng(xlSheetVisible), CLng(formatterSheet.Visible), "__formatter should stay visible."
+    Assert.AreEqual CLng(xlSheetVisible), CLng(checkSheet.Visible), "__check should stay visible."
     Exit Sub
 
 Fail:
