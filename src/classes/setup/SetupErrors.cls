@@ -23,10 +23,11 @@ Option Explicit
 'the workbook, Initialise sets the run up, Run walks every check, and Checkings
 'answers the entries. The dictionary is checked for duplicate variables,
 'missing labels, unknown controls and formulas that fail to parse; the choices
-'for unused entries and missing labels; the exports for missing metadata and
-'for variables the dictionary has none of; and the translations for missing and
-'duplicate labels. Entries are collected as Checking objects and printed to the
-'__checkRep worksheet through CheckingOutput.
+'for unused entries and missing labels; the exports for missing metadata, for
+'an "Admin levels" cell the export cannot read, and for variables the dictionary
+'has none of; and the translations for missing and duplicate labels. Entries are
+'collected as Checking objects and printed to the __checkRep worksheet through
+'CheckingOutput.
 '
 'THE CHECKS FOLLOW THE BUILDER
 '-------------------------------------------------------------------------------
@@ -121,6 +122,7 @@ Private Const DICT_VALID_CONTROL As String          = "Dictionary, line %1--Vali
 Private Const DICT_VAR_LENGTH As String             = "Dictionary, line %1--Variable ""%2"" length is less than 4. Variable should have length >= 4."
 Private Const DICT_VAR_UNIQUE As String             = "Dictionary, line %1--Variable ""%2"" is duplicate, variable names should be unique."
 Private Const EXP_ACT_EMPTY As String               = "Exports, line %1--The export is active, but the corresponding column is empty in the dictionary. You may end up with empty data in this export. Please correct the status of export %2."
+Private Const EXP_ADM_LEVELS As String              = "Exports, line %1--The Export Number %2 has an ""Admin levels"" value that cannot be read: ""%3"". Write the levels joined with a plus, like ""admin1+admin2"", or leave the cell empty to export every admin level. Please correct it."
 Private Const EXP_FILENAME_VARNOTVLIST As String    = "Exports, line %1--The Export Number %2 file name contains a variable named ""%3"" which is not a vlist1D variable, but a hlist2D. It will be considered as text in exports."
 Private Const EXP_FILENAME_VARUNFOUND As String     = "Exports, line %1--The Export Number %2 file name contains a variable named ""%3"" which does not exists. It will be considered as text in exports."
 Private Const EXP_ID_PASSWD As String               = "Exports, line %1--The Export Number %2 has no password, but keeps identifiers."
@@ -724,6 +726,48 @@ Private Function ContainsIgnoringCase(ByVal values As BetterArray, ByVal target 
     Next
 End Function
 
+'@label:is-admin-levels-cell
+'@sub-title Test whether an "Admin levels" cell is written the way an export reads it
+'@details
+'Mirrors LLExporter.AdminLevelOfChunk: the cell holds the admin levels the
+'export writes, joined with a plus and written `admin1+admin2`. Each chunk is
+'trimmed and read without regard to case, so `Admin2` and ` admin2` both pass,
+'and the level runs from 1 to 4 because LLdictionary.AppendGeoLines writes four.
+'An empty cell passes: the export reads it as every level.
+'The exporter honours the cell only when the whole of it reads, so a cell this
+'reports is a cell the export ignores, and every geo column goes out of it.
+'@param levelsText String. What the "Admin levels" cell of one export row holds.
+'@return Boolean. True when the export can honour the cell.
+Private Function IsAdminLevelsCell(ByVal levelsText As String) As Boolean
+
+    Const LEVEL_PREFIX As String = "admin"
+    Const LEVEL_SEPARATOR As String = "+"
+    Const LEVEL_COUNT As Long = 4
+
+    Dim chunks As Variant
+    Dim chunkText As String
+    Dim tail As String
+    Dim counter As Long
+
+    If LenB(Trim$(levelsText)) = 0 Then
+        IsAdminLevelsCell = True
+        Exit Function
+    End If
+
+    chunks = Split(levelsText, LEVEL_SEPARATOR)
+
+    For counter = LBound(chunks) To UBound(chunks)
+        chunkText = Trim$(CStr(chunks(counter)))
+        If Len(chunkText) <> Len(LEVEL_PREFIX) + 1 Then Exit Function
+        If StrComp(Left$(chunkText, Len(LEVEL_PREFIX)), _
+                   LEVEL_PREFIX, vbTextCompare) <> 0 Then Exit Function
+        tail = Right$(chunkText, 1)
+        If tail < "1" Or tail > CStr(LEVEL_COUNT) Then Exit Function
+    Next counter
+
+    IsAdminLevelsCell = True
+End Function
+
 '@label:is-literal-chunk
 '@sub-title Test whether a file-name chunk is a quoted literal
 '@details
@@ -1289,6 +1333,8 @@ Private Sub CheckExports()
     Dim statusRng As Range
     Dim numberRng As Range
     Dim identifiersRng As Range
+    Dim adminLevelsRng As Range
+    Dim adminLevelsValue As String
     Dim workFun As WorksheetFunction
     Dim fileNameChunks As Variant
     Dim actualFileName As String
@@ -1329,6 +1375,11 @@ Private Sub CheckExports()
     Set numberRng = expTab.DataRange("Export Number", strictSearch:=True)
     Set identifiersRng = expTab.DataRange("Include personal identifiers", strictSearch:=True)
 
+    'The column is optional, so a setup written before it existed is not reported
+    'as missing a column. An export whose row has no cell to read exports every
+    'admin level, which is what LLExporter.KeptAdminLevels answers for it.
+    Set adminLevelsRng = expTab.DataRange("Admin levels", strictSearch:=True)
+
     'The six required columns are resolved once and reported once. Reading them
     'cell by cell answered Nothing for a missing column, and IsEmpty(Nothing) is
     'False, so a missing column used to read as "this field is filled".
@@ -1363,6 +1414,10 @@ Private Sub CheckExports()
 
         exportKeepsId = vbNullString
         If Not identifiersRng Is Nothing Then exportKeepsId = CellText(identifiersRng.Cells(counter, 1).Value)
+
+        adminLevelsValue = vbNullString
+        If Not adminLevelsRng Is Nothing Then _
+            adminLevelsValue = CellText(adminLevelsRng.Cells(counter, 1).Value)
 
         For headerCounter = 0 To 5
             If Not fieldRanges(headerCounter) Is Nothing Then
@@ -1400,6 +1455,19 @@ Private Sub CheckExports()
             keyName = "exp-id-passwd"
             infoMessage = FormatMessage(EXP_ID_PASSWD, worksheetRow, exportNumber)
             check.Add keyName & "-" & checkingCounter, infoMessage, checkingWarning
+        End If
+
+        'A ROW OF ANY STATUS IS READ HERE
+        '-----------------------------------------------------------------------
+        'The row above reports what an ACTIVE export is missing, because an
+        'inactive one writes no file. This reports a cell that is written wrong,
+        'and a row turned active later carries the same wrong cell with it.
+        If Not IsAdminLevelsCell(adminLevelsValue) Then
+            checkingCounter = checkingCounter + 1
+            keyName = "exp-adm-levels"
+            infoMessage = FormatMessage(EXP_ADM_LEVELS, worksheetRow, exportNumber, _
+                                        adminLevelsValue)
+            check.Add keyName & "-" & checkingCounter, infoMessage, checkingError
         End If
 
         actualFileName = vbNullString

@@ -101,6 +101,13 @@ Private Const PCODES_GEO_CONCAT_ADM2 As String = "geo_concat_adm2"
 Private Const PCODES_GEO_CONCAT_ADM3 As String = "geo_concat_adm3"
 Private Const PCODES_GEO_CONCAT_ADM4 As String = "geo_concat_adm4"
 
+' How the "admin levels" cell of an Exports row is written, and what an empty
+' one is called on the options line a file carries about itself.
+Private Const ADMIN_LEVEL_SEPARATOR As String = "+"
+Private Const ADMIN_LEVEL_PREFIX As String = "admin"
+Private Const ADMIN_LEVEL_COUNT As Long = 4
+Private Const ADMIN_LEVELS_ALL As String = "all"
+
 
 '@section State
 '===============================================================================
@@ -416,11 +423,12 @@ End Function
 '@label:excluded-variables-for
 '@sub-title The variables a numbered export leaves out
 '@details
-'The selection an export makes before it writes anything: the geo p-code and geo
+'The selection an export makes before it writes anything: the geo variables of
+'every admin level the "admin levels" cell leaves out, the geo p-code and geo
 'concat variables when the export row turns p-codes off, and the personal
-'identifiers when it turns those off. Reading it costs three column reads and
-'writes nothing, so a caller can ask what a file will be missing before asking
-'for the file.
+'identifiers when it turns those off. Reading it costs four column reads at most
+'and writes nothing, so a caller can ask what a file will be missing before
+'asking for the file.
 '@param exportNumber Long. Which export definition to read (1-based).
 '@return BetterArray. The variable names the export drops.
 '@export
@@ -1137,11 +1145,18 @@ End Function
 '@label:excluded-variables
 '@sub-title The variables a custom export leaves out
 '@details
-'Reads the two "include" flags of the export row and answers the names of the
-'variables the export drops: the geo p-code and geo concat variables when
-'"include p-codes" is off, and every variable flagged as a personal identifier
-'when "include personal identifiers" is off. A variable that answers both is
-'listed twice, which costs a lookup and nothing else.
+'Reads three cells of the export row and answers the names of the variables the
+'export drops: the geo variables of every admin level "admin levels" leaves out,
+'the geo p-code and geo concat variables when "include p-codes" is off, and
+'every variable flagged as a personal identifier when "include personal
+'identifiers" is off.
+'
+'ONE LEVEL OWNS THREE ROWS
+'-------------------------------------------------------------------------------
+'LLdictionary.AppendGeoLines writes a visible name row, a hidden p-code row and
+'a hidden concat row for each of the four levels, and a level left out drops all
+'three. The health facility rows are left alone: `hf` and `geo_pcode_hf` belong
+'to no admin level, and an export keeps them whatever the cell asks for.
 '
 'WHY THIS READS AND NEVER WRITES
 '-------------------------------------------------------------------------------
@@ -1165,8 +1180,12 @@ Private Function ExcludedVariables(ByVal dict As LLdictionary, ByVal expObj As L
     Dim varNames As Variant
     Dim mainLabels As Variant
     Dim identifiers As Variant
+    Dim controlValues As Variant
+    Dim keptLevels() As Boolean
     Dim dropPcodes As Boolean
     Dim dropIdentifiers As Boolean
+    Dim dropLevels As Boolean
+    Dim rowLevel As Long
     Dim counter As Long
 
     Set excluded = New BetterArray
@@ -1175,10 +1194,14 @@ Private Function ExcludedVariables(ByVal dict As LLdictionary, ByVal expObj As L
     dropPcodes = (expObj.ColumnValue(exportNumber, "include p-codes") <> "yes")
     dropIdentifiers = (expObj.ColumnValue(exportNumber, _
                                           "include personal identifiers") <> "yes")
+    keptLevels = KeptAdminLevels(expObj.ColumnValue(exportNumber, "admin levels"), _
+                                 dropLevels)
 
-    If Not dropPcodes And Not dropIdentifiers Then Exit Function
+    If Not dropPcodes And Not dropIdentifiers And Not dropLevels Then Exit Function
 
     varNames = ColumnValues(dict.DataRange("variable name"))
+    If dropPcodes Or dropLevels Then _
+        mainLabels = ColumnValues(dict.DataRange("main label"))
 
     If dropPcodes Then
         Set pcodesTagList = New BetterArray
@@ -1187,10 +1210,28 @@ Private Function ExcludedVariables(ByVal dict As LLdictionary, ByVal expObj As L
                            PCODES_GEO_CONCAT_ADM1, PCODES_GEO_CONCAT_ADM2, _
                            PCODES_GEO_CONCAT_ADM3, PCODES_GEO_CONCAT_ADM4
 
-        mainLabels = ColumnValues(dict.DataRange("main label"))
         For counter = LBound(varNames) To UBound(varNames)
             If pcodesTagList.Includes(CStr(mainLabels(counter))) Then
                 excluded.Push CStr(varNames(counter))
+            End If
+        Next counter
+    End If
+
+    'A NAME THIS PASS FINDS MAY ALREADY BE ON THE LIST
+    '---------------------------------------------------------------------------
+    'An export that turns p-codes off and asks for two levels drops the p-code
+    'and the concat of the levels it left out twice over. The list is what
+    'ExcludedVariablesFor shows a user, so each name is pushed once.
+    If dropLevels Then
+        controlValues = ColumnValues(dict.DataRange("control"))
+        For counter = LBound(varNames) To UBound(varNames)
+            rowLevel = GeoLevelOf(CStr(controlValues(counter)), _
+                                  CStr(mainLabels(counter)))
+            If rowLevel > 0 Then
+                If Not keptLevels(rowLevel) Then
+                    If Not excluded.Includes(CStr(varNames(counter))) Then _
+                        excluded.Push CStr(varNames(counter))
+                End If
             End If
         Next counter
     End If
@@ -1203,6 +1244,117 @@ Private Function ExcludedVariables(ByVal dict As LLdictionary, ByVal expObj As L
             End If
         Next counter
     End If
+End Function
+
+'@label:kept-admin-levels
+'@sub-title The admin levels one export row asks for
+'@details
+'The "admin levels" cell holds the levels joined with a plus, written
+'`admin1+admin2`. An empty cell asks for every level.
+'
+'THE CELL IS HONOURED ONLY WHEN THE WHOLE OF IT READS
+'-------------------------------------------------------------------------------
+'A cell holding one chunk this cannot read answers every level, the way an empty
+'cell does. An export that silently drops geo columns over a typo is worse than
+'one that keeps them all, and SetupErrors.CheckExports reports that same cell on
+'the setup side, before a linelist is ever built from it.
+'@param cellText String. What the Exports row holds.
+'@param someDropped Boolean. Written True when a level is left out.
+'@return Boolean(). One entry per level, 1 to 4, True for a level to export.
+Private Function KeptAdminLevels(ByVal cellText As String, _
+                                 ByRef someDropped As Boolean) As Boolean()
+
+    Dim kept() As Boolean
+    Dim chunks As Variant
+    Dim levelNumber As Long
+    Dim counter As Long
+    Dim readable As Boolean
+
+    ReDim kept(1 To ADMIN_LEVEL_COUNT)
+    someDropped = False
+    readable = (LenB(Trim$(cellText)) > 0)
+
+    If readable Then
+        chunks = Split(cellText, ADMIN_LEVEL_SEPARATOR)
+        For counter = LBound(chunks) To UBound(chunks)
+            levelNumber = AdminLevelOfChunk(CStr(chunks(counter)))
+            If levelNumber > 0 Then
+                kept(levelNumber) = True
+            Else
+                readable = False
+                Exit For
+            End If
+        Next counter
+    End If
+
+    For counter = 1 To ADMIN_LEVEL_COUNT
+        If readable Then
+            If Not kept(counter) Then someDropped = True
+        Else
+            kept(counter) = True
+        End If
+    Next counter
+
+    KeptAdminLevels = kept
+End Function
+
+'@label:admin-level-of-chunk
+'@sub-title The level one chunk of the "admin levels" cell holds
+'@details
+'The chunk is trimmed and read without regard to case, so `Admin2` and ` admin2`
+'both answer 2. Anything else answers 0, and the caller reads that as a cell it
+'cannot honour. SetupErrors.IsAdminLevelsCell holds this same rule.
+'@param chunk String. One piece of the cell, between two plus signs.
+'@return Long. The level, 1 to 4, or 0 when the chunk holds something else.
+Private Function AdminLevelOfChunk(ByVal chunk As String) As Long
+
+    Dim chunkText As String
+    Dim tail As String
+
+    chunkText = Trim$(chunk)
+    If Len(chunkText) <> Len(ADMIN_LEVEL_PREFIX) + 1 Then Exit Function
+    If StrComp(Left$(chunkText, Len(ADMIN_LEVEL_PREFIX)), _
+               ADMIN_LEVEL_PREFIX, vbTextCompare) <> 0 Then Exit Function
+
+    tail = Right$(chunkText, 1)
+    If tail < "1" Or tail > CStr(ADMIN_LEVEL_COUNT) Then Exit Function
+
+    AdminLevelOfChunk = CLng(tail)
+End Function
+
+'@label:geo-level-of
+'@sub-title The admin level one dictionary row belongs to
+'@details
+'LLdictionary.AppendGeoLines writes three rows per level and this reads all
+'three back. The visible name row carries the control `geo1` to `geo4`. The two
+'hidden rows carry the control `formula`, and their level sits in the main
+'label, written `geo_pcode_adm2` or `geo_concat_adm2`.
+'A row belonging to no admin level answers 0, and the health facility rows are
+'among them: `hf` and `geo_pcode_hf` name no level.
+'@param controlValue String. The `control` cell of the row.
+'@param mainLabel String. The `main label` cell of the row.
+'@return Long. The level, 1 to 4, or 0 when the row names none.
+Private Function GeoLevelOf(ByVal controlValue As String, _
+                            ByVal mainLabel As String) As Long
+
+    Dim controlText As String
+    Dim labelText As String
+    Dim counter As Long
+
+    controlText = LCase$(Trim$(controlValue))
+    labelText = LCase$(Trim$(mainLabel))
+
+    For counter = 1 To ADMIN_LEVEL_COUNT
+        If controlText = "geo" & counter Then
+            GeoLevelOf = counter
+            Exit Function
+        End If
+        If labelText = "geo_pcode_adm" & counter Or _
+           labelText = "geo_concat_adm" & counter Then
+            GeoLevelOf = counter
+            Exit Function
+        End If
+    Next counter
 End Function
 
 '@label:column-values
@@ -1730,6 +1882,7 @@ Private Function ExportOptionsTag(ByVal scope As Byte, ByVal exportNumber As Lon
         options.Push OnePair("variable labels", "no")
         options.Push OnePair("header row", "1")
         options.Push OnePair("filtered data", "no")
+        options.Push OnePair("admin levels", ADMIN_LEVELS_ALL)
         ExportOptionsTag = Join(options.Items, OPTION_SEPARATOR)
         Exit Function
     End If
@@ -1752,6 +1905,9 @@ Private Function ExportOptionsTag(ByVal scope As Byte, ByVal exportNumber As Lon
                          expObj.ColumnValue(exportNumber, "include personal identifiers"))
     options.Push OnePair("include p-codes", _
                          expObj.ColumnValue(exportNumber, "include p-codes"))
+    options.Push OnePair("admin levels", _
+                         expObj.ColumnValue(exportNumber, "admin levels"), _
+                         whenEmpty:=ADMIN_LEVELS_ALL)
     options.Push OnePair("export metadata sheets", _
                          expObj.ColumnValue(exportNumber, "export metadata sheets"))
     options.Push OnePair("export analyses sheets", _
@@ -1764,15 +1920,19 @@ End Function
 '@sub-title One `name: value` pair of the export options line
 '@details
 'An option the Exports row left empty is written as `no`, so the reader on the
-'other side never has to tell an absent option from a false one.
+'other side never has to tell an absent option from a false one. An option whose
+'empty cell means something else says so: "admin levels" left empty asks for
+'every level, and `no` would read as none of them.
 '@param optionName String. The option name.
 '@param optionValue String. What the Exports row holds for it.
+'@param whenEmpty Optional String. What an empty cell is written as. Defaults to `no`.
 '@return String. The pair.
-Private Function OnePair(ByVal optionName As String, ByVal optionValue As String) As String
+Private Function OnePair(ByVal optionName As String, ByVal optionValue As String, _
+                         Optional ByVal whenEmpty As String = "no") As String
     Dim writtenValue As String
 
     writtenValue = optionValue
-    If LenB(writtenValue) = 0 Then writtenValue = "no"
+    If LenB(Trim$(writtenValue)) = 0 Then writtenValue = whenEmpty
 
     OnePair = optionName & OPTION_PAIR_SEPARATOR & writtenValue
 End Function

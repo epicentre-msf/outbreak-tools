@@ -77,6 +77,12 @@ Private Const PCODE_VARIABLE As String = "hid_beg_v1"
 Private Const PCODE_TAG As String = "geo_pcode_adm1"
 Private Const IDENTIFIER_VARIABLE As String = "hid_end_v1"
 
+'The fixture row a geo control puts on an admin level. hid_beg_v1 carries the
+'main label geo_pcode_adm1 and sits on level 1, so the two are dropped by
+'different levels and a test can keep one of them.
+Private Const GEO_LEVEL3_VARIABLE As String = "geo_h2"
+Private Const GEO_LEVEL3_CONTROL As String = "geo3"
+
 
 '@section Lifecycle
 '===============================================================================
@@ -102,6 +108,7 @@ Public Sub ModuleInitialize()
         Set FixtureWorkbook = NewWorkbook()
         DictionaryTestFixture.PrepareDictionaryFixture DICTIONARY_SHEET, FixtureWorkbook
         TagOnePcodeRow
+        TagOneGeoLevelRow
         BuildExportsSheet
 
         Set store = HiddenNames.Create(FixtureWorkbook)
@@ -260,6 +267,11 @@ TestFail:
 End Sub
 
 '@sub-title An export that keeps everything drops nothing.
+'@details
+'Export 2 keeps both flags on and leaves its admin levels cell empty, so all
+'three rules stay quiet. The empty cell is the one worth naming: the p-code row
+'and the geo3 row of the fixture both sit on a level, and a reader that took an
+'empty cell for "no level at all" would drop them here.
 '@TestMethod("LLExporter")
 Public Sub TestAnExportThatKeepsEverythingDropsNothing()
     CustomTestSetTitles Assert, TESTMODULE, "TestAnExportThatKeepsEverythingDropsNothing"
@@ -276,6 +288,78 @@ Public Sub TestAnExportThatKeepsEverythingDropsNothing()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestAnExportThatKeepsEverythingDropsNothing", Err.Number, Err.Description
+End Sub
+
+'@sub-title An export naming one admin level drops the geo rows of the others.
+'@details
+'Export 4 asks for admin1 and keeps both flags on, so the level is the only
+'rule that can drop anything. geo_h2 sits on level 3 and goes; hid_beg_v1
+'carries the main label geo_pcode_adm1, sits on level 1 and stays.
+'@TestMethod("LLExporter")
+Public Sub TestOneAdminLevelDropsTheGeoRowsOfTheOthers()
+    CustomTestSetTitles Assert, TESTMODULE, "TestOneAdminLevelDropsTheGeoRowsOfTheOthers"
+    If Not FixtureReady("TestOneAdminLevelDropsTheGeoRowsOfTheOthers") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim excluded As BetterArray
+
+    Set excluded = FixtureExporter().ExcludedVariablesFor(4)
+
+    Assert.IsTrue excluded.Includes(GEO_LEVEL3_VARIABLE), _
+                  "A geo3 row is dropped by an export that asks for admin1"
+    Assert.IsFalse excluded.Includes(PCODE_VARIABLE), _
+                   "The level the export asks for keeps its rows"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestOneAdminLevelDropsTheGeoRowsOfTheOthers", Err.Number, Err.Description
+End Sub
+
+'@sub-title The level named is the level kept, whichever one it is.
+'@details
+'Export 5 asks for admin3, so the two rows of export 4 change places. A rule
+'that always kept level 1 would pass that test and fail this one.
+'@TestMethod("LLExporter")
+Public Sub TestTheLevelNamedIsTheLevelKept()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheLevelNamedIsTheLevelKept"
+    If Not FixtureReady("TestTheLevelNamedIsTheLevelKept") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim excluded As BetterArray
+
+    Set excluded = FixtureExporter().ExcludedVariablesFor(5)
+
+    Assert.IsTrue excluded.Includes(PCODE_VARIABLE), _
+                  "A level 1 row is dropped by an export that asks for admin3"
+    Assert.IsFalse excluded.Includes(GEO_LEVEL3_VARIABLE), _
+                   "The geo3 row stays when admin3 is the level asked for"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheLevelNamedIsTheLevelKept", Err.Number, Err.Description
+End Sub
+
+'@sub-title A cell the reader cannot make sense of keeps every level.
+'@details
+'Export 6 holds `admin1+adm2`, and `adm2` names no level. The whole cell is
+'left alone rather than half honoured, so a typo costs a user no geo column.
+'SetupErrors reports that same cell on the setup side.
+'@TestMethod("LLExporter")
+Public Sub TestAnAdminLevelsCellThatCannotBeReadKeepsEveryLevel()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAnAdminLevelsCellThatCannotBeReadKeepsEveryLevel"
+    If Not FixtureReady("TestAnAdminLevelsCellThatCannotBeReadKeepsEveryLevel") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim excluded As BetterArray
+
+    Set excluded = FixtureExporter().ExcludedVariablesFor(6)
+
+    Assert.AreEqual CLng(0), excluded.Length, _
+                    "A cell holding a chunk that names no level drops nothing"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAnAdminLevelsCellThatCannotBeReadKeepsEveryLevel", Err.Number, Err.Description
 End Sub
 
 '@sub-title The two flags are read one at a time.
@@ -457,6 +541,26 @@ Public Sub TestTheOptionsLineCarriesTheExportRow()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestTheOptionsLineCarriesTheExportRow", Err.Number, Err.Description
+End Sub
+
+'@sub-title The admin levels reach the line, and an empty cell reads as `all`.
+'@details
+'Every other option left empty is written `no`, and `no` on this one would read
+'as no level at all. A file written with the cell empty carries every level.
+'@TestMethod("LLExporter")
+Public Sub TestTheOptionsLineNamesTheAdminLevels()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheOptionsLineNamesTheAdminLevels"
+    If Not FixtureReady("TestTheOptionsLineNamesTheAdminLevels") Then Exit Sub
+    On Error GoTo TestFail
+
+    Assert.IsTrue InStr(1, FixtureExporter().ExportOptionsFor(4), "admin levels: admin1") > 0, _
+                  "The levels of export 4 reach the line"
+    Assert.IsTrue InStr(1, FixtureExporter().ExportOptionsFor(2), "admin levels: all") > 0, _
+                  "An empty cell is written as all"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheOptionsLineNamesTheAdminLevels", Err.Number, Err.Description
 End Sub
 
 '@sub-title The pairs are joined with a pipe, so the import can split them.
@@ -998,7 +1102,37 @@ Private Sub TagOnePcodeRow()
     sh.Cells(2, labelColumn).Value = PCODE_TAG
 End Sub
 
-'@sub-title Write the three-row Exports worksheet the tests read.
+'@sub-title Put one fixture row on an admin level.
+'@details
+'The shared dictionary fixture holds the RAW geo row, control `geo`, the way a
+'setup file writes it. A linelist dictionary holds what LLdictionary.Prepare
+'made of it, and the level branch of the exporter reads that: `geo1` to `geo4`.
+'This writes the prepared control onto the one geo row of the fixture, so the
+'fixture answers the question the exporter asks of a real linelist.
+Private Sub TagOneGeoLevelRow()
+    Dim sh As Worksheet
+    Dim nameColumn As Long
+    Dim controlColumn As Long
+    Dim rowCounter As Long
+
+    Set sh = FixtureWorkbook.Worksheets(DICTIONARY_SHEET)
+    nameColumn = DictionaryTestFixture.DictionaryHeaderIndex("Variable Name") + 1
+    controlColumn = DictionaryTestFixture.DictionaryHeaderIndex("Control") + 1
+
+    For rowCounter = 2 To DictionaryTestFixture.DictionaryFixtureRowCount() + 1
+        If StrComp(CStr(sh.Cells(rowCounter, nameColumn).Value), _
+                   GEO_LEVEL3_VARIABLE, vbTextCompare) = 0 Then
+            sh.Cells(rowCounter, controlColumn).Value = GEO_LEVEL3_CONTROL
+            Exit For
+        End If
+    Next rowCounter
+End Sub
+
+'@sub-title Write the six-row Exports worksheet the tests read.
+'@details
+'"admin levels" is written LAST on the header row on purpose. SetHeaderFormat
+'reaches the header format by its column number, and a column inserted before
+'it would send that write somewhere else.
 Private Sub BuildExportsSheet()
     Dim sh As Worksheet
 
@@ -1008,14 +1142,23 @@ Private Sub BuildExportsSheet()
                              "file format", "file name", "password", _
                              "include personal identifiers", "include p-codes", _
                              "header format", "export metadata sheets", _
-                             "export analyses sheets"
+                             "export analyses sheets", "admin levels"
 
     WriteRow sh.Cells(2, 1), 1, "active", "both off", "xlsx", "one", "no", _
-                             "no", "no", "default", "no", "no"
+                             "no", "no", "default", "no", "no", vbNullString
     WriteRow sh.Cells(3, 1), 2, "active", "both on", "xlsx", "two", "no", _
-                             "yes", "yes", "default", "no", "no"
+                             "yes", "yes", "default", "no", "no", vbNullString
     WriteRow sh.Cells(4, 1), 3, "active", "identifiers off", "xlsx", "three", "no", _
-                             "no", "yes", "default", "no", "no"
+                             "no", "yes", "default", "no", "no", vbNullString
+
+    'The three level rows keep both flags on, so the levels are the only rule
+    'left to answer for what they drop.
+    WriteRow sh.Cells(5, 1), 4, "active", "level one", "xlsx", "four", "no", _
+                             "yes", "yes", "default", "no", "no", "admin1"
+    WriteRow sh.Cells(6, 1), 5, "active", "level three", "xlsx", "five", "no", _
+                             "yes", "yes", "default", "no", "no", "admin3"
+    WriteRow sh.Cells(7, 1), 6, "active", "level misspelt", "xlsx", "six", "no", _
+                             "yes", "yes", "default", "no", "no", "admin1+adm2"
 End Sub
 
 '@fun-title A workbook carrying the five sheets CreateFromFile looks for.

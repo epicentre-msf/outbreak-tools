@@ -208,7 +208,8 @@ Private Function ExportHeaders() As Variant
         "include p-codes", _
         "header format", _
         "export metadata sheets", _
-        "export analyses sheets")
+        "export analyses sheets", _
+        "admin levels")
 End Function
 
 Private Function BuildExportRow(ByVal statusValue As String, _

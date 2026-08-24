@@ -443,7 +443,8 @@ Public Sub TestExportsChecksReportAllMessages()
         "corresponding column is empty in the dictionary", _
         "file name contains a variable named ""missing_var"" which does not exists", _
         "file name contains a variable named ""calc_invalid"" which is not a vlist1D variable", _
-        "corresponding column in the dictionary is missing")
+        "corresponding column in the dictionary is missing", _
+        "has an ""Admin levels"" value that cannot be read: ""admin1+adm2""")
 
     For idx = LBound(expected) To UBound(expected)
         AssertContainsMessage results, CStr(expected(idx)), "Exports"
@@ -456,6 +457,38 @@ Cleanup:
 
 Fail:
     CustomTestLogFailure Assert, "TestExportsChecksReportAllMessages", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
+'@sub-title An "Admin levels" cell written the right way is left alone.
+'@details
+'Row 3 of the fixture holds `admin1+admin2`, which is the shape LLExporter
+'reads, and row 4 holds `admin1+adm2`, which it cannot. A check that reported
+'both would send a user to correct a cell that is already right.
+'@TestMethod("SetupErrors")
+Public Sub TestAWellWrittenAdminLevelsCellIsQuiet()
+    CustomTestSetTitles Assert, "SetupErrors", "TestAWellWrittenAdminLevelsCellIsQuiet"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As SetupErrors
+    Dim results As BetterArray
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
+    Set checker = SetupErrors.Create(hostBook)
+    checker.Run
+    Set results = checker.Checkings
+
+    Assert.IsFalse CheckingsContain(results, "cannot be read: ""admin1+admin2"""), _
+                   "A cell holding admin1+admin2 is reported by nothing"
+
+Cleanup:
+    Set checker = Nothing
+    DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestAWellWrittenAdminLevelsCellIsQuiet", Err.Number, Err.Description
     Resume Cleanup
 End Sub
 
@@ -1452,6 +1485,7 @@ Private Sub ConfigureExportsSheet(ByVal hostBook As Workbook, ByVal includeIssue
         exportsTable.ListColumns("password").DataBodyRange.Cells(3, 1).Value = "yes"
         exportsTable.ListColumns("include personal identifiers").DataBodyRange.Cells(3, 1).Value = "no"
         exportsTable.ListColumns("header format").DataBodyRange.Cells(3, 1).Value = "variables names"
+        exportsTable.ListColumns("admin levels").DataBodyRange.Cells(3, 1).Value = "admin1+admin2"
 
         exportsTable.ListColumns("status").DataBodyRange.Cells(4, 1).Value = "active"
         exportsTable.ListColumns("label button").DataBodyRange.Cells(4, 1).Value = "Missing dictionary column"
@@ -1460,6 +1494,7 @@ Private Sub ConfigureExportsSheet(ByVal hostBook As Workbook, ByVal includeIssue
         exportsTable.ListColumns("password").DataBodyRange.Cells(4, 1).Value = "yes"
         exportsTable.ListColumns("include personal identifiers").DataBodyRange.Cells(4, 1).Value = "no"
         exportsTable.ListColumns("header format").DataBodyRange.Cells(4, 1).Value = "variables names"
+        exportsTable.ListColumns("admin levels").DataBodyRange.Cells(4, 1).Value = "admin1+adm2"
     End If
 End Sub
 
