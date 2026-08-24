@@ -5,8 +5,56 @@ Attribute VB_Description = "Form code-behind for F_ShowHidePrint"
 '@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
 '@ModuleDescription("Form code-behind for F_ShowHidePrint")
 
+' This module is the complete code-behind of the F_ShowHidePrint form and is
+' copied into the form at deployment. The form is the printed sheet's show/hide:
+' beside showing and hiding a variable it says which way the header of a shown
+' variable reads, which is the one thing the data entry form has no need of.
+'
+' The controls the form carries:
+'
+'   LST_PrintNames        three columns, the label, the variable and its status
+'   OPT_PrintShowHoriz    show the picked variable, header across
+'   OPT_PrintShowVerti    show the picked variable, header down
+'   OPT_Hide              hide the picked variable
+'   LBL_ID                header of the variable column
+'   LBL_PrintStatus       header of the status column
+'   CMD_PrintBack         leave the form
+'   CMD_PrintLL           set the page up and open the print preview
+'   CMD_ColWidth          change the width of the picked column
+'   CMD_MatchLLShowHide   take the choices of the data entry sheet
+'
+' Every one of them has a row in T_TradLLForms under its own name, so
+' UserForm_Initialize translates the whole form in one call.
+
 Option Explicit
 
+
+Private tradform As TranslationObject
+
+
+'The translation helper is the one EventLinelist holds.
+Private Sub InitializeTrads()
+    Dim linelistEvents As EventLinelist
+    Dim lltrads As LLTranslation
+
+    If Not tradform Is Nothing Then Exit Sub
+
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    If Not linelistEvents Is Nothing Then Set lltrads = linelistEvents.Translation()
+
+    If lltrads Is Nothing Then _
+        Err.Raise ProjectError.ObjectNotInitialized, "FormLogicShowHidePrint", _
+                  "This linelist carries no usable translation sheet"
+
+    Set tradform = lltrads.TransObject(TranslationOfForms)
+End Sub
+
+Private Sub UserForm_Initialize()
+    InitializeTrads
+
+    Me.Caption = tradform.TranslatedValue(Me.Name)
+    tradform.TranslateForm Me
+End Sub
 
 Private Sub LST_PrintNames_Click()
     ClickListShowHide Me.LST_PrintNames.ListIndex
