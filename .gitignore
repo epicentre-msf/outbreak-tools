@@ -26,9 +26,11 @@ ribbons/_ribbontemplate_dev.xlsb
 #   tables the designer copies into a generated file.
 trads/designer_translations*.xlsx
 
-# tests input xlsb, xlsx files
-src/tests/.input/*.xlsb
-src/tests/.input/*.xlsx
+# tests input xlsb, xlsx files, at any depth.
+# `**/` matches zero directories as well as many, so these two cover
+# src/tests/.input/file.xlsx and src/tests/.input/package/file.xlsx alike.
+src/tests/.input/**/*.xlsb
+src/tests/.input/**/*.xlsx
 
 # --- VS Code: commit project tasks/snippets, ignore personal settings --------
 #   tasks.json + snippets are shared; settings.json is per-developer.
