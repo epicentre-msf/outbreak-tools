@@ -187,12 +187,33 @@ Private Const LEVEL_MEMO_MAX As Long = 16
 'The two hidden name stores are built here, once each, and handed to the
 'instance. Building one walks every Name of its container, and the class
 'reads both stores on nearly every call.
+'
+'A LINELIST OLDER THAN THE HIDDEN NAME STORE
+'-------------------------------------------------------------------------------
+'A linelist generated before this version kept its geo metadata in plain named
+'ranges, and the hidden name store is what replaced them. HiddenNames tracks a
+'name only when its Visible property is False, so on such a file every one of
+'the four names the checks demand reads as absent and the factory refuses a
+'geobase that is entirely there. That is what the other-linelist export meets
+'when a user points it at an old file.
+'
+'So the checks are optional. They stay on for everything that builds or edits a
+'linelist, where a missing name is a real fault worth stopping on, and the
+'export walks turn them off: an export reads the geobase tables and writes them
+'out, and the tables are what it needs. Whatever the file cannot answer fails at
+'the read that wants it, which names the missing piece instead of one error at
+'the door.
 '@param sh Worksheet. The geobase worksheet containing T_ADM1 through T_ADM4, T_HF, T_NAMES, T_HISTOGEO, T_HISTOHF, T_METADATA, and required named ranges/hidden names.
+'@param runChecks Optional Boolean. When False the tables, named ranges and
+'  hidden names are not checked before the instance is built. Defaults to True.
+'  It is NOT named checkRequirements: CheckRequirements is a Sub of this class,
+'  and a parameter of that name turns the call below into an index on a Boolean.
 '@return LLGeo. A fully initialised LLGeo instance.
 '@throws ProjectError.ObjectNotInitialized When the worksheet is Nothing.
-'@throws ProjectError.ElementNotFound When a required table, hidden name or named range is missing.
+'@throws ProjectError.ElementNotFound When a required table, hidden name or named range is missing and runChecks is True.
 '@export
-Public Function Create(ByVal sh As Worksheet) As LLGeo
+Public Function Create(ByVal sh As Worksheet, _
+                       Optional ByVal runChecks As Boolean = True) As LLGeo
     Dim instance As LLGeo
     Dim geoStore As HiddenNames
     Dim levelStore As HiddenNames
@@ -201,7 +222,7 @@ Public Function Create(ByVal sh As Worksheet) As LLGeo
 
     Set geoStore = HiddenNames.Create(sh)
     Set levelStore = HiddenNames.Create(sh.Parent)
-    CheckRequirements sh, geoStore, levelStore
+    If runChecks Then CheckRequirements sh, geoStore, levelStore
 
     Set instance = New LLGeo
     Set instance.Wksh = sh
@@ -1143,6 +1164,76 @@ End Property
 'order the class does not fix.
 '@param rawNames Optional Boolean. True to revert to raw names, False to apply the stored labels. Defaults to False.
 '@export
+'@label:try-translate
+'@sub-title Translate the headers, and carry on when the sheet will not take it
+'@details
+'Translate writes through HiddenNames and into the header rows of the admin
+'tables. Two things stop it on a real file: a linelist older than the hidden
+'name store, whose geo names are visible and therefore invisible to the store,
+'and a source workbook opened read-only, which an export walk always does.
+'
+'Neither is a reason to lose a geobase. The refusal is recorded in words and
+'written to the linelist''s own log, and the caller carries on.
+'THE READ OF THE FLAG IS INSIDE THE GUARD, AND HAS TO BE
+'-------------------------------------------------------------------------------
+'IsTranslated looks like a read and is not. EnsureFlagsCache, underneath it,
+'writes the flag back when the geo sheet does not already carry it -- EnsureName
+'then two SetValue calls, one of them onto RNG_GeoUpdated. On a linelist older
+'than the hidden name store that name is present and VISIBLE, the store refuses
+'to see it, and the write raises. So the refusal used to land one line above the
+'guard and escape it. Both the read and the translate sit inside now.
+'@param rawNames Boolean. True to put the raw names back, False for the labels.
+'@param wasTranslated Boolean. Receives the state the headers were in, and False
+'  whenever it could not be established -- which is what the restore paths want,
+'  since nothing was changed and nothing needs putting back.
+'@return Boolean. True when the headers were changed, False when they were left.
+Private Function TryTranslate(ByVal rawNames As Boolean, _
+                              ByRef wasTranslated As Boolean) As Boolean
+
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errMessage As String
+
+    On Error GoTo TranslateRefused
+    wasTranslated = IsTranslated()
+    Translate rawNames:=rawNames
+    TryTranslate = True
+    Exit Function
+
+TranslateRefused:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errMessage = Err.Description
+    wasTranslated = False
+    ReportTranslateRefusal rawNames, errNumber, errSource, errMessage
+End Function
+
+'@label:report-translate-refusal
+'@sub-title Put in words, in lastFailure, that the headers were left as they were
+'@details
+'This class does not reach a log, and it must not start: it is hand-exported
+'into the designer, so a dependency added here has to be carried by hand into
+'another workbook. lastFailure is how it already talks to whoever called it, and
+'the caller is the one holding a log.
+'
+'LLExporter.ExportGeo reads this after a geobase export that WORKED, and writes
+'the warning to the linelist''s own log from there.
+'@param rawNames Boolean. Which direction was refused.
+'@param errNumber Long. The error number.
+'@param errSource String. The error source.
+'@param errMessage String. The error description.
+Private Sub ReportTranslateRefusal(ByVal rawNames As Boolean, _
+                                   ByVal errNumber As Long, _
+                                   ByVal errSource As String, _
+                                   ByVal errMessage As String)
+
+    this.lastFailure = "The geobase headers were left as they were: putting the " & _
+                       IIf(rawNames, "raw names", "translated labels") & _
+                       " on them raised error " & CStr(errNumber) & " from " & _
+                       errSource & ": " & errMessage & ". The exported file " & _
+                       "carries the data and the headers it already had."
+End Sub
+
 Public Sub Translate(Optional ByVal rawNames As Boolean = False)
     Dim sh As Worksheet
     Dim counter As Long
@@ -1550,9 +1641,21 @@ Public Sub ExportToFile(ByVal outputWkb As Workbook, _
         Set tabl = TableNames()
     End If
 
+    'BEST EFFORT, BECAUSE THE HEADERS ARE NOT THE EXPORT
+    '---------------------------------------------------------------------------
+    'What this step changes is which words sit on the header row of the admin
+    'tables -- adm1_name, or the label the geobase was translated into. The
+    'export is the DATA underneath them, and a file whose headers could not be
+    'put back to their raw names is a file worth writing.
+    'It refuses on a linelist older than the hidden name store: the store tracks
+    'a name only when it is hidden, that file keeps its geo names visible, and
+    'SetValue therefore finds nothing to write. Failing the whole geobase export
+    'over the wording of a header row is the wrong trade.
+    'The failure is not swallowed. It is written into the linelist''s own log
+    'and kept in lastFailure, so a caller and a user both see that the headers
+    'were left as they were.
     atStep = "putting the raw names back on the headers"
-    wasTranslated = IsTranslated()
-    Translate rawNames:=True
+    TryTranslate rawNames:=True, wasTranslated:=wasTranslated
 
     With outputWkb
         atStep = "naming the Metadata sheet"
