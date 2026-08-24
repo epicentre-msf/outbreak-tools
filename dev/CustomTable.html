@@ -44,7 +44,7 @@ through ExportColumnsNotFound, and HasColumnsNotImported answers over the last
 import. Both routines unhide every column before they write and hide the same
 columns again after.</p>
 <p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="DropdownLists.html">DropdownLists</a></p>
-<p><strong>Version:</strong> 1.1 (2026-07-28)</p>
+<p><strong>Version:</strong> 1.2 (2026-08-24)</p>
 </div>
 </details>
 <details open class="doc-section" id="statemanagement">
@@ -948,11 +948,28 @@ back and the count was always zero. A Function cannot be called that way.</p>
                                 Optional ByVal totalRowCount As Long, _
                                 Optional ByVal forceShift As Boolean)
 </code></pre>
-<p>Scans from the bottom so deletions do not disturb subsequent indexes.
-A row is considered empty when its non-empty cell count is at or below
-totalRowCount. Deletes entire worksheet rows when the shift tracker is
-active or forceShift is True; otherwise removes ListRows directly.
-Always preserves the first data row to keep formulas and templates.</p>
+<p>A row is empty when its non-empty cell count is at or below totalRowCount.
+The first data row is always kept: it carries the formulas and the formats
+every new row is built from.</p>
+<p>The body is read once and every row is answered once, into a flag array both
+branches below read.</p>
+<h2 id="int-which-branch-runs">WHICH BRANCH RUNS</h2>
+<p>With the shift tracker on, or forceShift, the empty rows go as ENTIRE
+worksheet rows, so a table stacked under this one is pulled up with them.
+Without it the table closes over its own rows and nothing outside its columns
+moves. That difference is the promise each branch carries and the two stacked
+table tests pin it.</p>
+<h2 id="int-why-the-table-branch-looks-at-the-bottom-first">WHY THE TABLE BRANCH LOOKS AT THE BOTTOM FIRST</h2>
+<p>The rows a resize drops sit at the bottom of the table nearly every time: Add
+rows pads 199 at a time and a resize takes the pad back. Shrinking the table
+over that block and clearing it is one operation. Deleting the same block a
+ListRow at a time is one Excel call per row, measured at about 2.5 ms a row on
+macOS -- 1.2 s for 500 rows, and a pad of a few thousand was the whole of the
+wait a user felt on the linelist Resize button. Column count, formulas,
+dropdowns, conditional formatting and other sheets reading the table all left
+that figure where it was, so the per-row calls were the cost and nothing else
+was. Rows left empty between filled ones still go one at a time, and there are
+seldom many.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>lo</code>: ListObject. The table to clean.</li>
@@ -960,11 +977,134 @@ Always preserves the first data row to keep formulas and templates.</p>
 <li><code>forceShift</code>: Optional Boolean. When True, forces worksheet row deletion.</li>
 </ul>
 <hr />
+<h3 id="int-rowisempty">RowIsEmpty <a class="anchor-link" href="#int-rowisempty">#</a></h3>
+<p><em>row-is-empty</em></p>
+<p><strong>Whether one row of the block counts as empty</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RowIsEmpty(ByRef bodyValues As Variant, ByVal rowIndex As Long, _
+                            ByVal tabColumnCount As Long, _
+                            ByVal rowCount As Long) As Boolean
+</code></pre>
+<p>Counts the filled cells of the row and compares the count with the threshold.
+The count stops as soon as it passes the threshold, so a filled row costs a
+few cells rather than the whole width.</p>
+<p>What counts as filled is exactly what CountA counted: a formula that returns
+&quot;&quot; reads back from a block as &quot;&quot;, not as Empty, so it counts on both sides.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>bodyValues</code>: Variant. The body block read by the caller.</li>
+<li><code>rowIndex</code>: Long. Which row of that block to answer for.</li>
+</ul>
+<h2 id="int-the-block-comes-in-by-reference-on-purpose">THE BLOCK COMES IN BY REFERENCE ON PURPOSE</h2>
+<p>A Variant holding an array is COPIED when it is passed ByVal, and this is
+called once per row. Measured with ByVal, a trim of 597 rows over 60 columns
+took 0.160 s where the same work takes 0.016 s here, and the whole-row branch
+came out slower than the row-by-row delete it replaced. Every routine that
+reads the block takes it ByRef for that reason.</p>
+<ul>
+<li><code>tabColumnCount</code>: Long. Columns in the block.</li>
+<li><code>rowCount</code>: Long. Filled-cell threshold at or under which a row is empty.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the row counts as empty.</p>
+<hr />
+<h3 id="int-lastkeptrowof">LastKeptRowOf <a class="anchor-link" href="#int-lastkeptrowof">#</a></h3>
+<p><em>last-kept-row</em></p>
+<p><strong>The last row of the block that stays</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LastKeptRowOf(ByRef bodyValues As Variant, ByVal tabRowCount As Long, _
+                               ByVal tabColumnCount As Long, _
+                               ByVal rowCount As Long) As Long
+</code></pre>
+<p>Answers the highest row that does not count as empty, and 1 when every row
+under the first is empty. Everything after it is the trailing block.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>bodyValues</code>: Variant. The body block read by the caller.</li>
+<li><code>tabRowCount</code>: Long. Rows in the block.</li>
+<li><code>tabColumnCount</code>: Long. Columns in the block.</li>
+<li><code>rowCount</code>: Long. Filled-cell threshold.</li>
+</ul>
+<p><strong>Returns:</strong> Long. A row index between 1 and tabRowCount.</p>
+<hr />
+<h3 id="int-droptrailingrows">DropTrailingRows <a class="anchor-link" href="#int-droptrailingrows">#</a></h3>
+<p><em>drop-trailing-rows</em></p>
+<p><strong>Shrink the table over its trailing empty rows in one operation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DropTrailingRows(ByVal lo As ListObject, ByVal firstBodyRow As Long, _
+                                  ByVal lastKeptRow As Long, ByVal tabRowCount As Long, _
+                                  ByVal tabColumnCount As Long) As Boolean
+</code></pre>
+<p>Resizes the ListObject to the rows that stay and clears the block it let go.
+The cells keep their values, their formats and their dropdowns until they are
+cleared, and the row-by-row delete this replaces took all three, so the clear
+is what makes the two the same. Nothing outside the table columns moves, which
+is the promise the table branch carries.</p>
+<p>Answers False when Excel refuses the resize, and the caller then walks the
+rows one at a time exactly as before. A refused clear does not turn the answer
+back: the table has already let the rows go by then, and walking them again
+would delete rows that are no longer inside it.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lo</code>: ListObject. The table to shrink.</li>
+<li><code>firstBodyRow</code>: Long. Worksheet row of the first data row.</li>
+<li><code>lastKeptRow</code>: Long. Last data row that stays, 1-based in the block.</li>
+<li><code>tabRowCount</code>: Long. Rows in the block.</li>
+<li><code>tabColumnCount</code>: Long. Columns in the block.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the table was shrunk.</p>
+<hr />
+<h3 id="int-deleteworksheetrows">DeleteWorksheetRows <a class="anchor-link" href="#int-deleteworksheetrows">#</a></h3>
+<p><em>delete-worksheet-rows</em></p>
+<p><strong>Delete the empty rows as entire worksheet rows, in one call</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub DeleteWorksheetRows(ByVal lo As ListObject, ByVal sh As Worksheet, _
+                                ByRef bodyValues As Variant, _
+                                ByVal tabRowCount As Long, ByVal tabColumnCount As Long, _
+                                ByVal rowCount As Long, ByVal firstBodyRow As Long)
+</code></pre>
+<p>The empty rows are gathered and deleted in ONE call. Deleting them one at a
+time made Excel shift the whole sheet up once per row, and a sheet holding a
+few thousand spare rows spent minutes on it. A multi-area range costs a single
+shift however many areas it carries.</p>
+<p>What goes into the Union is a RUN of touching rows rather than a row. Union
+grows dearer as the range it already holds grows, and the rows a resize drops
+are one run nearly every time, so the old shape paid thousands of Union calls
+to build a single area.</p>
+<p>The walk runs from the bottom so a deletion does not move the rows still to
+come. When Excel refuses the delete, the fallback walks the table itself,
+which is what a stacked layout sometimes needs. It is slow and it only runs
+when the one-shot delete was refused.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lo</code>: ListObject. The table being trimmed.</li>
+<li><code>sh</code>: Worksheet. The sheet holding it.</li>
+<li><code>bodyValues</code>: Variant. The body block, for the fallback.</li>
+<li><code>tabRowCount</code>: Long. Rows in that block.</li>
+<li><code>tabColumnCount</code>: Long. Columns in that block.</li>
+<li><code>rowCount</code>: Long. Filled-cell threshold, for the fallback.</li>
+<li><code>firstBodyRow</code>: Long. Worksheet row of the first data row.</li>
+</ul>
+<hr />
+<h3 id="int-appendrowrun">AppendRowRun <a class="anchor-link" href="#int-appendrowrun">#</a></h3>
+<p><em>append-row-run</em></p>
+<p><strong>Add one run of touching worksheet rows to the range being gathered</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AppendRowRun(ByRef deadRows As Range, ByVal sh As Worksheet, _
+                         ByVal firstRow As Long, ByVal lastRow As Long)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>deadRows</code>: Range. The range gathered so far, Nothing on the first call.</li>
+<li><code>sh</code>: Worksheet. The sheet holding the rows.</li>
+<li><code>firstRow</code>: Long. First worksheet row of the run.</li>
+<li><code>lastRow</code>: Long. Last worksheet row of the run.</li>
+</ul>
+<hr />
 <h3 id="int-deleterowsthroughtable">DeleteRowsThroughTable <a class="anchor-link" href="#int-deleterowsthroughtable">#</a></h3>
 <p><em>delete-rows-through-table</em></p>
 <p><strong>Delete the empty rows one at a time through the ListObject</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub DeleteRowsThroughTable(ByVal lo As ListObject, ByVal bodyValues As Variant, _
+<pre><code class="language-vb">Private Sub DeleteRowsThroughTable(ByVal lo As ListObject, ByRef bodyValues As Variant, _
                                    ByVal tabRowCount As Long, ByVal tabColumnCount As Long, _
                                    ByVal rowCount As Long)
 </code></pre>
@@ -1295,7 +1435,7 @@ for consistent stack traces.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (32 file(s))</summary>
+<summary>Used in (33 file(s))</summary>
 <ul>
 <li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
@@ -1326,6 +1466,7 @@ for consistent stack traces.</p>
 <li>TestLLImporter.bas</li>
 <li>TestDesignerMulti.bas</li>
 <li>TestCustomTable.bas</li>
+<li>TestCustomTableTiming.bas</li>
 <li>TestLLTranslation.bas</li>
 <li>TestSetupErrors.bas</li>
 <li>TestSetupPreparation.bas</li>

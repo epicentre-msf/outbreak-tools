@@ -380,13 +380,44 @@ when it is absent.</p>
 <p><strong>Get the sheet type tag from worksheet-level HiddenNames.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SheetTagOf(ByVal sh As Worksheet, _
-                            Optional ByVal nameKey As String = &quot;sheet_type&quot;) As String
+                            Optional ByVal nameKey As String = SHEET_TYPE_KEY, _
+                            Optional ByVal allowOldLayout As Boolean = False) As String
 </code></pre>
+<p>A linelist generated before the sheet metadata moved into hidden names carries
+no name to read, and ValueAsString answers an empty string rather than raising.
+The old layout wrote the same two words into a formatted cell instead, so the
+cell is read when the name is absent.
+The fallback is asked for, not automatic. AddDataSheets wants it: the sheet
+type is all it needs and the data is lost without it. AddShowHide does not,
+because the layer it would then go on to write needs table_name as well, and
+that key has no old-layout fallback. Turning it on there would trade a layer
+quietly missing for a raise that costs the whole export.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The worksheet to query.</li>
+<li><code>allowOldLayout</code>: Optional Boolean. When True, an absent sheet_type name is
+read from the cell the old layout used. Defaults to False.</li>
 </ul>
 <p><strong>Returns:</strong> String. The sheet type tag (HList, VList, etc.).</p>
+<hr />
+<h3 id="int-oldsheettypecell">OldSheetTypeCell <a class="anchor-link" href="#int-oldsheettypecell">#</a></h3>
+<p><em>old-sheet-type-cell</em></p>
+<p><strong>The sheet type of a linelist older than the hidden names</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function OldSheetTypeCell(ByVal sh As Worksheet) As String
+</code></pre>
+<p>Hlist and Vlist wrote the sheet type into the third cell of the first row and
+the table name into the fourth, both formatted LinelistHiddenCell so nobody
+would see them. The two words are the ones the hidden name carries today, so
+the cell is read as it stands and nothing is translated.</p>
+<p>This is only ever reached when the worksheet carries no sheet_type name at all.
+A sheet that has one never comes here, so a modern file cannot be read wrong by
+a cell that happens to hold something else.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The data entry worksheet to query.</li>
+</ul>
+<p><strong>Returns:</strong> String. The tag the old layout wrote, or an empty string.</p>
 <hr />
 <h2 id="int-private-source-object-accessors">Private - Source Object Accessors</h2>
 <h3 id="int-sourcedictionary">SourceDictionary <a class="anchor-link" href="#int-sourcedictionary">#</a></h3>
