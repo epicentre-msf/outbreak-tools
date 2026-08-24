@@ -1292,10 +1292,21 @@ End Sub
 '@label:ValidatePasswords
 '@prop-title Validate password provider dependency
 '@param pass The password object to check.
+'@sub-title Accept the passwords object, including the absence of one
+'@details
+'A Nothing here used to be refused outright. It has one honest source: a
+'linelist older than the protection matrix, whose __pass sheet carries no
+'T_ProtectedSheets, so Passwords.Create refuses to build over it. An export
+'walk reading such a file has no passwords object and still has every right to
+'a file name -- the export-all name is composed without one, and the numbered
+'name loses only its version suffix.
+'
+'Nothing is guarded at the two places that read a value, so the absence travels
+'no further than the suffix it removes.
+'@param pass Passwords. The handler, or Nothing when the file has none.
 Private Sub ValidatePasswords(ByVal pass As Passwords)
-    If pass Is Nothing Then
-        ThrowError ProjectError.ObjectNotInitialized, "Passwords object is required"
-    End If
+    'Deliberately empty. Kept as the one place that documents why a missing
+    'passwords object is allowed through, and as the seam to refuse it again.
 End Sub
 
 '@label:ExportTable
@@ -1769,6 +1780,11 @@ End Sub
 Private Function BuildVersionSuffix(ByVal pass As Passwords) As String
     Dim versionValue As String
     Dim publicKeyValue As String
+
+    'No passwords object, no version and no public key to name the file after.
+    'The rest of the name is what identifies the export, so it goes out without
+    'the suffix rather than not going out.
+    If pass Is Nothing Then Exit Function
 
     versionValue = SanitizeChunk(pass.Value("version"))
     publicKeyValue = SanitizeChunk(pass.Value("publickey"))
