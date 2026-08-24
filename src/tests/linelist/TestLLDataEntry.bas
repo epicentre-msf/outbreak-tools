@@ -339,6 +339,75 @@ Private Function FixtureReady(ByVal testName As String) As Boolean
                          "The fixture could not be built - " & SetupMessage
 End Function
 
+'@sub-title State that one companion is protected and holds no locked cell.
+'@param companionName String. The name of the print or CRF worksheet.
+'@param label String. The word for that companion in the failure text.
+Private Sub AssertCompanionIsOpen(ByVal companionName As String, ByVal label As String)
+    Dim companionSh As Worksheet
+    Dim lockedFlag As Variant
+
+    On Error GoTo ArrangeFailed
+    Set companionSh = OutWkb.Worksheets(companionName)
+    lockedFlag = companionSh.Cells.Locked
+    On Error GoTo 0
+
+    Assert.IsTrue companionSh.ProtectContents, _
+                  "The build protects the " & label & " companion"
+
+    'Locked answers Null when the cells disagree, so the mixed case is named
+    'rather than left to CBool, which raises 94 on it.
+    Assert.IsFalse IsNull(lockedFlag), _
+                   "Every cell of the " & label & " companion carries the same locked state"
+    If IsNull(lockedFlag) Then Exit Sub
+
+    Assert.IsFalse CBool(lockedFlag), _
+                   "The build leaves every cell of the " & label & " companion unlocked"
+    Exit Sub
+
+ArrangeFailed:
+    CustomTestLogFailure Assert, "AssertCompanionIsOpen", Err.Number, _
+                         "The " & label & " companion could not be read - " & Err.Description
+End Sub
+
+'@sub-title State that the protection matrix allows one companion both flags.
+'@param companionName String. The name of the print or CRF worksheet.
+'@param label String. The word for that companion in the failure text.
+Private Sub AssertMatrixRowIsPermissive(ByVal companionName As String, ByVal label As String)
+    Dim matrixRange As Range
+    Dim rowIdx As Long
+    Dim matrixData As Variant
+    Dim found As Boolean
+
+    On Error GoTo ArrangeFailed
+    Set matrixRange = Specs.Password.TableRange("T_ProtectedSheets")
+    On Error GoTo 0
+
+    Assert.IsFalse matrixRange Is Nothing, _
+                   "The protection matrix holds at least one row after a build"
+    If matrixRange Is Nothing Then Exit Sub
+
+    matrixData = matrixRange.Value2
+
+    For rowIdx = 1 To UBound(matrixData, 1)
+        If StrComp(CStr(matrixData(rowIdx, 1)), companionName, vbTextCompare) = 0 Then
+            found = True
+            Assert.AreEqual "yes", LCase$(Trim$(CStr(matrixData(rowIdx, 2)))), _
+                            "The matrix allows shapes on the " & label & " companion"
+            Assert.AreEqual "yes", LCase$(Trim$(CStr(matrixData(rowIdx, 3)))), _
+                            "The matrix allows row deletion on the " & label & " companion"
+            Exit For
+        End If
+    Next rowIdx
+
+    Assert.IsTrue found, _
+                  "The build records the " & label & " companion in the protection matrix"
+    Exit Sub
+
+ArrangeFailed:
+    CustomTestLogFailure Assert, "AssertMatrixRowIsPermissive", Err.Number, _
+                         "The protection matrix could not be read - " & Err.Description
+End Sub
+
 '@fun-title The table name the dictionary gives a sheet.
 '@param sheetName String. The dictionary sheet name.
 '@return String. The sheet's table name.
@@ -832,6 +901,40 @@ Public Sub TestThePrintCompanionCarriesItsOwnType()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestThePrintCompanionCarriesItsOwnType", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLDataEntry")
+Public Sub TestBothCompanionsEndTheBuildProtectedWithEveryCellUnlocked()
+    CustomTestSetTitles Assert, TESTMODULE, "TestBothCompanionsEndTheBuildProtectedWithEveryCellUnlocked"
+    If Not FixtureReady("TestBothCompanionsEndTheBuildProtectedWithEveryCellUnlocked") Then Exit Sub
+    On Error GoTo TestFail
+
+    'The two companions are protected for the UserInterfaceOnly flag alone. The
+    'unlock is what keeps them out of the user's way: with no locked cell left,
+    'Contents has nothing to guard and a user can type anywhere on either sheet.
+    AssertCompanionIsOpen "print_" & HLIST_SHEET, "printed"
+    AssertCompanionIsOpen "crf_" & HLIST_SHEET, "CRF"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestBothCompanionsEndTheBuildProtectedWithEveryCellUnlocked", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLDataEntry")
+Public Sub TestTheProtectionMatrixAllowsBothCompanionsEverythingItRecords()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheProtectionMatrixAllowsBothCompanionsEverythingItRecords"
+    If Not FixtureReady("TestTheProtectionMatrixAllowsBothCompanionsEverythingItRecords") Then Exit Sub
+    On Error GoTo TestFail
+
+    'LeaveDebugMode restores a sheet from its matrix row and nothing else, so a
+    'row that says no would put the companion back locked down after a debug
+    'round trip. Both flags the matrix carries are asked for as yes.
+    AssertMatrixRowIsPermissive "print_" & HLIST_SHEET, "printed"
+    AssertMatrixRowIsPermissive "crf_" & HLIST_SHEET, "CRF"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheProtectionMatrixAllowsBothCompanionsEverythingItRecords", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLDataEntry")

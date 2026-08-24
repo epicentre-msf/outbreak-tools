@@ -528,6 +528,8 @@ Private Sub BuildHList()
 
     EnsureAndSet shHn, "filtered_sheet", filtSh.Name
 
+    ProtectCompanion printSh, pass
+    ProtectCompanion crfSh, pass
     pass.Protect sh
 
     LogInfo "HList sheet " & this.sheetName & " built (table: " & tableName & _
@@ -544,6 +546,8 @@ BuildFailed:
 
 CleanUpAfterFail:
     On Error Resume Next
+        ProtectCompanion printSh, pass
+        ProtectCompanion crfSh, pass
         If Not (sh Is Nothing Or pass Is Nothing) Then pass.Protect sh
         LogInfo "The HList sheet " & this.sheetName & " could not be built: " & _
                 failedDescription, checkingError
@@ -636,6 +640,35 @@ End Sub
 '@section Helpers
 '===============================================================================
 '@description Private utilities shared by both build modes.
+
+'@label:protect-companion
+'@sub-title Protect a print or CRF companion with every cell left editable
+'@details
+'The two companions hold no data of their own. The print sheet is a view of
+'the table beside it and the CRF is a form to fill in on paper, so a user who
+'wants to retype a header, widen a column or drop a row on one of them should
+'never be stopped. Every cell is unlocked before the sheet is protected, which
+'leaves nothing for Contents to guard.
+'
+'The protect call is still made, and it is made for the UserInterfaceOnly flag
+'it carries. That flag is what lets the show/hide bracket, the import walk and
+'the export walk write to the companion, and it is also what puts a row for the
+'companion into the protection matrix. The two flags the matrix records --
+'shapes and row deletion -- are both asked for as yes, so the row it writes
+'says both are allowed and LeaveDebugMode restores the sheet the same way.
+'@param companionSh Worksheet. The print or CRF sheet. Nothing is skipped.
+'@param pass Passwords. The protection keys. Nothing is skipped.
+Private Sub ProtectCompanion(ByVal companionSh As Worksheet, ByVal pass As Passwords)
+    If companionSh Is Nothing Then Exit Sub
+    If pass Is Nothing Then Exit Sub
+
+    'The unlock has to reach the sheet before the protection does, and a second
+    'pass over an already protected companion -- the failure path runs after the
+    'success path on a raise late in the build -- would be refused.
+    pass.UnProtect companionSh
+    companionSh.Cells.Locked = False
+    pass.Protect companionSh, allowShapes:=True, allowDeletingRows:=True
+End Sub
 
 '@label:freeze-header
 '@sub-title Freeze the header of a data entry sheet
