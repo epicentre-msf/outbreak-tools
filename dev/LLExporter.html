@@ -29,7 +29,7 @@ EpiWeekStart answers the first day of the epidemiological week, and
 LastExportPassword answers the password the last export was saved under.
 LastFailure answers what the last export failed on, for a caller writing the
 failure into the log.</p>
-<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLExport.html">LLExport</a>, <a href="Passwords.html">Passwords</a>, <a href="CustomTable.html">CustomTable</a>, <a href="DataSheet.html">DataSheet</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLChoices.html">LLChoices</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="ShowHide.html">ShowHide</a>, <a href="ShowHideLayout.html">ShowHideLayout</a>, <a href="ShowHideStore.html">ShowHideStore</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="ChoiceKeys.html">ChoiceKeys</a></p>
+<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLExport.html">LLExport</a>, <a href="Passwords.html">Passwords</a>, <a href="CustomTable.html">CustomTable</a>, <a href="LLLog.html">LLLog</a>, <a href="DataSheet.html">DataSheet</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLChoices.html">LLChoices</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="ShowHide.html">ShowHide</a>, <a href="ShowHideLayout.html">ShowHideLayout</a>, <a href="ShowHideStore.html">ShowHideStore</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="ChoiceKeys.html">ChoiceKeys</a></p>
 </div>
 </details>
 <details open class="doc-section" id="factory">
@@ -174,11 +174,12 @@ filtered companions. Defaults to False.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExcludedVariablesFor(ByVal exportNumber As Long) As BetterArray
 </code></pre>
-<p>The selection an export makes before it writes anything: the geo p-code and geo
+<p>The selection an export makes before it writes anything: the geo variables of
+every admin level the &quot;admin levels&quot; cell leaves out, the geo p-code and geo
 concat variables when the export row turns p-codes off, and the personal
-identifiers when it turns those off. Reading it costs three column reads and
-writes nothing, so a caller can ask what a file will be missing before asking
-for the file.</p>
+identifiers when it turns those off. Reading it costs four column reads at most
+and writes nothing, so a caller can ask what a file will be missing before
+asking for the file.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>exportNumber</code>: Long. Which export definition to read (1-based).</li>
@@ -414,14 +415,85 @@ when it is absent.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function PasswordsObject() As Passwords
 </code></pre>
-<p><strong>Returns:</strong> Passwords. Passwords instance from the __pass sheet.</p>
+<p>Built once and held, and answering Nothing rather than raising when the file
+will not take one.</p>
+<h2 id="int-a-linelist-older-than-the-protection-matrix">A LINELIST OLDER THAN THE PROTECTION MATRIX</h2>
+<p>Passwords.Create validates the sheet and demands T_ProtectedSheets, a table
+this version added. A linelist generated before it carries T_Keys, the five
+named ranges and no protection matrix, so the factory refuses a password sheet
+that is complete for everything an export wants from it. The class itself is
+not loosened -- it is baked into the workbook rather than imported, so a change
+there reaches nothing until every workbook is re-pasted by hand. The tolerance
+lives here instead, in a class that imports.</p>
+<p>What the absence costs is small and bounded. An export-all file name is
+composed without a passwords object at all; a numbered export loses its version
+suffix and cannot be given the private key. Both are guarded where they read.</p>
+<p><strong>Returns:</strong> Passwords. The held handler, or Nothing when the file carries none.</p>
 <hr />
-<h3 id="int-geoobject">GeoObject <a class="anchor-link" href="#int-geoobject">#</a></h3>
-<p><em>geo-object</em></p>
-<p><strong>Get the geo object from the source workbook</strong></p>
+<h3 id="int-reportgeowarning">ReportGeoWarning <a class="anchor-link" href="#int-reportgeowarning">#</a></h3>
+<p><em>report-geo-warning</em></p>
+<p><strong>Log what the geobase export got past rather than stopped on</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function GeoObject() As LLGeo
+<pre><code class="language-vb">Private Sub ReportGeoWarning(ByVal geo As LLGeo)
 </code></pre>
+<p>Read after an export that succeeded. LLGeo fills its LastFailure on a refusal
+it carried on from -- the headers it could not put back -- and leaves it empty
+otherwise, so a value here is a warning and never the reason for a failure.
+On a failure the RecordFailure handler already folds the same account into
+this class''s own, so nothing is said twice.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>geo</code>: LLGeo. The manager that just wrote the geobase.</li>
+</ul>
+<hr />
+<h3 id="int-reportpasswordsrefusal">ReportPasswordsRefusal <a class="anchor-link" href="#int-reportpasswordsrefusal">#</a></h3>
+<p><em>report-passwords-refusal</em></p>
+<p><strong>Say in the workbook''s log that this file carries no usable passwords</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ReportPasswordsRefusal(ByVal refusal As String)
+</code></pre>
+<p>Written as a warning rather than a failure: the export goes on to write its
+file, and the user needs to know why the name lost its version suffix and why
+no export of this file can be password protected.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>refusal</code>: String. What Passwords.Create said when it refused.</li>
+</ul>
+<hr />
+<h3 id="int-userlog">UserLog <a class="anchor-link" href="#int-userlog">#</a></h3>
+<p><em>user-log</em></p>
+<p><strong>The log of the workbook being exported, built once</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function UserLog() As LLLog
+</code></pre>
+<p>Built on first use and held, the way FilteredData and LLGeo hold theirs. A
+workbook that will not take a log answers Nothing, and the Nothing is the
+state rather than a raise.</p>
+<p><strong>Returns:</strong> LLLog. The held log, or Nothing.</p>
+<hr />
+<h3 id="int-recordexportfailure">RecordExportFailure <a class="anchor-link" href="#int-recordexportfailure">#</a></h3>
+<p><em>record-export-failure</em></p>
+<p><strong>Keep in words what an export refused on, before the raise leaves</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RecordExportFailure(ByVal what As String, ByVal atStep As String, _
+                                ByVal errNumber As Long, _
+                                ByVal errSource As String, _
+                                ByVal errMessage As String)
+</code></pre>
+<p>An error loses its words on the way out of this class: the caller reads the
+name of the method it called and nothing of what actually refused. Every
+export therefore records its own account here, and the caller reads it back
+through LastFailure.</p>
+<p>ExportGeo carried this alone for a while, which is why a failing migration
+answered an empty LastFailure and the form had nothing to log.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>what</code>: String. Which export this is, for the opening words.</li>
+<li><code>atStep</code>: String. The step the export was on.</li>
+<li><code>errNumber</code>: Long. The error number.</li>
+<li><code>errSource</code>: String. The error source.</li>
+<li><code>errMessage</code>: String. The error description.</li>
+</ul>
 <p><strong>Returns:</strong> LLGeo. Geo instance from the Geo sheet.</p>
 <hr />
 <h2 id="int-private-output-workbook-management">Private - Output Workbook Management</h2>
@@ -473,11 +545,16 @@ optional password, then closes it without saving again.</p>
 <pre><code class="language-vb">Private Function ExcludedVariables(ByVal dict As LLdictionary, ByVal expObj As LLExport, _
                                    ByVal exportNumber As Long) As BetterArray
 </code></pre>
-<p>Reads the two &quot;include&quot; flags of the export row and answers the names of the
-variables the export drops: the geo p-code and geo concat variables when
-&quot;include p-codes&quot; is off, and every variable flagged as a personal identifier
-when &quot;include personal identifiers&quot; is off. A variable that answers both is
-listed twice, which costs a lookup and nothing else.</p>
+<p>Reads three cells of the export row and answers the names of the variables the
+export drops: the geo variables of every admin level &quot;admin levels&quot; leaves out,
+the geo p-code and geo concat variables when &quot;include p-codes&quot; is off, and
+every variable flagged as a personal identifier when &quot;include personal
+identifiers&quot; is off.</p>
+<h2 id="int-one-level-owns-three-rows">ONE LEVEL OWNS THREE ROWS</h2>
+<p>LLdictionary.AppendGeoLines writes a visible name row, a hidden p-code row and
+a hidden concat row for each of the four levels, and a level left out drops all
+three. The health facility rows are left alone: <code>hf</code> and <code>geo_pcode_hf</code> belong
+to no admin level, and an export keeps them whatever the cell asks for.</p>
 <h2 id="int-why-this-reads-and-never-writes">WHY THIS READS AND NEVER WRITES</h2>
 <p>The exclusion used to be done by clearing the export column of the linelist's
 own Dictionary worksheet, so one export with p-codes off took those variables
@@ -494,6 +571,62 @@ sheet keeps what the setup put in it.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. The variable names to drop, empty when the export keeps
 everything.</p>
+<hr />
+<h3 id="int-keptadminlevels">KeptAdminLevels <a class="anchor-link" href="#int-keptadminlevels">#</a></h3>
+<p><em>kept-admin-levels</em></p>
+<p><strong>The admin levels one export row asks for</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function KeptAdminLevels(ByVal cellText As String, _
+                                 ByRef someDropped As Boolean) As Boolean()
+</code></pre>
+<p>The &quot;admin levels&quot; cell holds the levels joined with a plus, written
+<code>admin1+admin2</code>. An empty cell asks for every level.</p>
+<h2 id="int-the-cell-is-honoured-only-when-the-whole-of-it-reads">THE CELL IS HONOURED ONLY WHEN THE WHOLE OF IT READS</h2>
+<p>A cell holding one chunk this cannot read answers every level, the way an empty
+cell does. An export that silently drops geo columns over a typo is worse than
+one that keeps them all, and SetupErrors.CheckExports reports that same cell on
+the setup side, before a linelist is ever built from it.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellText</code>: String. What the Exports row holds.</li>
+<li><code>someDropped</code>: Boolean. Written True when a level is left out.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean(). One entry per level, 1 to 4, True for a level to export.</p>
+<hr />
+<h3 id="int-adminlevelofchunk">AdminLevelOfChunk <a class="anchor-link" href="#int-adminlevelofchunk">#</a></h3>
+<p><em>admin-level-of-chunk</em></p>
+<p><strong>The level one chunk of the &quot;admin levels&quot; cell holds</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function AdminLevelOfChunk(ByVal chunk As String) As Long
+</code></pre>
+<p>The chunk is trimmed and read without regard to case, so <code>Admin2</code> and <code> admin2</code>
+both answer 2. Anything else answers 0, and the caller reads that as a cell it
+cannot honour. SetupErrors.IsAdminLevelsCell holds this same rule.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>chunk</code>: String. One piece of the cell, between two plus signs.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The level, 1 to 4, or 0 when the chunk holds something else.</p>
+<hr />
+<h3 id="int-geolevelof">GeoLevelOf <a class="anchor-link" href="#int-geolevelof">#</a></h3>
+<p><em>geo-level-of</em></p>
+<p><strong>The admin level one dictionary row belongs to</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function GeoLevelOf(ByVal controlValue As String, _
+                            ByVal mainLabel As String) As Long
+</code></pre>
+<p>LLdictionary.AppendGeoLines writes three rows per level and this reads all
+three back. The visible name row carries the control <code>geo1</code> to <code>geo4</code>. The two
+hidden rows carry the control <code>formula</code>, and their level sits in the main
+label, written <code>geo_pcode_adm2</code> or <code>geo_concat_adm2</code>.
+A row belonging to no admin level answers 0, and the health facility rows are
+among them: <code>hf</code> and <code>geo_pcode_hf</code> name no level.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>controlValue</code>: String. The <code>control</code> cell of the row.</li>
+<li><code>mainLabel</code>: String. The <code>main label</code> cell of the row.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The level, 1 to 4, or 0 when the row names none.</p>
 <hr />
 <h3 id="int-columnvalues">ColumnValues <a class="anchor-link" href="#int-columnvalues">#</a></h3>
 <p><em>column-values</em></p>
@@ -608,6 +741,57 @@ to mark the dictionary as prepared.</p>
 <li><code>nbExp</code>: Long. Number of export columns.</li>
 </ul>
 <hr />
+<h3 id="int-adddictionarytranslations">AddDictionaryTranslations <a class="anchor-link" href="#int-adddictionarytranslations">#</a></h3>
+<p><em>add-dictionary-translations</em></p>
+<p><strong>Put the dictionary translations into the output, either layout</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddDictionaryTranslations(ByVal outwb As Workbook)
+</code></pre>
+<p>The current layout keeps them in Tab_Translations on the LinelistTranslation
+sheet, and LLTranslation.ExportDictionary writes them out from there onto a
+sheet called Translations.</p>
+<h2 id="int-the-layout-before-that-one">THE LAYOUT BEFORE THAT ONE</h2>
+<p>A linelist older than that table keeps its dictionary translations on a
+worksheet of its own, already called Translations, and carries no
+Tab_Translations at all. LLTranslation.Create demands that table and refuses
+the whole sheet without it, so the export used to stop here.</p>
+<p>Skipping is not the answer: the Translations sheet of an export file is what
+carries every translated label to whatever reads the file back, and an export
+without one loses all of them silently. So the older layout is read where it
+actually sits and copied straight across, the same way Metadata and Choices
+are copied above.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outwb</code>: Workbook. The output workbook being built.</li>
+</ul>
+<hr />
+<h3 id="int-copyoldtranslationssheet">CopyOldTranslationsSheet <a class="anchor-link" href="#int-copyoldtranslationssheet">#</a></h3>
+<p><em>copy-old-translations-sheet</em></p>
+<p><strong>Copy the dictionary translations of an older linelist across</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CopyOldTranslationsSheet(ByVal outwb As Workbook, _
+                                     ByVal refusal As String)
+</code></pre>
+<p>The destination name is the one ExportDictionary would have used, so a file
+built this way is shaped like every other export and needs nothing special to
+read it back.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outwb</code>: Workbook. The output workbook being built.</li>
+<li><code>refusal</code>: String. What LLTranslation.Create said when it refused.</li>
+</ul>
+<hr />
+<h3 id="int-reporttranslationswarning">ReportTranslationsWarning <a class="anchor-link" href="#int-reporttranslationswarning">#</a></h3>
+<p><em>report-translations-warning</em></p>
+<p><strong>Log which layout the dictionary translations came from</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ReportTranslationsWarning(ByVal detail As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>detail</code>: String. What to tell the user.</li>
+</ul>
+<hr />
 <h3 id="int-adddictionary">AddDictionary <a class="anchor-link" href="#int-adddictionary">#</a></h3>
 <p><em>add-dictionary</em></p>
 <p><strong>Add the dictionary to the output workbook</strong></p>
@@ -718,14 +902,18 @@ variable names on row 2 and reads back once the import knows to look there.</p>
 <p><em>one-pair</em></p>
 <p><strong>One <code>name: value</code> pair of the export options line</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function OnePair(ByVal optionName As String, ByVal optionValue As String) As String
+<pre><code class="language-vb">Private Function OnePair(ByVal optionName As String, ByVal optionValue As String, _
+                         Optional ByVal whenEmpty As String = &quot;no&quot;) As String
 </code></pre>
 <p>An option the Exports row left empty is written as <code>no</code>, so the reader on the
-other side never has to tell an absent option from a false one.</p>
+other side never has to tell an absent option from a false one. An option whose
+empty cell means something else says so: &quot;admin levels&quot; left empty asks for
+every level, and <code>no</code> would read as none of them.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>optionName</code>: String. The option name.</li>
 <li><code>optionValue</code>: String. What the Exports row holds for it.</li>
+<li><code>whenEmpty</code>: Optional String. What an empty cell is written as. Defaults to <code>no</code>.</li>
 </ul>
 <p><strong>Returns:</strong> String. The pair.</p>
 <hr />
@@ -977,7 +1165,7 @@ or special sheets.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (14 file(s))</summary>
+<summary>Used in (17 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="AnaTabIds.html">AnaTabIds.cls</a></li>
@@ -988,10 +1176,13 @@ or special sheets.</p>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
 <li><a href="LLTranslation.html">LLTranslation.cls</a></li>
+<li><a href="SetupErrors.html">SetupErrors.cls</a></li>
 <li>FormLogicExportMig.bas</li>
+<li>TestExportOtherLinelist.bas</li>
 <li>TestLLExporter.bas</li>
 <li>TestLLdictionary.bas</li>
 <li>TestLLGeo.bas</li>
+<li>TestSetupErrors.bas</li>
 <li>TestShowHide.bas</li>
 </ul>
 </details>

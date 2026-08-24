@@ -690,9 +690,18 @@ cached one stands. This is the single place the class picks its dictionary.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidatePasswords(ByVal pass As Passwords)
 </code></pre>
+<p>A Nothing here used to be refused outright. It has one honest source: a
+linelist older than the protection matrix, whose __pass sheet carries no
+T_ProtectedSheets, so Passwords.Create refuses to build over it. An export
+walk reading such a file has no passwords object and still has every right to
+a file name -- the export-all name is composed without one, and the numbered
+name loses only its version suffix.</p>
+<p>Nothing is guarded at the two places that read a value, so the absence travels
+no further than the suffix it removes.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>pass</code>: The password object to check.</li>
+<li><code>pass</code>: Passwords. The handler, or Nothing when the file has none.</li>
 </ul>
 <hr />
 <h3 id="int-exporttable">ExportTable <a class="anchor-link" href="#int-exporttable">#</a></h3>
@@ -1000,7 +1009,7 @@ list is replaced. The value goes straight into a SaveAs path.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (15 file(s))</summary>
+<summary>Used in (16 file(s))</summary>
 <ul>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLdictionary.html">LLdictionary.cls</a></li>
@@ -1013,6 +1022,7 @@ list is replaced. The value goes straight into a SaveAs path.</p>
 <li>InitTransfer.bas</li>
 <li>EventsLinelistButtons.bas</li>
 <li>FormLogicExport.bas</li>
+<li>TestExportOtherLinelist.bas</li>
 <li>TestLLExporter.bas</li>
 <li>TestLLExport.bas</li>
 <li>TestLinelistSpecs.bas</li>

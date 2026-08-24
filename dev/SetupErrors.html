@@ -15,10 +15,11 @@
 the workbook, Initialise sets the run up, Run walks every check, and Checkings
 answers the entries. The dictionary is checked for duplicate variables,
 missing labels, unknown controls and formulas that fail to parse; the choices
-for unused entries and missing labels; the exports for missing metadata and
-for variables the dictionary has none of; and the translations for missing and
-duplicate labels. Entries are collected as Checking objects and printed to the
-__checkRep worksheet through CheckingOutput.</p>
+for unused entries and missing labels; the exports for missing metadata, for
+an &quot;Admin levels&quot; cell the export cannot read, and for variables the dictionary
+has none of; and the translations for missing and duplicate labels. Entries are
+collected as Checking objects and printed to the __checkRep worksheet through
+CheckingOutput.</p>
 <details open class="doc-section" id="the-checks-follow-the-builder">
 <summary>THE CHECKS FOLLOW THE BUILDER</summary>
 <div class="section-body">
@@ -467,6 +468,25 @@ reads as absent. The build matches the two, so the checker does too.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the value is present in any case.</p>
 <hr />
+<h3 id="int-isadminlevelscell">IsAdminLevelsCell <a class="anchor-link" href="#int-isadminlevelscell">#</a></h3>
+<p><em>is-admin-levels-cell</em></p>
+<p><strong>Test whether an &quot;Admin levels&quot; cell is written the way an export reads it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsAdminLevelsCell(ByVal levelsText As String) As Boolean
+</code></pre>
+<p>Mirrors LLExporter.AdminLevelOfChunk: the cell holds the admin levels the
+export writes, joined with a plus and written <code>admin1+admin2</code>. Each chunk is
+trimmed and read without regard to case, so <code>Admin2</code> and <code> admin2</code> both pass,
+and the level runs from 1 to 4 because LLdictionary.AppendGeoLines writes four.
+An empty cell passes: the export reads it as every level.
+The exporter honours the cell only when the whole of it reads, so a cell this
+reports is a cell the export ignores, and every geo column goes out of it.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>levelsText</code>: String. What the &quot;Admin levels&quot; cell of one export row holds.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the export can honour the cell.</p>
+<hr />
 <h3 id="int-isliteralchunk">IsLiteralChunk <a class="anchor-link" href="#int-isliteralchunk">#</a></h3>
 <p><em>is-literal-chunk</em></p>
 <p><strong>Test whether a file-name chunk is a quoted literal</strong></p>
@@ -690,8 +710,9 @@ providing a consistent stack trace across all methods in this class.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (10 file(s))</summary>
+<summary>Used in (12 file(s))</summary>
 <ul>
+<li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="CaseWhen.html">CaseWhen.cls</a></li>
 <li><a href="ChoiceFormula.html">ChoiceFormula.cls</a></li>
@@ -699,6 +720,7 @@ providing a consistent stack trace across all methods in this class.</p>
 <li><a href="SetupPreparation.html">SetupPreparation.cls</a></li>
 <li>EventSetupWorkbook.bas</li>
 <li>SetupHelpers.bas</li>
+<li>TestLLExporter.bas</li>
 <li>TestLLdictionary.bas</li>
 <li>TestCaseWhen.bas</li>
 <li>TestSetupErrors.bas</li>
