@@ -72,6 +72,15 @@ Private Const TEMP_SHEET_OLD As String = "temp__"
 'Where the open-from-file tests put their saved workbooks
 Private Const FILES_FOLDER As String = "ExporterFiles"
 
+'The three data entry sheets the dictionary fixture names, and the value one
+'row of the HList table carries so an assertion can look for it.
+Private Const HLIST_SHEET As String = "hlist2D-sheet1"
+Private Const HLIST_SHEET_TWO As String = "hlist2D-sheet2"
+Private Const VLIST_SHEET As String = "vlist1D-sheet1"
+Private Const CHOICES_SHEET As String = "Choices"
+Private Const METADATA_SHEET As String = "Metadata"
+Private Const OLD_LAYOUT_MARKER As String = "old-layout-row"
+
 'The two fixture rows the exclusion has to find
 Private Const PCODE_VARIABLE As String = "hid_beg_v1"
 Private Const PCODE_TAG As String = "geo_pcode_adm1"
@@ -1059,6 +1068,101 @@ TestFail:
 End Sub
 
 
+
+'@section A linelist older than the hidden names
+'===============================================================================
+
+'@sub-title A data entry sheet tagged only in a cell still exports its rows.
+'@details
+'Hlist wrote "HList" into the third cell of the first row and nothing else.
+'AddDataSheets read the tag off the hidden name store alone, so such a sheet
+'matched neither arm of its Select Case, fell through to the formatting, and
+'came out formatted and empty with nothing raised and nothing logged. The whole
+'exported file held no data at all. Acts by exporting a source workbook whose
+'HList sheet carries the cell and no name, and asserts a value of the table
+'reaches the saved file.
+'@TestMethod("LLExporter")
+Public Sub TestAnOldLinelistExportsTheRowsItsCellTagNames()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAnOldLinelistExportsTheRowsItsCellTagNames"
+    On Error GoTo TestFail
+
+    Dim sourceBook As Workbook
+    Dim exporter As LLExporter
+    Dim savedPath As String
+    Dim failedNumber As Long
+    Dim failedText As String
+
+    Set sourceBook = OldLayoutSourceWorkbook(tagTheSheets:=True)
+    Set exporter = LLExporter.Create(sourceBook)
+
+    savedPath = exporter.ExportMigration(BuildTempFolder(ThisWorkbook, FILES_FOLDER))
+
+    Assert.IsTrue ExportedFileHolds(savedPath, HLIST_SHEET, OLD_LAYOUT_MARKER), _
+                  "A sheet tagged in a cell carries its rows into the export"
+
+    DropExportArtefacts sourceBook, exporter, savedPath
+    Exit Sub
+TestFail:
+    'The number and the text go into locals before anything else runs.
+    'DropExportArtefacts ends On Error GoTo 0, and that clears Err, so a
+    'handler that cleans up first logs the routine name and nothing else.
+    failedNumber = Err.Number
+    failedText = Err.Description
+    'The re-raise carries the method name and nothing of what refused.
+    'LastFailure is where the step and the error text are kept, and it has to
+    'be read before the cleanup closes the exporter.
+    If Not exporter Is Nothing Then _
+        failedText = failedText & " | " & exporter.LastFailure
+    On Error Resume Next
+    DropExportArtefacts sourceBook, exporter, savedPath
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestAnOldLinelistExportsTheRowsItsCellTagNames", failedNumber, failedText
+End Sub
+
+'@sub-title A sheet with no tag anywhere is what an empty export is made of.
+'@details
+'The companion of the test above, and the reason the fallback is worth having.
+'The same workbook with the cell cleared says nothing about what kind of sheet
+'it is, and the export writes no row. Asserts the marker is absent, so a
+'fallback that answered for every sheet whatever it held would fail here.
+'@TestMethod("LLExporter")
+Public Sub TestASheetThatNamesNoTypeExportsNoRow()
+    CustomTestSetTitles Assert, TESTMODULE, "TestASheetThatNamesNoTypeExportsNoRow"
+    On Error GoTo TestFail
+
+    Dim sourceBook As Workbook
+    Dim exporter As LLExporter
+    Dim savedPath As String
+    Dim failedNumber As Long
+    Dim failedText As String
+
+    Set sourceBook = OldLayoutSourceWorkbook(tagTheSheets:=False)
+    Set exporter = LLExporter.Create(sourceBook)
+
+    savedPath = exporter.ExportMigration(BuildTempFolder(ThisWorkbook, FILES_FOLDER))
+
+    Assert.IsFalse ExportedFileHolds(savedPath, HLIST_SHEET, OLD_LAYOUT_MARKER), _
+                   "A sheet that names no type writes no row"
+
+    DropExportArtefacts sourceBook, exporter, savedPath
+    Exit Sub
+TestFail:
+    'The number and the text go into locals before anything else runs.
+    'DropExportArtefacts ends On Error GoTo 0, and that clears Err, so a
+    'handler that cleans up first logs the routine name and nothing else.
+    failedNumber = Err.Number
+    failedText = Err.Description
+    'The re-raise carries the method name and nothing of what refused.
+    'LastFailure is where the step and the error text are kept, and it has to
+    'be read before the cleanup closes the exporter.
+    If Not exporter Is Nothing Then _
+        failedText = failedText & " | " & exporter.LastFailure
+    On Error Resume Next
+    DropExportArtefacts sourceBook, exporter, savedPath
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestASheetThatNamesNoTypeExportsNoRow", failedNumber, failedText
+End Sub
+
 '@section Fixture helpers
 '===============================================================================
 
@@ -1225,3 +1329,155 @@ Private Function ExportColumnValues() As Variant
 
     ExportColumnValues = values
 End Function
+
+'@fun-title A source workbook shaped the way a pre-hidden-names linelist was.
+'@details
+'The five sheets CreateFromFile looks for, plus the three data entry sheets the
+'dictionary fixture names. The HList sheets carry a table and, when asked, the
+'cell tag Hlist used to write. No worksheet-level hidden name is ever set, which
+'is the whole point: that is what an old file looks like.
+'@param tagTheSheets Boolean. When True, the old cell tag is written.
+'@return Workbook. The new workbook, open and unsaved.
+Private Function OldLayoutSourceWorkbook(ByVal tagTheSheets As Boolean) As Workbook
+    Dim sourceBook As Workbook
+
+    Set sourceBook = NewWorkbook()
+    DictionaryTestFixture.PrepareDictionaryFixture DICTIONARY_SHEET, sourceBook
+    ChoicesTestFixture.PrepareChoicesFixture CHOICES_SHEET, sourceBook
+
+    'AddMetadataSheets reads Metadata and Choices off the source with no
+    'guard, so a workbook without them raises 9 before the data walk is ever
+    'reached. Choices comes from its own fixture; Metadata is written here.
+    'The header has to be variable/value and there has to be a row under it:
+    'AddMetadataTags appends its tags below DataRange("variable"), and that
+    'answers nothing at all for a sheet holding a header and no body.
+    BuildOldMetadataSheet sourceBook
+
+    EnsureWorksheet EXPORTS_SHEET, sourceBook
+    EnsureWorksheet PASS_SHEET, sourceBook
+    EnsureWorksheet GEO_SHEET, sourceBook
+    EnsureWorksheet TEMP_SHEET, sourceBook
+
+    BuildOldExportsSheet sourceBook
+
+    BuildOldHListSheet sourceBook, HLIST_SHEET, tagTheSheets
+    BuildOldHListSheet sourceBook, HLIST_SHEET_TWO, tagTheSheets
+
+    EnsureWorksheet VLIST_SHEET, sourceBook
+    If tagTheSheets Then _
+        sourceBook.Worksheets(VLIST_SHEET).Cells(1, 3).Value = "VList"
+
+    Set OldLayoutSourceWorkbook = sourceBook
+End Function
+
+'@sub-title Put one HList data entry sheet on the old layout onto a workbook.
+'@details
+'The table starts on row three, because rows one and two are where the old
+'layout kept its own cells. Two data rows are written and the first carries the
+'marker the assertions look for.
+'@param wkb Workbook. The workbook to add the sheet to.
+'@param sheetName String. The name the dictionary gives this sheet.
+'@param tagTheSheet Boolean. When True, the old cell tag is written.
+Private Sub BuildOldHListSheet(ByVal wkb As Workbook, ByVal sheetName As String, _
+                               ByVal tagTheSheet As Boolean)
+    Dim sh As Worksheet
+    Dim rng As Range
+
+    EnsureWorksheet sheetName, wkb
+    Set sh = wkb.Worksheets(sheetName)
+
+    'The three variables the dictionary fixture puts on the HList sheets. The
+    'export resolves every dictionary name against the table and writes the ones
+    'it finds, so a table narrower than the dictionary is a fair source.
+    WriteRow sh.Cells(3, 1), "hid_beg_h2", "pers_id_h2", "uni_h2"
+    WriteRow sh.Cells(4, 1), "kept", OLD_LAYOUT_MARKER, "u1"
+    WriteRow sh.Cells(5, 1), "kept", "second row", "u2"
+
+    Set rng = sh.Range(sh.Cells(3, 1), sh.Cells(5, 3))
+    sh.ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "Tab_" & Replace(sheetName, "-", "_")
+
+    If tagTheSheet Then sh.Cells(1, 3).Value = "HList"
+End Sub
+
+'@sub-title Write the Metadata sheet a migration export appends its tags to.
+'@param wkb Workbook. The workbook carrying the Metadata sheet.
+Private Sub BuildOldMetadataSheet(ByVal wkb As Workbook)
+    Dim sh As Worksheet
+
+    Set sh = EnsureWorksheet(METADATA_SHEET, wkb, clearSheet:=True)
+
+    WriteRow sh.Cells(1, 1), "variable", "value"
+    WriteRow sh.Cells(2, 1), "language", "English"
+End Sub
+
+'@sub-title Write the one Exports row a migration export reads.
+'@details
+'The header row is the one BuildExportsSheet writes, because the Exports sheet
+'is read by column name. A migration exports everything and is not numbered, so
+'one active row is all it needs.
+'@param wkb Workbook. The workbook carrying the Exports sheet.
+Private Sub BuildOldExportsSheet(ByVal wkb As Workbook)
+    Dim sh As Worksheet
+
+    Set sh = EnsureWorksheet(EXPORTS_SHEET, wkb, clearSheet:=True)
+
+    WriteRow sh.Cells(1, 1), "export number", "status", "label button", _
+                             "file format", "file name", "password", _
+                             "include personal identifiers", "include p-codes", _
+                             "header format", "export metadata sheets", _
+                             "export analyses sheets", "admin levels"
+
+    WriteRow sh.Cells(2, 1), 1, "active", "migration", "xlsx", "one", "no", _
+                             "yes", "yes", "default", "no", "no", vbNullString
+End Sub
+
+'@fun-title Whether a saved export holds a value on one of its sheets.
+'@details
+'Opens the file read-only, looks the value up on the named sheet and closes it
+'again. A missing file or a missing sheet answers False, which is what a caller
+'asserting the value is absent already means.
+'@param filePath String. The saved export.
+'@param sheetName String. The sheet to look on.
+'@param lookFor String. The value to find.
+'@return Boolean. True when the sheet holds it.
+Private Function ExportedFileHolds(ByVal filePath As String, _
+                                   ByVal sheetName As String, _
+                                   ByVal lookFor As String) As Boolean
+    Dim outwb As Workbook
+    Dim sh As Worksheet
+    Dim found As Range
+
+    If LenB(filePath) = 0 Then Exit Function
+    If Dir$(filePath) = vbNullString Then Exit Function
+
+    On Error Resume Next
+    Set outwb = Application.Workbooks.Open(fileName:=filePath, ReadOnly:=True)
+    On Error GoTo 0
+    If outwb Is Nothing Then Exit Function
+
+    On Error Resume Next
+    Set sh = outwb.Worksheets(sheetName)
+    If Not sh Is Nothing Then
+        Set found = sh.Cells.Find(What:=lookFor, LookAt:=xlWhole)
+    End If
+    outwb.Close savechanges:=False
+    On Error GoTo 0
+
+    ExportedFileHolds = Not found Is Nothing
+End Function
+
+'@sub-title Close the source, the exporter and the file one export test made.
+'@param sourceBook Workbook. The source workbook to delete, or Nothing.
+'@param exporter LLExporter. The exporter to close, or Nothing.
+'@param savedPath String. The saved export to remove, or an empty string.
+Private Sub DropExportArtefacts(ByVal sourceBook As Workbook, _
+                                ByVal exporter As LLExporter, _
+                                ByVal savedPath As String)
+    On Error Resume Next
+    If Not exporter Is Nothing Then exporter.CloseAll
+    If Not sourceBook Is Nothing Then DeleteWorkbook sourceBook
+    If LenB(savedPath) > 0 Then
+        If Dir$(savedPath) <> vbNullString Then Kill savedPath
+    End If
+    On Error GoTo 0
+End Sub

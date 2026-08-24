@@ -77,6 +77,13 @@ Private Const GEOSHEET As String = "Geo"
 Private Const TEMPSHEET_OLD As String = "temp__"
 Private Const SHOWHIDESHEET_OLD As String = "show_hide__"
 
+' Where a data entry sheet says what kind of sheet it is. Today that is a
+' worksheet-level hidden name; before those, Hlist and Vlist wrote the same two
+' words into the third cell of the first row, formatted so nobody would see it.
+' A file with no name at all is read from the cell instead.
+Private Const SHEET_TYPE_KEY As String = "sheet_type"
+Private Const OLD_SHEET_TYPE_COLUMN As Long = 3
+
 ' Prefixes of the two companion sheets a data entry sheet can have
 Private Const PRINTPREFIX As String = "print_"
 Private Const CRFPREFIX As String = "crf_"
@@ -897,13 +904,50 @@ End Sub
 
 
 '@sub-title Get the sheet type tag from worksheet-level HiddenNames.
+'@details
+'A linelist generated before the sheet metadata moved into hidden names carries
+'no name to read, and ValueAsString answers an empty string rather than raising.
+'The old layout wrote the same two words into a formatted cell instead, so the
+'cell is read when the name is absent.
+'The fallback is asked for, not automatic. AddDataSheets wants it: the sheet
+'type is all it needs and the data is lost without it. AddShowHide does not,
+'because the layer it would then go on to write needs table_name as well, and
+'that key has no old-layout fallback. Turning it on there would trade a layer
+'quietly missing for a raise that costs the whole export.
 '@param sh Worksheet. The worksheet to query.
+'@param allowOldLayout Optional Boolean. When True, an absent sheet_type name is
+'   read from the cell the old layout used. Defaults to False.
 '@return String. The sheet type tag (HList, VList, etc.).
 Private Function SheetTagOf(ByVal sh As Worksheet, _
-                            Optional ByVal nameKey As String = "sheet_type") As String
+                            Optional ByVal nameKey As String = SHEET_TYPE_KEY, _
+                            Optional ByVal allowOldLayout As Boolean = False) As String
     Dim shHn As HiddenNames
     Set shHn = HiddenNames.Create(sh)
     SheetTagOf = shHn.ValueAsString(nameKey)
+
+    If LenB(SheetTagOf) = 0 And allowOldLayout And nameKey = SHEET_TYPE_KEY Then _
+        SheetTagOf = OldSheetTypeCell(sh)
+End Function
+
+'@label:old-sheet-type-cell
+'@sub-title The sheet type of a linelist older than the hidden names
+'@details
+'Hlist and Vlist wrote the sheet type into the third cell of the first row and
+'the table name into the fourth, both formatted LinelistHiddenCell so nobody
+'would see them. The two words are the ones the hidden name carries today, so
+'the cell is read as it stands and nothing is translated.
+'
+'This is only ever reached when the worksheet carries no sheet_type name at all.
+'A sheet that has one never comes here, so a modern file cannot be read wrong by
+'a cell that happens to hold something else.
+'@param sh Worksheet. The data entry worksheet to query.
+'@return String. The tag the old layout wrote, or an empty string.
+Private Function OldSheetTypeCell(ByVal sh As Worksheet) As String
+    'A cell that will not read is a sheet with no tag, which is what the caller
+    'already has. It is not worth losing the export over.
+    On Error Resume Next
+    OldSheetTypeCell = Trim$(CStr(sh.Cells(1, OLD_SHEET_TYPE_COLUMN).Value))
+    On Error GoTo 0
 End Function
 
 '@section Private - Source Object Accessors
@@ -2250,13 +2294,19 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As LLdictionary
     For counter = sheetNames.LowerBound To sheetNames.UpperBound
         sheetName = sheetNames.Item(counter)
         Set inpsh = this.sourceWkb.Worksheets(sheetName)
-        ' Build the sheet metadata once and read every tag from the same instance
+        ' The store the filtered companion is read off. The sheet type goes
+        ' through SheetTagOf instead, which falls back to the old cell layout.
         Set inpshNames = HiddenNames.Create(inpsh)
         Set headersList = expDict.Data.FilterData("sheet name", sheetName, _
                                                   "variable name", matchCase:=False)
         Set outsh = outwb.Worksheets(sheetName)
 
-        Select Case inpshNames.ValueAsString("sheet_type")
+        'Read through SheetTagOf rather than off inpshNames, because a linelist
+        'older than the hidden names has no name to answer with and the tag it
+        'does carry sits in a cell. Read off the store, such a file matched
+        'neither arm below, and every sheet came out formatted and empty with
+        'nothing raised and nothing logged.
+        Select Case SheetTagOf(inpsh, allowOldLayout:=True)
 
         Case "HList"
             ' Choose between filtered or raw data
