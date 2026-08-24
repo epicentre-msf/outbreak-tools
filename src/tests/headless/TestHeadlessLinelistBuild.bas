@@ -175,12 +175,12 @@ Public Sub ModuleCleanup()
 End Sub
 
 '@TestInitialize
-Private Sub TestInitialize()
+Public Sub TestInitialize()
     BusyApp
 End Sub
 
 '@TestCleanup
-Private Sub TestCleanup()
+Public Sub TestCleanup()
     If Not Assert Is Nothing Then
         Assert.Flush
     End If
@@ -455,7 +455,7 @@ End Function
 
 '@sub-title The build answered OK.
 '@TestMethod("headless")
-Private Sub TestTheHeadlessBuildAnswersOK()
+Public Sub TestTheHeadlessBuildAnswersOK()
     Const TESTNAME As String = "TestTheHeadlessBuildAnswersOK"
 
     If Not RanAtAll(TESTNAME) Then Exit Sub
@@ -473,7 +473,7 @@ End Sub
 
 '@sub-title The linelist and its log are on disk.
 '@TestMethod("headless")
-Private Sub TestTheLinelistIsWritten()
+Public Sub TestTheLinelistIsWritten()
     Const TESTNAME As String = "TestTheLinelistIsWritten"
 
     If Not RanAtAll(TESTNAME) Then Exit Sub
@@ -493,7 +493,7 @@ End Sub
 
 '@sub-title The build wrote the sheets and variables the dictionary asked for.
 '@TestMethod("headless")
-Private Sub TestTheBuildWroteTheDictionary()
+Public Sub TestTheBuildWroteTheDictionary()
     Const TESTNAME As String = "TestTheBuildWroteTheDictionary"
 
     If Not RanAtAll(TESTNAME) Then Exit Sub
@@ -516,7 +516,7 @@ End Sub
 'the transfer moves are the ones in src/, not the ones somebody last pasted
 'into a binary.
 '@TestMethod("headless")
-Private Sub TestTheDesignerCarriedTheCurrentSource()
+Public Sub TestTheDesignerCarriedTheCurrentSource()
     Const TESTNAME As String = "TestTheDesignerCarriedTheCurrentSource"
 
     If Not RanAtAll(TESTNAME) Then Exit Sub
@@ -539,7 +539,7 @@ End Sub
 'The assertion this suite was written for. Everything else can pass over a
 'workbook holding no VBA at all.
 '@TestMethod("headless")
-Private Sub TestTheLinelistCarriesItsCode()
+Public Sub TestTheLinelistCarriesItsCode()
     Const TESTNAME As String = "TestTheLinelistCarriesItsCode"
 
     If Not RanAtAll(TESTNAME) Then Exit Sub
@@ -563,7 +563,7 @@ End Sub
 'Not a judgement: one entry carrying what the build recorded, so a failure
 'above can be read without opening the log file.
 '@TestMethod("headless")
-Private Sub TestTheBuildNarrative()
+Public Sub TestTheBuildNarrative()
     Const TESTNAME As String = "TestTheBuildNarrative"
 
     On Error GoTo ErrHandler

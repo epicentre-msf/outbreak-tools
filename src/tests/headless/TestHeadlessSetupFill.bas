@@ -128,12 +128,12 @@ Public Sub ModuleCleanup()
 End Sub
 
 '@TestInitialize
-Private Sub TestInitialize()
+Public Sub TestInitialize()
     BusyApp
 End Sub
 
 '@TestCleanup
-Private Sub TestCleanup()
+Public Sub TestCleanup()
     If Not Assert Is Nothing Then
         Assert.Flush
     End If
@@ -210,7 +210,7 @@ End Function
 
 '@sub-title The import answered OK.
 '@TestMethod("headless")
-Private Sub TestTheHeadlessImportAnswersOK()
+Public Sub TestTheHeadlessImportAnswersOK()
     Const TESTNAME As String = "TestTheHeadlessImportAnswersOK"
 
     On Error GoTo ErrHandler
@@ -225,7 +225,7 @@ End Sub
 
 '@sub-title The filled setup carries the dictionary of the source.
 '@TestMethod("headless")
-Private Sub TestTheFilledSetupCarriesADictionary()
+Public Sub TestTheFilledSetupCarriesADictionary()
     Const TESTNAME As String = "TestTheFilledSetupCarriesADictionary"
 
     On Error GoTo ErrHandler
@@ -243,7 +243,7 @@ End Sub
 
 '@sub-title The fixture reports its own failure, once.
 '@TestMethod("headless")
-Private Sub TestTheFillRanAtAll()
+Public Sub TestTheFillRanAtAll()
     Const TESTNAME As String = "TestTheFillRanAtAll"
 
     If SetupError = 0 Then
