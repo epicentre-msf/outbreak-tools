@@ -201,9 +201,17 @@ End Sub
 '@details Late-bound so this class carries no dependency on the runner: if the
 ' OBTHeadlessActive entry point is absent, Application.Run raises and we treat
 ' the run as interactive.
+'
+' The call NAMES ITS WORKBOOK. An unqualified Application.Run resolves the
+' procedure against the ACTIVE workbook, and a suite that leaves a workbook of
+' its own open and on screen makes that some file carrying no code. The lookup
+' then fails, and inside the Apple Events `run VB macro` call that failure is a
+' NON-trappable -50: On Error Resume Next does not catch it, the macro dies and
+' the whole headless run is lost with an empty results file. Naming the
+' workbook that owns OBTHeadless takes the active workbook out of the question.
 Private Function HeadlessRunActive() As Boolean
     On Error Resume Next
-    HeadlessRunActive = CBool(Application.Run("OBTHeadlessActive"))
+    HeadlessRunActive = CBool(Application.Run("'" & ThisWorkbook.Name & "'!OBTHeadlessActive"))
     On Error GoTo 0
 End Function
 

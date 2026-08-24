@@ -278,12 +278,37 @@ End Sub
 '@sub-title Application.Run one procedure, swallowing (and logging) any error so the suite continues.
 Private Sub RunProc(ByVal moduleName As String, ByVal procName As String)
     If LenB(moduleName) = 0 Or LenB(procName) = 0 Then Exit Sub
+    ActivateHost
     On Error Resume Next
         Application.Run moduleName & "." & procName
         If Err.Number <> 0 Then
             Debug.Print "RunProc " & moduleName & "." & procName & " -> " & _
                         Err.Number & " " & Err.Description
         End If
+    On Error GoTo 0
+End Sub
+
+'@sub-title Make the driver workbook the active one before a macro is called.
+'@details
+'`Application.Run "Module.Proc"` resolves the module against the ACTIVE
+'workbook, not against ThisWorkbook. A test that opens a second workbook and
+'keeps it open leaves that book active, and every later call then looks for the
+'test module inside a file that carries no code. Application.Run cannot find it
+'and answers the same NON-trappable -50 described above RunModule: it is not
+'caught by On Error Resume Next, it kills the macro, and the whole run is lost
+'with an empty results file.
+'
+'That is not hypothetical. TestSetupImport opens one export workbook and shares
+'it across twenty tests on purpose, so the export stays active from the first
+'of them until ModuleCleanup closes it. The run survived it only by luck, and
+'died on the folders whose suites open a workbook of their own.
+'
+'The activation is skipped when the driver is already active, because that is
+'the normal case and activating a workbook redraws it.
+Private Sub ActivateHost()
+    On Error Resume Next
+        If Not ActiveWorkbook Is ThisWorkbook Then ThisWorkbook.Activate
+        If Err.Number <> 0 Then Err.Clear
     On Error GoTo 0
 End Sub
 
