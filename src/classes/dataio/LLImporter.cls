@@ -89,7 +89,7 @@ Private Type TLLImporter
     importedSheets As BetterArray
     importedVars As BetterArray
     ' Diagnostics
-    checkings As Checking
+    checks As Checking
     sealed As Boolean
 End Type
 
@@ -165,8 +165,8 @@ End Sub
 '@return Boolean. True when at least one entry was filed.
 '@export
 Public Property Get HasCheckings() As Boolean
-    If this.checkings Is Nothing Then Exit Property
-    HasCheckings = (this.checkings.Length > 0)
+    If this.checks Is Nothing Then Exit Property
+    HasCheckings = (this.checks.Length > 0)
 End Property
 
 '@label:checking-values
@@ -181,9 +181,9 @@ End Property
 '@sub-title The checking store, built on first use
 '@return Checking. The store this import files into.
 Private Function ImportCheckings() As Checking
-    If this.checkings Is Nothing Then _
-        Set this.checkings = Checking.Create("Import report", "What the import found")
-    Set ImportCheckings = this.checkings
+    If this.checks Is Nothing Then _
+        Set this.checks = Checking.Create("Import report", "What the import found")
+    Set ImportCheckings = this.checks
 End Function
 
 '@label:file-checking
@@ -1475,7 +1475,7 @@ Public Sub ClearReport()
     Set this.varsNotTouched = New BetterArray
     Set this.importedSheets = New BetterArray
     Set this.importedVars = New BetterArray
-    Set this.checkings = Nothing
+    Set this.checks = Nothing
 End Sub
 
 

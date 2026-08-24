@@ -23,6 +23,14 @@ Option Explicit
 'form, through ShowReportSheet, and puts it away with the close button of the
 'ribbon, which knows this sheet by the name ReportSheetName answers.
 '
+'THE WRITE COMES BEFORE THE FORM
+'-------------------------------------------------------------------------------
+'Two subs, and they do one thing each: WriteImportCheckings writes the sheet,
+'ShowReportSheet shows it. An import calls the write, and it must run BEFORE the
+'import report form is shown, because the Open Log button of that form calls
+'ShowReportSheet. A sheet written after the form was dismissed is a button that
+'does nothing.
+'
 'THE WORKBOOK IS UNPROTECTED AROUND EVERY VISIBILITY WRITE
 '-------------------------------------------------------------------------------
 'The workbook structure guards sheet visibility, so adding this sheet, hiding
@@ -50,7 +58,7 @@ End Function
 'it from the import report form.
 '@param sourceWkb Workbook. The linelist workbook.
 '@param checks Checking. What the import filed.
-Public Sub ShowImportCheckings(ByVal sourceWkb As Workbook, ByVal checks As Checking)
+Public Sub WriteImportCheckings(ByVal sourceWkb As Workbook, ByVal checks As Checking)
 
     Dim sh As Worksheet
     Dim writer As CheckingOutput

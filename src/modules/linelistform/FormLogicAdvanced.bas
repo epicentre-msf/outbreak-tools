@@ -390,7 +390,12 @@ End Function
 
 ' @description Import data from a migration workbook.
 ' Shows file picker, asks what to do with data already entered, checks language,
-' imports data and metadata, shows report.
+' imports data and metadata, writes what the import found.
+' Everything the import found goes onto the import checking worksheet in ONE
+' write, placed after the import work and before any box: the report form is
+' offered after that write, so its Open Log button has a sheet to show. A
+' refused file is the only path that puts the sheet on screen. A cancel and an
+' error write no worksheet at all - the workbook log already carries the line.
 ' @param sourceWkb Workbook. The linelist workbook.
 ' @param trads TranslationObject. Translations for messages.
 Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
@@ -406,6 +411,7 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
     Dim pastingRule As Byte
     Dim pasteAtBottom As Boolean
     Dim sameLanguage As Boolean
+    Dim refused As Boolean
     Dim failDetail As String
 
     On Error GoTo ErrHand
@@ -441,26 +447,34 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
 
     ' Read what the file says about itself, once, and read the file over
     Set meta = ImportMetadata.Create(impwb)
-    If Not impObj.CheckImportFile(impwb, meta) Then GoTo RefusedImport
+    refused = Not impObj.CheckImportFile(impwb, meta)
 
-    ' Check the import is in the language of this linelist
-    sameLanguage = impObj.HasSameLanguage(meta)
-    If Not sameLanguage Then
-        If Not KeepGoingOnLanguage(meta, impObj, trads) Then GoTo EndImport
-    End If
+    ' A refused file is read no further, and the walk carries on to the single
+    ' write below rather than leaving through its own exit: the reason the file
+    ' was turned away is itself something the import found, and it belongs on
+    ' the same worksheet as everything else it found.
+    If Not refused Then
 
-    ' Import all data
-    impObj.ImportData impwb, pasteAtBottom, meta
-    impObj.ImportCustomDropdown impwb, pasteAtBottom
-    impObj.CompareWithImportFile impwb
-    impObj.FinalizeReport
+        ' Check the import is in the language of this linelist
+        sameLanguage = impObj.HasSameLanguage(meta)
+        If Not sameLanguage Then
+            If Not KeepGoingOnLanguage(meta, impObj, trads) Then GoTo EndImport
+        End If
 
-    ' Import migration metadata. These three read the file's own dictionary and
-    ' labels, so they run only when the two files are in the same language.
-    If sameLanguage Then
-        impObj.ImportShowHide impwb, meta
-        impObj.ImportEditableLabels impwb, meta
-        impObj.ImportSingleValues meta
+        ' Import all data
+        impObj.ImportData impwb, pasteAtBottom, meta
+        impObj.ImportCustomDropdown impwb, pasteAtBottom
+        impObj.CompareWithImportFile impwb
+        impObj.FinalizeReport
+
+        ' Import migration metadata. These three read the file's own dictionary
+        ' and labels, so they run only when the two files are in the same
+        ' language.
+        If sameLanguage Then
+            impObj.ImportShowHide impwb, meta
+            impObj.ImportEditableLabels impwb, meta
+            impObj.ImportSingleValues meta
+        End If
     End If
 
     ' Close import workbook
@@ -469,6 +483,26 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
 
     actsh.Activate
     appState.Restore
+
+    ' Everything the import found, written onto the worksheet and left hidden.
+    ' ONE write, and it happens HERE: right after the import work, before any
+    ' box and before the report form. The Open Log button of that form shows
+    ' this worksheet, so a sheet written after the form was dismissed is a
+    ' button that does nothing.
+    ImportChecking.WriteImportCheckings sourceWkb, impObj.CheckingValues
+
+    ' A REFUSAL IS SHOWN, unlike a finished import. Nothing else tells the user
+    ' why the file was turned away: the box carries one sentence, the import
+    ' report form is never offered on this path, and the worksheet holds the
+    ' reason and what to do about it. This is the only place the sheet is put on
+    ' screen by an import.
+    If refused Then
+        LogWarningLine "import-data", "file refused: " & FileNameOf(filePath)
+        MsgBox trads.TranslatedValue("MSG_AbortImport"), _
+               vbExclamation + vbOKOnly, trads.TranslatedValue("MSG_Imports")
+        ImportChecking.ShowReportSheet sourceWkb
+        Exit Sub
+    End If
 
     ' The import rewrote the sheets the held managers were built over
     ResetEventCaches
@@ -487,32 +521,6 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
         MsgBox trads.TranslatedValue("MSG_FinishImport"), _
                vbOKOnly, trads.TranslatedValue("MSG_Imports")
     End If
-
-    ' Everything the import found, written onto a worksheet and left hidden.
-    ' The user reaches it from the button on the import report form when they
-    ' want it, so an import that went well puts no wall of text on the screen.
-    ImportChecking.ShowImportCheckings sourceWkb, impObj.CheckingValues
-    Exit Sub
-
-RefusedImport:
-    ' The file cannot be read at all. The reason is on the checking worksheet,
-    ' because it is too long for a message box and it names what to do about it.
-    On Error Resume Next
-    LogWarningLine "import-data", "file refused: " & FileNameOf(filePath)
-    If Not impwb Is Nothing Then impwb.Close savechanges:=False
-    Set impwb = Nothing
-    If Not actsh Is Nothing Then actsh.Activate
-    If Not appState Is Nothing Then appState.Restore
-    On Error GoTo 0
-    MsgBox trads.TranslatedValue("MSG_AbortImport"), _
-           vbExclamation + vbOKOnly, trads.TranslatedValue("MSG_Imports")
-
-    ' A REFUSAL IS SHOWN, unlike a finished import. Nothing else tells the user
-    ' why the file was turned away: the box carries one sentence, the import
-    ' report form is never offered on this path, and the worksheet holds the
-    ' reason and what to do about it.
-    ImportChecking.ShowImportCheckings sourceWkb, impObj.CheckingValues
-    ImportChecking.ShowReportSheet sourceWkb
     Exit Sub
 
 EndImport:

@@ -1312,8 +1312,8 @@ Public Sub ClickCloseSheet()
         actionCode = "close-log"
         sh.Visible = xlSheetVeryHidden
     ElseIf sh.Name = reportSheetName Then
-        'Very hidden, like the log. ShowImportCheckings puts it back on screen
-        'on the next import, so nothing is lost by keeping it out of the tab bar
+        'Very hidden, like the log. ShowReportSheet puts it back on screen when
+        'the user asks for it, so nothing is lost by keeping it out of the tab bar
         'and out of the unhide list.
         actionCode = "close-import-report"
         sh.Visible = xlSheetVeryHidden
