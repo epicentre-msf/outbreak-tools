@@ -67,7 +67,7 @@ Private Sub UserForm_Initialize()
     tradform.TranslateForm Me
     ShowOtherLinelistChoice Me.CHK_OtherLinelist.Value
     Me.Width = 250
-    Me.Height = 450
+    Me.Height = 480
 End Sub
 
 
