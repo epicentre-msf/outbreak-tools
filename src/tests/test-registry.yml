@@ -1214,6 +1214,21 @@ suites:
       # TestHelpersLite.
       - module: TestExportButton
         covers: [ExportButton]
+      # TestExportOtherLinelist walks the other-linelist export of F_ExportMig
+      # one step at a time against a real linelist, src/tests/.input/
+      # old_linelist.xlsb, which the path used to fail on. The walk is
+      # CreateFromFile, then the two reads an export depends on, then
+      # ExportMigration and the two ExportGeo calls, and each step is its own
+      # test so the report names the step that refused rather than the walk.
+      # It also reads what that file carries -- the geo tables and names, the
+      # password sheet, the translation sheet -- so an old layout is recorded
+      # rather than guessed at.
+      # The file is gitignored and travels through the push and pull asset
+      # scripts, so a machine that has not pulled it reads every step as a
+      # skip and no step as a failure. It reaches no fixture module; its helper
+      # calls are unqualified, so they resolve to TestHelpersLite.
+      - module: TestExportOtherLinelist
+        covers: [LLExporter]
       # TestFilteredData drives the filtered-companion sync two callers run:
       # ExportButton ahead of a filtered export, and
       # EventLinelist.UpdateFilterTables on every filter refresh. It covers the
