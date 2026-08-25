@@ -96,7 +96,7 @@ Private hostHeaders As TCurrentHeaders
 '@sub-title Instantiate a sheet builder with provided dependencies.
 Public Function Create(ByVal hostWorkbook As Workbook, _
                        ByVal dropdowns As DropdownLists, _
-                       ByVal translator As TranslationObject, _ 
+                       ByVal translator As TranslationObject, _
                        ByVal varObj As MasterSetupVariables) As DiseaseSheet
 
     Dim instance As DiseaseSheet
@@ -110,7 +110,7 @@ End Function
 
 Public Sub Initialise(ByVal hostWorkbook As Workbook, _
                       ByVal dropdowns As DropdownLists, _
-                      ByVal translator As TranslationObject, _ 
+                      ByVal translator As TranslationObject, _
                       ByVal varObj As MasterSetupVariables)
 
     ValidateInitialise hostWorkbook, dropdowns, varObj
@@ -274,7 +274,7 @@ Private Sub CreateDiseaseWorksheet(ByVal diseaseName As String)
     On Error GoTo 0
 
     If (anchor Is Nothing) Then
-        ThrowError ProjectError.ObjectNotInitialized, _ 
+        ThrowError ProjectError.ObjectNotInitialized, _
          "Anchor worksheet " & DEFAULT_ANCHOR_SHEET & " not found"
     End If
 

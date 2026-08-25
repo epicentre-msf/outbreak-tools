@@ -381,7 +381,7 @@ End Function
 '@Description("Return the default list of worksheets excluded from disease dropdowns.")
 Private Function DefaultDiseaseExclusions() As Variant
     DefaultDiseaseExclusions = Array("Choices", "Variables", "Translations", "Dev", _
-                                     "__pass", "__updated", "__compRep", _ 
+                                     "__pass", "__updated", "__compRep", _
                                     "__ribbonTranslation", _
                                     "__dropdowns")
 End Function
