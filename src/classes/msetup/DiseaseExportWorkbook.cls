@@ -17,13 +17,13 @@ Attribute VB_Description = "Provides a safe lifecycle for export workbooks used 
 Option Explicit
 
 'DiseaseExportWorkbook.cls without interface -- single implementation, no test
-'fake, no compile cycle (see project-rules.md 4.4).
+'fake, no compile cycle.
 
 '@section Types
 '===============================================================================
 
 Private Type TExportWorkbook
-    Book As Workbook
+    Book As Excel.Workbook
 End Type
 
 Private this As TExportWorkbook
@@ -43,7 +43,7 @@ End Function
 '@sub-title Ensure a workbook instance is available for exports.
 '@param excelApp Application host used to create the workbook.
 '@return Workbook ready for export operations.
-Public Function EnsureWorkbook(ByVal excelApp As Application) As Workbook
+Public Function EnsureWorkbook(ByVal excelApp As Application) As Excel.Workbook
     If excelApp Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Application reference cannot be Nothing"
     End If
@@ -119,7 +119,7 @@ Public Property Get HasWorkbook() As Boolean
 End Property
 
 '@sub-title Retrieve the managed workbook reference.
-Public Property Get Workbook() As Workbook
+Public Property Get Workbook() As Excel.Workbook
     Set Workbook = this.Book
 End Property
 
