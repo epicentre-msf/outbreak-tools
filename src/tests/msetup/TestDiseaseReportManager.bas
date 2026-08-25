@@ -14,7 +14,7 @@ Private Const MAIN_REPORT_TABLE As String = "T_ReportMain"
 Private Const SECONDARY_REPORT_TABLE As String = "T_ReportSecondary"
 
 Private Assert As CustomTest
-Private ReportManager As IDiseaseReportManager
+Private ReportManager As DiseaseReportManager
 Private ReportSheet As Worksheet
 Private MainTable As ListObject
 
@@ -27,7 +27,7 @@ Private Sub ModuleInitialize()
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestDiseaseReportManager"
-    Set ReportManager = New DiseaseReportManager
+    Set ReportManager = DiseaseReportManager.Create()
 End Sub
 
 '@ModuleCleanup

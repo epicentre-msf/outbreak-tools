@@ -5,16 +5,28 @@ END
 Attribute VB_Name = "DiseaseReportManager"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = False
+Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Maintains disease import report tables without mutating legacy logic"
 
+'@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Maintains disease import report tables without mutating legacy logic")
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IDiseaseReportManager
+
+'DiseaseReportManager.cls without interface -- single implementation, no test
+'fake, no compile cycle (see project-rules.md 4.4).
+
+'@section Factory
+'===============================================================================
+
+'@sub-title Build a fresh report manager.
+'@return DiseaseReportManager ready to use.
+Public Function Create() As DiseaseReportManager
+    Set Create = New DiseaseReportManager
+End Function
 
 '@section Queries
 '===============================================================================
@@ -192,15 +204,4 @@ End Function
 '@sub-title Centralised error raising aligned with ProjectError codes.
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
     Err.Raise errNumber, "DiseaseReportManager", errMessage
-End Sub
-
-'@section Interface
-'===============================================================================
-
-Private Function IDiseaseReportManager_HasPendingReport(ByVal reportTable As ListObject, ByVal diseaseName As String, Optional ByVal expectedValue As String = "yes") As Boolean
-    IDiseaseReportManager_HasPendingReport = HasPendingReport(reportTable, diseaseName, expectedValue)
-End Function
-
-Private Sub IDiseaseReportManager_ClearReportStatus(ByVal reportSheet As Worksheet, ByVal diseaseName As String)
-    ClearReportStatus reportSheet, diseaseName
 End Sub
