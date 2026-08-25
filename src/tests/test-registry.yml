@@ -1263,17 +1263,82 @@ suites:
       - module: TestLLImporter
         covers: [LLImporter]
 
+  # --- msetup (the master setup and its Disease subsystem) -------------------
+  # The whole master setup joined on 2026-08-25: the nine IDisease* interfaces
+  # folded into their classes, the three missing classes were written, and the
+  # ribbon translation dropdown went away, which ended the clash its LangLabel
+  # and clickLangChange had with the two names EventsDesignerCore declares.
+  # MasterSetupEventsManager carries an Ms prefix on MsWorkbookOpened and
+  # MsSheetChanged for the same reason: EventsManager under `setup` declares
+  # the bare names.
+  #
+  # The classes name ProjectError, ApplicationState, CustomTable, DataSheet,
+  # DropdownLists, LLChoices and OSFiles, all registered under `general`, and
+  # BetterArray, Checking, HiddenNames, Passwords and TranslationObject, all
+  # baked into the driver workbook. The modules add SetupTranslationsTable and
+  # UpdatedValues (under `setup`) and LLdictionary with LLVariables (under
+  # `dictionary`). So the rows below open nothing further.
+  #
+  # MasterSetupImportService stays out: it is an empty placeholder, and the
+  # import and export orchestration lives in MasterSetupExports.
+  - folder: msetup
+    classes:
+      - name: DiseaseExportWorkbook
+      - name: DiseaseTranslationCache
+      - name: DiseaseLogger
+      - name: DiseaseImportSummary
+      - name: DiseaseImporter
+      - name: DiseaseExporter
+      - name: DiseaseWorksheetManager
+      - name: DiseaseReportManager
+      - name: DiseaseSheet
+      - name: MasterSetupVariables
+      - name: MasterSetupPreparation
+      - name: EventMasterSetup
+    modules:
+      - MasterSetupHelpers
+      - MasterSetupEventsManager
+      - MasterSetupExports
+      # EventMasterSetupWorkbook is the ThisWorkbook code of the master setup
+      # workbook; as a standard module its handlers are plain private subs.
+      - EventMasterSetupWorkbook
+      # CustomMasterSetupFunctions carries the two worksheet functions the
+      # disease table formulas call: MainLabelValue and ChoiceValues.
+      - CustomMasterSetupFunctions
+      # The ribbon callbacks compile against IRibbonControl from the Office
+      # library, the same way the setup and designer event modules do.
+      - EventsMasterSetupRibbon
+    tests:
+      - module: TestDiseaseExportWorkbook
+        covers: [DiseaseExportWorkbook]
+      - module: TestDiseaseTranslationCache
+        covers: [DiseaseTranslationCache]
+      - module: TestDiseaseLogger
+        covers: [DiseaseLogger]
+      - module: TestDiseaseImporter
+        covers: [DiseaseImporter, DiseaseImportSummary]
+      - module: TestDiseaseExporter
+        covers: [DiseaseExporter]
+      - module: TestDiseaseWorksheetManager
+        covers: [DiseaseWorksheetManager]
+      - module: TestDiseaseReportManager
+        covers: [DiseaseReportManager]
+      - module: TestDiseaseSheet
+        covers: [DiseaseSheet]
+      - module: TestDiseaseIntegration
+        covers: [DiseaseSheet, DiseaseExporter, DiseaseImporter, DiseaseWorksheetManager]
+      - module: TestMasterSetupVariables
+        covers: [MasterSetupVariables]
+      - module: TestMasterSetupPreparation
+        covers: [MasterSetupPreparation]
+      - module: TestEventMasterSetup
+        covers: [EventMasterSetup]
+
 # ---------------------------------------------------------------------------
 # TEMPLATE -- copy per folder as coverage is added. Delete fields left empty.
 # Expansion backlog (suite folders under src/tests/ that are not yet
-# registered): msetup, and msetup alone.
-#
-# The classes, modules and tests of the master setup all live under msetup
-# folders since 2026-08-25, and every class its suites drive exists.
-# EventsMasterSetupRibbon still declares LangLabel and clickLangChange, the
-# same two Public names EventsDesignerCore declares under `designer`; that
-# clash ends when the ribbon translation dropdown goes away, which is on the
-# disease task list. The folder joins the registry then.
+# registered): none. The msetup folder joined on 2026-08-25 and closed the
+# backlog.
 #
 # src/tests/implement/ is gone as of 2026-08-15. It held TestCrossTableHelpers
 # alone -- 436 lines, 22 tests -- which built its assert object with
