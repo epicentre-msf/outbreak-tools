@@ -79,7 +79,7 @@ Public Sub TestAddExportImportRemove()
     Dim diseaseTable As ListObject
     Dim exportBook As Workbook
     Dim logger As DiseaseLogger
-    Dim summary As IDiseaseImportSummary
+    Dim summary As DiseaseImportSummary
     Dim entries As BetterArray
     Dim importTable As ListObject
     Dim manager As DiseaseWorksheetManager

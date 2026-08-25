@@ -23,14 +23,13 @@ Implements IDiseaseImporter
 Public Function MergeDisease(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, _
                              Optional ByVal mergeValues As Boolean = True, _
                              Optional ByVal priority As DiseaseImportPriority = DiseaseImportPriority_Foreign, _
-                             Optional ByVal logger As DiseaseLogger = Nothing) As IDiseaseImportSummary
+                             Optional ByVal logger As DiseaseLogger = Nothing) As DiseaseImportSummary
     Dim summary As DiseaseImportSummary
 
     ValidateTable targetTable, "targetTable"
     ValidateTable sourceTable, "sourceTable"
 
-    Set summary = New DiseaseImportSummary
-    summary.Initialise
+    Set summary = DiseaseImportSummary.Create()
 
     If Not mergeValues Then
         ReplaceTable targetTable, sourceTable, summary, logger
@@ -38,7 +37,7 @@ Public Function MergeDisease(ByVal targetTable As ListObject, ByVal sourceTable 
         MergeTables targetTable, sourceTable, priority, summary, logger
     End If
 
-    Set MergeDisease = summary.Self
+    Set MergeDisease = summary
 End Function
 
 '@section Replacement
@@ -380,6 +379,6 @@ End Sub
 '@section Interface
 '===============================================================================
 
-Private Function IDiseaseImporter_MergeDisease(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, Optional ByVal mergeValues As Boolean = True, Optional ByVal priority As DiseaseImportPriority = DiseaseImportPriority_Foreign, Optional ByVal logger As DiseaseLogger = Nothing) As IDiseaseImportSummary
+Private Function IDiseaseImporter_MergeDisease(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, Optional ByVal mergeValues As Boolean = True, Optional ByVal priority As DiseaseImportPriority = DiseaseImportPriority_Foreign, Optional ByVal logger As DiseaseLogger = Nothing) As DiseaseImportSummary
     Set IDiseaseImporter_MergeDisease = MergeDisease(targetTable, sourceTable, mergeValues, priority, logger)
 End Function

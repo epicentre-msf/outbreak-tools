@@ -69,7 +69,7 @@ End Sub
 Public Sub TestMergeUpdatesExistingAndAppendsNew()
     CustomTestSetTitles Assert, "DiseaseImporter", "TestMergeUpdatesExistingAndAppendsNew"
 
-    Dim summary As IDiseaseImportSummary
+    Dim summary As DiseaseImportSummary
     Dim data As Variant
     Dim missing As BetterArray
     Dim updated As BetterArray
@@ -109,7 +109,7 @@ End Sub
 Public Sub TestMergeDiseaseLogsOperations()
     CustomTestSetTitles Assert, "DiseaseImporter", "TestMergeDiseaseLogsOperations"
 
-    Dim summary As IDiseaseImportSummary
+    Dim summary As DiseaseImportSummary
     Dim logger As DiseaseLogger
     Dim entries As BetterArray
 
@@ -135,7 +135,7 @@ End Sub
 Public Sub TestReplaceTableCopiesSourceWhenMergeDisabled()
     CustomTestSetTitles Assert, "DiseaseImporter", "TestReplaceTableCopiesSourceWhenMergeDisabled"
 
-    Dim summary As IDiseaseImportSummary
+    Dim summary As DiseaseImportSummary
     Dim data As Variant
 
     On Error GoTo Fail

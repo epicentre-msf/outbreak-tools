@@ -32,9 +32,9 @@ End Enum
 '@param sourceTable ListObject containing the imported disease data.
 '@param mergeValues Optional Boolean. When False the target table is replaced.
 '@param priority Optional DiseaseImportPriority controlling conflict resolution. Defaults to foreign.
-'@return IDiseaseImportSummary containing the merge outcome.
+'@return DiseaseImportSummary containing the merge outcome.
 Public Function MergeDisease(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, _
                              Optional ByVal mergeValues As Boolean = True, _
                              Optional ByVal priority As DiseaseImportPriority = DiseaseImportPriority_Foreign, _
-                             Optional ByVal logger As DiseaseLogger) As IDiseaseImportSummary
+                             Optional ByVal logger As DiseaseLogger) As DiseaseImportSummary
 End Function
