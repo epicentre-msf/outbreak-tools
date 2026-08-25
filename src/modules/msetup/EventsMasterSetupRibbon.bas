@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Msetup")
 '@ModuleDescription("Ribbon callbacks supporting master setup operations.")
-'@depends MasterSetupPreparation, MasterSetupHelpers, MasterSetupExports, DropdownLists, Passwords, TranslationObject, ApplicationState, SetupTranslationsTable, UpdatedValues, DiseaseSheet, Development, RibbonDev
+'@depends MasterSetupPreparation, MasterSetupHelpers, MasterSetupExports, MasterSetupImportService, DropdownLists, Passwords, TranslationObject, ApplicationState, SetupTranslationsTable, UpdatedValues, DiseaseSheet, Development, RibbonDev
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'The master setup file itself stays in English: every prompt below is a plain
@@ -534,6 +534,47 @@ Handler:
     Resume Cleanup
 End Sub
 
+'@Description("Import a disease workbook exported for a setup back into this file.")
+'@EntryPoint
+Public Sub clickImpSheet(ByRef ribbonControl As IRibbonControl)
+    Dim scope As ApplicationState
+    Dim passManager As Passwords
+
+    On Error GoTo Handler
+
+    Set scope = ApplicationState.Create(Application)
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, blockSecurity:=True
+
+    Set passManager = MasterSetupHelpers.ResolveMasterPasswords()
+    If passManager Is Nothing Then Err.Raise ProjectError.ElementNotFound, "clickImpSheet", "Passwords worksheet '" & PASSWORD_SHEET_NAME & "' was not found."
+
+    'The import writes on the Variables and Choices sheets, on the disease
+    'sheet it lands on, and adds a sheet when the disease is new.
+    SetMasterSheetsProtection passManager, protectSheets:=False
+    MasterSetupExports.ImportFromSetup
+    SetMasterSheetsProtection passManager, protectSheets:=True
+
+    RefreshDropdownCaches
+    ResetMasterSetupFunctionCaches
+
+Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Restore
+    'would come straight back to this label and raise again.
+    On Error Resume Next
+    If Not scope Is Nothing Then scope.Restore
+    Exit Sub
+
+Handler:
+    Debug.Print "clickImpSheet: "; Err.Number; Err.Description
+    MsgBox "Disease import failed: " & Err.Description, vbCritical + vbOKOnly, "Import"
+    If Not passManager Is Nothing Then
+        On Error Resume Next
+            SetMasterSheetsProtection passManager, protectSheets:=True
+        On Error GoTo 0
+    End If
+    Resume Cleanup
+End Sub
+
 '@Description("Export every disease for migration workflows.")
 '@EntryPoint
 Public Sub clickExp(ByRef ribbonControl As IRibbonControl)
@@ -630,6 +671,33 @@ Private Sub RefreshDropdownCaches()
     On Error Resume Next
         Preparation.EnsureDropdowns
     On Error GoTo 0
+End Sub
+
+'The workbook, the Variables and Choices sheets and every disease worksheet
+'open before a setup import and close after it: the import can write on any
+'of them, and the disease sheet it adds is protected with the others.
+Private Sub SetMasterSheetsProtection(ByVal passManager As Passwords, ByVal protectSheets As Boolean)
+    Dim sh As Worksheet
+
+    For Each sh In ThisWorkbook.Worksheets
+        If MasterSetupHelpers.IsMasterDiseaseSheet(sh) Then
+            If protectSheets Then
+                passManager.Protect sh.Name
+            Else
+                passManager.UnProtect sh.Name
+            End If
+        End If
+    Next sh
+
+    If protectSheets Then
+        MasterSetupHelpers.ProtectMasterSetupSheet DeploymentSheet(VARIABLES_SHEET_NAME), "variables"
+        MasterSetupHelpers.ProtectMasterSetupSheet DeploymentSheet(CHOICES_SHEET_NAME), "choices"
+        passManager.Protect ThisWorkbook
+    Else
+        passManager.UnProtect ThisWorkbook
+        MasterSetupHelpers.UnProtectMasterSetupSheet DeploymentSheet(VARIABLES_SHEET_NAME), "variables"
+        MasterSetupHelpers.UnProtectMasterSetupSheet DeploymentSheet(CHOICES_SHEET_NAME), "choices"
+    End If
 End Sub
 
 'Deploy sets every sheet handed to AddHiddenSheet very hidden and protects

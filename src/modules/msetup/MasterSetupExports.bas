@@ -2,26 +2,32 @@ Attribute VB_Name = "MasterSetupExports"
 Option Explicit
 
 '@Folder("Msetup")
-'@ModuleDescription("Disease exports and the migration round trip for the master setup workbook.")
+'@ModuleDescription("Disease exports, the setup import and the migration round trip for the master setup workbook.")
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, ExcelMemberMayReturnNothing, UseMeaningfulName
 
-'Three doors to the outside world, all built on the msetup classes:
+'Four doors to the outside world, all built on the msetup classes:
 '- ExportToSetup writes one disease as a dictionary workbook a setup imports.
+'- ImportFromSetup reads such a workbook back: the disease worksheet is
+'  rebuilt or merged, and the Variables and Choices sheets take what they
+'  lack.
 '- ExportForMigration writes every disease of this file into one flat
 '  workbook, beside the Translations, Choices and Variables sheets.
 '- ImportFlatFile reads such a flat workbook back and recreates or merges
 '  every disease worksheet it carries.
+'
+'The landing of a block on a disease worksheet is MasterSetupImportService's
+'work; this module walks the files and builds the service over the master
+'managers.
 
 Private Const DISEASES_SHEET As String = "Diseases"
 Private Const IMPORT_STAGING_SHEET As String = "__dis_import"
-Private Const LANGUAGES_DROPDOWN As String = "__data_languages"
-Private Const DISEASES_DROPDOWN As String = "__diseases_list"
 Private Const NAME_DISLANG As String = "__Var_DISLANG"
 Private Const NAME_DISCODE As String = "__Var_DISCODE"
 Private Const DISEASE_TABLE_WIDTH As Long = 7
 Private Const BLOCK_HEADER_ROW As Long = 1
 Private Const BLOCK_META_ROW As Long = 2
 Private Const BLOCK_TABLE_ROW As Long = 3
+Private Const IMPORT_FILTERS As String = "*.xlsx;*.xlsb;*.xlsm"
 
 '@section Exports
 '===============================================================================
@@ -84,7 +90,63 @@ Public Sub ExportForMigration()
     MsgBox "Done! The migration file is saved at:" & vbNewLine & filePath, vbInformation + vbOKOnly, "Export"
 End Sub
 
-'@section Import
+'@section Setup import
+'===============================================================================
+
+'@sub-title Read a disease workbook exported for a setup back into this file.
+'@details The workbook is the one ExportToSetup writes. Its disease
+'worksheet is rebuilt when it is gone and merged when it is there, the
+'Variables table takes the variables it lacks and the Choices sheet takes
+'the lists it lacks. The lists of a file in another language than English
+'land with their labels empty.
+Public Sub ImportFromSetup()
+    Dim io As OSFiles
+    Dim sourceBook As Workbook
+    Dim service As MasterSetupImportService
+
+    Set io = OSFiles.Create()
+    io.LoadFile IMPORT_FILTERS
+    If Not io.HasValidFile() Then Exit Sub
+
+    Set sourceBook = Application.Workbooks.Open(fileName:=io.File(), ReadOnly:=True)
+
+    On Error GoTo CloseSource
+
+    Set service = ImportSetupWorkbook(sourceBook, ThisWorkbook)
+
+    MsgBox "Done! The disease '" & service.DiseaseName & "' is imported." & vbNewLine & _
+           service.AddedVariables.Length & " variable(s) added to the Variables sheet, " & _
+           service.AddedChoices.Length & " list(s) added to the Choices sheet.", _
+           vbInformation + vbOKOnly, "Import"
+
+CloseSource:
+    'Shielded close: the source workbook must not stay open on any path, and
+    'a failure of the import itself still reaches the caller.
+    On Error Resume Next
+    sourceBook.Close saveChanges:=False
+    On Error GoTo 0
+End Sub
+
+'@sub-title Fold an open setup export into the target workbook.
+'@details Public and fully parameterised so a suite can drive the import
+'without a file picker. ImportFromSetup wraps it with the picker.
+'@param sourceBook Workbook. The exported workbook, open.
+'@param targetBook Workbook. The master setup receiving it.
+'@param logger Optional DiseaseLogger.
+'@return MasterSetupImportService carrying the disease name, the variables
+'   and the lists added.
+Public Function ImportSetupWorkbook(ByVal sourceBook As Workbook, _
+                                    ByVal targetBook As Workbook, _
+                                    Optional ByVal logger As DiseaseLogger = Nothing) As MasterSetupImportService
+    Dim service As MasterSetupImportService
+
+    Set service = BuildImportService(targetBook)
+    service.ImportSetupExport sourceBook, logger
+
+    Set ImportSetupWorkbook = service
+End Function
+
+'@section Migration import
 '===============================================================================
 
 '@sub-title Read a flat migration file and recreate or merge its diseases.
@@ -95,7 +157,7 @@ Public Sub ImportFlatFile()
     Dim importedCount As Long
 
     Set io = OSFiles.Create()
-    io.LoadFile "*.xlsx;*.xlsb;*.xlsm"
+    io.LoadFile IMPORT_FILTERS
     If Not io.HasValidFile() Then Exit Sub
 
     Set sourceBook = Application.Workbooks.Open(fileName:=io.File(), ReadOnly:=True)
@@ -121,17 +183,17 @@ CloseSource:
     On Error GoTo 0
 End Sub
 
-'@section Import helpers
-'===============================================================================
-
 '@sub-title Walk the Diseases sheet blocks of a flat file and import each one.
 '@details Public and fully parameterised so a suite can drive the round trip
-'without a file picker. ImportFlatFile wraps it with the pickers.
+'without a file picker. ImportFlatFile wraps it with the pickers. The
+'header row is walked for the word Disease, so the blocks can sit at any
+'stride.
 '@param sourceBook Workbook carrying the flat Diseases sheet.
 '@param targetBook Workbook receiving the disease worksheets.
 '@return Long number of disease blocks imported.
 Public Function ImportMigrationDiseases(ByVal sourceBook As Workbook, ByVal targetBook As Workbook) As Long
     Dim diseasesSheet As Worksheet
+    Dim service As MasterSetupImportService
     Dim lastColumn As Long
     Dim columnIndex As Long
     Dim diseaseName As String
@@ -139,6 +201,8 @@ Public Function ImportMigrationDiseases(ByVal sourceBook As Workbook, ByVal targ
 
     Set diseasesSheet = FindWorksheet(sourceBook, DISEASES_SHEET)
     If diseasesSheet Is Nothing Then Exit Function
+
+    Set service = BuildImportService(targetBook)
 
     lastColumn = diseasesSheet.UsedRange.Columns(diseasesSheet.UsedRange.Columns.Count).Column
 
@@ -149,103 +213,30 @@ Public Function ImportMigrationDiseases(ByVal sourceBook As Workbook, ByVal targ
             languageTag = MasterSetupHelpers.SafeValue(diseasesSheet.Cells(BLOCK_META_ROW, columnIndex + 1).Value)
 
             If LenB(diseaseName) > 0 Then
-                ImportOneDisease diseasesSheet, columnIndex, diseaseName, languageTag, targetBook
+                ImportOneDisease service, diseasesSheet, columnIndex, diseaseName, languageTag, targetBook
                 ImportMigrationDiseases = ImportMigrationDiseases + 1
             End If
         End If
     Next columnIndex
 End Function
 
-'@sub-title Import one column block into a fresh or existing disease sheet.
-Private Sub ImportOneDisease(ByVal diseasesSheet As Worksheet, ByVal startColumn As Long, _
+'@sub-title Stage one column block and land it through the service.
+Private Sub ImportOneDisease(ByVal service As MasterSetupImportService, _
+                             ByVal diseasesSheet As Worksheet, ByVal startColumn As Long, _
                              ByVal diseaseName As String, ByVal languageTag As String, _
                              ByVal targetBook As Workbook)
 
-    Dim targetSheet As Worksheet
     Dim stagingTable As ListObject
     Dim manager As DiseaseWorksheetManager
-    Dim freshSheet As Boolean
-
-    Set targetSheet = FindWorksheet(targetBook, diseaseName)
-    freshSheet = targetSheet Is Nothing
-
-    If freshSheet Then
-        Set targetSheet = BuildDiseaseSheet(diseaseName, languageTag, targetBook)
-    ElseIf Not MasterSetupHelpers.IsMasterDiseaseSheet(targetSheet) Then
-        'A sheet of that name that is no disease sheet is left alone.
-        Exit Sub
-    End If
-
-    If targetSheet.ListObjects.Count = 0 Then Exit Sub
 
     Set stagingTable = BuildStagingTable(diseasesSheet, startColumn, targetBook)
     If stagingTable Is Nothing Then Exit Sub
 
-    'A fresh sheet takes the block whole; an existing one merges it, with the
-    'imported values winning.
-    DiseaseImporter.Create().MergeDisease targetSheet.ListObjects(1), stagingTable, _
-                                          mergeValues:=Not freshSheet, _
-                                          priority:=DiseaseImportPriority_Foreign
+    'A migration block keeps the values it carries; the formulas are M7's.
+    service.ImportDiseaseTable stagingTable, diseaseName, languageTag
 
     Set manager = DiseaseWorksheetManager.Create()
     manager.RemoveWorksheet targetBook, IMPORT_STAGING_SHEET
-End Sub
-
-'@sub-title Build a disease sheet for an imported block.
-Private Function BuildDiseaseSheet(ByVal diseaseName As String, ByVal languageTag As String, _
-                                   ByVal targetBook As Workbook) As Worksheet
-    Dim builder As DiseaseSheet
-    Dim dropdowns As DropdownLists
-    Dim languages As BetterArray
-
-    Set dropdowns = MasterSetupHelpers.ResolveMasterDropdowns( _
-                    MasterSetupHelpers.ResolveMasterDropdownsSheet(targetBook))
-
-    'A disease removed earlier can leave its name in the diseases list, and a
-    'stale name refuses the rebuild as a duplicate.
-    PurgeStaleDiseaseName dropdowns, diseaseName, targetBook
-
-    Set builder = DiseaseSheet.Create(targetBook, dropdowns, _
-                                      MasterSetupHelpers.ResolveMasterSetupVariables( _
-                                      MasterSetupHelpers.ResolveMasterVariablesSheet(targetBook)))
-
-    'A language the target file does not carry falls back to the default.
-    Set languages = dropdowns.Values(LANGUAGES_DROPDOWN)
-    If Not languages Is Nothing Then
-        If Not languages.Includes(languageTag) Then languageTag = vbNullString
-    End If
-
-    Set BuildDiseaseSheet = builder.Build(diseaseName, languageTag)
-End Function
-
-'@sub-title Drop a diseases-list entry whose worksheet is gone.
-Private Sub PurgeStaleDiseaseName(ByVal dropdowns As DropdownLists, ByVal diseaseName As String, _
-                                  ByVal targetBook As Workbook)
-    Dim names As BetterArray
-    Dim kept As BetterArray
-    Dim idx As Long
-    Dim candidate As String
-
-    If dropdowns Is Nothing Then Exit Sub
-    If Not FindWorksheet(targetBook, diseaseName) Is Nothing Then Exit Sub
-
-    Set names = dropdowns.Values(DISEASES_DROPDOWN)
-    If names Is Nothing Then Exit Sub
-    If Not names.Includes(diseaseName) Then Exit Sub
-
-    Set kept = New BetterArray
-    kept.LowerBound = 1
-
-    For idx = names.LowerBound To names.UpperBound
-        candidate = CStr(names.Item(idx))
-        If StrComp(candidate, diseaseName, vbTextCompare) <> 0 Then
-            kept.Push candidate
-        End If
-    Next idx
-
-    If kept.Length = 0 Then kept.Push vbNullString
-
-    dropdowns.Update kept, DISEASES_DROPDOWN
 End Sub
 
 '@sub-title Copy one block into a staging sheet and answer its ListObject.
@@ -298,6 +289,31 @@ End Function
 Private Function BuildExporter() As DiseaseExporter
     Set BuildExporter = DiseaseExporter.Create(DiseaseExportWorkbook.Create(), _
                                                ApplicationState.Create(Application))
+End Function
+
+'@sub-title Build the import service over the master managers of a workbook.
+'@details The Choices sheet is optional: a workbook without one still takes
+'its diseases, and the service logs the lists it leaves out.
+Private Function BuildImportService(ByVal targetBook As Workbook) As MasterSetupImportService
+    Dim dropdowns As DropdownLists
+    Dim variables As MasterSetupVariables
+    Dim choices As LLChoices
+    Dim choicesSheet As Worksheet
+    Dim builder As DiseaseSheet
+
+    Set dropdowns = MasterSetupHelpers.ResolveMasterDropdowns( _
+                    MasterSetupHelpers.ResolveMasterDropdownsSheet(targetBook))
+    Set variables = MasterSetupHelpers.ResolveMasterSetupVariables( _
+                    MasterSetupHelpers.ResolveMasterVariablesSheet(targetBook))
+
+    Set choicesSheet = MasterSetupHelpers.ResolveMasterChoicesSheet(targetBook)
+    If Not choicesSheet Is Nothing Then
+        Set choices = MasterSetupHelpers.ResolveMasterChoices(choicesSheet)
+    End If
+
+    Set builder = DiseaseSheet.Create(targetBook, dropdowns, variables)
+
+    Set BuildImportService = MasterSetupImportService.Create(targetBook, builder, dropdowns, variables, choices)
 End Function
 
 '@sub-title Collect the names of every disease worksheet of this workbook.

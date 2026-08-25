@@ -21,6 +21,7 @@
                 </group>
                 <group id="customGroupAdv" label="Exports">
                     <button id="btnExp" label="Export To Setup" image="anaexport" size="large" onAction="clickExpSheet"/>
+                    <button id="btnImpSheet" label="Import From Setup" image="download" size="large" onAction="clickImpSheet"/>
                     <button id="btnExpMig" label="Export For Migration" imageMso="GridSettings" size="normal" onAction="clickExp"/>
                     <button id="btnImpMig" label="Import Migration File" imageMso="GridSettings" size="normal" onAction="clickImp"/>
                 </group>

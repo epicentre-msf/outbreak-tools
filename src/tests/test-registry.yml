@@ -1290,8 +1290,9 @@ suites:
   # UpdatedValues (under `setup`) and LLdictionary with LLVariables (under
   # `dictionary`). So the rows below open nothing further.
   #
-  # MasterSetupImportService stays out: it is an empty placeholder, and the
-  # import and export orchestration lives in MasterSetupExports.
+  # MasterSetupImportService lands a disease table on a disease worksheet
+  # and folds a setup export back into the Variables and Choices sheets;
+  # MasterSetupExports walks the files and builds it over the master managers.
   - folder: msetup
     classes:
       - name: DiseaseExportWorkbook
@@ -1304,6 +1305,7 @@ suites:
       - name: DiseaseSheet
       - name: MasterSetupVariables
       - name: MasterSetupPreparation
+      - name: MasterSetupImportService
       - name: EventMasterSetup
     modules:
       - MasterSetupHelpers
@@ -1317,6 +1319,9 @@ suites:
       - CustomMasterSetupFunctions
       # The ribbon callbacks compile against IRibbonControl from the Office
       # library, the same way the setup and designer event modules do.
+      # clickDevInitialize also names RibbonDev.EnsureDevelopment and the
+      # Development type: RibbonDev is registered under `dev` and
+      # Development is baked into the driver workbook.
       - EventsMasterSetupRibbon
     tests:
       - module: TestDiseaseExportWorkbook
@@ -1339,6 +1344,11 @@ suites:
         covers: [MasterSetupVariables]
       - module: TestMasterSetupPreparation
         covers: [MasterSetupPreparation]
+      # TestMasterSetupImportService exports a disease through DiseaseExporter
+      # and folds the file back: the sheet rebuilt or merged, the Variables
+      # table and the Choices sheet taking what they lacked.
+      - module: TestMasterSetupImportService
+        covers: [MasterSetupImportService, MasterSetupVariables, DiseaseSheet]
       - module: TestEventMasterSetup
         covers: [EventMasterSetup]
       - module: TestMasterSetupHelpers

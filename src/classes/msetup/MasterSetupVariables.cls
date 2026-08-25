@@ -129,6 +129,48 @@ Public Sub RefreshChoices(ByVal variableName As String, ByVal choices As LLChoic
     WriteValue rowIndex, HEADER_CHOICES, concatenated
 End Sub
 
+'@sub-title Whether the table carries a line for the variable.
+'@param variableName String identifier of the variable, matched without regard to case.
+Public Function HasVariable(ByVal variableName As String) As Boolean
+    ValidateReady
+    HasVariable = (LocateVariableRow(Trim$(variableName)) > 0)
+End Function
+
+'@sub-title Add a variable on the first free line of the table.
+'@details A free line is a line with no variable name, which is what Add
+'Rows leaves behind; with none a row is added to the table. The line takes
+'the next order number, so a sort keeps the new variable at the end. The
+'joined choices values stay empty: RefreshChoices fills them.
+'@param variableName String identifier of the new variable.
+'@param section Optional String written in the Variable Section column.
+'@param label Optional String written in the Label column.
+'@param defaultChoice Optional String written in the Default Choice column.
+'@param defaultStatus Optional String written in the Default Status column.
+Public Sub AddVariable(ByVal variableName As String, _
+                       Optional ByVal section As String = vbNullString, _
+                       Optional ByVal label As String = vbNullString, _
+                       Optional ByVal defaultChoice As String = vbNullString, _
+                       Optional ByVal defaultStatus As String = vbNullString)
+    Dim rowIndex As Long
+
+    ValidateReady
+    variableName = Trim$(variableName)
+    If LenB(variableName) = 0 Then
+        ThrowError ProjectError.InvalidArgument, "AddVariable requires a variable name."
+    End If
+    If LocateVariableRow(variableName) > 0 Then
+        ThrowError ProjectError.InvalidArgument, "Variable '" & variableName & "' already exists in the variables table."
+    End If
+
+    rowIndex = FirstFreeRow()
+    WriteCell rowIndex, HEADER_ORDER, NextOrderNumber()
+    WriteValue rowIndex, HEADER_SECTION, section
+    WriteValue rowIndex, HEADER_NAME, variableName
+    WriteValue rowIndex, HEADER_LABEL, label
+    WriteValue rowIndex, HEADER_DEFAULT_CHOICE, defaultChoice
+    WriteValue rowIndex, HEADER_DEFAULT_STATUS, defaultStatus
+End Sub
+
 '@sub-title Retrieve the label for the supplied variable.
 Public Function LabelFor(ByVal variableName As String) As String
     ValidateReady
@@ -729,6 +771,78 @@ Private Sub WriteValue(ByVal rowIndex As Long, ByVal headerName As String, ByVal
 
     targetRange.Cells(rowIndex, 1).Value = newValue
 End Sub
+
+'@sub-title Write any value on the line of the given column.
+Private Sub WriteCell(ByVal rowIndex As Long, ByVal headerName As String, ByVal newValue As Variant)
+    Dim targetRange As Range
+
+    Set targetRange = ColumnRange(headerName)
+    If targetRange Is Nothing Then Exit Sub
+    If rowIndex <= 0 Or rowIndex > targetRange.Rows.Count Then Exit Sub
+
+    targetRange.Cells(rowIndex, 1).Value = newValue
+End Sub
+
+'@sub-title The first line with no variable name, or a new line at the end.
+Private Function FirstFreeRow() As Long
+    Dim nameRange As Range
+    Dim block As Variant
+    Dim rowCounter As Long
+
+    Set nameRange = ColumnRange(HEADER_NAME)
+    If Not nameRange Is Nothing Then
+        block = nameRange.Value
+        If Not IsArray(block) Then
+            If LenB(Trim$(CStr(block))) = 0 Then
+                FirstFreeRow = 1
+                Exit Function
+            End If
+        Else
+            For rowCounter = 1 To UBound(block, 1)
+                If LenB(Trim$(CStr(block(rowCounter, 1)))) = 0 Then
+                    FirstFreeRow = rowCounter
+                    Exit Function
+                End If
+            Next rowCounter
+        End If
+    End If
+
+    this.table.ListRows.Add
+    FirstFreeRow = this.table.ListRows.Count
+End Function
+
+'@sub-title One past the highest order number of the table.
+Private Function NextOrderNumber() As Long
+    Dim orderRange As Range
+    Dim block As Variant
+    Dim rowCounter As Long
+    Dim highest As Long
+
+    Set orderRange = ColumnRange(HEADER_ORDER)
+    If orderRange Is Nothing Then
+        NextOrderNumber = 1
+        Exit Function
+    End If
+
+    block = orderRange.Value
+    If Not IsArray(block) Then
+        highest = OrderOf(block)
+    Else
+        For rowCounter = 1 To UBound(block, 1)
+            If OrderOf(block(rowCounter, 1)) > highest Then highest = OrderOf(block(rowCounter, 1))
+        Next rowCounter
+    End If
+
+    NextOrderNumber = highest + 1
+End Function
+
+'@sub-title The order number a cell carries; anything else reads as 0.
+Private Function OrderOf(ByVal cellValue As Variant) As Long
+    If IsError(cellValue) Then Exit Function
+    If IsEmpty(cellValue) Then Exit Function
+    If Not IsNumeric(cellValue) Then Exit Function
+    OrderOf = CLng(cellValue)
+End Function
 
 Private Sub EnsureRequiredColumns(ByVal listTable As ListObject)
     Dim required As Variant

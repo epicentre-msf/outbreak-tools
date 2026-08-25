@@ -294,8 +294,6 @@ Private Sub WriteValues()
     Dim choiValIndex As Long
     Dim varNameIndex As Long
     Dim varChoiceIndex As Long
-    Dim varNameAddress As String
-    Dim varChoiceAddress As String
     Dim langAddress As String
 
 
@@ -321,22 +319,74 @@ Private Sub WriteValues()
     varNameIndex = ColumnIndexFor("Variable Name")
     varChoiceIndex = ColumnIndexFor("Choice")
     If varNameIndex <= 0 Then Exit Sub
-    varNameAddress = anchorRng.Cells(1, varNameIndex).Address(RowAbsolute:=False)
 
     'Add formulas on specific columns
     If mainLabIndex > 0 Then
-        anchorRng.Cells(1, mainLabIndex).Formula = "=MainLabelValue(" & varNameAddress & ", " & langAddress & ")"
+        anchorRng.Cells(1, mainLabIndex).Formula = LabelFormula(anchorRng.Cells(1, varNameIndex), langAddress)
     End If
 
     'The values follow the Choice cell of the line. The events manager fills
     'that cell with the default choice when a variable is picked, and a hand
     'pick of another choice reroutes the values with it.
     If choiValIndex > 0 And varChoiceIndex > 0 Then
-        varChoiceAddress = anchorRng.Cells(1, varChoiceIndex).Address(RowAbsolute:=False)
-        anchorRng.Cells(1, choiValIndex).Formula = "=ChoiceValues(" & varChoiceAddress & ", " & langAddress & ")"
+        anchorRng.Cells(1, choiValIndex).Formula = ChoiceValuesFormula(anchorRng.Cells(1, varChoiceIndex), langAddress)
     End If
 
 End Sub
+
+'@sub-title Put the label and the choice values formulas back on every line of a disease table.
+'@details An import writes values over the two formula columns, because a
+'merge copies whole lines. The master setup answers those two columns
+'itself, through the worksheet functions, so the formulas go back on every
+'line once the values have landed. The table has to be one this class
+'built: the columns are found by the headers it writes.
+'@param diseaseTable ListObject. The table of a disease worksheet.
+Public Sub WriteLineFormulas(ByVal diseaseTable As ListObject)
+    Dim body As Range
+    Dim sheet As Worksheet
+    Dim langAddress As String
+    Dim mainLabIndex As Long
+    Dim choiValIndex As Long
+    Dim varNameIndex As Long
+    Dim varChoiceIndex As Long
+
+    If diseaseTable Is Nothing Then Exit Sub
+    Set body = diseaseTable.DataBodyRange
+    If body Is Nothing Then Exit Sub
+
+    Set sheet = diseaseTable.Parent
+    langAddress = sheet.Cells(ANCHORROW, ANCHORCOLUMN).Address(True, True)
+
+    mainLabIndex = ColumnIndexFor("Main Label")
+    choiValIndex = ColumnIndexFor("Choice Values")
+    varNameIndex = ColumnIndexFor("Variable Name")
+    varChoiceIndex = ColumnIndexFor("Choice")
+    If varNameIndex <= 0 Then Exit Sub
+
+    'A formula written on a whole column keeps its row references relative,
+    'so every line reads its own name and choice cells.
+    If mainLabIndex > 0 Then
+        body.Columns(mainLabIndex).Formula = LabelFormula(body.Cells(1, varNameIndex), langAddress)
+    End If
+
+    If choiValIndex > 0 And varChoiceIndex > 0 Then
+        body.Columns(choiValIndex).Formula = ChoiceValuesFormula(body.Cells(1, varChoiceIndex), langAddress)
+    End If
+
+    'Under manual calculation the imported values would stand until
+    'something else recalculated the sheet.
+    body.Calculate
+End Sub
+
+'@sub-title The label formula of a line: the worksheet function over the name cell.
+Private Function LabelFormula(ByVal nameCell As Range, ByVal langAddress As String) As String
+    LabelFormula = "=MainLabelValue(" & nameCell.Address(RowAbsolute:=False) & ", " & langAddress & ")"
+End Function
+
+'@sub-title The choice values formula of a line: the worksheet function over the choice cell.
+Private Function ChoiceValuesFormula(ByVal choiceCell As Range, ByVal langAddress As String) As String
+    ChoiceValuesFormula = "=ChoiceValues(" & choiceCell.Address(RowAbsolute:=False) & ", " & langAddress & ")"
+End Function
 
 Private Sub CreateDiseaseTable()
 
