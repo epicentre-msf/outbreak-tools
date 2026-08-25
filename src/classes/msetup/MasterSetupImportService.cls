@@ -32,6 +32,13 @@ Option Explicit
 '  disease table. MasterSetupExports stages every block of a migration file
 '  that way.
 '
+'THE DISEASE NAME
+'-------------------------------------------------------------------------------
+'The name comes from the workbook tag the export writes, then from the
+'Metadata sheet, then from the caller. A file carrying none and given none
+'is refused; the ribbon door asks the user and checks the answer with
+'DiseaseNameIsFree before passing it in.
+'
 'CHOICE LABELS AND THE LANGUAGE
 '-------------------------------------------------------------------------------
 'The master Choices sheet holds its labels in English. An exported file
@@ -51,6 +58,11 @@ Private Const TABLE_CHOICES As String = "Tab_Choices"
 Private Const META_DISEASE As String = "export_disease"
 Private Const META_LANGUAGE As String = "dictionary_language"
 Private Const META_CODE As String = "dictionary_code"
+'The tags DiseaseExporter writes at workbook level; read before the sheet.
+Private Const NAME_DISNAME As String = "__Var_DISNAME"
+Private Const NAME_DISLANG As String = "__Var_DISLANG"
+Private Const NAME_DISCODE As String = "__Var_DISCODE"
+Private Const PROHIBITED_DROPDOWN As String = "__prohibited_diseases_list"
 'The Metadata sheet carries five lines; reading a few more costs nothing.
 Private Const META_ROWS_READ As Long = 20
 
@@ -194,10 +206,13 @@ End Sub
 '@param sourceBook Workbook. The exported workbook, open.
 '@param logger Optional DiseaseLogger. Receives one line per variable and
 '   list added, and one warning per thing left out.
+'@param diseaseName Optional String. The name to use when the file carries
+'   none; it also wins over the one the file carries when given.
 '@return DiseaseImportSummary of the merge, or Nothing when no disease
 '   worksheet could take the block.
 Public Function ImportSetupExport(ByVal sourceBook As Workbook, _
-                                  Optional ByVal logger As DiseaseLogger = Nothing) As DiseaseImportSummary
+                                  Optional ByVal logger As DiseaseLogger = Nothing, _
+                                  Optional ByVal diseaseName As String = vbNullString) As DiseaseImportSummary
 
     Dim dictionaryTable As ListObject
     Dim choicesTable As ListObject
@@ -212,7 +227,7 @@ Public Function ImportSetupExport(ByVal sourceBook As Workbook, _
     End If
 
     ResetTallies
-    ReadMetadata sourceBook
+    ReadMetadata sourceBook, diseaseName
 
     Set dictionaryTable = FindTable(sourceBook, TABLE_DICTIONARY, DICTIONARY_SHEET)
     If dictionaryTable Is Nothing Then
@@ -316,6 +331,41 @@ Public Function ImportDiseaseTable(ByVal sourceTable As ListObject, _
     If restoreFormulas Then this.builder.WriteLineFormulas targetSheet.ListObjects(1)
 End Function
 
+'@section Name Resolution
+'===============================================================================
+
+'@sub-title The disease name a file carries: its workbook tag, then its Metadata sheet.
+'@return String, empty when the file names no disease.
+Public Function ReadDiseaseName(ByVal sourceBook As Workbook) As String
+    If sourceBook Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, "Source workbook cannot be Nothing"
+    End If
+
+    ReadDiseaseName = Trim$(TagValue(sourceBook, NAME_DISNAME))
+    If LenB(ReadDiseaseName) > 0 Then Exit Function
+
+    ReadDiseaseName = MetadataValue(sourceBook, META_DISEASE)
+End Function
+
+'@sub-title Whether a name can take a new disease worksheet in the target workbook.
+'@details Empty names, names of a worksheet already there and names of the
+'prohibited list are refused. A name already there would merge the file
+'into a sheet the user did not name.
+Public Function DiseaseNameIsFree(ByVal candidate As String) As Boolean
+    Dim prohibited As BetterArray
+
+    candidate = Trim$(candidate)
+    If LenB(candidate) = 0 Then Exit Function
+    If Not FindWorksheet(this.targetBook, candidate) Is Nothing Then Exit Function
+
+    Set prohibited = this.dropdowns.Values(PROHIBITED_DROPDOWN)
+    If Not prohibited Is Nothing Then
+        If prohibited.Includes(candidate) Then Exit Function
+    End If
+
+    DiseaseNameIsFree = True
+End Function
+
 '@section Results
 '===============================================================================
 
@@ -347,38 +397,57 @@ End Property
 '@section Metadata
 '===============================================================================
 
-'@sub-title Read the disease name, the language and the code of the file.
+'@sub-title Settle the disease name, the language and the code of the file.
+'@details The workbook tags come first, the Metadata sheet fills what they
+'leave empty, and a name given by the caller wins. A file with no name from
+'any of the three is refused.
+Private Sub ReadMetadata(ByVal sourceBook As Workbook, ByVal givenName As String)
+    this.diseaseName = Trim$(TagValue(sourceBook, NAME_DISNAME))
+    this.languageTag = Trim$(TagValue(sourceBook, NAME_DISLANG))
+    this.diseaseCode = Trim$(TagValue(sourceBook, NAME_DISCODE))
+
+    If LenB(this.diseaseName) = 0 Then this.diseaseName = MetadataValue(sourceBook, META_DISEASE)
+    If LenB(this.languageTag) = 0 Then this.languageTag = MetadataValue(sourceBook, META_LANGUAGE)
+    If LenB(this.diseaseCode) = 0 Then this.diseaseCode = MetadataValue(sourceBook, META_CODE)
+
+    If LenB(Trim$(givenName)) > 0 Then this.diseaseName = Trim$(givenName)
+
+    If LenB(this.diseaseName) = 0 Then
+        ThrowError ProjectError.ElementNotFound, "The workbook carries no disease name and none was given"
+    End If
+End Sub
+
+'@sub-title A workbook tag; a file with no hidden names store answers empty.
+Private Function TagValue(ByVal sourceBook As Workbook, ByVal nameId As String) As String
+    Dim store As HiddenNames
+
+    'A foreign workbook can carry no store at all, and the store raises on it.
+    On Error Resume Next
+        Set store = HiddenNames.Create(sourceBook)
+        If Not store Is Nothing Then TagValue = store.ValueAsString(nameId)
+    On Error GoTo 0
+End Function
+
+'@sub-title One value of the Metadata sheet, read by its label; empty without the sheet.
 '@details The Metadata sheet is a two-column block of labels and values,
 'read by label so the order of the lines carries no weight.
-Private Sub ReadMetadata(ByVal sourceBook As Workbook)
+Private Function MetadataValue(ByVal sourceBook As Workbook, ByVal metaLabel As String) As String
     Dim metadataSheet As Worksheet
     Dim block As Variant
     Dim rowIndex As Long
-    Dim label As String
 
     Set metadataSheet = FindWorksheet(sourceBook, METADATA_SHEET)
-    If metadataSheet Is Nothing Then
-        ThrowError ProjectError.ElementNotFound, "The workbook carries no '" & METADATA_SHEET & "' worksheet"
-    End If
+    If metadataSheet Is Nothing Then Exit Function
 
     block = metadataSheet.Range("A1").Resize(META_ROWS_READ, 2).Value
 
     For rowIndex = 1 To META_ROWS_READ
-        label = LCase$(Trim$(TextOf(block(rowIndex, 1))))
-        Select Case label
-            Case META_DISEASE
-                this.diseaseName = Trim$(TextOf(block(rowIndex, 2)))
-            Case META_LANGUAGE
-                this.languageTag = Trim$(TextOf(block(rowIndex, 2)))
-            Case META_CODE
-                this.diseaseCode = Trim$(TextOf(block(rowIndex, 2)))
-        End Select
+        If StrComp(Trim$(TextOf(block(rowIndex, 1))), metaLabel, vbTextCompare) = 0 Then
+            MetadataValue = Trim$(TextOf(block(rowIndex, 2)))
+            Exit Function
+        End If
     Next rowIndex
-
-    If LenB(this.diseaseName) = 0 Then
-        ThrowError ProjectError.ElementNotFound, "The '" & METADATA_SHEET & "' worksheet names no disease (" & META_DISEASE & ")"
-    End If
-End Sub
+End Function
 
 '@section Variables
 '===============================================================================

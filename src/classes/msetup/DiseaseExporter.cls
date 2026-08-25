@@ -60,6 +60,9 @@ Private Const MASTER_CHOICES_START_COLUMN As Long = 1
 '(owner rule, 2026-08-25). No cell carries them.
 Private Const NAME_DISLANG As String = "__Var_DISLANG"
 Private Const NAME_DISCODE As String = "__Var_DISCODE"
+'The exported workbook carries the same three tags at workbook level, so
+'the master setup import knows the disease without asking.
+Private Const NAME_DISNAME As String = "__Var_DISNAME"
 
 'Column order of a disease table, as DiseaseSheet builds it:
 'Order, Name, Section, Label, Choice, Choice Values, Status.
@@ -174,6 +177,7 @@ Public Function BuildDiseaseWorkbook(ByVal diseaseWksh As Worksheet, _
     Set diseaseTable = ResolveDiseaseTable(diseaseWksh)
 
     PopulateMetadata metadataSheet, diseaseName, languageTag, diseaseCode
+    WriteWorkbookTags targetBook, diseaseName, languageTag, diseaseCode
     PopulateDictionary dictionarySheet, diseaseTable
     PopulateChoices choicesSheet, diseaseTable, ResolveMasterChoices(diseaseWksh), logger
     TranslateChoices choicesSheet, translationTable, languageTag, logger
@@ -432,6 +436,22 @@ Private Sub PopulateMetadata(ByVal metadataSheet As Worksheet, _
     metadata(5, 2) = diseaseCode
 
     metadataSheet.Range("A1").Resize(UBound(metadata, 1), UBound(metadata, 2)).Value = metadata
+End Sub
+
+'@sub-title Write the disease name, language and code as hidden names of the workbook.
+'@details The Metadata sheet says the same for a person reading the file;
+'the tags are what the import reads, and they survive a file that lost its
+'Metadata sheet on the way.
+Private Sub WriteWorkbookTags(ByVal targetBook As Workbook, _
+                              ByVal diseaseName As String, _
+                              ByVal languageTag As String, _
+                              ByVal diseaseCode As String)
+    Dim store As HiddenNames
+
+    Set store = HiddenNames.Create(targetBook)
+    store.EnsureName NAME_DISNAME, diseaseName, HiddenNameTypeString
+    store.EnsureName NAME_DISLANG, languageTag, HiddenNameTypeString
+    store.EnsureName NAME_DISCODE, diseaseCode, HiddenNameTypeString
 End Sub
 
 '@sub-title Populate the dictionary sheet in the Tab_Dictionary table.

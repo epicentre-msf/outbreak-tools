@@ -111,7 +111,9 @@ Public Sub TestSetupExportRebuildsTheDiseaseSheet()
     Set summary = Service.ImportSetupExport(ExportBook, logger)
 
     Assert.IsTrue WorksheetExists(DISEASE_NAME), "The disease worksheet should be rebuilt"
-    Assert.AreEqual DISEASE_NAME, Service.DiseaseName, "The disease name comes from the Metadata sheet"
+    Assert.AreEqual DISEASE_NAME, HiddenNames.Create(ExportBook).ValueAsString("__Var_DISNAME"), "The export tags the workbook with the disease name"
+    Assert.AreEqual DISEASE_NAME, Service.ReadDiseaseName(ExportBook), "The name is read off the tag"
+    Assert.AreEqual DISEASE_NAME, Service.DiseaseName, "The disease name comes from the tag"
     Assert.AreEqual "ENG", Service.LanguageTag, "The language comes from the Metadata sheet"
     Assert.AreEqual "DISSHEET001", Service.DiseaseCode, "The code comes from the Metadata sheet"
     Assert.AreEqual "ENG", ThisWorkbook.Worksheets(DISEASE_NAME).Cells(2, 2).Value, "The rebuilt sheet takes the language of the file"
@@ -221,6 +223,60 @@ Fail:
     CustomTestLogFailure Assert, "TestForeignLanguageAddsListsWithEmptyLabels", Err.Number, Err.Description
 End Sub
 
+'@TestMethod("MasterSetupImportService")
+Public Sub TestFileWithoutNameTakesTheGivenOneAndOnlyItsColumns()
+    CustomTestSetTitles Assert, "MasterSetupImportService", "TestFileWithoutNameTakesTheGivenOneAndOnlyItsColumns"
+
+    Dim diseaseWksh As Worksheet
+    Dim dictionaryTable As ListObject
+    Dim extraColumn As ListColumn
+    Dim builtTable As ListObject
+    Dim alerts As Boolean
+
+    On Error GoTo Fail
+
+    Set diseaseWksh = Builder.Build(DISEASE_NAME)
+    FillDiseaseTable diseaseWksh.ListObjects(1), Array( _
+        Array(1, "var_a", "demographics", "Age", "choice_age", "0 to 4 | 5 to 14", "core") _
+    )
+    Set ExportBook = Exporter.BuildDiseaseWorkbook(diseaseWksh, TranslationTable, DISEASE_NAME, "ENG", "DISSHEET001")
+
+    'A setup export: no tag, no Metadata sheet, and a wider dictionary.
+    HiddenNames.Create(ExportBook).RemoveName "__Var_DISNAME"
+    alerts = Application.DisplayAlerts
+    Application.DisplayAlerts = False
+    ExportBook.Worksheets("Metadata").Delete
+    Application.DisplayAlerts = alerts
+
+    Set dictionaryTable = ExportBook.Worksheets("Dictionary").ListObjects("Tab_Dictionary")
+    Set extraColumn = dictionaryTable.ListColumns.Add
+    extraColumn.Name = "Sheet Name"
+    extraColumn.DataBodyRange.Value = "sheet1"
+    Set extraColumn = dictionaryTable.ListColumns.Add
+    extraColumn.Name = "Sub Section"
+    extraColumn.DataBodyRange.Value = "sub"
+
+    Assert.AreEqual vbNullString, Service.ReadDiseaseName(ExportBook), "A file with no tag and no Metadata names no disease"
+    Assert.IsFalse Service.DiseaseNameIsFree(DISEASE_NAME), "A name already a worksheet is refused"
+    Assert.IsFalse Service.DiseaseNameIsFree("Variables"), "A reserved name is refused"
+    Assert.IsFalse Service.DiseaseNameIsFree(""), "An empty name is refused"
+    Assert.IsTrue Service.DiseaseNameIsFree("Beta"), "A new name is free"
+
+    Service.ImportSetupExport ExportBook, diseaseName:="Beta"
+
+    Assert.IsTrue WorksheetExists("Beta"), "The given name takes the disease worksheet"
+    Set builtTable = ThisWorkbook.Worksheets("Beta").ListObjects(1)
+    Assert.AreEqual 7, builtTable.ListColumns.Count, "Only the columns of a disease table are taken"
+    Assert.AreEqual "var_a", builtTable.DataBodyRange.Cells(1, 2).Value, "The variable lands"
+    Assert.AreEqual "demographics", builtTable.DataBodyRange.Cells(1, 3).Value, "The section lands in its column"
+    Assert.AreEqual "core", builtTable.DataBodyRange.Cells(1, 7).Value, "The status lands in its column"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestFileWithoutNameTakesTheGivenOneAndOnlyItsColumns", Err.Number, Err.Description
+End Sub
+
 '@section Fixtures
 '===============================================================================
 
@@ -297,6 +353,7 @@ Private Sub CleanupEnvironment()
     Set ExportBook = Nothing
 
     DeleteWorksheetSafe DISEASE_NAME
+    DeleteWorksheetSafe "Beta"
     DeleteWorksheetSafe DROPDOWN_SHEET
     DeleteWorksheetSafe TRANSLATIONS_SHEET
     DeleteWorksheetSafe CHOICES_SHEET

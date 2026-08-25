@@ -28,6 +28,8 @@ Private Const BLOCK_HEADER_ROW As Long = 1
 Private Const BLOCK_META_ROW As Long = 2
 Private Const BLOCK_TABLE_ROW As Long = 3
 Private Const IMPORT_FILTERS As String = "*.xlsx;*.xlsb;*.xlsm"
+'How many times the door asks for a disease name before it gives up.
+Private Const MAX_NAME_ATTEMPTS As Long = 4
 
 '@section Exports
 '===============================================================================
@@ -98,11 +100,17 @@ End Sub
 'worksheet is rebuilt when it is gone and merged when it is there, the
 'Variables table takes the variables it lacks and the Choices sheet takes
 'the lists it lacks. The lists of a file in another language than English
-'land with their labels empty.
+'land with their labels empty. A file that names no disease is asked for
+'one; a name already in the workbook is refused, and four bad answers
+'abort the import with an error.
 Public Sub ImportFromSetup()
     Dim io As OSFiles
     Dim sourceBook As Workbook
     Dim service As MasterSetupImportService
+    Dim diseaseName As String
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
 
     Set io = OSFiles.Create()
     io.LoadFile IMPORT_FILTERS
@@ -110,9 +118,14 @@ Public Sub ImportFromSetup()
 
     Set sourceBook = Application.Workbooks.Open(fileName:=io.File(), ReadOnly:=True)
 
-    On Error GoTo CloseSource
+    On Error GoTo Handler
 
-    Set service = ImportSetupWorkbook(sourceBook, ThisWorkbook)
+    Set service = BuildImportService(ThisWorkbook)
+
+    diseaseName = service.ReadDiseaseName(sourceBook)
+    If LenB(diseaseName) = 0 Then diseaseName = AskDiseaseName(service)
+
+    service.ImportSetupExport sourceBook, diseaseName:=diseaseName
 
     MsgBox "Done! The disease '" & service.DiseaseName & "' is imported." & vbNewLine & _
            service.AddedVariables.Length & " variable(s) added to the Variables sheet, " & _
@@ -125,23 +138,62 @@ CloseSource:
     On Error Resume Next
     sourceBook.Close saveChanges:=False
     On Error GoTo 0
+
+    If errNumber <> 0 Then
+        Err.Raise errNumber, errSource, errDescription
+    End If
+    Exit Sub
+
+Handler:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    Resume CloseSource
 End Sub
+
+'@sub-title Ask the user for the disease name of a file that carries none.
+'@details The answer has to be free: no worksheet of that name, and none of
+'the prohibited list. The question is put MAX_NAME_ATTEMPTS times, then the
+'import is aborted with an error.
+Private Function AskDiseaseName(ByVal service As MasterSetupImportService) As String
+    Dim attempt As Long
+    Dim candidate As String
+    Dim prompt As String
+
+    prompt = "The file names no disease. Enter the name of the disease worksheet to create:"
+
+    For attempt = 1 To MAX_NAME_ATTEMPTS
+        candidate = MasterSetupHelpers.CleanMasterSheetName(InputBox(prompt, "Import"))
+        If service.DiseaseNameIsFree(candidate) Then
+            AskDiseaseName = candidate
+            Exit Function
+        End If
+        prompt = "'" & candidate & "' is empty, reserved or already a worksheet of this file. " & _
+                 "Enter another name (" & attempt & " of " & MAX_NAME_ATTEMPTS & " tries used):"
+    Next attempt
+
+    Err.Raise ProjectError.InvalidArgument, "MasterSetupExports.ImportFromSetup", _
+              "No valid disease name after " & MAX_NAME_ATTEMPTS & " tries; the import is aborted."
+End Function
 
 '@sub-title Fold an open setup export into the target workbook.
 '@details Public and fully parameterised so a suite can drive the import
-'without a file picker. ImportFromSetup wraps it with the picker.
+'without a file picker. ImportFromSetup wraps it with the picker and the
+'name question.
 '@param sourceBook Workbook. The exported workbook, open.
 '@param targetBook Workbook. The master setup receiving it.
 '@param logger Optional DiseaseLogger.
+'@param diseaseName Optional String. The name to use when the file names none.
 '@return MasterSetupImportService carrying the disease name, the variables
 '   and the lists added.
 Public Function ImportSetupWorkbook(ByVal sourceBook As Workbook, _
                                     ByVal targetBook As Workbook, _
-                                    Optional ByVal logger As DiseaseLogger = Nothing) As MasterSetupImportService
+                                    Optional ByVal logger As DiseaseLogger = Nothing, _
+                                    Optional ByVal diseaseName As String = vbNullString) As MasterSetupImportService
     Dim service As MasterSetupImportService
 
     Set service = BuildImportService(targetBook)
-    service.ImportSetupExport sourceBook, logger
+    service.ImportSetupExport sourceBook, logger, diseaseName
 
     Set ImportSetupWorkbook = service
 End Function
