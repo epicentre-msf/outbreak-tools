@@ -43,6 +43,11 @@ Private Const MIGRATION_FILE_PREFIX As String = "flat_disease_file_"
 Private Const DISEASE_FILE_PREFIX As String = "setup_dictionary_"
 Private Const DISEASE_FILE_EXTENSION As String = ".xlsx"
 
+'The language and the code of a disease sheet live in its hidden names
+'(owner rule, 2026-08-25). No cell carries them.
+Private Const NAME_DISLANG As String = "__Var_DISLANG"
+Private Const NAME_DISCODE As String = "__Var_DISCODE"
+
 'Column order of a disease table, as DiseaseSheet builds it:
 'Order, Name, Section, Label, Choice, Choice Values, Status.
 Private Enum DiseaseColumns
@@ -552,8 +557,8 @@ Private Sub PopulateMigrationDisease(ByVal targetSheet As Worksheet, ByVal disea
     Dim diseaseTable As ListObject
     Dim sourceRange As Range
     Dim values As Variant
-    Dim columnOffset As Long
     Dim lastColumn As Long
+    Dim store As HiddenNames
 
     Set diseaseTable = ResolveDiseaseTable(diseaseWksh)
 
@@ -564,13 +569,15 @@ Private Sub PopulateMigrationDisease(ByVal targetSheet As Worksheet, ByVal disea
     lastColumn = LastUsedColumn(targetSheet) + 2
     If lastColumn < 1 Then lastColumn = 1
 
+    Set store = HiddenNames.Create(diseaseWksh)
+
     targetSheet.Cells(1, lastColumn).Value = "Disease"
     targetSheet.Cells(1, lastColumn + 1).Value = "Language"
     targetSheet.Cells(1, lastColumn + 2).Value = "Tag"
 
     targetSheet.Cells(2, lastColumn).Value = diseaseWksh.Name
-    targetSheet.Cells(2, lastColumn + 1).Value = diseaseWksh.Cells(2, 2).Value
-    targetSheet.Cells(2, lastColumn + 2).Value = diseaseWksh.Cells(2, 3).Value
+    targetSheet.Cells(2, lastColumn + 1).Value = store.ValueAsString(NAME_DISLANG)
+    targetSheet.Cells(2, lastColumn + 2).Value = store.ValueAsString(NAME_DISCODE)
 
     targetSheet.Range(targetSheet.Cells(3, lastColumn), _
                       targetSheet.Cells(2 + UBound(values, 1), lastColumn + UBound(values, 2) - 1)).Value = values

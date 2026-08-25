@@ -15,6 +15,9 @@ Option Explicit
 Private Const DISEASES_SHEET As String = "Diseases"
 Private Const IMPORT_STAGING_SHEET As String = "__dis_import"
 Private Const LANGUAGES_DROPDOWN As String = "__data_languages"
+Private Const DISEASES_DROPDOWN As String = "__diseases_list"
+Private Const NAME_DISLANG As String = "__Var_DISLANG"
+Private Const NAME_DISCODE As String = "__Var_DISCODE"
 Private Const DISEASE_TABLE_WIDTH As Long = 7
 Private Const BLOCK_HEADER_ROW As Long = 1
 Private Const BLOCK_META_ROW As Long = 2
@@ -29,6 +32,7 @@ Public Sub ExportToSetup()
     Dim io As OSFiles
     Dim exporter As DiseaseExporter
     Dim translationTable As ListObject
+    Dim store As HiddenNames
     Dim filePath As String
 
     Set targetSheet = ActiveSheet
@@ -45,12 +49,15 @@ Public Sub ExportToSetup()
 
     Set translationTable = ResolveTranslationsTable()
 
+    'The language and the code of the sheet live in its hidden names.
+    Set store = HiddenNames.Create(targetSheet)
+
     Set exporter = BuildExporter()
     filePath = exporter.ExportDisease(io.Folder(), targetSheet, translationTable, _
                                       MasterSetupHelpers.ResolveRibbonTranslations(), _
                                       targetSheet.Name, _
-                                      MasterSetupHelpers.SafeValue(targetSheet.Cells(2, 2).Value), _
-                                      MasterSetupHelpers.SafeValue(targetSheet.Cells(2, 3).Value))
+                                      store.ValueAsString(NAME_DISLANG), _
+                                      store.ValueAsString(NAME_DISCODE))
 
     MsgBox "Done! The disease file is saved at:" & vbNewLine & filePath, vbInformation + vbOKOnly, "Export"
 End Sub
@@ -195,6 +202,10 @@ Private Function BuildDiseaseSheet(ByVal diseaseName As String, ByVal languageTa
     Set dropdowns = MasterSetupHelpers.ResolveMasterDropdowns( _
                     MasterSetupHelpers.ResolveMasterDropdownsSheet(targetBook))
 
+    'A disease removed earlier can leave its name in the diseases list, and a
+    'stale name refuses the rebuild as a duplicate.
+    PurgeStaleDiseaseName dropdowns, diseaseName, targetBook
+
     Set builder = DiseaseSheet.Create(targetBook, dropdowns, _
                                       MasterSetupHelpers.ResolveRibbonTranslations(targetBook), _
                                       MasterSetupHelpers.ResolveMasterSetupVariables( _
@@ -208,6 +219,36 @@ Private Function BuildDiseaseSheet(ByVal diseaseName As String, ByVal languageTa
 
     Set BuildDiseaseSheet = builder.Build(diseaseName, languageTag)
 End Function
+
+'@sub-title Drop a diseases-list entry whose worksheet is gone.
+Private Sub PurgeStaleDiseaseName(ByVal dropdowns As DropdownLists, ByVal diseaseName As String, _
+                                  ByVal targetBook As Workbook)
+    Dim names As BetterArray
+    Dim kept As BetterArray
+    Dim idx As Long
+    Dim candidate As String
+
+    If dropdowns Is Nothing Then Exit Sub
+    If Not FindWorksheet(targetBook, diseaseName) Is Nothing Then Exit Sub
+
+    Set names = dropdowns.Values(DISEASES_DROPDOWN)
+    If names Is Nothing Then Exit Sub
+    If Not names.Includes(diseaseName) Then Exit Sub
+
+    Set kept = New BetterArray
+    kept.LowerBound = 1
+
+    For idx = names.LowerBound To names.UpperBound
+        candidate = CStr(names.Item(idx))
+        If StrComp(candidate, diseaseName, vbTextCompare) <> 0 Then
+            kept.Push candidate
+        End If
+    Next idx
+
+    If kept.Length = 0 Then kept.Push vbNullString
+
+    dropdowns.Update kept, DISEASES_DROPDOWN
+End Sub
 
 '@sub-title Copy one block into a staging sheet and answer its ListObject.
 Private Function BuildStagingTable(ByVal diseasesSheet As Worksheet, ByVal startColumn As Long, _

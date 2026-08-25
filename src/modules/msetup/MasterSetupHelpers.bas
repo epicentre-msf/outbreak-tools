@@ -22,9 +22,8 @@ Private Const START_COLUMN_VARIABLES As Long = 1
 Private Const START_ROW_CHOICES As Long = 4
 Private Const START_COLUMN_CHOICES As Long = 1
 Private Const DEFAULT_DROPDOWN_PREFIX As String = "dropdown_"
-Private Const DISEASE_MARKER_VALUE As String = "DISSHEET"
-Private Const DISEASE_MARKER_ROW As Long = 2
-Private Const DISEASE_MARKER_COLUMN As Long = 4
+Private Const SHEET_TAG_NAME As String = "sheetTag"
+Private Const DISEASE_TAG_VALUE As String = "disease"
 Private Const DEFAULT_ROW_BATCH As Long = 5
 Private Const DEFAULT_ROW_TARGET As Long = 1
 
@@ -438,10 +437,20 @@ Public Function ShouldManageMasterSheet(ByVal sheetName As String) As Boolean
     ShouldManageMasterSheet = Not ContainsValue(configSheets, sheetName)
 End Function
 
+'A disease sheet is recognised by its hidden sheetTag (owner rule,
+'2026-08-25). The old master setup used a marker cell; the cell is gone.
 Public Function IsMasterDiseaseSheet(ByVal targetSheet As Worksheet) As Boolean
+    Dim store As HiddenNames
+
     If targetSheet Is Nothing Then Exit Function
-    IsMasterDiseaseSheet = (StrComp(CStr(targetSheet.Cells(DISEASE_MARKER_ROW, DISEASE_MARKER_COLUMN).Value), _
-                                    DISEASE_MARKER_VALUE, vbTextCompare) = 0)
+
+    On Error Resume Next
+        Set store = HiddenNames.Create(targetSheet)
+    On Error GoTo 0
+    If store Is Nothing Then Exit Function
+
+    IsMasterDiseaseSheet = (StrComp(Trim$(store.ValueAsString(SHEET_TAG_NAME)), _
+                                    DISEASE_TAG_VALUE, vbTextCompare) = 0)
 End Function
 
 Public Function ResolveRibbonTranslations(Optional ByVal targetBook As Workbook) As TranslationObject
