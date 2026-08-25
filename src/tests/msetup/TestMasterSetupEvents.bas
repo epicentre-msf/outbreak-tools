@@ -69,7 +69,10 @@ Public Sub TestPreparationPutsDropdownsOnTheRightColumns()
     On Error GoTo Fail
 
     'Touching the service runs the preparation over the fixture sheets.
-    MasterSetupEventsManager.MasterSetupService.Variables
+    'A Property Get cannot stand alone as a statement; the assignment
+    'is what runs the preparation over the fixture sheets.
+    Dim preparedVariables As MasterSetupVariables
+    Set preparedVariables = MasterSetupEventsManager.MasterSetupService.Variables
 
     Set variablesTable = ThisWorkbook.Worksheets(VARIABLES_SHEET).ListObjects(1)
 
@@ -172,7 +175,10 @@ Public Sub TestDefaultChoicePickFillsChoicesValues()
     On Error GoTo Fail
 
     'The service resolves the managers once over the fixture sheets.
-    MasterSetupEventsManager.MasterSetupService.Variables
+    'A Property Get cannot stand alone as a statement; the assignment
+    'is what runs the preparation over the fixture sheets.
+    Dim preparedVariables As MasterSetupVariables
+    Set preparedVariables = MasterSetupEventsManager.MasterSetupService.Variables
 
     Set variablesTable = ThisWorkbook.Worksheets(VARIABLES_SHEET).ListObjects(1)
     Set choiceCell = variablesTable.ListColumns("Default Choice").DataBodyRange.Cells(1, 1)
@@ -238,7 +244,10 @@ Public Sub TestChoiceEditRefreshesJoinedValues()
 
     On Error GoTo Fail
 
-    MasterSetupEventsManager.MasterSetupService.Variables
+    'A Property Get cannot stand alone as a statement; the assignment
+    'is what runs the preparation over the fixture sheets.
+    Dim preparedVariables As MasterSetupVariables
+    Set preparedVariables = MasterSetupEventsManager.MasterSetupService.Variables
 
     Set variablesSheet = ThisWorkbook.Worksheets(VARIABLES_SHEET)
     Set variablesTable = variablesSheet.ListObjects(1)
