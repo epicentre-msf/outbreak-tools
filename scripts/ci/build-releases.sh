@@ -35,7 +35,7 @@ title: "Releases"
 toc: false
 ---
 
-Each archive contains a **designer**, a **setup**, and a **ribbon template** (\`.xlsb\`).
+Each archive contains a **designer**, a **setup**, a **master setup**, and a **ribbon template** (\`.xlsb\`).
 
 Stable releases carry a semantic version (\`vMAJOR.MINOR.PATCH\`) and are cut from
 \`main\`. The development build has no version: it is published continuously as the
