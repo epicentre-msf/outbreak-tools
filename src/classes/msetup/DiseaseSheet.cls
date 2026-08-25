@@ -366,7 +366,7 @@ Private Sub CreateDiseaseTable()
     Set tableRange = this.hostSheet.Range(anchorRng, dataEnd)
     Set table = this.hostSheet.ListObjects.Add(xlSrcRange, tableRange, , xlYes)
     table.Name = DEFAULT_TABLE_PREFIX & Format$(this.hostIndex, "000")
-    table.Style = ""
+    table.TableStyle = ""
     Set this.hostTable = CustomTable.Create(table)
 
 End Sub
