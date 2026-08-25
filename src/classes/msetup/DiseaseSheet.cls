@@ -300,12 +300,14 @@ End Sub
 
 
 Private Sub WriteValues()
-    
+
     Dim anchorRng As Range
     Dim mainLabIndex As Long
     Dim choiValIndex As Long
     Dim varNameIndex As Long
+    Dim varChoiceIndex As Long
     Dim varNameAddress As String
+    Dim varChoiceAddress As String
     Dim langAddress As String
 
 
@@ -328,16 +330,21 @@ Private Sub WriteValues()
     mainLabIndex = ColumnIndexFor(HEADER_LABEL_KEY, "Main Label")
     choiValIndex = ColumnIndexFor(HEADER_CHOICES_VALUE_KEY, "Choice Values")
     varNameIndex = ColumnIndexFor(HEADER_NAME_KEY, "Variable Name")
+    varChoiceIndex = ColumnIndexFor(HEADER_CHOICE_KEY, "Choice")
     If varNameIndex <= 0 Then Exit Sub
     varNameAddress = anchorRng.Cells(1, varNameIndex).Address(RowAbsolute:=False)
-  
+
     'Add formulas on specific columns
     If mainLabIndex > 0 Then
         anchorRng.Cells(1, mainLabIndex).Formula = "=MainLabelValue(" & varNameAddress & ", " & langAddress & ")"
     End If
 
-    If choiValIndex > 0 Then
-        anchorRng.Cells(1, choiValIndex).Formula = "=ChoiceValues(" & varNameAddress &  ", " & langAddress & " )"
+    'The values follow the Choice cell of the line. The events manager fills
+    'that cell with the default choice when a variable is picked, and a hand
+    'pick of another choice reroutes the values with it.
+    If choiValIndex > 0 And varChoiceIndex > 0 Then
+        varChoiceAddress = anchorRng.Cells(1, varChoiceIndex).Address(RowAbsolute:=False)
+        anchorRng.Cells(1, choiValIndex).Formula = "=ChoiceValues(" & varChoiceAddress & ", " & langAddress & ")"
     End If
 
 End Sub
