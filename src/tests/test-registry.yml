@@ -1,5 +1,16 @@
 # OutbreakTools -- Test Registry
 # =============================================================================
+# LAST FULL RUN (the whole registry, nothing commented out)
+#   when:        2026-08-25 14:04 (run assembled 13:02, about 62 minutes)
+#   where:       Windows 11, Excel hidden (windows/run-tests.vbs), --build
+#   result:      total=4664 failures=0
+#   modulesRun:  105   testsFound: 1747   vbe: ok(222)
+#   before it:   total=4521 failures=0 modulesRun=90 testsFound=1684 (08:49)
+#   what moved:  the msetup folder joined (15 suites), +143 assertions
+#   commit:      b5003c62
+# Update this block after every full run: a probe count (a narrowed
+# registry) says nothing about the suites outside it and never belongs here.
+# =============================================================================
 # Single source of truth for the test suite AND the Codes-worksheet ListObjects.
 #
 # A generator reads this file and:
