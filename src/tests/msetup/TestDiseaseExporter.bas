@@ -11,6 +11,7 @@ Option Private Module
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const DISEASE_SHEET_PREFIX As String = "DiseaseTest_"
 Private Const TRANSLATION_SHEET As String = "TranslationFixture"
+Private Const MASTER_CHOICES_SHEET As String = "Choices"
 
 Private Assert As CustomTest
 Private Exporter As DiseaseExporter
@@ -81,6 +82,7 @@ Public Sub TestBuildDiseaseWorkbookCopiesDictionaryAndChoices()
     Dim translationTable As ListObject
     Dim targetBook As Workbook
     Dim dictionaryValues As Variant
+    Dim choicesHeaders As Variant
     Dim choicesValues As Variant
 
     On Error GoTo Fail
@@ -92,16 +94,28 @@ Public Sub TestBuildDiseaseWorkbookCopiesDictionaryAndChoices()
                                                 diseaseWksh.Name, diseaseWksh.Cells(2, 2).Value, "ALPHA_CODE")
 
     dictionaryValues = targetBook.Worksheets("Dictionary").Range("A2").Resize(2, 6).Value
-    choicesValues = targetBook.Worksheets("Choices").Range("A2").Resize(4, 4).Value
+    choicesHeaders = targetBook.Worksheets("Choices").Range("A1").Resize(1, 6).Value
+    choicesValues = targetBook.Worksheets("Choices").Range("A2").Resize(6, 6).Value
 
     Assert.AreEqual 1, dictionaryValues(1, 1), "First variable order should be copied"
     Assert.AreEqual "core", dictionaryValues(1, 6), "Status column should be copied"
     Assert.AreEqual "symptoms", dictionaryValues(2, 2), "Section should be copied"
 
+    Assert.AreEqual "list name", choicesHeaders(1, 1), "The choices sheet carries the setup headers"
+    Assert.AreEqual "ordering list", choicesHeaders(1, 2), "The ordering list is the second setup column"
+    Assert.AreEqual "non translated label", choicesHeaders(1, 3), "The non translated label is the third setup column"
+    Assert.AreEqual "translated label", choicesHeaders(1, 4), "The translated label is the fourth setup column"
+    Assert.AreEqual "label", choicesHeaders(1, 5), "The label is the fifth setup column"
+    Assert.AreEqual "short label", choicesHeaders(1, 6), "The short label is the sixth setup column"
+
     Assert.AreEqual "choice_age", choicesValues(1, 1), "Control name should populate choices sheet"
-    Assert.AreEqual "0-4", choicesValues(1, 2), "Choice value should populate choices sheet"
-    Assert.AreEqual 2, choicesValues(2, 4), "Ordering should follow original order"
-    Assert.AreEqual "choice_fever", choicesValues(3, 1), "Multiple controls should be captured"
+    Assert.AreEqual "0-4", choicesValues(1, 3), "Choice value should populate the non translated label"
+    Assert.AreEqual "0-4", choicesValues(1, 4), "Choice value should populate the translated label"
+    Assert.AreEqual "0-4", choicesValues(1, 5), "The label formula should read the translated label"
+    Assert.AreEqual "0-4", choicesValues(1, 6), "Choice value should populate the short label"
+    Assert.AreEqual 2, choicesValues(2, 2), "Ordering should follow original order"
+    Assert.AreEqual "choice_fever", choicesValues(4, 1), "Multiple controls should be captured"
+    Assert.IsTrue IsEmpty(choicesValues(6, 1)), "Two lists of three and two values fill five rows"
 
     Exit Sub
 
@@ -130,11 +144,12 @@ Public Sub TestChoicesExportCoversEveryChoiceOnce()
     Set targetBook = Exporter.BuildDiseaseWorkbook(diseaseWksh, translationTable, _
                                                 diseaseWksh.Name, diseaseWksh.Cells(2, 2).Value, "ALPHA_CODE")
 
-    choicesValues = targetBook.Worksheets("Choices").Range("A2").Resize(5, 4).Value
+    choicesValues = targetBook.Worksheets("Choices").Range("A2").Resize(5, 6).Value
 
     Assert.AreEqual "choice_age", choicesValues(1, 1), "The first choice of the disease should be exported"
     Assert.AreEqual "choice_fever", choicesValues(3, 1), "Every distinct choice of the disease should be exported"
-    Assert.AreEqual "yes", choicesValues(3, 2), "The choice values should travel with their list"
+    Assert.AreEqual "yes", choicesValues(3, 3), "The choice values should travel with their list"
+    Assert.AreEqual 1, choicesValues(3, 2), "The ordering restarts on every list"
     Assert.IsTrue IsEmpty(choicesValues(5, 1)), "A choice used twice should be exported once"
 
     Exit Sub
@@ -191,8 +206,100 @@ Fail:
     CustomTestLogFailure Assert, "TestBuildMigrationWorkbookAggregatesDiseases", Err.Number, Err.Description
 End Sub
 
+'@TestMethod("DiseaseExporter")
+Public Sub TestChoicesExportTakesMasterListsAndTranslates()
+    CustomTestSetTitles Assert, "DiseaseExporter", "TestChoicesExportTakesMasterListsAndTranslates"
+
+    Dim diseaseWksh As Worksheet
+    Dim translationTable As ListObject
+    Dim logger As DiseaseLogger
+    Dim targetBook As Workbook
+    Dim choicesSheet As Worksheet
+    Dim choicesValues As Variant
+
+    On Error GoTo Fail
+
+    'The master lists: choice_age carries three values, the disease reads two of
+    'them; choice_missing is on the disease sheet only. The values are picked
+    'so that Excel stores none of them as a date, and the translations stay in
+    'plain ASCII because the VBE reads this file in the ANSI code page.
+    PrepareMasterChoicesSheet Array( _
+        Array("choice_age", "", "0-4", "0 to 4"), _
+        Array("choice_age", "", "15+", ""), _
+        Array("choice_age", "", "65+", "65 and over"), _
+        Array("choice_fever", "", "yes", "Y"), _
+        Array("choice_fever", "", "no", "N"), _
+        Array("choice_sex", "", "M", "M") _
+    )
+    Set diseaseWksh = PrepareDiseaseWorksheetRows("Alpha", "FRA", "ALPHA_CODE", Array( _
+        Array(1, "age", "demographics", "Age", "choice_age", "0-4 | 15+", "core"), _
+        Array(2, "fever", "symptoms", "Fever", "choice_fever", "yes | no", "core"), _
+        Array(3, "other", "symptoms", "Other", "choice_missing", "a | b", "optional") _
+    ))
+    Set translationTable = PrepareTranslationTable("FRA", Array( _
+        Array("0-4", "de 0 a 4"), _
+        Array("yes", "oui"), _
+        Array("Y", "O") _
+    ))
+    Set logger = DiseaseLogger.Create()
+
+    Set targetBook = Exporter.BuildDiseaseWorkbook(diseaseWksh, translationTable, _
+                                                diseaseWksh.Name, "FRA", "ALPHA_CODE", logger)
+
+    Set choicesSheet = targetBook.Worksheets("Choices")
+    choicesValues = choicesSheet.Range("A2").Resize(8, 6).Value
+
+    'choice_age: the three master rows, in master order.
+    Assert.AreEqual "choice_age", choicesValues(1, 1), "The master list travels under its name"
+    Assert.AreEqual "0-4", choicesValues(1, 3), "The non translated label keeps the master value"
+    Assert.AreEqual "de 0 a 4", choicesValues(1, 4), "The translated label is in the language of the disease"
+    Assert.AreEqual "de 0 a 4", choicesValues(1, 5), "The label reads the translated label"
+    Assert.AreEqual "0 to 4", choicesValues(1, 6), "A short label with no translation keeps the master value"
+    Assert.AreEqual "15+", choicesValues(2, 6), "An empty master short label takes the label"
+    Assert.AreEqual "65+", choicesValues(3, 3), "A master value the disease sheet does not reach is exported"
+    Assert.AreEqual 3, choicesValues(3, 2), "The ordering follows the master order"
+
+    'choice_fever: the label formula and the short label translation.
+    Assert.AreEqual "choice_fever", choicesValues(4, 1), "The second list follows the first"
+    Assert.AreEqual "oui", choicesValues(4, 5), "The label formula reads the translated value"
+    Assert.AreEqual "O", choicesValues(4, 6), "The short label is translated too"
+    Assert.IsTrue Left$(choicesSheet.Cells(5, 5).Formula, 1) = "=", "The label column carries a formula"
+
+    'choice_missing: the disease values, and one warning.
+    Assert.AreEqual "choice_missing", choicesValues(6, 1), "A list the master lacks is still exported"
+    Assert.AreEqual "a", choicesValues(6, 3), "A missing list takes the disease values"
+    Assert.AreEqual "b", choicesValues(7, 4), "The disease values fill the translated label too"
+    Assert.IsTrue IsEmpty(choicesValues(8, 1)), "choice_sex is on the master sheet only and stays out"
+    Assert.AreEqual 1, logger.Entries.Length, "One warning for the list the master lacks"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestChoicesExportTakesMasterListsAndTranslates", Err.Number, Err.Description
+End Sub
+
 '@section Fixtures
 '===============================================================================
+
+'The master Choices sheet: headers on row 4, column 1, the way the master
+'file carries them, with the label column as the formula the workbook owns.
+Private Sub PrepareMasterChoicesSheet(ByVal rows As Variant)
+    Dim sheet As Worksheet
+    Dim data As Variant
+    Dim rowCount As Long
+
+    DeleteWorksheet MASTER_CHOICES_SHEET
+    Set sheet = EnsureWorksheet(MASTER_CHOICES_SHEET)
+    ClearWorksheet sheet
+
+    data = RowsToMatrix(rows)
+    rowCount = UBound(data, 1)
+
+    WriteMatrix sheet.Range("A4"), RowsToMatrix(Array(Array("list name", "translated label", "label", "short label")))
+    WriteMatrix sheet.Range("A5"), data
+    sheet.ListObjects.Add SourceType:=xlSrcRange, Source:=sheet.Range("A4").Resize(rowCount + 1, 4), _
+                          XlListObjectHasHeaders:=xlYes
+End Sub
 
 Private Function PrepareDiseaseWorksheet(ByVal diseaseName As String, _
                                          ByVal languageTag As String, _
@@ -235,7 +342,10 @@ Private Function PrepareDiseaseWorksheetRows(ByVal diseaseName As String, _
     Set PrepareDiseaseWorksheetRows = sheet
 End Function
 
-Private Function PrepareTranslationTable() As ListObject
+'A translations table of one language column; the default rows carry no
+'choice value, so the choices of the other tests travel untranslated.
+Private Function PrepareTranslationTable(Optional ByVal languageTag As String = "ENG", _
+                                         Optional ByVal rows As Variant) As ListObject
     Dim sheet As Worksheet
     Dim header As Variant
     Dim dataRows As Variant
@@ -245,11 +355,15 @@ Private Function PrepareTranslationTable() As ListObject
     Set sheet = EnsureWorksheet(TRANSLATION_SHEET)
     ClearWorksheet sheet
 
-    header = RowsToMatrix(Array(Array("tag", "ENG")))
-    dataRows = RowsToMatrix(Array( _
-        Array("hello", "Hello"), _
-        Array("world", "World") _
-    ))
+    If IsMissing(rows) Then
+        rows = Array( _
+            Array("hello", "Hello"), _
+            Array("world", "World") _
+        )
+    End If
+
+    header = RowsToMatrix(Array(Array("tag", languageTag)))
+    dataRows = RowsToMatrix(rows)
 
     WriteMatrix sheet.Range("A1"), header
     WriteMatrix sheet.Range("A2"), dataRows
@@ -273,6 +387,7 @@ End Sub
 
 Private Sub DeleteFixtureSheets()
     DeleteWorksheet TRANSLATION_SHEET
+    DeleteWorksheet MASTER_CHOICES_SHEET
     DeleteWorksheet "Alpha"
 End Sub
 

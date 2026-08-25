@@ -30,9 +30,11 @@ Private Const TRANSLATIONS_SHEET As String = "Translations"
 Private Const METADATA_SHEET As String = "Metadata"
 Private Const VARIABLES_SHEET As String = "Variables"
 Private Const HEADER_LIST_NAME As String = "list name"
+Private Const HEADER_ORDER As String = "ordering list"
+Private Const HEADER_RAW_LABEL As String = "non translated label"
+Private Const HEADER_TRANSLATED_LABEL As String = "translated label"
 Private Const HEADER_LABEL As String = "label"
 Private Const HEADER_SHORT_LABEL As String = "short label"
-Private Const HEADER_ORDER As String = "ordering list"
 Private Const HEADER_VARIABLE_ORDER As String = "Variable Order"
 Private Const HEADER_VARIABLE_SECTION As String = "Variable Section"
 Private Const HEADER_VARIABLE_NAME As String = "Variable Name"
@@ -42,6 +44,12 @@ Private Const HEADER_STATUS As String = "Status"
 Private Const MIGRATION_FILE_PREFIX As String = "flat_disease_file_"
 Private Const DISEASE_FILE_PREFIX As String = "setup_dictionary_"
 Private Const DISEASE_FILE_EXTENSION As String = ".xlsx"
+Private Const LOG_OPERATION As String = "Export"
+
+'The master Choices sheet carries its headers on row 4, column 1, the way
+'MasterSetupHelpers reads it.
+Private Const MASTER_CHOICES_START_ROW As Long = 4
+Private Const MASTER_CHOICES_START_COLUMN As Long = 1
 
 'The language and the code of a disease sheet live in its hidden names
 '(owner rule, 2026-08-25). No cell carries them.
@@ -59,6 +67,19 @@ Private Enum DiseaseColumns
     DiseaseChoicesColumn = 6
     DiseaseStatusColumn = 7
 End Enum
+
+'Column order of the exported Choices sheet. It is the layout of a setup
+'Choices table, which is what SetupImport reads.
+Private Enum ChoiceColumns
+    ChoiceListColumn = 1
+    ChoiceOrderColumn = 2
+    ChoiceRawLabelColumn = 3
+    ChoiceTranslatedColumn = 4
+    ChoiceLabelColumn = 5
+    ChoiceShortLabelColumn = 6
+End Enum
+
+Private Const CHOICE_COLUMN_COUNT As Long = 6
 
 '@section State
 '===============================================================================
@@ -109,11 +130,21 @@ End Sub
 '===============================================================================
 
 '@sub-title Populate a workbook with dictionary, choices, translations, and metadata.
+'@details
+'The Choices sheet is the master Choices sheet cut down to the lists the
+'disease uses, in the six-column layout of a setup. The two editable label
+'columns are then translated into the language of the disease, and the
+'label column carries the formula a setup keeps there: the translated label
+'when present, the plain label otherwise.
+'@param logger Optional DiseaseLogger. Receives one warning per list the
+'   master Choices sheet does not carry, and one when the language has no
+'   column in the translations table.
 Public Function BuildDiseaseWorkbook(ByVal diseaseWksh As Worksheet, _
                                      ByVal translationTable As ListObject, _
                                      ByVal diseaseName As String, _
                                      ByVal languageTag As String, _
-                                     Optional ByVal diseaseCode As String = vbNullString) As Workbook
+                                     Optional ByVal diseaseCode As String = vbNullString, _
+                                     Optional ByVal logger As DiseaseLogger = Nothing) As Workbook
 
     Dim targetBook As Workbook
     Dim metadataSheet As Worksheet
@@ -136,7 +167,8 @@ Public Function BuildDiseaseWorkbook(ByVal diseaseWksh As Worksheet, _
 
     PopulateMetadata metadataSheet, diseaseName, languageTag, diseaseCode
     PopulateDictionary dictionarySheet, diseaseTable
-    PopulateChoices choicesSheet, diseaseTable
+    PopulateChoices choicesSheet, diseaseTable, ResolveMasterChoices(diseaseWksh), logger
+    TranslateChoices choicesSheet, translationTable, languageTag, logger
     PopulateTranslations translationsSheet, translationTable
 
     ApplySheetCosmetics metadataSheet, dictionarySheet, choicesSheet, translationsSheet
@@ -152,7 +184,8 @@ Public Function ExportDisease(ByVal exportFolder As String, _
                               ByVal translationTable As ListObject, _
                               ByVal diseaseName As String, _
                               ByVal languageTag As String, _
-                              Optional ByVal diseaseCode As String = vbNullString) As String
+                              Optional ByVal diseaseCode As String = vbNullString, _
+                              Optional ByVal logger As DiseaseLogger = Nothing) As String
 
     Dim targetBook As Workbook
     Dim filePath As String
@@ -160,7 +193,7 @@ Public Function ExportDisease(ByVal exportFolder As String, _
     ValidateFolder exportFolder
 
     Set targetBook = BuildDiseaseWorkbook(diseaseWksh, translationTable, _
-                                        diseaseName, languageTag, diseaseCode)
+                                        diseaseName, languageTag, diseaseCode, logger)
 
     filePath = BuildDiseaseFilePath(exportFolder, diseaseName)
     this.Manager.SaveAs filePath
@@ -340,6 +373,18 @@ Private Function ResolveListObject(ByVal targetBook As Workbook, ByVal sheetName
     Set ResolveListObject = sheet.ListObjects(1)
 End Function
 
+'@sub-title Wrap the master Choices sheet of the workbook holding the disease.
+'@details Answers Nothing when the workbook carries no Choices sheet; the
+'export then falls back on the values the disease sheet carries.
+Private Function ResolveMasterChoices(ByVal diseaseWksh As Worksheet) As LLChoices
+    Dim choicesWksh As Worksheet
+
+    Set choicesWksh = FindWorksheet(diseaseWksh.Parent, CHOICES_SHEET)
+    If choicesWksh Is Nothing Then Exit Function
+
+    Set ResolveMasterChoices = LLChoices.Create(choicesWksh, MASTER_CHOICES_START_ROW, MASTER_CHOICES_START_COLUMN)
+End Function
+
 '@sub-title Enumerate worksheets from provided disease names.
 Private Function ResolveSheets(ByVal targetBook As Workbook, ByVal diseaseNames As BetterArray) As Collection
     Dim results As New Collection
@@ -422,82 +467,303 @@ Private Function BuildDictionaryMatrix(ByRef sourceData As Variant, ByVal rowCou
     BuildDictionaryMatrix = matrix
 End Function
 
-'@sub-title Populate the choices sheet.
+'@section Choices Export
+'===============================================================================
+
+'@sub-title Populate the choices sheet with the lists the disease uses.
+'@details
+'Six columns, in the order of a setup Choices table: list name, ordering
+'list, non translated label, translated label, label, short label. The rows
+'come from the master Choices sheet, read once as a block and kept to the
+'lists the disease names. A list the master sheet does not carry takes the
+'values the disease sheet holds for it, and is logged. The label column is
+'written as the formula a setup keeps there.
 Private Sub PopulateChoices(ByVal choicesSheet As Worksheet, _
-                            ByVal diseaseTable As ListObject)
+                            ByVal diseaseTable As ListObject, _
+                            ByVal masterChoices As LLChoices, _
+                            ByVal logger As DiseaseLogger)
 
     Dim choiceRows As Collection
     Dim choiceMatrix As Variant
+    Dim rowCount As Long
 
     WriteHeaderRow choicesSheet.Range("A1"), _
-        Array(HEADER_LIST_NAME, HEADER_LABEL, HEADER_SHORT_LABEL, HEADER_ORDER)
+        Array(HEADER_LIST_NAME, HEADER_ORDER, HEADER_RAW_LABEL, _
+              HEADER_TRANSLATED_LABEL, HEADER_LABEL, HEADER_SHORT_LABEL)
 
     If diseaseTable.DataBodyRange Is Nothing Then Exit Sub
 
-    Set choiceRows = BuildChoiceRows(diseaseTable.DataBodyRange.Value)
-    choiceMatrix = CollectionToMatrix(choiceRows, 4)
+    Set choiceRows = BuildChoiceRows(diseaseTable.DataBodyRange.Value, masterChoices, logger)
+    choiceMatrix = CollectionToMatrix(choiceRows, CHOICE_COLUMN_COUNT)
 
-    If Not IsEmpty(choiceMatrix) Then
-        choicesSheet.Range("A2").Resize(UBound(choiceMatrix, 1), UBound(choiceMatrix, 2)).Value = choiceMatrix
-    End If
+    If IsEmpty(choiceMatrix) Then Exit Sub
+
+    rowCount = UBound(choiceMatrix, 1)
+    choicesSheet.Range("A2").Resize(rowCount, CHOICE_COLUMN_COUNT).Value = choiceMatrix
+    WriteLabelFormulas choicesSheet, rowCount
 End Sub
 
-'@sub-title Build a collection containing distinct choice rows.
-Private Function BuildChoiceRows(ByRef sourceData As Variant) As Collection
+'@sub-title Build the choice rows: the master rows of every list the disease names.
+Private Function BuildChoiceRows(ByRef sourceData As Variant, _
+                                 ByVal masterChoices As LLChoices, _
+                                 ByVal logger As DiseaseLogger) As Collection
     Dim rows As New Collection
-    Dim dedupe As BetterArray
-    Dim rowIndex As Long
-    Dim splitValues As Variant
-    Dim itemIndex As Long
-    Dim controlName As String
-    Dim choiceValue As String
-    Dim key As String
-    Dim choiceRow(1 To 4) As Variant
+    Dim listNames As BetterArray
+    Dim masterBlock As Variant
+    Dim nameColumn As Long
+    Dim labelColumn As Long
+    Dim shortColumn As Long
+    Dim hasMaster As Boolean
+    Dim listIndex As Long
+    Dim listName As String
+    Dim rowsAdded As Long
 
-    Set dedupe = New BetterArray
+    Set listNames = DiseaseListNames(sourceData)
 
-    For rowIndex = 1 To UBound(sourceData, 1)
-        controlName = Trim$(CStr(sourceData(rowIndex, DiseaseControlColumn)))
-        If LenB(controlName) = 0 Then GoTo NextRow
+    'One read of the master block serves every list of the disease.
+    If Not masterChoices Is Nothing Then
+        hasMaster = ReadMasterBlock(masterChoices, masterBlock, nameColumn, labelColumn, shortColumn)
+    End If
 
-        splitValues = SplitChoices(sourceData(rowIndex, DiseaseChoicesColumn))
-        If IsEmpty(splitValues) Then GoTo NextRow
-
-        For itemIndex = LBound(splitValues) To UBound(splitValues)
-            choiceValue = Trim$(CStr(splitValues(itemIndex)))
-            If LenB(choiceValue) = 0 Then GoTo NextChoice
-
-            key = KeyOf(controlName, choiceValue)
-            If Not ContainsKey(dedupe, key) Then
-                dedupe.Push key
-                choiceRow(1) = controlName
-                choiceRow(2) = choiceValue
-                choiceRow(3) = choiceValue
-                choiceRow(4) = itemIndex - LBound(splitValues) + 1
-                rows.Add choiceRow
-            End If
-
-NextChoice:
-        Next itemIndex
-
-NextRow:
-    Next rowIndex
+    For listIndex = listNames.LowerBound To listNames.UpperBound
+        listName = CStr(listNames.Item(listIndex))
+        rowsAdded = 0
+        If hasMaster Then
+            rowsAdded = AppendMasterRows(rows, masterBlock, nameColumn, labelColumn, shortColumn, listName)
+        End If
+        If rowsAdded = 0 Then
+            AppendDiseaseRows rows, sourceData, listName
+            Warn logger, "The master Choices sheet carries no list named '" & listName & _
+                         "'; the export takes the values of the disease sheet"
+        End If
+    Next listIndex
 
     Set BuildChoiceRows = rows
 End Function
 
-'@sub-title Determine whether a key has already been processed.
+'@sub-title Distinct list names of the disease table, in first-use order.
+Private Function DiseaseListNames(ByRef sourceData As Variant) As BetterArray
+    Dim names As BetterArray
+    Dim rowIndex As Long
+    Dim controlName As String
+
+    Set names = New BetterArray
+    names.LowerBound = 1
+
+    For rowIndex = 1 To UBound(sourceData, 1)
+        controlName = Trim$(CStr(sourceData(rowIndex, DiseaseControlColumn)))
+        If LenB(controlName) = 0 Then GoTo NextRow
+        If Not ContainsKey(names, controlName) Then names.Push controlName
+NextRow:
+    Next rowIndex
+
+    Set DiseaseListNames = names
+End Function
+
+'@sub-title Read the master Choices block with its headers, once.
+'@return Boolean. True when the block carries a list name and a label column.
+Private Function ReadMasterBlock(ByVal masterChoices As LLChoices, _
+                                 ByRef block As Variant, _
+                                 ByRef nameColumn As Long, _
+                                 ByRef labelColumn As Long, _
+                                 ByRef shortColumn As Long) As Boolean
+    Dim data As DataSheet
+    Dim columnIndex As Long
+    Dim headerText As String
+
+    Set data = masterChoices.ChoiceData
+    If Not data.ColumnExists(HEADER_LIST_NAME, matchCase:=False) Then Exit Function
+    If Not data.ColumnExists(HEADER_LABEL, matchCase:=False) Then Exit Function
+
+    block = RangeBlock(data.DataRange("__all__", includeHeaders:=True))
+
+    For columnIndex = 1 To UBound(block, 2)
+        headerText = LCase$(Trim$(TextOf(block(1, columnIndex))))
+        Select Case headerText
+            Case HEADER_LIST_NAME
+                nameColumn = columnIndex
+            Case HEADER_LABEL
+                labelColumn = columnIndex
+            Case HEADER_SHORT_LABEL
+                shortColumn = columnIndex
+        End Select
+    Next columnIndex
+
+    ReadMasterBlock = (nameColumn > 0) And (labelColumn > 0)
+End Function
+
+'@sub-title Append the master rows of one list; answers how many were added.
+Private Function AppendMasterRows(ByVal rows As Collection, _
+                                  ByRef block As Variant, _
+                                  ByVal nameColumn As Long, _
+                                  ByVal labelColumn As Long, _
+                                  ByVal shortColumn As Long, _
+                                  ByVal listName As String) As Long
+    Dim rowIndex As Long
+    Dim position As Long
+    Dim labelValue As String
+    Dim shortValue As String
+
+    For rowIndex = 2 To UBound(block, 1)
+        If StrComp(Trim$(TextOf(block(rowIndex, nameColumn))), listName, vbTextCompare) <> 0 Then GoTo NextRow
+
+        labelValue = Trim$(TextOf(block(rowIndex, labelColumn)))
+        If LenB(labelValue) = 0 Then GoTo NextRow
+
+        shortValue = vbNullString
+        If shortColumn > 0 Then shortValue = Trim$(TextOf(block(rowIndex, shortColumn)))
+        If LenB(shortValue) = 0 Then shortValue = labelValue
+
+        position = position + 1
+        rows.Add ChoiceRow(listName, position, labelValue, shortValue)
+NextRow:
+    Next rowIndex
+
+    AppendMasterRows = position
+End Function
+
+'@sub-title Append the values the disease sheet carries for a list the master lacks.
+Private Sub AppendDiseaseRows(ByVal rows As Collection, _
+                              ByRef sourceData As Variant, _
+                              ByVal listName As String)
+    Dim rowIndex As Long
+    Dim splitValues As Variant
+    Dim itemIndex As Long
+    Dim choiceValue As String
+    Dim position As Long
+
+    For rowIndex = 1 To UBound(sourceData, 1)
+        If StrComp(Trim$(CStr(sourceData(rowIndex, DiseaseControlColumn))), listName, vbTextCompare) <> 0 Then GoTo NextRow
+
+        splitValues = SplitChoices(sourceData(rowIndex, DiseaseChoicesColumn))
+        If IsEmpty(splitValues) Then Exit Sub
+
+        For itemIndex = LBound(splitValues) To UBound(splitValues)
+            choiceValue = Trim$(CStr(splitValues(itemIndex)))
+            If LenB(choiceValue) = 0 Then GoTo NextChoice
+            position = position + 1
+            rows.Add ChoiceRow(listName, position, choiceValue, choiceValue)
+NextChoice:
+        Next itemIndex
+
+        'The first row naming the list carries its values; the others repeat them.
+        Exit Sub
+NextRow:
+    Next rowIndex
+End Sub
+
+'@sub-title Build one export row; the label column is filled by its formula later.
+Private Function ChoiceRow(ByVal listName As String, _
+                           ByVal position As Long, _
+                           ByVal labelValue As String, _
+                           ByVal shortValue As String) As Variant
+    Dim rowValues(1 To CHOICE_COLUMN_COUNT) As Variant
+
+    rowValues(ChoiceListColumn) = listName
+    rowValues(ChoiceOrderColumn) = position
+    rowValues(ChoiceRawLabelColumn) = labelValue
+    rowValues(ChoiceTranslatedColumn) = labelValue
+    rowValues(ChoiceLabelColumn) = vbNullString
+    rowValues(ChoiceShortLabelColumn) = shortValue
+
+    ChoiceRow = rowValues
+End Function
+
+'@sub-title Write the label formula on every exported choice row.
+'@details The translated label when present, the non translated label
+'otherwise, which is the formula the setup Choices sheet keeps.
+Private Sub WriteLabelFormulas(ByVal choicesSheet As Worksheet, ByVal rowCount As Long)
+    Dim labelRange As Range
+    Dim translatedAddress As String
+    Dim rawAddress As String
+
+    Set labelRange = choicesSheet.Cells(2, ChoiceLabelColumn).Resize(rowCount, 1)
+    translatedAddress = choicesSheet.Cells(2, ChoiceTranslatedColumn).Address(RowAbsolute:=False, ColumnAbsolute:=False)
+    rawAddress = choicesSheet.Cells(2, ChoiceRawLabelColumn).Address(RowAbsolute:=False, ColumnAbsolute:=False)
+
+    labelRange.Formula = "=IF(" & translatedAddress & "<>"""", " & translatedAddress & ", " & rawAddress & ")"
+
+    'A workbook under manual calculation reads the formula results right away.
+    labelRange.Calculate
+End Sub
+
+'@sub-title Translate the exported choices into the language of the disease.
+'@details LLChoices.Translate writes the translated label and the short
+'label columns; the non translated label keeps the master value and the
+'label formula follows. A language the translations table has no column for
+'leaves the values as they are and is logged.
+Private Sub TranslateChoices(ByVal choicesSheet As Worksheet, _
+                             ByVal translationTable As ListObject, _
+                             ByVal languageTag As String, _
+                             ByVal logger As DiseaseLogger)
+    Dim exported As LLChoices
+    Dim trads As TranslationObject
+
+    If LenB(TextOf(choicesSheet.Cells(2, ChoiceListColumn).Value)) = 0 Then Exit Sub
+    If translationTable Is Nothing Then Exit Sub
+
+    If Not TableHasColumn(translationTable, languageTag) Then
+        Warn logger, "The translations table has no column for the language '" & languageTag & _
+                     "'; the choices keep the master values"
+        Exit Sub
+    End If
+
+    Set trads = TranslationObject.Create(translationTable, languageTag)
+    Set exported = LLChoices.Create(choicesSheet, 1, 1)
+    exported.Translate trads
+End Sub
+
+'@sub-title Whether a ListObject carries a header of the given name.
+Private Function TableHasColumn(ByVal table As ListObject, ByVal headerName As String) As Boolean
+    Dim headerCell As Range
+
+    If table.HeaderRowRange Is Nothing Then Exit Function
+
+    For Each headerCell In table.HeaderRowRange.Cells
+        If StrComp(Trim$(TextOf(headerCell.Value)), Trim$(headerName), vbTextCompare) = 0 Then
+            TableHasColumn = True
+            Exit Function
+        End If
+    Next headerCell
+End Function
+
+'@sub-title Record a warning on the logger when one is given.
+Private Sub Warn(ByVal logger As DiseaseLogger, ByVal message As String)
+    If logger Is Nothing Then Exit Sub
+    logger.Record LOG_OPERATION, DiseaseLogWarning, message
+End Sub
+
+'@sub-title Read a range as a two-dimensional block, one cell included.
+Private Function RangeBlock(ByVal target As Range) As Variant
+    Dim oneCell(1 To 1, 1 To 1) As Variant
+
+    If target.Cells.Count = 1 Then
+        oneCell(1, 1) = target.Value
+        RangeBlock = oneCell
+    Else
+        RangeBlock = target.Value
+    End If
+End Function
+
+'@sub-title Text of a cell value; an error value reads as empty.
+Private Function TextOf(ByVal cellValue As Variant) As String
+    If IsError(cellValue) Then Exit Function
+    If IsEmpty(cellValue) Then Exit Function
+    TextOf = CStr(cellValue)
+End Function
+
+'@section Shared Helpers
+'===============================================================================
+
+'@sub-title Determine whether a name has already been seen, without regard to case.
 Private Function ContainsKey(ByVal keys As BetterArray, ByVal key As String) As Boolean
     Dim idx As Long
-    Dim normalised As String
 
     If keys Is Nothing Then Exit Function
     If keys.Length = 0 Then Exit Function
 
-    normalised = LCase$(key)
-
     For idx = keys.LowerBound To keys.UpperBound
-        If StrComp(CStr(keys.Item(idx)), normalised, vbBinaryCompare) = 0 Then
+        If StrComp(CStr(keys.Item(idx)), key, vbTextCompare) = 0 Then
             ContainsKey = True
             Exit Function
         End If
@@ -656,11 +922,6 @@ Private Function CollectionToMatrix(ByVal rows As Collection, ByVal columnCount 
     Next rowIndex
 
     CollectionToMatrix = matrix
-End Function
-
-'@sub-title Build a unique key for deduplication.
-Private Function KeyOf(ByVal controlName As String, ByVal choiceValue As String) As String
-    KeyOf = LCase$(controlName & "|" & choiceValue)
 End Function
 
 '@sub-title Determine the last used column within the target sheet.
