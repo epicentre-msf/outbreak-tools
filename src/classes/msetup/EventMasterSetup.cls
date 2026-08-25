@@ -149,7 +149,7 @@ End Sub
 Private Sub ResetTranslationCaches()
     Set this.translations = Nothing
     Set this.ribbonTranslations = Nothing
-    Set this.choices = Nothing    'Choices rely on translated headers
+    Set this.choices = Nothing    'The helper re-reads the sheet next time
 End Sub
 
 Private Sub CacheCoreManagers(ByVal svc As MasterSetupPreparation)
@@ -212,8 +212,9 @@ Private Function EnsureChoicesHelper() As LLChoices
     If this.choices Is Nothing Then
         Set targetSheet = ResolveWorksheet(CHOICES_SHEET_NAME)
         If targetSheet Is Nothing Then Exit Function
-        Set this.choices = LLChoices.Create(targetSheet, CHOICES_START_ROW, CHOICES_START_COLUMN, _
-                                            EnsureWorkbookTranslations, CHOICES_IDENTIFIER)
+        'The master setup stays in English: the choices carry no
+        'translation object, and their headers keep their English names.
+        Set this.choices = LLChoices.Create(targetSheet, CHOICES_START_ROW, CHOICES_START_COLUMN, CHOICES_IDENTIFIER)
     End If
 
     Set EnsureChoicesHelper = this.choices
