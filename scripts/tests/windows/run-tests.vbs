@@ -56,14 +56,17 @@ Set xlsApp = Nothing
 Set Wkb = Nothing
 
 Set xlsApp = CreateObject("Excel.Application")
-' Excel comes up on screen for the length of the run, the way the macOS trigger
-' and windows/build-linelist.vbs both leave it. A hidden Excel refuses window
-' work: Window.FreezePanes answers 1004 "Unable to set the FreezePanes property
-' of the Window class", and LLDataEntry.FreezeHeader freezes the header of every
-' data entry sheet, so TestHeadlessLinelistBuild built nothing and reported six
-' failures. Writing a SheetView property goes the same way. This is Excel's own
-' instance, so a workbook the operator has open is untouched.
-xlsApp.Visible = True
+' One dedicated Excel instance, hidden for the whole run, so a run never takes
+' the screen or the keyboard focus away from the operator (owner ask,
+' 2026-08-25). A hidden Excel refuses window work -- Window.FreezePanes and
+' SheetView writes answer 1004 -- and that used to kill a build at its first
+' data entry sheet. Since commit 0b4c7bb9 LLDataEntry.FreezeHeader logs the
+' refusal and carries on, no test asserts a frozen pane, so a hidden run
+' builds the same workbook with its panes left unfrozen. If a test ever has
+' to check window work, it needs a visible host, and this is the line that
+' gives it one. The macOS trigger keeps Excel on screen: Mac Excel has no
+' hidden instance to offer.
+xlsApp.Visible = False
 xlsApp.DisplayAlerts = False
 xlsApp.ScreenUpdating = False
 

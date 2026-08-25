@@ -49,9 +49,11 @@
 # osascript, windows/run-tests.vbs through cscript. Both drive the same OBT*
 # entry points in the same order, so a difference in results is a difference in
 # the VBA rather than in the harness. The Windows side runs against a real
-# Windows Excel, and it brings Excel up on screen for the length of the run:
-# a hidden Excel refuses Window.FreezePanes and every other window write with
-# error 1004, which cost the headless suite six failures.
+# Windows Excel, hidden for the length of the run so it never takes the screen
+# from the operator. A hidden Excel refuses Window.FreezePanes and SheetView
+# writes with error 1004; production logs those refusals and carries on since
+# commit 0b4c7bb9, and no test asserts a frozen pane, so a hidden run stays
+# green with its panes left unfrozen.
 #
 # The workbook must carry the Development manager + the OBTImport / OBTHeadless
 # modules and the Codes-sheet folder named ranges (ModulesCodes /
@@ -110,8 +112,8 @@ if (!dir.exists(staging)) {
 }
 
 if (on_windows) {
-  message("run-tests.R: NOTE - Excel comes up on screen for the length of the ",
-          "run. It is the trigger's own instance, so anything already open is ",
+  message("run-tests.R: NOTE - Excel runs hidden for the length of the run. ",
+          "It is the trigger's own instance, so anything already open is ",
           "left alone.")
 }
 if (!file.exists(workbook_src)) stop("run-tests.R: workbook not found: ", workbook_src)
