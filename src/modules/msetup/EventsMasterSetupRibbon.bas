@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Msetup")
 '@ModuleDescription("Ribbon callbacks supporting master setup operations.")
-'@depends MasterSetupPreparation, MasterSetupHelpers, MasterSetupExports, DropdownLists, Passwords, TranslationObject, ApplicationState, SetupTranslationsTable, UpdatedValues, DiseaseSheet
+'@depends MasterSetupPreparation, MasterSetupHelpers, MasterSetupExports, DropdownLists, Passwords, TranslationObject, ApplicationState, SetupTranslationsTable, UpdatedValues, DiseaseSheet, Development, RibbonDev
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'The master setup file itself stays in English: every prompt below is a plain
@@ -13,6 +13,14 @@ Option Explicit
 Private Const TRANSLATIONS_SHEET_NAME As String = "Translations"
 Private Const TRANSLATIONS_TABLE_NAME As String = "Tab_Translations"
 Private Const PASSWORD_SHEET_NAME As String = "__pass"
+Private Const DROPDOWNS_SHEET_NAME As String = "__dropdowns"
+Private Const REGISTRY_SHEET_NAME As String = "__updated"
+Private Const COMPARE_REPORT_SHEET_NAME As String = "__compRep"
+Private Const IMPORT_REPORT_SHEET_NAME As String = "__impRep"
+Private Const DEVELOPMENT_SHEET_NAME As String = "Dev"
+Private Const VARIABLES_SHEET_NAME As String = "Variables"
+Private Const CHOICES_SHEET_NAME As String = "Choices"
+Private Const DEV_PROMPT_TITLE As String = "Development"
 
 Private prepService As MasterSetupPreparation
 
@@ -561,6 +569,38 @@ Handler:
 End Sub
 
 
+'@section Dev group callbacks
+'===============================================================================
+'The rest of the Dev group is served by RibbonDev, which every product shares.
+'Initialize sits here because each product prepares itself its own way: the
+'master setup rebuilds its dropdowns and its variables table, then hands the
+'Development manager the sheets Deploy has to hide and to protect.
+
+'@Description("Prepare the master setup workbook for deployment.")
+'@EntryPoint
+Public Sub clickDevInitialize(ByRef ribbonControl As IRibbonControl)
+    Dim manager As Development
+
+    On Error GoTo Handler
+
+    'RibbonDev holds one Development manager for the whole VBA session and the
+    'Deploy button reads that same object, so the sheet lists are written on it.
+    Set manager = RibbonDev.EnsureDevelopment()
+    If manager Is Nothing Then Exit Sub
+
+    'Prepare opens and restores its own busy scope.
+    Preparation.Prepare Application
+    RegisterDeploymentSheets manager
+
+    MsgBox "Done!", vbInformation + vbOKOnly, DEV_PROMPT_TITLE
+    Exit Sub
+
+Handler:
+    Debug.Print "clickDevInitialize: "; Err.Number; Err.Description
+    MsgBox "Initialisation failed: " & Err.Description, vbCritical + vbOKOnly, DEV_PROMPT_TITLE
+End Sub
+
+
 '@section Helpers
 '===============================================================================
 Private Function Preparation() As MasterSetupPreparation
@@ -575,3 +615,47 @@ Private Sub RefreshDropdownCaches()
         Preparation.EnsureDropdowns
     On Error GoTo 0
 End Sub
+
+'Deploy sets every sheet handed to AddHiddenSheet very hidden and protects
+'every sheet handed to AddProtectedSheet. Both lists are written again on each
+'initialise; Development drops a name it already holds, so a second press
+'leaves one entry per sheet.
+'
+'Disease worksheets stay out of both lists. They hold the content the user
+'edits after the file ships.
+Private Sub RegisterDeploymentSheets(ByVal manager As Development)
+    HideOnDeploy manager, DROPDOWNS_SHEET_NAME
+    HideOnDeploy manager, REGISTRY_SHEET_NAME
+    HideOnDeploy manager, PASSWORD_SHEET_NAME
+    HideOnDeploy manager, COMPARE_REPORT_SHEET_NAME
+    HideOnDeploy manager, IMPORT_REPORT_SHEET_NAME
+    HideOnDeploy manager, DEVELOPMENT_SHEET_NAME
+
+    'Variables and Choices keep row deletion, the same permission
+    'MasterSetupHelpers.ProtectMasterSetupSheet gives those two sheets.
+    ProtectOnDeploy manager, VARIABLES_SHEET_NAME, True, True
+    ProtectOnDeploy manager, CHOICES_SHEET_NAME, True, True
+    ProtectOnDeploy manager, TRANSLATIONS_SHEET_NAME, False, False
+End Sub
+
+'AddHiddenSheet and AddProtectedSheet raise ElementNotFound on a name the
+'workbook has no sheet for, so every name is looked up first. A master setup
+'that carries only some of the report sheets still initialises.
+Private Sub HideOnDeploy(ByVal manager As Development, ByVal sheetName As String)
+    If DeploymentSheet(sheetName) Is Nothing Then Exit Sub
+    manager.AddHiddenSheet sheetName
+End Sub
+
+Private Sub ProtectOnDeploy(ByVal manager As Development, _
+                            ByVal sheetName As String, _
+                            ByVal allowShapes As Boolean, _
+                            ByVal allowDeletingRows As Boolean)
+    If DeploymentSheet(sheetName) Is Nothing Then Exit Sub
+    manager.AddProtectedSheet sheetName, allowShapes, allowDeletingRows
+End Sub
+
+Private Function DeploymentSheet(ByVal sheetName As String) As Worksheet
+    On Error Resume Next
+        Set DeploymentSheet = ThisWorkbook.Worksheets(sheetName)
+    On Error GoTo 0
+End Function
