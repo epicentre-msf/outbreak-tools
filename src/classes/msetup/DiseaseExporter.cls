@@ -131,7 +131,11 @@ Public Function BuildDiseaseWorkbook(ByVal diseaseWksh As Worksheet, _
 
     Set diseaseTable = ResolveDiseaseTable(diseaseWksh)
 
-    Set headerCache = DiseaseTranslationCache.Create(ribbonTranslations)
+    'Without ribbon translations the headers keep their fallback text;
+    'TranslateHeader answers the fallback when the cache is Nothing.
+    If Not ribbonTranslations Is Nothing Then
+        Set headerCache = DiseaseTranslationCache.Create(ribbonTranslations)
+    End If
 
     PopulateMetadata metadataSheet, diseaseName, languageTag, diseaseCode
     PopulateDictionary dictionarySheet, diseaseTable
