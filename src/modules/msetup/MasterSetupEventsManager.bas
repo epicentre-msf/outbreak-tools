@@ -192,12 +192,70 @@ End Sub
 '@sub-title Carry a choices edit into every sheet reading the choices.
 '@details The label column recalculates the way the setup does it; then the
 'Variables sheet refreshes its joined values, references to a choice that is
-'gone empty out, and every disease line recalculates.
+'gone empty out, and the disease lines recalculate. Speed rule: the edited
+'and existing choice names are gathered ONCE into keyed Collections, every
+'column is read in one crossing, and a sheet is only unprotected and written
+'when one of its rows actually moves.
 Private Sub HandleChoicesSheetChange(ByVal sh As Worksheet, ByVal target As Range)
+    Dim editedChoices As Collection
+    Dim existingChoices As Collection
+
     RecalculateChoiceLabels target
-    CascadeChoicesToVariables
-    CascadeChoicesToDiseases
+
+    Set editedChoices = EditedChoiceNames(target)
+    Set existingChoices = ExistingChoiceNames()
+    If existingChoices Is Nothing Then Exit Sub
+
+    CascadeChoicesToVariables editedChoices, existingChoices
+    CascadeChoicesToDiseases editedChoices, existingChoices
 End Sub
+
+'@sub-title Collect the list names of the edited choices rows, keyed.
+Private Function EditedChoiceNames(ByVal target As Range) As Collection
+    Dim table As ListObject
+    Dim wrapper As CustomTable
+    Dim listRange As Range
+    Dim touched As Range
+    Dim rowCells As Range
+    Dim nameValue As String
+
+    Set EditedChoiceNames = New Collection
+
+    Set table = target.ListObject
+    If table Is Nothing Then Exit Function
+    If table.DataBodyRange Is Nothing Then Exit Function
+
+    Set wrapper = CustomTable.Create(table)
+    Set listRange = wrapper.DataRange(colName:="list name", includeHeaders:=False, strictSearch:=True, matchCase:=False)
+    If listRange Is Nothing Then Exit Function
+
+    Set touched = Intersect(target.EntireRow, listRange)
+    If touched Is Nothing Then Exit Function
+
+    For Each rowCells In touched.Cells
+        nameValue = Trim$(CStr(rowCells.Value))
+        If LenB(nameValue) > 0 Then AddKey EditedChoiceNames, nameValue
+    Next rowCells
+End Function
+
+'@sub-title Collect every list name the Choices sheet carries, keyed.
+Private Function ExistingChoiceNames() As Collection
+    Dim choices As LLChoices
+    Dim names As BetterArray
+    Dim idx As Long
+
+    Set choices = MasterSetupService.Choices
+    If choices Is Nothing Then Exit Function
+
+    Set ExistingChoiceNames = New Collection
+
+    Set names = choices.AllChoices
+    If names Is Nothing Then Exit Function
+
+    For idx = names.LowerBound To names.UpperBound
+        AddKey ExistingChoiceNames, Trim$(CStr(names.Item(idx)))
+    Next idx
+End Function
 
 '@sub-title Recalculate the label column when a translated label changes.
 Private Sub RecalculateChoiceLabels(ByVal target As Range)
@@ -225,17 +283,22 @@ End Sub
 
 '@sub-title Refresh the Variables sheet after a choices edit.
 '@details A default choice the Choices sheet no longer carries empties with
-'its joined values; a default choice still there gets its values rejoined.
-Private Sub CascadeChoicesToVariables()
+'its joined values; a default choice whose list was edited gets its values
+'rejoined. Both columns are read in one crossing each, and the sheet is only
+'unprotected when a row actually moves.
+Private Sub CascadeChoicesToVariables(ByVal editedChoices As Collection, ByVal existingChoices As Collection)
     Dim variablesSheet As Worksheet
     Dim table As ListObject
     Dim nameColumn As ListColumn
     Dim choiceColumn As ListColumn
     Dim valuesColumn As ListColumn
     Dim choices As LLChoices
+    Dim nameData As Variant
+    Dim choiceData As Variant
     Dim rowIndex As Long
     Dim variableName As String
     Dim choiceValue As String
+    Dim unprotected As Boolean
 
     Set variablesSheet = MasterSetupHelpers.ResolveMasterVariablesSheet()
     If variablesSheet Is Nothing Then Exit Sub
@@ -252,64 +315,78 @@ Private Sub CascadeChoicesToVariables()
     Set choices = MasterSetupService.Choices
     If choices Is Nothing Then Exit Sub
 
-    MasterSetupHelpers.UnProtectMasterSetupSheet variablesSheet, "variables"
+    'One crossing per column; the loop below runs in memory.
+    nameData = ColumnBlock(nameColumn.DataBodyRange)
+    choiceData = ColumnBlock(choiceColumn.DataBodyRange)
 
-    For rowIndex = 1 To table.ListRows.Count
-        variableName = Trim$(CStr(nameColumn.DataBodyRange.Cells(rowIndex, 1).Value))
-        choiceValue = Trim$(CStr(choiceColumn.DataBodyRange.Cells(rowIndex, 1).Value))
-
+    For rowIndex = 1 To UBound(choiceData, 1)
+        choiceValue = Trim$(CStr(choiceData(rowIndex, 1)))
         If LenB(choiceValue) > 0 Then
-            If Not choices.ChoiceExists(choiceValue) Then
+            If Not HasKey(existingChoices, choiceValue) Then
                 'The choice is gone from the Choices sheet; every reference
                 'to it empties.
+                EnsureUnprotected variablesSheet, "variables", unprotected
                 choiceColumn.DataBodyRange.Cells(rowIndex, 1).Value = vbNullString
                 If Not valuesColumn Is Nothing Then
                     valuesColumn.DataBodyRange.Cells(rowIndex, 1).Value = vbNullString
                 End If
-            ElseIf LenB(variableName) > 0 Then
-                'A half-filled line is normal while the user types; it fills
-                'nothing and raises nothing at the user.
-                On Error Resume Next
-                MasterSetupService.Variables.RefreshChoices variableName, choices
-                On Error GoTo 0
+            ElseIf HasKey(editedChoices, choiceValue) Then
+                variableName = Trim$(CStr(nameData(rowIndex, 1)))
+                If LenB(variableName) > 0 Then
+                    EnsureUnprotected variablesSheet, "variables", unprotected
+                    'A half-filled line is normal while the user types; it
+                    'fills nothing and raises nothing at the user.
+                    On Error Resume Next
+                    MasterSetupService.Variables.RefreshChoices variableName, choices
+                    On Error GoTo 0
+                End If
             End If
         End If
     Next rowIndex
 
-    MasterSetupHelpers.ProtectMasterSetupSheet variablesSheet, "variables"
+    If unprotected Then MasterSetupHelpers.ProtectMasterSetupSheet variablesSheet, "variables"
 End Sub
 
-'@sub-title Refresh every disease line after a choices edit.
-Private Sub CascadeChoicesToDiseases()
+'@sub-title Refresh the disease lines a choices edit reaches.
+'@details Each disease table's choice column is read in one crossing. A line
+'referencing a choice that is gone empties; a table is recalculated only when
+'one of its lines references an edited or a missing choice.
+Private Sub CascadeChoicesToDiseases(ByVal editedChoices As Collection, ByVal existingChoices As Collection)
     Dim sh As Worksheet
     Dim table As ListObject
-    Dim choices As LLChoices
-    Dim choiceCell As Range
+    Dim choiceData As Variant
     Dim rowIndex As Long
     Dim choiceValue As String
-
-    Set choices = MasterSetupService.Choices
-    If choices Is Nothing Then Exit Sub
+    Dim needsRecalc As Boolean
+    Dim unprotected As Boolean
 
     For Each sh In ThisWorkbook.Worksheets
         If MasterSetupHelpers.IsMasterDiseaseSheet(sh) Then
             If sh.ListObjects.Count > 0 Then
                 Set table = sh.ListObjects(1)
                 If Not table.DataBodyRange Is Nothing Then
-                    MasterSetupHelpers.UnProtectMasterSetupSheet sh, "disease"
+                    choiceData = ColumnBlock(table.DataBodyRange.Columns(DISEASE_CHOICE_COLUMN))
+                    needsRecalc = False
+                    unprotected = False
 
-                    For rowIndex = 1 To table.ListRows.Count
-                        Set choiceCell = table.DataBodyRange.Cells(rowIndex, DISEASE_CHOICE_COLUMN)
-                        choiceValue = Trim$(CStr(choiceCell.Value))
+                    For rowIndex = 1 To UBound(choiceData, 1)
+                        choiceValue = Trim$(CStr(choiceData(rowIndex, 1)))
                         If LenB(choiceValue) > 0 Then
-                            If Not choices.ChoiceExists(choiceValue) Then
-                                choiceCell.Value = vbNullString
+                            If Not HasKey(existingChoices, choiceValue) Then
+                                EnsureUnprotected sh, "disease", unprotected
+                                table.DataBodyRange.Cells(rowIndex, DISEASE_CHOICE_COLUMN).Value = vbNullString
+                                needsRecalc = True
+                            ElseIf HasKey(editedChoices, choiceValue) Then
+                                needsRecalc = True
                             End If
                         End If
                     Next rowIndex
 
-                    RecalculateDiseaseColumns table
-                    MasterSetupHelpers.ProtectMasterSetupSheet sh, "disease"
+                    If needsRecalc Then
+                        EnsureUnprotected sh, "disease", unprotected
+                        RecalculateDiseaseColumns table
+                    End If
+                    If unprotected Then MasterSetupHelpers.ProtectMasterSetupSheet sh, "disease"
                 End If
             End If
         End If
@@ -317,11 +394,14 @@ Private Sub CascadeChoicesToDiseases()
 End Sub
 
 '@sub-title Write a new default choice onto every disease line of a variable.
+'@details The name column is read in one crossing per table; a sheet with no
+'line carrying the variable is left untouched, protected and uncalculated.
 Private Sub PropagateDefaultChoice(ByVal variableName As String, ByVal choiceValue As String)
     Dim sh As Worksheet
     Dim table As ListObject
+    Dim nameData As Variant
     Dim rowIndex As Long
-    Dim rowName As String
+    Dim unprotected As Boolean
 
     If LenB(variableName) = 0 Then Exit Sub
 
@@ -330,22 +410,67 @@ Private Sub PropagateDefaultChoice(ByVal variableName As String, ByVal choiceVal
             If sh.ListObjects.Count > 0 Then
                 Set table = sh.ListObjects(1)
                 If Not table.DataBodyRange Is Nothing Then
-                    MasterSetupHelpers.UnProtectMasterSetupSheet sh, "disease"
+                    nameData = ColumnBlock(table.DataBodyRange.Columns(DISEASE_NAME_COLUMN))
+                    unprotected = False
 
-                    For rowIndex = 1 To table.ListRows.Count
-                        rowName = Trim$(CStr(table.DataBodyRange.Cells(rowIndex, DISEASE_NAME_COLUMN).Value))
-                        If StrComp(rowName, variableName, vbTextCompare) = 0 Then
+                    For rowIndex = 1 To UBound(nameData, 1)
+                        If StrComp(Trim$(CStr(nameData(rowIndex, 1))), variableName, vbTextCompare) = 0 Then
+                            EnsureUnprotected sh, "disease", unprotected
                             table.DataBodyRange.Cells(rowIndex, DISEASE_CHOICE_COLUMN).Value = choiceValue
                         End If
                     Next rowIndex
 
-                    RecalculateDiseaseColumns table
-                    MasterSetupHelpers.ProtectMasterSetupSheet sh, "disease"
+                    If unprotected Then
+                        RecalculateDiseaseColumns table
+                        MasterSetupHelpers.ProtectMasterSetupSheet sh, "disease"
+                    End If
                 End If
             End If
         End If
     Next sh
 End Sub
+
+'@sub-title Unprotect a sheet the first time a write needs it.
+Private Sub EnsureUnprotected(ByVal sh As Worksheet, ByVal sheetTag As String, ByRef unprotected As Boolean)
+    If unprotected Then Exit Sub
+    MasterSetupHelpers.UnProtectMasterSetupSheet sh, sheetTag
+    unprotected = True
+End Sub
+
+'@sub-title Read a one-column range as a 2D block, whatever its height.
+Private Function ColumnBlock(ByVal columnRange As Range) As Variant
+    Dim values As Variant
+    Dim scalar(1 To 1, 1 To 1) As Variant
+
+    values = columnRange.Value
+    If IsArray(values) Then
+        ColumnBlock = values
+    Else
+        scalar(1, 1) = values
+        ColumnBlock = scalar
+    End If
+End Function
+
+'@sub-title Add a key once; a duplicate add is a no-op.
+Private Sub AddKey(ByVal keys As Collection, ByVal keyValue As String)
+    ' A Collection refuses a duplicate key with a raise; the scoped probe is
+    ' the cheapest existence test. Restored right after.
+    On Error Resume Next
+    keys.Add keyValue, keyValue
+    On Error GoTo 0
+End Sub
+
+'@sub-title Answer whether a keyed Collection carries the key.
+Private Function HasKey(ByVal keys As Collection, ByVal keyValue As String) As Boolean
+    Dim probe As Variant
+
+    If keys Is Nothing Then Exit Function
+
+    On Error Resume Next
+    probe = keys.Item(keyValue)
+    HasKey = (Err.Number = 0)
+    On Error GoTo 0
+End Function
 
 '@sub-title Recalculate the two formula columns of a disease table.
 Private Sub RecalculateDiseaseColumns(ByVal table As ListObject)
