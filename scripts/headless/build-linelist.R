@@ -6,7 +6,7 @@
 #           [--out=<dir>] [--name=<stem>] [--designer=<path>] \
 #           [--forms=<dir>] [--home=<dir>] [--obt-home=<dir>] [--no-merge] \
 #           [--temppath=<ribbon.xlsb>] [--geopath=<geo.xlsb>] \
-#           [--setuplang=<column>] [--lllang=<code>] [--llpassword=<pass>]
+#           [--setuplang=<column>] [--lllang=<code>] [--llpassword=<pass>] #           [--style=<style.xlsx>] [--design=<column>]
 #
 # GENERATE SEVERAL AT ONCE by giving --setup more than once:
 #
@@ -350,6 +350,15 @@ temp_path     <- abs_path(opt("temppath", ""))
 geo_paths     <- vapply(opts_all("geopath"), abs_path, character(1), USE.NAMES = FALSE)
 geo_path      <- if (length(geo_paths)) geo_paths[1] else ""
 
+# The linelist style workbook, the file the designer's "import styles" button
+# takes. Given, the linelist is written from the DESIGNER's own formatter;
+# omitted, from the SETUP's, which is the design a setup carries of its own.
+# --design then picks which column of whichever table is shipped.
+style_path <- abs_path(opt("style", ""))
+if (nzchar(style_path) && !file.exists(style_path)) {
+  stop("build-linelist.R: no style workbook at ", style_path)
+}
+
 # TWO OR MORE SETUPS MAKE IT A MULTIPLE GENERATION.
 # -----------------------------------------------------------------------------
 # The designer builds several linelists from one press through the T_Multi table
@@ -437,6 +446,14 @@ message("build-linelist.R: ",
         } else {
           "buttons build (no ribbon template given): action buttons on the sheets, an Admin sheet"
         })
+message("build-linelist.R: format    -> ",
+        if (nzchar(style_path)) {
+          paste0("style ", basename(style_path), ", imported onto the designer")
+        } else {
+          "the setup's own formatter"
+        },
+        ", design ",
+        if (nzchar(opt("design", ""))) opt("design", "") else "(as the designer names it)")
 
 # --- 1) the merged forms -----------------------------------------------------
 # The forms in .mock carry whatever code was in the workbook the day they were
@@ -599,6 +616,7 @@ stage_in <- function(from, stem) {
 
 staged_designer <- stage_in(designer_path, "designer")
 staged_template <- stage_in(temp_path,     "template")
+staged_style    <- stage_in(style_path,    "style")
 
 # One staged name per row, so two rows built from two different setups keep two
 # different files inside the root. A single build keeps the bare "setup" name it
@@ -638,6 +656,8 @@ build_options <- paste(
   paste0("setuplang=",  opt("setuplang",  "")),
   paste0("lllang=",     opt("lllang",     "")),
   paste0("llpassword=", opt("llpassword", "")),
+  paste0("stylepath=",  staged_style),
+  paste0("design=",     opt("design",     "")),
   sep = "|"
 )
 

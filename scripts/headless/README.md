@@ -116,6 +116,8 @@ Three files land in `outputFolder`:
 | `setuplang` | the language of the setup file — a **column name** of the setup's own translation table, e.g. `English` |
 | `lllang` | the language the linelist is written in — a **code**, or a `CODE-Name` entry, e.g. `ENG` or `ENG-English` |
 | `llpassword` | the open password of the saved file. Empty opens on a double-click |
+| `stylepath` | a linelist style workbook to merge onto the designer's `__formatter` first. **Given, the designer's formatter is shipped; empty, the setup's is** |
+| `design` | which column of that table the run is written in — `design 1`, `design 2`, `user defined`. Empty keeps whatever `DESIGNTYPE` already names |
 
 An unknown key is **reported**, not ignored: a misspelled key reads exactly like
 an option nobody passed, and that difference is a build pointed somewhere else.
@@ -140,6 +142,7 @@ written.
 | `--designer` `--out` `--name` | default to the mock designer, `<home>/build`, `linelist` |
 | `--forms` | a folder of already-merged forms to copy in. Only meaningful with `--no-merge` |
 | `--temppath` `--geopath` `--setuplang` `--lllang` `--llpassword` | the option keys above, passed through |
+| `--style` `--design` | the two format keys above. `--style` is staged into `<OBT_HOME>/in` like every other input |
 | `--no-merge` | skip step two. Skipping it is how a linelist ends up with the right buttons wired to last week's handlers |
 | `--home` | the untracked working area, same one the test harness uses |
 | `--obt-home` | **the granted root** — everything Excel touches is staged under it. Falls back to the `OBT_HOME` environment variable (an `.Renviron` line is the deployed way to set it), then to `<repo>/headless-runner` |
@@ -186,6 +189,51 @@ table offers, reporting which one it settled on in the run narrative.
 Leave both empty and the setup language is read off the setup, the way loading a
 setup by hand fills it, and the linelist language stays whatever the designer
 holds.
+
+### The design is two choices, and `--design` is only the second one
+
+A linelist is written from a **format table** — `T_Formatter`, whose columns are
+`design 1`, `design 2` and `user defined`, and whose `DESIGNTYPE` named range
+says which of the three the run uses. Two workbooks carry that table, and which
+one is shipped is decided before any column is picked:
+
+| | which table the linelist is written from |
+|---|---|
+| no `--style` | the **setup's** `__formatter`. Every filled setup carries its own, so this is the design a setup was built with |
+| `--style=<file>` | the **designer's** `__formatter`, with the style workbook merged into it first |
+
+`InitTransfer` chooses between them on `DesignerPreparation.FormatterImported`,
+a flag stored on the designer workbook. The ribbon's *import styles* button
+sets it and loading a setup clears it, so the designer's own table wins only
+after somebody explicitly imported styles for the setup that is loaded now.
+`stylepath` does both halves — the merge and the flag. Import the columns and
+leave the flag alone, and the linelist comes out formatted from the setup while
+the imported style sits in the designer copy, silent, and reads as though it had
+been used.
+
+So the two axes multiply. Three designs against a setup's own table and three
+against a style workbook's make **six different linelists**, and the file names
+have to say which table each came from, because the column names are the same on
+both sides.
+
+#### `--design` writes `DESIGNTYPE`
+
+`RNG_DesignLL` on `Main` is the cell a person fills from a dropdown, and in a
+designer the workbook's own event handlers copy it into `DESIGNTYPE`. A headless
+run **throws those handlers away** with the rest of the designer's code, and
+`DESIGNTYPE` is the only name the build reads:
+`LinelistSpecs.EnsureFormat` and `InitTransfer.DesignerDesignName` both take the
+design from there. Write the dropdown alone and the build reports the design it
+was asked for while shipping the one the designer already held.
+
+`ApplyDesignChoice` writes `DESIGNTYPE`, which the build reads, and `Main` as
+well, which keeps the copy's record straight — a designer whose `Main` says one
+design while its formatter holds another misleads the next reader.
+
+A design name no column matches still builds. `LLFormat` falls back to its own
+default, the same answer a designer gives, so a typo delivers a plausible file
+written in `design 1`. The run narrative names the value that was written, and
+that line is where the difference shows.
 
 ### Why a designer file is still copied
 

@@ -107,6 +107,15 @@ Private Const RNG_LL_PWD_OPEN As String = "RNG_LLPwdOpen"
 Private Const RNG_DESIGN_LL As String = "RNG_DesignLL"
 Private Const RNG_EPIWEEK As String = "RNG_DefaultEpiWeek"
 
+'The format worksheet, and the one name on it that says which design of the
+'format table a run is written in. DESIGNTYPE DECIDES THE DESIGN:
+'LinelistSpecs.EnsureFormat and InitTransfer.DesignerDesignName both read it.
+'The Main entry beside it is the dropdown a person fills, and the designer's
+'own event handlers are what copy that cell into DESIGNTYPE. A headless run
+'throws those handlers away, so this module writes both names itself.
+Private Const SHEET_FORMATTER As String = "__formatter"
+Private Const RANGE_DESIGN_TYPE As String = "DESIGNTYPE"
+
 'The multiple generation table, and the twelve columns the driver reads.
 'The names are repeated from EventsDesignerMulti because the constants are
 'Private there. They are the headers of a shipped worksheet, so a change to
@@ -220,6 +229,8 @@ Private optGeo As String
 Private optSetupLang As String
 Private optLinelistLang As String
 Private optPassword As String
+Private optDesign As String
+Private optStyle As String
 
 
 '@section File access
@@ -411,6 +422,16 @@ End Function
 '  lllang=<name>     the language the linelist is written in
 '  llpassword=<text> the open password of the saved file. Empty saves a file
 '                    that opens on a double-click, which is what a demo wants.
+'  stylepath=<path>  a linelist style workbook to import onto the designer's
+'                    format sheet before the build, the file the ribbon's
+'                    "import styles" button takes. GIVEN, THE DESIGNER'S OWN
+'                    FORMATTER IS SHIPPED; empty, the SETUP's formatter is,
+'                    which is the design a setup carries of its own.
+'  design=<name>     the column of the format table the run is written in --
+'                    "design 1", "design 2", "user defined". Empty keeps
+'                    whatever the designer's DESIGNTYPE already names. A name
+'                    no column matches falls back to the format table's own
+'                    default, the same answer a designer gives.
 '
 'A key this routine does not know is reported rather than ignored, because a
 'misspelled key that reads as "not given" is a build silently pointed
@@ -523,6 +544,12 @@ Public Function BuildLinelistFromSetup(ByVal designerPath As String, _
 
     PrepareDesignerGeo designerBook
     AddToReport "designer geo prepared"
+
+    'The style first, the design second. Importing a style workbook writes that
+    'workbook's own DESIGNTYPE onto the format sheet, so a design named by the
+    'caller has to be applied after the import or the file would overrule it.
+    ImportLinelistStyle designerBook
+    ApplyDesignChoice designerBook
 
     WriteDesignerEntries designerBook, setupPath, outputFolder, outputName
     AddToReport "designer entries written"
@@ -1516,6 +1543,117 @@ Private Sub PrepareDesignerGeo(ByVal designerBook As Workbook)
     On Error GoTo 0
 End Sub
 
+'@Description("Import a linelist style workbook onto the designer copy's format sheet.")
+'@details
+'What the ribbon's clickImpStyle does, driven from code. LLFormat.Import
+'merges the style workbook's design columns into the designer's own
+'T_Formatter and copies the file's DESIGNTYPE across.
+'
+'THE FLAG IS WHAT MAKES THE IMPORT COUNT. InitTransfer ships the DESIGNER's
+'formatter only when DesignerPreparation.FormatterImported reads True, and the
+'SETUP's formatter otherwise. Import the columns and leave the flag alone, and
+'the linelist comes out formatted from the setup while the imported style sits
+'in the designer copy, silent, and reads as though it had been used.
+'
+'A run that names no style exits here, and that is the common run: the setup's
+'own formatter is the design a build gets when nobody asks for another.
+'@param designerBook Workbook. The designer copy.
+'@throws ProjectError.ElementNotFound When the style workbook cannot be read.
+Private Sub ImportLinelistStyle(ByVal designerBook As Workbook)
+    Dim styleBook As Workbook
+    Dim formatManager As LLFormat
+    Dim prep As DesignerPreparation
+
+    If LenB(optStyle) = 0 Then Exit Sub
+
+    If Len(Dir$(optStyle)) = 0 Then
+        ThrowError ProjectError.ElementNotFound, _
+                   "The style workbook does not exist: " & optStyle
+    End If
+
+    Set styleBook = Application.Workbooks.Open(fileName:=optStyle, ReadOnly:=True)
+
+    'Closed on the way out of a failure too. A style workbook left open is a
+    'workbook the quit at the end of the run stops to ask about.
+    On Error GoTo CloseAndRaise
+    Set formatManager = LLFormat.Create(designerBook.Worksheets(SHEET_FORMATTER))
+    formatManager.Import styleBook.Worksheets(1)
+    On Error GoTo 0
+
+    styleBook.Close SaveChanges:=False
+    Set styleBook = Nothing
+
+    Set prep = DesignerPreparation.Create(designerBook)
+    prep.FormatterImported = True
+
+    AddToReport "linelist style imported from " & optStyle & _
+                ", the designer's formatter is the live one"
+    Exit Sub
+
+CloseAndRaise:
+    Dim failedNumber As Long
+    Dim failedText As String
+    Dim failedSource As String
+
+    failedNumber = Err.Number
+    failedText = Err.Description
+    failedSource = Err.Source
+
+    On Error Resume Next
+        If Not styleBook Is Nothing Then styleBook.Close SaveChanges:=False
+        Err.Clear
+    On Error GoTo 0
+
+    Err.Raise failedNumber, failedSource, failedText
+End Sub
+
+'@Description("Name the design the run is written in, on the designer copy.")
+'@details
+'DESIGNTYPE on the format sheet is what decides the design, in both branches:
+'LinelistSpecs.EnsureFormat builds its LLFormat with it, and
+'InitTransfer.DesignerDesignName reads it to pick the column of whichever
+'formatter is shipped. RNG_DesignLL on Main is the dropdown a person fills, and
+'in the designer the workbook's own event handlers copy that cell into
+'DESIGNTYPE. This run threw those handlers away with the rest of the designer's
+'code, so the name is written to both places here.
+'
+'A design the format table has no column for still builds. LLFormat falls back
+'to its own default for an unknown name, which is the answer a designer gives
+'as well, so the run reports the value it wrote and a reader can see when the
+'fallback took over.
+'@param designerBook Workbook. The designer copy.
+Private Sub ApplyDesignChoice(ByVal designerBook As Workbook)
+    Dim formatSheet As Worksheet
+    Dim designRange As Range
+
+    If LenB(optDesign) = 0 Then Exit Sub
+
+    On Error Resume Next
+        Set formatSheet = designerBook.Worksheets(SHEET_FORMATTER)
+        Err.Clear
+    On Error GoTo 0
+
+    If formatSheet Is Nothing Then
+        AddToReport "design not applied, the designer copy carries no '" & _
+                    SHEET_FORMATTER & "' worksheet: " & optDesign
+        Exit Sub
+    End If
+
+    On Error Resume Next
+        Set designRange = formatSheet.Range(RANGE_DESIGN_TYPE)
+        Err.Clear
+    On Error GoTo 0
+
+    If designRange Is Nothing Then
+        AddToReport "design not applied, no '" & RANGE_DESIGN_TYPE & _
+                    "' range on " & SHEET_FORMATTER & ": " & optDesign
+        Exit Sub
+    End If
+
+    designRange.Cells(1, 1).Value = optDesign
+    AddToReport "design applied: " & optDesign
+End Sub
+
 '@Description("Write the build entries onto the designer's Main worksheet.")
 '@details
 'Three entries have to land, because nothing else says where the linelist goes
@@ -1556,6 +1694,12 @@ Private Sub WriteDesignerEntries(ByVal designerBook As Workbook, _
     'one against the translation table's columns by the time this runs.
     If LenB(optSetupLang) > 0 Then WriteEntry mainSheet, RNG_LANG_SETUP, optSetupLang
     If LenB(optLinelistLang) > 0 Then WriteEntry mainSheet, RNG_LL_FORM, optLinelistLang
+
+    'The dropdown beside the design ApplyDesignChoice already wrote onto the
+    'format sheet. The build reads DESIGNTYPE for the design it applies, and
+    'this cell keeps the copy's own record straight: a designer whose Main says
+    'one design while its formatter holds another misleads the next reader.
+    If LenB(optDesign) > 0 Then WriteEntry mainSheet, RNG_DESIGN_LL, optDesign
 
     AddToReport "entries written on Main, template: " & _
                 IIf(LenB(optTemplate) = 0, "(none, buttons build)", optTemplate)
@@ -1628,6 +1772,8 @@ Private Sub ReadOptions(ByVal options As String)
     optSetupLang = vbNullString
     optLinelistLang = vbNullString
     optPassword = vbNullString
+    optDesign = vbNullString
+    optStyle = vbNullString
 
     If LenB(Trim$(options)) = 0 Then Exit Sub
 
@@ -1657,6 +1803,10 @@ Private Sub ReadOptions(ByVal options As String)
                         optLinelistLang = keyValue
                     Case "llpassword"
                         optPassword = keyValue
+                    Case "design"
+                        optDesign = keyValue
+                    Case "stylepath"
+                        optStyle = keyValue
                     Case Else
                         AddToReport "option ignored, unknown key: " & keyName
                 End Select

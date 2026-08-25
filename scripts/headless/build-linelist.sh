@@ -72,6 +72,24 @@ SETUP_LANG="English"
 LL_LANG="ENG-English"
 LL_PASSWORD=""
 
+# THE FORMAT OF THE DELIVERED LINELIST: which format table it is written from,
+# and which column of that table.
+#
+#   STYLE   a linelist style workbook -- the file the designer's "import
+#           styles" button takes, e.g. src/tests/.input/linelist_style_1.xlsx.
+#           GIVEN, the style is merged onto the designer and THE DESIGNER'S
+#           formatter is what the linelist is written from. EMPTY, the SETUP's
+#           own formatter is, which is the design a setup carries of its own.
+#           The two are different products as surely as ribbon and buttons are.
+#
+#   DESIGN  which column of whichever table is shipped: "design 1", "design 2"
+#           or "user defined". Empty keeps whatever the designer's DESIGNTYPE
+#           already names, which in every shipped designer is "design 1". A
+#           name no column matches falls back to the table's own default in
+#           silence, so a typo here reads as a build nobody restyled.
+STYLE=""
+DESIGN=""
+
 # THE STAGING ROOT. Empty is right unless something is wrong. The build stages
 # itself inside Excel's own sandbox by default, which is why it runs without a
 # single permission dialog:
@@ -124,6 +142,14 @@ Every flag below is passed through to build-linelist.R.
   --setuplang=<col>    Label column of the setup. Omitted -> what the setup says.
   --lllang=<code>      Linelist language, e.g. ENG. Omitted -> the designer's entry.
   --llpassword=<pass>  Password for the linelist. Omitted -> unprotected.
+
+  --style=<file>       A linelist style workbook to import onto the designer
+                       before the build. Given -> the designer's own formatter
+                       is what the linelist is written from. Omitted -> the
+                       setup's own formatter is.
+  --design=<name>      Column of the format table to write the linelist in:
+                       "design 1", "design 2", "user defined". Omitted -> what
+                       the designer's DESIGNTYPE already names.
 
   --obt-home=<dir>     Staging root. Omitted -> Excel's own container, which is
                        what makes the run silent. Also read from the OBT_HOME
@@ -179,6 +205,8 @@ add forms      "$FORMS"
 add setuplang  "$SETUP_LANG"
 add lllang     "$LL_LANG"
 add llpassword "$LL_PASSWORD"
+add style      "$STYLE"
+add design     "$DESIGN"
 add obt-home   "$OBT_HOME"
 add home       "$BUILD_HOME"
 
