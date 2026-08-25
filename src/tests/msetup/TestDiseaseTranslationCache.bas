@@ -12,7 +12,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const TRANSLATION_SHEET As String = "CacheTranslationFixture"
 
 Private Assert As CustomTest
-Private Cache As IDiseaseTranslationCache
+Private Cache As DiseaseTranslationCache
 Private Translations As TranslationObject
 
 '@section Module lifecycle

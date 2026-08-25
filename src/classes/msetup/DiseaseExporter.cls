@@ -115,7 +115,7 @@ Public Function BuildDiseaseWorkbook(ByVal diseaseWksh As Worksheet, _
     Dim choicesSheet As Worksheet
     Dim translationsSheet As Worksheet
     Dim diseaseTable As ListObject
-    Dim headerCache As IDiseaseTranslationCache
+    Dim headerCache As DiseaseTranslationCache
     Dim guardStarted As Boolean
 
     ValidateDiseaseInputs diseaseWksh, diseaseName, languageTag
@@ -423,7 +423,7 @@ End Function
 '@sub-title Populate choices sheet translating headers when available.
 Private Sub PopulateChoices(ByVal choicesSheet As Worksheet, _
                             ByVal diseaseTable As ListObject, _
-                            ByVal headerCache As IDiseaseTranslationCache)
+                            ByVal headerCache As DiseaseTranslationCache)
 
     Dim choiceRows As Collection
     Dim choiceMatrix As Variant
@@ -666,7 +666,7 @@ Private Function CollectionToMatrix(ByVal rows As Collection, ByVal columnCount 
 End Function
 
 '@sub-title Translate headers when the translation object is provided.
-Private Function TranslateHeader(ByVal cache As IDiseaseTranslationCache, _
+Private Function TranslateHeader(ByVal cache As DiseaseTranslationCache, _
                                  ByVal key As String, _
                                  ByVal fallback As String) As String
     If cache Is Nothing Then
