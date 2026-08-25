@@ -218,13 +218,20 @@ Public Sub ModuleInitialize()
     SetupError = 0
     SetupMessage = vbNullString
 
+    'The four steps are read one at a time. Read once at the end, the
+    'answer was whatever Err held by then, and every `On Error` statement
+    'inside a later call clears Err: a build that raised on its first step
+    'reported SetupError = 0, FixtureReady called the fixture ready, and
+    'every test then ran against a workbook carrying no data entry table.
     On Error Resume Next
         BuildFixture
+        NoteSetupStep "BuildFixture"
         BuildBothSheets
+        NoteSetupStep "BuildBothSheets"
         OpenTheBuiltSheets
+        NoteSetupStep "OpenTheBuiltSheets"
         Set Sut = EventLinelist.Create(OutWkb)
-        SetupError = Err.Number
-        SetupMessage = Err.Description
+        NoteSetupStep "EventLinelist.Create"
     On Error GoTo 0
 
     'A build freezes the panes of the sheet it wrote, and freezing them
@@ -413,6 +420,21 @@ End Sub
 Private Sub OpenTheBuiltSheets()
     Guard.UnProtect OutWkb.Worksheets(VLIST_SHEET)
     Guard.UnProtect OutWkb.Worksheets(HLIST_SHEET)
+End Sub
+
+'@sub-title Keep the first setup failure, naming the step that raised it.
+'@details
+'Called after every step of the build while On Error Resume Next is on.
+'The first failure is the one that matters: the steps after it run on a
+'workbook the failed step never finished.
+'@param stepName String. The step just run.
+Private Sub NoteSetupStep(ByVal stepName As String)
+    If SetupError <> 0 Then Exit Sub
+    If Err.Number = 0 Then Exit Sub
+
+    SetupError = Err.Number
+    SetupMessage = stepName & " - " & Err.Description
+    Err.Clear
 End Sub
 
 '@fun-title Report a fixture that could not be built, once per test.

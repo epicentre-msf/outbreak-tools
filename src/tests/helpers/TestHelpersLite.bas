@@ -38,6 +38,31 @@ Private Const VBEXT_CT_STD_MODULE As Long = 1
 Private Const VBEXT_CT_CLASS_MODULE As Long = 2
 Private Const VBEXT_CT_DOCUMENT As Long = 100
 
+'@section Run log
+'===============================================================================
+
+'@label TraceLine
+'@sub-title Append one line to the run log beside the workbook.
+'@details
+'The same file the runner writes its per-module lines into, opened and closed
+'per line so the last line always survives. It is the only account a test can
+'leave of itself when the run dies: an unhandled error opens the VBA error
+'dialog, the results file is never written, and everything the harness held in
+'memory goes with it. A failing write is swallowed, because a trace must never
+'be what stops a run.
+'@param message String. The line to write.
+Public Sub TraceLine(ByVal message As String)
+    Dim fileNum As Integer
+
+    On Error Resume Next
+        fileNum = FreeFile
+        Open ThisWorkbook.Path & Application.PathSeparator & "obt-import.log" _
+            For Append As #fileNum
+        Print #fileNum, message
+        Close #fileNum
+    On Error GoTo 0
+End Sub
+
 '@section Application State
 '===============================================================================
 
@@ -71,7 +96,14 @@ End Sub
 Public Function NewWorkbook() As workbook
     BusyApp
     Set NewWorkbook = Workbooks.Add
-    ActiveWindow.WindowState = xlMinimized
+
+    'The window is left as Excel made it. It used to be minimized to keep the
+    'screen quiet, and a minimized window refuses window work: Window.FreezePanes
+    'answers 1004, and LLDataEntry freezes the header of every data entry sheet
+    'it builds, so the fixtures of TestLLDataEntry and TestEventLinelistSheets
+    'came out with no data entry table and 60 tests failed on a workbook the
+    'build never finished. BusyApp already holds ScreenUpdating off, which is
+    'what keeps the screen quiet.
 End Function
 
 '@label DeleteWorkbook

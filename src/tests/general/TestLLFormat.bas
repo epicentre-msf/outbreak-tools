@@ -555,7 +555,12 @@ Public Sub TestApplyFormatAllAnalysisSheetUsesDesignDimensions()
                      "Worksheet font size should match the design value"
     Assert.AreEqual expectedColumnWidth, tempSheet.Columns(1).ColumnWidth, _
                      "Worksheet column width should match the design value"
-    Assert.AreEqual 25, tempSheet.Rows(2).RowHeight, "Row height for row 2 should match specification"
+    'Excel stores a row height on the pixel grid of the screen, so the 25 the
+    'design writes reads back as 25.1 on some displays. One point of play
+    'covers that and still catches a height that came from another rule.
+    Assert.IsTrue Abs(tempSheet.Rows(2).RowHeight - 25) <= 1, _
+                  "Row height for row 2 should match specification, read " & _
+                  CStr(tempSheet.Rows(2).RowHeight)
 
     TestHelpersLite.DeleteWorksheet "LLFormat_AllAnalysis_Test"
 

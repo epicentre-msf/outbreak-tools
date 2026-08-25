@@ -51,6 +51,12 @@ Private mNameStatus As String
 ' stalls under Apple Events automation.
 Private mHeadlessActive As Boolean
 
+' One log line per test, off by default. The per-module lines are enough to
+' name the module a wedged run died in; turn this on to name the test inside
+' it, then turn it back off. A full run has about 1600 tests, and run-tests.R
+' prints the whole log when a run fails.
+Private Const TRACE_TESTS As Boolean = False
+
 '@sub-title Report whether a headless run is in progress (read by CustomTest.PrintResults).
 Public Function OBTHeadlessActive() As Boolean
     OBTHeadlessActive = mHeadlessActive
@@ -179,9 +185,16 @@ Private Sub RunAllTestModules()
         moduleName = Trim$(CStr(cel.Value))
         If LenB(moduleName) > 0 Then
             mModulesRun = mModulesRun + 1
+            'One line per module, written before the module runs. A run that
+            'dies takes the CSV with it, so the log is the only account of
+            'how far it got. An unhandled error inside a test opens the VBA
+            'error dialog, and a dialog in a hidden Excel waits for a click
+            'that never comes: the last line here names the module holding it.
+            LogRunStep "module " & moduleName
             RunModule moduleName
         End If
     Next cel
+    LogRunStep "all modules run"
 End Sub
 
 '@fun-title Resolve the module-name range from the ModulesForTesting ListObject.
@@ -267,12 +280,34 @@ Private Sub RunModule(ByVal moduleName As String)
 
     RunProc moduleName, "ModuleInitialize"
     For idx = 1 To tests.Count
+        If TRACE_TESTS Then LogRunStep "  test " & CStr(tests.Item(idx))
         RunProc moduleName, "TestInitialize"
         RunProc moduleName, CStr(tests.Item(idx))
         RunProc moduleName, "TestCleanup"
         DoEvents
     Next idx
     RunProc moduleName, "ModuleCleanup"
+    RestoreRunState
+End Sub
+
+'@sub-title Put the run's application state back between two modules.
+'@details
+'OBTRunAllTests sets this state once and a module can leave it somewhere
+'else. EventLinelist.OnWorkbookOpen turns events back on, and TestHelpersLite
+'BusyApp puts back everything except events, so every module after
+'TestEventLinelist ran with sheet handlers live. TestDevelopment then adds and
+'removes components with events firing, and the compile that follows opens the
+'VBA error dialog, which in a headless run waits for a click that never comes.
+'A module owns this state while it runs; the boundary is where the run takes
+'it back.
+Private Sub RestoreRunState()
+    On Error Resume Next
+        Application.EnableEvents = False
+        Application.ScreenUpdating = False
+        Application.DisplayAlerts = False
+        Application.Calculation = xlCalculationManual
+        Err.Clear
+    On Error GoTo 0
 End Sub
 
 '@sub-title Application.Run one procedure, swallowing (and logging) any error so the suite continues.
@@ -282,8 +317,10 @@ Private Sub RunProc(ByVal moduleName As String, ByVal procName As String)
     On Error Resume Next
         Application.Run moduleName & "." & procName
         If Err.Number <> 0 Then
-            Debug.Print "RunProc " & moduleName & "." & procName & " -> " & _
-                        Err.Number & " " & Err.Description
+            'Debug.Print goes to the Immediate window, and a headless run has
+            'nobody looking at it. The log is what a reader gets afterwards.
+            LogRunStep "  " & moduleName & "." & procName & " raised " & _
+                       CStr(Err.Number) & " " & Err.Description
         End If
     On Error GoTo 0
 End Sub

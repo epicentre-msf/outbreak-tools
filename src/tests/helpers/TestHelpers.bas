@@ -45,7 +45,10 @@ End Sub
 Public Function NewWorkbook() As workbook
     BusyApp
     Set NewWorkbook = Workbooks.Add
-    ActiveWindow.WindowState = xlMinimized
+
+    'The window is left as Excel made it, the same as TestHelpersLite. A
+    'minimized window refuses Window.FreezePanes with 1004, and a build that
+    'freezes a header then leaves the sheet half written.
 End Function
 
 '@label DeleteWorkbook

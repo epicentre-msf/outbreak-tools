@@ -683,6 +683,8 @@ End Sub
 '  Zero leaves the columns unsplit.
 Private Sub FreezeHeader(ByVal sh As Worksheet, ByVal splitRow As Long, _
                          Optional ByVal splitColumn As Long = 0)
+    Dim freezeError As Long
+
     On Error Resume Next
         sh.Activate
     On Error GoTo 0
@@ -699,11 +701,28 @@ Private Sub FreezeHeader(ByVal sh As Worksheet, ByVal splitRow As Long, _
         Exit Sub
     End If
 
-    With ActiveWindow
-        .SplitRow = splitRow
-        If splitColumn > 0 Then .SplitColumn = splitColumn
-        .FreezePanes = True
-    End With
+    'A window can refuse the freeze: a minimized one does, and so does a window
+    'in an Excel that is running off screen. Both answer 1004, "Unable to set
+    'the FreezePanes property of the Window class". A frozen header is how the
+    'sheet looks, so a refusal is filed beside the two conditions above and the
+    'build carries on with the sheet it has written. AnalysisOutput answers the
+    'same refusal the same way. A raise here stopped the build on its first
+    'data entry sheet and delivered a linelist with none.
+    freezeError = 0
+    On Error Resume Next
+        With ActiveWindow
+            .SplitRow = splitRow
+            If splitColumn > 0 Then .SplitColumn = splitColumn
+            .FreezePanes = True
+        End With
+        freezeError = Err.Number
+        Err.Clear
+    On Error GoTo 0
+
+    If freezeError <> 0 Then
+        LogInfo "The panes of " & this.sheetName & " were left unfrozen: the " & _
+                "window refused the freeze.", checkingWarning
+    End If
 End Sub
 
 '@label:build-sections

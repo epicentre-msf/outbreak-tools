@@ -56,12 +56,19 @@ Set xlsApp = Nothing
 Set Wkb = Nothing
 
 Set xlsApp = CreateObject("Excel.Application")
-xlsApp.Visible = False
+' Excel comes up on screen for the length of the run, the way the macOS trigger
+' and windows/build-linelist.vbs both leave it. A hidden Excel refuses window
+' work: Window.FreezePanes answers 1004 "Unable to set the FreezePanes property
+' of the Window class", and LLDataEntry.FreezeHeader freezes the header of every
+' data entry sheet, so TestHeadlessLinelistBuild built nothing and reported six
+' failures. Writing a SheetView property goes the same way. This is Excel's own
+' instance, so a workbook the operator has open is untouched.
+xlsApp.Visible = True
 xlsApp.DisplayAlerts = False
 xlsApp.ScreenUpdating = False
 
-' Any failure below leaves Excel running as an invisible orphan that wedges the
-' NEXT run, so trap from here on and always reach the cleanup.
+' Any failure below leaves Excel running as an orphan that wedges the NEXT run,
+' so trap from here on and always reach the cleanup.
 On Error Resume Next
 
 ' The loop MUTATES the workbook (imports components via Development, rebuilds

@@ -394,7 +394,10 @@ Private Sub PaintBar(ByVal ratio As Double)
     totalCells = this.barRange.Cells.Count
     If totalCells = 0 Then Exit Sub
 
-    filledCount = CLng(Fix(ratio * totalCells))
+    'The ratio is a Double, so a product that belongs on a whole number can
+    'come out just under it: 3 of 5 gives 2.9999999999999996 and Fix drops a
+    'cell. Rounding the product first settles it on the whole number.
+    filledCount = CLng(Fix(Round(ratio * totalCells, 9)))
 
     If ratio > 0# And filledCount = 0 Then
         filledCount = 1

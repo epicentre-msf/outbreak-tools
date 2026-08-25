@@ -478,15 +478,26 @@ Public Sub TestSecondStartResetsRecordMarkerAndSheet()
     CustomTestSetTitles Assert, "GenerationLog", "TestSecondStartResetsRecordMarkerAndSheet"
     On Error GoTo Fail
 
+    'The stage carries into the failure line. Five calls sit between the
+    'start of this test and its first assertion, and a bare error number
+    'names none of them.
+    Dim stage As String
+
     'Arrange: a finished first run with one bundle on the sheet
     Dim runLog As GenerationLog
+    stage = "create"
     Set runLog = GenerationLog.Create(FixtureWorkbook)
+    stage = "first start"
     runLog.Start "setup.xlsb", "linelist_v1"
+    stage = "collect"
     runLog.Collect MakeBundle("stale bundle", 1)
+    stage = "finish"
     runLog.Finish "done"
 
     'Act: the re-run
+    stage = "second start"
     runLog.Start
+    stage = "assertions"
 
     'Assert: the record starts over with the bare header
     Assert.AreEqual CLng(1), runLog.RecordLength, _
@@ -506,7 +517,9 @@ Public Sub TestSecondStartResetsRecordMarkerAndSheet()
 
     Exit Sub
 Fail:
-    CustomTestLogFailure Assert, "TestSecondStartResetsRecordMarkerAndSheet", Err.Number, Err.Description
+    CustomTestLogFailure Assert, _
+        "TestSecondStartResetsRecordMarkerAndSheet at " & stage & _
+        " [source " & Err.Source & "]", Err.Number, Err.Description
 End Sub
 
 

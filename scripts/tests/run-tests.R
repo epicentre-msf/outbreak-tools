@@ -48,8 +48,10 @@
 # trigger differs, and the host picks it — macos/run-tests.applescript through
 # osascript, windows/run-tests.vbs through cscript. Both drive the same OBT*
 # entry points in the same order, so a difference in results is a difference in
-# the VBA rather than in the harness. The Windows side has never been run
-# against a real Windows Excel, and the script says so when it picks it.
+# the VBA rather than in the harness. The Windows side runs against a real
+# Windows Excel, and it brings Excel up on screen for the length of the run:
+# a hidden Excel refuses Window.FreezePanes and every other window write with
+# error 1004, which cost the headless suite six failures.
 #
 # The workbook must carry the Development manager + the OBTImport / OBTHeadless
 # modules and the Codes-sheet folder named ranges (ModulesCodes /
@@ -108,8 +110,9 @@ if (!dir.exists(staging)) {
 }
 
 if (on_windows) {
-  message("run-tests.R: NOTE - the Windows trigger has never been run against a ",
-          "real Windows Excel. Read what it reports with that in mind.")
+  message("run-tests.R: NOTE - Excel comes up on screen for the length of the ",
+          "run. It is the trigger's own instance, so anything already open is ",
+          "left alone.")
 }
 if (!file.exists(workbook_src)) stop("run-tests.R: workbook not found: ", workbook_src)
 if (!file.exists(trigger))      stop("run-tests.R: trigger not found: ", trigger)
