@@ -103,7 +103,7 @@ Public Sub ImportFlatFile()
         GoTo CloseSource
     End If
 
-    importedCount = ImportDiseaseBlocks(diseasesSheet)
+    importedCount = ImportMigrationDiseases(sourceBook, ThisWorkbook)
 
     MsgBox "Done! " & importedCount & " disease worksheet(s) imported.", _
            vbInformation + vbOKOnly, "Import"
@@ -118,12 +118,21 @@ End Sub
 '@section Import helpers
 '===============================================================================
 
-'@sub-title Walk the Diseases sheet blocks and import each one.
-Private Function ImportDiseaseBlocks(ByVal diseasesSheet As Worksheet) As Long
+'@sub-title Walk the Diseases sheet blocks of a flat file and import each one.
+'@details Public and fully parameterised so a suite can drive the round trip
+'without a file picker. ImportFlatFile wraps it with the pickers.
+'@param sourceBook Workbook carrying the flat Diseases sheet.
+'@param targetBook Workbook receiving the disease worksheets.
+'@return Long number of disease blocks imported.
+Public Function ImportMigrationDiseases(ByVal sourceBook As Workbook, ByVal targetBook As Workbook) As Long
+    Dim diseasesSheet As Worksheet
     Dim lastColumn As Long
     Dim columnIndex As Long
     Dim diseaseName As String
     Dim languageTag As String
+
+    Set diseasesSheet = FindWorksheet(sourceBook, DISEASES_SHEET)
+    If diseasesSheet Is Nothing Then Exit Function
 
     lastColumn = diseasesSheet.UsedRange.Columns(diseasesSheet.UsedRange.Columns.Count).Column
 
@@ -134,8 +143,8 @@ Private Function ImportDiseaseBlocks(ByVal diseasesSheet As Worksheet) As Long
             languageTag = MasterSetupHelpers.SafeValue(diseasesSheet.Cells(BLOCK_META_ROW, columnIndex + 1).Value)
 
             If LenB(diseaseName) > 0 Then
-                ImportOneDisease diseasesSheet, columnIndex, diseaseName, languageTag
-                ImportDiseaseBlocks = ImportDiseaseBlocks + 1
+                ImportOneDisease diseasesSheet, columnIndex, diseaseName, languageTag, targetBook
+                ImportMigrationDiseases = ImportMigrationDiseases + 1
             End If
         End If
     Next columnIndex
@@ -143,18 +152,19 @@ End Function
 
 '@sub-title Import one column block into a fresh or existing disease sheet.
 Private Sub ImportOneDisease(ByVal diseasesSheet As Worksheet, ByVal startColumn As Long, _
-                             ByVal diseaseName As String, ByVal languageTag As String)
+                             ByVal diseaseName As String, ByVal languageTag As String, _
+                             ByVal targetBook As Workbook)
 
     Dim targetSheet As Worksheet
     Dim stagingTable As ListObject
     Dim manager As DiseaseWorksheetManager
     Dim freshSheet As Boolean
 
-    Set targetSheet = FindWorksheet(ThisWorkbook, diseaseName)
+    Set targetSheet = FindWorksheet(targetBook, diseaseName)
     freshSheet = targetSheet Is Nothing
 
     If freshSheet Then
-        Set targetSheet = BuildDiseaseSheet(diseaseName, languageTag)
+        Set targetSheet = BuildDiseaseSheet(diseaseName, languageTag, targetBook)
     ElseIf Not MasterSetupHelpers.IsMasterDiseaseSheet(targetSheet) Then
         'A sheet of that name that is no disease sheet is left alone.
         Exit Sub
@@ -162,7 +172,7 @@ Private Sub ImportOneDisease(ByVal diseasesSheet As Worksheet, ByVal startColumn
 
     If targetSheet.ListObjects.Count = 0 Then Exit Sub
 
-    Set stagingTable = BuildStagingTable(diseasesSheet, startColumn)
+    Set stagingTable = BuildStagingTable(diseasesSheet, startColumn, targetBook)
     If stagingTable Is Nothing Then Exit Sub
 
     'A fresh sheet takes the block whole; an existing one merges it, with the
@@ -172,20 +182,23 @@ Private Sub ImportOneDisease(ByVal diseasesSheet As Worksheet, ByVal startColumn
                                           priority:=DiseaseImportPriority_Foreign
 
     Set manager = DiseaseWorksheetManager.Create()
-    manager.RemoveWorksheet ThisWorkbook, IMPORT_STAGING_SHEET
+    manager.RemoveWorksheet targetBook, IMPORT_STAGING_SHEET
 End Sub
 
 '@sub-title Build a disease sheet for an imported block.
-Private Function BuildDiseaseSheet(ByVal diseaseName As String, ByVal languageTag As String) As Worksheet
+Private Function BuildDiseaseSheet(ByVal diseaseName As String, ByVal languageTag As String, _
+                                   ByVal targetBook As Workbook) As Worksheet
     Dim builder As DiseaseSheet
     Dim dropdowns As DropdownLists
     Dim languages As BetterArray
 
-    Set dropdowns = MasterSetupHelpers.ResolveMasterDropdowns()
+    Set dropdowns = MasterSetupHelpers.ResolveMasterDropdowns( _
+                    MasterSetupHelpers.ResolveMasterDropdownsSheet(targetBook))
 
-    Set builder = DiseaseSheet.Create(ThisWorkbook, dropdowns, _
-                                      MasterSetupHelpers.ResolveRibbonTranslations(), _
-                                      MasterSetupHelpers.ResolveMasterSetupVariables())
+    Set builder = DiseaseSheet.Create(targetBook, dropdowns, _
+                                      MasterSetupHelpers.ResolveRibbonTranslations(targetBook), _
+                                      MasterSetupHelpers.ResolveMasterSetupVariables( _
+                                      MasterSetupHelpers.ResolveMasterVariablesSheet(targetBook)))
 
     'A language the target file does not carry falls back to the default.
     Set languages = dropdowns.Values(LANGUAGES_DROPDOWN)
@@ -197,7 +210,8 @@ Private Function BuildDiseaseSheet(ByVal diseaseName As String, ByVal languageTa
 End Function
 
 '@sub-title Copy one block into a staging sheet and answer its ListObject.
-Private Function BuildStagingTable(ByVal diseasesSheet As Worksheet, ByVal startColumn As Long) As ListObject
+Private Function BuildStagingTable(ByVal diseasesSheet As Worksheet, ByVal startColumn As Long, _
+                                   ByVal targetBook As Workbook) As ListObject
     Dim stagingSheet As Worksheet
     Dim manager As DiseaseWorksheetManager
     Dim rowCount As Long
@@ -208,9 +222,9 @@ Private Function BuildStagingTable(ByVal diseasesSheet As Worksheet, ByVal start
     If rowCount = 0 Then Exit Function
 
     Set manager = DiseaseWorksheetManager.Create()
-    manager.RemoveWorksheet ThisWorkbook, IMPORT_STAGING_SHEET
+    manager.RemoveWorksheet targetBook, IMPORT_STAGING_SHEET
 
-    Set stagingSheet = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+    Set stagingSheet = targetBook.Worksheets.Add(After:=targetBook.Worksheets(targetBook.Worksheets.Count))
     stagingSheet.Name = IMPORT_STAGING_SHEET
     stagingSheet.Visible = xlSheetHidden
 
