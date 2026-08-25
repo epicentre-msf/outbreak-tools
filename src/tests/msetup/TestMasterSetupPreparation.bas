@@ -45,6 +45,37 @@ Public Sub ModuleCleanup()
 End Sub
 
 
+'@section Legacy adoption
+'===============================================================================
+'@TestMethod("MasterSetupPreparation")
+Public Sub TestPrepareAdoptsLegacyDiseaseSheets()
+    CustomTestSetTitles Assert, "MasterSetupPreparation", "TestPrepareAdoptsLegacyDiseaseSheets"
+
+    Dim legacySheet As Worksheet
+    Dim store As HiddenNames
+
+    On Error GoTo Fail
+
+    Set legacySheet = EnsureWorksheet("LegacyDisease", FixtureWorkbook)
+    legacySheet.Cells(2, 2).Value = "ENG"
+    legacySheet.Cells(2, 3).Value = "DISSHEET004"
+    legacySheet.Cells(2, 4).Value = "DISSHEET"
+
+    Subject.Prepare
+
+    Set store = HiddenNames.Create(legacySheet)
+    Assert.AreEqual "disease", store.ValueAsString("sheetTag"), "The legacy marker should become the hidden tag"
+    Assert.AreEqual "ENG", store.ValueAsString("__Var_DISLANG"), "The language should move into the hidden names"
+    Assert.AreEqual "DISSHEET004", store.ValueAsString("__Var_DISCODE"), "The code should move into the hidden names"
+    Assert.AreEqual 4&, store.ValueAsLong("__Var_DISINDEX", 0), "The index should parse off the code"
+    Assert.AreEqual vbNullString, CStr(legacySheet.Cells(2, 4).Value), "The marker cell should retire"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestPrepareAdoptsLegacyDiseaseSheets", Err.Number, Err.Description
+End Sub
+
 '@section Test lifecycle
 '===============================================================================
 '@TestInitialize

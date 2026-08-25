@@ -55,6 +55,18 @@ Private Const STATUS_INACTIVE As String = "inactive"
 
 Private Const DISEASE_TAG_VALUE As String = "disease"
 
+'The old master setup tagged a disease sheet with marker cells; those sheets
+'are adopted into hidden names once, when the workbook is prepared.
+Private Const LEGACY_MARKER_ROW As Long = 2
+Private Const LEGACY_MARKER_COLUMN As Long = 4
+Private Const LEGACY_CODE_COLUMN As Long = 3
+Private Const LEGACY_LANGUAGE_COLUMN As Long = 2
+Private Const LEGACY_MARKER_VALUE As String = "DISSHEET"
+Private Const NAME_DISNAME As String = "__Var_DISNAME"
+Private Const NAME_DISLANG As String = "__Var_DISLANG"
+Private Const NAME_DISCODE As String = "__Var_DISCODE"
+Private Const NAME_DISINDEX As String = "__Var_DISINDEX"
+
 
 Private Const VARIABLE_TABLE_STYLE As String = "TableStyleMedium2"
 
@@ -99,6 +111,10 @@ Public Sub Prepare(Optional ByVal excelApplication As Application)
 
     Set scope = ApplicationState.Create(excelApplication)
     scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
+
+    'The legacy sheets adopt their hidden tags first, so the diseases
+    'dropdown rebuild sees them.
+    AdoptLegacyDiseaseSheets
 
     EnsureDropdowns
     EnsureVariables
@@ -427,6 +443,48 @@ Private Sub RefreshDiseasesDropdown(ByVal drop As DropdownLists)
 
     drop.Update names, DISEASES_DROPODWN
 End Sub
+
+'@Description("Adopt legacy disease sheets: their cell tags move into hidden names.")
+Private Sub AdoptLegacyDiseaseSheets()
+    Dim sh As Worksheet
+    Dim store As HiddenNames
+    Dim marker As Variant
+    Dim codeValue As String
+
+    For Each sh In EnsureWorkbook.Worksheets
+        If Not SheetCarriesDiseaseTag(sh) Then
+            marker = sh.Cells(LEGACY_MARKER_ROW, LEGACY_MARKER_COLUMN).Value
+            If Not IsError(marker) Then
+                If StrComp(CStr(marker), LEGACY_MARKER_VALUE, vbTextCompare) = 0 Then
+                    codeValue = Trim$(CStr(sh.Cells(LEGACY_MARKER_ROW, LEGACY_CODE_COLUMN).Value))
+
+                    Set store = HiddenNames.Create(sh)
+                    store.EnsureName SHEET_TAG_NAME, DISEASE_TAG_VALUE, HiddenNameTypeString
+                    store.EnsureName NAME_DISNAME, sh.Name, HiddenNameTypeString
+                    store.EnsureName NAME_DISLANG, _
+                                     Trim$(CStr(sh.Cells(LEGACY_MARKER_ROW, LEGACY_LANGUAGE_COLUMN).Value)), _
+                                     HiddenNameTypeString
+                    store.EnsureName NAME_DISCODE, codeValue, HiddenNameTypeString
+                    store.EnsureName NAME_DISINDEX, LegacyIndexOf(codeValue), HiddenNameTypeLong
+
+                    'The two tag cells retire. A protected sheet may refuse
+                    'the clear, and the adopted names stand either way.
+                    On Error Resume Next
+                        sh.Cells(LEGACY_MARKER_ROW, LEGACY_CODE_COLUMN).Value = vbNullString
+                        sh.Cells(LEGACY_MARKER_ROW, LEGACY_MARKER_COLUMN).Value = vbNullString
+                    On Error GoTo 0
+                End If
+            End If
+        End If
+    Next sh
+End Sub
+
+'@Description("Parse the numeric index off a legacy disease code.")
+Private Function LegacyIndexOf(ByVal codeValue As String) As Long
+    If Len(codeValue) > Len(LEGACY_MARKER_VALUE) Then
+        LegacyIndexOf = CLng(Val(Mid$(codeValue, Len(LEGACY_MARKER_VALUE) + 1)))
+    End If
+End Function
 
 '@Description("Answer whether a worksheet carries the hidden disease tag.")
 Private Function SheetCarriesDiseaseTag(ByVal targetSheet As Worksheet) As Boolean
