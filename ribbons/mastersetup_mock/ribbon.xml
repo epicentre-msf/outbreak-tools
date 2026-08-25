@@ -2,34 +2,25 @@
     <ribbon startFromScratch="false">
         <tabs>
             <tab id="customTab" label="OutbreakTools">
-                <group id="customGroupManage" getLabel="LangLabel">
-                    <button id="btnAdd" getLabel="LangLabel" imageMso="QueryShowTable" size="large" onAction="clickAddRows"/>
-                    <button id="btnRes" getLabel="LangLabel" imageMso="SheetRowsDelete" size="large" onAction="clickResize"/>
-                    <button id="btnFilt" getLabel="LangLabel" imageMso="FilterClearAllFilters" size="large" onAction="clickFilters"/>
-                    <button id="btnSortTab" getLabel="LangLabel" image="sort" size="large" onAction="clickSortTable"/>
-                    <button id="btnInsertRow" getLabel="LangLabel" image="insertrow" size="large" onAction="clickInsertRow"/>
-                    <button id="btnDelLoRow" getLabel="LangLabel" image="dellorows" size="large" onAction="clickDelLoRows"/>
+                <group id="customGroupManage" label="Manage">
+                    <button id="btnAdd" label="Add Rows" imageMso="QueryShowTable" size="large" onAction="clickAddRows"/>
+                    <button id="btnRes" label="Resize Tables" imageMso="SheetRowsDelete" size="large" onAction="clickResize"/>
+                    <button id="btnFilt" label="Clear Filters" imageMso="FilterClearAllFilters" size="large" onAction="clickFilters"/>
+                    <button id="btnSortTab" label="Sort Tables" image="sort" size="large" onAction="clickRibbonSortTable"/>
                 </group>
-                <group id="customGroupDisease" getLabel="LangLabel">
-                    <button id="btnAddSheet" getLabel="LangLabel" image="addsheet" size="large" onAction="clickAddSheet"/>
-                    <button id="btnRemSheet" getLabel="LangLabel" imageMso="ClearGrid" size="normal" onAction="clickRemSheet"/>
-                    <button id="btnClear" getLabel="LangLabel" imageMso="ClearAll" size="normal" onAction="clickClearSheet"/>
+                <group id="customGroupDisease" label="Diseases">
+                    <button id="btnAddSheet" label="New Disease" image="addsheet" size="large" onAction="clickAddSheet"/>
+                    <button id="btnRemSheet" label="Remove Disease" imageMso="ClearGrid" size="normal" onAction="clickRemSheet"/>
+                    <button id="btnClear" label="Clear Disease" imageMso="ClearAll" size="normal" onAction="clickClearSheet"/>
                 </group>
-                <group id="customGroupTrans" getLabel="LangLabel">
-                    <button id="btnTransAdd" image="translation" getLabel="LangLabel" size="large" onAction="clickAddTrans"/>
-                    <editBox id="editLang" getLabel="LangLabel" imageMso="translationPane" onChange="clickAddLang"/>
-                    <dropDown id = "langDrop" onAction="clickLangChange" getLabel = "LangLabel">
-                        <item id = "FRA" label = "Français"/>
-                        <item id = "ENG" label = "English"/>
-                        <item id = "ARA" label = "عربى"/>
-                        <item id = "SPA" label = "Español"/>
-                        <item id = "POR" label = "Portugués"/>
-                    </dropDown>
+                <group id="customGroupTrans" label="Translations">
+                    <button id="btnTransAdd" image="translation" label="Update Translations" size="large" onAction="clickAddTrans"/>
+                    <editBox id="editLang" label="Add Language" imageMso="translationPane" onChange="clickAddLang"/>
                 </group>
-                <group id="customGroupAdv" getLabel="LangLabel">
-                    <button id="btnExp" getLabel="LangLabel" image="anaexport" size="large" onAction="clickExpSheet"/>
-                    <button id="btnExpMig" getLabel="LangLabel" imageMso="GridSettings" size="normal" onAction="clickExp"/>
-                    <button id="btnImpMig" getLabel="LangLabel" imageMso="GridSettings" size="normal" onAction="clickImp"/>
+                <group id="customGroupAdv" label="Exports">
+                    <button id="btnExp" label="Export To Setup" image="anaexport" size="large" onAction="clickExpSheet"/>
+                    <button id="btnExpMig" label="Export For Migration" imageMso="GridSettings" size="normal" onAction="clickExp"/>
+                    <button id="btnImpMig" label="Import Migration File" imageMso="GridSettings" size="normal" onAction="clickImp"/>
                 </group>
                 <group id="customGroupDev" label="Dev" getVisible="DevGroupVisible">
                     <button id="btnInit" label="Initialize" image="initialise" size="large" onAction="clickDevInitialize"/>
