@@ -37,6 +37,9 @@ Private Const DROPDOWN_SHEET_NAME As String = "__dropdowns"
 
 Private Const VARIABLES_SHEET_NAME As String = "Variables"
 Private Const TRANSLATIONS_SHEET_NAME As String = "Translations"
+Private Const CHOICES_SHEET_NAME As String = "Choices"
+Private Const CHOICES_START_ROW As Long = 4
+Private Const CHOICES_START_COLUMN As Long = 1
 Private Const DEFAULT_VARIABLE_TABLE_NAME As String = "Tab_MasterVariables"
 Private Const DROPDOWN_PREFIX As String = "dropdown_"
 Private Const LANGUAGES_DROPDOWN As String = "__data_languages"
@@ -135,6 +138,7 @@ Public Sub EnsureDropdowns()
     Next idx
 
     RefreshLanguageDropdowns drop
+    RefreshChoicesDropdown drop
     EnsureSheetTag ResolveWorksheet(CHOICES_SHEET_NAME), "choices"
 End Sub
 
@@ -367,6 +371,30 @@ End Function
 Private Function DefaultConfigSheets() As Variant
     DefaultConfigSheets = Array("Dev", "__pass", "__updated", "__compRep", "__ribbonTranslation", "__dropdowns")
 End Function
+
+'@Description("Populate the choices dropdown from the list names of the Choices sheet.")
+Private Sub RefreshChoicesDropdown(ByVal drop As DropdownLists)
+    Dim wsChoices As Worksheet
+    Dim choices As LLChoices
+    Dim names As BetterArray
+
+    If drop Is Nothing Then Exit Sub
+
+    Set wsChoices = ResolveWorksheet(CHOICES_SHEET_NAME)
+    If wsChoices Is Nothing Then Exit Sub
+
+    'A Choices sheet still missing its headers answers nothing to read; the
+    'placeholder list stays until the sheet is filled.
+    On Error Resume Next
+        Set choices = LLChoices.Create(wsChoices, CHOICES_START_ROW, CHOICES_START_COLUMN)
+        Set names = choices.AllChoices
+    On Error GoTo 0
+
+    If names Is Nothing Then Exit Sub
+    If names.Length = 0 Then Exit Sub
+
+    EnsureDropdownHasValues drop, CHOICES_DROPDOWN, names
+End Sub
 
 '@Description("Ensure a dropdown definition exists with the supplied values.")
 Private Sub EnsureDropdownDefinition(ByVal drop As DropdownLists, _
