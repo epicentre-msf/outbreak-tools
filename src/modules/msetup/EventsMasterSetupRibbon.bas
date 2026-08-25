@@ -391,6 +391,45 @@ Handler:
 End Sub
 
 
+'@Description("Import passwords from an external workbook, like in the designer.")
+'@EntryPoint
+Public Sub clickMsImpPass(ByRef ribbonControl As IRibbonControl)
+    Dim io As OSFiles
+    Dim importBook As Workbook
+    Dim importer As Passwords
+    Dim target As Passwords
+    Dim scope As ApplicationState
+    Dim passSheet As Worksheet
+
+    Set io = OSFiles.Create()
+    io.LoadFile "*.xlsx"
+    If Not io.HasValidFile() Then Exit Sub
+
+    On Error GoTo Cleanup
+    Set scope = ApplicationState.Create(Application)
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+
+    Set passSheet = MasterSetupHelpers.ResolveMasterPasswordsSheet()
+    If passSheet Is Nothing Then Err.Raise ProjectError.ElementNotFound, "clickMsImpPass", "Passwords sheet '" & PASSWORD_SHEET_NAME & "' was not found."
+
+    Set importBook = Workbooks.Open(io.File(), ReadOnly:=False)
+    Set importer = Passwords.Create(importBook.Worksheets(1))
+    Set target = Passwords.Create(passSheet)
+    target.ImportFrom importer
+
+    MsgBox "Done!", vbInformation + vbOKOnly, "Passwords"
+
+Cleanup:
+    If Not importBook Is Nothing Then importBook.Close saveChanges:=False
+    If Not scope Is Nothing Then scope.Restore
+    If Err.Number <> 0 Then
+        Debug.Print "clickMsImpPass: "; Err.Number; Err.Description
+        MsgBox "Unable to import passwords: " & Err.Description, vbExclamation + vbOKOnly, "Passwords"
+        Err.Clear
+    End If
+End Sub
+
+
 '@section Advanced group callbacks
 '===============================================================================
 '@Description("Export the current disease worksheet to a standalone setup workbook.")
