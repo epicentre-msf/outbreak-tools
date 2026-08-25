@@ -164,9 +164,13 @@ analyze() {
   return $rc
 }
 
+# GNU stat is tried first and its success is tested on the value, not on the
+# pipeline: GNU stat reads -f as 'filesystem status', so probing the BSD form
+# first succeeds everywhere and prints a filesystem dump instead of a date.
 file_time() {
-  stat -f '%Sm' -t '%Y-%m-%d %H:%M' "$1" 2>/dev/null && return 0
-  stat -c '%y' "$1" 2>/dev/null | cut -c1-16
+  local t
+  t=$(stat -c '%y' "$1" 2>/dev/null) && { printf '%s' "${t:0:16}"; return 0; }
+  stat -f '%Sm' -t '%Y-%m-%d %H:%M' "$1" 2>/dev/null
 }
 
 # --- report ------------------------------------------------------------------

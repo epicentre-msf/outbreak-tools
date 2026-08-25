@@ -18,6 +18,13 @@ PATHS=( src/bin .mock ribbons/_ribbontemplate_main.xlsb ribbons/_ribbontemplate_
 
 command -v gh >/dev/null 2>&1 || { echo "ERROR: gh CLI not found (brew install gh)." >&2; exit 1; }
 
+# Nothing leaves this machine until the binaries and the sources agree: no 2010
+# ribbon envelope, ribbon plumbing intact, the ribbons under ribbons/ identical to
+# the ones inside the workbooks, and no hand-imported class trailing its .cls.
+# preflight.sh rewrites nothing unless every one of those passes. RELEASING.md §2.
+bash scripts/release/preflight.sh
+echo
+
 TMPD="$(mktemp -d)"; trap 'rm -rf "$TMPD"' EXIT
 BUNDLE="$TMPD/$BUNDLE_NAME"
 

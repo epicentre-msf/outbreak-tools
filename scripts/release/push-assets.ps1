@@ -13,6 +13,18 @@ $Paths  = @("src/bin", ".mock", "ribbons/_ribbontemplate_main.xlsb", "ribbons/_r
 
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { throw "gh CLI not found." }
 
+# Nothing leaves this machine until the binaries and the sources agree: no 2010
+# ribbon envelope, ribbon plumbing intact, the ribbons under ribbons/ identical to
+# the ones inside the workbooks, and no hand-imported class trailing its .cls.
+# preflight.sh rewrites nothing unless every one of those passes. RELEASING.md §2.
+# It stays one bash script rather than two: the ribbon tools it drives are bash.
+if (-not (Get-Command bash -ErrorAction SilentlyContinue)) {
+  throw "bash not found — the release preflight (scripts/release/preflight.sh) needs it."
+}
+bash scripts/release/preflight.sh
+if ($LASTEXITCODE -ne 0) { throw "preflight failed — nothing was pushed." }
+Write-Host ""
+
 # PowerShell hands tar the literal argument, so a wildcard entry is expanded here.
 $existing = @()
 foreach ($p in $Paths) {

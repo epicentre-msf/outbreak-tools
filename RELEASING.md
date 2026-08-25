@@ -55,12 +55,59 @@ and the two `ribbons/_ribbontemplate_*.xlsb`.
 
 | Task | Command | What it does |
 |------|---------|--------------|
-| Publish your binaries off-git | `bash scripts/release/push-assets.sh` | bundles the paths above → uploads (`--clobber`). Creates the release on first run, then triggers `dev-latest.yml` so the dev pre-release picks the new binaries up. |
+| Publish your binaries off-git | `bash scripts/release/push-assets.sh` | runs the **preflight** below, then bundles the paths above → uploads (`--clobber`). Creates the release on first run, then triggers `dev-latest.yml` so the dev pre-release picks the new binaries up. |
 | Restore binaries (new machine / CI) | `bash scripts/release/pull-assets.sh` | downloads the bundle → extracts into `src/bin/`, `.mock/`, and the ribbon templates. |
 
 Windows: use the `.ps1` twins. Both need the `gh` CLI authenticated with write
 access to the repo. Set `OBT_SKIP_DEV_REFRESH=1` to publish binaries without
 republishing the dev build.
+
+### The preflight
+
+`push-assets.sh` (and its `.ps1` twin) runs `scripts/release/preflight.sh` first and
+**uploads nothing if it fails**. It is the one place that catches a binary and its
+sources disagreeing, because once the `.xlsb` is in the store nothing in git can tell
+you which side was right. In order:
+
+| # | Check | Fails when |
+|---|-------|-----------|
+| 1 | envelope | a bundled workbook carries a `customUI14` part (conventions.md §11) |
+| 2 | plumbing | `ribbon-doctor.sh` prints a `FAIL` for a workbook that has a ribbon |
+| 3 | ribbons | a workbook's `customUI` or an icon differs, **byte for byte**, from the folder under `ribbons/` that holds it |
+| 4 | imports | `mock-import-drift.sh` finds a hand-imported class or module that no longer matches its `.cls`/`.bas` |
+| 5 | rebuild | — writes, does not check: the `ribbons/` sources are re-read out of the workbooks |
+
+Steps 1–4 only read. Step 5 runs only once all four are green, so an aborted push
+leaves the tree exactly as it found it. Run the checks on their own with
+`bash scripts/release/preflight.sh --check`, which stops after step 4.
+
+Step 3 is where drift actually shows up, and it is byte-exact on purpose —
+`.gitattributes` marks `ribbons/**/ribbon.xml` as `-text` so the file in git is the
+customUI part as it sits inside the workbook. (The *report* is normalised with
+`--strip-trailing-cr`, because a customUI part can mix CRLF and LF and GNU diff then
+calls every line changed; when that is the only difference the check says so.) The
+pairing is a table at the top of `sync-ribbons.sh` rather than a name rule, because a
+folder is named after its ribbon, not its workbook: `.mock/setup_mock.xlsb` and
+`src/bin/setup/setup_dev.xlsb` are two copies of the one ribbon in `ribbons/setup`.
+Each mock workbook is checked, and so is the dev twin copied from it, so a dev build
+trailing its mock cannot reach the store. `.mock/cleanDesignerMockFile.xlsb` is left
+out: it is a stripped designer kept for rebuilds, not a shipped ribbon source.
+
+When step 3 fails, decide which side is right and make them agree:
+
+```sh
+# the folder is ahead (a ribbon edited as text)
+scripts/devtools/ribbon-pack.sh <folder> --out <workbook> --overwrite
+
+# the workbook is ahead (a ribbon edited in Excel / OfficeRibbonX)
+scripts/devtools/ribbon-extract.sh <workbook> --out-dir ribbons --overwrite
+```
+
+A dev workbook trailing its mock is not a ribbon edit at all — run the `update … dev`
+tasks to recopy it.
+
+`src/tests/.input` is bundled but exempt from every check: those are frozen fixtures,
+and an old setup is *supposed* to still carry an old ribbon envelope.
 
 **Daily flow:** edit in Excel → save to `.mock/` → run the `update … dev/main` VS Code
 tasks (`update_files.R`) to populate `src/bin/` → `push-assets` to publish. On another
@@ -216,6 +263,8 @@ how `release.yml` and `dev-latest.yml` refresh the page). Test it offline with
 |------|------|
 | `CHANGELOG.md` | release log; its top semantic version drives releases |
 | `scripts/release/push-assets.{sh,ps1}` | publish working binaries to the asset store, then refresh `dev-latest` |
+| `scripts/release/preflight.sh` | the gate push-assets runs first; uploads nothing if it fails |
+| `scripts/release/sync-ribbons.sh` | preflight steps 3 and 5: ribbons byte-compared, then rebuilt from the workbooks |
 | `scripts/release/pull-assets.{sh,ps1}` | restore working binaries from the asset store |
 | `scripts/release/build-release-zip.sh` | assemble `OBT-{branch}-{version}.zip` |
 | `scripts/release/backfill-legacy.sh` | one-time: upload old `releases/old/*.zip` to `legacy-archive` |
