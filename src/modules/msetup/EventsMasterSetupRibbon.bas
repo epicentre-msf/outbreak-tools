@@ -391,6 +391,60 @@ Handler:
 End Sub
 
 
+'@Description("Delete one language column from the translations table.")
+'@EntryPoint
+Public Sub clickRemLang(ByRef ribbonControl As IRibbonControl, ByRef text As String)
+    Dim scope As ApplicationState
+    Dim translationsSheet As Worksheet
+    Dim translationsTable As ListObject
+    Dim manager As SetupTranslationsTable
+    Dim passManager As Passwords
+
+    text = Trim$(text)
+    If LenB(text) = 0 Then Exit Sub
+
+    Set translationsSheet = MasterSetupHelpers.ResolveMasterTranslationsSheet()
+    If translationsSheet Is Nothing Then Exit Sub
+
+    On Error Resume Next
+        Set translationsTable = translationsSheet.ListObjects(TRANSLATIONS_TABLE_NAME)
+    On Error GoTo 0
+    If translationsTable Is Nothing Then Exit Sub
+
+    If MsgBox("Remove language: " & text, vbYesNo + vbQuestion, "Confirm") <> vbYes Then Exit Sub
+
+    On Error GoTo Handler
+
+    Set scope = ApplicationState.Create(Application)
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+
+    Set passManager = MasterSetupHelpers.ResolveMasterPasswords()
+    If passManager Is Nothing Then Err.Raise ProjectError.ElementNotFound, "clickRemLang", "Passwords sheet '" & PASSWORD_SHEET_NAME & "' was not found."
+
+    passManager.UnProtect TRANSLATIONS_SHEET_NAME
+    Set manager = SetupTranslationsTable.Create(translationsTable)
+    manager.RemoveLanguage text
+    passManager.Protect TRANSLATIONS_SHEET_NAME
+
+    MsgBox "Done!", vbInformation + vbOKOnly, "Confirm"
+
+    RefreshDropdownCaches
+    ResetMasterSetupFunctionCaches
+
+Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Restore
+    'would come straight back to this label and raise again.
+    On Error Resume Next
+    If Not scope Is Nothing Then scope.Restore
+    Exit Sub
+
+Handler:
+    Debug.Print "clickRemLang: "; Err.Number; Err.Description
+    MsgBox "Unable to remove the language column: " & Err.Description, vbCritical + vbOKOnly, "Confirm"
+    If Not passManager Is Nothing Then passManager.Protect TRANSLATIONS_SHEET_NAME
+    Resume Cleanup
+End Sub
+
 '@Description("Import passwords from an external workbook, like in the designer.")
 '@EntryPoint
 Public Sub clickMsImpPass(ByRef ribbonControl As IRibbonControl)
