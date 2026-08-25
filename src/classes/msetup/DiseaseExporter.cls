@@ -5,16 +5,19 @@ END
 Attribute VB_Name = "DiseaseExporter"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = False
+Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Creates workbook exports for disease dictionaries and migration bundles"
 
+'@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Creates workbook exports for disease dictionaries and migration bundles")
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IDiseaseExporter
+
+'DiseaseExporter.cls without interface -- single implementation, no test fake,
+'no compile cycle (see project-rules.md 4.4).
 
 '@section Constants
 '===============================================================================
@@ -66,20 +69,15 @@ Private this As TDiseaseExporter
 '@sub-title Instantiate a DiseaseExporter with its dependencies configured.
 '@param workbookManager DiseaseExportWorkbook providing workbook lifecycle handling.
 '@param appGuard ApplicationState maintaining Application toggles.
-'@return IDiseaseExporter ready to generate exports.
+'@return DiseaseExporter ready to generate exports.
 Public Function Create(ByVal workbookManager As DiseaseExportWorkbook, _
-                       ByVal appGuard As ApplicationState) As IDiseaseExporter
+                       ByVal appGuard As ApplicationState) As DiseaseExporter
 
-    With New DiseaseExporter
-        .Initialise workbookManager, appGuard
-        Set Create = .Self
-    End With
+    Dim exporter As DiseaseExporter
+    Set exporter = New DiseaseExporter
+    exporter.Initialise workbookManager, appGuard
+    Set Create = exporter
 End Function
-
-'@sub-title Return the current instance as its interface.
-Public Property Get Self() As IDiseaseExporter
-    Set Self = Me
-End Property
 
 '@section Configuration
 '===============================================================================
@@ -730,26 +728,3 @@ End Function
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
     Err.Raise errNumber, "DiseaseExporter", errMessage
 End Sub
-
-'@section Interface
-'===============================================================================
-
-Private Sub IDiseaseExporter_Initialise(ByVal workbookManager As DiseaseExportWorkbook, ByVal appGuard As ApplicationState)
-    Initialise workbookManager, appGuard
-End Sub
-
-Private Function IDiseaseExporter_BuildDiseaseWorkbook(ByVal diseaseWksh As Worksheet, ByVal translationTable As ListObject, ByVal ribbonTranslations As TranslationObject, ByVal diseaseName As String, ByVal languageTag As String, Optional ByVal diseaseCode As String = vbNullString) As Workbook
-    Set IDiseaseExporter_BuildDiseaseWorkbook = BuildDiseaseWorkbook(diseaseWksh, translationTable, ribbonTranslations, diseaseName, languageTag, diseaseCode)
-End Function
-
-Private Function IDiseaseExporter_ExportDisease(ByVal exportFolder As String, ByVal diseaseWksh As Worksheet, ByVal translationTable As ListObject, ByVal ribbonTranslations As TranslationObject, ByVal diseaseName As String, ByVal languageTag As String, Optional ByVal diseaseCode As String = vbNullString) As String
-    IDiseaseExporter_ExportDisease = ExportDisease(exportFolder, diseaseWksh, translationTable, ribbonTranslations, diseaseName, languageTag, diseaseCode)
-End Function
-
-Private Function IDiseaseExporter_BuildMigrationWorkbook(ByVal sourceWorkbook As Workbook, ByVal diseaseNames As BetterArray) As Workbook
-    Set IDiseaseExporter_BuildMigrationWorkbook = BuildMigrationWorkbook(sourceWorkbook, diseaseNames)
-End Function
-
-Private Function IDiseaseExporter_ExportForMigration(ByVal exportFolder As String, ByVal sourceWorkbook As Workbook, ByVal diseaseNames As BetterArray) As String
-    IDiseaseExporter_ExportForMigration = ExportForMigration(exportFolder, sourceWorkbook, diseaseNames)
-End Function

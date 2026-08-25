@@ -17,7 +17,7 @@ Private Const IMPORT_SHEET As String = "IntegrationImport"
 Private Assert As CustomTest
 Private Builder As IDiseaseSheetBuilder
 Private Importer As DiseaseImporter
-Private Exporter As IDiseaseExporter
+Private Exporter As DiseaseExporter
 Private ExportManager As DiseaseExportWorkbook
 Private AppGuard As ApplicationState
 Private Dropdowns As DropdownLists

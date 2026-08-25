@@ -14,7 +14,7 @@ Private Const TRANSLATION_SHEET As String = "TranslationFixture"
 Private Const RIBBON_SHEET As String = "RibbonFixture"
 
 Private Assert As CustomTest
-Private Exporter As IDiseaseExporter
+Private Exporter As DiseaseExporter
 Private Manager As DiseaseExportWorkbook
 Private Guard As ApplicationState
 Private TempFolder As String
