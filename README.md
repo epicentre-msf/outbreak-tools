@@ -3,9 +3,8 @@
 
 ##  Quickly build a linelist from an excel designer :snail:
 
-[OBT main](https://github.com/epicentre-msf/outbreak-tools/releases/latest/download/OBT-main-latest.zip) ·
-[OBT Dev](https://github.com/epicentre-msf/outbreak-tools/releases/download/dev-latest/OBT-dev-latest.zip) ·
-[Master Setup](https://github.com/epicentre-msf/outbreak-tools-setup/raw/main/releases/latest/disease_setup-latest.xlsb)
+[OBT main](https://github.com/epicentre-msf/outbreak-tools/releases/latest/download/OBT-main-latest.zip) .
+[OBT Dev](https://github.com/epicentre-msf/outbreak-tools/releases/download/dev-latest/OBT-dev-latest.zip)
 </p>
 </div>
 
