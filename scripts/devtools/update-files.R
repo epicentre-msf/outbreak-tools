@@ -103,7 +103,7 @@ update_unit_test <- function() {
   # replace the dev designer
 
   file_copy(
-    here(".mock", "unit_test_mock.xlsb"),
+    here(".mock", "unit_tests_mock.xlsb"),
     here("src", "bin", "test-files", "unit_tests_dev.xlsb"),
     overwrite = TRUE
   )
