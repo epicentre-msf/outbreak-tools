@@ -82,7 +82,7 @@ Public Sub TestAddExportImportRemove()
     Dim summary As IDiseaseImportSummary
     Dim entries As BetterArray
     Dim importTable As ListObject
-    Dim manager As IDiseaseWorksheetManager
+    Dim manager As DiseaseWorksheetManager
 
     On Error GoTo Fail
 
@@ -112,7 +112,7 @@ Public Sub TestAddExportImportRemove()
     Set entries = logger.Entries
     Assert.IsTrue entries.Length >= 3, "Logger should contain multiple entries for merge operations"
 
-    Set manager = New DiseaseWorksheetManager
+    Set manager = DiseaseWorksheetManager.Create()
     Assert.IsTrue manager.RemoveWorksheet(ThisWorkbook, "Alpha"), "Worksheet manager should remove disease sheet"
     Assert.IsFalse WorksheetExists("Alpha"), "Disease worksheet should be removed"
 

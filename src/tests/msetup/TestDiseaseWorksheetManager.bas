@@ -12,7 +12,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const TEMP_SHEET_NAME As String = "DiseaseRemovalFixture"
 
 Private Assert As CustomTest
-Private Manager As IDiseaseWorksheetManager
+Private Manager As DiseaseWorksheetManager
 
 '@section Module lifecycle
 '===============================================================================
@@ -23,7 +23,7 @@ Private Sub ModuleInitialize()
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestDiseaseWorksheetManager"
-    Set Manager = New DiseaseWorksheetManager
+    Set Manager = DiseaseWorksheetManager.Create()
 End Sub
 
 '@ModuleCleanup

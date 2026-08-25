@@ -5,16 +5,28 @@ END
 Attribute VB_Name = "DiseaseWorksheetManager"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = False
+Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Provides safe worksheet removal utilities for disease setup workflows"
 
+'@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Provides safe worksheet removal utilities for disease setup workflows")
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IDiseaseWorksheetManager
+
+'DiseaseWorksheetManager.cls without interface -- single implementation, no
+'test fake, no compile cycle (see project-rules.md 4.4).
+
+'@section Factory
+'===============================================================================
+
+'@sub-title Build a fresh worksheet manager.
+'@return DiseaseWorksheetManager ready to use.
+Public Function Create() As DiseaseWorksheetManager
+    Set Create = New DiseaseWorksheetManager
+End Function
 
 '@section Commands
 '===============================================================================
@@ -112,14 +124,3 @@ End Function
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
     Err.Raise errNumber, "DiseaseWorksheetManager", errMessage
 End Sub
-
-'@section Interface
-'===============================================================================
-
-Private Function IDiseaseWorksheetManager_RemoveWorksheet(ByVal targetBook As Workbook, ByVal sheetName As String) As Boolean
-    IDiseaseWorksheetManager_RemoveWorksheet = RemoveWorksheet(targetBook, sheetName)
-End Function
-
-Private Function IDiseaseWorksheetManager_WorksheetExists(ByVal targetBook As Workbook, ByVal sheetName As String) As Boolean
-    IDiseaseWorksheetManager_WorksheetExists = WorksheetExists(targetBook, sheetName)
-End Function
