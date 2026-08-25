@@ -20,7 +20,7 @@ Private Const VARIABLES_SHEET_NAME As String = "Variables"
 Private Const TRANSLATIONS_SHEET_NAME As String = "Translations"
 Private Const STATUS_DROPDOWN As String = "__var_status"
 Private Const YESNO_DROPDOWN As String = "__yesno"
-Private Const LANGUAGES_DROPDOWN As String = "__languages"
+Private Const LANGUAGES_DROPDOWN As String = "__data_languages"
 Private Const VARIABLE_COLUMN_NAME As String = "__Col__Variables"
 
 
@@ -131,7 +131,7 @@ Public Sub TestPrepareRegistersDropdowns()
 
     Set diseases = Subject.Dropdowns.Values("__diseases_list")
     Assert.IsFalse diseases Is Nothing, "Diseases dropdown should be registered"
-    Assert.IsTrue ContainsValue(diseases, "Variables"), "Diseases dropdown should include core sheets"
+    Assert.IsFalse ContainsValue(diseases, "Variables"), "The diseases list carries tagged sheets alone"
     Exit Sub
 
 Fail:
