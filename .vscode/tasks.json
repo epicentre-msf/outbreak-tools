@@ -217,6 +217,74 @@
             "type": "shell",
             "command": "bash scripts/devtools/show-names.sh ${input:namesKind} ${input:namesArgs}",
             "problemMatcher": []
+        },
+        {
+            "label": "tests: run suite (background)",
+            "type": "shell",
+            "command": "bash scripts/tests/run-tests-bg.sh --build",
+            "group": "test",
+            "problemMatcher": []
+        },
+        {
+            "label": "tests: run suite (background, with options)",
+            "type": "shell",
+            "command": "bash scripts/tests/run-tests-bg.sh ${input:testRunArgs}",
+            "problemMatcher": []
+        },
+        {
+            "label": "headless: build linelist",
+            "type": "shell",
+            "command": "bash scripts/headless/build-linelist.sh",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "headless: build linelist (with options)",
+            "type": "shell",
+            "command": "bash scripts/headless/build-linelist.sh ${input:headlessArgs}",
+            "problemMatcher": []
+        },
+        {
+            "label": "release: push assets",
+            "type": "shell",
+            "command": "bash scripts/release/push-assets.sh",
+            "problemMatcher": []
+        },
+        {
+            "label": "release: push assets (no dev refresh)",
+            "type": "shell",
+            "command": "OBT_SKIP_DEV_REFRESH=1 bash scripts/release/push-assets.sh",
+            "problemMatcher": []
+        },
+        {
+            "label": "release: pull assets",
+            "type": "shell",
+            "command": "bash scripts/release/pull-assets.sh",
+            "problemMatcher": []
+        },
+        {
+            "label": "release: build zip",
+            "type": "shell",
+            "command": "bash scripts/release/build-release-zip.sh ${input:releaseBranch} '${input:releaseVersion}'",
+            "problemMatcher": []
+        },
+        {
+            "label": "release: build site releases page",
+            "type": "shell",
+            "command": "bash scripts/ci/build-releases.sh",
+            "problemMatcher": []
+        },
+        {
+            "label": "release: backfill legacy (dry run)",
+            "type": "shell",
+            "command": "DRY_RUN=yes bash scripts/release/backfill-legacy.sh",
+            "problemMatcher": []
+        },
+        {
+            "label": "release: backfill legacy",
+            "type": "shell",
+            "command": "bash scripts/release/backfill-legacy.sh",
+            "problemMatcher": []
         }
     ],
     "inputs": [
@@ -315,6 +383,34 @@
             "type": "promptString",
             "description": "Extra arguments: --folder=<name>, --folders, --ext, --paths; empty lists every name in the tree",
             "default": "--folder=dataio"
+        },
+        {
+            "id": "testRunArgs",
+            "type": "promptString",
+            "description": "Flags for run-tests-bg.sh: --build (import the sources first), --wait (block until the run ends), --keep, --home=<dir>",
+            "default": "--build --wait"
+        },
+        {
+            "id": "headlessArgs",
+            "type": "promptString",
+            "description": "Overrides for build-linelist.sh, e.g. --setup=<file> --out=<dir> --name=<stem>; --help lists them all",
+            "default": "--help"
+        },
+        {
+            "id": "releaseBranch",
+            "type": "pickString",
+            "description": "Which stream to package: main ships the promoted binaries, dev the _dev ones",
+            "options": [
+                "main",
+                "dev"
+            ],
+            "default": "dev"
+        },
+        {
+            "id": "releaseVersion",
+            "type": "promptString",
+            "description": "Version stamped on the archive: a semantic version for main (e.g. 2.0.0), 'latest' for dev",
+            "default": "latest"
         }
     ]
 }
