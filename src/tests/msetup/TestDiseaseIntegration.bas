@@ -13,15 +13,23 @@ Private Const ANCHOR_SHEET As String = "Variables"
 Private Const DROPDOWN_SHEET As String = "IntegrationDropdown"
 Private Const TRANSLATION_SHEET As String = "IntegrationTranslations"
 Private Const IMPORT_SHEET As String = "IntegrationImport"
+Private Const LANGUAGES_LIST As String = "__data_languages"
+Private Const STATUS_LIST As String = "__var_status"
+Private Const CHOICES_LIST As String = "__lst_choices"
+Private Const PROHIBITED_LIST As String = "__prohibited_diseases_list"
+Private Const DISEASES_LIST As String = "__diseases_list"
+Private Const VARIABLE_NAME_RANGE As String = "__Col__Variables"
+Private Const MARKER_NAME_PREFIX As String = "DISSHEET"
 
 Private Assert As CustomTest
-Private Builder As IDiseaseSheetBuilder
+Private Builder As DiseaseSheet
 Private Importer As DiseaseImporter
 Private Exporter As DiseaseExporter
 Private ExportManager As DiseaseExportWorkbook
 Private AppGuard As ApplicationState
 Private Dropdowns As DropdownLists
 Private RibbonTranslations As TranslationObject
+Private VariablesManager As MasterSetupVariables
 Private TranslationTable As ListObject
 
 '@section Module lifecycle
@@ -53,6 +61,7 @@ Private Sub ModuleCleanup()
     Set AppGuard = Nothing
     Set Dropdowns = Nothing
     Set RibbonTranslations = Nothing
+    Set VariablesManager = Nothing
     Set TranslationTable = Nothing
 End Sub
 
@@ -86,7 +95,7 @@ Public Sub TestAddExportImportRemove()
 
     On Error GoTo Fail
 
-    Set diseaseWksh = Builder.Build("Alpha", 1)
+    Set diseaseWksh = Builder.Build("Alpha")
     Set diseaseTable = diseaseWksh.ListObjects(1)
 
     PopulateDiseaseTable diseaseTable
@@ -104,8 +113,9 @@ Public Sub TestAddExportImportRemove()
 
     Set summary = Importer.MergeDisease(diseaseTable, importTable, True, DiseaseImportPriority_Foreign, logger)
 
-    Assert.AreEqual "LabelAUpdated", diseaseTable.DataBodyRange.Cells(1, 2).Value, "Merge should update existing variable label"
-    Assert.AreEqual "var_d", diseaseTable.DataBodyRange.Cells(3, 1).Value, "Merge should append new variables"
+    Assert.AreEqual "LabelAUpdated", diseaseTable.DataBodyRange.Cells(1, 4).Value, "Merge should update existing variable label"
+    Assert.AreEqual "var_c", diseaseTable.DataBodyRange.Cells(3, 2).Value, "Merge should append new variables"
+    Assert.AreEqual "var_d", diseaseTable.DataBodyRange.Cells(4, 2).Value, "Merge should append every new variable"
     Assert.IsTrue summary.RequiresReport, "Summary should indicate report requirement"
 
     Assert.IsTrue logger.HasEntries, "Logger should capture merge operations"
@@ -128,28 +138,37 @@ End Sub
 Private Sub PrepareEnvironment()
     Dim dropdownSheet As Worksheet
     Dim translationSheet As Worksheet
+    Dim variablesSheet As Worksheet
+    Dim variableTable As ListObject
     Dim data As Variant
 
-    EnsureWorksheet ANCHOR_SHEET
+    Set variablesSheet = EnsureWorksheet(ANCHOR_SHEET)
+    ClearWorksheet variablesSheet
+
+    variablesSheet.Range("A1").Value = "Variable Order"
+    variablesSheet.Range("B1").Value = "Variable Section"
+    variablesSheet.Range("C1").Value = "Variable Name"
+    variablesSheet.Range("B2").Value = "demographics"
+    variablesSheet.Range("C2").Value = "var_a"
+    variablesSheet.Range("B3").Value = "symptoms"
+    variablesSheet.Range("C3").Value = "var_b"
+
+    Set variableTable = variablesSheet.ListObjects.Add(xlSrcRange, variablesSheet.Range("A1:C3"), _
+                                                       XlListObjectHasHeaders:=xlYes)
+    variableTable.Name = "TST_IntegrationVariables"
+
+    Set VariablesManager = MasterSetupVariables.Create(variableTable)
+    RegisterVariableName variableTable
 
     Set dropdownSheet = EnsureWorksheet(DROPDOWN_SHEET)
     ClearWorksheet dropdownSheet
 
-    dropdownSheet.Range("A1").Value = "Languages"
-    dropdownSheet.Range("A2:A4").Value = Application.WorksheetFunction.Transpose(Array("ENG", "FRA", "ESP"))
-    dropdownSheet.Range("B1").Value = "Status"
-    dropdownSheet.Range("B2:B4").Value = Application.WorksheetFunction.Transpose(Array("core", "optional", "hidden"))
-    dropdownSheet.Range("C1").Value = "VarNames"
-    dropdownSheet.Range("C2:C5").Value = Application.WorksheetFunction.Transpose(Array("var_a", "var_b", "var_c", "var_d"))
-    dropdownSheet.Range("D1").Value = "Choices"
-    dropdownSheet.Range("D2:D5").Value = Application.WorksheetFunction.Transpose(Array("choice_age", "choice_fever", "choice_other", "choice_new"))
-
-    AddName "__languages", dropdownSheet.Range("A2:A4")
-    AddName "__var_status", dropdownSheet.Range("B2:B4")
-    AddName "PARAMVARNAME", dropdownSheet.Range("C2:C5")
-    AddName "PARAMCHOICESLIST", dropdownSheet.Range("D2:D5")
-
     Set Dropdowns = DropdownLists.Create(dropdownSheet)
+    AddDropdownList Dropdowns, LANGUAGES_LIST, Array("ENG", "FRA", "ESP")
+    AddDropdownList Dropdowns, STATUS_LIST, Array("core", "optional", "hidden")
+    AddDropdownList Dropdowns, CHOICES_LIST, Array("choice_age", "choice_fever", "choice_other", "choice_new")
+    AddDropdownList Dropdowns, PROHIBITED_LIST, Array("Variables", "Translations")
+    AddDropdownList Dropdowns, DISEASES_LIST, Array("", "")
 
     Set translationSheet = EnsureWorksheet(TRANSLATION_SHEET)
     ClearWorksheet translationSheet
@@ -162,8 +181,8 @@ Private Sub PrepareEnvironment()
         Array("varSection", "Variable Section"), _
         Array("varName", "Variable Name"), _
         Array("varLabel", "Main Label"), _
-        Array("varChoice", "Control"), _
-        Array("choiceVal", "Choices"), _
+        Array("varChoice", "Choice"), _
+        Array("choiceVal", "Choice Values"), _
         Array("varStatus", "Status"), _
         Array("errLang", "Please select a language") _
     )
@@ -176,7 +195,7 @@ Private Sub PrepareEnvironment()
     Set TranslationTable = translationSheet.ListObjects(1)
     Set RibbonTranslations = TranslationObject.Create(TranslationTable, "ENG")
 
-    Set Builder = DiseaseSheetBuilder.Create(ThisWorkbook, Dropdowns, RibbonTranslations)
+    Set Builder = DiseaseSheet.Create(ThisWorkbook, Dropdowns, RibbonTranslations, VariablesManager)
     Set Importer = DiseaseImporter.Create()
     Set ExportManager = DiseaseExportWorkbook.Create()
     Set AppGuard = ApplicationState.Create(Application)
@@ -188,16 +207,17 @@ Private Sub CleanupEnvironment()
     DeleteWorksheetSafe DROPDOWN_SHEET
     DeleteWorksheetSafe TRANSLATION_SHEET
     DeleteWorksheetSafe IMPORT_SHEET
-    DeleteNameSafe "__languages"
-    DeleteNameSafe "__var_status"
-    DeleteNameSafe "PARAMVARNAME"
-    DeleteNameSafe "PARAMCHOICESLIST"
-    DeleteNameSafe "disLang_1"
+    ClearWorksheetSafe ANCHOR_SHEET
+
+    DeleteNameSafe VARIABLE_NAME_RANGE
+    DeleteNameSafe MARKER_NAME_PREFIX & "001"
+    DeleteNameSafe MARKER_NAME_PREFIX & "002"
 End Sub
 
 Private Sub PopulateDiseaseTable(ByVal table As ListObject)
-    table.ListRows(1).Range.Value = Array("var_a", "LabelA", "string", "formatA", "choice_age", "0-4 | 5-14", "core")
-    table.ListRows(2).Range.Value = Array("var_b", "LabelB", "number", "formatB", "choice_fever", "yes | no", "core")
+    table.ListRows.Add
+    table.ListRows(1).Range.Value = Array(1, "var_a", "demographics", "LabelA", "choice_age", "0-4 | 5-14", "core")
+    table.ListRows(2).Range.Value = Array(2, "var_b", "symptoms", "LabelB", "choice_fever", "yes | no", "core")
 End Sub
 
 Private Function PrepareImportTable() As ListObject
@@ -209,11 +229,11 @@ Private Function PrepareImportTable() As ListObject
     Set importSheet = EnsureWorksheet(IMPORT_SHEET)
     ClearWorksheet importSheet
 
-    header = RowsToMatrix(Array(Array("Variable", "Label", "Type", "Format", "Choice", "Choices", "Status")))
+    header = RowsToMatrix(Array(Array("Variable Order", "Variable Name", "Variable Section", "Main Label", "Choice", "Choice Values", "Status")))
     rows = RowsToMatrix(Array( _
-        Array("var_a", "LabelAUpdated", "string", "formatAUpdated", "choice_age", "0-4 | 5-14", "core"), _
-        Array("var_c", "LabelC", "string", "formatC", "choice_other", "low | high", "optional"), _
-        Array("var_d", "LabelD", "string", "formatD", "choice_new", "alpha | beta", "core") _
+        Array(1, "var_a", "demographics", "LabelAUpdated", "choice_age", "0-4 | 5-14", "core"), _
+        Array(3, "var_c", "history", "LabelC", "choice_other", "low | high", "optional"), _
+        Array(4, "var_d", "history", "LabelD", "choice_new", "alpha | beta", "core") _
     ))
 
     WriteMatrix importSheet.Range("A1"), header
@@ -228,6 +248,18 @@ Private Sub DeleteWorksheetSafe(ByVal sheetName As String)
     On Error Resume Next
         ThisWorkbook.Worksheets(sheetName).Delete
     On Error GoTo 0
+End Sub
+
+Private Sub ClearWorksheetSafe(ByVal sheetName As String)
+    Dim sh As Worksheet
+
+    On Error Resume Next
+        Set sh = ThisWorkbook.Worksheets(sheetName)
+    On Error GoTo 0
+
+    If Not sh Is Nothing Then
+        ClearWorksheet sh
+    End If
 End Sub
 
 Private Sub DeleteNameSafe(ByVal nameValue As String)
@@ -251,7 +283,33 @@ Private Function FindWorksheet(ByVal targetBook As Workbook, ByVal sheetName As 
     Next sheet
 End Function
 
-Private Sub AddName(ByVal nameValue As String, ByVal targetRange As Range)
-    DeleteNameSafe nameValue
-    ThisWorkbook.Names.Add Name:=nameValue, RefersTo:=targetRange
+Private Sub RegisterVariableName(ByVal lo As ListObject)
+    Dim store As HiddenNames
+
+    Set store = HiddenNames.Create(ThisWorkbook)
+    store.SetListObjectHeader VARIABLE_NAME_RANGE, lo, "Variable Name"
 End Sub
+
+Private Sub AddDropdownList(ByVal target As DropdownLists, ByVal listName As String, ByVal values As Variant)
+    Dim listValues As BetterArray
+
+    Set listValues = BuildBetterArray(values)
+    If listValues Is Nothing Then Exit Sub
+
+    target.Add listValues, listName
+End Sub
+
+Private Function BuildBetterArray(ByVal values As Variant) As BetterArray
+    Dim arr As BetterArray
+    Dim idx As Long
+
+    If Not IsArray(values) Then Exit Function
+
+    Set arr = New BetterArray
+    arr.LowerBound = 1
+    For idx = LBound(values) To UBound(values)
+        arr.Push CStr(values(idx))
+    Next idx
+
+    Set BuildBetterArray = arr
+End Function
