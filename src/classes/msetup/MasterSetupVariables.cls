@@ -718,15 +718,23 @@ End Function
 
 Private Function LocateVariableRow(ByVal variableName As String) As Long
     Dim nameRange As Range
+    Dim block As Variant
     Dim rowCounter As Long
-    Dim totalRows As Long
 
     Set nameRange = ColumnRange(HEADER_NAME)
     If nameRange Is Nothing Then Exit Function
 
-    totalRows = nameRange.Rows.Count
-    For rowCounter = 1 To totalRows
-        If StrComp(CStr(nameRange.Cells(rowCounter, 1).Value), variableName, vbTextCompare) = 0 Then
+    'One crossing; the scan runs in memory. Reading cell by cell cost one
+    'crossing per row, on every lookup the line fill and the worksheet
+    'functions make.
+    block = nameRange.Value
+    If Not IsArray(block) Then
+        If StrComp(CStr(block), variableName, vbTextCompare) = 0 Then LocateVariableRow = 1
+        Exit Function
+    End If
+
+    For rowCounter = 1 To UBound(block, 1)
+        If StrComp(CStr(block(rowCounter, 1)), variableName, vbTextCompare) = 0 Then
             LocateVariableRow = rowCounter
             Exit Function
         End If
