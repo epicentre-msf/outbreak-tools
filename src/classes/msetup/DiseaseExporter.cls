@@ -397,9 +397,9 @@ Private Sub PopulateDictionary(ByVal dictionarySheet As Worksheet, ByVal disease
     Dim prepared As Variant
     Dim rowCount As Long
 
-    dictionarySheet.Range("A1").Resize(1, 6).Value = ArrayToRow( _
+    WriteHeaderRow dictionarySheet.Range("A1"), _
         Array(HEADER_VARIABLE_ORDER, HEADER_VARIABLE_SECTION, HEADER_VARIABLE_NAME, _
-              HEADER_MAIN_LABEL, HEADER_CONTROL, HEADER_STATUS))
+              HEADER_MAIN_LABEL, HEADER_CONTROL, HEADER_STATUS)
 
     If diseaseTable.DataBodyRange Is Nothing Then Exit Sub
 
@@ -439,12 +439,11 @@ Private Sub PopulateChoices(ByVal choicesSheet As Worksheet, _
     Dim choiceRows As Collection
     Dim choiceMatrix As Variant
 
-    choicesSheet.Range("A1").Resize(1, 4).Value = ArrayToRow(Array( _
+    WriteHeaderRow choicesSheet.Range("A1"), Array( _
         TranslateHeader(headerCache, HEADER_LIST_NAME, HEADER_LIST_NAME), _
         TranslateHeader(headerCache, HEADER_LABEL, HEADER_LABEL), _
         TranslateHeader(headerCache, HEADER_SHORT_LABEL, HEADER_SHORT_LABEL), _
-        TranslateHeader(headerCache, HEADER_ORDER, HEADER_ORDER) _
-    ))
+        TranslateHeader(headerCache, HEADER_ORDER, HEADER_ORDER))
 
     If diseaseTable.DataBodyRange Is Nothing Then Exit Sub
 
@@ -640,21 +639,15 @@ Private Sub ClearSheet(ByVal sheet As Worksheet)
     sheet.Cells.Clear
 End Sub
 
-'@sub-title Convert one-dimensional array into a 1xN matrix for assignment.
-Private Function ArrayToRow(ByVal values As Variant) As Variant
-    Dim columnCount As Long
-    Dim row(1 To 1, 1 To 1) As Variant
-    Dim index As Long
+'@sub-title Write one header row through a BetterArray.
+Private Sub WriteHeaderRow(ByVal anchorCell As Range, ByVal values As Variant)
+    Dim headers As BetterArray
 
-    columnCount = UBound(values) - LBound(values) + 1
-    ReDim row(1 To 1, 1 To columnCount)
-
-    For index = LBound(values) To UBound(values)
-        row(1, index - LBound(values) + 1) = values(index)
-    Next index
-
-    ArrayToRow = row
-End Function
+    Set headers = New BetterArray
+    headers.LowerBound = 1
+    headers.Items = values
+    headers.ToExcelRange anchorCell, TransposeValues:=True
+End Sub
 
 '@sub-title Convert a collection of row arrays into a matrix.
 Private Function CollectionToMatrix(ByVal rows As Collection, ByVal columnCount As Long) As Variant
