@@ -80,10 +80,10 @@ Public Sub TestMergeUpdatesExistingAndAppendsNew()
     Set summary = Importer.MergeDisease(TargetTable, SourceTable, True, DiseaseImportPriority_Foreign)
 
     data = TargetTable.DataBodyRange.Value
-    Assert.AreEqual "LabelAUpdated", data(1, 2), "Existing variable should be updated from import"
+    Assert.AreEqual "LabelAUpdated", data(1, 4), "Existing variable should be updated from import"
     Assert.AreEqual "choiceA2", data(1, 5), "Choice column should be updated"
-    Assert.AreEqual "LabelB", data(2, 2), "Unimported variable should keep original values"
-    Assert.AreEqual "var_c", data(3, 1), "New variable should be appended"
+    Assert.AreEqual "LabelB", data(2, 4), "Unimported variable should keep original values"
+    Assert.AreEqual "var_c", data(3, 2), "New variable should be appended"
 
     Set missing = summary.MissingVariables
     Assert.AreEqual 1, missing.Length, "Exactly one variable should be missing"
@@ -143,8 +143,8 @@ Public Sub TestReplaceTableCopiesSourceWhenMergeDisabled()
     Set summary = Importer.MergeDisease(TargetTable, SourceTable, False, DiseaseImportPriority_Foreign)
 
     data = TargetTable.DataBodyRange.Value
-    Assert.AreEqual "var_a", data(1, 1), "First row variable should match source"
-    Assert.AreEqual "LabelC", data(2, 2), "Second row label should match source"
+    Assert.AreEqual "var_a", data(1, 2), "First row variable should match source"
+    Assert.AreEqual "LabelC", data(2, 4), "Second row label should match source"
     Assert.AreEqual 2, TargetTable.ListRows.Count, "Target table should match source row count"
 
     Assert.IsTrue summary.AppendedVariables.Length > 0, "Summary should contain appended variables after replace"
@@ -167,16 +167,16 @@ Private Sub PrepareTargetTable()
     Set TargetSheet = EnsureWorksheet(TARGET_SHEET_NAME)
     ClearWorksheet TargetSheet
 
-    headerMatrix = RowsToMatrix(Array(Array("Variable", "Label", "Type", "Format", "Choice", "Active")))
+    headerMatrix = RowsToMatrix(Array(Array("Variable Order", "Variable Name", "Variable Section", "Main Label", "Choice", "Choice Values", "Status")))
     bodyMatrix = RowsToMatrix(Array( _
-        Array("var_a", "LabelA", "string", "formatA", "choiceA", "yes"), _
-        Array("var_b", "LabelB", "number", "formatB", "choiceB", "yes") _
+        Array(1, "var_a", "demographics", "LabelA", "choiceA", "0-4 | 5-14", "core"), _
+        Array(2, "var_b", "symptoms", "LabelB", "choiceB", "yes | no", "core") _
     ))
 
     WriteMatrix TargetSheet.Range("A1"), headerMatrix
     WriteMatrix TargetSheet.Range("A2"), bodyMatrix
 
-    Set tableRange = TargetSheet.Range("A1").Resize(UBound(bodyMatrix, 1) + 1, 6)
+    Set tableRange = TargetSheet.Range("A1").Resize(UBound(bodyMatrix, 1) + 1, 7)
     Set TargetTable = TargetSheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=tableRange, _
                                                   XlListObjectHasHeaders:=xlYes)
     TargetTable.Name = TARGET_TABLE_NAME
@@ -190,16 +190,16 @@ Private Sub PrepareSourceTable()
     Set SourceSheet = EnsureWorksheet(SOURCE_SHEET_NAME)
     ClearWorksheet SourceSheet
 
-    headerMatrix = RowsToMatrix(Array(Array("Variable", "Label", "Type", "Format", "Choice", "Active")))
+    headerMatrix = RowsToMatrix(Array(Array("Variable Order", "Variable Name", "Variable Section", "Main Label", "Choice", "Choice Values", "Status")))
     bodyMatrix = RowsToMatrix(Array( _
-        Array("var_a", "LabelAUpdated", "string", "formatA2", "choiceA2", "no"), _
-        Array("var_c", "LabelC", "string", "formatC", "choiceC", "yes") _
+        Array(1, "var_a", "demographics", "LabelAUpdated", "choiceA2", "0-4 | 5-14 | 15+", "core"), _
+        Array(3, "var_c", "history", "LabelC", "choiceC", "low | high", "optional") _
     ))
 
     WriteMatrix SourceSheet.Range("A1"), headerMatrix
     WriteMatrix SourceSheet.Range("A2"), bodyMatrix
 
-    Set tableRange = SourceSheet.Range("A1").Resize(UBound(bodyMatrix, 1) + 1, 6)
+    Set tableRange = SourceSheet.Range("A1").Resize(UBound(bodyMatrix, 1) + 1, 7)
     Set SourceTable = SourceSheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=tableRange, _
                                                   XlListObjectHasHeaders:=xlYes)
     SourceTable.Name = SOURCE_TABLE_NAME

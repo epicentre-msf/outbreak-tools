@@ -27,6 +27,10 @@ Public Enum DiseaseImportPriority
     DiseaseImportPriority_Foreign = 1
 End Enum
 
+'The variable name keys every merge. DiseaseSheet builds it as column 2
+'of the disease table (Order, Name, Section, ...).
+Private Const VARIABLE_NAME_COLUMN As Long = 2
+
 '@section Factory
 '===============================================================================
 
@@ -87,7 +91,7 @@ Private Sub ReplaceTable(ByVal targetTable As ListObject, ByVal sourceTable As L
     targetTable.DataBodyRange.Value = sourceData
 
     For rowIndex = 1 To sourceRows
-        variableName = CStr(sourceData(rowIndex, 1))
+        variableName = CStr(sourceData(rowIndex, VARIABLE_NAME_COLUMN))
         If LenB(variableName) > 0 Then
             summary.RegisterAppended variableName
             Log logger, "ImportReplace", DiseaseLogInfo, "Appended variable during replace", BuildDetails("Variable", variableName)
@@ -147,7 +151,7 @@ Private Function BuildTargetIndex(ByVal targetData As Variant, ByVal targetRows 
         ReDim names(1 To targetRows)
 
         For rowIndex = 1 To targetRows
-            key = Normalize(CStr(targetData(rowIndex, 1)))
+            key = Normalize(CStr(targetData(rowIndex, VARIABLE_NAME_COLUMN)))
             names(rowIndex) = key
             If LenB(key) > 0 Then
                 AddIfMissing targetIndex, key, rowIndex
@@ -173,7 +177,7 @@ Private Sub ApplyMerge(ByRef targetData As Variant, ByRef sourceData As Variant,
     If sourceRows = 0 Then Exit Sub
 
     For rowIndex = 1 To sourceRows
-        variableName = CStr(sourceData(rowIndex, 1))
+        variableName = CStr(sourceData(rowIndex, VARIABLE_NAME_COLUMN))
         normalizedName = Normalize(variableName)
         If LenB(normalizedName) = 0 Then GoTo ContinueLoop
 
@@ -223,7 +227,7 @@ Private Sub AppendImportedRows(ByVal targetTable As ListObject, ByVal appendedRo
     If Not logger Is Nothing Then
         For rowIndex = appendedRows.LowerBound To appendedRows.UpperBound
             rowValues = appendedRows.Item(rowIndex)
-            Log logger, "ImportAppend", DiseaseLogInfo, "Appended new row from import", BuildDetails("Variable", CStr(rowValues(1, 1)))
+            Log logger, "ImportAppend", DiseaseLogInfo, "Appended new row from import", BuildDetails("Variable", CStr(rowValues(1, VARIABLE_NAME_COLUMN)))
         Next rowIndex
     End If
 End Sub
@@ -243,8 +247,8 @@ Private Sub RegisterMissingVariables(ByVal targetData As Variant, ByVal targetRo
         If LenB(normalizedName) = 0 Then GoTo NextRow
 
         If Not CollectionContains(seenSource, normalizedName) Then
-            summary.RegisterMissing CStr(targetData(rowIndex, 1))
-            Log logger, "ImportMerge", DiseaseLogWarning, "Variable missing from import", BuildDetails("Variable", CStr(targetData(rowIndex, 1)))
+            summary.RegisterMissing CStr(targetData(rowIndex, VARIABLE_NAME_COLUMN))
+            Log logger, "ImportMerge", DiseaseLogWarning, "Variable missing from import", BuildDetails("Variable", CStr(targetData(rowIndex, VARIABLE_NAME_COLUMN)))
         End If
 
 NextRow:
