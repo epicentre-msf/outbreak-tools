@@ -203,6 +203,48 @@ Public Sub TestRemoveLanguageRefusesDefaultAndUnknown()
 End Sub
 
 '@TestMethod("SetupTranslationsTable")
+Public Sub TestRemoveLanguageDeletesSeveralColumns()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestRemoveLanguageDeletesSeveralColumns"
+    On Error GoTo Fail
+
+    Subject.EnsureLanguages "French;German;Italian"
+    Subject.RemoveLanguage "French; Italian"
+
+    Assert.AreEqual CLng(2), TranslationsTable.ListColumns.Count, "Two language columns should be gone"
+    Assert.IsFalse HasColumn("French"), "The first named language column should be gone"
+    Assert.IsFalse HasColumn("Italian"), "The second named language column should be gone"
+    Assert.IsTrue HasColumn("German"), "The language left out of the list should remain"
+    Assert.IsTrue HasColumn("English"), "The default language column should remain"
+
+    Dim languages As BetterArray
+    Set languages = Subject.Languages
+    Assert.AreEqual CLng(1), languages.Length, "The stored language list should follow the deletes"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestRemoveLanguageDeletesSeveralColumns", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestRemoveLanguageKeepsEveryColumnWhenOneNameIsRefused()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestRemoveLanguageKeepsEveryColumnWhenOneNameIsRefused"
+
+    Dim refused As Boolean
+
+    Subject.EnsureLanguages "French;German"
+
+    On Error Resume Next
+        Subject.RemoveLanguage "French;Klingon"
+        refused = (Err.Number = ProjectError.InvalidArgument)
+        Err.Clear
+    On Error GoTo 0
+
+    Assert.IsTrue refused, "An unknown name in the list should be refused"
+    Assert.AreEqual CLng(3), TranslationsTable.ListColumns.Count, "No column goes when one name of the list is refused"
+    Assert.IsTrue HasColumn("French"), "The known language of a refused list should remain"
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
 Public Sub TestEnsureLanguagesPersistsHiddenName()
     CustomTestSetTitles Assert, "SetupTranslationsTable", "TestEnsureLanguagesPersistsHiddenName"
     On Error GoTo Fail

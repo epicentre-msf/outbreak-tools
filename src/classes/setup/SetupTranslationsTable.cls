@@ -418,20 +418,53 @@ CleanFail:
 End Sub
 
 '@label:remove-language
-'@sub-title Delete one language column from the translations table.
+'@sub-title Delete one or more language columns from the translations table.
 '@details
-'Only the columns after the default language are languages, so the structural
-'columns can never be deleted through here. The default language column
-'stays: promote another language first with SwitchDefaultLanguage. The stored
-'language list is refreshed once the column is gone.
-'@param languageName String. Header of the language column to delete.
+'Several names come in one string, split on ";" the way EnsureLanguages reads
+'them. Only the columns after the default language are languages, so the
+'structural columns can never be deleted through here. The default language
+'column stays: promote another language first with SwitchDefaultLanguage.
+'Every name is checked before any column goes, so a refused name leaves the
+'table as it was. The stored language list is refreshed once the columns are
+'gone.
+'@param languageName String. Header of the language column to delete, or several headers separated by ";".
 Public Sub RemoveLanguage(ByVal languageName As String)
+    Dim languageList() As String
+    Dim counter As Long
+    Dim candidate As String
     Dim targetIndex As Long
 
     ValidateInitialised
 
     languageName = Trim$(languageName)
     If LenB(languageName) = 0 Then Exit Sub
+
+    languageList = Split(languageName, ";")
+
+    For counter = LBound(languageList) To UBound(languageList)
+        candidate = Trim$(languageList(counter))
+        If LenB(candidate) > 0 Then ValidateRemovableLanguage candidate
+    Next counter
+
+    'The index is read again for every name: each delete moves the columns
+    'after it one to the left. A name typed twice finds no column the second
+    'time and is skipped.
+    For counter = LBound(languageList) To UBound(languageList)
+        candidate = Trim$(languageList(counter))
+        If LenB(candidate) > 0 Then
+            targetIndex = LanguageColumnIndex(candidate)
+            If targetIndex > 0 Then this.table.ListColumns(targetIndex).Delete
+        End If
+    Next counter
+
+    PersistLanguageList
+End Sub
+
+'@label:validate-removable-language
+'@sub-title Refuse a language name that is unknown or is the default language.
+'@param languageName String. One trimmed language header.
+Private Sub ValidateRemovableLanguage(ByVal languageName As String)
+    Dim targetIndex As Long
 
     targetIndex = LanguageColumnIndex(languageName)
     If targetIndex = 0 Then
@@ -441,9 +474,6 @@ Public Sub RemoveLanguage(ByVal languageName As String)
     If targetIndex = LabelColumnIndex() Then
         ThrowProjectError ProjectError.InvalidArgument, "Language '" & languageName & "' is the default language. Promote another language first."
     End If
-
-    this.table.ListColumns(targetIndex).Delete
-    PersistLanguageList
 End Sub
 
 '@label:switchable-languages

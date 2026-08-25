@@ -21,8 +21,12 @@ Private Const START_COLUMN_CHOICES As Long = 1
 Private Const DEFAULT_DROPDOWN_PREFIX As String = "dropdown_"
 Private Const SHEET_TAG_NAME As String = "sheetTag"
 Private Const DISEASE_TAG_VALUE As String = "disease"
+Private Const VARIABLES_TAG_VALUE As String = "variables"
+Private Const CHOICES_TAG_VALUE As String = "choices"
 Private Const DEFAULT_ROW_BATCH As Long = 5
-Private Const DEFAULT_ROW_TARGET As Long = 1
+'A threshold of 0 lets CustomTable count the formula columns of the first row
+'itself, so a line carrying only its formulas counts as empty on every sheet.
+Private Const EMPTY_ROW_THRESHOLD As Long = 0
 
 '@section Workbook helpers
 '===============================================================================
@@ -248,31 +252,29 @@ End Function
 
 '@section Tables Management utilities
 '===============================================================================
+'@sub-title Add a batch of rows to every table of a sheet, or trim their empty rows.
+'@details Every sheet gains DEFAULT_ROW_BATCH rows per add. A trim hands
+'CustomTable a threshold of 0, so it counts the formula columns of the first
+'row: a disease line carrying only its label and choice values formulas is
+'empty, a choices line carrying only its label formula is empty, and a
+'variables line is empty when nothing is typed. The first row of a table
+'always stays. The sheet kind (ResolveMasterSheetKind) decides the protection
+'put back at the end. A failure is raised at the caller once the sheet is
+'protected again and the application state is restored, so the ribbon can
+'say what went wrong.
 Public Sub ManageRows(ByVal targetSheet As Worksheet, ByVal addRows As Boolean)
 
     Dim lo As ListObject
     Dim wrapper As CustomTable
-    Dim store As HiddenNames
-    Dim sheetTag As String
-    Dim rowCount As Long
+    Dim sheetKind As String
     Dim scope As ApplicationState
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
 
     If targetSheet Is Nothing Then Exit Sub
 
-    Set store = HiddenNames.Create(targetSheet)
-    sheetTag = store.ValueAsString("sheetTag")
- 
-
-    Select Case LCase$(Trim$(sheetTag))
-        Case "disease", "dis"
-            rowCount = IIf(addRows, 2, 10)
-        Case "choices", "choi"
-            rowCount = IIf(addRows, 0, 5)
-        Case "variables", "variable", "var"
-            rowCount = IIf(addRows, 1, 20)
-        Case Else
-            rowCount = IIf(addRows, 0, 10)
-    End Select
+    sheetKind = ResolveMasterSheetKind(targetSheet)
 
     'The handler is armed ABOVE ApplyBusyState. That call writes screen
     'updating and alerts before the settings that can refuse, so a raise
@@ -282,28 +284,38 @@ Public Sub ManageRows(ByVal targetSheet As Worksheet, ByVal addRows As Boolean)
     Set scope = ApplicationState.Create(Application)
     scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
-    UnProtectMasterSetupSheet targetSheet, sheetTag
+    UnProtectMasterSetupSheet targetSheet, sheetKind
 
     For Each lo In targetSheet.ListObjects
         Set wrapper = CustomTable.Create(lo)
         If addRows Then
-            wrapper.AddRows nbRows:=rowCount
+            wrapper.AddRows nbRows:=DEFAULT_ROW_BATCH
         Else
-            wrapper.RemoveRows totalCount:=rowCount
+            wrapper.RemoveRows totalCount:=EMPTY_ROW_THRESHOLD
         End If
     Next lo
 
-    ProtectMasterSetupSheet targetSheet, sheetTag
+    ProtectMasterSetupSheet targetSheet, sheetKind
 
 Cleanup:
     'Shielded: Handler is still armed here, and a raise from Restore would
-    'come straight back to this label and raise again.
+    'come straight back to this label and raise again. The failure path puts
+    'the sheet back under protection before the state is restored.
     On Error Resume Next
+    If errNumber <> 0 Then ProtectMasterSetupSheet targetSheet, sheetKind
     If Not scope Is Nothing Then scope.Restore
+    On Error GoTo 0
+
+    If errNumber <> 0 Then
+        Err.Raise errNumber, errSource, errDescription
+    End If
     Exit Sub
 
 Handler:
-    Debug.Print "ManageRows - "; targetSheet.Name; " addRows: "; addRows; " error "; Err.Number; " "; Err.Description
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    Debug.Print "ManageRows - "; targetSheet.Name; " addRows: "; addRows; " error "; errNumber; " "; errDescription
     Resume Cleanup
 End Sub
 
@@ -430,6 +442,41 @@ Public Function ShouldManageMasterSheet(ByVal sheetName As String) As Boolean
     If configSheets Is Nothing Then Exit Function
 
     ShouldManageMasterSheet = Not ContainsValue(configSheets, sheetName)
+End Function
+
+'@sub-title Answer the kind of a master setup sheet: disease, variables, choices, or empty.
+'@details The hidden sheetTag is read first; the disease builder and the
+'preparation write it. A sheet with no tag is known by its name, so the
+'Variables and Choices sheets answer their kind before the preparation has
+'run on them, and the ribbon row buttons work on a file opened with the
+'events off.
+Public Function ResolveMasterSheetKind(ByVal targetSheet As Worksheet) As String
+    Dim store As HiddenNames
+    Dim tagValue As String
+
+    If targetSheet Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set store = HiddenNames.Create(targetSheet)
+    On Error GoTo 0
+    If Not store Is Nothing Then
+        tagValue = LCase$(Trim$(store.ValueAsString(SHEET_TAG_NAME)))
+    End If
+
+    Select Case tagValue
+        Case "disease", "dis"
+            ResolveMasterSheetKind = DISEASE_TAG_VALUE
+        Case "variables", "variable", "var"
+            ResolveMasterSheetKind = VARIABLES_TAG_VALUE
+        Case "choices", "choice", "choi"
+            ResolveMasterSheetKind = CHOICES_TAG_VALUE
+        Case Else
+            If StrComp(targetSheet.Name, VARIABLES_SHEETNAME, vbTextCompare) = 0 Then
+                ResolveMasterSheetKind = VARIABLES_TAG_VALUE
+            ElseIf StrComp(targetSheet.Name, CHOICES_SHEETNAME, vbTextCompare) = 0 Then
+                ResolveMasterSheetKind = CHOICES_TAG_VALUE
+            End If
+    End Select
 End Function
 
 'A disease sheet is recognised by its hidden sheetTag (owner rule,

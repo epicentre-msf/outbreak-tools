@@ -137,6 +137,12 @@ Private Sub HandleDiseaseSheetChange(ByVal sh As Worksheet, ByVal target As Rang
     Set table = sh.ListObjects(1)
     If table.DataBodyRange Is Nothing Then Exit Sub
 
+    'The two formula columns read the language cell. Under manual calculation
+    'the old text would stand until something else recalculated the sheet.
+    If Not Intersect(target, languageCell) Is Nothing Then
+        RecalculateDiseaseColumns table
+    End If
+
     Set nameCells = Intersect(target, table.DataBodyRange.Columns(DISEASE_NAME_COLUMN))
     If nameCells Is Nothing Then Exit Sub
 

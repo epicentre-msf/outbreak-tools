@@ -38,20 +38,36 @@ End Sub
 '@EntryPoint
 Public Sub clickAddRows(ByRef ribbonControl As IRibbonControl)
     Dim targetSheet As Worksheet
+
     Set targetSheet = ActiveSheet
-    If Not targetSheet Is Nothing Then
-        MasterSetupHelpers.ManageRows targetSheet, True
-    End If
+    If targetSheet Is Nothing Then Exit Sub
+
+    'ManageRows restores the application state and the protection itself
+    'before it raises, so the failure only has to be said here.
+    On Error GoTo Handler
+    MasterSetupHelpers.ManageRows targetSheet, True
+    Exit Sub
+
+Handler:
+    Debug.Print "clickAddRows: "; Err.Number; Err.Description
+    MsgBox "Unable to add rows: " & Err.Description, vbCritical + vbOKOnly, "Rows"
 End Sub
 
 '@Description("Trim table rows on the active worksheet, preserving header rows.")
 '@EntryPoint
 Public Sub clickResize(ByRef ribbonControl As IRibbonControl)
     Dim targetSheet As Worksheet
+
     Set targetSheet = ActiveSheet
-    If Not targetSheet Is Nothing Then
-        MasterSetupHelpers.ManageRows targetSheet, False
-    End If
+    If targetSheet Is Nothing Then Exit Sub
+
+    On Error GoTo Handler
+    MasterSetupHelpers.ManageRows targetSheet, False
+    Exit Sub
+
+Handler:
+    Debug.Print "clickResize: "; Err.Number; Err.Description
+    MsgBox "Unable to resize the tables: " & Err.Description, vbCritical + vbOKOnly, "Rows"
 End Sub
 
 '@Description("Clear all active filters applied to tables on the active worksheet.")

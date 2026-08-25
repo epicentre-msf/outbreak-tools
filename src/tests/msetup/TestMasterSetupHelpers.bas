@@ -10,9 +10,15 @@ Option Private Module
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const FIXTURE_SHEET As String = "HelpersDiseaseFixture"
+Private Const UNTAGGED_SHEET As String = "HelpersPlainFixture"
+Private Const CHOICES_SHEET As String = "Choices"
 Private Const PASSWORD_SHEET As String = "__pass"
+Private Const FOREIGN_PASSWORD As String = "not-the-debug-password"
 
 Private Assert As CustomTest
+'Names of the sheets PrepareNamedSheet added, so the cleanup deletes only
+'what this module made and leaves a Choices sheet another suite owns alone.
+Private createdSheets As Collection
 
 '@section Module lifecycle
 '===============================================================================
@@ -46,6 +52,8 @@ End Sub
 
 '@TestCleanup
 Private Sub TestCleanup()
+    'The assertions of a test reach the results sheet only once flushed.
+    Assert.Flush
     CleanupEnvironment
 End Sub
 
@@ -66,7 +74,7 @@ Public Sub TestManageRowsAddsDiseaseRows()
 
     MasterSetupHelpers.ManageRows fixtureSheet, True
 
-    Assert.AreEqual 3&, CLng(table.ListRows.Count), "A disease sheet should gain two rows per add"
+    Assert.AreEqual 6&, CLng(table.ListRows.Count), "A sheet should gain five rows per add"
 
     Exit Sub
 
@@ -86,16 +94,105 @@ Public Sub TestManageRowsTrimsDiseaseRows()
     Set fixtureSheet = PrepareDiseaseFixture(15)
     Set table = fixtureSheet.ListObjects(1)
     table.DataBodyRange.Cells(1, 2).Value = "var_kept"
+    table.DataBodyRange.Cells(3, 2).Value = "var_also_kept"
 
     MasterSetupHelpers.ManageRows fixtureSheet, False
 
-    Assert.AreEqual 10&, CLng(table.ListRows.Count), "A disease sheet resize should keep ten rows"
-    Assert.AreEqual "var_kept", table.DataBodyRange.Cells(1, 2).Value, "Filled rows should survive the trim"
+    Assert.AreEqual 2&, CLng(table.ListRows.Count), "A resize should keep the filled rows and drop the empty ones"
+    Assert.AreEqual "var_kept", table.DataBodyRange.Cells(1, 2).Value, "The first filled row should survive the trim"
+    Assert.AreEqual "var_also_kept", table.DataBodyRange.Cells(2, 2).Value, "A filled row below empty ones should move up"
 
     Exit Sub
 
 Fail:
     CustomTestLogFailure Assert, "TestManageRowsTrimsDiseaseRows", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("MasterSetupHelpers")
+Public Sub TestManageRowsTrimsLinesCarryingOnlyFormulas()
+    CustomTestSetTitles Assert, "MasterSetupHelpers", "TestManageRowsTrimsLinesCarryingOnlyFormulas"
+
+    Dim fixtureSheet As Worksheet
+    Dim table As ListObject
+
+    On Error GoTo Fail
+
+    'A disease line carries two formulas, the label and the choice values,
+    'from the day it is built. A line with nothing else on it is empty.
+    Set fixtureSheet = PrepareDiseaseFixture(5)
+    Set table = fixtureSheet.ListObjects(1)
+    table.ListColumns(4).DataBodyRange.Formula = "=""label"""
+    table.ListColumns(6).DataBodyRange.Formula = "=""values"""
+    table.DataBodyRange.Cells(2, 2).Value = "var_kept"
+
+    MasterSetupHelpers.ManageRows fixtureSheet, False
+
+    Assert.AreEqual 2&, CLng(table.ListRows.Count), "Lines carrying only their formulas should go"
+    Assert.AreEqual "var_kept", table.DataBodyRange.Cells(2, 2).Value, "The line with a name should stay"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestManageRowsTrimsLinesCarryingOnlyFormulas", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("MasterSetupHelpers")
+Public Sub TestManageRowsRaisesWhenTheSheetStaysProtected()
+    CustomTestSetTitles Assert, "MasterSetupHelpers", "TestManageRowsRaisesWhenTheSheetStaysProtected"
+
+    Dim fixtureSheet As Worksheet
+    Dim raisedNumber As Long
+
+    On Error GoTo Fail
+
+    'A password the passwords sheet does not hold: UnProtect cannot lift it,
+    'and the add meets a protected table. The ribbon reads the raise.
+    Set fixtureSheet = PrepareDiseaseFixture(1)
+    fixtureSheet.Protect Password:=FOREIGN_PASSWORD
+
+    On Error Resume Next
+        MasterSetupHelpers.ManageRows fixtureSheet, True
+        raisedNumber = Err.Number
+        Err.Clear
+    On Error GoTo Fail
+
+    fixtureSheet.Unprotect FOREIGN_PASSWORD
+
+    Assert.IsTrue raisedNumber <> 0, "A refused add should reach the caller as a raise"
+    Assert.AreEqual 1&, CLng(fixtureSheet.ListObjects(1).ListRows.Count), "The table should be left as it was"
+
+    Exit Sub
+
+Fail:
+    On Error Resume Next
+        fixtureSheet.Unprotect FOREIGN_PASSWORD
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestManageRowsRaisesWhenTheSheetStaysProtected", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("MasterSetupHelpers")
+Public Sub TestSheetKindReadsTheTagThenTheName()
+    CustomTestSetTitles Assert, "MasterSetupHelpers", "TestSheetKindReadsTheTagThenTheName"
+
+    Dim fixtureSheet As Worksheet
+    Dim namedSheet As Worksheet
+
+    On Error GoTo Fail
+
+    Set fixtureSheet = PrepareDiseaseFixture(1)
+    Assert.AreEqual "disease", MasterSetupHelpers.ResolveMasterSheetKind(fixtureSheet), "The hidden tag names a disease sheet"
+
+    'A Choices sheet the preparation has never tagged is known by its name.
+    Set namedSheet = PrepareNamedSheet(CHOICES_SHEET)
+    Assert.AreEqual "choices", MasterSetupHelpers.ResolveMasterSheetKind(namedSheet), "An untagged Choices sheet is known by its name"
+
+    Set namedSheet = PrepareNamedSheet(UNTAGGED_SHEET)
+    Assert.AreEqual vbNullString, MasterSetupHelpers.ResolveMasterSheetKind(namedSheet), "A sheet with no tag and another name has no kind"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSheetKindReadsTheTagThenTheName", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("MasterSetupHelpers")
@@ -175,8 +272,44 @@ Private Function PrepareDiseaseFixture(ByVal rowCount As Long) As Worksheet
     Set PrepareDiseaseFixture = fixtureSheet
 End Function
 
+'@description Answer a sheet of the given name, adding a blank one when the workbook has none.
+Private Function PrepareNamedSheet(ByVal sheetName As String) As Worksheet
+    Dim sh As Worksheet
+
+    For Each sh In ThisWorkbook.Worksheets
+        If StrComp(sh.Name, sheetName, vbTextCompare) = 0 Then
+            Set PrepareNamedSheet = sh
+            Exit Function
+        End If
+    Next sh
+
+    Set sh = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+    sh.Name = sheetName
+
+    If createdSheets Is Nothing Then Set createdSheets = New Collection
+    createdSheets.Add sheetName
+
+    Set PrepareNamedSheet = sh
+End Function
+
+Private Sub DeleteCreatedSheets()
+    Dim idx As Long
+
+    If createdSheets Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    For idx = 1 To createdSheets.Count
+        DeleteWorksheet CStr(createdSheets.Item(idx))
+    Next idx
+    On Error GoTo 0
+
+    Set createdSheets = Nothing
+End Sub
+
 Private Sub CleanupEnvironment()
     Dim fixtureSheet As Worksheet
+
+    DeleteCreatedSheets
 
     On Error Resume Next
         Set fixtureSheet = ThisWorkbook.Worksheets(FIXTURE_SHEET)

@@ -128,8 +128,22 @@ Public Sub TestBuildCreatesWorksheet()
     
     Assert.IsTrue table.ListColumns(choicesValueHeader).DataBodyRange.Locked, "Choice values column should be locked."
     Assert.IsTrue table.ListColumns(labelHeader).DataBodyRange.Locked, "Translated label column should be locked."
-    
-    
+
+    'The sheet ships protected: what the user picks in has to be unlocked.
+    Assert.IsFalse diseaseWksh.Cells(2, 2).Locked, "The language cell stays open on a protected sheet."
+    Assert.IsFalse table.ListColumns("Variable Name").DataBodyRange.Locked, "The name column stays open on a protected sheet."
+    Assert.IsFalse table.ListColumns(choiceHeader).DataBodyRange.Locked, "The choice column stays open on a protected sheet."
+    Assert.IsFalse table.ListColumns(statusHeader).DataBodyRange.Locked, "The status column stays open on a protected sheet."
+
+    'White sheet; the language cell and the headers carry the house blue.
+    Assert.AreEqual RGB(0, 82, 155), CLng(diseaseWksh.Cells(2, 2).Interior.Color), "The language cell carries the house blue."
+    Assert.AreEqual vbWhite, CLng(diseaseWksh.Cells(2, 2).Font.Color), "The language cell writes in white."
+    Assert.AreEqual RGB(0, 82, 155), CLng(table.HeaderRowRange.Cells(1, 1).Interior.Color), "The table headers carry the house blue."
+    Assert.AreEqual vbWhite, CLng(table.HeaderRowRange.Cells(1, 1).Font.Color), "The table headers write in white."
+    Assert.AreEqual vbWhite, CLng(table.DataBodyRange.Cells(1, 1).Interior.Color), "The table body stays white."
+    Assert.AreEqual vbWhite, CLng(diseaseWksh.Cells(1, 1).Interior.Color), "The sheet around the table stays white."
+
+
 
     Set sheetStore = HiddenNames.Create(diseaseWksh)
     Assert.AreEqual "disease", sheetStore.ValueAsString(SHEET_TAG_NAME), "Sheet tag metadata should be stored."

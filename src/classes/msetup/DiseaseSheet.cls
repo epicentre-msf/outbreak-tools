@@ -421,29 +421,49 @@ Private Sub WriteMetadata()
 End Sub
 
 
+'The sheet is white. The language cell and the table headers carry the house
+'blue with white text, so the two things the user reads first stand out.
 Private Sub FormatDiseaseSheet()
+    Dim languageCell As Range
 
     RemoveGridlines this.hostSheet
 
     With this.hostSheet
         .Cells.Font.Name = "Calibri"
-        .Cells.Interior.Color = RGB(0, 82, 155)
-        .Cells(ANCHORROW, ANCHORCOLUMN).Font.Color = vbWhite
+        .Cells.Interior.Color = vbWhite
     End With
 
-    'Format the table header Range. and interiror color
+    Set languageCell = this.hostSheet.Cells(ANCHORROW, ANCHORCOLUMN)
+    With languageCell
+        .Interior.Color = HouseBlue()
+        .Font.Color = vbWhite
+        .Font.Bold = True
+        .HorizontalAlignment = xlHAlignCenter
+    End With
+
     With this.hostTable.HeaderRange
         .Font.Bold = True
-        .Interior.Color = RGB(237, 242, 248)
+        .Font.Color = vbWhite
+        .Interior.Color = HouseBlue()
         .Cells.HorizontalAlignment = xlHAlignLeft
         .Cells.VerticalAlignment = xlVAlignCenter
     End With
 
-    'Lock required ranges
+    'The sheet ships protected, and every cell of a worksheet starts locked.
+    'The language cell and the table body are unlocked so the user can pick
+    'in them; the two formula columns lock back, because the label and the
+    'choice values are answered by the worksheet functions and never typed.
+    languageCell.Locked = False
+    this.hostTable.Table.DataBodyRange.Locked = False
     this.hostTable.DataRange(hostHeaders.choiceVal).Locked = True
     this.hostTable.DataRange(hostHeaders.varLabel).Locked = True
 
 End Sub
+
+'RGB is a call, so the colour cannot be a Const.
+Private Function HouseBlue() As Long
+    HouseBlue = RGB(0, 82, 155)
+End Function
 
 Private Sub RemoveGridlines(ByVal sheet As Worksheet)
     Dim view As WorksheetView
