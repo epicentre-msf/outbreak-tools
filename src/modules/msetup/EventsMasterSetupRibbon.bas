@@ -3,20 +3,26 @@ Option Explicit
 
 '@Folder("Msetup")
 '@ModuleDescription("Ribbon callbacks supporting master setup operations.")
-'@depends MasterSetupPreparation, MasterSetupHelpers, DropdownLists, Passwords, Passwords, Translation, TranslationObject, TranslationChunks, ITranslationChunks, ApplicationState, SetupTranslationsTable, UpdatedValues, DiseaseSheetBuilder, IDiseaseSheetBuilder
+'@depends MasterSetupPreparation, MasterSetupHelpers, MasterSetupExports, DropdownLists, Passwords, TranslationObject, ApplicationState, SetupTranslationsTable, UpdatedValues, DiseaseSheet
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, ExcelMemberMayReturnNothing, UseMeaningfulName
 
-Private Const RIBBON_TRANSLATION_SHEET As String = "__ribbonTranslation"
-Private Const RIBBON_TRANSLATION_TABLE As String = "TabTransId"
-Private Const RIBBON_LANGUAGE_RANGE As String = "RNG_FileLang"
+'The master setup file itself stays in English: every prompt below is a plain
+'English string, and the ribbon carries no translation dropdown. The only
+'translatable content is the values inside a disease worksheet.
+
 Private Const TRANSLATIONS_SHEET_NAME As String = "Translations"
 Private Const TRANSLATIONS_TABLE_NAME As String = "Tab_Translations"
-Private Const REGISTRY_SHEET_NAME As String = "__updated"
 Private Const PASSWORD_SHEET_NAME As String = "__pass"
-Private Const DEFAULT_REMOVE_ROW_TARGET As Long = 1
-Private Const DEFAULT_ADD_ROW_BATCH As Long = 10
 
 Private prepService As MasterSetupPreparation
+
+'@section Ribbon lifecycle
+'===============================================================================
+'@Description("Cache the ribbon reference when the workbook loads it.")
+'@EntryPoint
+Public Sub ribbonLoaded(ByRef ribbon As IRibbonUI)
+    MasterSetupEventsManager.RibbonLoaded ribbon
+End Sub
 
 '@section Manage group callbacks
 '===============================================================================
@@ -43,8 +49,11 @@ End Sub
 '@Description("Clear all active filters applied to tables on the active worksheet.")
 '@EntryPoint
 Public Sub clickFilters(ByRef ribbonControl As IRibbonControl)
+    Dim targetSheet As Worksheet
     Set targetSheet = ActiveSheet
-    MasterSetupHelpers.ClearMasterSheetFilters targetSheet
+    If Not targetSheet Is Nothing Then
+        MasterSetupHelpers.ClearMasterSheetFilters targetSheet
+    End If
 End Sub
 
 '@Description("Sort master setup tables on the active worksheet using default ordering.")
@@ -78,40 +87,26 @@ End Sub
 
 '@section Disease group callbacks
 '===============================================================================
-'@Description("Create a new disease worksheet using the builder template.")
+'@Description("Create a new disease worksheet using the sheet builder.")
 '@EntryPoint
 Public Sub clickAddSheet(ByRef ribbonControl As IRibbonControl)
     Dim scope As ApplicationState
     Dim passManager As Passwords
     Dim dropdowns As DropdownLists
-    Dim translations As TranslationObject
-    Dim builder As IDiseaseSheetBuilder
+    Dim builder As DiseaseSheet
     Dim diseaseWksh As Worksheet
     Dim diseaseName As String
     Dim attempt As Long
-    Dim confirmPrompt As String
-    Dim confirmTitle As String
-    Dim promptMessage As String
-    Dim promptTitle As String
-    Dim errorNamePrompt As String
-    Dim languageTag As String
 
-    Set translations = MasterSetupHelpers.ResolveRibbonTranslations()
-    confirmPrompt = MasterSetupHelpers.TranslateValue(translations, "askConfirmAddDis", "Add a new disease worksheet?")
-    confirmTitle = MasterSetupHelpers.TranslateValue(translations, "askConfirm", "Confirm")
-    If MsgBox(confirmPrompt, vbYesNo + vbQuestion, confirmTitle) <> vbYes Then Exit Sub
-
-    promptMessage = MasterSetupHelpers.TranslateValue(translations, "enterDis", "Enter the disease name")
-    promptTitle = MasterSetupHelpers.TranslateValue(translations, "enterValue", "Disease")
-    errorNamePrompt = MasterSetupHelpers.TranslateValue(translations, "errDisName", "Unable to capture the disease name.")
+    If MsgBox("Add a new disease worksheet?", vbYesNo + vbQuestion, "Confirm") <> vbYes Then Exit Sub
 
     For attempt = 1 To 5
-        diseaseName = MasterSetupHelpers.CleanMasterSheetName(InputBox(promptMessage, promptTitle))
+        diseaseName = MasterSetupHelpers.CleanMasterSheetName(InputBox("Enter the disease name", "Disease"))
         If LenB(diseaseName) > 0 Then Exit For
     Next attempt
 
     If LenB(diseaseName) = 0 Then
-        If attempt > 5 Then MsgBox errorNamePrompt, vbCritical + vbOKOnly, confirmTitle
+        If attempt > 5 Then MsgBox "Unable to capture the disease name.", vbCritical + vbOKOnly, "Confirm"
         Exit Sub
     End If
 
@@ -124,16 +119,19 @@ Public Sub clickAddSheet(ByRef ribbonControl As IRibbonControl)
     If passManager Is Nothing Then Err.Raise ProjectError.ElementNotFound, "clickAddSheet", "Passwords worksheet '" & PASSWORD_SHEET_NAME & "' was not found."
 
     Set dropdowns = MasterSetupHelpers.ResolveMasterDropdowns()
-    Set builder = DiseaseSheetBuilder.Create(ThisWorkbook, dropdowns, translations)
-    languageTag = MasterSetupHelpers.ResolveRibbonLanguageTag()
+    Set builder = DiseaseSheet.Create(ThisWorkbook, dropdowns, _
+                                      MasterSetupHelpers.ResolveRibbonTranslations(), _
+                                      MasterSetupHelpers.ResolveMasterSetupVariables())
 
     passManager.UnProtect ThisWorkbook
-    Set diseaseWksh = builder.Build(diseaseName, MasterSetupHelpers.ResolveNextDiseaseIndex(), languageTag)
+    'The language of the sheet starts on the first language of the list; the
+    'user picks another one on the sheet itself.
+    Set diseaseWksh = builder.Build(diseaseName)
     passManager.Protect diseaseWksh.Name
     passManager.Protect ThisWorkbook
 
     RefreshDropdownCaches
-    MsgBox MasterSetupHelpers.TranslateValue(translations, "done", "Done!"), vbInformation + vbOKOnly, confirmTitle
+    MsgBox "Done!", vbInformation + vbOKOnly, "Confirm"
 
 Cleanup:
     'Shielded: Handler is still armed here, and a raise from Restore
@@ -144,7 +142,7 @@ Cleanup:
 
 Handler:
     Debug.Print "clickAddSheet: "; Err.Number; Err.Description
-    MsgBox MasterSetupHelpers.TranslateValue(translations, "errDisCreate", "Unable to create the disease worksheet."), vbCritical + vbOKOnly, confirmTitle
+    MsgBox "Unable to create the disease worksheet.", vbCritical + vbOKOnly, "Confirm"
     If Not passManager Is Nothing Then
         On Error Resume Next
             passManager.Protect ThisWorkbook
@@ -158,27 +156,18 @@ End Sub
 Public Sub clickRemSheet(ByRef ribbonControl As IRibbonControl)
     Dim scope As ApplicationState
     Dim passManager As Passwords
-    Dim translations As TranslationObject
     Dim targetSheet As Worksheet
-    Dim confirmPrompt As String
-    Dim confirmTitle As String
-    Dim notDiseaseMessage As String
     Dim alertsState As Boolean
 
     Set targetSheet = ActiveSheet
     If targetSheet Is Nothing Then Exit Sub
 
-    Set translations = MasterSetupHelpers.ResolveRibbonTranslations()
-    confirmTitle = MasterSetupHelpers.TranslateValue(translations, "askConfirm", "Confirm")
-    notDiseaseMessage = MasterSetupHelpers.TranslateValue(translations, "errDisNotFound", "Select a disease worksheet before removing it.")
-
     If Not MasterSetupHelpers.IsMasterDiseaseSheet(targetSheet) Then
-        MsgBox notDiseaseMessage, vbExclamation + vbOKOnly, confirmTitle
+        MsgBox "Select a disease worksheet before removing it.", vbExclamation + vbOKOnly, "Confirm"
         Exit Sub
     End If
 
-    confirmPrompt = MasterSetupHelpers.TranslateValue(translations, "askConfirmRemDis", "Remove the selected disease worksheet?")
-    If MsgBox(confirmPrompt, vbYesNo + vbQuestion, confirmTitle) <> vbYes Then Exit Sub
+    If MsgBox("Remove the selected disease worksheet?", vbYesNo + vbQuestion, "Confirm") <> vbYes Then Exit Sub
 
     On Error GoTo Handler
 
@@ -216,7 +205,7 @@ Handler:
             passManager.Protect ThisWorkbook
         On Error GoTo 0
     End If
-    MsgBox MasterSetupHelpers.TranslateValue(translations, "errDisRemove", "Unable to remove the selected worksheet."), vbCritical + vbOKOnly, confirmTitle
+    MsgBox "Unable to remove the selected worksheet.", vbCritical + vbOKOnly, "Confirm"
     Resume Cleanup
 End Sub
 
@@ -224,27 +213,18 @@ End Sub
 '@EntryPoint
 Public Sub clickClearSheet(ByRef ribbonControl As IRibbonControl)
     Dim scope As ApplicationState
-    Dim translations As TranslationObject
     Dim passManager As Passwords
     Dim targetSheet As Worksheet
-    Dim confirmPrompt As String
-    Dim confirmTitle As String
-    Dim notDiseaseMessage As String
 
     Set targetSheet = ActiveSheet
     If targetSheet Is Nothing Then Exit Sub
 
-    Set translations = MasterSetupHelpers.ResolveRibbonTranslations()
-    confirmTitle = MasterSetupHelpers.TranslateValue(translations, "askConfirm", "Confirm")
-    notDiseaseMessage = MasterSetupHelpers.TranslateValue(translations, "errDisNotFound", "Select a disease worksheet before clearing it.")
-
     If Not MasterSetupHelpers.IsMasterDiseaseSheet(targetSheet) Then
-        MsgBox notDiseaseMessage, vbExclamation + vbOKOnly, confirmTitle
+        MsgBox "Select a disease worksheet before clearing it.", vbExclamation + vbOKOnly, "Confirm"
         Exit Sub
     End If
 
-    confirmPrompt = MasterSetupHelpers.TranslateValue(translations, "askConfirmClearDis", "Clear all data in the current disease worksheet?")
-    If MsgBox(confirmPrompt, vbYesNo + vbQuestion, confirmTitle) <> vbYes Then Exit Sub
+    If MsgBox("Clear all data in the current disease worksheet?", vbYesNo + vbQuestion, "Confirm") <> vbYes Then Exit Sub
 
     On Error GoTo Handler
 
@@ -267,7 +247,7 @@ Cleanup:
 
 Handler:
     Debug.Print "clickClearSheet: "; Err.Number; Err.Description
-    MsgBox MasterSetupHelpers.TranslateValue(translations, "errClearDis", "Unable to clear the disease worksheet."), vbCritical + vbOKOnly, confirmTitle
+    MsgBox "Unable to clear the disease worksheet.", vbCritical + vbOKOnly, "Confirm"
     If Not passManager Is Nothing Then
         On Error Resume Next
             passManager.Protect targetSheet.Name
@@ -339,6 +319,9 @@ Public Sub clickAddTrans(ByRef ribbonControl As IRibbonControl)
     Set updater = MasterSetupHelpers.ResolveMasterUpdatedValues()
     If Not updater Is Nothing Then updater.SwitchTagsToNo
 
+    'The worksheet functions read the translations; their caches are stale now.
+    ResetMasterSetupFunctionCaches
+
 Cleanup:
     'Shielded: Handler is still armed here, and a raise from Restore
     'would come straight back to this label and raise again.
@@ -357,57 +340,41 @@ End Sub
 '@EntryPoint
 Public Sub clickAddLang(ByRef ribbonControl As IRibbonControl, ByRef text As String)
     Dim scope As ApplicationState
-    Dim targetBook As Workbook
     Dim translationsSheet As Worksheet
-    Dim translationTagSheet As Worksheet
-    Dim translationTable As ListObject
-    Dim dropdowns As DropdownLists
-    Dim chunks As ITranslationChunks
+    Dim translationsTable As ListObject
+    Dim manager As SetupTranslationsTable
     Dim passManager As Passwords
-    Dim translations As TranslationObject
-    Dim languagePrompt As String
-    Dim confirmTitle As String
-    Dim confirmPrompt As String
-    Dim fileLanguage As String
 
     text = Trim$(text)
     If LenB(text) = 0 Then Exit Sub
 
-    Set targetBook = ThisWorkbook
+    Set translationsSheet = MasterSetupHelpers.ResolveMasterTranslationsSheet()
+    If translationsSheet Is Nothing Then Exit Sub
 
     On Error Resume Next
-        Set translationsSheet = targetBook.Worksheets(TRANSLATIONS_SHEET_NAME)
-        Set translationTagSheet = targetBook.Worksheets(RIBBON_TRANSLATION_SHEET)
-        Set translationTable = translationTagSheet.ListObjects(RIBBON_TRANSLATION_TABLE)
+        Set translationsTable = translationsSheet.ListObjects(TRANSLATIONS_TABLE_NAME)
     On Error GoTo 0
+    If translationsTable Is Nothing Then Exit Sub
 
-    If translationsSheet Is Nothing Or translationTable Is Nothing Then Exit Sub
-
-    fileLanguage = MasterSetupHelpers.SafeValue(translationTagSheet.Range(RIBBON_LANGUAGE_RANGE).Value)
-    Set translations = Translation.Create(translationTable, fileLanguage)
-    confirmTitle = MasterSetupHelpers.TranslateValue(translations, "askConfirm", "Confirm")
-    confirmPrompt = MasterSetupHelpers.TranslateValue(translations, "addLang", "Add language: ") & text
-
-    If MsgBox(confirmPrompt, vbYesNo + vbQuestion, confirmTitle) <> vbYes Then Exit Sub
+    If MsgBox("Add language: " & text, vbYesNo + vbQuestion, "Confirm") <> vbYes Then Exit Sub
 
     On Error GoTo Handler
 
     Set scope = ApplicationState.Create(Application)
     scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
-    Set dropdowns = MasterSetupHelpers.ResolveMasterDropdowns()
-    Set chunks = TranslationChunks.Create(translationsSheet, TRANSLATIONS_TABLE_NAME, dropdowns)
     Set passManager = MasterSetupHelpers.ResolveMasterPasswords()
     If passManager Is Nothing Then Err.Raise ProjectError.ElementNotFound, "clickAddLang", "Passwords sheet '" & PASSWORD_SHEET_NAME & "' was not found."
 
     passManager.UnProtect TRANSLATIONS_SHEET_NAME
-    chunks.AddTransLang text
+    Set manager = SetupTranslationsTable.Create(translationsTable)
+    manager.EnsureLanguages text
     passManager.Protect TRANSLATIONS_SHEET_NAME
 
-    languagePrompt = MasterSetupHelpers.TranslateValue(translations, "done", "Done!")
-    MsgBox languagePrompt, vbInformation + vbOKOnly, confirmTitle
+    MsgBox "Done!", vbInformation + vbOKOnly, "Confirm"
 
     RefreshDropdownCaches
+    ResetMasterSetupFunctionCaches
 
 Cleanup:
     'Shielded: Handler is still armed here, and a raise from Restore
@@ -418,63 +385,9 @@ Cleanup:
 
 Handler:
     Debug.Print "clickAddLang: "; Err.Number; Err.Description
-    MsgBox MasterSetupHelpers.TranslateValue(translations, "errAddLang", "Unable to add the language column."), vbCritical + vbOKOnly, confirmTitle
+    MsgBox "Unable to add the language column.", vbCritical + vbOKOnly, "Confirm"
     If Not passManager Is Nothing Then passManager.Protect TRANSLATIONS_SHEET_NAME
     Resume Cleanup
-End Sub
-
-'@Description("Change the current ribbon language and refresh workbook labels.")
-'@EntryPoint
-Public Sub clickLangChange(ByRef ribbonControl As IRibbonControl, ByVal langId As String, ByVal index As Integer)
-    Dim scope As ApplicationState
-    Dim tagSheet As Worksheet
-    Dim ribbon As IRibbonUI
-
-    On Error GoTo Handler
-
-    Set scope = ApplicationState.Create(Application)
-    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
-
-    Set tagSheet = ThisWorkbook.Worksheets(RIBBON_TRANSLATION_SHEET)
-    tagSheet.Range(RIBBON_LANGUAGE_RANGE).Value = langId
-
-    RefreshDropdownCaches
-
-    Set ribbon = RibbonDev.ActualRibbon()
-    If Not ribbon Is Nothing Then ribbon.Invalidate
-
-    On Error Resume Next
-        Misc.TranslateWbElmts langId
-    On Error GoTo 0
-
-Cleanup:
-    'Shielded: Handler is still armed here, and a raise from Restore
-    'would come straight back to this label and raise again.
-    On Error Resume Next
-    If Not scope Is Nothing Then scope.Restore
-    Exit Sub
-
-Handler:
-    Debug.Print "clickLangChange: "; Err.Number; Err.Description
-    Resume Cleanup
-End Sub
-
-'@Description("Return the translated label for ribbon controls.")
-'@EntryPoint
-Public Sub LangLabel(ByRef ribbonControl As IRibbonControl, ByRef returnedVal)
-    Dim translations As TranslationObject
-    Dim fallback As String
-
-    On Error GoTo Handler
-
-    Set translations = MasterSetupHelpers.ResolveRibbonTranslations()
-    fallback = ribbonControl.Id
-
-    returnedVal = MasterSetupHelpers.TranslateValue(translations, ribbonControl.Id, fallback)
-    Exit Sub
-
-Handler:
-    returnedVal = ribbonControl.Id
 End Sub
 
 
@@ -490,7 +403,7 @@ Public Sub clickExpSheet(ByRef ribbonControl As IRibbonControl)
     Set scope = ApplicationState.Create(Application)
     scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
-    Exports.ExportToSetup
+    MasterSetupExports.ExportToSetup
 
 Cleanup:
     'Shielded: Handler is still armed here, and a raise from Restore
@@ -505,7 +418,7 @@ Handler:
     Resume Cleanup
 End Sub
 
-'@Description("Export diseases for migration workflows.")
+'@Description("Export every disease for migration workflows.")
 '@EntryPoint
 Public Sub clickExp(ByRef ribbonControl As IRibbonControl)
     Dim scope As ApplicationState
@@ -515,7 +428,7 @@ Public Sub clickExp(ByRef ribbonControl As IRibbonControl)
     Set scope = ApplicationState.Create(Application)
     scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
-    Exports.ExportForMigration
+    MasterSetupExports.ExportForMigration
 
 Cleanup:
     'Shielded: Handler is still armed here, and a raise from Restore
@@ -530,7 +443,7 @@ Handler:
     Resume Cleanup
 End Sub
 
-'@Description("Import diseases from a flat file using the legacy importer.")
+'@Description("Import diseases from a flat migration file.")
 '@EntryPoint
 Public Sub clickImp(ByRef ribbonControl As IRibbonControl)
     Dim scope As ApplicationState
@@ -538,9 +451,9 @@ Public Sub clickImp(ByRef ribbonControl As IRibbonControl)
     On Error GoTo Handler
 
     Set scope = ApplicationState.Create(Application)
-    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, blockSecurity:=True
 
-    Exports.ImportFlatFile
+    MasterSetupExports.ImportFlatFile
 
 Cleanup:
     'Shielded: Handler is still armed here, and a raise from Restore
