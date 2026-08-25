@@ -878,8 +878,14 @@ Private Sub PopulateMigrationDisease(ByVal targetSheet As Worksheet, ByVal disea
     If sourceRange Is Nothing Then Exit Sub
 
     values = sourceRange.Value
-    lastColumn = LastUsedColumn(targetSheet) + 2
-    If lastColumn < 1 Then lastColumn = 1
+    'The first block opens at column 1; every later block leaves one empty
+    'column after the last one.
+    lastColumn = LastUsedColumn(targetSheet)
+    If lastColumn = 0 Then
+        lastColumn = 1
+    Else
+        lastColumn = lastColumn + 2
+    End If
 
     Set store = HiddenNames.Create(diseaseWksh)
 
@@ -985,11 +991,16 @@ Private Function CollectionToMatrix(ByVal rows As Collection, ByVal columnCount 
 End Function
 
 '@sub-title Determine the last used column within the target sheet.
+'@details The UsedRange of a sheet holding nothing is $A$1, so the range
+'is counted before its last column is read: an empty sheet answers 0 and the
+'first migration block opens at column 1.
 Private Function LastUsedColumn(ByVal sheet As Worksheet) As Long
     Dim usedRange As Range
 
     Set usedRange = sheet.UsedRange
     If usedRange Is Nothing Then
+        LastUsedColumn = 0
+    ElseIf Application.WorksheetFunction.CountA(usedRange) = 0 Then
         LastUsedColumn = 0
     Else
         LastUsedColumn = usedRange.Columns(usedRange.Columns.Count).Column

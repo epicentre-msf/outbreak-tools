@@ -194,14 +194,16 @@ Public Sub TestBuildMigrationWorkbookAggregatesDiseases()
     Set diseasesSheet = targetBook.Worksheets("Diseases")
     Set translationsSheet = targetBook.Worksheets("Translations")
 
-    diseaseMeta = diseasesSheet.Range("A1").Resize(2, 6).Value
+    'A block is seven columns wide (the disease table) and the next block
+    'opens one empty column after it, so the second disease sits at column 9.
+    diseaseMeta = diseasesSheet.Range("A1").Resize(2, 10).Value
     translationValues = translationsSheet.Range("A1").Resize(3, 2).Value
 
     Assert.AreEqual "Disease", diseaseMeta(1, 1), "Metadata headers should be created"
     Assert.AreEqual "Beta", diseaseMeta(2, 1), "First disease should be copied"
-    Assert.AreEqual "Gamma", diseaseMeta(2, 4), "Second disease metadata should be appended"
+    Assert.AreEqual "Gamma", diseaseMeta(2, 9), "Second disease metadata should be appended"
     Assert.AreEqual "ENG", diseaseMeta(2, 2), "Language should be copied with metadata"
-    Assert.AreEqual "FRA", diseaseMeta(2, 5), "Second disease language should be copied"
+    Assert.AreEqual "FRA", diseaseMeta(2, 10), "Second disease language should be copied"
 
     Assert.AreEqual "tag", translationValues(1, 1), "Translation header should be copied"
     Assert.AreEqual "hello", translationValues(2, 1), "Translation rows should be copied"
@@ -210,12 +212,16 @@ Public Sub TestBuildMigrationWorkbookAggregatesDiseases()
     Exit Sub
 
 Fail:
-    'A failure before the source workbook exists leaves it Nothing;
-    'the guard keeps the handler from raising over the real error.
+    'The error is read before the shield below, since On Error GoTo 0 clears
+    'it. A failure before the source workbook exists leaves it Nothing.
+    Dim failNumber As Long
+    Dim failText As String
+    failNumber = Err.Number
+    failText = Err.Description
     On Error Resume Next
         If Not sourceWorkbook Is Nothing Then sourceWorkbook.Close SaveChanges:=False
     On Error GoTo 0
-    CustomTestLogFailure Assert, "TestBuildMigrationWorkbookAggregatesDiseases", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestBuildMigrationWorkbookAggregatesDiseases", failNumber, failText
 End Sub
 
 '@TestMethod("DiseaseExporter")
@@ -413,13 +419,14 @@ Private Function PrepareMigrationSourceWorkbook() As Workbook
     Dim values As Variant
     Dim rangeObj As Range
 
+    'A new workbook opens with one sheet, so the other sheets are added.
     Set wb = Workbooks.Add
 
     Set translations = wb.Worksheets(1)
     translations.Name = "Translations"
-    Set choices = wb.Worksheets(2)
+    Set choices = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
     choices.Name = "Choices"
-    Set variables = wb.Worksheets(3)
+    Set variables = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
     variables.Name = "Variables"
     Set diseaseBeta = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
     diseaseBeta.Name = "Beta"
