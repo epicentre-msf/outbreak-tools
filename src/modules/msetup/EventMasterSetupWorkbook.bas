@@ -1,7 +1,7 @@
 Attribute VB_Name = "EventMasterSetupWorkbook"
 Option Explicit
 
-'@Folder("Master Setup")
+'@Folder("Msetup")
 '@ModuleDescription("Workbook-level event handlers delegating to the master setup manager.")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 

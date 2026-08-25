@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Workbook-level orchestrator for master setup lifecycle"
 
 '@PredeclaredId
-'@Folder("MasterSetup")
+'@Folder("Msetup")
 '@ModuleDescription("Coordinates workbook events and shared services for the master setup workbook.")
 '@depends MasterSetupPreparation, MasterSetupVariables, DropdownLists, DropdownLists, LLChoices, Translation, TranslationObject
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation

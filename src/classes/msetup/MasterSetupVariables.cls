@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Lightweight manager for the Master Setup Variables table"
 
 '@PredeclaredId
-'@Folder("MasterSetup")
+'@Folder("Msetup")
 '@ModuleDescription("Lightweight manager for the Master Setup Variables table wrapping CustomTable interactions")
 '@depends CustomTable, HiddenNames, BetterArray, Checking, LLChoices, DropdownLists, TranslationObject, DataSheet
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation

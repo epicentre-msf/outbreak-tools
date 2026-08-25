@@ -1266,17 +1266,16 @@ suites:
 # ---------------------------------------------------------------------------
 # TEMPLATE -- copy per folder as coverage is added. Delete fields left empty.
 # Expansion backlog (suite folders under src/tests/ that are not yet
-# registered): mastersetup, and mastersetup alone.
+# registered): msetup, and msetup alone.
 #
-# It stays out by owner decision. Three of the classes its thirteen suites
-# drive do not exist anywhere in the tree -- DiseaseTranslationCache,
-# DiseaseExportWorkbook and DiseaseSheetBuilder -- and the rest live in
-# src/classes/msetup/ while the tests live in src/tests/mastersetup/, which no
-# single suite can name: a suite resolves classes AND tests against one folder.
+# The classes, modules and tests of the master setup all live under msetup
+# folders since 2026-08-25. Three of the classes its suites drive are still
+# missing from the tree -- DiseaseTranslationCache, DiseaseExportWorkbook and
+# DiseaseSheetBuilder -- so the folder stays out until they are written.
 # EventsMasterSetupRibbon also declares LangLabel and clickLangChange, the same
-# two Public names EventsDesignerCore declares under `designer`, so registering
-# the folder has to rename one side first (the Session 51 ambiguous-name
-# lesson). None of that is a registry edit.
+# two Public names EventsDesignerCore declares under `designer`; that clash
+# ends when the ribbon translation dropdown goes away, which is on the disease
+# task list. None of that is a registry edit.
 #
 # src/tests/implement/ is gone as of 2026-08-15. It held TestCrossTableHelpers
 # alone -- 436 lines, 22 tests -- which built its assert object with

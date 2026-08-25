@@ -1,7 +1,7 @@
 Attribute VB_Name = "MasterSetupEventsManager"
 Option Explicit
 
-'@Folder("Master Setup")
+'@Folder("Msetup")
 '@ModuleDescription("Coordinator for master setup workbook events and shared services.")
 '@IgnoreModule UnrecognizedAnnotation
 

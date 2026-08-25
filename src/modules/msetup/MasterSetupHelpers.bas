@@ -1,7 +1,7 @@
 Attribute VB_Name = "MasterSetupHelpers"
 Option Explicit
 
-'@Folder("Master Setup")
+'@Folder("Msetup")
 '@ModuleDescription("Utility helpers shared across master setup modules.")
 '@depends DropdownLists, DropdownLists, CustomTable, Passwords, Passwords, Translation, TranslationObject, BetterArray
 

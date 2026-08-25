@@ -1,7 +1,7 @@
 Attribute VB_Name = "EventsMasterSetupRibbon"
 Option Explicit
 
-'@Folder("Master Setup")
+'@Folder("Msetup")
 '@ModuleDescription("Ribbon callbacks supporting master setup operations.")
 '@depends MasterSetupPreparation, MasterSetupHelpers, DropdownLists, Passwords, Passwords, Translation, TranslationObject, TranslationChunks, ITranslationChunks, ApplicationState, SetupTranslationsTable, UpdatedValues, DiseaseSheetBuilder, IDiseaseSheetBuilder
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, ExcelMemberMayReturnNothing, UseMeaningfulName

@@ -1,7 +1,7 @@
 Attribute VB_Name = "CustomMasterSetupFunctions"
 Option Explicit
 
-'@Folder("Master Setup")
+'@Folder("Msetup")
 '@ModuleDescription("Custom functions exposed for master setup scenarios.")
 '@IgnoreModule UnrecognizedAnnotation
 

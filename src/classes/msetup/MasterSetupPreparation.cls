@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Implementation for Master Setup preparation and configuration"
 
 '@PredeclaredId
-'@Folder("MasterSetup")
+'@Folder("Msetup")
 '@ModuleDescription("Implementation for Master Setup preparation and configuration")
 '@depends ApplicationState, DropdownLists, DropdownLists, BetterArray, MasterSetupVariables, ProjectError, HiddenNames
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation

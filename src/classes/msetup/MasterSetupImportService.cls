@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Placeholder for Master Setup import service coordination"
 
 '@PredeclaredId
-'@Folder("MasterSetup")
+'@Folder("Msetup")
 '@ModuleDescription("Placeholder for coordinating Master Setup import and export operations")
 
 Option Explicit
