@@ -19,8 +19,8 @@
                     <button id="btnImpStyle" getLabel="LangLabel" image="format" size="large" onAction="clickImpStyle"/>
                 </group>
                 <group id="customGroupAdvanced">
-                    <button id="btnOpen" imageMso="FileOpen" size="normal" getLabel="LangLabel" onAction="clickOpen"/>
-                    <button id="btnOpenLog" imageMso="ErrorChecking" size="normal" getLabel="LangLabel" onAction="clickOpenLog"/>
+                    <button id="btnOpen" imageMso="FileOpen" size="large" getLabel="LangLabel" onAction="clickOpen"/>
+                    <button id="btnOpenLog" imageMso="ErrorChecking" size="large" getLabel="LangLabel" onAction="clickOpenLog"/>
                     <checkBox id="chkAlert" getLabel="LangLabel" getPressed="initMainAlert" onAction="clickMainAlert"/>
                     <checkBox id="chkInstruct" getLabel="LangLabel" getPressed="initMainInstruct" onAction="clickMainInstruct"/>
                 </group>
