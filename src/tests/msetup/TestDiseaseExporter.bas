@@ -16,7 +16,7 @@ Private Const RIBBON_SHEET As String = "RibbonFixture"
 Private Assert As CustomTest
 Private Exporter As IDiseaseExporter
 Private Manager As IDiseaseExportWorkbook
-Private Guard As DiseaseApplicationState
+Private Guard As ApplicationState
 Private TempFolder As String
 
 '@section Module lifecycle
@@ -30,7 +30,7 @@ Private Sub ModuleInitialize()
     Assert.SetModuleName "TestDiseaseExporter"
 
     Set Manager = New DiseaseExportWorkbook
-    Set Guard = DiseaseApplicationState.Create()
+    Set Guard = ApplicationState.Create(Application)
     Set Exporter = DiseaseExporter.Create(Manager, Guard)
 
     TempFolder = ThisWorkbook.Path & Application.PathSeparator & "temp"

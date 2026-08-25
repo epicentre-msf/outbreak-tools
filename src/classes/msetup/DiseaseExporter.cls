@@ -55,7 +55,7 @@ End Enum
 
 Private Type TDiseaseExporter
     Manager As IDiseaseExportWorkbook
-    Guard As DiseaseApplicationState
+    Guard As ApplicationState
 End Type
 
 Private this As TDiseaseExporter
@@ -65,10 +65,10 @@ Private this As TDiseaseExporter
 
 '@sub-title Instantiate a DiseaseExporter with its dependencies configured.
 '@param workbookManager IDiseaseExportWorkbook providing workbook lifecycle handling.
-'@param appGuard DiseaseApplicationState maintaining Application toggles.
+'@param appGuard ApplicationState maintaining Application toggles.
 '@return IDiseaseExporter ready to generate exports.
 Public Function Create(ByVal workbookManager As IDiseaseExportWorkbook, _
-                       ByVal appGuard As DiseaseApplicationState) As IDiseaseExporter
+                       ByVal appGuard As ApplicationState) As IDiseaseExporter
 
     With New DiseaseExporter
         .Initialise workbookManager, appGuard
@@ -86,7 +86,7 @@ End Property
 
 '@sub-title Attach the workbook manager and application guard.
 Public Sub Initialise(ByVal workbookManager As IDiseaseExportWorkbook, _
-                      ByVal appGuard As DiseaseApplicationState)
+                      ByVal appGuard As ApplicationState)
 
     If workbookManager Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Export workbook manager cannot be Nothing"
@@ -242,7 +242,7 @@ End Sub
 '@sub-title Begin the guarded Application state only once per call.
 Private Sub BeginGuard(ByRef guardStarted As Boolean)
     If this.Guard Is Nothing Then Exit Sub
-    this.Guard.BeginGuard Application
+    this.Guard.ApplyBusyState suppressEvents:=True
     guardStarted = True
 End Sub
 
@@ -734,7 +734,7 @@ End Sub
 '@section Interface
 '===============================================================================
 
-Private Sub IDiseaseExporter_Initialise(ByVal workbookManager As IDiseaseExportWorkbook, ByVal appGuard As DiseaseApplicationState)
+Private Sub IDiseaseExporter_Initialise(ByVal workbookManager As IDiseaseExportWorkbook, ByVal appGuard As ApplicationState)
     Initialise workbookManager, appGuard
 End Sub
 
