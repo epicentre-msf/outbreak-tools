@@ -18,7 +18,7 @@ Private Assert As CustomTest
 Private Builder As IDiseaseSheetBuilder
 Private Importer As DiseaseImporter
 Private Exporter As IDiseaseExporter
-Private ExportManager As IDiseaseExportWorkbook
+Private ExportManager As DiseaseExportWorkbook
 Private AppGuard As ApplicationState
 Private Dropdowns As DropdownLists
 Private RibbonTranslations As TranslationObject
@@ -178,7 +178,7 @@ Private Sub PrepareEnvironment()
 
     Set Builder = DiseaseSheetBuilder.Create(ThisWorkbook, Dropdowns, RibbonTranslations)
     Set Importer = DiseaseImporter.Create()
-    Set ExportManager = New DiseaseExportWorkbook
+    Set ExportManager = DiseaseExportWorkbook.Create()
     Set AppGuard = ApplicationState.Create(Application)
     Set Exporter = DiseaseExporter.Create(ExportManager, AppGuard)
 End Sub

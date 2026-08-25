@@ -54,7 +54,7 @@ End Enum
 '===============================================================================
 
 Private Type TDiseaseExporter
-    Manager As IDiseaseExportWorkbook
+    Manager As DiseaseExportWorkbook
     Guard As ApplicationState
 End Type
 
@@ -64,10 +64,10 @@ Private this As TDiseaseExporter
 '===============================================================================
 
 '@sub-title Instantiate a DiseaseExporter with its dependencies configured.
-'@param workbookManager IDiseaseExportWorkbook providing workbook lifecycle handling.
+'@param workbookManager DiseaseExportWorkbook providing workbook lifecycle handling.
 '@param appGuard ApplicationState maintaining Application toggles.
 '@return IDiseaseExporter ready to generate exports.
-Public Function Create(ByVal workbookManager As IDiseaseExportWorkbook, _
+Public Function Create(ByVal workbookManager As DiseaseExportWorkbook, _
                        ByVal appGuard As ApplicationState) As IDiseaseExporter
 
     With New DiseaseExporter
@@ -85,7 +85,7 @@ End Property
 '===============================================================================
 
 '@sub-title Attach the workbook manager and application guard.
-Public Sub Initialise(ByVal workbookManager As IDiseaseExportWorkbook, _
+Public Sub Initialise(ByVal workbookManager As DiseaseExportWorkbook, _
                       ByVal appGuard As ApplicationState)
 
     If workbookManager Is Nothing Then
@@ -734,7 +734,7 @@ End Sub
 '@section Interface
 '===============================================================================
 
-Private Sub IDiseaseExporter_Initialise(ByVal workbookManager As IDiseaseExportWorkbook, ByVal appGuard As ApplicationState)
+Private Sub IDiseaseExporter_Initialise(ByVal workbookManager As DiseaseExportWorkbook, ByVal appGuard As ApplicationState)
     Initialise workbookManager, appGuard
 End Sub
 

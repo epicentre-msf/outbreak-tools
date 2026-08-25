@@ -12,7 +12,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const EXPORT_TEST_FILE As String = "disease_export_test.xlsx"
 
 Private Assert As CustomTest
-Private Manager As IDiseaseExportWorkbook
+Private Manager As DiseaseExportWorkbook
 
 '@section Module lifecycle
 '===============================================================================
@@ -23,7 +23,7 @@ Private Sub ModuleInitialize()
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestDiseaseExportWorkbook"
-    Set Manager = New DiseaseExportWorkbook
+    Set Manager = DiseaseExportWorkbook.Create()
 End Sub
 
 '@ModuleCleanup

@@ -20,9 +20,9 @@ Option Explicit
 '===============================================================================
 
 '@sub-title Configure dependencies required for the exporter.
-'@param workbookManager IDiseaseExportWorkbook responsible for workbook lifecycle.
+'@param workbookManager DiseaseExportWorkbook responsible for workbook lifecycle.
 '@param appGuard ApplicationState guarding Application state toggles.
-Public Sub Initialise(ByVal workbookManager As IDiseaseExportWorkbook, ByVal appGuard As ApplicationState)
+Public Sub Initialise(ByVal workbookManager As DiseaseExportWorkbook, ByVal appGuard As ApplicationState)
 End Sub
 
 '@section Disease Export
