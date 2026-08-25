@@ -158,6 +158,51 @@ Fail:
 End Sub
 
 '@TestMethod("SetupTranslationsTable")
+Public Sub TestRemoveLanguageDeletesTheColumn()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestRemoveLanguageDeletesTheColumn"
+    On Error GoTo Fail
+
+    Subject.EnsureLanguages "French;German"
+    Subject.RemoveLanguage "French"
+
+    Assert.AreEqual CLng(2), TranslationsTable.ListColumns.Count, "One language column should be gone"
+    Assert.IsFalse HasColumn("French"), "The removed language column should be gone"
+    Assert.IsTrue HasColumn("German"), "The other language column should remain"
+    Assert.IsTrue HasColumn("English"), "The default language column should remain"
+
+    Dim languages As BetterArray
+    Set languages = Subject.Languages
+    Assert.AreEqual CLng(1), languages.Length, "The stored language list should follow the delete"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestRemoveLanguageDeletesTheColumn", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestRemoveLanguageRefusesDefaultAndUnknown()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestRemoveLanguageRefusesDefaultAndUnknown"
+
+    Dim refusedDefault As Boolean
+    Dim refusedUnknown As Boolean
+
+    Subject.EnsureLanguages "French"
+
+    On Error Resume Next
+        Subject.RemoveLanguage "English"
+        refusedDefault = (Err.Number = ProjectError.InvalidArgument)
+        Err.Clear
+        Subject.RemoveLanguage "Klingon"
+        refusedUnknown = (Err.Number = ProjectError.InvalidArgument)
+        Err.Clear
+    On Error GoTo 0
+
+    Assert.IsTrue refusedDefault, "The default language column must stay"
+    Assert.IsTrue refusedUnknown, "An unknown language should be refused"
+    Assert.AreEqual CLng(2), TranslationsTable.ListColumns.Count, "No column should be deleted by a refusal"
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
 Public Sub TestEnsureLanguagesPersistsHiddenName()
     CustomTestSetTitles Assert, "SetupTranslationsTable", "TestEnsureLanguagesPersistsHiddenName"
     On Error GoTo Fail

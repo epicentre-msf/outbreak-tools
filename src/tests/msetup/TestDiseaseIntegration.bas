@@ -10,7 +10,7 @@ Option Private Module
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const ANCHOR_SHEET As String = "Variables"
-Private Const DROPDOWN_SHEET As String = "IntegrationDropdown"
+Private Const DROPDOWN_SHEET As String = "__dropdowns"
 Private Const TRANSLATION_SHEET As String = "IntegrationTranslations"
 Private Const IMPORT_SHEET As String = "IntegrationImport"
 Private Const LANGUAGES_LIST As String = "__data_languages"
@@ -101,7 +101,8 @@ Public Sub TestAddExportImportRemove()
     PopulateDiseaseTable diseaseTable
 
     Set exportBook = Exporter.BuildDiseaseWorkbook(diseaseWksh, TranslationTable, RibbonTranslations, _
-                                                   "Alpha", diseaseWksh.Cells(2, 2).Value, diseaseWksh.Cells(2, 3).Value)
+                                                   "Alpha", diseaseWksh.Cells(2, 2).Value, _
+                                                   HiddenNames.Create(diseaseWksh).ValueAsString("__Var_DISCODE"))
 
     Assert.AreEqual "Alpha", exportBook.Worksheets("Metadata").Cells(3, 2).Value, "Metadata should reference disease name"
     Assert.AreEqual "LabelA", exportBook.Worksheets("Dictionary").Cells(2, 4).Value, "Dictionary should capture existing variables"
@@ -132,8 +133,79 @@ Fail:
     CustomTestLogFailure Assert, "TestAddExportImportRemove", Err.Number, Err.Description
 End Sub
 
+'@TestMethod("DiseaseIntegration")
+Public Sub TestMigrationRoundTrip()
+    CustomTestSetTitles Assert, "DiseaseIntegration", "TestMigrationRoundTrip"
+
+    Dim diseaseWksh As Worksheet
+    Dim migrationBook As Workbook
+    Dim diseaseNames As BetterArray
+    Dim manager As DiseaseWorksheetManager
+    Dim importedCount As Long
+    Dim rebuiltTable As ListObject
+
+    On Error GoTo Fail
+
+    PrepareMasterSheets
+
+    Set diseaseWksh = Builder.Build("Alpha")
+    PopulateDiseaseTable diseaseWksh.ListObjects(1)
+
+    Set diseaseNames = New BetterArray
+    diseaseNames.Push "Alpha"
+
+    Set migrationBook = Exporter.BuildMigrationWorkbook(ThisWorkbook, diseaseNames)
+
+    'The disease goes away, then comes back off the flat book.
+    Set manager = DiseaseWorksheetManager.Create()
+    manager.RemoveWorksheet ThisWorkbook, "Alpha"
+
+    importedCount = MasterSetupExports.ImportMigrationDiseases(migrationBook, ThisWorkbook)
+    migrationBook.Close SaveChanges:=False
+
+    Assert.AreEqual 1&, CLng(importedCount), "One disease block should come back"
+    Assert.IsFalse FindWorksheet(ThisWorkbook, "Alpha") Is Nothing, "The disease worksheet should be recreated"
+
+    Set rebuiltTable = ThisWorkbook.Worksheets("Alpha").ListObjects(1)
+    Assert.AreEqual "var_a", rebuiltTable.DataBodyRange.Cells(1, 2).Value, "The first variable should survive the round trip"
+    Assert.AreEqual "LabelB", rebuiltTable.DataBodyRange.Cells(2, 4).Value, "The labels should survive the round trip"
+    Assert.AreEqual "ENG", ThisWorkbook.Worksheets("Alpha").Cells(2, 2).Value, "The language should survive the round trip"
+
+    Exit Sub
+
+Fail:
+    On Error Resume Next
+        If Not migrationBook Is Nothing Then migrationBook.Close SaveChanges:=False
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestMigrationRoundTrip", Err.Number, Err.Description
+End Sub
+
 '@section Helpers
 '===============================================================================
+
+'@description The migration build reads the Translations, Choices and Variables
+'sheets of the source workbook; the two the other tests never need are built
+'here and cleaned with the rest.
+Private Sub PrepareMasterSheets()
+    Dim masterSheet As Worksheet
+    Dim data As Variant
+
+    Set masterSheet = EnsureWorksheet("Translations")
+    ClearWorksheet masterSheet
+    data = RowsToMatrix(Array(Array("tag", "ENG"), Array("hello", "Hello")))
+    WriteMatrix masterSheet.Range("A1"), data
+    masterSheet.ListObjects.Add SourceType:=xlSrcRange, _
+                                Source:=masterSheet.Range("A1").Resize(2, 2), _
+                                XlListObjectHasHeaders:=xlYes
+
+    Set masterSheet = EnsureWorksheet("Choices")
+    ClearWorksheet masterSheet
+    data = RowsToMatrix(Array(Array("List Name", "Label"), Array("choice_age", "0-4")))
+    WriteMatrix masterSheet.Range("A1"), data
+    masterSheet.ListObjects.Add SourceType:=xlSrcRange, _
+                                Source:=masterSheet.Range("A1").Resize(2, 2), _
+                                XlListObjectHasHeaders:=xlYes
+End Sub
 
 Private Sub PrepareEnvironment()
     Dim dropdownSheet As Worksheet
@@ -207,6 +279,9 @@ Private Sub CleanupEnvironment()
     DeleteWorksheetSafe DROPDOWN_SHEET
     DeleteWorksheetSafe TRANSLATION_SHEET
     DeleteWorksheetSafe IMPORT_SHEET
+    DeleteWorksheetSafe "Translations"
+    DeleteWorksheetSafe "Choices"
+    DeleteWorksheetSafe "__dis_import"
     ClearWorksheetSafe ANCHOR_SHEET
 
     DeleteNameSafe VARIABLE_NAME_RANGE

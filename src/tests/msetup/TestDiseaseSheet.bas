@@ -23,6 +23,7 @@ Private Const SHEET_TAG_NAME As String = "sheetTag"
 Private Const NAME_DISNAME As String = "__Var_DISNAME"
 Private Const NAME_DISLANG As String = "__Var_DISLANG"
 Private Const NAME_INDEX As String = "__Var_DISINDEX"
+Private Const NAME_DISCODE As String = "__Var_DISCODE"
 
 Private Assert As CustomTest
 Private Builder As DiseaseSheet
@@ -100,7 +101,6 @@ Public Sub TestBuildCreatesWorksheet()
     Set diseaseWksh = Builder.Build("Zeta")
 
     Assert.AreEqual "ENG", diseaseWksh.Cells(2, 2).Value, "Language cell should default to the first dropdown entry."
-    Assert.AreEqual MARKER_NAME_PREFIX, diseaseWksh.Cells(2, 4).Value, "Marker cell should identify disease worksheets."
     Assert.IsTrue InStr(1, diseaseWksh.Cells(2, 2).Validation.Formula1, LANGUAGES_LIST, vbTextCompare) > 0, _
                  "Language cell should use the languages dropdown."
     
@@ -139,6 +139,7 @@ Public Sub TestBuildCreatesWorksheet()
     Assert.AreEqual "Zeta", sheetStore.ValueAsString(NAME_DISNAME), "Disease name metadata should match the worksheet name."
     Assert.AreEqual "ENG", sheetStore.ValueAsString(NAME_DISLANG), "Language metadata should match the selected language."
     Assert.AreEqual 1&, sheetStore.ValueAsLong(NAME_INDEX, 0), "Disease index should be persisted through hidden names."
+    Assert.AreEqual MARKER_NAME_PREFIX & "001", sheetStore.ValueAsString(NAME_DISCODE), "The disease code should live in the hidden names."
 
 
 

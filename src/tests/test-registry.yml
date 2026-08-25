@@ -1264,7 +1264,7 @@ suites:
         covers: [LLImporter]
 
   # --- msetup (the master setup and its Disease subsystem) -------------------
-  # The whole master setup joined on 2026-08-25: the nine IDisease* interfaces
+  # The whole master setup joined on 2026-08-25 (15 suites): the nine IDisease* interfaces
   # folded into their classes, the three missing classes were written, and the
   # ribbon translation dropdown went away, which ended the clash its LangLabel
   # and clickLangChange had with the two names EventsDesignerCore declares.
@@ -1333,6 +1333,20 @@ suites:
         covers: [MasterSetupPreparation]
       - module: TestEventMasterSetup
         covers: [EventMasterSetup]
+      - module: TestMasterSetupHelpers
+        covers: [MasterSetupHelpers]
+      # TestMasterSetupEvents drives the whole event chain: the workbook
+      # handlers' targets in MasterSetupEventsManager, the preparation's
+      # dropdown placement, the disease line fill and the choices label
+      # recalculation.
+      - module: TestMasterSetupEvents
+        covers: [MasterSetupEventsManager, MasterSetupPreparation, EventMasterSetup]
+      # TestDiseaseSetupImport proves the disease export imports cleanly into
+      # a setup: it drives SetupImport (under `setup`) over a file
+      # DiseaseExporter wrote, arranging with SetupImportTestFixture,
+      # DictionaryTestFixture and PasswordsTestFixture under `helpers`.
+      - module: TestDiseaseSetupImport
+        covers: [DiseaseExporter]
 
 # ---------------------------------------------------------------------------
 # TEMPLATE -- copy per folder as coverage is added. Delete fields left empty.

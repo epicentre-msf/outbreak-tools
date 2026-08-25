@@ -111,6 +111,42 @@ Fail:
 End Sub
 
 '@TestMethod("DiseaseExporter")
+Public Sub TestChoicesExportCoversEveryChoiceOnce()
+    CustomTestSetTitles Assert, "DiseaseExporter", "TestChoicesExportCoversEveryChoiceOnce"
+
+    Dim diseaseWksh As Worksheet
+    Dim translationTable As ListObject
+    Dim ribbonTranslations As TranslationObject
+    Dim targetBook As Workbook
+    Dim choicesValues As Variant
+
+    On Error GoTo Fail
+
+    Set diseaseWksh = PrepareDiseaseWorksheetRows("Alpha", "ENG", "ALPHA_CODE", Array( _
+        Array(1, "age", "demographics", "Age", "choice_age", "0-4 | 5-14", "core"), _
+        Array(2, "fever", "symptoms", "Fever", "choice_fever", "yes | no", "core"), _
+        Array(3, "age_grp", "demographics", "Age group", "choice_age", "0-4 | 5-14", "optional") _
+    ))
+    Set translationTable = PrepareTranslationTable()
+    Set ribbonTranslations = PrepareRibbonTranslations()
+
+    Set targetBook = Exporter.BuildDiseaseWorkbook(diseaseWksh, translationTable, ribbonTranslations, _
+                                                diseaseWksh.Name, diseaseWksh.Cells(2, 2).Value, "ALPHA_CODE")
+
+    choicesValues = targetBook.Worksheets("Choices").Range("A2").Resize(5, 4).Value
+
+    Assert.AreEqual "choice_age", choicesValues(1, 1), "The first choice of the disease should be exported"
+    Assert.AreEqual "choice_fever", choicesValues(3, 1), "Every distinct choice of the disease should be exported"
+    Assert.AreEqual "yes", choicesValues(3, 2), "The choice values should travel with their list"
+    Assert.IsTrue IsEmpty(choicesValues(5, 1)), "A choice used twice should be exported once"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestChoicesExportCoversEveryChoiceOnce", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("DiseaseExporter")
 Public Sub TestBuildMigrationWorkbookAggregatesDiseases()
     CustomTestSetTitles Assert, "DiseaseExporter", "TestBuildMigrationWorkbookAggregatesDiseases"
 
@@ -163,6 +199,17 @@ Private Function PrepareDiseaseWorksheet(ByVal diseaseName As String, _
                                          ByVal languageTag As String, _
                                          ByVal diseaseCode As String) As Worksheet
 
+    Set PrepareDiseaseWorksheet = PrepareDiseaseWorksheetRows(diseaseName, languageTag, diseaseCode, Array( _
+        Array(1, "age", "demographics", "Age", "choice_age", "0-4 | 5-14 | 15+", "core"), _
+        Array(2, "fever", "symptoms", "Fever", "choice_fever", "yes | no", "core") _
+    ))
+End Function
+
+Private Function PrepareDiseaseWorksheetRows(ByVal diseaseName As String, _
+                                             ByVal languageTag As String, _
+                                             ByVal diseaseCode As String, _
+                                             ByVal rows As Variant) As Worksheet
+
     Dim sheet As Worksheet
     Dim header As Variant
     Dim dataRows As Variant
@@ -174,13 +221,10 @@ Private Function PrepareDiseaseWorksheet(ByVal diseaseName As String, _
     ClearWorksheet sheet
 
     sheet.Cells(2, 2).Value = languageTag
-    sheet.Cells(2, 3).Value = diseaseCode
+    SeedDiseaseTags sheet, languageTag, diseaseCode
 
     header = RowsToMatrix(Array(Array("Variable Order", "Variable Name", "Variable Section", "Main Label", "Choice", "Choice Values", "Status")))
-    dataRows = RowsToMatrix(Array( _
-        Array(1, "age", "demographics", "Age", "choice_age", "0-4 | 5-14 | 15+", "core"), _
-        Array(2, "fever", "symptoms", "Fever", "choice_fever", "yes | no", "core") _
-    ))
+    dataRows = RowsToMatrix(rows)
 
     Set startRange = sheet.Range("B4")
     WriteMatrix startRange, header
@@ -189,7 +233,7 @@ Private Function PrepareDiseaseWorksheet(ByVal diseaseName As String, _
     Set listRange = sheet.Range("B4").Resize(UBound(dataRows, 1) + 1, UBound(dataRows, 2))
     sheet.ListObjects.Add SourceType:=xlSrcRange, Source:=listRange, XlListObjectHasHeaders:=xlYes
 
-    Set PrepareDiseaseWorksheet = sheet
+    Set PrepareDiseaseWorksheetRows = sheet
 End Function
 
 Private Function PrepareTranslationTable() As ListObject
@@ -243,6 +287,17 @@ Private Function PrepareRibbonTranslations() As TranslationObject
 
     Set PrepareRibbonTranslations = TranslationObject.Create(sheet.ListObjects(1), "ENG")
 End Function
+
+'The tags of a disease sheet live in its hidden names; the fixtures seed
+'them the way DiseaseSheet writes them.
+Private Sub SeedDiseaseTags(ByVal sheet As Worksheet, ByVal languageTag As String, ByVal diseaseCode As String)
+    Dim store As HiddenNames
+
+    Set store = HiddenNames.Create(sheet)
+    store.EnsureName "sheetTag", "disease", HiddenNameTypeString
+    store.EnsureName "__Var_DISLANG", languageTag, HiddenNameTypeString
+    store.EnsureName "__Var_DISCODE", diseaseCode, HiddenNameTypeString
+End Sub
 
 Private Sub DeleteFixtureSheets()
     DeleteWorksheet TRANSLATION_SHEET
@@ -325,7 +380,7 @@ Private Sub PopulateDiseaseSheet(ByVal sheet As Worksheet, _
 
     sheet.Cells.Clear
     sheet.Cells(2, 2).Value = languageTag
-    sheet.Cells(2, 3).Value = diseaseCode
+    SeedDiseaseTags sheet, languageTag, diseaseCode
 
     rowCount = UBound(data, 1)
     columnCount = UBound(data, 2)
