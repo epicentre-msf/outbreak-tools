@@ -233,7 +233,7 @@ Private Sub AppendImportedRows(ByVal targetTable As ListObject, ByVal appendedRo
 End Sub
 
 '@sub-title Determine which existing variables were missing from the import.
-Private Sub RegisterMissingVariables(ByVal targetData As Variant, ByVal targetRows As Long, ByVal targetNames() As String, ByVal seenSource As Collection, ByVal summary As DiseaseImportSummary, ByVal logger As DiseaseLogger)
+Private Sub RegisterMissingVariables(ByVal targetData As Variant, ByVal targetRows As Long, ByRef targetNames() As String, ByVal seenSource As Collection, ByVal summary As DiseaseImportSummary, ByVal logger As DiseaseLogger)
     Dim rowIndex As Long
     Dim normalizedName As String
 
