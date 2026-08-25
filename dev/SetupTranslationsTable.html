@@ -235,17 +235,31 @@ leaves the rest to the red catch-all.</p>
 <hr />
 <h3 id="int-removelanguage">RemoveLanguage <a class="anchor-link" href="#int-removelanguage">#</a></h3>
 <p><em>remove-language</em></p>
-<p><strong>Delete one language column from the translations table.</strong></p>
+<p><strong>Delete one or more language columns from the translations table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RemoveLanguage(ByVal languageName As String)
 </code></pre>
-<p>Only the columns after the default language are languages, so the structural
-columns can never be deleted through here. The default language column
-stays: promote another language first with SwitchDefaultLanguage. The stored
-language list is refreshed once the column is gone.</p>
+<p>Several names come in one string, split on &quot;;&quot; the way EnsureLanguages reads
+them. Only the columns after the default language are languages, so the
+structural columns can never be deleted through here. The default language
+column stays: promote another language first with SwitchDefaultLanguage.
+Every name is checked before any column goes, so a refused name leaves the
+table as it was. The stored language list is refreshed once the columns are
+gone.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>languageName</code>: String. Header of the language column to delete.</li>
+<li><code>languageName</code>: String. Header of the language column to delete, or several headers separated by &quot;;&quot;.</li>
+</ul>
+<hr />
+<h3 id="int-validateremovablelanguage">ValidateRemovableLanguage <a class="anchor-link" href="#int-validateremovablelanguage">#</a></h3>
+<p><em>validate-removable-language</em></p>
+<p><strong>Refuse a language name that is unknown or is the default language.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateRemovableLanguage(ByVal languageName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>languageName</code>: String. One trimmed language header.</li>
 </ul>
 <hr />
 <h3 id="int-switchablelanguages">SwitchableLanguages <a class="anchor-link" href="#int-switchablelanguages">#</a></h3>

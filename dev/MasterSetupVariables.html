@@ -21,7 +21,7 @@
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>listObject</code>: ListObject representing the Master Setup Variables worksheet table.</li>
+<li><code>listTable</code>: ListObject representing the Master Setup Variables worksheet table.</li>
 </ul>
 <p><strong>Returns:</strong> MasterSetupVariables ready to manage the associated ListObject.</p>
 <hr />
@@ -75,36 +75,6 @@
 <p><strong>Retrieve the section label for the supplied variable.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function SectionFor(ByVal variableName As String) As String
-</code></pre>
-<hr />
-<h3 id="int-addrows">AddRows <a class="anchor-link" href="#int-addrows">#</a></h3>
-<p><strong>Append rows to the underlying table.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub AddRows(Optional ByVal rowCount As Long = 20)
-</code></pre>
-<hr />
-<h3 id="int-removerows">RemoveRows <a class="anchor-link" href="#int-removerows">#</a></h3>
-<p><strong>Remove rows from the underlying table.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub RemoveRows(Optional ByVal rowCount As Long = 1)
-</code></pre>
-<hr />
-<h3 id="int-translateheaders">TranslateHeaders <a class="anchor-link" href="#int-translateheaders">#</a></h3>
-<p><strong>Translate the header row with the supplied translations object.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub TranslateHeaders(ByVal trads As TranslationObject)
-</code></pre>
-<hr />
-<h3 id="int-translatecontent">TranslateContent <a class="anchor-link" href="#int-translatecontent">#</a></h3>
-<p><strong>Translate the key content columns without affecting headers.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub TranslateContent(ByVal trads As TranslationObject)
-</code></pre>
-<hr />
-<h3 id="int-translateall">TranslateAll <a class="anchor-link" href="#int-translateall">#</a></h3>
-<p><strong>Translate both headers and content using the supplied translation object.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub TranslateAll(ByVal contentsTrads As TranslationObject, Optional ByVal ribbonTrads As TranslationObject)
 </code></pre>
 <hr />
 <h3 id="int-setvariablevalidation">SetVariableValidation <a class="anchor-link" href="#int-setvariablevalidation">#</a></h3>
@@ -169,7 +139,7 @@
 </ul>
 <hr />
 <h3 id="int-exportmetadata">ExportMetadata <a class="anchor-link" href="#int-exportmetadata">#</a></h3>
-<p><strong>Export the hidden metadata required to resolve translated columns.</strong></p>
+<p><strong>Export the hidden metadata that records where each column sits.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ExportMetadata(ByVal targetSheet As Worksheet)
 </code></pre>

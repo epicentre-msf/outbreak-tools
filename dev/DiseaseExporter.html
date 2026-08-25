@@ -41,7 +41,6 @@
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function BuildDiseaseWorkbook(ByVal diseaseWksh As Worksheet, _
                                      ByVal translationTable As ListObject, _
-                                     ByVal ribbonTranslations As TranslationObject, _
                                      ByVal diseaseName As String, _
                                      ByVal languageTag As String, _
                                      Optional ByVal diseaseCode As String = vbNullString) As Workbook
@@ -53,7 +52,6 @@
 <pre><code class="language-vb">Public Function ExportDisease(ByVal exportFolder As String, _
                               ByVal diseaseWksh As Worksheet, _
                               ByVal translationTable As ListObject, _
-                              ByVal ribbonTranslations As TranslationObject, _
                               ByVal diseaseName As String, _
                               ByVal languageTag As String, _
                               Optional ByVal diseaseCode As String = vbNullString) As String
@@ -171,11 +169,10 @@
 </code></pre>
 <hr />
 <h3 id="int-populatechoices">PopulateChoices <a class="anchor-link" href="#int-populatechoices">#</a></h3>
-<p><strong>Populate choices sheet translating headers when available.</strong></p>
+<p><strong>Populate the choices sheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PopulateChoices(ByVal choicesSheet As Worksheet, _
-                            ByVal diseaseTable As ListObject, _
-                            ByVal headerCache As DiseaseTranslationCache)
+                            ByVal diseaseTable As ListObject)
 </code></pre>
 <hr />
 <h3 id="int-buildchoicerows">BuildChoiceRows <a class="anchor-link" href="#int-buildchoicerows">#</a></h3>
@@ -259,14 +256,6 @@
 <p><strong>Convert a collection of row arrays into a matrix.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CollectionToMatrix(ByVal rows As Collection, ByVal columnCount As Long) As Variant
-</code></pre>
-<hr />
-<h3 id="int-translateheader">TranslateHeader <a class="anchor-link" href="#int-translateheader">#</a></h3>
-<p><strong>Translate headers when the translation object is provided.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function TranslateHeader(ByVal cache As DiseaseTranslationCache, _
-                                 ByVal key As String, _
-                                 ByVal fallback As String) As String
 </code></pre>
 <hr />
 <h3 id="int-keyof">KeyOf <a class="anchor-link" href="#int-keyof">#</a></h3>
