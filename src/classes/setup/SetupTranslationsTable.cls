@@ -417,6 +417,35 @@ CleanFail:
     ThrowProjectError ProjectError.SomethingWentWrong, "Failed to switch default language: " & Err.Description
 End Sub
 
+'@label:remove-language
+'@sub-title Delete one language column from the translations table.
+'@details
+'Only the columns after the default language are languages, so the structural
+'columns can never be deleted through here. The default language column
+'stays: promote another language first with SwitchDefaultLanguage. The stored
+'language list is refreshed once the column is gone.
+'@param languageName String. Header of the language column to delete.
+Public Sub RemoveLanguage(ByVal languageName As String)
+    Dim targetIndex As Long
+
+    ValidateInitialised
+
+    languageName = Trim$(languageName)
+    If LenB(languageName) = 0 Then Exit Sub
+
+    targetIndex = LanguageColumnIndex(languageName)
+    If targetIndex = 0 Then
+        ThrowProjectError ProjectError.InvalidArgument, "Language '" & languageName & "' does not exist in the translations table."
+    End If
+
+    If targetIndex = LabelColumnIndex() Then
+        ThrowProjectError ProjectError.InvalidArgument, "Language '" & languageName & "' is the default language. Promote another language first."
+    End If
+
+    this.table.ListColumns(targetIndex).Delete
+    PersistLanguageList
+End Sub
+
 '@label:switchable-languages
 '@sub-title Retrieve the available languages excluding the default column.
 Public Function SwitchableLanguages() As BetterArray
