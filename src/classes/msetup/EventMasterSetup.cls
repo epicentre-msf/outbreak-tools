@@ -12,7 +12,7 @@ Attribute VB_Description = "Workbook-level orchestrator for master setup lifecyc
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Coordinates workbook events and shared services for the master setup workbook.")
-'@depends MasterSetupPreparation, MasterSetupVariables, DropdownLists, DropdownLists, LLChoices, Translation, TranslationObject
+'@depends MasterSetupPreparation, MasterSetupVariables, DropdownLists, LLChoices, TranslationObject
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -228,7 +228,7 @@ Private Function EnsureWorkbookTranslations() As TranslationObject
         If table Is Nothing Then Exit Function
 
         languageTag = ResolveLanguageTag()
-        Set this.translations = Translation.Create(table, languageTag)
+        Set this.translations = TranslationObject.Create(table, languageTag)
     End If
 
     Set EnsureWorkbookTranslations = this.translations
@@ -243,7 +243,7 @@ Private Function EnsureRibbonTranslations() As TranslationObject
         If table Is Nothing Then Exit Function
 
         languageTag = ResolveLanguageTag()
-        Set this.ribbonTranslations = Translation.Create(table, languageTag)
+        Set this.ribbonTranslations = TranslationObject.Create(table, languageTag)
     End If
 
     Set EnsureRibbonTranslations = this.ribbonTranslations
