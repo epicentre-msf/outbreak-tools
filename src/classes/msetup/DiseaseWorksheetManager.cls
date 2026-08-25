@@ -24,7 +24,7 @@ Implements IDiseaseWorksheetManager
 '@param sheetName String worksheet name to delete.
 '@return Boolean True when the worksheet existed and has been removed.
 Public Function RemoveWorksheet(ByVal targetBook As Workbook, ByVal sheetName As String) As Boolean
-    Dim guard As IDiseaseApplicationState
+    Dim guard As DiseaseApplicationState
     Dim targetSheet As Worksheet
     Dim errMessage As String
 
@@ -97,10 +97,10 @@ Private Function FindWorksheet(ByVal targetBook As Workbook, ByVal sheetName As 
 End Function
 
 '@sub-title Instantiate and activate an Application guard.
-Private Function CreateGuard(ByVal excelApp As Application) As IDiseaseApplicationState
-    Dim guard As IDiseaseApplicationState
+Private Function CreateGuard(ByVal excelApp As Application) As DiseaseApplicationState
+    Dim guard As DiseaseApplicationState
 
-    Set guard = New DiseaseApplicationState
+    Set guard = DiseaseApplicationState.Create()
     guard.BeginGuard excelApp, False
     Set CreateGuard = guard
 End Function

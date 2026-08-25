@@ -19,7 +19,7 @@ Private Builder As IDiseaseSheetBuilder
 Private Importer As IDiseaseImporter
 Private Exporter As IDiseaseExporter
 Private ExportManager As IDiseaseExportWorkbook
-Private AppGuard As IDiseaseApplicationState
+Private AppGuard As DiseaseApplicationState
 Private Dropdowns As DropdownLists
 Private RibbonTranslations As TranslationObject
 Private TranslationTable As ListObject
@@ -179,7 +179,7 @@ Private Sub PrepareEnvironment()
     Set Builder = DiseaseSheetBuilder.Create(ThisWorkbook, Dropdowns, RibbonTranslations)
     Set Importer = New DiseaseImporter
     Set ExportManager = New DiseaseExportWorkbook
-    Set AppGuard = New DiseaseApplicationState
+    Set AppGuard = DiseaseApplicationState.Create()
     Set Exporter = DiseaseExporter.Create(ExportManager, AppGuard)
 End Sub
 

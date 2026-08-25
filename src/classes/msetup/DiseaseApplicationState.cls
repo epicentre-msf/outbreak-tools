@@ -5,16 +5,19 @@ END
 Attribute VB_Name = "DiseaseApplicationState"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = False
+Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Guards and restores Excel Application state for disease workflows"
 
+'@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Guards and restores Excel Application state for disease workflows")
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IDiseaseApplicationState
+
+'DiseaseApplicationState.cls without interface -- single implementation, no
+'test fake, no compile cycle (see project-rules.md 4.4).
 
 '@section Types
 '===============================================================================
@@ -31,6 +34,15 @@ Private Type TApplicationState
 End Type
 
 Private this As TApplicationState
+
+'@section Factory
+'===============================================================================
+
+'@sub-title Build a fresh, unarmed state guard.
+'@return DiseaseApplicationState ready to arm with BeginGuard.
+Public Function Create() As DiseaseApplicationState
+    Set Create = New DiseaseApplicationState
+End Function
 
 '@section Commands
 '===============================================================================
@@ -118,15 +130,4 @@ End Sub
 '@sub-title Centralised error raising aligned with ProjectError codes.
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
     Err.Raise errNumber, "DiseaseApplicationState", errMessage
-End Sub
-
-'@section Interface
-'===============================================================================
-
-Private Sub IDiseaseApplicationState_BeginGuard(ByVal app As Application, Optional ByVal disableStatusBar As Boolean = True)
-    BeginGuard app, disableStatusBar
-End Sub
-
-Private Sub IDiseaseApplicationState_Restore()
-    Restore
 End Sub

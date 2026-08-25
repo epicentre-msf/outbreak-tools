@@ -11,7 +11,7 @@ Option Private Module
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 Private Assert As CustomTest
-Private Guard As IDiseaseApplicationState
+Private Guard As DiseaseApplicationState
 
 '@section Module lifecycle
 '===============================================================================
@@ -22,7 +22,7 @@ Private Sub ModuleInitialize()
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestDiseaseApplicationState"
-    Set Guard = New DiseaseApplicationState
+    Set Guard = DiseaseApplicationState.Create()
 End Sub
 
 '@ModuleCleanup
