@@ -25,7 +25,7 @@ Private Const NAME_DISLANG As String = "__Var_DISLANG"
 Private Const NAME_INDEX As String = "__Var_DISINDEX"
 
 Private Assert As CustomTest
-Private Builder As IDiseaseSheet
+Private Builder As DiseaseSheet
 Private Dropdowns As DropdownLists
 Private Translations As TranslationObject
 Private VariablesManager As MasterSetupVariables

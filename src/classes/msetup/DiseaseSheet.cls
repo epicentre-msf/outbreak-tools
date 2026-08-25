@@ -15,7 +15,9 @@ Attribute VB_Description = "Builds disease worksheets with translated headers, v
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IDiseaseSheet
+
+'DiseaseSheet.cls without interface -- single implementation, no test fake,
+'no compile cycle (see project-rules.md 4.4).
 
 '@section Constants
 '===============================================================================
@@ -94,7 +96,7 @@ Private hostHeaders As TCurrentHeaders
 Public Function Create(ByVal hostWorkbook As Workbook, _
                        ByVal dropdowns As DropdownLists, _
                        ByVal translator As TranslationObject, _ 
-                       ByVal varObj As MasterSetupVariables) As IDiseaseSheet
+                       ByVal varObj As MasterSetupVariables) As DiseaseSheet
 
     Dim instance As DiseaseSheet
     Set instance = New DiseaseSheet
@@ -123,7 +125,7 @@ End Sub
 '@section Worksheet Construction
 '===============================================================================
 
-Private Function Build(ByVal diseaseName As String, Optional ByVal languageTag As String = vbNullString) As Worksheet
+Public Function Build(ByVal diseaseName As String, Optional ByVal languageTag As String = vbNullString) As Worksheet
 
     diseaseName = Trim$(diseaseName)
     ValidateBuildInputs diseaseName, languageTag
@@ -582,22 +584,4 @@ End Function
 
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
     Err.Raise errNumber, "DiseaseSheet", errMessage
-End Sub
-
-'@section Interface
-'===============================================================================
-
-Private Sub IDiseaseSheet_Initialise(ByVal hostWorkbook As Workbook, _
-                                     ByVal dropdowns As DropdownLists, _
-                                     ByVal translations As TranslationObject, _
-                                     ByVal varObj As MasterSetupVariables)
-    Initialise hostWorkbook, dropdowns, translations, varObj
-End Sub
-
-Private Function IDiseaseSheet_Build(ByVal diseaseName As String, Optional ByVal languageTag As String = vbNullString) As Worksheet
-    Set IDiseaseSheet_Build = Build(diseaseName, languageTag)
-End Function
-
-Private Sub IDiseaseSheet_Reset()
-    Reset
 End Sub
