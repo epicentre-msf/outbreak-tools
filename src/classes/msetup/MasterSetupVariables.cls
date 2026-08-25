@@ -60,6 +60,7 @@ Private Const HEADER_DEFAULT_STATUS As String = "Default Status"
 Private Const HEADER_COMMENTS As String = "Comments"
 
 Private Const STATUS_DROPDOWN_NAME As String = "__var_status"
+Private Const CHOICES_DROPDOWN_NAME As String = "__lst_choices"
 Private Const STATUS_MANDATORY As String = "mandatory"
 Private Const STATUS_VISIBLE As String = "optional, visible"
 Private Const STATUS_HIDDEN As String = "optional, hidden"
@@ -455,6 +456,7 @@ End Function
 
 Private Sub ApplyDropdownValidation(ByVal dropdowns As DropdownLists)
     Dim statusRange As Range
+    Dim choiceRange As Range
     Dim values As BetterArray
 
     Set statusRange = ColumnRange(HEADER_DEFAULT_STATUS)
@@ -472,6 +474,15 @@ Private Sub ApplyDropdownValidation(ByVal dropdowns As DropdownLists)
     End If
 
     dropdowns.SetValidation statusRange, STATUS_DROPDOWN_NAME, alertType:="info"
+
+    'The Default Choice column takes the list of choices when the preparation
+    'has filled it from the Choices sheet.
+    Set choiceRange = ColumnRange(HEADER_DEFAULT_CHOICE)
+    If Not choiceRange Is Nothing Then
+        If dropdowns.Exists(CHOICES_DROPDOWN_NAME) Then
+            dropdowns.SetValidation choiceRange, CHOICES_DROPDOWN_NAME, alertType:="info"
+        End If
+    End If
 End Sub
 
 Private Sub ApplyDuplicateFormatting()
