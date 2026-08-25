@@ -200,6 +200,19 @@
             "command": "bash scripts/devtools/ribbon-envelope.sh '${input:ribbonWorkbook}'",
             "problemMatcher": []
         },
+
+        {
+            "label": "ribbon: check sources against the workbooks",
+            "type": "shell",
+            "command": "bash scripts/release/sync-ribbons.sh --check",
+            "problemMatcher": []
+        },
+        {
+            "label": "ribbon: re-read sources from the workbooks",
+            "type": "shell",
+            "command": "bash scripts/release/sync-ribbons.sh",
+            "problemMatcher": []
+        },
         {
             "label": "inspect: linelist",
             "type": "shell",
@@ -242,6 +255,12 @@
             "label": "headless: build linelist (with options)",
             "type": "shell",
             "command": "bash scripts/headless/build-linelist.sh ${input:headlessArgs}",
+            "problemMatcher": []
+        },
+        {
+            "label": "release: preflight (check only)",
+            "type": "shell",
+            "command": "bash scripts/release/preflight.sh --check",
             "problemMatcher": []
         },
         {

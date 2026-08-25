@@ -86,12 +86,18 @@ Step 3 is where drift actually shows up, and it is byte-exact on purpose —
 customUI part as it sits inside the workbook. (The *report* is normalised with
 `--strip-trailing-cr`, because a customUI part can mix CRLF and LF and GNU diff then
 calls every line changed; when that is the only difference the check says so.) The
-pairing is a table at the top of `sync-ribbons.sh` rather than a name rule, because a
-folder is named after its ribbon, not its workbook: `.mock/setup_mock.xlsb` and
-`src/bin/setup/setup_dev.xlsb` are two copies of the one ribbon in `ribbons/setup`.
-Each mock workbook is checked, and so is the dev twin copied from it, so a dev build
-trailing its mock cannot reach the store. `.mock/cleanDesignerMockFile.xlsb` is left
-out: it is a stripped designer kept for rebuilds, not a shipped ribbon source.
+pairing is a table at the top of `sync-ribbons.sh` rather than a name rule, because two
+workbooks share one folder: `.mock/setup_mock.xlsb` and `src/bin/setup/setup_dev.xlsb`
+are two copies of the one ribbon in `ribbons/setup_mock`, and `.source` names only one
+of them. There is one folder per ribbon, named after the mock that owns it, and both
+workbooks carrying that ribbon are checked against it, so a dev build trailing its mock
+cannot reach the store.
+
+The promoted main builds (`designer.xlsb`, `setup.xlsb`, `msetup.xlsb`) and
+`_ribbontemplate_main.xlsb` have no folder and are not compared. They are promoted from
+the dev line, so they trail it by design and would fail the check every time — their
+ribbon lives only in the binary. `.mock/cleanDesignerMockFile.xlsb` is left out too: it
+is a stripped designer kept for rebuilds, not a shipped ribbon source.
 
 When step 3 fails, decide which side is right and make them agree:
 
@@ -158,9 +164,9 @@ exists); a failed run self-heals the download alias on the next run. A push to `
 that still says `## [Unreleased]` at the top resolves to the last released version and
 so cuts nothing.
 
-> The shipped zip contains a **designer**, a **setup**, and a **ribbon template**.
-> `main` ships `designer.xlsb`/`setup.xlsb`; `dev` (and `hot-fixes`) ship the `_dev`
-> builds.
+> The shipped zip contains a **designer**, a **setup**, a **master setup** and a
+> **ribbon template**. `main` ships `designer.xlsb`/`setup.xlsb`/`msetup.xlsb`; `dev`
+> (and `hot-fixes`) ship the `_dev` builds.
 
 ### Refreshing the dev build
 
@@ -177,7 +183,7 @@ push-assets.sh ─▶ working-binaries.tar.gz   (asset store = src/bin + .mock +
   you, when binaries change                       │
                                                   │  the workflows pull + build from it
                                                   ▼
-release.yml     ─▶ OBT-main-<version>.zip   (the release = designer + setup + ribbon)
+release.yml     ─▶ OBT-main-<version>.zip   (the release = designer + setup + msetup + ribbon)
   CI, on a CHANGELOG version landing on main   + OBT-main-latest.zip (stable alias)
 dev-latest.yml  ─▶ OBT-dev-latest.zip       (the one dev build, overwritten in place)
 ```

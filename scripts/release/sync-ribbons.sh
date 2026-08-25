@@ -27,26 +27,35 @@
 # folder is checked against (ribbons/setup tracks the dev line but packs into the
 # main workbook).
 #
-# The pairing below is explicit rather than read out of .source, because a folder
-# is named after its ribbon, not its workbook: .mock/setup_mock.xlsb and
-# src/bin/setup/setup_dev.xlsb are two copies of the one ribbon in ribbons/setup.
+# The pairing below is explicit rather than read out of .source, because two
+# workbooks share one folder: .mock/setup_mock.xlsb and src/bin/setup/setup_dev.xlsb
+# are two copies of the one ribbon in ribbons/setup_mock, and .source can name only
+# one of them.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
-# workbook|ribbons folder. The mock workbooks are the authority; each dev twin is
-# a copy of one of them (scripts/devtools/update-files.R) and is checked too, so
-# a dev build that trails its mock cannot slip into the bundle.
+# workbook|ribbons folder. One folder per ribbon, named after the mock that owns
+# it, and both workbooks carrying that ribbon are checked against it: the mock is
+# the authority and the dev twin is a copy of it (scripts/devtools/update-files.R),
+# so a dev build that trails its mock cannot slip into the bundle.
+#
+# The promoted main builds (designer.xlsb, setup.xlsb, msetup.xlsb) and the main
+# ribbon template have no folder and are not checked. They are promoted from the
+# dev line, so they trail it by design and would fail this check every time.
 PAIRS=(
-  # mock
+  # designer
   ".mock/designer_mock.xlsb|ribbons/designer_mock"
-  ".mock/mastersetup_mock.xlsb|ribbons/mastersetup_mock"
-  ".mock/setup_mock.xlsb|ribbons/setup"
-  ".mock/unit_test_mock.xlsb|ribbons/unit_tests_dev"
-  # dev
   "src/bin/designer/designer_dev.xlsb|ribbons/designer_mock"
-  "src/bin/setup/setup_dev.xlsb|ribbons/setup"
-  "src/bin/master-setup/master_setup_dev.xlsb|ribbons/master_setup"
-  "src/bin/test-files/unit_tests_dev.xlsb|ribbons/unit_tests_dev"
+  # setup
+  ".mock/setup_mock.xlsb|ribbons/setup_mock"
+  "src/bin/setup/setup_dev.xlsb|ribbons/setup_mock"
+  # unit tests
+  ".mock/unit_tests_mock.xlsb|ribbons/unit_tests_mock"
+  "src/bin/test-files/unit_tests_dev.xlsb|ribbons/unit_tests_mock"
+  # master setup
+  ".mock/mastersetup_mock.xlsb|ribbons/mastersetup_mock"
+  "src/bin/msetup/msetup_dev.xlsb|ribbons/mastersetup_mock"
+  # ribbon template
   "ribbons/_ribbontemplate_dev.xlsb|ribbons/_ribbontemplate_dev"
 )
 # .mock/cleanDesignerMockFile.xlsb is deliberately absent: it is a stripped

@@ -80,7 +80,7 @@ workbook_for() {
   case "$1" in
     setup)       echo ".mock/setup_mock.xlsb" ;;
     designer)    echo ".mock/designer_mock.xlsb" ;;
-    unit_test)   echo ".mock/unit_test_mock.xlsb" ;;
+    unit_test)   echo ".mock/unit_tests_mock.xlsb" ;;
     mastersetup) echo ".mock/mastersetup_mock.xlsb" ;;
     *)           echo "" ;;
   esac

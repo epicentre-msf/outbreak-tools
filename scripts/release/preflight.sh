@@ -38,9 +38,11 @@ command -v unzip >/dev/null 2>&1 || { echo "ERROR: unzip not found." >&2; exit 1
 # The workbooks the bundle ships and conventions.md §11 governs.
 # src/tests/.input is bundled too and deliberately left out: those are frozen
 # fixtures, and an old setup is *supposed* to still carry an old ribbon.
+# ~$... is Excel's lock file for a workbook that is open right now. It is not a
+# workbook, it is bundled all the same, and it must not be mistaken for one here.
 WORKBOOKS=()
 while IFS= read -r f; do [ -n "$f" ] && WORKBOOKS+=("$f"); done < <(
-  ls .mock/*.xlsb src/bin/*/*.xlsb ribbons/_ribbontemplate_*.xlsb 2>/dev/null | sort -u
+  ls .mock/*.xlsb src/bin/*/*.xlsb ribbons/_ribbontemplate_*.xlsb 2>/dev/null     | grep -v '/~\$' | sort -u
 )
 [ ${#WORKBOOKS[@]} -gt 0 ] || { echo "ERROR: no workbooks found (pull-assets.sh first?)" >&2; exit 1; }
 
