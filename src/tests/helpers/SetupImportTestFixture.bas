@@ -16,18 +16,25 @@ Option Explicit
 '@param startRow Long starting row for the dictionary headers.
 '@param startColumn Long starting column for the dictionary headers.
 '@param targetBook Optional Workbook hosting the worksheet.
+'@param tableName Optional String. When given, the block is wrapped in a
+'   ListObject of that name, the host side of the by-name match the import
+'   path runs.
 Public Sub PrepareSetupDictionarySheet(ByVal sheetName As String, _
                                        ByVal variableName As String, _
                                        ByVal sheetValue As String, _
                                        ByVal startRow As Long, _
                                        ByVal startColumn As Long, _
-                                       Optional ByVal targetBook As Workbook)
+                                       Optional ByVal targetBook As Workbook, _
+                                       Optional ByVal tableName As String = vbNullString)
 
     Dim wb As Workbook
     Dim sh As Worksheet
     Dim headers As Variant
     Dim headerMatrix As Variant
     Dim dataMatrix As Variant
+    Dim totalColumns As Long
+    Dim sourceRange As Range
+    Dim lo As ListObject
 
     Set wb = ResolveWorkbook(targetBook)
     Set sh = EnsureWorksheet(sheetName, wb, clearSheet:=True)
@@ -38,6 +45,16 @@ Public Sub PrepareSetupDictionarySheet(ByVal sheetName As String, _
 
     WriteMatrix sh.Cells(startRow, startColumn), headerMatrix
     WriteMatrix sh.Cells(startRow + 1, startColumn), dataMatrix
+
+    If LenB(tableName) = 0 Then Exit Sub
+
+    totalColumns = UBound(headers) - LBound(headers) + 1
+    Set sourceRange = sh.Range(sh.Cells(startRow, startColumn), _
+                               sh.Cells(startRow + 1, startColumn + totalColumns - 1))
+
+    Set lo = sh.ListObjects.Add(xlSrcRange, sourceRange, , xlYes)
+    lo.Name = tableName
+    lo.TableStyle = ""
 End Sub
 
 Private Function BuildDictionaryRow(ByVal headers As Variant, _

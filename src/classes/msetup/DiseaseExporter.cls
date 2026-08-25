@@ -29,6 +29,11 @@ Private Const CHOICES_SHEET As String = "Choices"
 Private Const TRANSLATIONS_SHEET As String = "Translations"
 Private Const METADATA_SHEET As String = "Metadata"
 Private Const VARIABLES_SHEET As String = "Variables"
+'The exported tables take the names a setup gives its own, since
+'SetupImport matches the source tables to the host ones by name.
+Private Const TABLE_DICTIONARY As String = "Tab_Dictionary"
+Private Const TABLE_CHOICES As String = "Tab_Choices"
+Private Const TABLE_TRANSLATIONS As String = "Tab_Translations"
 Private Const HEADER_LIST_NAME As String = "list name"
 Private Const HEADER_ORDER As String = "ordering list"
 Private Const HEADER_RAW_LABEL As String = "non translated label"
@@ -36,7 +41,7 @@ Private Const HEADER_TRANSLATED_LABEL As String = "translated label"
 Private Const HEADER_LABEL As String = "label"
 Private Const HEADER_SHORT_LABEL As String = "short label"
 Private Const HEADER_VARIABLE_ORDER As String = "Variable Order"
-Private Const HEADER_VARIABLE_SECTION As String = "Variable Section"
+Private Const HEADER_MAIN_SECTION As String = "Main Section"
 Private Const HEADER_VARIABLE_NAME As String = "Variable Name"
 Private Const HEADER_MAIN_LABEL As String = "Main Label"
 Private Const HEADER_CONTROL As String = "Control"
@@ -80,6 +85,7 @@ Private Enum ChoiceColumns
 End Enum
 
 Private Const CHOICE_COLUMN_COUNT As Long = 6
+Private Const DICTIONARY_COLUMN_COUNT As Long = 6
 
 '@section State
 '===============================================================================
@@ -135,7 +141,9 @@ End Sub
 'disease uses, in the six-column layout of a setup. The two editable label
 'columns are then translated into the language of the disease, and the
 'label column carries the formula a setup keeps there: the translated label
-'when present, the plain label otherwise.
+'when present, the plain label otherwise. The dictionary, choices and
+'translations blocks are each wrapped in a ListObject named the way a setup
+'names its own, so SetupImport finds them by name.
 '@param logger Optional DiseaseLogger. Receives one warning per list the
 '   master Choices sheet does not carry, and one when the language has no
 '   column in the translations table.
@@ -169,7 +177,7 @@ Public Function BuildDiseaseWorkbook(ByVal diseaseWksh As Worksheet, _
     PopulateDictionary dictionarySheet, diseaseTable
     PopulateChoices choicesSheet, diseaseTable, ResolveMasterChoices(diseaseWksh), logger
     TranslateChoices choicesSheet, translationTable, languageTag, logger
-    PopulateTranslations translationsSheet, translationTable
+    PopulateTranslations translationsSheet, translationTable, TABLE_TRANSLATIONS
 
     ApplySheetCosmetics metadataSheet, dictionarySheet, choicesSheet, translationsSheet
 
@@ -426,7 +434,11 @@ Private Sub PopulateMetadata(ByVal metadataSheet As Worksheet, _
     metadataSheet.Range("A1").Resize(UBound(metadata, 1), UBound(metadata, 2)).Value = metadata
 End Sub
 
-'@sub-title Populate dictionary sheet using array-based assignment.
+'@sub-title Populate the dictionary sheet in the Tab_Dictionary table.
+'@details
+'The headers are the ones of a setup dictionary, so CustomTable.Import
+'matches them by name. Variable Order stays as the first column: the
+'setup dictionary has no such column and the import skips it.
 Private Sub PopulateDictionary(ByVal dictionarySheet As Worksheet, ByVal diseaseTable As ListObject)
 
     Dim sourceData As Variant
@@ -434,18 +446,20 @@ Private Sub PopulateDictionary(ByVal dictionarySheet As Worksheet, ByVal disease
     Dim rowCount As Long
 
     WriteHeaderRow dictionarySheet.Range("A1"), _
-        Array(HEADER_VARIABLE_ORDER, HEADER_VARIABLE_SECTION, HEADER_VARIABLE_NAME, _
+        Array(HEADER_VARIABLE_ORDER, HEADER_MAIN_SECTION, HEADER_VARIABLE_NAME, _
               HEADER_MAIN_LABEL, HEADER_CONTROL, HEADER_STATUS)
 
-    If diseaseTable.DataBodyRange Is Nothing Then Exit Sub
+    If Not diseaseTable.DataBodyRange Is Nothing Then
+        sourceData = diseaseTable.DataBodyRange.Value
+        rowCount = UBound(sourceData, 1)
+        prepared = BuildDictionaryMatrix(sourceData, rowCount)
 
-    sourceData = diseaseTable.DataBodyRange.Value
-    rowCount = UBound(sourceData, 1)
-    prepared = BuildDictionaryMatrix(sourceData, rowCount)
-
-    If Not IsEmpty(prepared) Then
-        dictionarySheet.Range("A2").Resize(rowCount, 6).Value = prepared
+        If Not IsEmpty(prepared) Then
+            dictionarySheet.Range("A2").Resize(rowCount, DICTIONARY_COLUMN_COUNT).Value = prepared
+        End If
     End If
+
+    WrapAsTable dictionarySheet, rowCount, DICTIONARY_COLUMN_COUNT, TABLE_DICTIONARY
 End Sub
 
 '@sub-title Build a dictionary matrix selecting required columns.
@@ -453,7 +467,7 @@ Private Function BuildDictionaryMatrix(ByRef sourceData As Variant, ByVal rowCou
     Dim matrix() As Variant
     Dim rowIndex As Long
 
-    ReDim matrix(1 To rowCount, 1 To 6)
+    ReDim matrix(1 To rowCount, 1 To DICTIONARY_COLUMN_COUNT)
 
     For rowIndex = 1 To rowCount
         matrix(rowIndex, 1) = sourceData(rowIndex, DiseaseOrderColumn)
@@ -477,7 +491,8 @@ End Function
 'come from the master Choices sheet, read once as a block and kept to the
 'lists the disease names. A list the master sheet does not carry takes the
 'values the disease sheet holds for it, and is logged. The label column is
-'written as the formula a setup keeps there.
+'written as the formula a setup keeps there. The block is wrapped in the
+'Tab_Choices table.
 Private Sub PopulateChoices(ByVal choicesSheet As Worksheet, _
                             ByVal diseaseTable As ListObject, _
                             ByVal masterChoices As LLChoices, _
@@ -491,16 +506,18 @@ Private Sub PopulateChoices(ByVal choicesSheet As Worksheet, _
         Array(HEADER_LIST_NAME, HEADER_ORDER, HEADER_RAW_LABEL, _
               HEADER_TRANSLATED_LABEL, HEADER_LABEL, HEADER_SHORT_LABEL)
 
-    If diseaseTable.DataBodyRange Is Nothing Then Exit Sub
+    If Not diseaseTable.DataBodyRange Is Nothing Then
+        Set choiceRows = BuildChoiceRows(diseaseTable.DataBodyRange.Value, masterChoices, logger)
+        choiceMatrix = CollectionToMatrix(choiceRows, CHOICE_COLUMN_COUNT)
 
-    Set choiceRows = BuildChoiceRows(diseaseTable.DataBodyRange.Value, masterChoices, logger)
-    choiceMatrix = CollectionToMatrix(choiceRows, CHOICE_COLUMN_COUNT)
+        If Not IsEmpty(choiceMatrix) Then
+            rowCount = UBound(choiceMatrix, 1)
+            choicesSheet.Range("A2").Resize(rowCount, CHOICE_COLUMN_COUNT).Value = choiceMatrix
+            WriteLabelFormulas choicesSheet, rowCount
+        End If
+    End If
 
-    If IsEmpty(choiceMatrix) Then Exit Sub
-
-    rowCount = UBound(choiceMatrix, 1)
-    choicesSheet.Range("A2").Resize(rowCount, CHOICE_COLUMN_COUNT).Value = choiceMatrix
-    WriteLabelFormulas choicesSheet, rowCount
+    WrapAsTable choicesSheet, rowCount, CHOICE_COLUMN_COUNT, TABLE_CHOICES
 End Sub
 
 '@sub-title Build the choice rows: the master rows of every list the disease names.
@@ -790,8 +807,12 @@ Private Function SplitChoices(ByVal rawValue As Variant) As Variant
     SplitChoices = Split(textValue, DEFAULT_CHOICE_SEPARATOR)
 End Function
 
-'@sub-title Populate a worksheet with a ListObject using a single array assignment.
-Private Sub PopulateTranslations(ByVal targetSheet As Worksheet, ByVal sourceTable As ListObject)
+'@sub-title Copy the values of a ListObject to a worksheet in one assignment.
+'@param tableName Optional String. When given, the copied block is wrapped
+'   in a ListObject of that name.
+Private Sub PopulateTranslations(ByVal targetSheet As Worksheet, _
+                                 ByVal sourceTable As ListObject, _
+                                 Optional ByVal tableName As String = vbNullString)
     Dim sourceRange As Range
     Dim values As Variant
 
@@ -802,6 +823,25 @@ Private Sub PopulateTranslations(ByVal targetSheet As Worksheet, ByVal sourceTab
 
     values = sourceRange.Value
     targetSheet.Range("A1").Resize(UBound(values, 1), UBound(values, 2)).Value = values
+
+    If LenB(tableName) = 0 Then Exit Sub
+    WrapAsTable targetSheet, UBound(values, 1) - 1, UBound(values, 2), tableName
+End Sub
+
+'@sub-title Wrap a block anchored on A1 in a plain ListObject of the given name.
+'@param dataRowCount Long. The rows under the header row; zero wraps the
+'   header row alone.
+Private Sub WrapAsTable(ByVal targetSheet As Worksheet, _
+                        ByVal dataRowCount As Long, _
+                        ByVal columnCount As Long, _
+                        ByVal tableName As String)
+    Dim blockRange As Range
+    Dim table As ListObject
+
+    Set blockRange = targetSheet.Range("A1").Resize(dataRowCount + 1, columnCount)
+    Set table = targetSheet.ListObjects.Add(xlSrcRange, blockRange, , xlYes)
+    table.Name = tableName
+    table.TableStyle = ""
 End Sub
 
 '@sub-title Populate a migration worksheet with disease data.

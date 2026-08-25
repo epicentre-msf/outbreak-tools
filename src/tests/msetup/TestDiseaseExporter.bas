@@ -81,6 +81,7 @@ Public Sub TestBuildDiseaseWorkbookCopiesDictionaryAndChoices()
     Dim diseaseWksh As Worksheet
     Dim translationTable As ListObject
     Dim targetBook As Workbook
+    Dim dictionaryHeaders As Variant
     Dim dictionaryValues As Variant
     Dim choicesHeaders As Variant
     Dim choicesValues As Variant
@@ -93,6 +94,7 @@ Public Sub TestBuildDiseaseWorkbookCopiesDictionaryAndChoices()
     Set targetBook = Exporter.BuildDiseaseWorkbook(diseaseWksh, translationTable, _
                                                 diseaseWksh.Name, diseaseWksh.Cells(2, 2).Value, "ALPHA_CODE")
 
+    dictionaryHeaders = targetBook.Worksheets("Dictionary").Range("A1").Resize(1, 6).Value
     dictionaryValues = targetBook.Worksheets("Dictionary").Range("A2").Resize(2, 6).Value
     choicesHeaders = targetBook.Worksheets("Choices").Range("A1").Resize(1, 6).Value
     choicesValues = targetBook.Worksheets("Choices").Range("A2").Resize(6, 6).Value
@@ -100,6 +102,16 @@ Public Sub TestBuildDiseaseWorkbookCopiesDictionaryAndChoices()
     Assert.AreEqual 1, dictionaryValues(1, 1), "First variable order should be copied"
     Assert.AreEqual "core", dictionaryValues(1, 6), "Status column should be copied"
     Assert.AreEqual "symptoms", dictionaryValues(2, 2), "Section should be copied"
+    Assert.AreEqual "Variable Order", dictionaryHeaders(1, 1), "The order column keeps its name"
+    Assert.AreEqual "Main Section", dictionaryHeaders(1, 2), "The section column carries the setup header"
+    Assert.AreEqual "Variable Name", dictionaryHeaders(1, 3), "The name column carries the setup header"
+
+    Assert.AreEqual "Tab_Dictionary", targetBook.Worksheets("Dictionary").ListObjects(1).Name, _
+                    "The dictionary block is the table a setup names Tab_Dictionary"
+    Assert.AreEqual "Tab_Choices", targetBook.Worksheets("Choices").ListObjects(1).Name, _
+                    "The choices block is the table a setup names Tab_Choices"
+    Assert.AreEqual "Tab_Translations", targetBook.Worksheets("Translations").ListObjects(1).Name, _
+                    "The translations block is the table a setup names Tab_Translations"
 
     Assert.AreEqual "list name", choicesHeaders(1, 1), "The choices sheet carries the setup headers"
     Assert.AreEqual "ordering list", choicesHeaders(1, 2), "The ordering list is the second setup column"

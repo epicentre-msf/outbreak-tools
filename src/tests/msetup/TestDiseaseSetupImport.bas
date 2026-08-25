@@ -14,6 +14,7 @@ Private Const DICTIONARY_SHEET As String = "Dictionary"
 Private Const CHOICES_SHEET As String = "Choices"
 Private Const TRANSLATIONS_SHEET As String = "Translations"
 Private Const DISEASE_FIXTURE_SHEET As String = "DisImpAlpha"
+Private Const DICTIONARY_TABLE As String = "Tab_Dictionary"
 Private Const CHOICES_TABLE As String = "Tab_Choices"
 Private Const TRANSLATIONS_TABLE As String = "Tab_Translations"
 
@@ -75,7 +76,7 @@ Public Sub TestExportedDiseaseImportsIntoSetup()
 
     'The host setup sheets, from the same fixtures the setup import suite uses.
     PreparePasswordsFixture PASS_SHEET
-    PrepareSetupDictionarySheet DICTIONARY_SHEET, "existing_var", "sheet1", 5, 1
+    PrepareSetupDictionarySheet DICTIONARY_SHEET, "existing_var", "sheet1", 5, 1, , DICTIONARY_TABLE
     PrepareSetupChoicesSheet CHOICES_SHEET, 4, 1, , CHOICES_TABLE
     PrepareSetupTranslationsSheet TRANSLATIONS_SHEET, TRANSLATIONS_TABLE, "hello", "Hello", "greet", 1, 2
 
