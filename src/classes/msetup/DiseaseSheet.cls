@@ -26,6 +26,7 @@ Private Const NAME_SHEET_TAG As String = "sheetTag"
 Private Const NAME_DISNAME As String = "__Var_DISNAME"
 Private Const NAME_DISLANG As String = "__Var_DISLANG"
 Private Const NAME_INDEX As String = "__Var_DISINDEX"
+Private Const NAME_DISCODE As String = "__Var_DISCODE"
 
 
 Private Const DEFAULT_ANCHOR_SHEET As String = "Variables"
@@ -316,10 +317,11 @@ Private Sub WriteValues()
     Set anchorRng = this.hostSheet.Cells(ANCHORROW, ANCHORCOLUMN)
     langAddress = anchorRng.Address(True, True)
 
+    'The language cell is the one visible control of the header line. Every
+    'tag of the sheet lives in its hidden names (owner rule, 2026-08-25):
+    'the code and the marker cells of the old master setup are gone.
     anchorRng.Value = this.hostLanguage
-    this.hostSheet.Cells(ANCHORROW, ANCHORCOLUMN + 1).Value = DiseaseCodeName()
-    this.hostSheet.Cells(ANCHORROW, DISEASE_MARKER_COLUMN).Value = DEFAULT_DISEASE_CODE
-    
+
     EnsureColumnsInitialized
     Set anchorRng = anchorRng.Offset(2)
     DEFAULTDISEASECOLUMNS.ToExcelRange anchorRng, TransposeValues:=True
@@ -423,6 +425,9 @@ Private Sub WriteMetadata()
     'Add the disease name to the worksheet
     storeSheet.EnsureName NAME_DISNAME, this.hostSheet.Name, HiddenNameTypeString
 
+    'Write the disease code beside the other tags. Exports read it from here;
+    'no cell carries it.
+    storeSheet.EnsureName NAME_DISCODE, DiseaseCodeName(), HiddenNameTypeString
 
     'Add the disease code name to the workbook
     storeBook.EnsureName DiseaseCodeName(), this.hostSheet.Name, HiddenNameTypeString
@@ -430,18 +435,13 @@ End Sub
 
 
 Private Sub FormatDiseaseSheet()
-    Dim anchorRng As Range
-
-    Set anchorRng = this.hostSheet.Cells(ANCHORROW, ANCHORCOLUMN)
-    this.hostSheet.Cells.Font.Name = "Calibri"
-    this.hostSheet.ListObjects(1).T
 
     RemoveGridlines this.hostSheet
-    With this.hostShee
-        .Cells.Font.Name = "Calibri"
-        .Interior.Color = RGB(0, 82, 155)
-        .Cells(ANCHORROW, ANCHORCOLUMN).Font.Color = vbWhite
 
+    With this.hostSheet
+        .Cells.Font.Name = "Calibri"
+        .Cells.Interior.Color = RGB(0, 82, 155)
+        .Cells(ANCHORROW, ANCHORCOLUMN).Font.Color = vbWhite
     End With
 
     'Format the table header Range. and interiror color
