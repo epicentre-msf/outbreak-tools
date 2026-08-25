@@ -34,6 +34,7 @@ Private Const NAME_DISLANG As String = "__Var_DISLANG"
 
 Private Const HEADER_VARIABLE_NAME As String = "Variable Name"
 Private Const HEADER_DEFAULT_CHOICE As String = "Default Choice"
+Private Const CHOICES_DROPDOWN As String = "__lst_choices"
 
 Private eventService As EventMasterSetup
 
@@ -84,6 +85,11 @@ Public Sub MsSheetChanged(ByVal sh As Worksheet, ByVal target As Range)
         HandleDiseaseSheetChange sh, target
     ElseIf SheetIs(sh, "vars") Then
         HandleVariablesSheetChange sh, target
+    ElseIf SheetIs(sh, "choi") Then
+        HandleChoicesSheetChange sh, target
+        'The choice values feed the worksheet functions; their caches are
+        'stale now.
+        ResetMasterSetupFunctionCaches
     ElseIf SheetIs(sh, "trans") Then
         ResetMasterSetupFunctionCaches
         MasterSetupService.RefreshTranslations
@@ -135,18 +141,29 @@ Private Sub HandleDiseaseSheetChange(ByVal sh As Worksheet, ByVal target As Rang
 End Sub
 
 '@sub-title Fill one line of the disease table from the Variables sheet.
+'@details A cleared name cleans the whole line: the filled cells empty and
+'the choice dropdown the fill added goes with them. A picked name fills the
+'section, the default choice and the default status, and puts the choices
+'dropdown on the Choice cell so another choice is one pick away.
 Private Sub FillDiseaseLine(ByVal table As ListObject, ByVal nameCell As Range)
     Dim variables As MasterSetupVariables
+    Dim choiceCell As Range
     Dim variableName As String
     Dim rowIndex As Long
 
     rowIndex = nameCell.Row - table.DataBodyRange.Row + 1
     variableName = Trim$(CStr(nameCell.Value))
+    Set choiceCell = table.DataBodyRange.Cells(rowIndex, DISEASE_CHOICE_COLUMN)
 
     If LenB(variableName) = 0 Then
         table.DataBodyRange.Cells(rowIndex, DISEASE_SECTION_COLUMN).Value = vbNullString
-        table.DataBodyRange.Cells(rowIndex, DISEASE_CHOICE_COLUMN).Value = vbNullString
+        choiceCell.Value = vbNullString
         table.DataBodyRange.Cells(rowIndex, DISEASE_STATUS_COLUMN).Value = vbNullString
+        'A cell with no validation raises on Delete; the clean line matters
+        'more than the raise.
+        On Error Resume Next
+        choiceCell.Validation.Delete
+        On Error GoTo 0
         Exit Sub
     End If
 
@@ -157,8 +174,36 @@ Private Sub FillDiseaseLine(ByVal table As ListObject, ByVal nameCell As Range)
     'typing it.
     On Error Resume Next
     table.DataBodyRange.Cells(rowIndex, DISEASE_SECTION_COLUMN).Value = variables.SectionFor(variableName)
-    table.DataBodyRange.Cells(rowIndex, DISEASE_CHOICE_COLUMN).Value = variables.DefaultChoiceFor(variableName)
+    choiceCell.Value = variables.DefaultChoiceFor(variableName)
     table.DataBodyRange.Cells(rowIndex, DISEASE_STATUS_COLUMN).Value = variables.DefaultStatusFor(variableName)
+    MasterSetupService.Dropdowns.SetValidation choiceCell, CHOICES_DROPDOWN
+    On Error GoTo 0
+End Sub
+
+'@sub-title Recalculate the label column when a translated label changes.
+'@details The same rule the setup applies on its Choices sheet: the label
+'column carries formulas over the translated and untranslated labels, and a
+'committed edit in the translated column recalculates them.
+Private Sub HandleChoicesSheetChange(ByVal sh As Worksheet, ByVal target As Range)
+    Dim wrapper As CustomTable
+    Dim translatedRange As Range
+    Dim labelRange As Range
+
+    If target.ListObject Is Nothing Then Exit Sub
+
+    Set wrapper = CustomTable.Create(target.ListObject)
+
+    Set translatedRange = wrapper.DataRange(colName:="translated label", includeHeaders:=False, strictSearch:=True, matchCase:=False)
+    If translatedRange Is Nothing Then Exit Sub
+    If Intersect(target, translatedRange) Is Nothing Then Exit Sub
+
+    Set labelRange = wrapper.DataRange(colName:="label", includeHeaders:=False, strictSearch:=True, matchCase:=False)
+    If labelRange Is Nothing Then Exit Sub
+
+    'A refused calculate on a hidden or protected view is logged by the sheet
+    'itself; the edit stands either way.
+    On Error Resume Next
+        labelRange.Calculate
     On Error GoTo 0
 End Sub
 
