@@ -161,6 +161,23 @@ Public Function ResolveMasterVariables(Optional ByVal dictionary As LLdictionary
     Set ResolveMasterVariables = LLVariables.Create(resolvedDictionary)
 End Function
 
+'The variables manager wraps the first table of the Variables sheet, which is
+'the one MasterSetupPreparation maintains.
+Public Function ResolveMasterSetupVariables(Optional ByVal hostSheet As Worksheet) As MasterSetupVariables
+    Dim targetSheet As Worksheet
+
+    If hostSheet Is Nothing Then
+        Set targetSheet = ResolveMasterVariablesSheet()
+    Else
+        Set targetSheet = hostSheet
+    End If
+
+    If targetSheet Is Nothing Then Exit Function
+    If targetSheet.ListObjects.Count = 0 Then Exit Function
+
+    Set ResolveMasterSetupVariables = MasterSetupVariables.Create(targetSheet.ListObjects(1))
+End Function
+
 Public Function ResolveMasterDropdowns(Optional ByVal hostSheet As Worksheet, _
                                        Optional ByVal headerPrefix As String = DEFAULT_DROPDOWN_PREFIX) As DropdownLists
     Dim targetSheet As Worksheet
