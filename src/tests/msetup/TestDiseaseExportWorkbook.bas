@@ -33,7 +33,7 @@ Private Sub ModuleCleanup()
             Assert.PrintResults TEST_OUTPUT_SHEET
         End If
         If Not Manager Is Nothing Then
-            Manager.Release
+            Manager.ReleaseWorkbook
         End If
         DeleteTestFile
     On Error GoTo 0
@@ -48,14 +48,14 @@ Private Sub TestInitialize()
     BusyApp
     DeleteTestFile
     If Not Manager Is Nothing Then
-        Manager.Release
+        Manager.ReleaseWorkbook
     End If
 End Sub
 
 '@TestCleanup
 Private Sub TestCleanup()
     If Not Manager Is Nothing Then
-        Manager.Release
+        Manager.ReleaseWorkbook
     End If
     DeleteTestFile
 End Sub
@@ -97,7 +97,7 @@ Public Sub TestSaveWithoutWorkbookRaises()
     Dim raisedError As Boolean
 
     On Error Resume Next
-        Manager.Release
+        Manager.ReleaseWorkbook
         Manager.SaveAs BuildTestFilePath()
         raisedError = (Err.Number = ProjectError.ObjectNotInitialized)
         Err.Clear

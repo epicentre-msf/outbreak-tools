@@ -43,7 +43,7 @@ Private Sub ModuleCleanup()
             Assert.PrintResults TEST_OUTPUT_SHEET
         End If
         Guard.Restore
-        Manager.Release
+        Manager.ReleaseWorkbook
         DeleteFixtureSheets
     On Error GoTo 0
 
@@ -58,14 +58,14 @@ End Sub
 Private Sub TestInitialize()
     BusyApp
     Guard.Restore
-    Manager.Release
+    Manager.ReleaseWorkbook
     DeleteFixtureSheets
 End Sub
 
 '@TestCleanup
 Private Sub TestCleanup()
     Guard.Restore
-    Manager.Release
+    Manager.ReleaseWorkbook
     DeleteFixtureSheets
 End Sub
 

@@ -89,7 +89,7 @@ End Sub
 
 '@sub-title Release the workbook without saving, ensuring the reference is cleared.
 '@details Never raises: a dead or missing workbook still ends released.
-Public Sub Release()
+Public Sub ReleaseWorkbook()
     If Not this.Book Is Nothing Then
         ' The workbook may already be closed by the user; closing it again
         ' raises, and Release promises to clear the reference regardless.

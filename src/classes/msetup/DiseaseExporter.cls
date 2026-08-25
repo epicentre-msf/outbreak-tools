@@ -245,7 +245,7 @@ End Function
 
 '@sub-title Ensure the workbook manager has a pristine workbook.
 Private Sub EnsureFreshWorkbook()
-    If this.Manager.HasWorkbook Then this.Manager.Release
+    If this.Manager.HasWorkbook Then this.Manager.ReleaseWorkbook
 End Sub
 
 '@sub-title Begin the guarded Application state only once per call.
