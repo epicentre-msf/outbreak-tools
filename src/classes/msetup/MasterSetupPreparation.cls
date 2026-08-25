@@ -43,7 +43,6 @@ Private Const CHOICES_START_COLUMN As Long = 1
 Private Const DEFAULT_VARIABLE_TABLE_NAME As String = "Tab_MasterVariables"
 Private Const DROPDOWN_PREFIX As String = "dropdown_"
 Private Const LANGUAGES_DROPDOWN As String = "__data_languages"
-Private Const FILE_LANGUAGES_DROPDOWN As String = "__file_languages"
 Private Const DISEASES_DROPDOWN_PROHIBITED As String = "__prohibited_diseases_list"
 Private Const DISEASES_DROPODWN As String  = "__diseases_list"
 Private Const CONFIGS_DROPDOWN As String = "__configSheets"
@@ -372,7 +371,6 @@ Private Function DefaultDropdownDefinitions() As Variant
         Array(DISEASES_DROPDOWN_PROHIBITED, DefaultDiseaseExclusions()), _
         Array(CONFIGS_DROPDOWN, DefaultConfigSheets()), _
         Array(DISEASES_DROPODWN, Array("", "")), _
-        Array(FILE_LANGUAGES_DROPDOWN, Array(vbNullString)), _
         Array(LANGUAGES_DROPDOWN, Array(vbNullString)), _
         Array(CHOICES_DROPDOWN, Array("", "")) _
     )
@@ -382,13 +380,12 @@ End Function
 Private Function DefaultDiseaseExclusions() As Variant
     DefaultDiseaseExclusions = Array("Choices", "Variables", "Translations", "Dev", _
                                      "__pass", "__updated", "__compRep", _
-                                    "__ribbonTranslation", _
                                     "__dropdowns")
 End Function
 
 '@Description("Return the default configuration worksheets list.")
 Private Function DefaultConfigSheets() As Variant
-    DefaultConfigSheets = Array("Dev", "__pass", "__updated", "__compRep", "__ribbonTranslation", "__dropdowns")
+    DefaultConfigSheets = Array("Dev", "__pass", "__updated", "__compRep", "__dropdowns")
 End Function
 
 '@Description("Populate the choices dropdown from the list names of the Choices sheet.")
@@ -540,7 +537,6 @@ Private Sub RefreshLanguageDropdowns(ByVal drop As DropdownLists)
     End If
 
     EnsureDropdownHasValues drop, LANGUAGES_DROPDOWN, langValues
-    EnsureDropdownHasValues drop, FILE_LANGUAGES_DROPDOWN, langValues.Clone
 End Sub
 
 '@Description("Convert supplied items into a BetterArray helper.")

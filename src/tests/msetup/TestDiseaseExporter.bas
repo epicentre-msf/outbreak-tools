@@ -11,7 +11,6 @@ Option Private Module
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const DISEASE_SHEET_PREFIX As String = "DiseaseTest_"
 Private Const TRANSLATION_SHEET As String = "TranslationFixture"
-Private Const RIBBON_SHEET As String = "RibbonFixture"
 
 Private Assert As CustomTest
 Private Exporter As DiseaseExporter
@@ -78,7 +77,6 @@ Public Sub TestBuildDiseaseWorkbookCopiesDictionaryAndChoices()
 
     Dim diseaseWksh As Worksheet
     Dim translationTable As ListObject
-    Dim ribbonTranslations As TranslationObject
     Dim targetBook As Workbook
     Dim dictionaryValues As Variant
     Dim choicesValues As Variant
@@ -87,9 +85,8 @@ Public Sub TestBuildDiseaseWorkbookCopiesDictionaryAndChoices()
 
     Set diseaseWksh = PrepareDiseaseWorksheet("Alpha", "ENG", "ALPHA_CODE")
     Set translationTable = PrepareTranslationTable()
-    Set ribbonTranslations = PrepareRibbonTranslations()
 
-    Set targetBook = Exporter.BuildDiseaseWorkbook(diseaseWksh, translationTable, ribbonTranslations, _
+    Set targetBook = Exporter.BuildDiseaseWorkbook(diseaseWksh, translationTable, _
                                                 diseaseWksh.Name, diseaseWksh.Cells(2, 2).Value, "ALPHA_CODE")
 
     dictionaryValues = targetBook.Worksheets("Dictionary").Range("A2").Resize(2, 6).Value
@@ -116,7 +113,6 @@ Public Sub TestChoicesExportCoversEveryChoiceOnce()
 
     Dim diseaseWksh As Worksheet
     Dim translationTable As ListObject
-    Dim ribbonTranslations As TranslationObject
     Dim targetBook As Workbook
     Dim choicesValues As Variant
 
@@ -128,9 +124,8 @@ Public Sub TestChoicesExportCoversEveryChoiceOnce()
         Array(3, "age_grp", "demographics", "Age group", "choice_age", "0-4 | 5-14", "optional") _
     ))
     Set translationTable = PrepareTranslationTable()
-    Set ribbonTranslations = PrepareRibbonTranslations()
 
-    Set targetBook = Exporter.BuildDiseaseWorkbook(diseaseWksh, translationTable, ribbonTranslations, _
+    Set targetBook = Exporter.BuildDiseaseWorkbook(diseaseWksh, translationTable, _
                                                 diseaseWksh.Name, diseaseWksh.Cells(2, 2).Value, "ALPHA_CODE")
 
     choicesValues = targetBook.Worksheets("Choices").Range("A2").Resize(5, 4).Value
@@ -263,33 +258,6 @@ Private Function PrepareTranslationTable() As ListObject
     Set PrepareTranslationTable = sheet.ListObjects(1)
 End Function
 
-Private Function PrepareRibbonTranslations() As TranslationObject
-    Dim sheet As Worksheet
-    Dim header As Variant
-    Dim dataRows As Variant
-    Dim listRange As Range
-
-    DeleteWorksheet RIBBON_SHEET
-    Set sheet = EnsureWorksheet(RIBBON_SHEET)
-    ClearWorksheet sheet
-
-    header = RowsToMatrix(Array(Array("tag", "ENG")))
-    dataRows = RowsToMatrix(Array( _
-        Array("list name", "List Name"), _
-        Array("label", "Label"), _
-        Array("short label", "Short Label"), _
-        Array("ordering list", "Ordering") _
-    ))
-
-    WriteMatrix sheet.Range("A1"), header
-    WriteMatrix sheet.Range("A2"), dataRows
-
-    Set listRange = sheet.Range("A1").Resize(UBound(dataRows, 1) + 1, UBound(dataRows, 2))
-    sheet.ListObjects.Add SourceType:=xlSrcRange, Source:=listRange, XlListObjectHasHeaders:=xlYes
-
-    Set PrepareRibbonTranslations = TranslationObject.Create(sheet.ListObjects(1), "ENG")
-End Function
-
 'The tags of a disease sheet live in its hidden names; the fixtures seed
 'them the way DiseaseSheet writes them.
 Private Sub SeedDiseaseTags(ByVal sheet As Worksheet, ByVal languageTag As String, ByVal diseaseCode As String)
@@ -303,7 +271,6 @@ End Sub
 
 Private Sub DeleteFixtureSheets()
     DeleteWorksheet TRANSLATION_SHEET
-    DeleteWorksheet RIBBON_SHEET
     DeleteWorksheet "Alpha"
 End Sub
 

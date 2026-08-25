@@ -27,7 +27,6 @@ Private Type TEventMasterSetup
     variables As MasterSetupVariables   'Cached variables manager
     choices As LLChoices                'Cached choices helper
     translations As TranslationObject   'Cached workbook translations
-    ribbonTranslations As TranslationObject 'Cached ribbon translations
     ribbon As IRibbonUI                  'Cached ribbon interface for future invalidations
 End Type
 
@@ -50,9 +49,6 @@ Private Const DROPDOWNS_PREFIX As String = "dropdown_"
 Private Const TRANSLATIONS_SHEET_NAME As String = "Translations"
 Private Const TRANSLATIONS_TABLE_NAME As String = "Tab_Translations"
 
-Private Const RIBBON_TRANSLATION_SHEET As String = "__ribbonTranslation"
-Private Const RIBBON_TRANSLATION_TABLE As String = "TabTransId"
-Private Const RIBBON_LANGUAGE_RANGE As String = "RNG_FileLang"
 
 
 '@section Factory helpers
@@ -125,11 +121,6 @@ Public Property Get Translations() As TranslationObject
     Set Translations = EnsureWorkbookTranslations
 End Property
 
-'@sub-title Provide the ribbon translations object.
-Public Property Get RibbonTranslations() As TranslationObject
-    Set RibbonTranslations = EnsureRibbonTranslations
-End Property
-
 '@sub-title Expose the cached ribbon interface.
 Public Property Get Ribbon() As IRibbonUI
     Set Ribbon = this.ribbon
@@ -148,7 +139,6 @@ End Sub
 
 Private Sub ResetTranslationCaches()
     Set this.translations = Nothing
-    Set this.ribbonTranslations = Nothing
     Set this.choices = Nothing    'The helper re-reads the sheet next time
 End Sub
 
@@ -230,48 +220,12 @@ Private Function EnsureWorkbookTranslations() As TranslationObject
 
         'The file language went away with the ribbon dropdown; the first
         'language column of the table is the default.
-        languageTag = ResolveLanguageTag()
-        If LenB(languageTag) = 0 Then
-            languageTag = Trim$(CStr(table.HeaderRowRange.Cells(1, 1).Value))
-        End If
+        languageTag = Trim$(CStr(table.HeaderRowRange.Cells(1, 1).Value))
 
         Set this.translations = TranslationObject.Create(table, languageTag)
     End If
 
     Set EnsureWorkbookTranslations = this.translations
-End Function
-
-Private Function EnsureRibbonTranslations() As TranslationObject
-    Dim table As ListObject
-    Dim languageTag As String
-
-    If this.ribbonTranslations Is Nothing Then
-        Set table = ResolveTranslationTable(RIBBON_TRANSLATION_SHEET, RIBBON_TRANSLATION_TABLE)
-        If table Is Nothing Then Exit Function
-
-        languageTag = ResolveLanguageTag()
-        Set this.ribbonTranslations = TranslationObject.Create(table, languageTag)
-    End If
-
-    Set EnsureRibbonTranslations = this.ribbonTranslations
-End Function
-
-Private Function ResolveLanguageTag() As String
-    Dim ribbonSheet As Worksheet
-    Dim candidate As Variant
-
-    Set ribbonSheet = ResolveWorksheet(RIBBON_TRANSLATION_SHEET)
-    If ribbonSheet Is Nothing Then Exit Function
-
-    On Error Resume Next
-        candidate = ribbonSheet.Range(RIBBON_LANGUAGE_RANGE).Value
-    On Error GoTo 0
-
-    If IsError(candidate) Then
-        ResolveLanguageTag = vbNullString
-    Else
-        ResolveLanguageTag = Trim$(CStr(candidate))
-    End If
 End Function
 
 Private Function ResolveTranslationTable(ByVal sheetName As String, _

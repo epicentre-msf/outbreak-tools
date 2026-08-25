@@ -1295,7 +1295,6 @@ suites:
   - folder: msetup
     classes:
       - name: DiseaseExportWorkbook
-      - name: DiseaseTranslationCache
       - name: DiseaseLogger
       - name: DiseaseImportSummary
       - name: DiseaseImporter
@@ -1322,8 +1321,6 @@ suites:
     tests:
       - module: TestDiseaseExportWorkbook
         covers: [DiseaseExportWorkbook]
-      - module: TestDiseaseTranslationCache
-        covers: [DiseaseTranslationCache]
       - module: TestDiseaseLogger
         covers: [DiseaseLogger]
       - module: TestDiseaseImporter

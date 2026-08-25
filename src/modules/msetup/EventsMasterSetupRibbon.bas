@@ -120,7 +120,6 @@ Public Sub clickAddSheet(ByRef ribbonControl As IRibbonControl)
 
     Set dropdowns = MasterSetupHelpers.ResolveMasterDropdowns()
     Set builder = DiseaseSheet.Create(ThisWorkbook, dropdowns, _
-                                      MasterSetupHelpers.ResolveRibbonTranslations(), _
                                       MasterSetupHelpers.ResolveMasterSetupVariables())
 
     passManager.UnProtect ThisWorkbook

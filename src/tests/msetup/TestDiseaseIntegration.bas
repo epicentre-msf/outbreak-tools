@@ -28,7 +28,6 @@ Private Exporter As DiseaseExporter
 Private ExportManager As DiseaseExportWorkbook
 Private AppGuard As ApplicationState
 Private Dropdowns As DropdownLists
-Private RibbonTranslations As TranslationObject
 Private VariablesManager As MasterSetupVariables
 Private TranslationTable As ListObject
 
@@ -60,7 +59,6 @@ Private Sub ModuleCleanup()
     Set ExportManager = Nothing
     Set AppGuard = Nothing
     Set Dropdowns = Nothing
-    Set RibbonTranslations = Nothing
     Set VariablesManager = Nothing
     Set TranslationTable = Nothing
 End Sub
@@ -100,7 +98,7 @@ Public Sub TestAddExportImportRemove()
 
     PopulateDiseaseTable diseaseTable
 
-    Set exportBook = Exporter.BuildDiseaseWorkbook(diseaseWksh, TranslationTable, RibbonTranslations, _
+    Set exportBook = Exporter.BuildDiseaseWorkbook(diseaseWksh, TranslationTable, _
                                                    "Alpha", diseaseWksh.Cells(2, 2).Value, _
                                                    HiddenNames.Create(diseaseWksh).ValueAsString("__Var_DISCODE"))
 
@@ -265,9 +263,8 @@ Private Sub PrepareEnvironment()
                                       XlListObjectHasHeaders:=xlYes
 
     Set TranslationTable = translationSheet.ListObjects(1)
-    Set RibbonTranslations = TranslationObject.Create(TranslationTable, "ENG")
 
-    Set Builder = DiseaseSheet.Create(ThisWorkbook, Dropdowns, RibbonTranslations, VariablesManager)
+    Set Builder = DiseaseSheet.Create(ThisWorkbook, Dropdowns, VariablesManager)
     Set Importer = DiseaseImporter.Create()
     Set ExportManager = DiseaseExportWorkbook.Create()
     Set AppGuard = ApplicationState.Create(Application)

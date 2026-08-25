@@ -111,7 +111,6 @@ End Sub
 '@sub-title Populate a workbook with dictionary, choices, translations, and metadata.
 Public Function BuildDiseaseWorkbook(ByVal diseaseWksh As Worksheet, _
                                      ByVal translationTable As ListObject, _
-                                     ByVal ribbonTranslations As TranslationObject, _
                                      ByVal diseaseName As String, _
                                      ByVal languageTag As String, _
                                      Optional ByVal diseaseCode As String = vbNullString) As Workbook
@@ -122,7 +121,6 @@ Public Function BuildDiseaseWorkbook(ByVal diseaseWksh As Worksheet, _
     Dim choicesSheet As Worksheet
     Dim translationsSheet As Worksheet
     Dim diseaseTable As ListObject
-    Dim headerCache As DiseaseTranslationCache
     Dim guardStarted As Boolean
 
     ValidateDiseaseInputs diseaseWksh, diseaseName, languageTag
@@ -136,15 +134,9 @@ Public Function BuildDiseaseWorkbook(ByVal diseaseWksh As Worksheet, _
 
     Set diseaseTable = ResolveDiseaseTable(diseaseWksh)
 
-    'Without ribbon translations the headers keep their fallback text;
-    'TranslateHeader answers the fallback when the cache is Nothing.
-    If Not ribbonTranslations Is Nothing Then
-        Set headerCache = DiseaseTranslationCache.Create(ribbonTranslations)
-    End If
-
     PopulateMetadata metadataSheet, diseaseName, languageTag, diseaseCode
     PopulateDictionary dictionarySheet, diseaseTable
-    PopulateChoices choicesSheet, diseaseTable, headerCache
+    PopulateChoices choicesSheet, diseaseTable
     PopulateTranslations translationsSheet, translationTable
 
     ApplySheetCosmetics metadataSheet, dictionarySheet, choicesSheet, translationsSheet
@@ -158,7 +150,6 @@ End Function
 Public Function ExportDisease(ByVal exportFolder As String, _
                               ByVal diseaseWksh As Worksheet, _
                               ByVal translationTable As ListObject, _
-                              ByVal ribbonTranslations As TranslationObject, _
                               ByVal diseaseName As String, _
                               ByVal languageTag As String, _
                               Optional ByVal diseaseCode As String = vbNullString) As String
@@ -168,7 +159,7 @@ Public Function ExportDisease(ByVal exportFolder As String, _
 
     ValidateFolder exportFolder
 
-    Set targetBook = BuildDiseaseWorkbook(diseaseWksh, translationTable, ribbonTranslations, _
+    Set targetBook = BuildDiseaseWorkbook(diseaseWksh, translationTable, _
                                         diseaseName, languageTag, diseaseCode)
 
     filePath = BuildDiseaseFilePath(exportFolder, diseaseName)
@@ -431,19 +422,15 @@ Private Function BuildDictionaryMatrix(ByRef sourceData As Variant, ByVal rowCou
     BuildDictionaryMatrix = matrix
 End Function
 
-'@sub-title Populate choices sheet translating headers when available.
+'@sub-title Populate the choices sheet.
 Private Sub PopulateChoices(ByVal choicesSheet As Worksheet, _
-                            ByVal diseaseTable As ListObject, _
-                            ByVal headerCache As DiseaseTranslationCache)
+                            ByVal diseaseTable As ListObject)
 
     Dim choiceRows As Collection
     Dim choiceMatrix As Variant
 
-    WriteHeaderRow choicesSheet.Range("A1"), Array( _
-        TranslateHeader(headerCache, HEADER_LIST_NAME, HEADER_LIST_NAME), _
-        TranslateHeader(headerCache, HEADER_LABEL, HEADER_LABEL), _
-        TranslateHeader(headerCache, HEADER_SHORT_LABEL, HEADER_SHORT_LABEL), _
-        TranslateHeader(headerCache, HEADER_ORDER, HEADER_ORDER))
+    WriteHeaderRow choicesSheet.Range("A1"), _
+        Array(HEADER_LIST_NAME, HEADER_LABEL, HEADER_SHORT_LABEL, HEADER_ORDER)
 
     If diseaseTable.DataBodyRange Is Nothing Then Exit Sub
 
@@ -669,17 +656,6 @@ Private Function CollectionToMatrix(ByVal rows As Collection, ByVal columnCount 
     Next rowIndex
 
     CollectionToMatrix = matrix
-End Function
-
-'@sub-title Translate headers when the translation object is provided.
-Private Function TranslateHeader(ByVal cache As DiseaseTranslationCache, _
-                                 ByVal key As String, _
-                                 ByVal fallback As String) As String
-    If cache Is Nothing Then
-        TranslateHeader = fallback
-    Else
-        TranslateHeader = cache.Resolve(key, fallback)
-    End If
 End Function
 
 '@sub-title Build a unique key for deduplication.

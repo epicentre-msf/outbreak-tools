@@ -12,7 +12,7 @@ Attribute VB_Description = "Lightweight manager for the Master Setup Variables t
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Lightweight manager for the Master Setup Variables table wrapping CustomTable interactions")
-'@depends CustomTable, HiddenNames, BetterArray, Checking, LLChoices, DropdownLists, TranslationObject, DataSheet
+'@depends CustomTable, HiddenNames, BetterArray, LLChoices, DropdownLists, DataSheet
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -53,7 +53,7 @@ Private Const NAME_SHEET_TAG As String = "sheetTag"
 Private Const HEADER_ORDER As String = "Variable Order"
 Private Const HEADER_SECTION As String = "Variable Section"
 Private Const HEADER_NAME As String = "Variable Name"
-Private Const HEADER_LABEL As String = "Variable Label"
+Private Const HEADER_LABEL As String = "Label"
 Private Const HEADER_DEFAULT_CHOICE As String = "Default Choice"
 Private Const HEADER_CHOICES As String = "Choices Values"
 Private Const HEADER_DEFAULT_STATUS As String = "Default Status"
@@ -73,7 +73,7 @@ Private Const VARIABLE_NAME_RANGE As String = "__Col__Variables"
 '@section Factory helpers
 '===============================================================================
 '@sub-title Create a configured variables table manager instance.
-'@param listObject ListObject representing the Master Setup Variables worksheet table.
+'@param listTable ListObject representing the Master Setup Variables worksheet table.
 '@return MasterSetupVariables ready to manage the associated ListObject.
 Public Function Create(ByVal listTable As ListObject) As MasterSetupVariables
 
@@ -158,49 +158,6 @@ Public Function SectionFor(ByVal variableName As String) As String
     ValidateReady
     SectionFor = ValueFor(variableName, HEADER_SECTION)
 End Function
-
-'@sub-title Append rows to the underlying table.
-Public Sub AddRows(Optional ByVal rowCount As Long = 20)
-    ValidateReady
-    TableWrapper.AddRows nbRows:=rowCount
-End Sub
-
-'@sub-title Remove rows from the underlying table.
-Public Sub RemoveRows(Optional ByVal rowCount As Long = 1)
-    Dim idx As Long
-    ValidateReady
-    TableWrapper.RemoveRows rowCount
-End Sub
-
-'@sub-title Translate the header row with the supplied translations object.
-Public Sub TranslateHeaders(ByVal trads As TranslationObject)
-    Dim headerRange As Range
-
-    ValidateReady
-    If trads Is Nothing Then Exit Sub
-
-    Set headerRange = TableRange(includeHeaders:=True).Rows(1)
-    If headerRange Is Nothing Then Exit Sub
-
-    trads.TranslateRange headerRange
-End Sub
-
-'@sub-title Translate the key content columns without affecting headers.
-Public Sub TranslateContent(ByVal trads As TranslationObject)
-    ValidateReady
-    If trads Is Nothing Then Exit Sub
-    TranslateColumn trads, HEADER_SECTION
-    TranslateColumn trads, HEADER_LABEL
-    TranslateColumn trads, HEADER_COMMENTS
-End Sub
-
-'@sub-title Translate both headers and content using the supplied translation object.
-Public Sub TranslateAll(ByVal contentsTrads As TranslationObject, Optional ByVal ribbonTrads As TranslationObject)
-    TranslateContent contentsTrads
-    If (Not ribbonTrad Is Nothing) Then
-        TranslateHeaders trads
-    End If
-End Sub
 
 '@sub-title Apply workbook-scoped validation for variable names onto the supplied range.
 Public Sub SetVariableValidation(ByVal targetRange As Range)
@@ -315,14 +272,14 @@ Public Sub CopyToListObject(ByVal targetTable As ListObject)
     targetWrapper.Import TableWrapper, keepSourceHeaders:=True
 
     On Error Resume Next
-       targetTable.Name = this.table.Name
+        targetTable.Name = this.table.Name
         targetTable.TableStyle = this.table.TableStyle
     On Error GoTo 0
 
     EnsureRequiredColumns targetTable
 End Sub
 
-'@sub-title Export the hidden metadata required to resolve translated columns.
+'@sub-title Export the hidden metadata that records where each column sits.
 '@param targetSheet Worksheet receiving the hidden name definitions.
 Public Sub ExportMetadata(ByVal targetSheet As Worksheet)
     Dim store As HiddenNames
@@ -459,12 +416,12 @@ Private Sub ApplyDropdownValidation(ByVal dropdowns As DropdownLists)
     Dim choiceRange As Range
     Dim values As BetterArray
 
+    If dropdowns Is Nothing Then
+        ThrowError ProjectError.InvalidArgument, "Initialise requires a DropdownLists dependency."
+    End If
+
     Set statusRange = ColumnRange(HEADER_DEFAULT_STATUS)
     If statusRange Is Nothing Then Exit Sub
-
-    If dropdowns Is Nothing Then
-        ThrowError ProjectError.InvalidArgument, "Initialise requires an DropdownLists dependency."
-    End If
 
     If Not dropdowns.Exists(STATUS_DROPDOWN_NAME) Then
         Set values = New BetterArray
@@ -561,11 +518,17 @@ Private Function ColumnIndex(ByVal headerName As String) As Long
         nameId = ColumnHiddenName(headerName)
         If LenB(nameId) > 0 Then
             cached = store.ValueAsLong(nameId, 0)
+            'A stored index is trusted only while its header still sits there:
+            'a column moved or renamed since Initialise would otherwise be read
+            'as another one.
             If cached > 0 And cached <= this.table.ListColumns.Count Then
-                CacheColumnIndex headerName, cached
-                ColumnIndex = cached
-                Exit Function
+                If StrComp(Trim$(this.table.ListColumns(cached).Name), headerName, vbTextCompare) = 0 Then
+                    CacheColumnIndex headerName, cached
+                    ColumnIndex = cached
+                    Exit Function
+                End If
             End If
+            cached = 0
         End If
     End If
 
@@ -767,15 +730,6 @@ Private Sub WriteValue(ByVal rowIndex As Long, ByVal headerName As String, ByVal
     targetRange.Cells(rowIndex, 1).Value = newValue
 End Sub
 
-Private Sub TranslateColumn(ByVal trads As TranslationObject, ByVal headerName As String)
-    Dim targetRange As Range
-
-    Set targetRange = ColumnRange(headerName)
-    If targetRange Is Nothing Then Exit Sub
-
-    trads.TranslateRange targetRange
-End Sub
-
 Private Sub EnsureRequiredColumns(ByVal listTable As ListObject)
     Dim required As Variant
     Dim header As Variant
@@ -794,7 +748,7 @@ Private Sub EnsureRequiredColumns(ByVal listTable As ListObject)
             EnsureColumnAtStoredIndex listTable, CStr(header), store
         Next header
     Else
-        EnsureColumnExistsSimple listTable, vbNullString
+        EnsureColumnExistsSimple listTable
     End If
 End Sub
 
@@ -803,57 +757,50 @@ Private Function RequiredHeaders() As Variant
                             HEADER_DEFAULT_CHOICE, HEADER_CHOICES, HEADER_DEFAULT_STATUS, HEADER_COMMENTS)
 End Function
 
-Private Sub EnsureColumnExistsSimple(ByVal listTable As ListObject, ByVal headerName As String)
+
+Private Sub EnsureColumnExistsSimple(ByVal listTable As ListObject)
     Dim required As Variant
-    Dim desiredCount As Long
-    Dim currentCount As Long
-    Dim headerRow As Range
+    Dim header As Variant
     Dim idx As Long
-    Dim baseIndex As Long
+    Dim added As ListColumn
 
     If listTable Is Nothing Then Exit Sub
 
     required = RequiredHeaders()
     If Not IsArray(required) Then Exit Sub
 
-    desiredCount = UBound(required) - LBound(required) + 1
-
-    ' Remove any columns that are not part of the required schema.
+    'Columns outside the schema go; the ones inside it stay where they are.
+    'Headers are never rewritten by position: a table whose columns sit in
+    'another order would otherwise get every header shifted onto the data of
+    'its neighbour, with nothing raised.
     For idx = listTable.ListColumns.Count To 1 Step -1
         If Not IsRequiredHeader(listTable.ListColumns(idx).Name, required) Then
             listTable.ListColumns(idx).Delete
         End If
     Next idx
 
-    currentCount = listTable.ListColumns.Count
-
-    ' Trim any excess columns (for example, duplicate required headers).
-    If currentCount > desiredCount Then
-        For idx = currentCount To desiredCount + 1 Step -1
-            listTable.ListColumns(idx).Delete
-        Next idx
-    End If
-
-    ' Add missing columns so the table matches the required count.
-    currentCount = listTable.ListColumns.Count
-    If currentCount < desiredCount Then
-        For idx = currentCount + 1 To desiredCount
-            listTable.ListColumns.Add
-        Next idx
-    End If
-
     If Not listTable.ShowHeaders Then
         listTable.ShowHeaders = True
     End If
 
-    Set headerRow = listTable.HeaderRowRange
-    If headerRow Is Nothing Then Exit Sub
-
-    baseIndex = LBound(required)
-    For idx = 0 To desiredCount - 1
-        headerRow.Cells(1, idx + 1).Value = required(baseIndex + idx)
-    Next idx
+    For Each header In required
+        If Not HasColumn(listTable, CStr(header)) Then
+            Set added = listTable.ListColumns.Add
+            added.Name = CStr(header)
+        End If
+    Next header
 End Sub
+
+Private Function HasColumn(ByVal listTable As ListObject, ByVal headerName As String) As Boolean
+    Dim column As ListColumn
+
+    For Each column In listTable.ListColumns
+        If StrComp(Trim$(column.Name), headerName, vbTextCompare) = 0 Then
+            HasColumn = True
+            Exit Function
+        End If
+    Next column
+End Function
 
 Private Function IsRequiredHeader(ByVal candidate As String, ByVal required As Variant) As Boolean
     Dim header As Variant
@@ -879,7 +826,7 @@ Private Sub EnsureColumnAtStoredIndex(ByVal listTable As ListObject, _
     targetIndex = store.ValueAsLong(hiddenName, 0)
 
     If targetIndex <= 0 Then
-        EnsureColumnExistsSimple listTable, headerName
+        EnsureColumnExistsSimple listTable
         Exit Sub
     End If
 
@@ -898,6 +845,14 @@ Private Sub EnsureColumnAtStoredIndex(ByVal listTable As ListObject, _
 
     If current Is Nothing Then
         Set current = listTable.ListColumns.Add(Position:=targetIndex)
+    End If
+
+    If StrComp(Trim$(current.Name), headerName, vbTextCompare) = 0 Then Exit Sub
+    If IsRequiredHeader(current.Name, RequiredHeaders()) Then
+        'Another schema column sits at the stored index: the layout moved since
+        'the metadata was written, so the header scan takes over.
+        EnsureColumnExistsSimple listTable
+        Exit Sub
     End If
 
     current.Name = headerName

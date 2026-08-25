@@ -84,7 +84,7 @@ Public Sub TestExportedDiseaseImportsIntoSetup()
     Set exporter = DiseaseExporter.Create(DiseaseExportWorkbook.Create(), _
                                           ApplicationState.Create(Application))
     ExportedPath = exporter.ExportDisease(EnsureTempFolder(), diseaseWksh, translationTable, _
-                                          Nothing, diseaseWksh.Name, "ENG", "DISCODE1")
+                                          diseaseWksh.Name, "ENG", "DISCODE1")
 
     Assert.IsTrue LenB(Dir(ExportedPath)) > 0, "The disease export should land on disk"
 

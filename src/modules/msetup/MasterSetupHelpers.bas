@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Msetup")
 '@ModuleDescription("Utility helpers shared across master setup modules.")
-'@depends DropdownLists, CustomTable, Passwords, TranslationObject, BetterArray
+'@depends DropdownLists, CustomTable, Passwords, BetterArray
 
 Private Const VARIABLES_SHEETNAME As String = "Variables"
 Private Const TRANSLATIONS_SHEETNAME As String = "Translations"
@@ -13,9 +13,6 @@ Private Const REGISTRY_SHEETNAME As String = "__updated"
 Private Const PASSWORDS_SHEETNAME As String = "__pass"
 Private Const DEVELOPMENT_SHEETNAME As String = "Dev"
 Private Const CONFIG_SHEETS_LIST As String = "__configSheets"
-Private Const RIBBON_TRANSLATION_SHEET As String = "__ribbonTranslation"
-Private Const RIBBON_TRANSLATION_TABLE As String = "TabTransId"
-Private Const RIBBON_LANGUAGE_RANGE As String = "RNG_FileLang"
 
 Private Const START_ROW_VARIABLES As Long = 5
 Private Const START_COLUMN_VARIABLES As Long = 1
@@ -63,8 +60,6 @@ Public Function ResolveMasterSetupSheetName(ByVal sheetKey As String) As String
             ResolveMasterSetupSheetName = PASSWORDS_SHEETNAME
         Case "dev", "development"
             ResolveMasterSetupSheetName = DEVELOPMENT_SHEETNAME
-        Case "ribbontrads", "ribtrads", "ribtrad"
-            ResolveMasterSetupSheetName = RIBBON_TRANSLATION_SHEET
         Case Else
             ResolveMasterSetupSheetName = sheetKey
     End Select
@@ -451,52 +446,6 @@ Public Function IsMasterDiseaseSheet(ByVal targetSheet As Worksheet) As Boolean
 
     IsMasterDiseaseSheet = (StrComp(Trim$(store.ValueAsString(SHEET_TAG_NAME)), _
                                     DISEASE_TAG_VALUE, vbTextCompare) = 0)
-End Function
-
-Public Function ResolveRibbonTranslations(Optional ByVal targetBook As Workbook) As TranslationObject
-    Dim tagSheet As Worksheet
-    Dim table As ListObject
-    Dim languageTag As String
-
-    Set targetBook = ResolveMasterSetupWorkbook(targetBook)
-
-    On Error Resume Next
-        Set tagSheet = targetBook.Worksheets(RIBBON_TRANSLATION_SHEET)
-        Set table = tagSheet.ListObjects(RIBBON_TRANSLATION_TABLE)
-    On Error GoTo 0
-
-    If table Is Nothing Then Exit Function
-
-    languageTag = SafeValue(tagSheet.Range(RIBBON_LANGUAGE_RANGE).Value)
-    Set ResolveRibbonTranslations = TranslationObject.Create(table, languageTag)
-End Function
-
-Public Function ResolveRibbonLanguageTag(Optional ByVal targetBook As Workbook) As String
-    Dim tagSheet As Worksheet
-
-    Set targetBook = ResolveMasterSetupWorkbook(targetBook)
-
-    On Error Resume Next
-        Set tagSheet = targetBook.Worksheets(RIBBON_TRANSLATION_SHEET)
-    On Error GoTo 0
-
-    If tagSheet Is Nothing Then
-        ResolveRibbonLanguageTag = vbNullString
-    Else
-        ResolveRibbonLanguageTag = SafeValue(tagSheet.Range(RIBBON_LANGUAGE_RANGE).Value)
-    End If
-End Function
-
-Public Function TranslateValue(ByVal translations As TranslationObject, _
-                               ByVal key As String, _
-                               ByVal fallback As String) As String
-    If translations Is Nothing Then
-        TranslateValue = fallback
-    ElseIf translations.ValueExists(key) Then
-        TranslateValue = translations.TranslatedValue(key)
-    Else
-        TranslateValue = fallback
-    End If
 End Function
 
 Public Function ResolveNextDiseaseIndex(Optional ByVal targetBook As Workbook) As Long

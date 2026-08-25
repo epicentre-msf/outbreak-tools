@@ -37,14 +37,6 @@ Private Const DEFAULT_VAR_NAME_LIST As String = "PARAMVARNAME"
 Private Const DEFAULT_VAR_CHOICE_LIST As String = "PARAMCHOICESLIST"
 Private Const DEFAULT_DISEASE_CODE As String = "DISSHEET"
 
-Private Const HEADER_ORDER_KEY As String = "varOrder"
-Private Const HEADER_SECTION_KEY As String = "varSection"
-Private Const HEADER_NAME_KEY As String = "varName"
-Private Const HEADER_LABEL_KEY As String = "varLabel"
-Private Const HEADER_CHOICE_KEY As String = "varChoice"
-Private Const HEADER_CHOICES_VALUE_KEY As String = "choiceVal"
-Private Const HEADER_STATUS_KEY As String = "varStatus"
-Private Const HEADER_LANGUAGE_PROMPT_KEY As String = "infoSelectLang"
 Private Const MESSAGE_SELECT_VALUE_KEY As String = "selectValue"
 Private Const MESSAGE_LANGUAGE_ERROR_KEY As String = "errLang"
 
@@ -67,7 +59,6 @@ Private Const DISEASE_MARKER_COLUMN As Long = 4
 Private Type TBuilderState
     hostwb As Workbook
     dropdowns As DropdownLists
-    trads As TranslationObject
     initialised As Boolean
     hostSheet As Worksheet
     hostIndex As Long
@@ -96,12 +87,11 @@ Private hostHeaders As TCurrentHeaders
 '@sub-title Instantiate a sheet builder with provided dependencies.
 Public Function Create(ByVal hostWorkbook As Workbook, _
                        ByVal dropdowns As DropdownLists, _
-                       ByVal translator As TranslationObject, _
                        ByVal varObj As MasterSetupVariables) As DiseaseSheet
 
     Dim instance As DiseaseSheet
     Set instance = New DiseaseSheet
-    instance.Initialise hostWorkbook, dropdowns, translator, varObj
+    instance.Initialise hostWorkbook, dropdowns, varObj
     Set Create = instance
 End Function
 
@@ -110,14 +100,12 @@ End Function
 
 Public Sub Initialise(ByVal hostWorkbook As Workbook, _
                       ByVal dropdowns As DropdownLists, _
-                      ByVal translator As TranslationObject, _
                       ByVal varObj As MasterSetupVariables)
 
     ValidateInitialise hostWorkbook, dropdowns, varObj
 
     Set this.hostwb = hostWorkbook
     Set this.dropdowns = dropdowns
-    Set this.trads = translator
     Set this.hostVariables = varObj
     this.hostLanguage = vbNullString
     this.initialised = True
@@ -154,7 +142,6 @@ End Function
 Public Sub Reset()
     Set this.hostwb = Nothing
     Set this.dropdowns = Nothing
-    Set this.trads = Nothing
     this.initialised = False
     Set this.hostSheet = Nothing
     Set this.hostTable = Nothing
@@ -173,13 +160,13 @@ Private Sub EnsureColumnsInitialized()
         
         DEFAULTDISEASECOLUMNS.LowerBound = 1
 
-        hostHeaders.varOrder    = Translate(HEADER_ORDER_KEY, "Variable Order")
-        hostHeaders.varName     = Translate(HEADER_NAME_KEY, "Variable Name")
-        hostHeaders.varSection  = Translate(HEADER_SECTION_KEY, "Variable Section")
-        hostHeaders.varLabel    = Translate(HEADER_LABEL_KEY, "Main Label")
-        hostHeaders.varChoice   = Translate(HEADER_CHOICE_KEY, "Choice")
-        hostHeaders.choiceVal   = Translate(HEADER_CHOICES_VALUE_KEY, "Choice Values")
-        hostHeaders.varStatus   = Translate(HEADER_STATUS_KEY, "Status")
+        hostHeaders.varOrder    = "Variable Order"
+        hostHeaders.varName     = "Variable Name"
+        hostHeaders.varSection  = "Variable Section"
+        hostHeaders.varLabel    = "Main Label"
+        hostHeaders.varChoice   = "Choice"
+        hostHeaders.choiceVal   = "Choice Values"
+        hostHeaders.varStatus   = "Status"
 
 
         DEFAULTDISEASECOLUMNS.Push  hostHeaders.varOrder, _
@@ -329,10 +316,10 @@ Private Sub WriteValues()
       'Line on values
     Set anchorRng = anchorRng.Offset(1)
 
-    mainLabIndex = ColumnIndexFor(HEADER_LABEL_KEY, "Main Label")
-    choiValIndex = ColumnIndexFor(HEADER_CHOICES_VALUE_KEY, "Choice Values")
-    varNameIndex = ColumnIndexFor(HEADER_NAME_KEY, "Variable Name")
-    varChoiceIndex = ColumnIndexFor(HEADER_CHOICE_KEY, "Choice")
+    mainLabIndex = ColumnIndexFor("Main Label")
+    choiValIndex = ColumnIndexFor("Choice Values")
+    varNameIndex = ColumnIndexFor("Variable Name")
+    varChoiceIndex = ColumnIndexFor("Choice")
     If varNameIndex <= 0 Then Exit Sub
     varNameAddress = anchorRng.Cells(1, varNameIndex).Address(RowAbsolute:=False)
 
@@ -468,15 +455,9 @@ Private Sub RemoveGridlines(ByVal sheet As Worksheet)
     Next view
 End Sub
 
-Private Function ColumnIndexFor(ByVal headerKey As String, ByVal fallback As String) As Long
-    Dim translated As String
-
+Private Function ColumnIndexFor(ByVal header As String) As Long
     EnsureColumnsInitialized
-    translated = Translate(headerKey, fallback)
-    ColumnIndexFor = DEFAULTDISEASECOLUMNS.IndexOf(translated)
-    If ColumnIndexFor <= 0 Then
-        ColumnIndexFor = DEFAULTDISEASECOLUMNS.IndexOf(fallback)
-    End If
+    ColumnIndexFor = DEFAULTDISEASECOLUMNS.IndexOf(header)
 End Function
 
 Private Function FindWorksheet(ByVal wb As Workbook, ByVal sheetName As String) As Worksheet
@@ -507,22 +488,6 @@ Private Sub AssignName(ByVal targetBook As Workbook, ByVal target As Range, ByVa
     EnsureNameDeleted targetBook, nameValue
     targetBook.Names.Add Name:=nameValue, RefersTo:=target
 End Sub
-
-Private Function Translate(ByVal key As String, ByVal fallback As String) As String
-    Dim retVal As String
-
-    If this.trads Is Nothing Then
-        retVal = fallback
-    Else
-        retVal = this.trads.TranslatedValue(key)
-        If LenB(retVal) = 0 Or retVal = key Then
-            retVal = fallback
-        End If
-    End If
-
-    Translate = retVal
-End Function
-
 Private Function ResolveNextDiseaseIndex() As Long
     Dim highestIndex As Long
     Dim fallbackCount As Long

@@ -54,7 +54,6 @@ Public Sub ExportToSetup()
 
     Set exporter = BuildExporter()
     filePath = exporter.ExportDisease(io.Folder(), targetSheet, translationTable, _
-                                      MasterSetupHelpers.ResolveRibbonTranslations(), _
                                       targetSheet.Name, _
                                       store.ValueAsString(NAME_DISLANG), _
                                       store.ValueAsString(NAME_DISCODE))
@@ -207,7 +206,6 @@ Private Function BuildDiseaseSheet(ByVal diseaseName As String, ByVal languageTa
     PurgeStaleDiseaseName dropdowns, diseaseName, targetBook
 
     Set builder = DiseaseSheet.Create(targetBook, dropdowns, _
-                                      MasterSetupHelpers.ResolveRibbonTranslations(targetBook), _
                                       MasterSetupHelpers.ResolveMasterSetupVariables( _
                                       MasterSetupHelpers.ResolveMasterVariablesSheet(targetBook)))
 

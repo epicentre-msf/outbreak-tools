@@ -11,7 +11,6 @@ Option Private Module
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const ANCHOR_SHEET As String = "Variables"
 Private Const DROPDOWN_SHEET As String = "DropdownStubSheet"
-Private Const TRANSLATION_SHEET As String = "SheetBuilderTranslations"
 Private Const LANGUAGES_LIST As String = "__data_languages"
 Private Const STATUS_LIST As String = "__var_status"
 Private Const CHOICES_LIST As String = "__lst_choices"
@@ -28,7 +27,6 @@ Private Const NAME_DISCODE As String = "__Var_DISCODE"
 Private Assert As CustomTest
 Private Builder As DiseaseSheet
 Private Dropdowns As DropdownLists
-Private Translations As TranslationObject
 Private VariablesManager As MasterSetupVariables
 
 '@section Module lifecycle
@@ -55,7 +53,6 @@ Private Sub ModuleCleanup()
     Set Assert = Nothing
     Set Builder = Nothing
     Set Dropdowns = Nothing
-    Set Translations = Nothing
     Set VariablesManager = Nothing
     DeleteWorksheet ANCHOR_SHEET
 End Sub
@@ -93,10 +90,10 @@ Public Sub TestBuildCreatesWorksheet()
 
     On Error GoTo Fail
 
-    labelHeader = Translate("varLabel", "Main Label")
-    choiceHeader = Translate("varChoice", "Choice")
-    statusHeader = Translate("varStatus", "Status")
-    choicesValueHeader = Translate("choiceVal", "Choice Values")
+    labelHeader = "Main Label"
+    choiceHeader = "Choice"
+    statusHeader = "Status"
+    choicesValueHeader = "Choice Values"
 
     Set diseaseWksh = Builder.Build("Zeta")
 
@@ -221,8 +218,6 @@ End Sub
 
 Private Sub PrepareEnvironment()
     Dim dropdownSheet As Worksheet
-    Dim translationSheet As Worksheet
-    Dim data As Variant
     Dim variablesSheet As Worksheet
     Dim variableTable As ListObject
 
@@ -254,29 +249,7 @@ Private Sub PrepareEnvironment()
     AddDropdownList Dropdowns, PROHIBITED_LIST, Array("Variables", "Translations")
     AddDropdownList Dropdowns, DISEASES_LIST, Array("", "")
 
-    Set translationSheet = EnsureWorksheet(TRANSLATION_SHEET)
-    ClearWorksheet translationSheet
-
-    data = Array( _
-        Array("tag", "ENG"), _
-        Array("selectValue", "Select a value"), _
-        Array("infoSelectLang", "Select language"), _
-        Array("varOrder", "Variable Order"), _
-        Array("varSection", "Variable Section"), _
-        Array("varName", "Variable Name"), _
-        Array("varLabel", "Main Label"), _
-        Array("varChoice", "Choice"), _
-        Array("choiceVal", "Choice Values"), _
-        Array("varStatus", "Status"), _
-        Array("errLang", "Please select a language") _
-    )
-
-    translationSheet.Range("A1").Resize(UBound(data) + 1, 2).Value = data
-    translationSheet.ListObjects.Add SourceType:=xlSrcRange, Source:=translationSheet.Range("A1").Resize(UBound(data) + 1, 2), _
-                                     XlListObjectHasHeaders:=xlYes
-
-    Set Translations = TranslationObject.Create(translationSheet.ListObjects(1), "ENG")
-    Set Builder = DiseaseSheet.Create(ThisWorkbook, Dropdowns, Translations, VariablesManager)
+    Set Builder = DiseaseSheet.Create(ThisWorkbook, Dropdowns, VariablesManager)
 End Sub
 
 Private Sub CleanupEnvironment()
@@ -286,7 +259,6 @@ Private Sub CleanupEnvironment()
     DeleteWorksheetSafe "Beta"
     DeleteWorksheetSafe "Gamma"
     DeleteWorksheetSafe DROPDOWN_SHEET
-    DeleteWorksheetSafe TRANSLATION_SHEET
     ClearWorksheetSafe ANCHOR_SHEET
 
     DeleteNameSafe VARIABLE_NAME_RANGE
@@ -296,7 +268,6 @@ Private Sub CleanupEnvironment()
 
     Set Builder = Nothing
     Set Dropdowns = Nothing
-    Set Translations = Nothing
     Set VariablesManager = Nothing
 End Sub
 
@@ -311,11 +282,6 @@ Private Sub DeleteNameSafe(ByVal nameValue As String)
         ThisWorkbook.Names(nameValue).Delete
     On Error GoTo 0
 End Sub
-
-Private Function Translate(ByVal key As String, ByVal fallback As String) As String
-    Translate = Translations.TranslatedValue(key)
-    If LenB(Translate) = 0 Or (Translate = key) Then Translate = fallback
-End Function
 
 Private Sub ClearWorksheetSafe(ByVal sheetName As String)
     Dim sh As Worksheet

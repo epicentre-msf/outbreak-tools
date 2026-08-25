@@ -406,7 +406,6 @@ Private Function BuildDiseaseFixture() As Worksheet
 
     Set builder = DiseaseSheet.Create(ThisWorkbook, _
                                       MasterSetupEventsManager.MasterSetupService.Dropdowns, _
-                                      Nothing, _
                                       MasterSetupEventsManager.MasterSetupService.Variables)
 
     Set BuildDiseaseFixture = builder.Build(DISEASE_NAME)
