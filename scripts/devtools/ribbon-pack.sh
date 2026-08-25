@@ -86,11 +86,18 @@ if [ -d "$DIR/images" ]; then
 fi
 
 # ---- build ------------------------------------------------------------------
-STAGE=$(mktemp -d); trap 'rm -rf "$STAGE"' EXIT
+STAGE=$(mktemp -d)
+OUTDIR=$(cd "$(dirname "$OUT")" && pwd); ABS_OUT="$OUTDIR/$(basename "$OUT")"
+
+# The package is built beside --out and moved into place at the very end.
+# --out and --into name the same workbook whenever a folder is packed back over
+# the workbook it was extracted from, and cp refuses to copy a file onto itself;
+# building aside also leaves --out untouched when a later step fails.
+BUILD="$ABS_OUT.packing.$$"
+trap 'rm -rf "$STAGE"; rm -f "$BUILD"' EXIT
 mkdir -p "$STAGE/customUI/_rels" "$STAGE/customUI/images" "$STAGE/_rels"
 
-OUTDIR=$(cd "$(dirname "$OUT")" && pwd); ABS_OUT="$OUTDIR/$(basename "$OUT")"
-cp "$INTO" "$ABS_OUT"
+cp "$INTO" "$BUILD"
 
 cp "$DIR/ribbon.xml" "$STAGE/customUI/customUI.xml"
 
@@ -110,7 +117,7 @@ cp "$DIR/ribbon.xml" "$STAGE/customUI/customUI.xml"
 } > "$STAGE/customUI/_rels/customUI.xml.rels"
 
 # package relationship: drop any existing extensibility rel, add exactly one
-unzip -p "$ABS_OUT" _rels/.rels > "$STAGE/_rels/.rels"
+unzip -p "$BUILD" _rels/.rels > "$STAGE/_rels/.rels"
 perl -pi -e 's{<Relationship[^>]*relationships/ui/extensibility[^>]*/>}{}g' "$STAGE/_rels/.rels"
 perl -pi -e "s{</Relationships>}{<Relationship Id=\"rIdOBTRibbon\" Type=\"$REL06\" Target=\"customUI/customUI.xml\"/></Relationships>}" \
   "$STAGE/_rels/.rels"
@@ -119,7 +126,7 @@ perl -pi -e "s{</Relationships>}{<Relationship Id=\"rIdOBTRibbon\" Type=\"$REL06
 # The brackets in the part name are glob metacharacters to both unzip and zip,
 # so every reference to it is either escaped or passed with -nw. Without that
 # they match nothing and fail silently.
-unzip -p "$ABS_OUT" '\[Content_Types\].xml' > "$STAGE/Content_Types.xml"
+unzip -p "$BUILD" '\[Content_Types\].xml' > "$STAGE/Content_Types.xml"
 [ -s "$STAGE/Content_Types.xml" ] || { echo "ERROR: could not read [Content_Types].xml from $INTO" >&2; exit 1; }
 if ! grep -qi 'Extension="png"' "$STAGE/Content_Types.xml"; then
   perl -pi -e 's{<Types([^>]*)>}{<Types$1><Default Extension="png" ContentType="image/png"/>}' "$STAGE/Content_Types.xml"
@@ -128,11 +135,13 @@ fi
 mv "$STAGE/Content_Types.xml" "$STAGE/[Content_Types].xml"
 
 # swap the parts, leaving every other part of the base workbook byte-identical
-zip -q -d "$ABS_OUT" "customUI/*" "_rels/.rels" 2>/dev/null || true
-zip -q -d -nw "$ABS_OUT" "[Content_Types].xml" 2>/dev/null || true
+zip -q -d "$BUILD" "customUI/*" "_rels/.rels" 2>/dev/null || true
+zip -q -d -nw "$BUILD" "[Content_Types].xml" 2>/dev/null || true
 # -D: no directory entries, matching how Excel writes the package
-( cd "$STAGE" && zip -q -X -D -r "$ABS_OUT" "_rels/.rels" "customUI" )
-( cd "$STAGE" && zip -q -X -D -nw "$ABS_OUT" "[Content_Types].xml" )
+( cd "$STAGE" && zip -q -X -D -r "$BUILD" "_rels/.rels" "customUI" )
+( cd "$STAGE" && zip -q -X -D -nw "$BUILD" "[Content_Types].xml" )
+
+mv -f "$BUILD" "$ABS_OUT"
 
 NIMG=$(find "$STAGE/customUI/images" -name '*.png' | wc -l | tr -d ' ')
 echo "packed $DIR -> $OUT"
