@@ -43,10 +43,12 @@ Private Const MIGRATION_FILE_PREFIX As String = "flat_disease_file_"
 Private Const DISEASE_FILE_PREFIX As String = "setup_dictionary_"
 Private Const DISEASE_FILE_EXTENSION As String = ".xlsx"
 
+'Column order of a disease table, as DiseaseSheet builds it:
+'Order, Name, Section, Label, Choice, Choice Values, Status.
 Private Enum DiseaseColumns
     DiseaseOrderColumn = 1
-    DiseaseSectionColumn = 2
-    DiseaseNameColumn = 3
+    DiseaseNameColumn = 2
+    DiseaseSectionColumn = 3
     DiseaseLabelColumn = 4
     DiseaseControlColumn = 5
     DiseaseChoicesColumn = 6

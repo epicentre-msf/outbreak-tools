@@ -176,10 +176,10 @@ Private Function PrepareDiseaseWorksheet(ByVal diseaseName As String, _
     sheet.Cells(2, 2).Value = languageTag
     sheet.Cells(2, 3).Value = diseaseCode
 
-    header = RowsToMatrix(Array(Array("Order", "Section", "Name", "Label", "Control", "Choices", "Status")))
+    header = RowsToMatrix(Array(Array("Variable Order", "Variable Name", "Variable Section", "Main Label", "Choice", "Choice Values", "Status")))
     dataRows = RowsToMatrix(Array( _
-        Array(1, "demographics", "age", "Age", "choice_age", "0-4 | 5-14 | 15+", "core"), _
-        Array(2, "symptoms", "fever", "Fever", "choice_fever", "yes | no", "core") _
+        Array(1, "age", "demographics", "Age", "choice_age", "0-4 | 5-14 | 15+", "core"), _
+        Array(2, "fever", "symptoms", "Fever", "choice_fever", "yes | no", "core") _
     ))
 
     Set startRange = sheet.Range("B4")
@@ -301,14 +301,14 @@ Private Function PrepareMigrationSourceWorkbook() As Workbook
     variables.ListObjects.Add SourceType:=xlSrcRange, Source:=rangeObj, XlListObjectHasHeaders:=xlYes
 
     PopulateDiseaseSheet diseaseBeta, RowsToMatrix(Array( _
-        Array("Order", "Section", "Name", "Label", "Control", "Choices", "Status"), _
-        Array(1, "demographics", "age", "Age", "choice_age", "0-4 | 5-14", "core"), _
-        Array(2, "symptoms", "fever", "Fever", "choice_fever", "yes | no", "core") _
+        Array("Variable Order", "Variable Name", "Variable Section", "Main Label", "Choice", "Choice Values", "Status"), _
+        Array(1, "age", "demographics", "Age", "choice_age", "0-4 | 5-14", "core"), _
+        Array(2, "fever", "symptoms", "Fever", "choice_fever", "yes | no", "core") _
     )), "ENG", "BETA_CODE"
 
     PopulateDiseaseSheet diseaseGamma, RowsToMatrix(Array( _
-        Array("Order", "Section", "Name", "Label", "Control", "Choices", "Status"), _
-        Array(1, "history", "travel", "Recent travel", "choice_travel", "yes | no", "core") _
+        Array("Variable Order", "Variable Name", "Variable Section", "Main Label", "Choice", "Choice Values", "Status"), _
+        Array(1, "travel", "history", "Recent travel", "choice_travel", "yes | no", "core") _
     )), "FRA", "GAMMA_CODE"
 
     Set PrepareMigrationSourceWorkbook = wb
