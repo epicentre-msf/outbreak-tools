@@ -73,6 +73,23 @@ the cursor it snapshots, so with the standing cursor equal to the busy one an
 event leaves no visible pointer change. The snapshot used to hold the default
 cursor, and every selection on a data entry sheet flicked the pointer twice.</p>
 <hr />
+<h3 id="applyrestingstate">ApplyRestingState <a class="anchor-link" href="#applyrestingstate">#</a></h3>
+<p><strong>Put the application on the settings a linelist session rests on.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ApplyRestingState()
+</code></pre>
+<p>A linelist runs on manual calculation. Every handler that needs a value
+refreshed calculates the range it touched, and the workbook is far too large
+to recalculate whole on each of them: a data entry sheet carries a GEOCONCAT
+call per row, and those are answered by VBA.</p>
+<p>The pointer rests on the north-west arrow for the same reason: it is the
+cursor every busy state of the session applies, and ApplicationState puts back
+what it snapshots, so an event that opens and closes a busy state leaves
+neither the calculation mode nor the pointer changed.</p>
+<p>LinelistEventsManager calls this again once the open has finished, because the
+open itself runs inside a busy state whose snapshot was taken before any of
+this was said.</p>
+<hr />
 <h3 id="onsheetchange">OnSheetChange <a class="anchor-link" href="#onsheetchange">#</a></h3>
 <p><strong>Handle worksheet change events.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -83,6 +100,22 @@ cursor, and every selection on a data entry sheet flicked the pointer twice.</p>
 <li><code>sh</code>: Worksheet. The worksheet raising the change event.</li>
 <li><code>target</code>: Range. The edited cells.</li>
 </ul>
+<hr />
+<h3 id="sheethaslistautowork">SheetHasListAutoWork <a class="anchor-link" href="#sheethaslistautowork">#</a></h3>
+<p><strong>Whether leaving this sheet has an automatic list rebuild behind it.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function SheetHasListAutoWork(ByVal prevsh As Worksheet) As Boolean
+</code></pre>
+<p>An edit on the sheet raises the flag and the rebuild lowers it, so a sheet
+nobody touched answers False. LinelistEventsManager asks before it takes any
+application state, because the state is itself what the user sees: screen
+updating off and back on repaints the window whether or not anything changed,
+and leaving an untouched sheet used to pay for that repaint.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>prevsh</code>: Worksheet. The sheet about to be left.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when OnSheetDeactivate has work to do on it.</p>
 <hr />
 <h3 id="onsheetdeactivate">OnSheetDeactivate <a class="anchor-link" href="#onsheetdeactivate">#</a></h3>
 <p><strong>Handle worksheet deactivation events.</strong></p>
@@ -100,6 +133,26 @@ raises. A sheet nobody touched costs one hidden-name read on the way out.</p>
 <ul>
 <li><code>prevsh</code>: Worksheet. The sheet that was deactivated.</li>
 </ul>
+<hr />
+<h3 id="selectionisheavy">SelectionIsHeavy <a class="anchor-link" href="#selectionisheavy">#</a></h3>
+<p><strong>Whether a selection on a data entry sheet starts the geo cascade.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function SelectionIsHeavy(ByVal sh As Worksheet, ByVal target As Range) As Boolean
+</code></pre>
+<p>Landing on a cell under a geo2, geo3 or geo4 column clears the dropdown list
+of that admin level and rewrites it from the geobase. That is the one thing a
+selection does that is worth hiding the screen for. Every other selection
+recalculates the row under the cursor and stops there.</p>
+<p>LinelistEventsManager asks so it can pick the state to run the handler under.
+Every selection used to take the full busy state, and screen updating off and
+back on repaints the window, so moving round a sheet with the arrow keys
+flickered once per key.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The sheet the selection is on.</li>
+<li><code>target</code>: Range. The newly selected cells.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the selection starts a geo cascade.</p>
 <hr />
 <h3 id="onselectionchange">OnSelectionChange <a class="anchor-link" href="#onselectionchange">#</a></h3>
 <p><strong>Handle selection change events on HList sheets.</strong></p>
@@ -437,6 +490,18 @@ the sheet very hidden, and the fallback then lands on the first sheet the user
 is meant to see rather than on Geo.</p>
 <p>Nothing here is worth an error box on open. Every step is guarded and a
 workbook that answers none of them opens where it was saved.</p>
+<hr />
+<h3 id="int-firstvisiblesheet">FirstVisibleSheet <a class="anchor-link" href="#int-firstvisiblesheet">#</a></h3>
+<p><strong>The first worksheet of the host workbook the user can see.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FirstVisibleSheet() As Worksheet
+</code></pre>
+<p>The generation moves the instruction sheet to the front, so on a workbook
+that carries a visible one this answers that sheet. On one that does not it
+answers whatever the user is meant to land on instead, which is what makes a
+linelist open somewhere other than the sheet the generation happened to stop
+on.</p>
+<p><strong>Returns:</strong> Worksheet. The first visible worksheet, or Nothing when none is.</p>
 <hr />
 <h3 id="int-recalculategeocolumnsofsheet">RecalculateGeoColumnsOfSheet <a class="anchor-link" href="#int-recalculategeocolumnsofsheet">#</a></h3>
 <p><strong>Recalculate the geobase columns of one data entry sheet.</strong></p>
@@ -921,7 +986,7 @@ permanent refusal to build the manager again.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (29 file(s))</summary>
+<summary>Used in (30 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
@@ -952,6 +1017,7 @@ permanent refusal to build the manager again.</p>
 <li>GeoTestFixture.bas</li>
 <li>TestEventLinelist.bas</li>
 <li>TestEventLinelistSheets.bas</li>
+<li>OBTHeadless.bas</li>
 </ul>
 </details>
   </main>

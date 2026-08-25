@@ -13,6 +13,14 @@
 <h1>DiseaseWorksheetManager</h1>
 <details>
 <summary>Internal members (not exported)</summary>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
+<p><strong>Build a fresh worksheet manager.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create() As DiseaseWorksheetManager
+</code></pre>
+<p><strong>Returns:</strong> DiseaseWorksheetManager ready to use.</p>
+<hr />
 <h2 id="int-commands">Commands</h2>
 <h3 id="int-removeworksheet">RemoveWorksheet <a class="anchor-link" href="#int-removeworksheet">#</a></h3>
 <p><strong>Remove the specified worksheet using guarded Application settings.</strong></p>
@@ -61,7 +69,7 @@
 <h3 id="int-createguard">CreateGuard <a class="anchor-link" href="#int-createguard">#</a></h3>
 <p><strong>Instantiate and activate an Application guard.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function CreateGuard(ByVal excelApp As Application) As IDiseaseApplicationState
+<pre><code class="language-vb">Private Function CreateGuard(ByVal excelApp As Application) As ApplicationState
 </code></pre>
 <hr />
 <h2 id="int-errorhandling">ErrorHandling</h2>
@@ -73,8 +81,9 @@
 <hr />
 </details>
 <details>
-<summary>Used in (2 file(s))</summary>
+<summary>Used in (3 file(s))</summary>
 <ul>
+<li>MasterSetupExports.bas</li>
 <li>TestDiseaseIntegration.bas</li>
 <li>TestDiseaseWorksheetManager.bas</li>
 </ul>

@@ -161,6 +161,35 @@ is loaded now.</p>
 <li><code>imported</code>: Boolean. True to mark the designer's formatter as the live copy.</li>
 </ul>
 <hr />
+<h3 id="ribbontemplatepath">RibbonTemplatePath <a class="anchor-link" href="#ribbontemplatepath">#</a></h3>
+<p><em>ribbon-template-path</em></p>
+<p><strong>The ribbon template file of the multi generation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get RibbonTemplatePath() As String
+</code></pre>
+<p>Reads the workbook-level TAG_RIBBON_TEMPLATE name. The multi generation
+gives this file to every row it builds, so the rows carry a ribbon
+without anybody loading a template on the Main worksheet first.</p>
+<p>An empty answer means the designer has never been given one. It also
+means the linelists carry buttons: that is what an empty template path
+has always meant to the generation.</p>
+<p><strong>Returns:</strong> String. The stored path, empty when the designer holds none.</p>
+<hr />
+<h3 id="ribbontemplatepath">RibbonTemplatePath <a class="anchor-link" href="#ribbontemplatepath">#</a></h3>
+<p><em>ribbon-template-path-set</em></p>
+<p><strong>Store the ribbon template file of the multi generation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let RibbonTemplatePath(ByVal templatePath As String)
+</code></pre>
+<p>Creates the hidden name when the designer has none yet. An empty path
+takes the name off the store, which puts the designer back in the state
+it had before it was ever given a file: the read answers empty and the
+generation builds the buttons.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>templatePath</code>: String. The full path of the template file.</li>
+</ul>
+<hr />
 <h3 id="hostworkbook">HostWorkbook <a class="anchor-link" href="#hostworkbook">#</a></h3>
 <p><em>host-workbook</em></p>
 <p><strong>The configured host workbook</strong></p>

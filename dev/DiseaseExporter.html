@@ -17,28 +17,22 @@
 <h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
 <p><strong>Instantiate a DiseaseExporter with its dependencies configured.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal workbookManager As IDiseaseExportWorkbook, _
-                       ByVal appGuard As IDiseaseApplicationState) As IDiseaseExporter
+<pre><code class="language-vb">Public Function Create(ByVal workbookManager As DiseaseExportWorkbook, _
+                       ByVal appGuard As ApplicationState) As DiseaseExporter
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>workbookManager</code>: IDiseaseExportWorkbook providing workbook lifecycle handling.</li>
-<li><code>appGuard</code>: IDiseaseApplicationState maintaining Application toggles.</li>
+<li><code>workbookManager</code>: DiseaseExportWorkbook providing workbook lifecycle handling.</li>
+<li><code>appGuard</code>: ApplicationState maintaining Application toggles.</li>
 </ul>
-<p><strong>Returns:</strong> IDiseaseExporter ready to generate exports.</p>
-<hr />
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><strong>Return the current instance as its interface.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IDiseaseExporter
-</code></pre>
+<p><strong>Returns:</strong> DiseaseExporter ready to generate exports.</p>
 <hr />
 <h2 id="int-configuration">Configuration</h2>
 <h3 id="int-initialise">Initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
 <p><strong>Attach the workbook manager and application guard.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Initialise(ByVal workbookManager As IDiseaseExportWorkbook, _
-                      ByVal appGuard As IDiseaseApplicationState)
+<pre><code class="language-vb">Public Sub Initialise(ByVal workbookManager As DiseaseExportWorkbook, _
+                      ByVal appGuard As ApplicationState)
 </code></pre>
 <hr />
 <h2 id="int-disease-export">Disease Export</h2>
@@ -181,7 +175,7 @@
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PopulateChoices(ByVal choicesSheet As Worksheet, _
                             ByVal diseaseTable As ListObject, _
-                            ByVal headerCache As IDiseaseTranslationCache)
+                            ByVal headerCache As DiseaseTranslationCache)
 </code></pre>
 <hr />
 <h3 id="int-buildchoicerows">BuildChoiceRows <a class="anchor-link" href="#int-buildchoicerows">#</a></h3>
@@ -255,10 +249,10 @@
 <pre><code class="language-vb">Private Sub ClearSheet(ByVal sheet As Worksheet)
 </code></pre>
 <hr />
-<h3 id="int-arraytorow">ArrayToRow <a class="anchor-link" href="#int-arraytorow">#</a></h3>
-<p><strong>Convert one-dimensional array into a 1xN matrix for assignment.</strong></p>
+<h3 id="int-writeheaderrow">WriteHeaderRow <a class="anchor-link" href="#int-writeheaderrow">#</a></h3>
+<p><strong>Write one header row through a BetterArray.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ArrayToRow(ByVal values As Variant) As Variant
+<pre><code class="language-vb">Private Sub WriteHeaderRow(ByVal anchorCell As Range, ByVal values As Variant)
 </code></pre>
 <hr />
 <h3 id="int-collectiontomatrix">CollectionToMatrix <a class="anchor-link" href="#int-collectiontomatrix">#</a></h3>
@@ -270,7 +264,7 @@
 <h3 id="int-translateheader">TranslateHeader <a class="anchor-link" href="#int-translateheader">#</a></h3>
 <p><strong>Translate headers when the translation object is provided.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function TranslateHeader(ByVal cache As IDiseaseTranslationCache, _
+<pre><code class="language-vb">Private Function TranslateHeader(ByVal cache As DiseaseTranslationCache, _
                                  ByVal key As String, _
                                  ByVal fallback As String) As String
 </code></pre>
@@ -314,10 +308,12 @@
 <hr />
 </details>
 <details>
-<summary>Used in (2 file(s))</summary>
+<summary>Used in (4 file(s))</summary>
 <ul>
+<li>MasterSetupExports.bas</li>
 <li>TestDiseaseExporter.bas</li>
 <li>TestDiseaseIntegration.bas</li>
+<li>TestDiseaseSetupImport.bas</li>
 </ul>
 </details>
   </main>

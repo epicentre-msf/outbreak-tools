@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DiseaseExportWorkbook - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>DiseaseExportWorkbook</h1>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
+<p><strong>Build a fresh manager holding no workbook yet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create() As DiseaseExportWorkbook
+</code></pre>
+<p><strong>Returns:</strong> DiseaseExportWorkbook ready to hand out a workbook on demand.</p>
+<hr />
+<h2 id="int-lifecycle">Lifecycle</h2>
+<h3 id="int-ensureworkbook">EnsureWorkbook <a class="anchor-link" href="#int-ensureworkbook">#</a></h3>
+<p><strong>Ensure a workbook instance is available for exports.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function EnsureWorkbook(ByVal excelApp As Application) As Excel.Workbook
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>excelApp</code>: Application host used to create the workbook.</li>
+</ul>
+<p><strong>Returns:</strong> Workbook ready for export operations.</p>
+<hr />
+<h3 id="int-saveas">SaveAs <a class="anchor-link" href="#int-saveas">#</a></h3>
+<p><strong>Persist the workbook to disk.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SaveAs(ByVal filePath As String, _
+                  Optional ByVal fileFormat As Long = xlOpenXMLWorkbook, _
+                  Optional ByVal createBackup As Boolean = False)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>filePath</code>: String destination path.</li>
+<li><code>fileFormat</code>: Optional Long holding an XlFileFormat value. Defaults to xlOpenXMLWorkbook.</li>
+<li><code>createBackup</code>: Optional Boolean. Defaults to False.</li>
+</ul>
+<hr />
+<h3 id="int-closeworkbook">CloseWorkbook <a class="anchor-link" href="#int-closeworkbook">#</a></h3>
+<p><strong>Close the workbook and clear the reference.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub CloseWorkbook(Optional ByVal saveChanges As Boolean = False)
+</code></pre>
+<p>Safe to call with nothing managed: that is a harmless no-op.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>saveChanges</code>: Optional Boolean controlling the SaveChanges flag.</li>
+</ul>
+<hr />
+<h3 id="int-releaseworkbook">ReleaseWorkbook <a class="anchor-link" href="#int-releaseworkbook">#</a></h3>
+<p><strong>Release the workbook without saving, ensuring the reference is cleared.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ReleaseWorkbook()
+</code></pre>
+<p>Never raises: a dead or missing workbook still ends released.</p>
+<hr />
+<h2 id="int-state">State</h2>
+<h3 id="int-hasworkbook">HasWorkbook <a class="anchor-link" href="#int-hasworkbook">#</a></h3>
+<p><strong>Indicates whether a workbook is currently managed.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasWorkbook() As Boolean
+</code></pre>
+<hr />
+<h3 id="int-workbook">Workbook <a class="anchor-link" href="#int-workbook">#</a></h3>
+<p><strong>Retrieve the managed workbook reference.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Workbook() As Excel.Workbook
+</code></pre>
+<hr />
+<h2 id="int-errorhandling">ErrorHandling</h2>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><strong>Centralised error raising aligned with ProjectError codes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
+</code></pre>
+<hr />
+</details>
+<details>
+<summary>Used in (6 file(s))</summary>
+<ul>
+<li><a href="DiseaseExporter.html">DiseaseExporter.cls</a></li>
+<li>MasterSetupExports.bas</li>
+<li>TestDiseaseExporter.bas</li>
+<li>TestDiseaseExportWorkbook.bas</li>
+<li>TestDiseaseIntegration.bas</li>
+<li>TestDiseaseSetupImport.bas</li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

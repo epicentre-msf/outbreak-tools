@@ -29,6 +29,19 @@ runs the same with or without an open log. The in-memory record stays
 alive after Finish, which is what a later text re-export reads. Start
 resets the worksheet, the render marker and the record, so a re-run
 begins clean.</p>
+</div>
+</details>
+<details open class="doc-section" id="sections-and-subsections">
+<summary>SECTIONS AND SUBSECTIONS</summary>
+<div class="section-body">
+<p>A run that builds several linelists opens one section per linelist,
+through OpenSection and CloseSection. While a section is open every
+bundle is re-headed -- the section title becomes the bundle title and
+the bundle's own title becomes its subtitle -- and held back. Closing
+the section writes the held bundles in one pass, so the section title
+lands once as a level one heading and every part of that build reads as
+a subsection under it. Without an open section a bundle is written on
+its own, which is what the single build does.</p>
 <p><strong>Depends on:</strong> <a href="CheckingOutput.html">CheckingOutput</a>, <a href="Checking.html">Checking</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a>, <a href="LinelistSpecs.html">LinelistSpecs</a></p>
 </div>
 </details>
@@ -155,6 +168,16 @@ hh:mm:ss  [scope]  bundle-title  entry-label.</p>
 <li>ProjectError.InvalidArgument When index is outside the record.</li>
 </ul>
 <hr />
+<h3 id="int-sectiontitle">SectionTitle <a class="anchor-link" href="#int-sectiontitle">#</a></h3>
+<p><em>section-title</em></p>
+<p><strong>The title of the section that is open</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SectionTitle() As String
+</code></pre>
+<p>Answers an empty string when no section is open, which is the state of
+a single build from the first bundle to the last.</p>
+<p><strong>Returns:</strong> String. The open section title.</p>
+<hr />
 <h2 id="int-run-lifecycle">Run lifecycle</h2>
 <h3 id="int-start">Start <a class="anchor-link" href="#int-start">#</a></h3>
 <p><em>start</em></p>
@@ -188,6 +211,39 @@ constants, so they are the build that is running and cannot be misread.
 The Excel version comes from the application.</p>
 <p><strong>Returns:</strong> String. Something of the shape &quot;mac-64 excel-16.90&quot;.</p>
 <hr />
+<h3 id="int-opensection">OpenSection <a class="anchor-link" href="#int-opensection">#</a></h3>
+<p><em>open-section</em></p>
+<p><strong>Open one section of the report</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub OpenSection(ByVal sectionTitle As String)
+</code></pre>
+<p>A section is one whole piece of work, and for a run that builds several
+linelists that is one linelist. While the section is open every bundle
+Collect takes is held back and re-headed: the section title becomes the
+bundle title and the bundle's own title becomes its subtitle. Closing
+the section writes the held bundles in one pass, which puts the section
+title on the sheet once, at level one, with every part of the build
+under it at level two.</p>
+<p>Opening a section closes the one that was open before it, so a driver
+that walks a table calls this once per row and the rows never mix. An
+empty title closes the open section and opens none. A call outside the
+run window is ignored, like every other call here.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sectionTitle</code>: String. The title of the section.</li>
+</ul>
+<hr />
+<h3 id="int-closesection">CloseSection <a class="anchor-link" href="#int-closesection">#</a></h3>
+<p><em>close-section</em></p>
+<p><strong>Write the open section to the worksheet and close it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub CloseSection()
+</code></pre>
+<p>The held bundles go to the writer as one batch, which is what makes the
+section title land once. A section that took no bundle writes nothing.
+Calling this with no section open is a no-op, so a driver may close
+after every row and after the loop.</p>
+<hr />
 <h3 id="int-collect">Collect <a class="anchor-link" href="#int-collect">#</a></h3>
 <p><em>collect</em></p>
 <p><strong>Take one Checking bundle into the run</strong></p>
@@ -207,11 +263,31 @@ hundred entries on a normal linelist, and CheckingOutput ends every
 row it writes with an EntireColumn.AutoFit. The worksheet keeps the
 sheet, section and analysis milestones plus every fault, which is what
 a reader opens it for.</p>
+<h2 id="int-the-bundle-of-an-open-section">THE BUNDLE OF AN OPEN SECTION</h2>
+<p>The bundle is held in the section, and CloseSection writes the whole
+section in one pass. The record line carries the section title in front
+of the bundle title, so the text file reads the same way the worksheet
+does.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>checks</code>: Checking. The bundle to take.</li>
 <li><code>recordOnly</code>: Optional Boolean. True keeps the bundle off the worksheet.</li>
 </ul>
+<hr />
+<h3 id="int-subsectionof">SubsectionOf <a class="anchor-link" href="#int-subsectionof">#</a></h3>
+<p><em>subsection-of</em></p>
+<p><strong>One bundle re-headed as a subsection of the open section</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SubsectionOf(ByVal checks As Checking) As Checking
+</code></pre>
+<p>A copy is taken because the caller owns the bundle it handed over, and
+because a Checking is sealed at creation: its title is written by the
+factory alone. Append carries the entries across with their scopes.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>checks</code>: Checking. The bundle to re-head.</li>
+</ul>
+<p><strong>Returns:</strong> Checking. The copy, headed by the section and subheaded by the bundle.</p>
 <hr />
 <h3 id="int-harvest">Harvest <a class="anchor-link" href="#int-harvest">#</a></h3>
 <p><em>harvest</em></p>

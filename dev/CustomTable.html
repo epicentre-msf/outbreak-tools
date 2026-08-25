@@ -893,6 +893,20 @@ directly. Resets state after the operation.</p>
 <li><code>insertShift</code>: Boolean. When True, inserts worksheet rows.</li>
 </ul>
 <hr />
+<h3 id="int-calculateaddedrows">CalculateAddedRows <a class="anchor-link" href="#int-calculateaddedrows">#</a></h3>
+<p><em>calculate-added-rows</em></p>
+<p><strong>Calculate the rows an add has just brought into a table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CalculateAddedRows(ByVal newRange As Range, ByVal nbRows As Long)
+</code></pre>
+<p>The added rows are the tail of the resized range, whether worksheet rows were
+inserted below the table or the table range was simply extended over them.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>newRange</code>: Range. The table range as the resize left it.</li>
+<li><code>nbRows</code>: Long. How many rows were added.</li>
+</ul>
+<hr />
 <h3 id="int-ensureselectionontablesheet">EnsureSelectionOnTableSheet <a class="anchor-link" href="#int-ensureselectionontablesheet">#</a></h3>
 <p><em>ensure-selection-on-table-sheet</em></p>
 <p><strong>Ensure the provided range belongs to the table worksheet</strong></p>
@@ -1435,7 +1449,7 @@ for consistent stack traces.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (33 file(s))</summary>
+<summary>Used in (34 file(s))</summary>
 <ul>
 <li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
@@ -1459,6 +1473,7 @@ for consistent stack traces.</p>
 <li>EventsDesignerMulti.bas</li>
 <li>RibbonDev.bas</li>
 <li>EventsLinelistButtons.bas</li>
+<li>MasterSetupEventsManager.bas</li>
 <li>MasterSetupHelpers.bas</li>
 <li>EventsGlobal.bas</li>
 <li>EventsRibbon.bas</li>

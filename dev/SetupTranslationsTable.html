@@ -233,6 +233,21 @@ leaves the rest to the red catch-all.</p>
 <pre><code class="language-vb">Public Sub SwitchDefaultLanguage(ByVal languageName As String)
 </code></pre>
 <hr />
+<h3 id="int-removelanguage">RemoveLanguage <a class="anchor-link" href="#int-removelanguage">#</a></h3>
+<p><em>remove-language</em></p>
+<p><strong>Delete one language column from the translations table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RemoveLanguage(ByVal languageName As String)
+</code></pre>
+<p>Only the columns after the default language are languages, so the structural
+columns can never be deleted through here. The default language column
+stays: promote another language first with SwitchDefaultLanguage. The stored
+language list is refreshed once the column is gone.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>languageName</code>: String. Header of the language column to delete.</li>
+</ul>
+<hr />
 <h3 id="int-switchablelanguages">SwitchableLanguages <a class="anchor-link" href="#int-switchablelanguages">#</a></h3>
 <p><em>switchable-languages</em></p>
 <p><strong>Retrieve the available languages excluding the default column.</strong></p>

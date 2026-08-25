@@ -148,6 +148,42 @@
 </code></pre>
 <p>(&quot;Return the default configuration worksheets list.&quot;)</p>
 <hr />
+<h3 id="int-refreshchoicesdropdown">RefreshChoicesDropdown <a class="anchor-link" href="#int-refreshchoicesdropdown">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RefreshChoicesDropdown(ByVal drop As DropdownLists)
+</code></pre>
+<p>(&quot;Populate the choices dropdown from the list names of the Choices sheet.&quot;)</p>
+<hr />
+<h3 id="int-refreshdiseasesdropdown">RefreshDiseasesDropdown <a class="anchor-link" href="#int-refreshdiseasesdropdown">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RefreshDiseasesDropdown(ByVal drop As DropdownLists)
+</code></pre>
+<p>(&quot;Rebuild the diseases dropdown from the marker sheets of the workbook.&quot;)</p>
+<hr />
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
+</code></pre>
+<p>(&quot;Centralised error raising aligned with ProjectError codes.&quot;)</p>
+<hr />
+<h3 id="int-adoptlegacydiseasesheets">AdoptLegacyDiseaseSheets <a class="anchor-link" href="#int-adoptlegacydiseasesheets">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AdoptLegacyDiseaseSheets()
+</code></pre>
+<p>(&quot;Adopt legacy disease sheets: their cell tags move into hidden names.&quot;)</p>
+<hr />
+<h3 id="int-legacyindexof">LegacyIndexOf <a class="anchor-link" href="#int-legacyindexof">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LegacyIndexOf(ByVal codeValue As String) As Long
+</code></pre>
+<p>(&quot;Parse the numeric index off a legacy disease code.&quot;)</p>
+<hr />
+<h3 id="int-sheetcarriesdiseasetag">SheetCarriesDiseaseTag <a class="anchor-link" href="#int-sheetcarriesdiseasetag">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetCarriesDiseaseTag(ByVal targetSheet As Worksheet) As Boolean
+</code></pre>
+<p>(&quot;Answer whether a worksheet carries the hidden disease tag.&quot;)</p>
+<hr />
 <h3 id="int-ensuredropdowndefinition">EnsureDropdownDefinition <a class="anchor-link" href="#int-ensuredropdowndefinition">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDropdownDefinition(ByVal drop As DropdownLists, _
@@ -204,10 +240,11 @@
 <hr />
 </details>
 <details>
-<summary>Used in (3 file(s))</summary>
+<summary>Used in (4 file(s))</summary>
 <ul>
 <li><a href="EventMasterSetup.html">EventMasterSetup.cls</a></li>
 <li>EventsMasterSetupRibbon.bas</li>
+<li>MasterSetupHelpers.bas</li>
 <li>TestMasterSetupPreparation.bas</li>
 </ul>
 </details>

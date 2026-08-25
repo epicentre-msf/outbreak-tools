@@ -15,18 +15,12 @@
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
 <h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
-<p><strong>Return a new summary instance as its interface.</strong></p>
+<p><strong>Return a new, initialised summary instance.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create() As IDiseaseImportSummary
+<pre><code class="language-vb">Public Function Create() As DiseaseImportSummary
 </code></pre>
 <hr />
 <h2 id="int-public-api">Public API</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><strong>Provide the interface reference to the current instance.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IDiseaseImportSummary
-</code></pre>
-<hr />
 <h3 id="int-initialise">Initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
 <p><strong>Ensure arrays are initialised before use.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -90,9 +84,11 @@
 <hr />
 </details>
 <details>
-<summary>Used in (1 file(s))</summary>
+<summary>Used in (3 file(s))</summary>
 <ul>
 <li><a href="DiseaseImporter.html">DiseaseImporter.cls</a></li>
+<li>TestDiseaseImporter.bas</li>
+<li>TestDiseaseIntegration.bas</li>
 </ul>
 </details>
   </main>

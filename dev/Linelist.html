@@ -384,6 +384,55 @@ resetting specifications after construction.</p>
 <li><code>value</code>: LinelistSpecs. The specifications to bind.</li>
 </ul>
 <hr />
+<h2 id="int-lifecycle">Lifecycle</h2>
+<h3 id="int-activatelandingsheet">ActivateLandingSheet <a class="anchor-link" href="#int-activatelandingsheet">#</a></h3>
+<p><em>activate-landing-sheet</em></p>
+<p><strong>Leave the output workbook on the sheet its user should open it on</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ActivateLandingSheet(ByVal outWkb As Workbook, _
+                                 ByVal msgTrads As TranslationObject)
+</code></pre>
+<p>The generation stops wherever its last step left it, which is the Geo sheet,
+and a workbook is saved on the sheet that was active. So the sheet chosen here
+is the sheet the user sees the first time they open the linelist.</p>
+<p>The instruction sheet is the wanted one and the admin sheet is the answer on a
+build that carries no instructions. Neither is always there: the instruction
+sheet belongs to template builds and goes very hidden when the specification
+turns instructions off, and the admin sheet belongs to the builds that have no
+template. A build that answers neither used to be left on Geo, so the first
+visible worksheet closes the list.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outWkb</code>: Workbook. The generated workbook.</li>
+<li><code>msgTrads</code>: TranslationObject. The message translations naming the sheets.</li>
+</ul>
+<hr />
+<h3 id="int-visiblesheetornothing">VisibleSheetOrNothing <a class="anchor-link" href="#int-visiblesheetornothing">#</a></h3>
+<p><em>visible-sheet-or-nothing</em></p>
+<p><strong>One named worksheet of a workbook, when it is there and visible</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function VisibleSheetOrNothing(ByVal outWkb As Workbook, _
+                                       ByVal sheetName As String) As Worksheet
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outWkb</code>: Workbook. The workbook to look in.</li>
+<li><code>sheetName</code>: String. The name to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The worksheet, or Nothing when it is missing or hidden.</p>
+<hr />
+<h3 id="int-firstvisiblesheet">FirstVisibleSheet <a class="anchor-link" href="#int-firstvisiblesheet">#</a></h3>
+<p><em>first-visible-sheet</em></p>
+<p><strong>The first worksheet of a workbook the user can see</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FirstVisibleSheet(ByVal outWkb As Workbook) As Worksheet
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outWkb</code>: Workbook. The workbook to walk.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The first visible worksheet, or Nothing when none is.</p>
+<hr />
 <h2 id="int-private-workbook-management">Private - Workbook management</h2>
 <h3 id="int-outputwkb">OutputWkb <a class="anchor-link" href="#int-outputwkb">#</a></h3>
 <p><em>output-wkb</em></p>
