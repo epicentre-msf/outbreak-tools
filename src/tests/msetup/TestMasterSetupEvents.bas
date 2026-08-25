@@ -261,7 +261,7 @@ Public Sub TestChoiceEditRefreshesJoinedValues()
     Assert.AreEqual "0-4 | 5-14", valuesCell.Value, "The joined values should start from the labels"
 
     Set choicesSheet = ThisWorkbook.Worksheets(CHOICES_SHEET)
-    Set translatedCell = choicesSheet.Range("B5")
+    Set translatedCell = choicesSheet.Range("C5")
     translatedCell.Value = "zero-four"
     MasterSetupEventsManager.MsSheetChanged choicesSheet, translatedCell
 
@@ -372,25 +372,35 @@ Private Sub PrepareEnvironment()
         Array(1, "demographics", "var_age", "Age", "choice_age", "", "core", ""), _
         Array(2, "symptoms", "var_fever", "Fever", "", "", "core", "") _
     ))
+    'The Choices Values column is text, so a joined value such as "0-4 | 5-14"
+    'stays as typed.
+    targetSheet.Range("F1:F3").NumberFormat = "@"
     WriteMatrix targetSheet.Range("A1"), data
     targetSheet.ListObjects.Add SourceType:=xlSrcRange, Source:=targetSheet.Range("A1").Resize(3, 8), _
                                 XlListObjectHasHeaders:=xlYes
 
-    'Choices sheet: headers at row 4, the way the master file carries them.
+    'Choices sheet: headers at row 4, the way the master file carries them,
+    'with the ordering list column: AllChoices lists nothing without it, and
+    'the cascade then reads every default choice as gone.
     'The label column carries a formula, the way the setup choices sheet does.
     Set targetSheet = EnsureWorksheet(CHOICES_SHEET)
     ClearWorksheet targetSheet
     data = RowsToMatrix(Array( _
-        Array("list name", "translated label", "label", "short label"), _
-        Array("choice_age", "", "0-4", "0-4"), _
-        Array("choice_age", "", "5-14", "5-14"), _
-        Array("choice_sex", "", "M", "M"), _
-        Array("choice_sex", "", "F", "F") _
+        Array("list name", "ordering list", "translated label", "label", "short label"), _
+        Array("choice_age", 1, "", "0-4", "0-4"), _
+        Array("choice_age", 2, "", "5-14", "5-14"), _
+        Array("choice_sex", 1, "", "M", "M"), _
+        Array("choice_sex", 2, "", "F", "F") _
     ))
+    'The two typed label columns are text before the write: Excel reads
+    '"5-14" as a date in a General cell. Column D keeps the General format,
+    'since a text cell stores a formula as its own text.
+    targetSheet.Range("C4:C8").NumberFormat = "@"
+    targetSheet.Range("E4:E8").NumberFormat = "@"
     WriteMatrix targetSheet.Range("A4"), data
-    targetSheet.ListObjects.Add SourceType:=xlSrcRange, Source:=targetSheet.Range("A4").Resize(5, 4), _
+    targetSheet.ListObjects.Add SourceType:=xlSrcRange, Source:=targetSheet.Range("A4").Resize(5, 5), _
                                 XlListObjectHasHeaders:=xlYes
-    targetSheet.Range("C5:C8").Formula = "=IF(B5="""", D5, B5)"
+    targetSheet.Range("D5:D8").Formula = "=IF(C5="""", E5, C5)"
     targetSheet.Calculate
 
     'Translations sheet: the language columns feed the languages dropdown.
