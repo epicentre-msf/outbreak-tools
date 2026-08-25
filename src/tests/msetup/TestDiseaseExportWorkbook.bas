@@ -90,6 +90,7 @@ Public Sub TestEnsureSaveAndCloseReleasesWorkbook()
 
 Fail:
     CustomTestLogFailure Assert, "TestEnsureSaveAndCloseReleasesWorkbook", Err.Number, Err.Description
+    ReleaseWorkbookShielded
 End Sub
 
 '@TestMethod("DiseaseExportWorkbook")
@@ -127,15 +128,32 @@ Public Sub TestEnsureAfterCloseCreatesFreshWorkbook()
 
 Fail:
     CustomTestLogFailure Assert, "TestEnsureAfterCloseCreatesFreshWorkbook", Err.Number, Err.Description
+    ReleaseWorkbookShielded
 End Sub
 
 '@section Helpers
 '===============================================================================
 
 Private Function BuildTestFilePath() As String
-    BuildTestFilePath = ThisWorkbook.Path & Application.PathSeparator & "temp" & _
-                        Application.PathSeparator & EXPORT_TEST_FILE
+    BuildTestFilePath = EnsureTempFolder() & Application.PathSeparator & EXPORT_TEST_FILE
 End Function
+
+Private Function EnsureTempFolder() As String
+    EnsureTempFolder = ThisWorkbook.Path & Application.PathSeparator & "temp"
+
+    ' MkDir raises when the folder already exists; existing is the good case.
+    On Error Resume Next
+        MkDir EnsureTempFolder
+    On Error GoTo 0
+End Function
+
+'@description Release the workbook after a raise, so a failed test leaves
+'nothing open for the runner to meet at quit.
+Private Sub ReleaseWorkbookShielded()
+    On Error Resume Next
+        If Not Manager Is Nothing Then Manager.ReleaseWorkbook
+    On Error GoTo 0
+End Sub
 
 Private Sub DeleteTestFile()
     Dim path As String
