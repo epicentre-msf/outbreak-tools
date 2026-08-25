@@ -17,7 +17,7 @@ Attribute VB_Description = "Maintains disease import report tables without mutat
 Option Explicit
 
 'DiseaseReportManager.cls without interface -- single implementation, no test
-'fake, no compile cycle (see project-rules.md 4.4).
+'fake, no compile cycle.
 
 '@section Factory
 '===============================================================================

@@ -17,7 +17,7 @@ Attribute VB_Description = "Creates workbook exports for disease dictionaries an
 Option Explicit
 
 'DiseaseExporter.cls without interface -- single implementation, no test fake,
-'no compile cycle (see project-rules.md 4.4).
+'no compile cycle.
 
 '@section Constants
 '===============================================================================

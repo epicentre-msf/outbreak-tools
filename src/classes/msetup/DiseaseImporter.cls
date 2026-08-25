@@ -17,7 +17,7 @@ Attribute VB_Description = "Coordinates disease worksheet imports with merge and
 Option Explicit
 
 'DiseaseImporter.cls without interface -- single implementation, no test fake,
-'no compile cycle (see project-rules.md 4.4).
+'no compile cycle.
 
 '@section Enumerations
 '===============================================================================

@@ -17,7 +17,7 @@ Attribute VB_Description = "Caches translated header labels for disease exports"
 Option Explicit
 
 'DiseaseTranslationCache.cls without interface -- single implementation, no
-'test fake, no compile cycle (see project-rules.md 4.4).
+'test fake, no compile cycle.
 '
 'A thin wrapper over TranslationObject. The first Resolve of a key reads the
 'translation table; the answer itself is cached in a keyed Collection, so

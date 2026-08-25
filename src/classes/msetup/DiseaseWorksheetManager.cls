@@ -17,7 +17,7 @@ Attribute VB_Description = "Provides safe worksheet removal utilities for diseas
 Option Explicit
 
 'DiseaseWorksheetManager.cls without interface -- single implementation, no
-'test fake, no compile cycle (see project-rules.md 4.4).
+'test fake, no compile cycle.
 
 '@section Factory
 '===============================================================================

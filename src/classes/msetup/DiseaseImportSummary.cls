@@ -17,7 +17,7 @@ Attribute VB_Description = "Collects the outcome of disease import merge operati
 Option Explicit
 
 'DiseaseImportSummary.cls without interface -- single implementation, no test
-'fake, no compile cycle (see project-rules.md 4.4).
+'fake, no compile cycle.
 
 '@section State
 '===============================================================================
