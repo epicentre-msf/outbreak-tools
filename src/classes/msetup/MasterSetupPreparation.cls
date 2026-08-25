@@ -444,6 +444,11 @@ Private Sub RefreshDiseasesDropdown(ByVal drop As DropdownLists)
     drop.Update names, DISEASES_DROPODWN
 End Sub
 
+'@Description("Centralised error raising aligned with ProjectError codes.")
+Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
+    Err.Raise errNumber, CLASS_NAME, errMessage
+End Sub
+
 '@Description("Adopt legacy disease sheets: their cell tags move into hidden names.")
 Private Sub AdoptLegacyDiseaseSheets()
     Dim sh As Worksheet
