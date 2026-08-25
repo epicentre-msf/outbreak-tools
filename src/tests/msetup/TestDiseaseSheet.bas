@@ -6,7 +6,7 @@ Option Private Module
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '@Folder("CustomTests")
-'@ModuleDescription("Tests ensuring DiseaseSheetBuilder creates worksheets with headers, validations, and tables")
+'@ModuleDescription("Tests ensuring DiseaseSheet creates worksheets with headers, validations, and tables")
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const ANCHOR_SHEET As String = "Variables"
@@ -38,7 +38,7 @@ Private Sub ModuleInitialize()
     BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
-    Assert.SetModuleName "TestDiseaseSheetBuilder"
+    Assert.SetModuleName "TestDiseaseSheet"
 End Sub
 
 '@ModuleCleanup
@@ -75,9 +75,9 @@ End Sub
 '@section Tests
 '===============================================================================
 
-'@TestMethod("DiseaseSheetBuilder")
+'@TestMethod("DiseaseSheet")
 Public Sub TestBuildCreatesWorksheet()
-    CustomTestSetTitles Assert, "DiseaseSheetBuilder", "TestBuildCreatesWorksheet"
+    CustomTestSetTitles Assert, "DiseaseSheet", "TestBuildCreatesWorksheet"
 
     Dim diseaseWksh As Worksheet
     Dim table As ListObject
@@ -155,9 +155,9 @@ Fail:
     CustomTestLogFailure Assert, "TestBuildCreatesWorksheet", Err.Number, Err.Description
 End Sub
 
-'@TestMethod("DiseaseSheetBuilder")
+'@TestMethod("DiseaseSheet")
 Public Sub TestBuildRespectsProvidedLanguage()
-    CustomTestSetTitles Assert, "DiseaseSheetBuilder", "TestBuildRespectsProvidedLanguage"
+    CustomTestSetTitles Assert, "DiseaseSheet", "TestBuildRespectsProvidedLanguage"
 
     Dim diseaseWksh As Worksheet
     Dim firstSheet As Worksheet
@@ -186,9 +186,9 @@ Fail:
     CustomTestLogFailure Assert, "TestBuildRespectsProvidedLanguage", Err.Number, Err.Description
 End Sub
 
-'@TestMethod("DiseaseSheetBuilder")
+'@TestMethod("DiseaseSheet")
 Public Sub TestBuildRejectsInvalidInputs()
-    CustomTestSetTitles Assert, "DiseaseSheetBuilder", "TestBuildRejectsInvalidInputs"
+    CustomTestSetTitles Assert, "DiseaseSheet", "TestBuildRejectsInvalidInputs"
 
     Dim diseaseWksh As Worksheet
 
