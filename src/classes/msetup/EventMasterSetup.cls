@@ -227,7 +227,13 @@ Private Function EnsureWorkbookTranslations() As TranslationObject
         Set table = ResolveTranslationTable(TRANSLATIONS_SHEET_NAME, TRANSLATIONS_TABLE_NAME)
         If table Is Nothing Then Exit Function
 
+        'The file language went away with the ribbon dropdown; the first
+        'language column of the table is the default.
         languageTag = ResolveLanguageTag()
+        If LenB(languageTag) = 0 Then
+            languageTag = Trim$(CStr(table.HeaderRowRange.Cells(1, 1).Value))
+        End If
+
         Set this.translations = TranslationObject.Create(table, languageTag)
     End If
 
