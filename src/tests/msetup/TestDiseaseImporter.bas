@@ -56,6 +56,8 @@ End Sub
 
 '@TestCleanup
 Private Sub TestCleanup()
+    'The assertions of a test reach the results sheet only once flushed.
+    Assert.Flush
     If Not TargetSheet Is Nothing Then ClearWorksheet TargetSheet
     If Not SourceSheet Is Nothing Then ClearWorksheet SourceSheet
     Set TargetTable = Nothing

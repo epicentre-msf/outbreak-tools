@@ -63,6 +63,8 @@ End Sub
 
 '@TestCleanup
 Private Sub TestCleanup()
+    'The assertions of a test reach the results sheet only once flushed.
+    Assert.Flush
     Guard.Restore
     Manager.ReleaseWorkbook
     DeleteFixtureSheets
