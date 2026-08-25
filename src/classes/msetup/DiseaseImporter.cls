@@ -127,7 +127,11 @@ Private Sub MergeTables(ByVal targetTable As ListObject, ByVal sourceTable As Li
 
     targetNames = BuildTargetIndex(targetData, targetRows, targetIndex)
     Set seenSource = New Collection
+    'The rows pushed here are 2D arrays based at 1, and Push re-bases any
+    'array whose bound disagrees with the container's. The container has to
+    'start at 1 too, or the readers index 1 into a row that starts at 0.
     Set appendedRows = New BetterArray
+    appendedRows.LowerBound = 1
 
     ApplyMerge targetData, sourceData, targetRows, sourceRows, columnCount, priority, targetIndex, seenSource, appendedRows, summary, logger
 
