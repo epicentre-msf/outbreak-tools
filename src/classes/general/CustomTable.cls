@@ -2310,12 +2310,22 @@ Private Sub ImportFormat(ByVal impRng As Range, ByVal currRng As Range)
         End If
 
         'Add interior color
+        'A cell with NO FILL says nothing about colour, so the target keeps what
+        'it had. The guard used to compare the colour to white, which also
+        'silenced a design that names white on purpose: white text over a dark
+        'section arrived as whatever colour the target already carried, and the
+        'imported style looked like it had been applied.
         sourceInterior = sourceCell.Interior.Color
-        If sourceInterior <> vbWhite Then targetCell.Interior.Color = sourceInterior
+        If sourceCell.Interior.ColorIndex <> xlNone Then
+            targetCell.Interior.Color = sourceInterior
+        End If
 
         'Add Font color
+        'Same shape. An AUTOMATIC font colour says nothing; a black one says black.
         sourceFontColor = sourceCell.Font.Color
-        If sourceFontColor <> vbBlack Then targetCell.Font.Color = sourceFontColor
+        If sourceCell.Font.ColorIndex <> xlAutomatic Then
+            targetCell.Font.Color = sourceFontColor
+        End If
 
         'Add Font weight and decoration
         targetCell.Font.Bold = sourceCell.Font.Bold
