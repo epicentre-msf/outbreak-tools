@@ -53,6 +53,8 @@ Private Const YESNO_DROPDOWN As String = "__yesno"
 Private Const STATUS_ACTIVE As String = "active"
 Private Const STATUS_INACTIVE As String = "inactive"
 
+Private Const DISEASE_TAG_VALUE As String = "disease"
+
 
 Private Const VARIABLE_TABLE_STYLE As String = "TableStyleMedium2"
 
@@ -139,6 +141,7 @@ Public Sub EnsureDropdowns()
 
     RefreshLanguageDropdowns drop
     RefreshChoicesDropdown drop
+    RefreshDiseasesDropdown drop
     EnsureSheetTag ResolveWorksheet(CHOICES_SHEET_NAME), "choices"
 End Sub
 
@@ -395,6 +398,50 @@ Private Sub RefreshChoicesDropdown(ByVal drop As DropdownLists)
 
     EnsureDropdownHasValues drop, CHOICES_DROPDOWN, names
 End Sub
+
+'@Description("Rebuild the diseases dropdown from the marker sheets of the workbook.")
+Private Sub RefreshDiseasesDropdown(ByVal drop As DropdownLists)
+    Dim wb As Workbook
+    Dim sh As Worksheet
+    Dim names As BetterArray
+
+    If drop Is Nothing Then Exit Sub
+
+    Set wb = EnsureWorkbook
+    Set names = New BetterArray
+    names.LowerBound = 1
+
+    'The live sheets are the truth. A disease removed by hand or by code left
+    'its name in the list before this rebuild, and a stale name refused every
+    'new sheet of that name as a duplicate. A disease sheet is recognised by
+    'its hidden sheetTag.
+    For Each sh In wb.Worksheets
+        If SheetCarriesDiseaseTag(sh) Then
+            names.Push sh.Name
+        End If
+    Next sh
+
+    If names.Length = 0 Then
+        names.Push vbNullString
+    End If
+
+    drop.Update names, DISEASES_DROPODWN
+End Sub
+
+'@Description("Answer whether a worksheet carries the hidden disease tag.")
+Private Function SheetCarriesDiseaseTag(ByVal targetSheet As Worksheet) As Boolean
+    Dim store As HiddenNames
+
+    If targetSheet Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set store = HiddenNames.Create(targetSheet)
+    On Error GoTo 0
+    If store Is Nothing Then Exit Function
+
+    SheetCarriesDiseaseTag = (StrComp(Trim$(store.ValueAsString(SHEET_TAG_NAME)), _
+                                      DISEASE_TAG_VALUE, vbTextCompare) = 0)
+End Function
 
 '@Description("Ensure a dropdown definition exists with the supplied values.")
 Private Sub EnsureDropdownDefinition(ByVal drop As DropdownLists, _
