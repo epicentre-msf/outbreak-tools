@@ -18,7 +18,7 @@ Private Sub Workbook_Open()
     mBooting = True
 
     On Error GoTo Clean
-    MasterSetupEventsManager.WorkbookOpened
+    MasterSetupEventsManager.MsWorkbookOpened
 
 Clean:
     mBooting = False
@@ -37,7 +37,7 @@ Private Sub Workbook_SheetChange(ByVal sh As Object, ByVal target As Range)
     mBooting = True
 
     On Error GoTo Clean
-    MasterSetupEventsManager.SheetChanged sh, target
+    MasterSetupEventsManager.MsSheetChanged sh, target
 
 Clean:
     mBooting = False

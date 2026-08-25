@@ -58,7 +58,7 @@ End Sub
 '===============================================================================
 
 '@sub-title Prepare the workbook once when it opens.
-Public Sub WorkbookOpened()
+Public Sub MsWorkbookOpened()
     ResetMasterSetupFunctionCaches
     MasterSetupService.OnWorkbookOpen Application
 End Sub
@@ -69,7 +69,7 @@ Public Sub RibbonLoaded(ByVal ribbon As IRibbonUI)
 End Sub
 
 '@sub-title Route a committed edit to the sheet's own handler.
-Public Sub SheetChanged(ByVal sh As Worksheet, ByVal target As Range)
+Public Sub MsSheetChanged(ByVal sh As Worksheet, ByVal target As Range)
     Dim scope As ApplicationState
 
     If sh Is Nothing Then Exit Sub
