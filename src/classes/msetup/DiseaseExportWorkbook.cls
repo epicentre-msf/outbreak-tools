@@ -77,7 +77,7 @@ End Sub
 '@sub-title Close the workbook and clear the reference.
 '@details Safe to call with nothing managed: that is a harmless no-op.
 '@param saveChanges Optional Boolean controlling the SaveChanges flag.
-Public Sub Close(Optional ByVal saveChanges As Boolean = False)
+Public Sub CloseWorkbook(Optional ByVal saveChanges As Boolean = False)
     If Not HasWorkbook Then
         Set this.Book = Nothing
         Exit Sub

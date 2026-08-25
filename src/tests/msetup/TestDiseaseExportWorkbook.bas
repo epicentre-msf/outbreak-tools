@@ -81,7 +81,7 @@ Public Sub TestEnsureSaveAndCloseReleasesWorkbook()
     Manager.SaveAs exportPath
     Assert.IsTrue FileExists(exportPath), "SaveAs should create the export file"
 
-    Manager.Close saveChanges:=False
+    Manager.CloseWorkbook saveChanges:=False
     Assert.IsFalse Manager.HasWorkbook, "Manager should release workbook after Close"
 
     Exit Sub
@@ -116,7 +116,7 @@ Public Sub TestEnsureAfterCloseCreatesFreshWorkbook()
     On Error GoTo Fail
 
     Set firstWorkbook = Manager.EnsureWorkbook(Application)
-    Manager.Close saveChanges:=False
+    Manager.CloseWorkbook saveChanges:=False
     Set secondWorkbook = Manager.EnsureWorkbook(Application)
 
     Assert.IsFalse firstWorkbook Is secondWorkbook, "EnsureWorkbook should create a fresh workbook after Close"

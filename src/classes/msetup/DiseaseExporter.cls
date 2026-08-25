@@ -173,7 +173,7 @@ Public Function ExportDisease(ByVal exportFolder As String, _
 
     filePath = BuildDiseaseFilePath(exportFolder, diseaseName)
     this.Manager.SaveAs filePath
-    this.Manager.Close False
+    this.Manager.CloseWorkbook False
 
     ExportDisease = filePath
 End Function
@@ -235,7 +235,7 @@ Public Function ExportForMigration(ByVal exportFolder As String, _
 
     filePath = BuildMigrationFilePath(exportFolder)
     this.Manager.SaveAs filePath
-    this.Manager.Close False
+    this.Manager.CloseWorkbook False
 
     ExportForMigration = filePath
 End Function
