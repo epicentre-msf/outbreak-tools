@@ -296,6 +296,90 @@ Fail:
     CustomTestLogFailure Assert, "TestChoicesExportTakesMasterListsAndTranslates", Err.Number, Err.Description
 End Sub
 
+'@TestMethod("DiseaseExporter")
+Public Sub TestExportedSheetsTakeTheMigrationFormat()
+    CustomTestSetTitles Assert, "DiseaseExporter", "TestExportedSheetsTakeTheMigrationFormat"
+
+    Dim diseaseWksh As Worksheet
+    Dim translationTable As ListObject
+    Dim targetBook As Workbook
+    Dim dictionarySheet As Worksheet
+    Dim metadataSheet As Worksheet
+
+    On Error GoTo Fail
+
+    Set diseaseWksh = PrepareDiseaseWorksheet("Alpha", "ENG", "ALPHA_CODE")
+    Set translationTable = PrepareTranslationTable()
+
+    Set targetBook = Exporter.BuildDiseaseWorkbook(diseaseWksh, translationTable, _
+                                                diseaseWksh.Name, diseaseWksh.Cells(2, 2).Value, "ALPHA_CODE")
+
+    Set dictionarySheet = targetBook.Worksheets("Dictionary")
+    Set metadataSheet = targetBook.Worksheets("Metadata")
+
+    'What the window carries -- the frozen header and the gridlines -- stays
+    'out of the assertions. This suite runs in a hidden Excel, and a window
+    'off screen refuses the freeze with error 1004.
+    Assert.AreEqual "Consolas", dictionarySheet.Range("A2").Font.Name, "The body of an export is written in Consolas"
+    Assert.AreEqual 9, dictionarySheet.Range("A2").Font.Size, "The body font is size 9"
+    Assert.IsTrue dictionarySheet.Range("A2").WrapText, "The body of an export wraps"
+    Assert.AreEqual 25, dictionarySheet.Columns(1).ColumnWidth, "A written column is 25 wide"
+    Assert.IsTrue dictionarySheet.Rows(1).Font.Bold, "The header row is bold"
+    Assert.AreEqual 10, dictionarySheet.Rows(1).Font.Size, "The header row is size 10"
+    Assert.AreEqual RGB(240, 240, 244), dictionarySheet.Rows(1).Interior.Color, "The header row carries the band colour"
+    Assert.AreEqual 20, dictionarySheet.Rows(1).RowHeight, "The header row keeps its height after the auto fit"
+
+    Assert.IsTrue metadataSheet.Rows(1).Font.Bold, "The Metadata header row is bold"
+    Assert.AreEqual 25, metadataSheet.Columns(1).ColumnWidth, "The Metadata label column is 25 wide"
+    Assert.AreEqual 40, metadataSheet.Columns(2).ColumnWidth, "The Metadata value column is wider than the label one"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportedSheetsTakeTheMigrationFormat", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("DiseaseExporter")
+Public Sub TestMigrationSheetsTakeTheSameFormat()
+    CustomTestSetTitles Assert, "DiseaseExporter", "TestMigrationSheetsTakeTheSameFormat"
+
+    Dim diseaseNames As BetterArray
+    Dim targetBook As Workbook
+    Dim diseasesSheet As Worksheet
+
+    On Error GoTo Fail
+
+    Dim sourceWorkbook As Workbook
+    Set sourceWorkbook = PrepareMigrationSourceWorkbook()
+
+    Set diseaseNames = New BetterArray
+    diseaseNames.Push "Beta"
+
+    Set targetBook = Exporter.BuildMigrationWorkbook(sourceWorkbook, diseaseNames)
+    Set diseasesSheet = targetBook.Worksheets("Diseases")
+
+    Assert.AreEqual "Consolas", diseasesSheet.Range("A3").Font.Name, "A migration sheet is written in Consolas"
+    Assert.AreEqual 25, diseasesSheet.Columns(1).ColumnWidth, "A written column of a migration sheet is 25 wide"
+    Assert.IsTrue diseasesSheet.Rows(1).Font.Bold, "The header row of a migration sheet is bold"
+    Assert.AreEqual RGB(240, 240, 244), diseasesSheet.Rows(1).Interior.Color, "The header row carries the band colour"
+    Assert.AreEqual 20, diseasesSheet.Rows(1).RowHeight, "The header row keeps its height"
+
+    sourceWorkbook.Close SaveChanges:=False
+    Exit Sub
+
+Fail:
+    'The error is read before the shield below, since On Error GoTo 0 clears
+    'it. A failure before the source workbook exists leaves it Nothing.
+    Dim failNumber As Long
+    Dim failText As String
+    failNumber = Err.Number
+    failText = Err.Description
+    On Error Resume Next
+        If Not sourceWorkbook Is Nothing Then sourceWorkbook.Close SaveChanges:=False
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestMigrationSheetsTakeTheSameFormat", failNumber, failText
+End Sub
+
 '@section Fixtures
 '===============================================================================
 

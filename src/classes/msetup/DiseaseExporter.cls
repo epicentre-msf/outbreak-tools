@@ -51,6 +51,17 @@ Private Const DISEASE_FILE_PREFIX As String = "setup_dictionary_"
 Private Const DISEASE_FILE_EXTENSION As String = ".xlsx"
 Private Const LOG_OPERATION As String = "Export"
 
+'The export format, shaped on the one a setup migration export carries
+'(DataSheet.Export). The header band colour sits in FormatExportSheet,
+'since RGB is a function and a Const cannot hold a call.
+Private Const EXPORT_BODY_FONT As String = "Consolas"
+Private Const EXPORT_BODY_SIZE As Double = 9
+Private Const EXPORT_HEADER_SIZE As Double = 10
+Private Const EXPORT_HEADER_HEIGHT As Double = 20
+Private Const EXPORT_COLUMN_WIDTH As Double = 25
+Private Const METADATA_LABEL_WIDTH As Double = 25
+Private Const METADATA_VALUE_WIDTH As Double = 40
+
 'The master Choices sheet carries its headers on row 4, column 1, the way
 'MasterSetupHelpers reads it.
 Private Const MASTER_CHOICES_START_ROW As Long = 4
@@ -901,33 +912,155 @@ Private Sub PopulateMigrationDisease(ByVal targetSheet As Worksheet, ByVal disea
                       targetSheet.Cells(2 + UBound(values, 1), lastColumn + UBound(values, 2) - 1)).Value = values
 End Sub
 
-'@sub-title Apply light formatting to export worksheets.
+'@sub-title Give the four sheets of a disease export their format.
+'@details A reader opens an exported disease file and a setup migration
+'export and sees the same thing. The Metadata sheet is a label and value
+'block, so its two columns take their own widths.
 Private Sub ApplySheetCosmetics(ByVal metadataSheet As Worksheet, _
                                 ByVal dictionarySheet As Worksheet, _
                                 ByVal choicesSheet As Worksheet, _
                                 ByVal translationsSheet As Worksheet)
 
-    AutoFitSheet metadataSheet
-    AutoFitSheet dictionarySheet
-    AutoFitSheet choicesSheet
-    AutoFitSheet translationsSheet
+    FormatMetadataSheet metadataSheet
+    FormatExportSheet dictionarySheet
+    FormatExportSheet choicesSheet
+    FormatExportSheet translationsSheet
 End Sub
 
-'@sub-title Apply formatting to migration workbook sheets.
+'@sub-title Give the four sheets of a migration export their format.
 Private Sub ApplyMigrationFormatting(ByVal targetBook As Workbook)
-    AutoFitSheet targetBook.Worksheets(DISEASES_SHEET)
-    AutoFitSheet targetBook.Worksheets(TRANSLATIONS_SHEET)
-    AutoFitSheet targetBook.Worksheets(CHOICES_SHEET)
-    AutoFitSheet targetBook.Worksheets(VARIABLES_SHEET)
+    FormatExportSheet targetBook.Worksheets(DISEASES_SHEET)
+    FormatExportSheet targetBook.Worksheets(TRANSLATIONS_SHEET)
+    FormatExportSheet targetBook.Worksheets(CHOICES_SHEET)
+    FormatExportSheet targetBook.Worksheets(VARIABLES_SHEET)
 End Sub
 
-'@sub-title Auto fit worksheet columns and style header row.
-Private Sub AutoFitSheet(ByVal sheet As Worksheet)
-    With sheet
-        .Cells.WrapText = False
-        .Rows(1).Font.Bold = True
-        .Columns.AutoFit
-    End With
+'@sub-title Give one written sheet the export format.
+'@details
+'The shape is the one DataSheet.Export writes for a setup migration: body
+'font Consolas 9, a header band of RGB(240, 240, 244) carrying a bold 10,
+'wrapped text and a column width of 25.
+'
+'Only the written block is formatted. Running this over Cells meant the
+'auto-fit walked a million empty rows and the width was set on every column
+'of the sheet.
+'
+'The header height is written after the auto-fit. The auto-fit reads the
+'wrapped body and sizes row 1 with it, so a height set before it is lost.
+'
+'The exported tables carry no table style, so this format is the whole of
+'what a reader sees.
+'@param targetSheet Worksheet. The sheet holding the written block.
+'@param columnWidth Optional Double. Width given to the written columns.
+Private Sub FormatExportSheet(ByVal targetSheet As Worksheet, _
+                              Optional ByVal columnWidth As Double = EXPORT_COLUMN_WIDTH)
+    Dim writtenRange As Range
+
+    If targetSheet Is Nothing Then Exit Sub
+
+    Set writtenRange = WrittenBlock(targetSheet)
+    If writtenRange Is Nothing Then Exit Sub
+
+    'The target workbook belongs to the caller and one of its sheets may be
+    'protected. The format is cosmetic, so a refusal here must leave the
+    'export standing: that is what this On Error covers, and nothing else.
+    On Error Resume Next
+        writtenRange.EntireColumn.ColumnWidth = columnWidth
+        writtenRange.Font.Name = EXPORT_BODY_FONT
+        writtenRange.Font.Size = EXPORT_BODY_SIZE
+        writtenRange.WrapText = True
+        writtenRange.HorizontalAlignment = xlHAlignLeft
+        writtenRange.VerticalAlignment = xlVAlignCenter
+        writtenRange.EntireRow.AutoFit
+        With targetSheet.Rows(1)
+            .Font.Size = EXPORT_HEADER_SIZE
+            .Font.Bold = True
+            .Interior.Color = RGB(240, 240, 244)
+            .VerticalAlignment = xlVAlignCenter
+            .RowHeight = EXPORT_HEADER_HEIGHT
+        End With
+        Err.Clear
+    On Error GoTo 0
+
+    HideGridLines targetSheet
+    FreezeHeaderRow targetSheet
+End Sub
+
+'@sub-title Give the Metadata sheet its two widths.
+'@details The sheet holds a label column and a value column. The value
+'column is the wider of the two; the rest is the export format.
+'@param targetSheet Worksheet. The Metadata sheet of a disease export.
+Private Sub FormatMetadataSheet(ByVal targetSheet As Worksheet)
+    If targetSheet Is Nothing Then Exit Sub
+
+    FormatExportSheet targetSheet, METADATA_LABEL_WIDTH
+
+    On Error Resume Next
+        targetSheet.Columns(2).ColumnWidth = METADATA_VALUE_WIDTH
+        Err.Clear
+    On Error GoTo 0
+End Sub
+
+'@sub-title The written block of a sheet.
+'@details A sheet holding nothing answers Nothing. The UsedRange of an
+'empty sheet is $A$1, and formatting it would band the first row of a sheet
+'a reader was given nothing on.
+'@param targetSheet Worksheet. The sheet to read.
+'@return Range. The used block, or Nothing when the sheet is empty.
+Private Function WrittenBlock(ByVal targetSheet As Worksheet) As Range
+    Dim blockRange As Range
+
+    Set blockRange = targetSheet.UsedRange
+    If blockRange Is Nothing Then Exit Function
+    If Application.WorksheetFunction.CountA(blockRange) = 0 Then Exit Function
+
+    Set WrittenBlock = blockRange
+End Function
+
+'@sub-title Turn the gridlines off on one written sheet.
+'@details The view of a sheet is reached through the window of its
+'workbook, the way LLExporter.RemoveGridLines reaches it. A workbook with
+'no window leaves the sheet as it is. The zeros stay on show: a 0 in the
+'ordering column is a value a reader needs.
+'@param targetSheet Worksheet. The sheet whose gridlines go.
+Private Sub HideGridLines(ByVal targetSheet As Worksheet)
+    Dim sheetView As WorksheetView
+
+    On Error Resume Next
+        For Each sheetView In targetSheet.Parent.Windows(1).SheetViews
+            If sheetView.Sheet.Name = targetSheet.Name Then
+                sheetView.DisplayGridlines = False
+                Exit For
+            End If
+        Next sheetView
+        Err.Clear
+    On Error GoTo 0
+End Sub
+
+'@sub-title Freeze the header row of one written sheet.
+'@details
+'The freeze needs the sheet in front and a window to write on, so the sheet
+'is activated first. A window can refuse it: an Excel running off screen
+'answers 1004, "Unable to set the FreezePanes property of the Window
+'class". A frozen header is how a sheet looks, so a refusal leaves the
+'sheet written and the export carries on. LLDataEntry.FreezeHeader answers
+'the same refusal the same way.
+'@param targetSheet Worksheet. The sheet whose header row is frozen.
+Private Sub FreezeHeaderRow(ByVal targetSheet As Worksheet)
+    On Error Resume Next
+        targetSheet.Activate
+        If ActiveSheet Is targetSheet Then
+            If Not ActiveWindow Is Nothing Then
+                With ActiveWindow
+                    .FreezePanes = False
+                    .SplitColumn = 0
+                    .SplitRow = 1
+                    .FreezePanes = True
+                End With
+            End If
+        End If
+        Err.Clear
+    On Error GoTo 0
 End Sub
 
 '@sub-title Ensure a worksheet exists and optionally rename the provided template.
