@@ -245,14 +245,32 @@ Cleanup:
     ExitBusyState
 End Sub
 
+'@sub-title Route an activation under the lightest state it needs
+'@details
+'Activating the Analysis sheet primes three table wrappers and rebuilds the
+'dropdowns over them, which writes to the sheet and wants the screen still.
+'Every other activation invalidates at most three ribbon controls, and only
+'when the Translations boundary is crossed.
+'
+'The workbook handler used to switch screen updating off for all of them and
+'never switch it back, leaving Excel to do that when the handler returned. So
+'each sheet the user moved to repainted the window a second time, for work that
+'in nearly every case had not touched a cell.
+'@param sh Worksheet. The worksheet that became active.
 Public Sub SheetActivated(ByVal sh As Worksheet)
     If sh Is Nothing Then Exit Sub
 
     On Error GoTo Cleanup
+    If StrComp(sh.Name, SHEET_ANALYSIS, vbTextCompare) = 0 Then EnterBusyState persist:=False
+
     Service.OnSheetActivate sh
+    ExitBusyState
     Exit Sub
 
 Cleanup:
+    'An exit with nothing open does nothing, so this is owed whichever branch
+    'above the failure came from.
+    ExitBusyState
     LogHandlerFailure "SheetActivated", sh.Name
 End Sub
 

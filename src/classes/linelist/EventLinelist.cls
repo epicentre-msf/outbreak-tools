@@ -191,17 +191,41 @@ End Sub
 'cursor, and every selection on a data entry sheet flicked the pointer twice.
 '@export
 Public Sub OnWorkbookOpen()
+    ApplyRestingState
+
     On Error Resume Next
     Application.OnKey "^+g", "ClickGeoApp"
-    Application.Calculation = xlCalculationManual
-    Application.EnableEvents = True
-    Application.FormatStaleValues = False
-    Application.Cursor = xlNorthwestArrow
     On Error GoTo 0
 
     LandOnInstructions
 
     LogEventLine checkingInfo, "open", this.hostBook.Name
+End Sub
+
+
+'@sub-title Put the application on the settings a linelist session rests on.
+'@details
+'A linelist runs on manual calculation. Every handler that needs a value
+'refreshed calculates the range it touched, and the workbook is far too large
+'to recalculate whole on each of them: a data entry sheet carries a GEOCONCAT
+'call per row, and those are answered by VBA.
+'
+'The pointer rests on the north-west arrow for the same reason: it is the
+'cursor every busy state of the session applies, and ApplicationState puts back
+'what it snapshots, so an event that opens and closes a busy state leaves
+'neither the calculation mode nor the pointer changed.
+'
+'LinelistEventsManager calls this again once the open has finished, because the
+'open itself runs inside a busy state whose snapshot was taken before any of
+'this was said.
+'@export
+Public Sub ApplyRestingState()
+    On Error Resume Next
+    Application.Calculation = xlCalculationManual
+    Application.EnableEvents = True
+    Application.FormatStaleValues = False
+    Application.Cursor = xlNorthwestArrow
+    On Error GoTo 0
 End Sub
 
 
@@ -217,7 +241,6 @@ End Sub
 'workbook that answers none of them opens where it was saved.
 Private Sub LandOnInstructions()
     Dim instrSheet As Worksheet
-    Dim sh As Worksheet
     Dim instrName As String
 
     On Error Resume Next
@@ -230,22 +253,43 @@ Private Sub LandOnInstructions()
         On Error GoTo 0
     End If
 
+    'A workbook built with the instructions turned off carries the sheet very
+    'hidden, and one built from a template that never had it carries no such
+    'sheet at all. Both used to leave the user wherever the generation stopped,
+    'which is the Geo sheet, because the fallback only answered the second case
+    'and the first was turned away by the visibility test below it.
     If instrSheet Is Nothing Then
-        For Each sh In this.hostBook.Worksheets
-            If sh.Visible = xlSheetVisible Then
-                Set instrSheet = sh
-                Exit For
-            End If
-        Next
+        Set instrSheet = FirstVisibleSheet()
+    ElseIf instrSheet.Visible <> xlSheetVisible Then
+        Set instrSheet = FirstVisibleSheet()
     End If
 
     If instrSheet Is Nothing Then Exit Sub
-    If instrSheet.Visible <> xlSheetVisible Then Exit Sub
 
     On Error Resume Next
     instrSheet.Activate
     On Error GoTo 0
 End Sub
+
+
+'@sub-title The first worksheet of the host workbook the user can see.
+'@details
+'The generation moves the instruction sheet to the front, so on a workbook
+'that carries a visible one this answers that sheet. On one that does not it
+'answers whatever the user is meant to land on instead, which is what makes a
+'linelist open somewhere other than the sheet the generation happened to stop
+'on.
+'@return Worksheet. The first visible worksheet, or Nothing when none is.
+Private Function FirstVisibleSheet() As Worksheet
+    Dim sh As Worksheet
+
+    For Each sh In this.hostBook.Worksheets
+        If sh.Visible = xlSheetVisible Then
+            Set FirstVisibleSheet = sh
+            Exit Function
+        End If
+    Next
+End Function
 
 
 '@sub-title Handle worksheet change events.
@@ -281,6 +325,28 @@ Public Sub OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
 End Sub
 
 
+'@sub-title Whether leaving this sheet has an automatic list rebuild behind it.
+'@details
+'An edit on the sheet raises the flag and the rebuild lowers it, so a sheet
+'nobody touched answers False. LinelistEventsManager asks before it takes any
+'application state, because the state is itself what the user sees: screen
+'updating off and back on repaints the window whether or not anything changed,
+'and leaving an untouched sheet used to pay for that repaint.
+'@param prevsh Worksheet. The sheet about to be left.
+'@return Boolean. True when OnSheetDeactivate has work to do on it.
+'@export
+Public Function SheetHasListAutoWork(ByVal prevsh As Worksheet) As Boolean
+    Dim shHn As HiddenNames
+
+    If prevsh Is Nothing Then Exit Function
+
+    Set shHn = SheetStore(prevsh)
+    If shHn Is Nothing Then Exit Function
+
+    SheetHasListAutoWork = (shHn.ValueAsString(LISTAUTO_UPDATE_FLAG) = "yes")
+End Function
+
+
 '@sub-title Handle worksheet deactivation events.
 '@details
 'The handler is written into the code module of each HList sheet, so the sheet
@@ -313,6 +379,54 @@ Public Sub OnSheetDeactivate(ByVal prevsh As Worksheet)
     Exit Sub
 ErrHand:
 End Sub
+
+
+'@sub-title Whether a selection on a data entry sheet starts the geo cascade.
+'@details
+'Landing on a cell under a geo2, geo3 or geo4 column clears the dropdown list
+'of that admin level and rewrites it from the geobase. That is the one thing a
+'selection does that is worth hiding the screen for. Every other selection
+'recalculates the row under the cursor and stops there.
+'
+'LinelistEventsManager asks so it can pick the state to run the handler under.
+'Every selection used to take the full busy state, and screen updating off and
+'back on repaints the window, so moving round a sheet with the arrow keys
+'flickered once per key.
+'@param sh Worksheet. The sheet the selection is on.
+'@param target Range. The newly selected cells.
+'@return Boolean. True when the selection starts a geo cascade.
+'@export
+Public Function SelectionIsHeavy(ByVal sh As Worksheet, ByVal target As Range) As Boolean
+    Dim shHn As HiddenNames
+    Dim hRng As Range
+    Dim varName As String
+    Dim varControl As String
+
+    If (sh Is Nothing) Or (target Is Nothing) Then Exit Function
+
+    Set shHn = SheetStore(sh)
+    If shHn Is Nothing Then Exit Function
+
+    'A sheet with no ListObject, or a name the store does not carry, answers
+    'False and the caller runs the handler under the quiet state. That is the
+    'same answer an unreadable sheet gives, and it is the safe one: the handler
+    'below guards each of these steps again.
+    On Error GoTo NotHeavy
+
+    Set hRng = sh.ListObjects(1).HeaderRowRange
+    If target.Row <= hRng.Row Then Exit Function
+
+    varName = sh.Cells(hRng.Row, target.Column).Value
+    varControl = shHn.ValueAsString(varName & " -- control")
+
+    SelectionIsHeavy = (varControl = "geo2") Or _
+                       (varControl = "geo3") Or _
+                       (varControl = "geo4")
+    Exit Function
+
+NotHeavy:
+    SelectionIsHeavy = False
+End Function
 
 
 '@sub-title Handle selection change events on HList sheets.

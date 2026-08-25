@@ -317,6 +317,68 @@ End Sub
 '@details Builds the default three-row fixture, appends two rows via AddRows, then calls
 '   AddIds. Asserts the total row count is five and that the new rows receive IDs "row 4"
 '   and "row 5" following the existing sequence.
+'@sub-title Verifies that AddRows calculates the rows it brings in, and only those
+'@details A linelist runs on manual calculation, so a row that arrives holding a formula
+'   and no answer keeps the blank until something asks for a recalculation. AddRows used
+'   to be followed by one: the busy state it ran under restored automatic calculation on
+'   the way out and the whole workbook recalculated, which on a long data entry sheet is
+'   the slowest thing the click could do. The table below carries a formula reading a
+'   helper cell that is moved after the rows already there were calculated, so the two
+'   halves are told apart by their values: the old rows keep the answer they held and the
+'   new ones carry the answer the helper reads now.
+'@TestMethod("CustomTable")
+Public Sub TestAddRowsCalculatesOnlyTheRowsItBrings()
+    CustomTestSetTitles Assert, "CustomTable", "TestAddRowsCalculatesOnlyTheRowsItBrings"
+    On Error GoTo Fail
+
+    Const CALCSHEET As String = "addRowsCalcSheet"
+    Const CALCTABLE As String = "addRowsCalcTable"
+
+    Dim tableObject As CustomTable
+    Dim hostSheet As Worksheet
+    Dim Lo As ListObject
+    Dim answers As Range
+    Dim heldCalculation As Long
+
+    heldCalculation = Application.Calculation
+    Application.Calculation = xlCalculationManual
+
+    Set tableObject = CreateCustomTableWithData(CALCSHEET, CALCTABLE, _
+                                                Array("ID", "Name", "Answer"), _
+                                                Array(Array("row 1", "first", 0), _
+                                                      Array("row 2", "second", 0)))
+
+    Set hostSheet = ThisWorkbook.Worksheets(CALCSHEET)
+    Set Lo = hostSheet.ListObjects(CALCTABLE)
+
+    'One formula down the whole column makes Excel treat it as a calculated
+    'column, which is what carries it into rows added later.
+    hostSheet.Range("G1").Value = 2
+    Lo.ListColumns("Answer").DataBodyRange.Formula = "=$G$1 * 3"
+    hostSheet.Calculate
+
+    'The helper moves and nothing follows it: the workbook is on manual.
+    hostSheet.Range("G1").Value = 10
+
+    tableObject.AddRows nbRows:=2
+
+    Set answers = Lo.ListColumns("Answer").DataBodyRange
+
+    Assert.IsTrue (CDbl(answers.Cells(1, 1).Value) = 6), _
+                  "A row that was already there keeps the answer it held, read " & _
+                  CStr(answers.Cells(1, 1).Value)
+    Assert.IsTrue (CDbl(answers.Cells(3, 1).Value) = 30), _
+                  "A row the add brought in holds its answer, read " & _
+                  CStr(answers.Cells(3, 1).Value)
+
+    Application.Calculation = heldCalculation
+    Exit Sub
+
+Fail:
+    Application.Calculation = heldCalculation
+    CustomTestLogFailure Assert, "TestAddRowsCalculatesOnlyTheRowsItBrings", Err.Number, Err.Description
+End Sub
+
 '@TestMethod("CustomTable")
 Public Sub TestAddRowsAssignsIds()
     CustomTestSetTitles Assert, "CustomTable", "TestAddRowsAssignsIds"

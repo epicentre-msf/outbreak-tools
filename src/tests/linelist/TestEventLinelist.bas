@@ -2291,3 +2291,205 @@ TestFail:
                          "TestRestPointerIsSafeWhenThePointerIsAlreadyAtRest", _
                          Err.Number, Err.Description
 End Sub
+
+
+'@section The resting state
+'===============================================================================
+'A linelist runs on manual calculation and rests its pointer on the north-west
+'arrow. Both are what every busy state of the session applies, and
+'ApplicationState puts back what it snapshots, so with the resting values equal
+'to the busy ones an event leaves neither of them changed.
+'
+'The open used to set them inside a busy state whose snapshot was taken before
+'it, so the exit restored the host Excel's own calculation mode over the top. A
+'linelist opened into a session that already had a workbook up therefore ran on
+'automatic calculation, and every event of the workbook ended in a full
+'recalculation on the way out of its busy state. LinelistEventsManager calls
+'this once more after the open closes, which is why the sub exists apart from
+'OnWorkbookOpen and why it is worth a test of its own.
+
+'@sub-title The resting state is manual calculation and the arrow.
+'@TestMethod("EventLinelist")
+Public Sub TestTheRestingStateIsManualCalculationAndTheArrow()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheRestingStateIsManualCalculationAndTheArrow"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim heldCalculation As Long
+
+    heldCalculation = Application.Calculation
+    Application.Calculation = xlCalculationAutomatic
+    Application.Cursor = xlDefault
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+    sut.ApplyRestingState
+
+    Assert.AreEqual CLng(xlCalculationManual), CLng(Application.Calculation), _
+                    "The resting state is manual calculation"
+    Assert.AreEqual CLng(xlNorthwestArrow), CLng(Application.Cursor), _
+                    "The resting state parks the pointer on the north-west arrow"
+
+    RestoreAfterOpen heldCalculation
+    Exit Sub
+TestFail:
+    RestoreAfterOpen heldCalculation
+    CustomTestLogFailure Assert, "TestTheRestingStateIsManualCalculationAndTheArrow", _
+                         Err.Number, Err.Description
+End Sub
+
+
+'@section What a handler is worth taking application state for
+'===============================================================================
+'The two questions LinelistEventsManager asks before it picks the state to run a
+'handler under. Screen updating off and back on repaints the window whether or
+'not anything changed, so a handler that turns out to have no work costs the
+'user a flicker for nothing. Both answers come off values the handlers were
+'reading anyway.
+
+'@sub-title A sheet whose flag says yes has a rebuild waiting on it.
+'@TestMethod("EventLinelist")
+Public Sub TestSheetHasListAutoWorkFollowsTheFlag()
+    CustomTestSetTitles Assert, TESTMODULE, "TestSheetHasListAutoWorkFollowsTheFlag"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim dataWksh As Worksheet
+
+    Set dataWksh = FixtureWkb.Worksheets(1)
+    SetSheetName dataWksh, LISTAUTO_FLAG, "yes"
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    Assert.IsTrue sut.SheetHasListAutoWork(dataWksh), _
+                  "A sheet flagged yes has a rebuild waiting on it"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSheetHasListAutoWorkFollowsTheFlag", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A sheet nobody edited, and Nothing, are both worth no state.
+'@details
+'This is the answer that matters. It is what the manager reads on every sheet
+'the user leaves, and reading False is what keeps the busy state, and the
+'repaint that comes with it, off the ordinary path.
+'@TestMethod("EventLinelist")
+Public Sub TestSheetHasListAutoWorkIsFalseWithoutAnEdit()
+    CustomTestSetTitles Assert, TESTMODULE, "TestSheetHasListAutoWorkIsFalseWithoutAnEdit"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim dataWksh As Worksheet
+
+    Set dataWksh = FixtureWkb.Worksheets(1)
+    SetSheetName dataWksh, LISTAUTO_FLAG, "no"
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    Assert.IsFalse sut.SheetHasListAutoWork(dataWksh), _
+                   "A sheet flagged no has nothing waiting on it"
+    Assert.IsFalse sut.SheetHasListAutoWork(Nothing), _
+                   "A Nothing sheet has nothing waiting on it"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSheetHasListAutoWorkIsFalseWithoutAnEdit", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A cell under a geo column starts the admin cascade.
+'@TestMethod("EventLinelist")
+Public Sub TestSelectionIsHeavyUnderAGeoColumn()
+    CustomTestSetTitles Assert, TESTMODULE, "TestSelectionIsHeavyUnderAGeoColumn"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim sh As Worksheet
+
+    Set sh = SeedHListSheet("adm2_var", "geo2")
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    Assert.IsTrue sut.SelectionIsHeavy(sh, sh.Cells(9, 2)), _
+                  "A cell under a geo2 column starts the admin cascade"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSelectionIsHeavyUnderAGeoColumn", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title An ordinary cell, the header row and Nothing all start nothing.
+'@details
+'The three answers the arrow keys give. A selection that starts no cascade runs
+'under the quiet state, which writes nothing the user can see, and that is what
+'stops a data entry sheet flickering once per key.
+'@TestMethod("EventLinelist")
+Public Sub TestSelectionIsNotHeavyAnywhereElse()
+    CustomTestSetTitles Assert, TESTMODULE, "TestSelectionIsNotHeavyAnywhereElse"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim sh As Worksheet
+
+    Set sh = SeedHListSheet("plain_var", "choice_multiple")
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    Assert.IsFalse sut.SelectionIsHeavy(sh, sh.Cells(9, 2)), _
+                   "A cell under an ordinary column starts no cascade"
+    Assert.IsFalse sut.SelectionIsHeavy(sh, sh.Cells(8, 2)), _
+                   "The header row itself starts no cascade"
+    Assert.IsFalse sut.SelectionIsHeavy(sh, Nothing), _
+                   "A Nothing selection starts no cascade"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSelectionIsNotHeavyAnywhereElse", _
+                         Err.Number, Err.Description
+End Sub
+
+
+'@section Where the open lands
+'===============================================================================
+'A linelist is saved on the sheet the generation stopped on, which is Geo, so
+'the open has to move the user off it. The instruction sheet is where they
+'belong, and it is not always there to move them to: a build with the
+'instructions turned off carries it very hidden.
+'
+'That case used to be turned away. The fallback to the first visible worksheet
+'ran only when no instruction sheet was found at all, and a hidden one is found,
+'so the visibility test below it exited and the user was left on Geo. This is
+'that case.
+
+'@sub-title A hidden instruction sheet lands the user on the first visible sheet.
+'@TestMethod("EventLinelist")
+Public Sub TestTheOpenLandsOnTheFirstVisibleSheet()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheOpenLandsOnTheFirstVisibleSheet"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+    Dim hiddenSheet As Worksheet
+    Dim landingSheet As Worksheet
+    Dim heldCalculation As Long
+
+    heldCalculation = Application.Calculation
+
+    'The workbook the fixture hands over holds one sheet, so the sheet to land
+    'on is added before the first one is taken out of sight. A workbook cannot
+    'hide its last visible sheet.
+    Set hiddenSheet = FixtureWkb.Worksheets(1)
+    Set landingSheet = FixtureWkb.Worksheets.Add(After:=hiddenSheet)
+    landingSheet.Name = "landing"
+    hiddenSheet.Visible = xlSheetVeryHidden
+
+    Set sut = EventLinelist.Create(FixtureWkb)
+    sut.OnWorkbookOpen
+
+    Assert.AreEqual "landing", FixtureWkb.ActiveSheet.Name, _
+                    "The open lands on the first sheet the user can see"
+
+    RestoreAfterOpen heldCalculation
+    Exit Sub
+TestFail:
+    RestoreAfterOpen heldCalculation
+    CustomTestLogFailure Assert, "TestTheOpenLandsOnTheFirstVisibleSheet", _
+                         Err.Number, Err.Description
+End Sub

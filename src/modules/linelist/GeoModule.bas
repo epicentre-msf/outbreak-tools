@@ -82,6 +82,18 @@ Private Function GeoOf() As LLGeo
     Set GeoOf = linelistEvents.GeoManager()
 End Function
 
+' Whether the tab strip of each frame has been put back on its first page. The
+' picker keeps its state between opens through its default instance, so the tab
+' it comes up on the very first time is the tab the form was saved on, which is
+' whichever one the designer happened to close. The user starts on the four
+' admin lists, not on the concatenated list and not on the historic.
+'
+' One flag per frame, because the two pickers open independently and the first
+' open of each is the one that needs it. Every later open gives the user back
+' the tab they left.
+Private adminPageSettled As Boolean
+Private facilityPageSettled As Boolean
+
 '@section LoadGeo — Form Display
 '===============================================================================
 
@@ -152,6 +164,8 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
             .LBL_Fac1.Visible = False
             .LBL_Geo1.Visible = True
 
+            ShowFirstGeoPage .FRM_Geo, adminPageSettled
+
         Case GeoScopeHF
             .LBL_Adm4F.Caption = geoObj.GeoNames("hf_name")
             .LBL_Adm3F.Caption = geoObj.GeoNames("adm3_name")
@@ -172,6 +186,8 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
             .FRM_Geo.Visible = False
             .LBL_Fac1.Visible = True
             .LBL_Geo1.Visible = False
+
+            ShowFirstGeoPage .FRM_Facility, facilityPageSettled
 
         Case Else
             'GeoScopeBoth exists on the enum and has no layout in the form. An
@@ -197,6 +213,30 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
 ErrLoadGeo:
     LinelistEventsManager.LLExitBusyState
     ReportGeoError "LoadGeo", Err.Description
+End Sub
+
+' @description Put the tab strip of one frame on its first page, the four admin
+'              lists, and only the first time that frame is opened in the
+'              session. The page is chosen by position: the two frames carry a
+'              tab strip each and the form gives them different names, so the
+'              control is found by type rather than by name.
+' @param frameControl The FRM_Geo or FRM_Facility frame of the picker
+' @param alreadySettled The session flag of that frame, raised here
+Private Sub ShowFirstGeoPage(ByVal frameControl As Object, _
+                             ByRef alreadySettled As Boolean)
+    Dim ctrl As Object
+
+    If alreadySettled Then Exit Sub
+    alreadySettled = True
+
+    ' A frame carrying no tab strip has nothing to settle, and a tab strip that
+    ' refuses the page leaves the picker on the one it was already showing.
+    ' Neither is worth stopping an open for.
+    On Error Resume Next
+    For Each ctrl In frameControl.Controls
+        If TypeName(ctrl) = "MultiPage" Then ctrl.Value = 0
+    Next
+    On Error GoTo 0
 End Sub
 
 ' @description Empty every list control of the F_Geo form, entries and

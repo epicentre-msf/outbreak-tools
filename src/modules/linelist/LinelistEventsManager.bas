@@ -181,12 +181,29 @@ End Function
 '@section Workbook Entry Points
 '===============================================================================
 
+'@sub-title Answer the open, and leave the session on the linelist resting state.
+'@details
+'The resting state is applied a second time, after the busy state has closed.
+'The open runs inside a busy state whose snapshot was taken before the linelist
+'had said anything about how it wants to run, so the exit put manual
+'calculation and the resting pointer straight back to whatever the host Excel
+'was on. A session that already had a workbook open when the linelist arrived
+'therefore ran the linelist on automatic calculation, and from there every
+'event of the workbook -- a cell selected, a sheet left, a click on Add rows --
+'ended in a recalculation of the whole linelist on the way out of its busy
+'state.
 Public Sub LLWorkbookOpened()
     On Error GoTo Cleanup
     LLEnterBusyState
     Service.OnWorkbookOpen
 Cleanup:
     LLExitBusyState
+
+    'Nothing on the open is worth an error box, and the line above has already
+    'given the user their screen back.
+    On Error Resume Next
+    Service.ApplyRestingState
+    On Error GoTo 0
 End Sub
 
 '@sub-title Route the deactivation of one HList sheet.
@@ -200,7 +217,14 @@ End Sub
 '@param sh Worksheet. The sheet that was left.
 Public Sub SheetDeactivated(ByVal sh As Worksheet)
     If sh Is Nothing Then Exit Sub
+
+    'The busy state is asked for only when the sheet has a rebuild waiting on
+    'it. Taking it is not free and it is not invisible: screen updating off and
+    'back on repaints the window, so leaving a sheet nobody had edited used to
+    'flicker for a flag that said there was nothing to do.
     On Error GoTo Cleanup
+    If Not Service.SheetHasListAutoWork(sh) Then Exit Sub
+
     LLEnterBusyState busyCursor:=xlNorthwestArrow
     Service.OnSheetDeactivate sh
 Cleanup:
@@ -220,22 +244,41 @@ Cleanup:
     LLExitBusyState
 End Sub
 
+'@sub-title Route a selection under the lightest state that fits it.
+'@details
+'Landing on an admin cell refills the dropdown under it from the geobase, which
+'is the slowest thing a selection can start and the only one worth hiding the
+'screen for. It takes the busy state, and the north-west arrow with it: the
+'edit that may follow runs under the same arrow, and the cursor changing
+'between the two is a flick the owner reported.
+'
+'Every other selection recalculates the row under the cursor and stops. That
+'used to take the busy state as well, and it is the visible one of the two:
+'screen updating off and back on repaints the window, so moving round a data
+'entry sheet with the arrow keys flickered once per key. The quiet state writes
+'nothing the user can see.
 Public Sub SelectionChanged(ByVal sh As Worksheet, ByVal target As Range)
+    Dim needsBusyState As Boolean
+
     If (sh Is Nothing) Or (target Is Nothing) Then Exit Sub
 
     On Error GoTo Cleanup
-    'The same cursor the change handler shows, and it is here because of the geo
-    'cascade. Landing on an admin cell refills the dropdown under it, which is
-    'the slowest thing a selection can start, and it used to run under the
-    'ordinary cursor while the edit just before it ran under the arrow. The
-    'cursor changing between the two is the flick the owner reported.
-    'This line was left out on purpose once, on the grounds that the handler
-    'runs on every arrow key. If plain movement round the sheet starts to
-    'flicker, that is this line and it comes back out.
-    LLEnterBusyState busyCursor:=xlNorthwestArrow
+    needsBusyState = Service.SelectionIsHeavy(sh, target)
+
+    If needsBusyState Then
+        LLEnterBusyState busyCursor:=xlNorthwestArrow
+    Else
+        LLEnterQuietState
+    End If
+
     Service.OnSelectionChange sh, target
+
 Cleanup:
-    LLExitBusyState
+    If needsBusyState Then
+        LLExitBusyState
+    Else
+        LLExitQuietState
+    End If
 End Sub
 
 '@sub-title Route a double-click and answer the geo picker it asked for.

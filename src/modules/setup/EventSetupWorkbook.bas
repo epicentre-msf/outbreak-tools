@@ -39,12 +39,16 @@ Private Sub Workbook_BeforeClose(Cancel As Boolean)
     On Error GoTo 0
 End Sub
 
+'Screen updating is left alone here. Excel turns it back on by itself when the
+'handler returns, and the False that used to open this routine therefore made
+'every sheet the user moved to repaint the window twice. EventsManager takes
+'the busy state instead, and only for the one sheet whose activation does work
+'worth hiding.
 Private Sub Workbook_SheetActivate(ByVal sh As Object)
     If mBooting Then Exit Sub
     If TypeName(sh) <> "Worksheet" Then Exit Sub
     If sh.Name = SHEET_CHECKING Then Exit Sub
 
-    Application.ScreenUpdating = False
     mBooting = True
 
     On Error GoTo Clean

@@ -884,7 +884,38 @@ Private Sub AddTableRows(ByVal lo As ListObject, ByVal nbRows As Long, ByVal ins
 
     lo.Resize newRange
 
+    'The new rows arrive holding the formulas of the rows above them and none of
+    'the answers, and a linelist runs on manual calculation, so nothing would
+    'fill them until something else asked for a recalculation. Only the block
+    'that was added is calculated: a data entry sheet answers a GEOCONCAT call
+    'per row out of VBA, so recalculating a whole long one is the slowest thing
+    'an Add rows click could do.
+    CalculateAddedRows newRange, nbRows
+
     ResetCaches
+End Sub
+
+'@label:calculate-added-rows
+'@sub-title Calculate the rows an add has just brought into a table
+'@details
+'The added rows are the tail of the resized range, whether worksheet rows were
+'inserted below the table or the table range was simply extended over them.
+'@param newRange Range. The table range as the resize left it.
+'@param nbRows Long. How many rows were added.
+Private Sub CalculateAddedRows(ByVal newRange As Range, ByVal nbRows As Long)
+    Dim addedRows As Range
+
+    If newRange Is Nothing Then Exit Sub
+    If nbRows <= 0 Then Exit Sub
+    If newRange.Rows.Count < nbRows Then Exit Sub
+
+    Set addedRows = newRange.Rows(newRange.Rows.Count - nbRows + 1).Resize(nbRows)
+
+    'A block Excel refuses to calculate is left to the next recalculation, which
+    'is where it stood before this call existed.
+    On Error Resume Next
+    addedRows.Calculate
+    On Error GoTo 0
 End Sub
 
 '@label:ensure-selection-on-table-sheet

@@ -547,11 +547,8 @@ Public Sub SaveLL()
     outPath = this.specs.Value("lldir") & Application.PathSeparator & _
               this.specs.Value("llname") & ".xlsb"
 
-    'Select an appropriate visible sheet before saving
-    On Error Resume Next
-    outWkb.Worksheets(msgTrads.TranslatedValue("LLSHEET_Admin")).Activate
-    outWkb.Worksheets(msgTrads.TranslatedValue("INSTSHEETNAME")).Activate
-    On Error GoTo 0
+    'Land the workbook on the sheet the user should open it on.
+    ActivateLandingSheet outWkb, msgTrads
 
     'Protect the workbook structure, add debugging mechanism
     passObj.Protect outWkb
@@ -566,6 +563,83 @@ Public Sub SaveLL()
 
     If Not this.tempRepos Is Nothing Then this.tempRepos.Reset
 End Sub
+
+'@label:activate-landing-sheet
+'@sub-title Leave the output workbook on the sheet its user should open it on
+'@details
+'The generation stops wherever its last step left it, which is the Geo sheet,
+'and a workbook is saved on the sheet that was active. So the sheet chosen here
+'is the sheet the user sees the first time they open the linelist.
+'
+'The instruction sheet is the wanted one and the admin sheet is the answer on a
+'build that carries no instructions. Neither is always there: the instruction
+'sheet belongs to template builds and goes very hidden when the specification
+'turns instructions off, and the admin sheet belongs to the builds that have no
+'template. A build that answers neither used to be left on Geo, so the first
+'visible worksheet closes the list.
+'@param outWkb Workbook. The generated workbook.
+'@param msgTrads TranslationObject. The message translations naming the sheets.
+Private Sub ActivateLandingSheet(ByVal outWkb As Workbook, _
+                                 ByVal msgTrads As TranslationObject)
+    Dim landingSheet As Worksheet
+
+    Set landingSheet = VisibleSheetOrNothing(outWkb, msgTrads.TranslatedValue("INSTSHEETNAME"))
+
+    If landingSheet Is Nothing Then
+        Set landingSheet = VisibleSheetOrNothing(outWkb, msgTrads.TranslatedValue("LLSHEET_Admin"))
+    End If
+
+    If landingSheet Is Nothing Then
+        Set landingSheet = FirstVisibleSheet(outWkb)
+    End If
+
+    If landingSheet Is Nothing Then Exit Sub
+
+    'A workbook that refuses the activation is still saved, and it is saved on
+    'the sheet it was already on. That is worth no more than the sheet it costs.
+    On Error Resume Next
+    landingSheet.Activate
+    On Error GoTo 0
+End Sub
+
+'@label:visible-sheet-or-nothing
+'@sub-title One named worksheet of a workbook, when it is there and visible
+'@param outWkb Workbook. The workbook to look in.
+'@param sheetName String. The name to look for.
+'@return Worksheet. The worksheet, or Nothing when it is missing or hidden.
+Private Function VisibleSheetOrNothing(ByVal outWkb As Workbook, _
+                                       ByVal sheetName As String) As Worksheet
+    Dim sh As Worksheet
+
+    If LenB(sheetName) = 0 Then Exit Function
+
+    'A name no sheet carries raises subscript out of range, and that is the
+    'ordinary answer here rather than a fault: the two sheets asked for belong
+    'to different kinds of build.
+    On Error Resume Next
+    Set sh = outWkb.Worksheets(sheetName)
+    On Error GoTo 0
+
+    If sh Is Nothing Then Exit Function
+    If sh.Visible <> xlSheetVisible Then Exit Function
+
+    Set VisibleSheetOrNothing = sh
+End Function
+
+'@label:first-visible-sheet
+'@sub-title The first worksheet of a workbook the user can see
+'@param outWkb Workbook. The workbook to walk.
+'@return Worksheet. The first visible worksheet, or Nothing when none is.
+Private Function FirstVisibleSheet(ByVal outWkb As Workbook) As Worksheet
+    Dim sh As Worksheet
+
+    For Each sh In outWkb.Worksheets
+        If sh.Visible = xlSheetVisible Then
+            Set FirstVisibleSheet = sh
+            Exit Function
+        End If
+    Next
+End Function
 
 '@label:error-manage
 '@sub-title Display an error dialog for incomplete linelist operations
