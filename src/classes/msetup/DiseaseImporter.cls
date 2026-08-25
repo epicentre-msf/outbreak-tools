@@ -5,24 +5,45 @@ END
 Attribute VB_Name = "DiseaseImporter"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = False
+Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Coordinates disease worksheet imports with merge and reporting support"
 
+'@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Coordinates disease worksheet imports with merge and reporting support")
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IDiseaseImporter
+
+'DiseaseImporter.cls without interface -- single implementation, no test fake,
+'no compile cycle (see project-rules.md 4.4).
+
+'@section Enumerations
+'===============================================================================
+
+Public Enum DiseaseImportPriority
+    DiseaseImportPriority_Existing = 0
+    DiseaseImportPriority_Foreign = 1
+End Enum
+
+'@section Factory
+'===============================================================================
+
+'@sub-title Build a fresh importer.
+'@return DiseaseImporter ready to merge disease tables.
+Public Function Create() As DiseaseImporter
+    Set Create = New DiseaseImporter
+End Function
 
 '@section Operations
 '===============================================================================
 
 '@sub-title Import disease data, merging when requested.
+'@param priority Byte holding a DiseaseImportPriority value. Defaults to foreign.
 Public Function MergeDisease(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, _
                              Optional ByVal mergeValues As Boolean = True, _
-                             Optional ByVal priority As DiseaseImportPriority = DiseaseImportPriority_Foreign, _
+                             Optional ByVal priority As Byte = DiseaseImportPriority_Foreign, _
                              Optional ByVal logger As DiseaseLogger = Nothing) As DiseaseImportSummary
     Dim summary As DiseaseImportSummary
 
@@ -78,7 +99,7 @@ End Sub
 '===============================================================================
 
 '@sub-title Merge the source data into the target according to the priority.
-Private Sub MergeTables(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, ByVal priority As DiseaseImportPriority, ByVal summary As DiseaseImportSummary, ByVal logger As DiseaseLogger)
+Private Sub MergeTables(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, ByVal priority As Byte, ByVal summary As DiseaseImportSummary, ByVal logger As DiseaseLogger)
     Dim targetRows As Long
     Dim sourceRows As Long
     Dim columnCount As Long
@@ -139,7 +160,7 @@ End Function
 
 '@sub-title Perform the merge between target and source matrices.
 Private Sub ApplyMerge(ByRef targetData As Variant, ByRef sourceData As Variant, ByVal targetRows As Long, ByVal sourceRows As Long, _
-                       ByVal columnCount As Long, ByVal priority As DiseaseImportPriority, ByVal targetIndex As Collection, _
+                       ByVal columnCount As Long, ByVal priority As Byte, ByVal targetIndex As Collection, _
                        ByVal seenSource As Collection, ByVal appendedRows As BetterArray, ByVal summary As DiseaseImportSummary, ByVal logger As DiseaseLogger)
 
     Dim rowIndex As Long
@@ -376,9 +397,3 @@ Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As Stri
     Err.Raise errNumber, "DiseaseImporter", errMessage
 End Sub
 
-'@section Interface
-'===============================================================================
-
-Private Function IDiseaseImporter_MergeDisease(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, Optional ByVal mergeValues As Boolean = True, Optional ByVal priority As DiseaseImportPriority = DiseaseImportPriority_Foreign, Optional ByVal logger As DiseaseLogger = Nothing) As DiseaseImportSummary
-    Set IDiseaseImporter_MergeDisease = MergeDisease(targetTable, sourceTable, mergeValues, priority, logger)
-End Function

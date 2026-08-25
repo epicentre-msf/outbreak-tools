@@ -16,7 +16,7 @@ Private Const IMPORT_SHEET As String = "IntegrationImport"
 
 Private Assert As CustomTest
 Private Builder As IDiseaseSheetBuilder
-Private Importer As IDiseaseImporter
+Private Importer As DiseaseImporter
 Private Exporter As IDiseaseExporter
 Private ExportManager As IDiseaseExportWorkbook
 Private AppGuard As DiseaseApplicationState
@@ -177,7 +177,7 @@ Private Sub PrepareEnvironment()
     Set RibbonTranslations = TranslationObject.Create(TranslationTable, "ENG")
 
     Set Builder = DiseaseSheetBuilder.Create(ThisWorkbook, Dropdowns, RibbonTranslations)
-    Set Importer = New DiseaseImporter
+    Set Importer = DiseaseImporter.Create()
     Set ExportManager = New DiseaseExportWorkbook
     Set AppGuard = DiseaseApplicationState.Create()
     Set Exporter = DiseaseExporter.Create(ExportManager, AppGuard)

@@ -15,7 +15,7 @@ Private Const TARGET_TABLE_NAME As String = "T_TargetDisease"
 Private Const SOURCE_TABLE_NAME As String = "T_SourceDisease"
 
 Private Assert As CustomTest
-Private Importer As IDiseaseImporter
+Private Importer As DiseaseImporter
 Private TargetSheet As Worksheet
 Private SourceSheet As Worksheet
 Private TargetTable As ListObject
@@ -30,7 +30,7 @@ Private Sub ModuleInitialize()
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestDiseaseImporter"
-    Set Importer = New DiseaseImporter
+    Set Importer = DiseaseImporter.Create()
 End Sub
 
 '@ModuleCleanup
