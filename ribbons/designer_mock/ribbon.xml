@@ -31,6 +31,7 @@
                     <button id="btnResMulti" getLabel="LangLabel" imageMso="SheetRowsDelete" size="large" onAction="clickResizeMulti"/>
                     <button id="btnImpMulti" image="import" size="large" getLabel="LangLabel" onAction="clickImpMulti"/>
                     <button id="btnExportMulti" getLabel="LangLabel" image="download" size="large" onAction="clickExportMulti"/>
+                    <button id="btnRibbonMulti" getLabel="LangLabel" image="settings2" size="large" onAction="clickRibbonMulti"/>
                     <button id="btnGenerateMulti" getLabel="LangLabel" imageMso="MacroPlay" size="large" onAction="clickGenerateMulti"/>
                 </group>
                 <group id="customGroupDev" label="Dev" getVisible="DevGroupVisible">

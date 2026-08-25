@@ -83,6 +83,11 @@ Private Const TAG_LAST_OPENED As String = "RNG_LastOpenedDate"
 'setup file clears it, and the transfer reads it to pick the formatter source.
 Private Const TAG_FORMATTER_IMPORTED As String = "TAG_FORMATTER_IMPORTED"
 
+'The ribbon template file the multi generation gives to every row it builds.
+'The single generation reads the path the user loaded on Main; the rows of
+'GenerateMultiple read this one, so the two screens stop sharing a cell.
+Private Const TAG_RIBBON_TEMPLATE As String = "TAG_RIBBON_TEMPLATE"
+
 'The version of the designer. The owner writes it by hand on the Dev worksheet,
 'as the value name RNG_Version, and preparation copies it into the workbook-
 'scoped name below. LLGeo reads that one when it writes the metadata sheet of a
@@ -288,6 +293,45 @@ Public Property Let FormatterImported(ByVal imported As Boolean)
     EnsureHiddenStore
     this.store.EnsureName TAG_FORMATTER_IMPORTED, storedValue, HiddenNameTypeString
     this.store.SetValue TAG_FORMATTER_IMPORTED, storedValue
+End Property
+
+'@label:ribbon-template-path
+'@prop-title The ribbon template file of the multi generation
+'@details
+'Reads the workbook-level TAG_RIBBON_TEMPLATE name. The multi generation
+'gives this file to every row it builds, so the rows carry a ribbon
+'without anybody loading a template on the Main worksheet first.
+'
+'An empty answer means the designer has never been given one. It also
+'means the linelists carry buttons: that is what an empty template path
+'has always meant to the generation.
+'@return String. The stored path, empty when the designer holds none.
+'@export
+Public Property Get RibbonTemplatePath() As String
+    EnsureHiddenStore
+    RibbonTemplatePath = Trim$(this.store.ValueAsString(TAG_RIBBON_TEMPLATE, vbNullString))
+End Property
+
+'@label:ribbon-template-path-set
+'@prop-title Store the ribbon template file of the multi generation
+'@details
+'Creates the hidden name when the designer has none yet. An empty path
+'takes the name off the store, which puts the designer back in the state
+'it had before it was ever given a file: the read answers empty and the
+'generation builds the buttons.
+'@param templatePath String. The full path of the template file.
+'@export
+Public Property Let RibbonTemplatePath(ByVal templatePath As String)
+    EnsureHiddenStore
+
+    If LenB(templatePath) = 0 Then
+        If this.store.HasName(TAG_RIBBON_TEMPLATE) Then _
+            this.store.RemoveName TAG_RIBBON_TEMPLATE
+        Exit Property
+    End If
+
+    this.store.EnsureName TAG_RIBBON_TEMPLATE, templatePath, HiddenNameTypeString
+    this.store.SetValue TAG_RIBBON_TEMPLATE, templatePath
 End Property
 
 '@label:host-workbook

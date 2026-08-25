@@ -751,8 +751,11 @@ Public Function BuildMultipleFromTable(ByVal designerPath As String, _
     EventsDesignerAdvanced.StartRunLog vbNullString, vbNullString, designerBook
     AddToReport "run log opened on the designer copy"
 
+    'The template option is the ribbon file of the whole run, so it rides
+    'with the loop the same way a designer press gives its rows the file it
+    'holds. An empty option is the buttons build.
     EventsDesignerMulti.GenerateMultipleRows multiTable, entry, Nothing, _
-                                             lastBuilt, lastFailed
+                                             lastBuilt, lastFailed, optTemplate
     AddToReport "loop finished: " & CStr(lastBuilt) & " built, " & _
                 CStr(lastFailed) & " failed"
 

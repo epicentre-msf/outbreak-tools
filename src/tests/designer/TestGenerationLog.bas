@@ -4,7 +4,7 @@ Attribute VB_Description = "Unit tests for the GenerationLog class"
 Option Explicit
 
 '@Folder("CustomTests.Designer")
-'@ModuleDescription("Validates GenerationLog: the run header, the stamped in-memory record, the append across two flushes, the run window, the closing bundle, the text export and the re-run reset.")
+'@ModuleDescription("Validates GenerationLog: the run header, the stamped in-memory record, the append across two flushes, the run window, the report sections and their subsections, the closing bundle, the text export and the re-run reset.")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As CustomTest
@@ -17,6 +17,10 @@ Private Const SHEET_CHECKING As String = "__check"
 
 'Base name of the text export written into this workbook's folder
 Private Const EXPORT_BASE As String = "obt_generationlog_test"
+
+'The first visible column of the report. The writer puts the first
+'fragment of every row it writes there, so a heading is one cell of it.
+Private Const HEADING_COLUMN As Long = 3
 
 
 '@section Module lifecycle
@@ -239,6 +243,134 @@ Public Sub TestARecordOnlyBundleStaysOffTheWorksheet()
     Exit Sub
 Fail:
     CustomTestLogFailure Assert, "TestARecordOnlyBundleStaysOffTheWorksheet", Err.Number, Err.Description
+End Sub
+
+
+'@section Section Tests
+'===============================================================================
+'@TestMethod("GenerationLog.Section")
+Public Sub TestASectionHeadsItsBundlesOnce()
+    CustomTestSetTitles Assert, "GenerationLog", "TestASectionHeadsItsBundlesOnce"
+    On Error GoTo Fail
+
+    'Arrange
+    Dim runLog As GenerationLog
+    Set runLog = GenerationLog.Create(FixtureWorkbook)
+    runLog.Start
+
+    'Act: two parts of one build, under one section
+    runLog.OpenSection "linelist one"
+    runLog.Collect MakeBundle("dictionary", 1)
+    runLog.Collect MakeBundle("choices", 1)
+    runLog.CloseSection
+
+    'Assert: the section title stands once, with both parts under it
+    Dim sh As Worksheet
+    Set sh = FixtureWorkbook.Worksheets(SHEET_CHECKING)
+    Assert.AreEqual CLng(1), TitleCount(sh, "linelist one"), _
+                    "The section title should reach the worksheet once."
+    Assert.IsNotNothing sh.Cells.Find(What:="dictionary", LookIn:=xlValues, LookAt:=xlPart), _
+                        "The first part should land as a subsection of the section."
+    Assert.IsNotNothing sh.Cells.Find(What:="choices", LookIn:=xlValues, LookAt:=xlPart), _
+                        "The second part should land as a subsection of the section."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestASectionHeadsItsBundlesOnce", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("GenerationLog.Section")
+Public Sub TestAnOpenSectionHoldsItsBundlesBack()
+    CustomTestSetTitles Assert, "GenerationLog", "TestAnOpenSectionHoldsItsBundlesBack"
+    On Error GoTo Fail
+
+    'Arrange
+    Dim runLog As GenerationLog
+    Set runLog = GenerationLog.Create(FixtureWorkbook)
+    runLog.Start
+    Dim sh As Worksheet
+    Set sh = FixtureWorkbook.Worksheets(SHEET_CHECKING)
+
+    'Act: one bundle inside a section that stays open
+    runLog.OpenSection "linelist two"
+    runLog.Collect MakeBundle("held bundle", 1)
+
+    'Assert: the record has it and the worksheet stays clear
+    Assert.AreEqual "linelist two", runLog.SectionTitle, _
+                    "The open section should answer its own title."
+    Assert.AreEqual CLng(2), runLog.RecordLength, _
+                    "A held bundle should reach the in-memory record straight away."
+    Assert.IsNothing sh.Cells.Find(What:="held bundle", LookIn:=xlValues, LookAt:=xlPart), _
+                     "A bundle of an open section should stay off the worksheet."
+
+    'Act: closing writes the whole section
+    runLog.CloseSection
+
+    'Assert
+    Assert.AreEqual vbNullString, runLog.SectionTitle, _
+                    "A closed section should leave no title open."
+    Assert.IsNotNothing sh.Cells.Find(What:="held bundle", LookIn:=xlValues, LookAt:=xlPart), _
+                        "Closing the section should write the bundles it held."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestAnOpenSectionHoldsItsBundlesBack", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("GenerationLog.Section")
+Public Sub TestOpeningASectionClosesTheOneBeforeIt()
+    CustomTestSetTitles Assert, "GenerationLog", "TestOpeningASectionClosesTheOneBeforeIt"
+    On Error GoTo Fail
+
+    'Arrange
+    Dim runLog As GenerationLog
+    Set runLog = GenerationLog.Create(FixtureWorkbook)
+    runLog.Start
+
+    'Act: a driver walking two rows and closing neither by hand
+    runLog.OpenSection "row one"
+    runLog.Collect MakeBundle("first part", 1)
+    runLog.OpenSection "row two"
+    runLog.Collect MakeBundle("second part", 1)
+    runLog.Finish "done"
+
+    'Assert: both sections stand, each once, and Finish wrote the last one
+    Dim sh As Worksheet
+    Set sh = FixtureWorkbook.Worksheets(SHEET_CHECKING)
+    Assert.AreEqual CLng(1), TitleCount(sh, "row one"), _
+                    "The first section should stand on the worksheet once."
+    Assert.AreEqual CLng(1), TitleCount(sh, "row two"), _
+                    "Finish should write the section that was still open."
+    Assert.AreEqual vbNullString, runLog.SectionTitle, _
+                    "Finish should leave no section open."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestOpeningASectionClosesTheOneBeforeIt", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("GenerationLog.Section")
+Public Sub TestARecordLineOfASectionNamesBothTitles()
+    CustomTestSetTitles Assert, "GenerationLog", "TestARecordLineOfASectionNamesBothTitles"
+    On Error GoTo Fail
+
+    'Arrange
+    Dim runLog As GenerationLog
+    Set runLog = GenerationLog.Create(FixtureWorkbook)
+    runLog.Start
+
+    'Act
+    runLog.OpenSection "linelist three"
+    runLog.Collect MakeBundle("analyses", 1)
+    runLog.CloseSection
+
+    'Assert: the text file reads the way the worksheet does
+    Assert.IsTrue InStr(1, runLog.RecordLine(2), "linelist three - analyses") > 0, _
+                  "A record line of a section should name the section and the part."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestARecordLineOfASectionNamesBothTitles", Err.Number, Err.Description
 End Sub
 
 
@@ -537,6 +669,26 @@ Private Function MakeBundle(ByVal title As String, ByVal entryCount As Long) As 
     Next index
 
     Set MakeBundle = bundle
+End Function
+
+'@sub-title How many rows of the report carry one text as their heading
+'@details
+'The writer puts the first fragment of every row it writes in the first
+'visible column, so a level one heading is one cell of that column. The
+'count answers how many times a section title reached the sheet.
+Private Function TitleCount(ByVal sh As Worksheet, ByVal titleText As String) As Long
+    Dim cell As Range
+    Dim lastRow As Long
+    Dim rowIndex As Long
+
+    lastRow = sh.Cells(sh.Rows.Count, HEADING_COLUMN).End(xlUp).Row
+
+    For rowIndex = 1 To lastRow
+        Set cell = sh.Cells(rowIndex, HEADING_COLUMN)
+        If StrComp(CStr(cell.Value), titleText, vbTextCompare) = 0 Then
+            TitleCount = TitleCount + 1
+        End If
+    Next rowIndex
 End Function
 
 '@sub-title The full path of the test's text export

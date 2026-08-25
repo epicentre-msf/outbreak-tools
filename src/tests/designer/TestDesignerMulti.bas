@@ -4,7 +4,7 @@ Attribute VB_Description = "Unit tests for Multi group table operations"
 Option Explicit
 
 '@Folder("CustomTests.Designer")
-'@ModuleDescription("Validates Multi group table operations: add rows, remove rows, duplicate, import, export, the write-once row IDs on T_Multi, the driver helpers that read a row into the Main entries, and the shared setup language extraction.")
+'@ModuleDescription("Validates Multi group table operations: add rows, remove rows, duplicate, import, export, the write-once row IDs on T_Multi, the driver helpers that read a row into the Main entries, the ribbon file the run gives every row, the report section title of a row, and the shared setup language extraction.")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As CustomTest
@@ -419,6 +419,69 @@ Public Sub TestWriteRowEntriesLandsRowValuesOnMain()
     Exit Sub
 Fail:
     CustomTestLogFailure Assert, "TestWriteRowEntriesLandsRowValuesOnMain", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("DesignerMulti.Driver")
+Public Sub TestWriteRowEntriesLandsTheRunRibbonFile()
+    CustomTestSetTitles Assert, "DesignerMulti", "TestWriteRowEntriesLandsTheRunRibbonFile"
+    On Error GoTo Fail
+
+    'Arrange: a Main-shaped sheet carrying the template range the build reads
+    Dim mainSheet As Worksheet
+    Set mainSheet = EnsureWorksheet("Main", FixtureWorkbook)
+    FixtureWorkbook.Names.Add Name:="RNG_LLTemp", RefersTo:=mainSheet.Range("A11")
+    mainSheet.Range("A11").Value = "/templates/from_the_main_sheet.xlsb"
+
+    Dim lo As ListObject
+    Set lo = MultiSheet.ListObjects(TABLE_MULTI)
+    lo.ListRows(1).Range.Cells(1, 2).Value = "/setups/measles.xlsb"
+
+    Dim entry As DesignerEntry
+    Set entry = DesignerEntry.Create(mainSheet)
+
+    'Act: the run's own ribbon file rides with the row
+    EventsDesignerMulti.WriteRowEntries lo, 1, entry, "/ribbons/run_template.xlsb"
+
+    'Assert: the row builds with the run's file, and the Main cell is overwritten
+    Assert.AreEqual "/ribbons/run_template.xlsb", entry.ValueOf("temppath"), _
+                    "The ribbon file of the run should land on the template entry."
+
+    'Act: a run with no ribbon file clears the entry, so the buttons build
+    EventsDesignerMulti.WriteRowEntries lo, 1, entry
+
+    'Assert
+    Assert.AreEqual vbNullString, entry.ValueOf("temppath"), _
+                    "A run with no ribbon file should leave the template entry empty."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestWriteRowEntriesLandsTheRunRibbonFile", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("DesignerMulti.Driver")
+Public Sub TestRowSectionTitleNamesTheRowAndItsSetup()
+    CustomTestSetTitles Assert, "DesignerMulti", "TestRowSectionTitleNamesTheRowAndItsSetup"
+    On Error GoTo Fail
+
+    'Arrange
+    Dim lo As ListObject
+    Set lo = MultiSheet.ListObjects(TABLE_MULTI)
+    lo.ListRows(1).Range.Cells(1, 1).Value = "Operation- 3"
+
+    'Act and assert: the ID and the file name of the setup
+    Assert.AreEqual "Operation- 3 - measles.xlsb", _
+                    EventsDesignerMulti.RowSectionTitle(lo, 1, "/setups/measles.xlsb"), _
+                    "The section title should name the row ID and the setup file."
+
+    'Act and assert: a row with no ID is named by its position
+    lo.ListRows(1).Range.Cells(1, 1).Value = vbNullString
+    Assert.AreEqual "row 1 - measles.xlsb", _
+                    EventsDesignerMulti.RowSectionTitle(lo, 1, "/setups/measles.xlsb"), _
+                    "A row with no ID should be named by its position in the table."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestRowSectionTitleNamesTheRowAndItsSetup", Err.Number, Err.Description
 End Sub
 
 

@@ -37,6 +37,17 @@ Option Explicit
 'alive after Finish, which is what a later text re-export reads. Start
 'resets the worksheet, the render marker and the record, so a re-run
 'begins clean.
+'
+'SECTIONS AND SUBSECTIONS
+'-------------------------------------------------------------------------------
+'A run that builds several linelists opens one section per linelist,
+'through OpenSection and CloseSection. While a section is open every
+'bundle is re-headed -- the section title becomes the bundle title and
+'the bundle's own title becomes its subtitle -- and held back. Closing
+'the section writes the held bundles in one pass, so the section title
+'lands once as a level one heading and every part of that build reads as
+'a subsection under it. Without an open section a bundle is written on
+'its own, which is what the single build does.
 '@depends CheckingOutput, Checking, HiddenNames, BetterArray, LinelistSpecs
 
 
@@ -49,6 +60,8 @@ Private Type TGenerationLog
     record As BetterArray
     startedAt As Date
     sealed As Boolean
+    sectionTitle As String
+    sectionBatch As BetterArray
 End Type
 
 Private this As TGenerationLog
@@ -169,6 +182,16 @@ Public Property Get RecordLine(ByVal index As Long) As String
                  CStr(entry(fieldBase + 1)) & "  " & CStr(entry(fieldBase + 3))
 End Property
 
+'@label:section-title
+'@prop-title The title of the section that is open
+'@details
+'Answers an empty string when no section is open, which is the state of
+'a single build from the first bundle to the last.
+'@return String. The open section title.
+Public Property Get SectionTitle() As String
+    SectionTitle = this.sectionTitle
+End Property
+
 
 '@section Run lifecycle
 '===============================================================================
@@ -202,6 +225,12 @@ Public Sub Start(Optional ByVal setupPath As String = vbNullString, _
     Set this.record = New BetterArray
     this.record.LowerBound = 1
     this.startedAt = Now
+
+    'A run opens with no section. The header and the closing bundle of the
+    'run are written on their own, and a driver that builds several
+    'linelists opens one section per linelist between them.
+    this.sectionTitle = vbNullString
+    Set this.sectionBatch = Nothing
 
     Set header = Checking.Create(HEADER_TITLE)
     'The platform rides on the start entry rather than taking an entry of its
@@ -242,6 +271,58 @@ Private Function PlatformTag() As String
     PlatformTag = osName & "-" & bits & " excel-" & Application.Version
 End Function
 
+'@label:open-section
+'@sub-title Open one section of the report
+'@details
+'A section is one whole piece of work, and for a run that builds several
+'linelists that is one linelist. While the section is open every bundle
+'Collect takes is held back and re-headed: the section title becomes the
+'bundle title and the bundle's own title becomes its subtitle. Closing
+'the section writes the held bundles in one pass, which puts the section
+'title on the sheet once, at level one, with every part of the build
+'under it at level two.
+'
+'Opening a section closes the one that was open before it, so a driver
+'that walks a table calls this once per row and the rows never mix. An
+'empty title closes the open section and opens none. A call outside the
+'run window is ignored, like every other call here.
+'@param sectionTitle String. The title of the section.
+Public Sub OpenSection(ByVal sectionTitle As String)
+    CloseSection
+
+    If this.writer Is Nothing Then Exit Sub
+    If LenB(sectionTitle) = 0 Then Exit Sub
+
+    this.sectionTitle = sectionTitle
+    Set this.sectionBatch = New BetterArray
+    this.sectionBatch.LowerBound = 1
+End Sub
+
+'@label:close-section
+'@sub-title Write the open section to the worksheet and close it
+'@details
+'The held bundles go to the writer as one batch, which is what makes the
+'section title land once. A section that took no bundle writes nothing.
+'Calling this with no section open is a no-op, so a driver may close
+'after every row and after the loop.
+Public Sub CloseSection()
+    If LenB(this.sectionTitle) = 0 Then
+        Set this.sectionBatch = Nothing
+        Exit Sub
+    End If
+
+    If Not this.writer Is Nothing Then
+        If Not this.sectionBatch Is Nothing Then
+            If this.sectionBatch.Length > 0 Then
+                this.writer.PrintOutput this.sectionBatch
+            End If
+        End If
+    End If
+
+    this.sectionTitle = vbNullString
+    Set this.sectionBatch = Nothing
+End Sub
+
 '@label:collect
 '@sub-title Take one Checking bundle into the run
 '@details
@@ -259,6 +340,13 @@ End Function
 'row it writes with an EntireColumn.AutoFit. The worksheet keeps the
 'sheet, section and analysis milestones plus every fault, which is what
 'a reader opens it for.
+'
+'THE BUNDLE OF AN OPEN SECTION
+'-------------------------------------------------------------------------------
+'The bundle is held in the section, and CloseSection writes the whole
+'section in one pass. The record line carries the section title in front
+'of the bundle title, so the text file reads the same way the worksheet
+'does.
 '@param checks Checking. The bundle to take.
 '@param recordOnly Optional Boolean. True keeps the bundle off the worksheet.
 Public Sub Collect(ByVal checks As Checking, _
@@ -268,6 +356,7 @@ Public Sub Collect(ByVal checks As Checking, _
     Dim keyIndex As Long
     Dim keyName As String
     Dim batch As BetterArray
+    Dim headingText As String
 
     If this.writer Is Nothing Then Exit Sub
     If checks Is Nothing Then Exit Sub
@@ -277,21 +366,47 @@ Public Sub Collect(ByVal checks As Checking, _
     'and the drivers flush at their milestones.
     stampText = Format$(Now, "hh:nn:ss")
 
+    headingText = checks.Heading
+    If LenB(this.sectionTitle) > 0 Then
+        headingText = this.sectionTitle & " - " & headingText
+    End If
+
     Set keys = checks.ListOfKeys
     For keyIndex = keys.LowerBound To keys.UpperBound
         keyName = CStr(keys.Item(keyIndex))
-        this.record.Push Array(stampText, checks.Heading, keyName, _
+        this.record.Push Array(stampText, headingText, keyName, _
                                checks.ValueOf(keyName, checkingLabel), _
                                ScopeText(checks, keyName))
     Next keyIndex
 
     If recordOnly Then Exit Sub
 
+    If LenB(this.sectionTitle) > 0 Then
+        this.sectionBatch.Push SubsectionOf(checks)
+        Exit Sub
+    End If
+
     Set batch = New BetterArray
     batch.LowerBound = 1
     batch.Push checks
     this.writer.PrintOutput batch
 End Sub
+
+'@label:subsection-of
+'@sub-title One bundle re-headed as a subsection of the open section
+'@details
+'A copy is taken because the caller owns the bundle it handed over, and
+'because a Checking is sealed at creation: its title is written by the
+'factory alone. Append carries the entries across with their scopes.
+'@param checks Checking. The bundle to re-head.
+'@return Checking. The copy, headed by the section and subheaded by the bundle.
+Private Function SubsectionOf(ByVal checks As Checking) As Checking
+    Dim headed As Checking
+
+    Set headed = Checking.Create(this.sectionTitle, checks.Heading)
+    headed.Append checks
+    Set SubsectionOf = headed
+End Function
 
 '@label:harvest
 '@sub-title Collect the bundles of the specification collaborators
@@ -343,6 +458,10 @@ Public Sub Finish(ByVal outcome As String, _
     Dim filterFault As Boolean
 
     If this.writer Is Nothing Then Exit Sub
+
+    'A run that ended while a section was open still writes that section.
+    'The closing bundle belongs to the run, so it lands after it, on its own.
+    CloseSection
 
     'The filter handler makes the sheet interactive. The install runs
     'before the closing bundle so a refusal can speak inside it: the

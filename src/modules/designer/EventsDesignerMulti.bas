@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the Multi group on the designer workbook, and the driver that generates one linelist per row.")
-'@depends CustomTable, ApplicationState, OSFiles, DropdownLists, BetterArray, EventsDesignerAdvanced, EventsDesignerCore, DesignerEntry, GenerationLog, Checking, ProgressBar, Linelist
+'@depends CustomTable, ApplicationState, OSFiles, DropdownLists, BetterArray, EventsDesignerAdvanced, EventsDesignerCore, DesignerEntry, DesignerPreparation, GenerationLog, Checking, ProgressBar, Linelist
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Ribbon callbacks for the Multi group manage the T_Multi ListObject on
@@ -40,6 +40,23 @@ Option Explicit
 'workbook of a row is opened once, inside the build. Every row flushes
 'its checkings into the one generation report of the run, its outcome
 'lands in the result column, and a failed row leaves the loop running.
+'
+'THE RIBBON FILE OF THE RUN
+'-------------------------------------------------------------------------------
+'The rows used to build with whatever template file was loaded on the
+'Main worksheet, which is a screen the user of this table never opens.
+'The run now carries its own: the path is kept in the designer's hidden
+'names (DesignerPreparation.RibbonTemplatePath) and every row is built
+'with it. The first Generate asks for the file, and so does a Generate
+'that finds the stored file gone from the disk. clickRibbonMulti is the
+'button that changes it or clears it at any time.
+'
+'THE REPORT OF THE RUN
+'-------------------------------------------------------------------------------
+'Every row opens one section of the report and closes it. The parts of
+'that row's build -- the dictionary, the choices, each data entry sheet,
+'the analyses -- become subsections under the row's heading, so a run of
+'ten linelists reads as ten blocks, one block per linelist.
 
 Private Const SHEET_GENERATE_MULTIPLE As String = "GenerateMultiple"
 Private Const TABLE_MULTI As String = "T_Multi"
@@ -89,6 +106,29 @@ Private Const RNG_PROGRESS_STATUS As String = "RNG_ProgressStatus"
 
 'The result column value of a row that built and saved
 Private Const RESULT_BUILT As String = "OK"
+
+'The ribbon file of the run. The filter is the shape of a template
+'workbook, the same one the Main worksheet's template button uses.
+Private Const TEMPLATE_FILTER As String = "*.xlsb"
+Private Const MSG_RIBBON_ASK As String = _
+    "Pick the ribbon file the generated linelists are built with."
+Private Const MSG_RIBBON_GONE As String = _
+    "The ribbon file of this designer was not found on the disk. Pick it again:"
+Private Const MSG_RIBBON_NONE As String = _
+    "No ribbon file was picked. The generated linelists will carry buttons." & _
+    vbNewLine & vbNewLine & "Build them that way?"
+Private Const MSG_RIBBON_CURRENT As String = "The ribbon file of this designer is:"
+Private Const MSG_RIBBON_CHANGE As String = _
+    "Yes picks another file, No clears it and builds with buttons, " & _
+    "Cancel keeps the file above."
+Private Const MSG_RIBBON_CLEARED As String = _
+    "The ribbon file was cleared. The generated linelists will carry buttons."
+Private Const MSG_RIBBON_SET As String = "The ribbon file is now:"
+
+'The two bundle titles a row files itself. Under an open section they
+'read as the first and the last subsection of the row.
+Private Const TITLE_ROW_START As String = "build start"
+Private Const TITLE_ROW_OUTCOME As String = "build outcome"
 
 
 '@section Multi group callbacks
@@ -530,12 +570,65 @@ Cleanup:
     End If
 End Sub
 
+'@Description("Show the ribbon file of the designer and change or clear it.")
+'@details
+'The one button that manages the ribbon file the multi generation builds
+'with. A designer that already holds one shows it and offers the three
+'answers: pick another file, clear it so the linelists carry buttons, or
+'keep what is there. A designer that holds none goes straight to the
+'picker.
+'
+'Generate asks for the file on its own when the designer holds none, so
+'this button is for the day the file moves or the choice changes.
+'@EntryPoint
+Public Sub clickRibbonMulti(ByRef ribbonControl As IRibbonControl)
+    Dim prep As DesignerPreparation
+    Dim currentPath As String
+    Dim answer As VbMsgBoxResult
+    Dim pickedPath As String
+
+    If Not OnMultiSheet() Then Exit Sub
+
+    On Error GoTo Cleanup
+    Set prep = DesignerPreparation.Create(ThisWorkbook)
+    currentPath = prep.RibbonTemplatePath
+
+    If LenB(currentPath) > 0 Then
+        answer = MsgBox(MSG_RIBBON_CURRENT & vbNewLine & currentPath & vbNewLine & _
+                        vbNewLine & MSG_RIBBON_CHANGE, _
+                        vbQuestion + vbYesNoCancel, PROMPT_TITLE)
+
+        If answer = vbCancel Then Exit Sub
+
+        If answer = vbNo Then
+            prep.RibbonTemplatePath = vbNullString
+            MsgBox MSG_RIBBON_CLEARED, vbInformation + vbOKOnly, PROMPT_TITLE
+            Exit Sub
+        End If
+    End If
+
+    pickedPath = AskRibbonTemplate(prep)
+    If LenB(pickedPath) = 0 Then Exit Sub
+
+    MsgBox MSG_RIBBON_SET & vbNewLine & pickedPath, _
+           vbInformation + vbOKOnly, PROMPT_TITLE
+    Exit Sub
+
+Cleanup:
+    Debug.Print "clickRibbonMulti: "; Err.Number; Err.Description
+    MsgBox "Unable to read the ribbon file: " & Err.Description, _
+           vbExclamation + vbOKOnly, PROMPT_TITLE
+End Sub
+
 '@Description("Generate one linelist per filled row of the T_Multi table.")
 '@details
 'The multi driver. One generation report serves the whole run and one
 'progress bar moves over the rows when the sheet carries its range. The
 'summary message closes the run; each row's own outcome is in the
 'result column.
+'
+'The ribbon file of the run is settled before the busy state, because it
+'may open a dialog. Every row is built with it.
 '@EntryPoint
 Public Sub clickGenerateMulti(ByRef ribbonControl As IRibbonControl)
     Dim lo As ListObject
@@ -545,6 +638,8 @@ Public Sub clickGenerateMulti(ByRef ribbonControl As IRibbonControl)
     Dim buildRows As Long
     Dim builtCount As Long
     Dim failedCount As Long
+    Dim templatePath As String
+    Dim designerBook As Workbook
 
     If Not OnMultiSheet() Then Exit Sub
 
@@ -554,12 +649,20 @@ Public Sub clickGenerateMulti(ByRef ribbonControl As IRibbonControl)
         Exit Sub
     End If
 
+    Set designerBook = lo.Parent.Parent
+
     buildRows = CountBuildRows(lo)
     If buildRows = 0 Then
         MsgBox "No row carries a setup file. Fill the " & Chr(34) & COL_SETUPS & _
                Chr(34) & " column first.", vbInformation + vbOKOnly, PROMPT_TITLE
         Exit Sub
     End If
+
+    'The ribbon file every row of this run is built with. A designer that
+    'holds one keeps it; a designer that holds none, or one whose file has
+    'left the disk, asks here. A user who wants none says so and the run
+    'goes on with the buttons.
+    If Not ResolveRibbonTemplate(designerBook, templatePath) Then Exit Sub
 
     On Error GoTo Cleanup
     Set appScope = ApplicationState.Create(Application)
@@ -573,7 +676,11 @@ Public Sub clickGenerateMulti(ByRef ribbonControl As IRibbonControl)
 
     Set bar = ResolveProgressBar(lo.Parent, buildRows)
 
-    GenerateMultipleRows lo, entry, bar, builtCount, failedCount
+    GenerateMultipleRows lo, entry, bar, builtCount, failedCount, templatePath
+
+    'The run ends with the last built linelist in front, and the bar the
+    'user is watching is here.
+    EventsDesignerAdvanced.BringToFront designerBook
 
     If Not bar Is Nothing Then bar.Complete CStr(builtCount) & " built"
     EventsDesignerAdvanced.FinishRunLog CStr(builtCount) & " linelist(s) built, " & _
@@ -607,6 +714,75 @@ Cleanup:
 End Sub
 
 
+'@section The ribbon file of the run
+'===============================================================================
+
+'@Description("Settle the ribbon file of a run, asking for it when the designer holds none.")
+'@details
+'The stored path wins whenever the file behind it is on the disk, so the
+'question is asked once and the answer outlives the session. A stored
+'path whose file has gone says so and asks again, which is the other
+'case the user wants to hear about.
+'
+'A picker the user closes is a real answer: an empty template path builds
+'the linelists with buttons, and that is offered plainly. Saying no to
+'that stops the run before anything is built.
+'@param designerBook Workbook. The designer holding the stored path.
+'@param templatePath String. Answers the path the run builds with, empty for the buttons.
+'@return Boolean. True when the run may start.
+Private Function ResolveRibbonTemplate(ByVal designerBook As Workbook, _
+                                       ByRef templatePath As String) As Boolean
+    Dim prep As DesignerPreparation
+    Dim storedPath As String
+
+    templatePath = vbNullString
+    Set prep = DesignerPreparation.Create(designerBook)
+    storedPath = prep.RibbonTemplatePath
+
+    If LenB(storedPath) > 0 Then
+        If LenB(Dir(storedPath)) > 0 Then
+            templatePath = storedPath
+            ResolveRibbonTemplate = True
+            Exit Function
+        End If
+
+        MsgBox MSG_RIBBON_GONE & vbNewLine & storedPath, _
+               vbExclamation + vbOKOnly, PROMPT_TITLE
+    Else
+        MsgBox MSG_RIBBON_ASK, vbInformation + vbOKOnly, PROMPT_TITLE
+    End If
+
+    templatePath = AskRibbonTemplate(prep)
+
+    If LenB(templatePath) > 0 Then
+        ResolveRibbonTemplate = True
+        Exit Function
+    End If
+
+    ResolveRibbonTemplate = _
+        (MsgBox(MSG_RIBBON_NONE, vbQuestion + vbYesNo, PROMPT_TITLE) = vbYes)
+End Function
+
+'@Description("Show the file picker and store what the user picked.")
+'@details
+'The one place the ribbon file reaches the hidden names, so the picker
+'and the store never fall apart. A closed picker stores nothing and
+'answers an empty path.
+'@param prep DesignerPreparation. The preparation over the designer workbook.
+'@return String. The picked path, empty when the user closed the picker.
+Private Function AskRibbonTemplate(ByVal prep As DesignerPreparation) As String
+    Dim io As OSFiles
+
+    Set io = OSFiles.Create()
+    io.LoadFile TEMPLATE_FILTER
+
+    If Not io.HasValidFile() Then Exit Function
+
+    AskRibbonTemplate = io.File()
+    prep.RibbonTemplatePath = AskRibbonTemplate
+End Function
+
+
 '@section Multi generation driver
 '===============================================================================
 
@@ -620,25 +796,40 @@ End Sub
 'itself skipped in the result column; a fully empty row stays untouched.
 'The table and the entry arrive as parameters so a suite can drive the
 'loop with fixture objects.
+'
+'ONE SECTION PER ROW
+'-------------------------------------------------------------------------------
+'A row opens a section of the report before its build and closes it
+'after, so the parts of that build read as subsections under the row's
+'own heading. The section is closed on every path out of the row, the
+'failed one included.
 '@param lo ListObject. The T_Multi ListObject.
 '@param entry DesignerEntry. The entry manager over the Main worksheet.
 '@param bar ProgressBar. The bar over the rows. Nothing means no bar.
 '@param builtCount Long. Answers the number of rows built and saved.
 '@param failedCount Long. Answers the number of rows refused or failed.
+'@param templatePath Optional String. The ribbon file every row is built with. Empty builds the buttons.
 Public Sub GenerateMultipleRows(ByVal lo As ListObject, _
                                 ByVal entry As DesignerEntry, _
                                 ByVal bar As ProgressBar, _
                                 ByRef builtCount As Long, _
-                                ByRef failedCount As Long)
+                                ByRef failedCount As Long, _
+                                Optional ByVal templatePath As String = vbNullString)
     Dim rowIdx As Long
     Dim processed As Long
     Dim setupPath As String
     Dim outcomeText As String
+    Dim rowBuilt As Boolean
+    Dim designerBook As Workbook
 
     builtCount = 0
     failedCount = 0
 
     If lo.DataBodyRange Is Nothing Then Exit Sub
+
+    'The bar and the result cells live here, and the build puts each new
+    'linelist workbook in front of them.
+    Set designerBook = lo.Parent.Parent
 
     For rowIdx = 1 To lo.ListRows.Count
         setupPath = CellText(lo, rowIdx, COL_SETUPS)
@@ -646,16 +837,22 @@ Public Sub GenerateMultipleRows(ByVal lo As ListObject, _
         If LenB(setupPath) > 0 Then
             processed = processed + 1
             If Not bar Is Nothing Then
+                EventsDesignerAdvanced.BringToFront designerBook
                 bar.Update processed - 1, RowStatus(bar, processed, setupPath), _
                            forceRepaint:=True
             End If
 
+            EventsDesignerAdvanced.OpenLogSection _
+                RowSectionTitle(lo, rowIdx, setupPath)
+
             FlushRowHeader lo, rowIdx, setupPath
-            WriteRowEntries lo, rowIdx, entry
+            WriteRowEntries lo, rowIdx, entry, templatePath
 
             'The result cell shows the row's milestones while the row
             'builds and ends as the row's outcome below.
-            If BuildRow(entry, outcomeText, RowCellRange(lo, rowIdx, COL_RESULT)) Then
+            rowBuilt = BuildRow(entry, outcomeText, RowCellRange(lo, rowIdx, COL_RESULT))
+
+            If rowBuilt Then
                 builtCount = builtCount + 1
                 WriteRowCell lo, rowIdx, COL_OUTPUT_FILES, outcomeText
                 WriteRowCell lo, rowIdx, COL_RESULT, RESULT_BUILT
@@ -664,7 +861,11 @@ Public Sub GenerateMultipleRows(ByVal lo As ListObject, _
                 WriteRowCell lo, rowIdx, COL_RESULT, outcomeText
             End If
 
+            FlushRowOutcome lo, rowIdx, outcomeText, rowBuilt
+            EventsDesignerAdvanced.CloseLogSection
+
             If Not bar Is Nothing Then
+                EventsDesignerAdvanced.BringToFront designerBook
                 bar.Update processed, RowStatus(bar, processed, setupPath), _
                            forceRepaint:=True
             End If
@@ -674,6 +875,26 @@ Public Sub GenerateMultipleRows(ByVal lo As ListObject, _
         End If
     Next rowIdx
 End Sub
+
+'@Description("The report section title of one row.")
+'@details
+'The row ID and the name of its setup file. The ID alone reads as
+'"Operation- 3" in a report of ten sections and says nothing about which
+'linelist it built.
+'@param lo ListObject. The T_Multi ListObject.
+'@param rowIdx Long. The ListRows position of the row.
+'@param setupPath String. The row's setup file path.
+'@return String. The section title.
+Public Function RowSectionTitle(ByVal lo As ListObject, _
+                                ByVal rowIdx As Long, _
+                                ByVal setupPath As String) As String
+    Dim rowId As String
+
+    rowId = CellText(lo, rowIdx, COL_ID)
+    If LenB(rowId) = 0 Then rowId = "row " & CStr(rowIdx)
+
+    RowSectionTitle = rowId & " - " & BaseName(setupPath)
+End Function
 
 '@Description("The global bar's status text for one row.")
 '@param bar ProgressBar. The bar over the rows; its maximum is the row count.
@@ -696,12 +917,23 @@ End Function
 'message. The output files cell may carry the full path the last run
 'wrote; OutputNameFromCell reduces it to the file name, which keeps a
 're-run of the table stable.
+'
+'THE RIBBON FILE IS THE RUN'S, THE COLUMNS ARE THE ROW'S
+'-------------------------------------------------------------------------------
+'The template path arrives from the caller and is written like the mapped
+'columns are, blanks included. The table carries no template column: the
+'file is one for the whole run and the designer keeps it in its hidden
+'names. Writing it on every row is what keeps the Main worksheet's own
+'template cell out of the multi generation.
 '@param lo ListObject. The T_Multi ListObject.
 '@param rowIdx Long. The ListRows position of the row.
 '@param entry DesignerEntry. The entry manager over the Main worksheet.
+'@param templatePath Optional String. The ribbon file of the run. Empty builds the buttons.
 Public Sub WriteRowEntries(ByVal lo As ListObject, _
                            ByVal rowIdx As Long, _
-                           ByVal entry As DesignerEntry)
+                           ByVal entry As DesignerEntry, _
+                           Optional ByVal templatePath As String = vbNullString)
+    entry.AddInfo templatePath, "temppath"
     entry.AddInfo CellText(lo, rowIdx, COL_SETUPS), "setuppath"
     entry.AddInfo CellText(lo, rowIdx, COL_GEOBASES), "geopath"
     entry.AddInfo CellText(lo, rowIdx, COL_OUTPUT_FOLDERS), "lldir"
@@ -795,8 +1027,9 @@ End Function
 
 '@Description("Flush one log bundle naming the row before its build starts.")
 '@details
-'The bundles of every row land in the one run log, and this line tells
-'the reader which row the entries under it belong to.
+'The first subsection of the row's section. The row's section is already
+'open when this runs, so the bundle title reads as the subsection
+'heading and the setup path lands in the entry under it.
 '@param lo ListObject. The T_Multi ListObject.
 '@param rowIdx Long. The ListRows position of the row.
 '@param setupPath String. The row's setup file path.
@@ -809,8 +1042,45 @@ Private Sub FlushRowHeader(ByVal lo As ListObject, _
     rowId = CellText(lo, rowIdx, COL_ID)
     If LenB(rowId) = 0 Then rowId = "row " & CStr(rowIdx)
 
-    Set rowChecks = Checking.Create("Multi build " & rowId, setupPath)
+    Set rowChecks = Checking.Create(TITLE_ROW_START)
     rowChecks.Add rowId, "Build started for: " & setupPath, checkingInfo
+
+    EventsDesignerAdvanced.CollectIntoLog rowChecks
+End Sub
+
+'@Description("Flush one log bundle carrying the outcome of the row.")
+'@details
+'The last subsection of the row's section, so a reader who opens the
+'report at a row learns how that row ended without going to the table.
+'The written path is what a row that built answers; a row that failed
+'answers the fault, and the entry carries the error scope so the
+'severity filter of the report sheet finds it.
+'@param lo ListObject. The T_Multi ListObject.
+'@param rowIdx Long. The ListRows position of the row.
+'@param outcomeText String. The written path, or the fault text.
+'@param rowBuilt Boolean. True when the row built and saved.
+Private Sub FlushRowOutcome(ByVal lo As ListObject, _
+                            ByVal rowIdx As Long, _
+                            ByVal outcomeText As String, _
+                            ByVal rowBuilt As Boolean)
+    Dim rowChecks As Checking
+    Dim rowId As String
+    Dim scope As Byte
+    Dim outcomeLabel As String
+
+    rowId = CellText(lo, rowIdx, COL_ID)
+    If LenB(rowId) = 0 Then rowId = "row " & CStr(rowIdx)
+
+    If rowBuilt Then
+        scope = checkingSuccess
+        outcomeLabel = "Built: " & outcomeText
+    Else
+        scope = checkingError
+        outcomeLabel = outcomeText
+    End If
+
+    Set rowChecks = Checking.Create(TITLE_ROW_OUTCOME)
+    rowChecks.Add rowId, outcomeLabel, scope
 
     EventsDesignerAdvanced.CollectIntoLog rowChecks
 End Sub

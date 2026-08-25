@@ -101,6 +101,27 @@ Public Sub CollectIntoLog(ByVal checks As Checking, _
     heldLog.Collect checks, recordOnly
 End Sub
 
+'@Description("Open one section of the run log. Without an open run the call is ignored.")
+'@details
+'A section is one whole build. The multi driver opens one per row, so
+'every bundle of that row's build lands under one heading with the parts
+'of the build as subsections. The single build opens none and keeps one
+'heading per part.
+'@param sectionTitle String. The title of the section.
+Public Sub OpenLogSection(ByVal sectionTitle As String)
+    If heldLog Is Nothing Then Exit Sub
+    heldLog.OpenSection sectionTitle
+End Sub
+
+'@Description("Write the open section of the run log and close it.")
+'@details
+'Safe to call with no section open, so a driver may close after every row
+'and after the loop.
+Public Sub CloseLogSection()
+    If heldLog Is Nothing Then Exit Sub
+    heldLog.CloseSection
+End Sub
+
 '@Description("Close the run log with the outcome text. Without an open run the call is ignored.")
 '@details
 'The counts the run added up ride into the closing bundle beside the
@@ -650,7 +671,7 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, _
     If Not heldLog Is Nothing Then heldLog.Harvest specs
     If InitTransfer.HasCheckings() Then CollectIntoLog InitTransfer.CheckingValues()
 
-    TickProgress bar, statusTarget, "transfer"
+    TickProgress bar, statusTarget, "transfer", designerBook:=designerBook
 
     'After the preparation step of the specifications, internal specifications
     'object shift focus from the designer to the linelist workbook as they
@@ -666,7 +687,7 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, _
     'report names it.
     If ll.HasCheckings Then CollectIntoLog ll.CheckingValues
 
-    TickProgress bar, statusTarget, "linelist"
+    TickProgress bar, statusTarget, "linelist", designerBook:=designerBook
 
     'Build data entry worksheets (sections, variables, formatting). The sheet
     'name list is the one Linelist.Prepare already walked the dictionary for.
@@ -692,7 +713,8 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, _
                          CStr(sheetLists.Item(counter)), _
                          "sheet " & CStr(counter - sheetLists.LowerBound + 1) & _
                          " of " & CStr(sheetLists.Length) & " - " & _
-                         CStr(sheetLists.Item(counter))
+                         CStr(sheetLists.Item(counter)), _
+                         designerBook
             Set listBld = BuildOneSheet(llSheetInfo, ll, sheetLists.Item(counter))
 
             'Flush Phase 2: the sheet's build checkings, one bundle per
@@ -713,15 +735,15 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, _
     Dim dropStd As DropdownLists
     Set dropStd = ll.Dropdown(1)
     If dropStd.HasCheckings Then CollectIntoLog dropStd.CheckingValues
-    TickProgress bar, statusTarget, "dropdowns"
+    TickProgress bar, statusTarget, "dropdowns", designerBook:=designerBook
 
     Dim dropCust As DropdownLists
     Set dropCust = ll.Dropdown(2)
     If dropCust.HasCheckings Then CollectIntoLog dropCust.CheckingValues
-    TickProgress bar, statusTarget, "dropdowns"
+    TickProgress bar, statusTarget, "dropdowns", designerBook:=designerBook
 
     'Build the analyses
-    TickProgress bar, statusTarget, "analyses"
+    TickProgress bar, statusTarget, "analyses", designerBook:=designerBook
     Set anaOut = AnalysisOutput.Create(specs.AnalysisObject.Wksh(), ll)
     ' All four analysis sheets. The call used to stop after the time series
     ' tables, so the generated linelist carried no time series chart, no
@@ -748,7 +770,7 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, _
     If anaOut.HasCheckings Then CollectIntoLog anaOut.CheckingValues
 
     'Save the linelist as .xlsb with password protection
-    TickProgress bar, statusTarget, "save"
+    TickProgress bar, statusTarget, "save", designerBook:=designerBook
     ll.SaveLL
 
     'The path SaveLL wrote, read from the same values it read
@@ -778,22 +800,30 @@ End Function
 
 '@Description("Move the progress displays one milestone forward.")
 '@details
-'One tick, two observers: the bar steps with its own repaint, and the
-'status target takes the text as a plain write. When the tick has a bar
-'the bar's repaint shows the target's write too; a target alone repaints
-'here, since the busy state keeps every write invisible without it.
+'One tick, three observers: the designer window comes back to the front,
+'the bar steps with its own repaint, and the status target takes the text
+'as a plain write. When the tick has a bar the bar's repaint shows the
+'target's write too; a target alone repaints here, since the busy state
+'keeps every write invisible without it.
 '@param bar ProgressBar. The bar over the milestones. Nothing means no bar.
 '@param statusTarget Range. One cell taking the milestone text. Nothing means no write.
 '@param statusText String. The milestone text.
 '@param targetText String. Text for the status target when it differs from the bar's. Defaults to statusText.
+'@param designerBook Workbook. The designer the bar lives on. Nothing leaves the front window alone.
 Private Sub TickProgress(ByVal bar As ProgressBar, _
                          ByVal statusTarget As Range, _
                          ByVal statusText As String, _
-                         Optional ByVal targetText As String = vbNullString)
+                         Optional ByVal targetText As String = vbNullString, _
+                         Optional ByVal designerBook As Workbook = Nothing)
     If Not statusTarget Is Nothing Then
         If LenB(targetText) = 0 Then targetText = statusText
         statusTarget.Value = targetText
     End If
+
+    'The bar and the status cell both live on the designer, and the build
+    'puts the new linelist workbook in front of them. Bringing the designer
+    'back before the repaint is what makes the tick visible.
+    BringToFront designerBook
 
     If Not bar Is Nothing Then
         bar.StepBy 1, statusText, forceRepaint:=True
@@ -802,6 +832,31 @@ Private Sub TickProgress(ByVal bar As ProgressBar, _
         DoEvents
         Application.ScreenUpdating = False
     End If
+End Sub
+
+'@Description("Put one workbook window back in front of the others.")
+'@details
+'A generation creates the output linelist workbook, and Excel puts its
+'window in front. Every progress display of the run lives on the designer,
+'so the user watched a bar they could not see. This is called at each
+'milestone, right before the repaint that shows the tick.
+'
+'The build activates worksheets of the output workbook as it goes
+'(the frozen panes of a data entry sheet want the sheet in front), so the
+'designer is brought back at every milestone.
+'
+'A workbook with no window, a window Excel refuses to activate, and a
+'call with Nothing all leave the screen as it is. The progress display is
+'worth no raise.
+'@param book Workbook. The workbook to bring to the front. Nothing exits.
+Public Sub BringToFront(ByVal book As Workbook)
+    If book Is Nothing Then Exit Sub
+
+    'Activate is a window move and costs a repaint, so the workbook that is
+    'already in front is left alone.
+    On Error Resume Next
+    If Not Application.ActiveWorkbook Is book Then book.Activate
+    On Error GoTo 0
 End Sub
 
 '@Description("Build the bar over the milestones when the Main sheet carries its range.")

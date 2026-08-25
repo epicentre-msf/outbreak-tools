@@ -4,7 +4,7 @@ Attribute VB_Description = "Unit tests for DesignerPreparation class"
 Option Explicit
 
 '@Folder("CustomTests.Designer")
-'@ModuleDescription("Validates DesignerPreparation for persisted flags, sheet hiding, dropdown creation, T_Multi and Main validation.")
+'@ModuleDescription("Validates DesignerPreparation for persisted flags, the stored ribbon file of the multi generation, sheet hiding, dropdown creation, T_Multi and Main validation.")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As CustomTest
@@ -231,6 +231,42 @@ Public Sub TestFormatterFlagIsSetAndCleared()
 
 Fail:
     ReportTestFailure "TestFormatterFlagIsSetAndCleared"
+End Sub
+
+
+'@TestMethod("DesignerPreparation.RibbonTemplate")
+Public Sub TestRibbonTemplatePathIsKeptAndCleared()
+    CustomTestSetTitles Assert, "DesignerPreparation", "TestRibbonTemplatePathIsKeptAndCleared"
+    On Error GoTo Fail
+
+    'Arrange: a designer that was never given a ribbon file
+    Dim subject As DesignerPreparation
+    Set subject = DesignerPreparation.Create(FixtureWorkbook)
+
+    Assert.AreEqual vbNullString, subject.RibbonTemplatePath, _
+                    "A workbook with no ribbon file should read empty."
+
+    'Act: the multi generation stores the file the user picked
+    subject.RibbonTemplatePath = "C:\templates\ribbon.xlsb"
+
+    'Assert: a second reader of the same workbook finds it
+    Dim reader As DesignerPreparation
+    Set reader = DesignerPreparation.Create(FixtureWorkbook)
+    Assert.AreEqual "C:\templates\ribbon.xlsb", reader.RibbonTemplatePath, _
+                    "The ribbon file should outlive the object that stored it."
+
+    'Act: the button clears it so the linelists carry buttons
+    subject.RibbonTemplatePath = vbNullString
+
+    'Assert
+    Assert.AreEqual vbNullString, subject.RibbonTemplatePath, _
+                    "A cleared ribbon file should read empty."
+    Assert.IsFalse subject.HiddenStore.HasName("TAG_RIBBON_TEMPLATE"), _
+                   "Clearing the ribbon file should take its hidden name off the workbook."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestRibbonTemplatePathIsKeptAndCleared"
 End Sub
 
 '@TestMethod("DesignerPreparation")
