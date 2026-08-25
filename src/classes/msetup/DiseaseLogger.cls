@@ -17,7 +17,7 @@ Attribute VB_Description = "Collects lightweight log entries for disease workflo
 Option Explicit
 
 'DiseaseLogger.cls without interface -- single implementation, no test fake,
-'no compile cycle (see project-rules.md 4.4).
+'no compile cycle.
 
 '@section Enumerations
 '===============================================================================
@@ -110,7 +110,7 @@ End Sub
 '@section Internal Helpers
 '===============================================================================
 
-Private Sub AppendEntry(ByVal entry As TLogEntry)
+Private Sub AppendEntry(ByRef entry As TLogEntry)
     Dim snapshot As BetterArray
     Set snapshot = New BetterArray
 
