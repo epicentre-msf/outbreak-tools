@@ -36,5 +36,5 @@ End Enum
 Public Function MergeDisease(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, _
                              Optional ByVal mergeValues As Boolean = True, _
                              Optional ByVal priority As DiseaseImportPriority = DiseaseImportPriority_Foreign, _
-                             Optional ByVal logger As IDiseaseLogger) As IDiseaseImportSummary
+                             Optional ByVal logger As DiseaseLogger) As IDiseaseImportSummary
 End Function

@@ -11,7 +11,7 @@ Option Private Module
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 Private Assert As CustomTest
-Private Logger As IDiseaseLogger
+Private Logger As DiseaseLogger
 
 '@section Module lifecycle
 '===============================================================================
@@ -39,7 +39,7 @@ End Sub
 
 '@TestInitialize
 Private Sub TestInitialize()
-    Set Logger = New DiseaseLogger
+    Set Logger = DiseaseLogger.Create()
 End Sub
 
 '@TestCleanup

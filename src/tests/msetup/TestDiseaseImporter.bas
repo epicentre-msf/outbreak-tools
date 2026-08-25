@@ -110,12 +110,12 @@ Public Sub TestMergeDiseaseLogsOperations()
     CustomTestSetTitles Assert, "DiseaseImporter", "TestMergeDiseaseLogsOperations"
 
     Dim summary As IDiseaseImportSummary
-    Dim logger As IDiseaseLogger
+    Dim logger As DiseaseLogger
     Dim entries As BetterArray
 
     On Error GoTo Fail
 
-    Set logger = New DiseaseLogger
+    Set logger = DiseaseLogger.Create()
     Set summary = Importer.MergeDisease(TargetTable, SourceTable, True, DiseaseImportPriority_Foreign, logger)
 
     Assert.IsTrue logger.HasEntries, "Merge should record logging information"

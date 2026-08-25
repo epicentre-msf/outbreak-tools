@@ -78,7 +78,7 @@ Public Sub TestAddExportImportRemove()
     Dim diseaseWksh As Worksheet
     Dim diseaseTable As ListObject
     Dim exportBook As Workbook
-    Dim logger As IDiseaseLogger
+    Dim logger As DiseaseLogger
     Dim summary As IDiseaseImportSummary
     Dim entries As BetterArray
     Dim importTable As ListObject
@@ -100,7 +100,7 @@ Public Sub TestAddExportImportRemove()
     exportBook.Close SaveChanges:=False
 
     Set importTable = PrepareImportTable()
-    Set logger = New DiseaseLogger
+    Set logger = DiseaseLogger.Create()
 
     Set summary = Importer.MergeDisease(diseaseTable, importTable, True, DiseaseImportPriority_Foreign, logger)
 

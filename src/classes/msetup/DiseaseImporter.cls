@@ -23,7 +23,7 @@ Implements IDiseaseImporter
 Public Function MergeDisease(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, _
                              Optional ByVal mergeValues As Boolean = True, _
                              Optional ByVal priority As DiseaseImportPriority = DiseaseImportPriority_Foreign, _
-                             Optional ByVal logger As IDiseaseLogger = Nothing) As IDiseaseImportSummary
+                             Optional ByVal logger As DiseaseLogger = Nothing) As IDiseaseImportSummary
     Dim summary As DiseaseImportSummary
 
     ValidateTable targetTable, "targetTable"
@@ -45,7 +45,7 @@ End Function
 '===============================================================================
 
 '@sub-title Replace the target table with the source content.
-Private Sub ReplaceTable(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, ByVal summary As DiseaseImportSummary, ByVal logger As IDiseaseLogger)
+Private Sub ReplaceTable(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, ByVal summary As DiseaseImportSummary, ByVal logger As DiseaseLogger)
     Dim sourceRows As Long
     Dim sourceData As Variant
     Dim columnCount As Long
@@ -79,7 +79,7 @@ End Sub
 '===============================================================================
 
 '@sub-title Merge the source data into the target according to the priority.
-Private Sub MergeTables(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, ByVal priority As DiseaseImportPriority, ByVal summary As DiseaseImportSummary, ByVal logger As IDiseaseLogger)
+Private Sub MergeTables(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, ByVal priority As DiseaseImportPriority, ByVal summary As DiseaseImportSummary, ByVal logger As DiseaseLogger)
     Dim targetRows As Long
     Dim sourceRows As Long
     Dim columnCount As Long
@@ -141,7 +141,7 @@ End Function
 '@sub-title Perform the merge between target and source matrices.
 Private Sub ApplyMerge(ByRef targetData As Variant, ByRef sourceData As Variant, ByVal targetRows As Long, ByVal sourceRows As Long, _
                        ByVal columnCount As Long, ByVal priority As DiseaseImportPriority, ByVal targetIndex As Collection, _
-                       ByVal seenSource As Collection, ByVal appendedRows As BetterArray, ByVal summary As DiseaseImportSummary, ByVal logger As IDiseaseLogger)
+                       ByVal seenSource As Collection, ByVal appendedRows As BetterArray, ByVal summary As DiseaseImportSummary, ByVal logger As DiseaseLogger)
 
     Dim rowIndex As Long
     Dim colIndex As Long
@@ -180,7 +180,7 @@ ContinueLoop:
 End Sub
 
 '@sub-title Append merged rows to the target ListObject.
-Private Sub AppendImportedRows(ByVal targetTable As ListObject, ByVal appendedRows As BetterArray, ByVal logger As IDiseaseLogger)
+Private Sub AppendImportedRows(ByVal targetTable As ListObject, ByVal appendedRows As BetterArray, ByVal logger As DiseaseLogger)
     Dim appendCount As Long
     Dim columnCount As Long
     Dim appendedMatrix As Variant
@@ -209,7 +209,7 @@ Private Sub AppendImportedRows(ByVal targetTable As ListObject, ByVal appendedRo
 End Sub
 
 '@sub-title Determine which existing variables were missing from the import.
-Private Sub RegisterMissingVariables(ByVal targetData As Variant, ByVal targetRows As Long, ByVal targetNames() As String, ByVal seenSource As Collection, ByVal summary As DiseaseImportSummary, ByVal logger As IDiseaseLogger)
+Private Sub RegisterMissingVariables(ByVal targetData As Variant, ByVal targetRows As Long, ByVal targetNames() As String, ByVal seenSource As Collection, ByVal summary As DiseaseImportSummary, ByVal logger As DiseaseLogger)
     Dim rowIndex As Long
     Dim normalizedName As String
 
@@ -355,7 +355,7 @@ Private Function Normalize(ByVal value As String) As String
     Normalize = LCase$(Trim$(value))
 End Function
 
-Private Sub Log(ByVal logger As IDiseaseLogger, ByVal operation As String, ByVal severity As DiseaseLogSeverity, ByVal message As String, Optional ByVal details As BetterArray)
+Private Sub Log(ByVal logger As DiseaseLogger, ByVal operation As String, ByVal severity As Byte, ByVal message As String, Optional ByVal details As BetterArray)
     If logger Is Nothing Then Exit Sub
     logger.Record operation, severity, message, details
 End Sub
@@ -380,6 +380,6 @@ End Sub
 '@section Interface
 '===============================================================================
 
-Private Function IDiseaseImporter_MergeDisease(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, Optional ByVal mergeValues As Boolean = True, Optional ByVal priority As DiseaseImportPriority = DiseaseImportPriority_Foreign, Optional ByVal logger As IDiseaseLogger = Nothing) As IDiseaseImportSummary
+Private Function IDiseaseImporter_MergeDisease(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, Optional ByVal mergeValues As Boolean = True, Optional ByVal priority As DiseaseImportPriority = DiseaseImportPriority_Foreign, Optional ByVal logger As DiseaseLogger = Nothing) As IDiseaseImportSummary
     Set IDiseaseImporter_MergeDisease = MergeDisease(targetTable, sourceTable, mergeValues, priority, logger)
 End Function
