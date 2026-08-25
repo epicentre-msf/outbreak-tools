@@ -186,8 +186,10 @@ Public Sub TestBuildMigrationWorkbookAggregatesDiseases()
     Exit Sub
 
 Fail:
+    'A failure before the source workbook exists leaves it Nothing;
+    'the guard keeps the handler from raising over the real error.
     On Error Resume Next
-        sourceWorkbook.Close SaveChanges:=False
+        If Not sourceWorkbook Is Nothing Then sourceWorkbook.Close SaveChanges:=False
     On Error GoTo 0
     CustomTestLogFailure Assert, "TestBuildMigrationWorkbookAggregatesDiseases", Err.Number, Err.Description
 End Sub
