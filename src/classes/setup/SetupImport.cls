@@ -1596,6 +1596,9 @@ Private Sub EnsureSavedExport()
 
     Dim targetWorkbook As Workbook
     Dim filePath As String
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
 
     Set targetWorkbook = this.exportWorkbook
     If targetWorkbook Is Nothing Then Exit Sub
@@ -1603,11 +1606,25 @@ Private Sub EnsureSavedExport()
 
     filePath = BuildExportFilePath()
 
+    'A locked file, a missing folder or a name Excel refuses raises here, and
+    'the bare message never says which path was tried. The handler adds it and
+    're-raises; Export's own cleanup label closes the workbook.
+    On Error GoTo SaveFailed
     targetWorkbook.SaveAs filePath, _
                           FileFormat:=xlOpenXMLWorkbook, _
                           CreateBackup:=False, _
                           ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+    On Error GoTo 0
     this.lastExportFile = filePath
+    Exit Sub
+
+SaveFailed:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+
+    Err.Raise errNumber, errSource, _
+              errDescription & " (export file: " & filePath & ")"
 End Sub
 
 '@label:dictionary-format-headers
@@ -1631,16 +1648,65 @@ End Function
 'Whatever follows the last dot of the host name is dropped, so a host saved as
 '.xlsm or .XLSB no longer carries its extension inside the new name. The stamp
 'carries the time as well as the date, so two exports in one day are two files.
+'Two exports inside the same second still land on one stamp, so a name already
+'taken takes a counter behind the stamp rather than a raise from SaveAs.
 Private Function BuildExportFilePath() As String
     Dim baseName As String
     Dim dotPosition As Long
+    Dim stemPath As String
+    Dim candidate As String
+    Dim suffix As Long
 
     baseName = ThisWorkbook.Name
     dotPosition = InStrRev(baseName, ".")
     If dotPosition > 1 Then baseName = Left$(baseName, dotPosition - 1)
 
-    BuildExportFilePath = this.exportPath & Application.PathSeparator & _
-                          baseName & "_export_" & Format$(Now(), "yyyymmdd_hhnnss") & ".xlsx"
+    stemPath = this.exportPath & Application.PathSeparator & _
+               baseName & "_export_" & Format$(Now(), "yyyymmdd_hhnnss")
+
+    candidate = stemPath & ".xlsx"
+    Do While ExportNameIsTaken(candidate)
+        suffix = suffix + 1
+        candidate = stemPath & "_" & CStr(suffix) & ".xlsx"
+    Loop
+
+    BuildExportFilePath = candidate
+End Function
+
+'@label:export-name-is-taken
+'@sub-title Answer whether an export path is already spoken for.
+'@details
+'Two exports inside the same second build the same stamp, and Excel refuses
+'SaveAs against a name one of the open workbooks already carries, whatever
+'folder that workbook sits in. Both the disk and the open workbooks are read
+'here so the caller can step to the next free name instead of raising.
+'@param filePath String the candidate path.
+'@return Boolean True when a file or an open workbook holds that name.
+Private Function ExportNameIsTaken(ByVal filePath As String) As Boolean
+    Dim fileName As String
+    Dim openBook As Workbook
+    Dim onDisk As String
+
+    'Shielded: Dir$ raises on a folder that is not there, and a missing folder
+    'is the SaveAs call's own failure to report, not this function's.
+    On Error Resume Next
+    onDisk = Dir$(filePath)
+    Err.Clear
+    On Error GoTo 0
+
+    If LenB(onDisk) <> 0 Then
+        ExportNameIsTaken = True
+        Exit Function
+    End If
+
+    fileName = Mid$(filePath, InStrRev(filePath, Application.PathSeparator) + 1)
+
+    For Each openBook In Application.Workbooks
+        If StrComp(openBook.Name, fileName, vbTextCompare) = 0 Then
+            ExportNameIsTaken = True
+            Exit Function
+        End If
+    Next openBook
 End Function
 
 '@label:close-import-workbook
