@@ -27,9 +27,10 @@ Option Explicit
 '  hidden names, so exports read the language the user chose.
 '- An edit on the Translations sheet drops the translation caches.
 '
-'The workbook open and the workbook close are the two lines this module
-'writes in the user log, the record EventMasterSetup holds on __log. A log
-'fault never takes down the event it records: every write is guarded.
+'The workbook open, the workbook close and a change handler that ended at
+'its error label are the lines this module writes in the user log, the
+'record EventMasterSetup holds on __log. A log fault never takes down the
+'event it records: every write is guarded.
 
 'Headers of a disease table, as DiseaseSheet writes them. The columns are
 'found by header once per handler call, the way every other reader of the
@@ -109,6 +110,7 @@ End Sub
 '@sub-title Route a committed edit to the sheet's own handler.
 Public Sub MsSheetChanged(ByVal sh As Worksheet, ByVal target As Range)
     Dim scope As ApplicationState
+    Dim errDescription As String
 
     If sh Is Nothing Then Exit Sub
     If target Is Nothing Then Exit Sub
@@ -142,7 +144,12 @@ Cleanup:
     Exit Sub
 
 Handler:
-    Debug.Print "SheetChanged - "; sh.Name; " error "; Err.Number; " "; Err.Description
+    'The description is copied first: the guard inside the log line resets
+    'Err. A refused write on a shipped file then leaves a trace the owner
+    'can read from the Open Log button.
+    errDescription = Err.Number & " " & Err.Description
+    Debug.Print "SheetChanged - "; sh.Name; " error "; errDescription
+    LogFailureLine "sheet-change", sh.Name & ": " & errDescription, "MsSheetChanged"
     Resume Cleanup
 End Sub
 
@@ -680,6 +687,23 @@ Private Sub LogInfoLine(ByVal action As String, _
 
     On Error Resume Next
     logStore.LogInfo action, detail, source
+    On Error GoTo 0
+End Sub
+
+'@sub-title Write the failure line of a handler that ended at its error label.
+'@details The write is guarded so a log fault never takes down the event
+'it records. The caller copies Err.Description before calling: the guard
+'below resets Err.
+Private Sub LogFailureLine(ByVal action As String, _
+                           Optional ByVal detail As String = vbNullString, _
+                           Optional ByVal source As String = vbNullString)
+    Dim logStore As MasterSetupLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.LogFailure action, detail, source
     On Error GoTo 0
 End Sub
 

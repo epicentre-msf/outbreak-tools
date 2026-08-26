@@ -13,6 +13,7 @@ Private Const VARIABLES_SHEET As String = "Variables"
 Private Const CHOICES_SHEET As String = "Choices"
 Private Const TRANSLATIONS_SHEET As String = "Translations"
 Private Const DROPDOWNS_SHEET As String = "__dropdowns"
+Private Const PASSWORDS_SHEET As String = "__pass"
 Private Const DISEASE_NAME As String = "EvtAlpha"
 Private Const CHOICES_LIST As String = "__lst_choices"
 Private Const STATUS_LIST As String = "__var_status"
@@ -70,9 +71,9 @@ Public Sub TestPreparationPutsDropdownsOnTheRightColumns()
 
     On Error GoTo Fail
 
-    'Touching the service runs the preparation over the fixture sheets.
-    'A Property Get cannot stand alone as a statement; the assignment
-    'is what runs the preparation over the fixture sheets.
+    'The service reads the managers off the prepared fixture sheets. A
+    'Property Get cannot stand alone as a statement; the assignment is what
+    'resolves them.
     Dim preparedVariables As MasterSetupVariables
     Set preparedVariables = MasterSetupEventsManager.MasterSetupService.Variables
 
@@ -121,6 +122,54 @@ Public Sub TestVariablePickFillsTheDiseaseLine()
 
 Fail:
     CustomTestLogFailure Assert, "TestVariablePickFillsTheDiseaseLine", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("MasterSetupEvents")
+'@sub-title A pick on a protected disease sheet fills its line while the Variables sheet is protected too.
+'@details The shipped file is protected and its dropdown sheet is very
+'hidden. The service reads the managers off the sheets and writes nothing
+'of its own, so the handler's own unprotect is the one write path. This is
+'the guard of the fault the owner met on the mock.
+Public Sub TestVariablePickFillsAProtectedDiseaseLine()
+    CustomTestSetTitles Assert, "MasterSetupEvents", "TestVariablePickFillsAProtectedDiseaseLine"
+
+    Dim diseaseWksh As Worksheet
+    Dim variablesSheet As Worksheet
+    Dim table As ListObject
+    Dim nameCell As Range
+    Dim pass As Passwords
+
+    On Error GoTo Fail
+
+    Set diseaseWksh = BuildDiseaseFixture()
+    Set table = diseaseWksh.ListObjects(1)
+    Set nameCell = table.DataBodyRange.Cells(1, 2)
+    Set variablesSheet = ThisWorkbook.Worksheets(VARIABLES_SHEET)
+
+    'The service is dropped so the managers are built on the protected
+    'file, the way a reset VBA project builds them inside a change event.
+    MasterSetupEventsManager.DisposeMasterSetup
+
+    PreparePasswordsFixture PASSWORDS_SHEET
+    Set pass = Passwords.Create(ThisWorkbook.Worksheets(PASSWORDS_SHEET))
+    pass.DisplayPrompts = False
+    pass.Protect variablesSheet.Name
+    pass.Protect diseaseWksh.Name
+    ThisWorkbook.Worksheets(DROPDOWNS_SHEET).Visible = xlSheetVeryHidden
+
+    nameCell.Value = "var_age"
+    MasterSetupEventsManager.MsSheetChanged diseaseWksh, nameCell
+
+    Assert.AreEqual "demographics", table.DataBodyRange.Cells(1, 3).Value, "The section should fill on a protected file"
+    Assert.AreEqual "choice_age", table.DataBodyRange.Cells(1, 5).Value, "The default choice should fill on a protected file"
+    Assert.AreEqual "core", table.DataBodyRange.Cells(1, 7).Value, "The default status should fill on a protected file"
+    Assert.IsTrue diseaseWksh.ProtectContents, "The disease sheet should be protected again after the fill"
+    Assert.IsTrue variablesSheet.ProtectContents, "The Variables sheet should stay protected through the fill"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestVariablePickFillsAProtectedDiseaseLine", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("MasterSetupEvents")
@@ -176,9 +225,9 @@ Public Sub TestDefaultChoicePickFillsChoicesValues()
 
     On Error GoTo Fail
 
-    'The service resolves the managers once over the fixture sheets.
-    'A Property Get cannot stand alone as a statement; the assignment
-    'is what runs the preparation over the fixture sheets.
+    'The service resolves the managers once over the prepared fixture
+    'sheets. A Property Get cannot stand alone as a statement; the
+    'assignment is what resolves them.
     Dim preparedVariables As MasterSetupVariables
     Set preparedVariables = MasterSetupEventsManager.MasterSetupService.Variables
 
@@ -247,7 +296,7 @@ Public Sub TestChoiceEditRefreshesJoinedValues()
     On Error GoTo Fail
 
     'A Property Get cannot stand alone as a statement; the assignment
-    'is what runs the preparation over the fixture sheets.
+    'is what resolves the managers over the prepared fixture sheets.
     Dim preparedVariables As MasterSetupVariables
     Set preparedVariables = MasterSetupEventsManager.MasterSetupService.Variables
 
@@ -391,6 +440,7 @@ End Sub
 Private Sub PrepareEnvironment()
     Dim targetSheet As Worksheet
     Dim data As Variant
+    Dim preparation As MasterSetupPreparation
 
     'Variables sheet: the master table the managers read.
     Set targetSheet = EnsureWorksheet(VARIABLES_SHEET)
@@ -441,6 +491,13 @@ Private Sub PrepareEnvironment()
     WriteMatrix targetSheet.Range("B1"), data
     targetSheet.ListObjects.Add SourceType:=xlSrcRange, Source:=targetSheet.Range("B1").Resize(2, 2), _
                                 XlListObjectHasHeaders:=xlYes
+
+    'The developer presses Initialize once before a file ships: the
+    'dropdown tables and the Variables table take their shape here, and
+    'the events then read prepared sheets.
+    Set preparation = MasterSetupPreparation.Create(ThisWorkbook)
+    preparation.EnsureDropdowns
+    preparation.EnsureVariables
 End Sub
 
 '@description Build one disease sheet over the fixture managers.
@@ -463,10 +520,21 @@ Private Sub CleanupEnvironment()
     DeleteWorksheetSafe CHOICES_SHEET
     DeleteWorksheetSafe TRANSLATIONS_SHEET
     DeleteWorksheetSafe DROPDOWNS_SHEET
+    DeleteWorksheetSafe PASSWORDS_SHEET
 
     DeleteNameSafe "__Col__Variables"
     DeleteNameSafe "DISSHEET001"
     DeleteNameSafe "DISSHEET002"
+
+    'The names the passwords fixture seeds.
+    DeleteNameSafe "RNG_PublicKey"
+    DeleteNameSafe "RNG_PrivateKey"
+    DeleteNameSafe "RNG_DebuggingPassword"
+    DeleteNameSafe "RNG_DebugMode"
+    DeleteNameSafe "RNG_Version"
+    DeleteNameSafe "RNG_LabPublicKey"
+    DeleteNameSafe "RNG_LabPrivateKey"
+    DeleteNameSafe "Passwords_ProtectedSheets"
 End Sub
 
 Private Sub DeleteWorksheetSafe(ByVal sheetName As String)

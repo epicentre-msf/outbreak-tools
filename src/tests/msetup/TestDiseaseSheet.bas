@@ -143,6 +143,12 @@ Public Sub TestBuildCreatesWorksheet()
     Assert.AreEqual vbWhite, CLng(table.DataBodyRange.Cells(1, 1).Interior.Color), "The table body stays white."
     Assert.AreEqual vbWhite, CLng(diseaseWksh.Cells(1, 1).Interior.Color), "The sheet around the table stays white."
 
+    'The gridlines are off, so the table carries its own dotted gray frame.
+    Assert.AreEqual CLng(xlDot), CLng(table.DataBodyRange.Cells(1, 1).Borders(xlEdgeBottom).LineStyle), _
+                    "The first body cell carries a dotted bottom edge."
+    Assert.AreEqual RGB(166, 166, 166), CLng(table.DataBodyRange.Cells(1, 1).Borders(xlEdgeBottom).Color), _
+                    "The frame is gray."
+
 
 
     Set sheetStore = HiddenNames.Create(diseaseWksh)

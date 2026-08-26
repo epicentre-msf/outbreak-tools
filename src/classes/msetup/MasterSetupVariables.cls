@@ -108,6 +108,27 @@ Public Sub RefreshDuplicateFormatting()
     ApplyDuplicateFormatting
 End Sub
 
+'@sub-title Put the choices dropdown on the Default Choice column.
+'@details Runs on every preparation, outside the Initialised guard, so a
+'         table initialised while the Choices sheet was empty gets the
+'         dropdown once the list exists. A dropdown manager without the
+'         choices list leaves the column as it stands.
+'@param dropdowns DropdownLists provider carrying the choices list.
+Public Sub RefreshChoiceValidation(ByVal dropdowns As DropdownLists)
+    Dim choiceRange As Range
+
+    ValidateReady
+    If dropdowns Is Nothing Then
+        ThrowError ProjectError.InvalidArgument, "RefreshChoiceValidation requires a DropdownLists dependency."
+    End If
+
+    Set choiceRange = ColumnRange(HEADER_DEFAULT_CHOICE)
+    If choiceRange Is Nothing Then Exit Sub
+    If Not dropdowns.Exists(CHOICES_DROPDOWN_NAME) Then Exit Sub
+
+    dropdowns.SetValidation choiceRange, CHOICES_DROPDOWN_NAME, alertType:="info"
+End Sub
+
 '@sub-title Refresh the concatenated choices values for the supplied variable.
 '@param variableName String identifier of the variable row to update.
 '@param choices LLChoices providing category listings.
@@ -464,7 +485,6 @@ End Function
 
 Private Sub ApplyDropdownValidation(ByVal dropdowns As DropdownLists)
     Dim statusRange As Range
-    Dim choiceRange As Range
     Dim values As BetterArray
 
     If dropdowns Is Nothing Then
@@ -485,12 +505,7 @@ Private Sub ApplyDropdownValidation(ByVal dropdowns As DropdownLists)
 
     'The Default Choice column takes the list of choices when the preparation
     'has filled it from the Choices sheet.
-    Set choiceRange = ColumnRange(HEADER_DEFAULT_CHOICE)
-    If Not choiceRange Is Nothing Then
-        If dropdowns.Exists(CHOICES_DROPDOWN_NAME) Then
-            dropdowns.SetValidation choiceRange, CHOICES_DROPDOWN_NAME, alertType:="info"
-        End If
-    End If
+    RefreshChoiceValidation dropdowns
 End Sub
 
 '@sub-title Delete and re-add the one duplicate rule over the name column.

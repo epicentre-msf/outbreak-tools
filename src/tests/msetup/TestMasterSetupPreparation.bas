@@ -22,6 +22,7 @@ Private Const STATUS_DROPDOWN As String = "__var_status"
 Private Const YESNO_DROPDOWN As String = "__yesno"
 Private Const LANGUAGES_DROPDOWN As String = "__data_languages"
 Private Const VARIABLE_COLUMN_NAME As String = "__Col__Variables"
+Private Const CHOICES_DROPDOWN As String = "__lst_choices"
 
 
 '@section Module lifecycle
@@ -264,6 +265,38 @@ Fail:
 End Sub
 
 '@TestMethod("MasterSetupPreparation")
+'@sub-title An initialised table that lost its Default Choice dropdown gets it back on the next preparation.
+'@details The Initialised flag is a hidden name that survives every save,
+'so the validation written once by Initialise stood for good. The refresh
+'runs outside the flag, the way the duplicate rule does.
+Public Sub TestPrepareTwiceGivesTheDefaultChoiceColumnItsDropdown()
+    Dim choiceRange As Range
+
+    CustomTestSetTitles Assert, "MasterSetupPreparation", "TestPrepareTwiceGivesTheDefaultChoiceColumnItsDropdown"
+    On Error GoTo Fail
+
+    Subject.Prepare Application
+    Assert.IsTrue Subject.Variables.Initialised, "The first preparation should initialise the variables table"
+
+    'The table stands initialised and its column has no dropdown, the way
+    'a table initialised over an empty choices list stood on the mock.
+    Subject.Variables.DataRange("Default Choice").Validation.Delete
+    Assert.IsFalse ColumnHasListValidation(Subject.Variables.DataRange("Default Choice")), _
+                   "The Default Choice column should start this test without a dropdown"
+
+    Subject.Prepare Application
+
+    Set choiceRange = Subject.Variables.DataRange("Default Choice")
+    Assert.IsTrue ColumnHasListValidation(choiceRange), "The second preparation should put the dropdown on the Default Choice column"
+    Assert.IsTrue InStr(1, choiceRange.Validation.Formula1, CHOICES_DROPDOWN, vbTextCompare) > 0, _
+                  "The Default Choice dropdown should reference the choices list"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareTwiceGivesTheDefaultChoiceColumnItsDropdown"
+End Sub
+
+'@TestMethod("MasterSetupPreparation")
 Public Sub TestEnsureDropdownsLoadsLanguages()
     CustomTestSetTitles Assert, "MasterSetupPreparation", "TestEnsureDropdownsLoadsLanguages"
     On Error GoTo Fail
@@ -301,6 +334,22 @@ Private Sub PrepareTranslationsFixture(ByVal wsTrans As Worksheet)
     Set lo = wsTrans.ListObjects.Add(xlSrcRange, wsTrans.Range("A1:C2"), , xlYes)
     lo.Name = "TST_MasterTranslations"
 End Sub
+
+'@description Whether a range carries a list validation over all its cells.
+Private Function ColumnHasListValidation(ByVal target As Range) As Boolean
+    Dim validationType As Long
+
+    If target Is Nothing Then Exit Function
+
+    'A range with no validation raises on the read; the raise is the answer.
+    On Error Resume Next
+        validationType = target.Validation.Type
+        ColumnHasListValidation = (Err.Number = 0)
+        Err.Clear
+    On Error GoTo 0
+
+    If ColumnHasListValidation Then ColumnHasListValidation = (validationType = xlValidateList)
+End Function
 
 '@description A worksheet of the fixture workbook by name, or Nothing.
 Private Function FixtureSheet(ByVal sheetName As String) As Worksheet

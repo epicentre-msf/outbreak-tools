@@ -12,7 +12,7 @@ Attribute VB_Description = "Workbook-level orchestrator for master setup lifecyc
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Coordinates workbook events and shared services for the master setup workbook.")
-'@depends MasterSetupPreparation, MasterSetupVariables, DropdownLists, LLChoices, MasterSetupLog, Passwords
+'@depends MasterSetupVariables, DropdownLists, LLChoices, MasterSetupLog, Passwords
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -22,7 +22,6 @@ Option Explicit
 '===============================================================================
 Private Type TEventMasterSetup
     hostBook As Workbook                 'Workbook hosting master setup assets
-    prep As MasterSetupPreparation      'Preparation helper ensuring tables and dropdowns exist
     dropdowns As DropdownLists          'Cached dropdown manager
     variables As MasterSetupVariables   'Cached variables manager
     choices As LLChoices                'Cached choices helper
@@ -72,14 +71,16 @@ Public Sub Configure(ByVal hostBook As Workbook)
     ResetCaches
 End Sub
 
-'@sub-title Handle workbook open events by running preparation once.
+'@sub-title Handle the workbook open by dropping every held manager.
+'@details
+'The managers are built from the sheets on the first read after the open.
+'The preparation of the workbook is a dev-time step: it writes on the
+'sheets, and the Initialize button of the Dev tab is its one door. A change
+'handler on a shipped file reads protected sheets, so the open writes
+'nothing. The application argument is kept for the callers that pass it.
 Public Sub OnWorkbookOpen(Optional ByVal excelApplication As Application)
-    Dim svc As MasterSetupPreparation
-
-    Set svc = Preparation()
-    svc.Prepare excelApplication
-
-    CacheCoreManagers svc
+    Set this.dropdowns = Nothing
+    Set this.variables = Nothing
     ResetTranslationCaches
 End Sub
 
@@ -88,11 +89,15 @@ Public Sub OnRibbonLoad(ByVal ribbon As IRibbonUI)
     Set this.ribbon = ribbon
 End Sub
 
-'@sub-title Drop the choices helper after an edit of the Choices or Translations sheet.
+'@sub-title Drop the choices helper and the variables manager after an edit.
 '@details The master setup holds its content in English, so the service
-'carries no translation object of its own; the choices helper is the one
-'cache an edit of those two sheets makes stale.
+'carries no translation object of its own. A choices edit cascades through
+'RefreshChoices into the Variables table, and a Variables table that grew
+'rows through the ribbon needs a manager over the rows it has today, so
+'both caches drop. The manager is cheap to rebuild: the column indexes come
+'off the hidden names.
 Public Sub RefreshTranslations()
+    Set this.variables = Nothing
     ResetTranslationCaches
 End Sub
 
@@ -104,12 +109,14 @@ Public Property Get HostWorkbook() As Workbook
     Set HostWorkbook = EnsureWorkbook
 End Property
 
-'@sub-title Provide the dropdown manager, ensuring the preparation ran.
+'@sub-title Provide the dropdown manager built over the __dropdowns sheet.
+'@details Nothing when the workbook has no __dropdowns sheet.
 Public Property Get Dropdowns() As DropdownLists
     Set Dropdowns = EnsureDropdownManager
 End Property
 
-'@sub-title Provide the master setup variables manager.
+'@sub-title Provide the master setup variables manager built over the Variables table.
+'@details Nothing when the Variables sheet is missing or carries no table.
 Public Property Get Variables() As MasterSetupVariables
     Set Variables = EnsureVariablesManager
 End Property
@@ -140,7 +147,6 @@ End Function
 '@section Internal helpers
 '===============================================================================
 Private Sub ResetCaches()
-    Set this.prep = Nothing
     Set this.dropdowns = Nothing
     Set this.variables = Nothing
     Set this.choices = Nothing
@@ -196,15 +202,6 @@ Private Sub ResetTranslationCaches()
     Set this.choices = Nothing    'The helper re-reads the sheet next time
 End Sub
 
-Private Sub CacheCoreManagers(ByVal svc As MasterSetupPreparation)
-    If svc Is Nothing Then Exit Sub
-
-    On Error Resume Next
-        Set this.dropdowns = svc.Dropdowns
-        Set this.variables = svc.Variables
-    On Error GoTo 0
-End Sub
-
 Private Function EnsureWorkbook() As Workbook
     If this.hostBook Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, _
@@ -214,37 +211,44 @@ Private Function EnsureWorkbook() As Workbook
     Set EnsureWorkbook = this.hostBook
 End Function
 
-Private Function Preparation() As MasterSetupPreparation
-    If this.prep Is Nothing Then
-        Set this.prep = MasterSetupPreparation.Create(EnsureWorkbook)
-    End If
-
-    Set Preparation = this.prep
-End Function
-
-Private Sub EnsureCorePrepared()
-    Dim svc As MasterSetupPreparation
-
-    Set svc = Preparation()
-    svc.EnsureDropdowns
-    svc.EnsureVariables
-End Sub
-
+'@sub-title Build the dropdown manager over the __dropdowns sheet, once.
+'@details
+'The manager is built from the sheet as it stands, the way the worksheet
+'functions build theirs. A workbook without the sheet answers Nothing.
+'Create is guarded the way EventSetup guards its dictionary: a half-built
+'sheet answers Nothing and the caller decides.
 Private Function EnsureDropdownManager() As DropdownLists
-    EnsureCorePrepared
+    Dim targetSheet As Worksheet
 
     If this.dropdowns Is Nothing Then
-        Set this.dropdowns = Preparation().Dropdowns
+        Set targetSheet = ResolveWorksheet(DROPDOWNS_SHEET_NAME)
+        If targetSheet Is Nothing Then Exit Function
+
+        On Error Resume Next
+            Set this.dropdowns = DropdownLists.Create(targetSheet, DROPDOWNS_PREFIX)
+        On Error GoTo 0
     End If
 
     Set EnsureDropdownManager = this.dropdowns
 End Function
 
+'@sub-title Build the variables manager over the Variables table, once.
+'@details
+'The manager reads the first table of the Variables sheet. A sheet that is
+'missing or carries no table answers Nothing. Create is guarded the way
+'EventSetup guards its dictionary: a half-built table answers Nothing and
+'the caller decides.
 Private Function EnsureVariablesManager() As MasterSetupVariables
-    EnsureCorePrepared
+    Dim targetSheet As Worksheet
 
     If this.variables Is Nothing Then
-        Set this.variables = Preparation().Variables
+        Set targetSheet = ResolveWorksheet(VARIABLES_SHEET_NAME)
+        If targetSheet Is Nothing Then Exit Function
+        If targetSheet.ListObjects.Count = 0 Then Exit Function
+
+        On Error Resume Next
+            Set this.variables = MasterSetupVariables.Create(targetSheet.ListObjects(1))
+        On Error GoTo 0
     End If
 
     Set EnsureVariablesManager = this.variables

@@ -21,6 +21,7 @@ Private Const VARIABLES_SHEET_NAME As String = "Variables"
 Private Const CHOICES_SHEET_NAME As String = "Choices"
 Private Const TRANSLATIONS_SHEET_NAME As String = "Translations"
 Private Const TRANSLATION_TABLE_NAME As String = "Tab_Translations"
+Private Const VARIABLES_TABLE_NAME As String = "Tab_Variables"
 
 
 '@section Module lifecycle
@@ -54,6 +55,7 @@ Public Sub TestInitialize()
     Set ChoicesSheet = EnsureWorksheet(CHOICES_SHEET_NAME, FixtureWorkbook)
     Set TranslationsSheet = EnsureWorksheet(TRANSLATIONS_SHEET_NAME, FixtureWorkbook)
 
+    PrepareVariablesFixture VariablesSheet
     PrepareChoicesFixture ChoicesSheet
     PrepareTranslationsFixture TranslationsSheet
 
@@ -94,6 +96,7 @@ Public Sub TestCreateRequiresWorkbook()
 End Sub
 
 '@TestMethod("EventMasterSetup")
+'@sub-title After the open, the managers are built from the sheets and held across two reads.
 Public Sub TestOnWorkbookOpenInitialisesDependencies()
     CustomTestSetTitles Assert, "EventMasterSetup", "TestOnWorkbookOpenInitialisesDependencies"
     On Error GoTo Fail
@@ -106,10 +109,11 @@ Public Sub TestOnWorkbookOpenInitialisesDependencies()
 
     Set drops = Subject.Dropdowns
     Assert.IsFalse drops Is Nothing, "Dropdown manager should be resolved"
+    Assert.IsTrue drops Is Subject.Dropdowns, "The dropdown manager is held across two reads"
 
     Set vars = Subject.Variables
-    Assert.IsFalse vars Is Nothing, "Variables manager should be cached"
-    Assert.IsTrue vars.Initialised, "Variables manager should be initialised after OnWorkbookOpen"
+    Assert.IsFalse vars Is Nothing, "Variables manager should be resolved"
+    Assert.IsTrue vars Is Subject.Variables, "The variables manager is held across two reads"
 
     Set choices = Subject.Choices
     Assert.IsFalse choices Is Nothing, "Choices helper should be created"
@@ -118,6 +122,41 @@ Public Sub TestOnWorkbookOpenInitialisesDependencies()
 
 Fail:
     ReportTestFailure "TestOnWorkbookOpenInitialisesDependencies"
+End Sub
+
+'@TestMethod("EventMasterSetup")
+'@sub-title The open writes nothing on the sheets: the Variables table stays uninitialised.
+Public Sub TestOnWorkbookOpenLeavesTheSheetsAlone()
+    CustomTestSetTitles Assert, "EventMasterSetup", "TestOnWorkbookOpenLeavesTheSheetsAlone"
+    On Error GoTo Fail
+
+    Subject.OnWorkbookOpen Application
+
+    Assert.IsFalse Subject.Variables.Initialised, "The open runs no preparation over the Variables table"
+    Assert.AreEqual 0&, DropdownSheet.ListObjects.Count, "The open writes no dropdown table"
+
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestOnWorkbookOpenLeavesTheSheetsAlone"
+End Sub
+
+'@TestMethod("EventMasterSetup")
+'@sub-title A workbook missing the sheets or the table answers Nothing for its managers.
+Public Sub TestManagersAnswerNothingWithoutTheirSheets()
+    CustomTestSetTitles Assert, "EventMasterSetup", "TestManagersAnswerNothingWithoutTheirSheets"
+    On Error GoTo Fail
+
+    VariablesSheet.ListObjects(1).Unlist
+    DropdownSheet.Delete
+
+    Assert.IsTrue Subject.Variables Is Nothing, "A Variables sheet without a table answers no manager"
+    Assert.IsTrue Subject.Dropdowns Is Nothing, "A workbook without __dropdowns answers no manager"
+
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestManagersAnswerNothingWithoutTheirSheets"
 End Sub
 
 '@TestMethod("EventMasterSetup")
@@ -136,7 +175,7 @@ Public Sub TestRefreshTranslationsResetsCaches()
     Subject.RefreshTranslations
 
     Assert.IsFalse firstChoices Is Subject.Choices, "Choices helper should refresh when translations change"
-    Assert.IsTrue firstVariables Is Subject.Variables, "The variables manager stays cached across a refresh"
+    Assert.IsFalse firstVariables Is Subject.Variables, "The variables manager is rebuilt after a refresh"
     Exit Sub
 
 Fail:
@@ -146,6 +185,20 @@ End Sub
 
 '@section Helpers
 '===============================================================================
+'@description The eight columns of the master table, one blank line under them.
+Private Sub PrepareVariablesFixture(ByVal targetSheet As Worksheet)
+    Dim lo As ListObject
+
+    If targetSheet Is Nothing Then Exit Sub
+
+    targetSheet.Cells.Clear
+    targetSheet.Range("A1:H1").Value = Array("Variable Order", "Variable Section", "Variable Name", "Label", _
+                                             "Default Choice", "Choices Values", "Default Status", "Comments")
+
+    Set lo = targetSheet.ListObjects.Add(xlSrcRange, targetSheet.Range("A1:H2"), , xlYes)
+    lo.Name = VARIABLES_TABLE_NAME
+End Sub
+
 Private Sub PrepareChoicesFixture(ByVal targetSheet As Worksheet)
     If targetSheet Is Nothing Then Exit Sub
 

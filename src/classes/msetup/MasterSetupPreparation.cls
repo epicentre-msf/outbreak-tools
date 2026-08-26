@@ -194,6 +194,12 @@ Public Sub EnsureVariables()
     'existed, or one whose table grew rows, would keep no rule or a short one.
     manager.RefreshDuplicateFormatting
 
+    'The choices dropdown of the Default Choice column is refreshed the same
+    'way. A table initialised while the Choices sheet was empty carried no
+    'dropdown, and the Initialised flag kept it that way on every later
+    'preparation.
+    manager.RefreshChoiceValidation Dropdowns
+
     EnsureVariableNameColumnName manager
 End Sub
 

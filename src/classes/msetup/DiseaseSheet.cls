@@ -464,7 +464,9 @@ End Sub
 
 
 'The sheet is white. The language cell and the table headers carry the house
-'blue with white text, so the two things the user reads first stand out.
+'blue with white text, so the two things the user reads first stand out. The
+'table is framed in dotted gray, because the gridlines are off and the body
+'would otherwise read as nothing past the header row.
 Private Sub FormatDiseaseSheet()
     Dim languageCell As Range
 
@@ -482,6 +484,9 @@ Private Sub FormatDiseaseSheet()
         .Font.Bold = True
         .HorizontalAlignment = xlHAlignCenter
     End With
+
+    'The frame goes on before the header fill, so the header keeps its blue.
+    PaintTableBorders this.hostTable.Table.Range
 
     With this.hostTable.HeaderRange
         .Font.Bold = True
@@ -506,6 +511,38 @@ End Sub
 Private Function HouseBlue() As Long
     HouseBlue = RGB(0, 82, 155)
 End Function
+
+Private Function BorderGray() As Long
+    BorderGray = RGB(166, 166, 166)
+End Function
+
+'Frame every cell of the table with a thin dotted gray border. Rows added
+'later through ManageRows inherit the format of the last row, so the frame
+'grows with the table.
+'
+'The four edges are painted cell by cell. Painting the edges of the whole
+'table range leaves the bottom edge of the last table row unreadable: the
+'cell shows the line, and Borders(xlEdgeBottom) still answers xlNone, so
+'the frame could not be proved. Per cell, every edge reads back.
+Private Sub PaintTableBorders(ByVal target As Range)
+    Dim cell As Range
+
+    For Each cell In target.Cells
+        PaintDottedBorder cell, xlEdgeTop
+        PaintDottedBorder cell, xlEdgeBottom
+        PaintDottedBorder cell, xlEdgeLeft
+        PaintDottedBorder cell, xlEdgeRight
+    Next cell
+End Sub
+
+'Paint one edge of a range as a thin dotted gray line.
+Private Sub PaintDottedBorder(ByVal target As Range, ByVal edge As Long)
+    With target.Borders(edge)
+        .LineStyle = xlDot
+        .Weight = xlThin
+        .Color = BorderGray()
+    End With
+End Sub
 
 Private Sub RemoveGridlines(ByVal sheet As Worksheet)
     Dim view As WorksheetView

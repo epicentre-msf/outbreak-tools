@@ -22,6 +22,9 @@ Private Sub Workbook_Open()
     MasterSetupEventsManager.MsWorkbookOpened
 
 Clean:
+    'A failed open is otherwise invisible, and the next change event meets
+    'the same fault with nothing said.
+    If Err.Number <> 0 Then Debug.Print "Workbook_Open error "; Err.Number; " "; Err.Description
     reentrant = False
 End Sub
 
