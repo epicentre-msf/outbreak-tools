@@ -23,6 +23,8 @@ Private Const YESNO_DROPDOWN As String = "__yesno"
 Private Const LANGUAGES_DROPDOWN As String = "__data_languages"
 Private Const VARIABLE_COLUMN_NAME As String = "__Col__Variables"
 Private Const CHOICES_DROPDOWN As String = "__lst_choices"
+Private Const CHOICES_SHEET_NAME As String = "Choices"
+Private Const REGISTRY_SHEET_NAME As String = "__updated"
 
 
 '@section Module lifecycle
@@ -297,6 +299,54 @@ Fail:
 End Sub
 
 '@TestMethod("MasterSetupPreparation")
+'@sub-title Prepare builds the __updated registry from the tagged columns, and a second Prepare keeps one table per sheet.
+'@details The fixture Choices sheet carries a "translate as text" tag above
+'its label column, the way the master setup file does. The registry row for
+'it is flagged yes and its RNG_ workbook name resolves.
+Public Sub TestPrepareBuildsTheUpdatedRegistry()
+    Dim choicesSheet As Worksheet
+    Dim registrySheet As Worksheet
+    Dim registryTable As ListObject
+    Dim rangeName As String
+    Dim definedName As Name
+
+    CustomTestSetTitles Assert, "MasterSetupPreparation", "TestPrepareBuildsTheUpdatedRegistry"
+    On Error GoTo Fail
+
+    Set choicesSheet = EnsureWorksheet(CHOICES_SHEET_NAME, FixtureWorkbook)
+    PrepareTaggedChoicesFixture choicesSheet
+
+    Subject.Prepare Application
+
+    Set registrySheet = FixtureSheet(REGISTRY_SHEET_NAME)
+    Assert.IsFalse registrySheet Is Nothing, "Prepare should grow the __updated sheet"
+    Assert.AreEqual 1&, registrySheet.ListObjects.Count, "One registry table should stand for the one tagged sheet"
+
+    Set registryTable = registrySheet.ListObjects(1)
+    Assert.AreEqual 1&, registryTable.ListRows.Count, "One row should stand for the one tagged column"
+    Assert.AreEqual "yes", LCase$(Trim$(CStr(registryTable.ListColumns("updated").DataBodyRange.Cells(1, 1).Value))), _
+                    "The flag should start at yes"
+    Assert.AreEqual "translate as text", LCase$(Trim$(CStr(registryTable.ListColumns("headername").DataBodyRange.Cells(1, 1).Value))), _
+                    "The row should carry the tag of the column"
+
+    rangeName = CStr(registryTable.ListColumns("rngname").DataBodyRange.Cells(1, 1).Value)
+    On Error Resume Next
+        Set definedName = FixtureWorkbook.Names(rangeName)
+    On Error GoTo 0
+    On Error GoTo Fail
+    Assert.IsFalse definedName Is Nothing, "The registry row should carry a workbook name for the watched column"
+
+    'A second preparation rebuilds the registry in place.
+    Subject.Prepare Application
+    Assert.AreEqual 1&, registrySheet.ListObjects.Count, "A second Prepare should keep one registry table"
+    Assert.AreEqual 1&, registrySheet.ListObjects(1).ListRows.Count, "A second Prepare should keep one registry row"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareBuildsTheUpdatedRegistry"
+End Sub
+
+'@TestMethod("MasterSetupPreparation")
 Public Sub TestEnsureDropdownsLoadsLanguages()
     CustomTestSetTitles Assert, "MasterSetupPreparation", "TestEnsureDropdownsLoadsLanguages"
     On Error GoTo Fail
@@ -333,6 +383,27 @@ Private Sub PrepareTranslationsFixture(ByVal wsTrans As Worksheet)
 
     Set lo = wsTrans.ListObjects.Add(xlSrcRange, wsTrans.Range("A1:C2"), , xlYes)
     lo.Name = "TST_MasterTranslations"
+End Sub
+
+'@description A Choices sheet with headers at row 4 and a translate tag over its label column.
+Private Sub PrepareTaggedChoicesFixture(ByVal targetSheet As Worksheet)
+    Dim lo As ListObject
+
+    If targetSheet Is Nothing Then Exit Sub
+
+    targetSheet.Cells.Clear
+    targetSheet.Range("B3").Value = "translate as text"
+    targetSheet.Range("A4").Value = "list name"
+    targetSheet.Range("B4").Value = "label"
+    targetSheet.Range("C4").Value = "short label"
+    targetSheet.Range("D4").Value = "ordering list"
+    targetSheet.Range("A5").Value = "demo_list"
+    targetSheet.Range("B5").Value = "Demo label"
+    targetSheet.Range("C5").Value = "Demo"
+    targetSheet.Range("D5").Value = 1
+
+    Set lo = targetSheet.ListObjects.Add(xlSrcRange, targetSheet.Range("A4:D5"), , xlYes)
+    lo.Name = "Tab_Choices"
 End Sub
 
 '@description Whether a range carries a list validation over all its cells.

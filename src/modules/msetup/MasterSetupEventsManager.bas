@@ -163,18 +163,37 @@ End Sub
 'choices helper or dropdown manager answers Nothing leaves the table as it
 'stands.
 Public Sub MsSheetDeactivated(ByVal sh As Worksheet)
-    Dim scope As ApplicationState
     Dim errDescription As String
 
     If sh Is Nothing Then Exit Sub
     If Not SheetIs(sh, "choi") Then Exit Sub
 
     On Error GoTo Handler
+    MsRefreshChoicesDropdown
+    Exit Sub
+
+Handler:
+    errDescription = Err.Number & " " & Err.Description
+    Debug.Print "SheetDeactivated - "; sh.Name; " error "; errDescription
+    LogFailureLine "sheet-leave", sh.Name & ": " & errDescription, "MsSheetDeactivated"
+End Sub
+
+'@sub-title Rebuild __lst_choices from the Choices sheet, under a busy scope.
+'@details The door the Refresh Choices button and the sheet leave share.
+'The caches drop first, so the helper reads the sheet as it stands. A
+'failure is raised at the caller once the application state is restored,
+'so the ribbon can say what went wrong.
+Public Sub MsRefreshChoicesDropdown()
+    Dim scope As ApplicationState
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
+
+    On Error GoTo Handler
 
     Set scope = ApplicationState.Create(Application)
     scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
-    'The caches drop first, so the helper reads the sheet as it stands.
     ResetMasterSetupFunctionCaches
     MasterSetupService.RefreshTranslations
     RefreshChoicesDropdown
@@ -184,12 +203,17 @@ Cleanup:
     'would come straight back to this label and raise again.
     On Error Resume Next
     If Not scope Is Nothing Then scope.Restore
+    On Error GoTo 0
+
+    If errNumber <> 0 Then
+        Err.Raise errNumber, errSource, errDescription
+    End If
     Exit Sub
 
 Handler:
-    errDescription = Err.Number & " " & Err.Description
-    Debug.Print "SheetDeactivated - "; sh.Name; " error "; errDescription
-    LogFailureLine "sheet-leave", sh.Name & ": " & errDescription, "MsSheetDeactivated"
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
     Resume Cleanup
 End Sub
 

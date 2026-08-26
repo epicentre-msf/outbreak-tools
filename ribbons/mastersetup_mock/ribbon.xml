@@ -7,6 +7,7 @@
                     <button id="btnRes" label="Resize Tables" imageMso="SheetRowsDelete" size="large" onAction="clickResize"/>
                     <button id="btnFilt" label="Clear Filters" imageMso="FilterClearAllFilters" size="large" onAction="clickFilters"/>
                     <button id="btnSortTab" label="Sort Tables" image="sort" size="large" onAction="clickRibbonSortTable"/>
+                    <button id="btnRefChoices" label="Refresh Choices" imageMso="RefreshAll" size="large" onAction="clickRefreshChoices"/>
                     <button id="btnMsImpPass" label="Import Passwords" image="password" size="large" onAction="clickMsImpPass"/>
                 </group>
                 <group id="customGroupDisease" label="Diseases">

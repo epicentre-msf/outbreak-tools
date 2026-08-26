@@ -12,7 +12,7 @@ Attribute VB_Description = "Implementation for Master Setup preparation and conf
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Implementation for Master Setup preparation and configuration")
-'@depends MasterSetupVariables, DropdownLists, LLChoices, ApplicationState, ProjectError, HiddenNames, BetterArray
+'@depends MasterSetupVariables, DropdownLists, LLChoices, UpdatedValues, ApplicationState, ProjectError, HiddenNames, BetterArray
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -25,6 +25,8 @@ Private Type TMasterSetupPreparation
     variablesSheet As Worksheet      'Worksheet hosting the variables table
     dropdowns As DropdownLists      'Cached dropdown manager
     variables As MasterSetupVariables  'Cached variables manager
+    registrySheet As Worksheet       'Worksheet hosting the updated values registry
+    updater As UpdatedValues         'Updated values watcher bound to the registry sheet
 End Type
 
 Private this As TMasterSetupPreparation
@@ -38,6 +40,7 @@ Private Const DROPDOWN_SHEET_NAME As String = "__dropdowns"
 'never carried it grows it very hidden on the first preparation, the way
 'MasterSetupLog grows __log.
 Private Const COMPARE_REPORT_SHEET_NAME As String = "__compRep"
+Private Const REGISTRY_SHEET_NAME As String = "__updated"
 
 Private Const VARIABLES_SHEET_NAME As String = "Variables"
 Private Const TRANSLATIONS_SHEET_NAME As String = "Translations"
@@ -121,6 +124,7 @@ Public Sub Prepare(Optional ByVal excelApplication As Application)
 
     EnsureDropdowns
     EnsureVariables
+    EnsureUpdatedRegistry
     EnsureReportSheet
 
     On Error GoTo 0
@@ -203,6 +207,33 @@ Public Sub EnsureVariables()
     EnsureVariableNameColumnName manager
 End Sub
 
+'@Description("Rebuild the __updated registry from the tagged columns of the Variables and Choices sheets.")
+'@details The registry is dropped and built again, the way
+'SetupPreparation.ResetUpdatedRegistry does it: every registry table goes,
+'the watched sheets are read for the tags above their headers (watch for
+'update, translate as text, translate as formula), one registry row and one
+'RNG_ workbook name are written per tagged column, and every flag is set
+'back to yes. The Update Translations button reads those rows. A watched
+'sheet the workbook lacks is skipped: a fresh file has its Variables table
+'from EnsureVariables and may carry no Choices sheet yet.
+Public Sub EnsureUpdatedRegistry()
+    Dim watcher As UpdatedValues
+    Dim watched As Variant
+    Dim idx As Long
+    Dim targetSheet As Worksheet
+
+    Set watcher = EnsureUpdatedValuesWatcher
+    watcher.DeleteUp
+
+    watched = Array(VARIABLES_SHEET_NAME, CHOICES_SHEET_NAME)
+    For idx = LBound(watched) To UBound(watched)
+        Set targetSheet = ResolveWorksheet(CStr(watched(idx)))
+        If Not targetSheet Is Nothing Then watcher.AddSheet targetSheet
+    Next idx
+
+    watcher.SwitchTagsToYes
+End Sub
+
 '@Description("Expose the dropdown manager for callers needing direct access.")
 Public Property Get Dropdowns() As DropdownLists
     EnsureDropdownManager
@@ -229,7 +260,24 @@ Private Sub ResetCaches()
     Set this.variablesSheet = Nothing
     Set this.dropdowns = Nothing
     Set this.variables = Nothing
+    Set this.registrySheet = Nothing
+    Set this.updater = Nothing
 End Sub
+
+'@Description("Bind the updated values watcher to the registry sheet, growing the sheet hidden when it is missing.")
+'@details An existing registry sheet keeps its visibility; Deploy makes it
+'very hidden later.
+Private Function EnsureUpdatedValuesWatcher() As UpdatedValues
+    If this.updater Is Nothing Then
+        Set this.registrySheet = ResolveWorksheet(REGISTRY_SHEET_NAME)
+        If this.registrySheet Is Nothing Then
+            Set this.registrySheet = ResolveOrCreateWorksheet(REGISTRY_SHEET_NAME, xlSheetHidden)
+        End If
+        Set this.updater = UpdatedValues.Create(this.registrySheet)
+    End If
+
+    Set EnsureUpdatedValuesWatcher = this.updater
+End Function
 
 '@Description("Ensure the dropdown manager is initialised and cached.")
 Private Function EnsureDropdownManager() As DropdownLists

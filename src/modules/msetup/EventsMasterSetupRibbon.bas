@@ -110,6 +110,26 @@ Handler:
     LogFailureLine "clear-filters", failureText, "clickFilters"
 End Sub
 
+'@Description("Rebuild the choices dropdown from the lists of the Choices sheet.")
+'@details The same rebuild runs when the user leaves the Choices sheet; the
+'button is the door for a file whose dropdown fell behind the sheet.
+'@EntryPoint
+Public Sub clickRefreshChoices(ByRef ribbonControl As IRibbonControl)
+    Dim failureText As String
+
+    On Error GoTo Handler
+    MasterSetupEventsManager.MsRefreshChoicesDropdown
+    LogSuccessLine "refresh-choices", vbNullString, "clickRefreshChoices"
+    MsgBox "The choices dropdown follows the Choices sheet.", vbInformation + vbOKOnly, "Choices"
+    Exit Sub
+
+Handler:
+    failureText = Err.Description
+    Debug.Print "clickRefreshChoices: "; Err.Number; Err.Description
+    MsgBox "Unable to refresh the choices dropdown: " & Err.Description, vbCritical + vbOKOnly, "Choices"
+    LogFailureLine "refresh-choices", failureText, "clickRefreshChoices"
+End Sub
+
 '@Description("Sort master setup tables on the active worksheet using default ordering.")
 '@EntryPoint
 Public Sub clickRibbonSortTable(ByRef ribbonControl As IRibbonControl)
