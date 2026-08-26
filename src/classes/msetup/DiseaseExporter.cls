@@ -7,11 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Attribute VB_Description = "Creates workbook exports for disease dictionaries and migration bundles"
+Attribute VB_Description = "Creates the workbook export of one disease for a setup"
 
 '@PredeclaredId
 '@Folder("Msetup")
-'@ModuleDescription("Creates workbook exports for disease dictionaries and migration bundles")
+'@ModuleDescription("Creates the workbook export of one disease for a setup; the migration of the whole file is MasterSetupMigration's")
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -23,12 +23,10 @@ Option Explicit
 '===============================================================================
 
 Private Const DEFAULT_CHOICE_SEPARATOR As String = " | "
-Private Const DISEASES_SHEET As String = "Diseases"
 Private Const DICTIONARY_SHEET As String = "Dictionary"
 Private Const CHOICES_SHEET As String = "Choices"
 Private Const TRANSLATIONS_SHEET As String = "Translations"
 Private Const METADATA_SHEET As String = "Metadata"
-Private Const VARIABLES_SHEET As String = "Variables"
 'The exported tables take the names a setup gives its own, since
 'SetupImport matches the source tables to the host ones by name.
 Private Const TABLE_DICTIONARY As String = "Tab_Dictionary"
@@ -46,7 +44,6 @@ Private Const HEADER_VARIABLE_NAME As String = "Variable Name"
 Private Const HEADER_MAIN_LABEL As String = "Main Label"
 Private Const HEADER_CONTROL As String = "Control"
 Private Const HEADER_STATUS As String = "Status"
-Private Const MIGRATION_FILE_PREFIX As String = "flat_disease_file_"
 Private Const DISEASE_FILE_PREFIX As String = "setup_dictionary_"
 Private Const DISEASE_FILE_EXTENSION As String = ".xlsx"
 Private Const LOG_OPERATION As String = "Export"
@@ -225,68 +222,6 @@ Public Function ExportDisease(ByVal exportFolder As String, _
     ExportDisease = filePath
 End Function
 
-'@section Migration Export
-'===============================================================================
-
-'@sub-title Build a workbook aggregating all diseases for migration.
-Public Function BuildMigrationWorkbook(ByVal sourceWorkbook As Workbook, _
-                                       ByVal diseaseNames As BetterArray) As Workbook
-
-    Dim targetBook As Workbook
-    Dim guardStarted As Boolean
-    Dim translationsTable As ListObject
-    Dim choicesTable As ListObject
-    Dim variablesTable As ListObject
-    Dim diseaseWksh As Worksheet
-    Dim diseaseList As BetterArray
-
-    ValidateMigrationInputs sourceWorkbook, diseaseNames
-
-    BeginGuard guardStarted
-
-    EnsureFreshWorkbook
-    Set targetBook = this.Manager.EnsureWorkbook(Application)
-    PrepareMigrationSheets targetBook
-
-    Set translationsTable = ResolveListObject(sourceWorkbook, TRANSLATIONS_SHEET)
-    Set choicesTable = ResolveListObject(sourceWorkbook, CHOICES_SHEET)
-    Set variablesTable = ResolveListObject(sourceWorkbook, VARIABLES_SHEET)
-
-    PopulateTranslations targetBook.Worksheets(TRANSLATIONS_SHEET), translationsTable
-    PopulateTranslations targetBook.Worksheets(CHOICES_SHEET), choicesTable
-    PopulateTranslations targetBook.Worksheets(VARIABLES_SHEET), variablesTable
-
-    Set diseaseList = diseaseNames.Clone()
-    For Each diseaseWksh In ResolveSheets(sourceWorkbook, diseaseList)
-        PopulateMigrationDisease targetBook.Worksheets(DISEASES_SHEET), diseaseWksh
-    Next diseaseWksh
-
-    ApplyMigrationFormatting targetBook
-
-    Set BuildMigrationWorkbook = targetBook
-
-    RestoreGuard guardStarted
-End Function
-
-'@sub-title Persist the migration workbook to disk and return the saved file path.
-Public Function ExportForMigration(ByVal exportFolder As String, _
-                                   ByVal sourceWorkbook As Workbook, _
-                                   ByVal diseaseNames As BetterArray) As String
-
-    Dim targetBook As Workbook
-    Dim filePath As String
-
-    ValidateFolder exportFolder
-
-    Set targetBook = BuildMigrationWorkbook(sourceWorkbook, diseaseNames)
-
-    filePath = BuildMigrationFilePath(exportFolder)
-    this.Manager.SaveAs filePath
-    this.Manager.CloseWorkbook False
-
-    ExportForMigration = filePath
-End Function
-
 '@section Internal Helpers
 '===============================================================================
 
@@ -328,23 +263,6 @@ Private Sub ValidateDiseaseInputs(ByVal diseaseWksh As Worksheet, _
     End If
 End Sub
 
-'@sub-title Validate migration export inputs.
-Private Sub ValidateMigrationInputs(ByVal sourceWorkbook As Workbook, _
-                                    ByVal diseaseNames As BetterArray)
-
-    If sourceWorkbook Is Nothing Then
-        ThrowError ProjectError.ObjectNotInitialized, "Source workbook cannot be Nothing"
-    End If
-
-    If diseaseNames Is Nothing Then
-        ThrowError ProjectError.ObjectNotInitialized, "Disease name list cannot be Nothing"
-    End If
-
-    If diseaseNames.Length = 0 Then
-        ThrowError ProjectError.InvalidArgument, "Disease name list cannot be empty"
-    End If
-End Sub
-
 '@sub-title Validate that a folder path was supplied.
 Private Sub ValidateFolder(ByVal exportFolder As String)
     If LenB(exportFolder) = 0 Then
@@ -370,30 +288,12 @@ Private Sub PrepareSheets(ByVal targetBook As Workbook, _
     ClearSheet translationsSheet
 End Sub
 
-'@sub-title Prepare migration workbook worksheets.
-Private Sub PrepareMigrationSheets(ByVal targetBook As Workbook)
-    ClearSheet EnsureWorksheet(targetBook, DISEASES_SHEET, targetBook.Worksheets(1))
-    ClearSheet EnsureWorksheet(targetBook, TRANSLATIONS_SHEET)
-    ClearSheet EnsureWorksheet(targetBook, CHOICES_SHEET)
-    ClearSheet EnsureWorksheet(targetBook, VARIABLES_SHEET)
-End Sub
-
 '@sub-title Retrieve the disease table from the worksheet.
 Private Function ResolveDiseaseTable(ByVal diseaseWksh As Worksheet) As ListObject
     If diseaseWksh.ListObjects.Count = 0 Then
         ThrowError ProjectError.ElementNotFound, "Disease worksheet must contain a ListObject"
     End If
     Set ResolveDiseaseTable = diseaseWksh.ListObjects(1)
-End Function
-
-'@sub-title Retrieve a ListObject from a named worksheet.
-Private Function ResolveListObject(ByVal targetBook As Workbook, ByVal sheetName As String) As ListObject
-    Dim sheet As Worksheet
-    Set sheet = targetBook.Worksheets(sheetName)
-    If sheet.ListObjects.Count = 0 Then
-        ThrowError ProjectError.ElementNotFound, "Worksheet '" & sheetName & "' is missing its ListObject"
-    End If
-    Set ResolveListObject = sheet.ListObjects(1)
 End Function
 
 '@sub-title Wrap the master Choices sheet of the workbook holding the disease.
@@ -406,25 +306,6 @@ Private Function ResolveMasterChoices(ByVal diseaseWksh As Worksheet) As LLChoic
     If choicesWksh Is Nothing Then Exit Function
 
     Set ResolveMasterChoices = LLChoices.Create(choicesWksh, MASTER_CHOICES_START_ROW, MASTER_CHOICES_START_COLUMN)
-End Function
-
-'@sub-title Enumerate worksheets from provided disease names.
-Private Function ResolveSheets(ByVal targetBook As Workbook, ByVal diseaseNames As BetterArray) As Collection
-    Dim results As New Collection
-    Dim index As Long
-    Dim diseaseName As String
-    Dim sheet As Worksheet
-
-    For index = diseaseNames.LowerBound To diseaseNames.UpperBound
-        diseaseName = CStr(diseaseNames.Item(index))
-        Set sheet = FindWorksheet(targetBook, diseaseName)
-        If sheet Is Nothing Then
-            ThrowError ProjectError.ElementNotFound, "Disease worksheet '" & diseaseName & "' does not exist"
-        End If
-        results.Add sheet
-    Next index
-
-    Set ResolveSheets = results
 End Function
 
 '@sub-title Populate metadata worksheet with export details.
@@ -875,43 +756,6 @@ Private Sub WrapAsTable(ByVal targetSheet As Worksheet, _
     table.TableStyle = ""
 End Sub
 
-'@sub-title Populate a migration worksheet with disease data.
-Private Sub PopulateMigrationDisease(ByVal targetSheet As Worksheet, ByVal diseaseWksh As Worksheet)
-    Dim diseaseTable As ListObject
-    Dim sourceRange As Range
-    Dim values As Variant
-    Dim lastColumn As Long
-    Dim store As HiddenNames
-
-    Set diseaseTable = ResolveDiseaseTable(diseaseWksh)
-
-    Set sourceRange = diseaseTable.Range
-    If sourceRange Is Nothing Then Exit Sub
-
-    values = sourceRange.Value
-    'The first block opens at column 1; every later block leaves one empty
-    'column after the last one.
-    lastColumn = LastUsedColumn(targetSheet)
-    If lastColumn = 0 Then
-        lastColumn = 1
-    Else
-        lastColumn = lastColumn + 2
-    End If
-
-    Set store = HiddenNames.Create(diseaseWksh)
-
-    targetSheet.Cells(1, lastColumn).Value = "Disease"
-    targetSheet.Cells(1, lastColumn + 1).Value = "Language"
-    targetSheet.Cells(1, lastColumn + 2).Value = "Tag"
-
-    targetSheet.Cells(2, lastColumn).Value = diseaseWksh.Name
-    targetSheet.Cells(2, lastColumn + 1).Value = store.ValueAsString(NAME_DISLANG)
-    targetSheet.Cells(2, lastColumn + 2).Value = store.ValueAsString(NAME_DISCODE)
-
-    targetSheet.Range(targetSheet.Cells(3, lastColumn), _
-                      targetSheet.Cells(2 + UBound(values, 1), lastColumn + UBound(values, 2) - 1)).Value = values
-End Sub
-
 '@sub-title Give the four sheets of a disease export their format.
 '@details A reader opens an exported disease file and a setup migration
 'export and sees the same thing. The Metadata sheet is a label and value
@@ -922,18 +766,16 @@ Private Sub ApplySheetCosmetics(ByVal metadataSheet As Worksheet, _
                                 ByVal translationsSheet As Worksheet)
 
     FormatMetadataSheet metadataSheet
-    FormatExportSheet dictionarySheet
-    FormatExportSheet choicesSheet
-    FormatExportSheet translationsSheet
+    FormatWrittenSheet dictionarySheet
+    FormatWrittenSheet choicesSheet
+    FormatWrittenSheet translationsSheet
 End Sub
 
-'@sub-title Give the four sheets of a migration export their format.
-Private Sub ApplyMigrationFormatting(ByVal targetBook As Workbook)
-    FormatExportSheet targetBook.Worksheets(DISEASES_SHEET)
-    FormatExportSheet targetBook.Worksheets(TRANSLATIONS_SHEET)
-    FormatExportSheet targetBook.Worksheets(CHOICES_SHEET)
-    FormatExportSheet targetBook.Worksheets(VARIABLES_SHEET)
-End Sub
+'@section Export Format
+'===============================================================================
+'The two formatters read no state, so MasterSetupMigration calls them on
+'the predeclared instance and its five sheets read the way a disease
+'export reads.
 
 '@sub-title Give one written sheet the export format.
 '@details
@@ -952,7 +794,7 @@ End Sub
 'what a reader sees.
 '@param targetSheet Worksheet. The sheet holding the written block.
 '@param columnWidth Optional Double. Width given to the written columns.
-Private Sub FormatExportSheet(ByVal targetSheet As Worksheet, _
+Public Sub FormatWrittenSheet(ByVal targetSheet As Worksheet, _
                               Optional ByVal columnWidth As Double = EXPORT_COLUMN_WIDTH)
     Dim writtenRange As Range
 
@@ -989,11 +831,11 @@ End Sub
 '@sub-title Give the Metadata sheet its two widths.
 '@details The sheet holds a label column and a value column. The value
 'column is the wider of the two; the rest is the export format.
-'@param targetSheet Worksheet. The Metadata sheet of a disease export.
-Private Sub FormatMetadataSheet(ByVal targetSheet As Worksheet)
+'@param targetSheet Worksheet. The Metadata sheet of an export.
+Public Sub FormatMetadataSheet(ByVal targetSheet As Worksheet)
     If targetSheet Is Nothing Then Exit Sub
 
-    FormatExportSheet targetSheet, METADATA_LABEL_WIDTH
+    FormatWrittenSheet targetSheet, METADATA_LABEL_WIDTH
 
     On Error Resume Next
         targetSheet.Columns(2).ColumnWidth = METADATA_VALUE_WIDTH
@@ -1123,33 +965,10 @@ Private Function CollectionToMatrix(ByVal rows As Collection, ByVal columnCount 
     CollectionToMatrix = matrix
 End Function
 
-'@sub-title Determine the last used column within the target sheet.
-'@details The UsedRange of a sheet holding nothing is $A$1, so the range
-'is counted before its last column is read: an empty sheet answers 0 and the
-'first migration block opens at column 1.
-Private Function LastUsedColumn(ByVal sheet As Worksheet) As Long
-    Dim usedRange As Range
-
-    Set usedRange = sheet.UsedRange
-    If usedRange Is Nothing Then
-        LastUsedColumn = 0
-    ElseIf Application.WorksheetFunction.CountA(usedRange) = 0 Then
-        LastUsedColumn = 0
-    Else
-        LastUsedColumn = usedRange.Columns(usedRange.Columns.Count).Column
-    End If
-End Function
-
 '@sub-title Build path for disease export.
 Private Function BuildDiseaseFilePath(ByVal exportFolder As String, ByVal diseaseName As String) As String
     BuildDiseaseFilePath = exportFolder & Application.PathSeparator & _
                            DISEASE_FILE_PREFIX & SanitizeFileName(diseaseName) & DISEASE_FILE_EXTENSION
-End Function
-
-'@sub-title Build path for migration export.
-Private Function BuildMigrationFilePath(ByVal exportFolder As String) As String
-    BuildMigrationFilePath = exportFolder & Application.PathSeparator & _
-                             MIGRATION_FILE_PREFIX & Format$(Now, "yyyy-mm-dd") & DISEASE_FILE_EXTENSION
 End Function
 
 '@sub-title Remove characters invalid in file names.

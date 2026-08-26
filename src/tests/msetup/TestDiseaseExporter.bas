@@ -1,12 +1,12 @@
 Attribute VB_Name = "TestDiseaseExporter"
-Attribute VB_Description = "Tests validating DiseaseExporter builds array-based disease and migration workbooks"
+Attribute VB_Description = "Tests validating DiseaseExporter builds the disease workbook a setup imports"
 
 Option Explicit
 Option Private Module
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '@Folder("CustomTests")
-'@ModuleDescription("Tests validating DiseaseExporter builds array-based disease and migration workbooks")
+'@ModuleDescription("Tests validating DiseaseExporter builds the disease workbook a setup imports")
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const DISEASE_SHEET_PREFIX As String = "DiseaseTest_"
@@ -171,60 +171,6 @@ Fail:
 End Sub
 
 '@TestMethod("DiseaseExporter")
-Public Sub TestBuildMigrationWorkbookAggregatesDiseases()
-    CustomTestSetTitles Assert, "DiseaseExporter", "TestBuildMigrationWorkbookAggregatesDiseases"
-
-    Dim diseaseNames As BetterArray
-    Dim targetBook As Workbook
-    Dim diseasesSheet As Worksheet
-    Dim translationsSheet As Worksheet
-    Dim diseaseMeta As Variant
-    Dim translationValues As Variant
-
-    On Error GoTo Fail
-
-    Dim sourceWorkbook As Workbook
-    Set sourceWorkbook = PrepareMigrationSourceWorkbook()
-
-    Set diseaseNames = New BetterArray
-    diseaseNames.Push "Beta"
-    diseaseNames.Push "Gamma"
-
-    Set targetBook = Exporter.BuildMigrationWorkbook(sourceWorkbook, diseaseNames)
-    Set diseasesSheet = targetBook.Worksheets("Diseases")
-    Set translationsSheet = targetBook.Worksheets("Translations")
-
-    'A block is seven columns wide (the disease table) and the next block
-    'opens one empty column after it, so the second disease sits at column 9.
-    diseaseMeta = diseasesSheet.Range("A1").Resize(2, 10).Value
-    translationValues = translationsSheet.Range("A1").Resize(3, 2).Value
-
-    Assert.AreEqual "Disease", diseaseMeta(1, 1), "Metadata headers should be created"
-    Assert.AreEqual "Beta", diseaseMeta(2, 1), "First disease should be copied"
-    Assert.AreEqual "Gamma", diseaseMeta(2, 9), "Second disease metadata should be appended"
-    Assert.AreEqual "ENG", diseaseMeta(2, 2), "Language should be copied with metadata"
-    Assert.AreEqual "FRA", diseaseMeta(2, 10), "Second disease language should be copied"
-
-    Assert.AreEqual "tag", translationValues(1, 1), "Translation header should be copied"
-    Assert.AreEqual "hello", translationValues(2, 1), "Translation rows should be copied"
-
-    sourceWorkbook.Close SaveChanges:=False
-    Exit Sub
-
-Fail:
-    'The error is read before the shield below, since On Error GoTo 0 clears
-    'it. A failure before the source workbook exists leaves it Nothing.
-    Dim failNumber As Long
-    Dim failText As String
-    failNumber = Err.Number
-    failText = Err.Description
-    On Error Resume Next
-        If Not sourceWorkbook Is Nothing Then sourceWorkbook.Close SaveChanges:=False
-    On Error GoTo 0
-    CustomTestLogFailure Assert, "TestBuildMigrationWorkbookAggregatesDiseases", failNumber, failText
-End Sub
-
-'@TestMethod("DiseaseExporter")
 Public Sub TestChoicesExportTakesMasterListsAndTranslates()
     CustomTestSetTitles Assert, "DiseaseExporter", "TestChoicesExportTakesMasterListsAndTranslates"
 
@@ -339,47 +285,6 @@ Fail:
     CustomTestLogFailure Assert, "TestExportedSheetsTakeTheMigrationFormat", Err.Number, Err.Description
 End Sub
 
-'@TestMethod("DiseaseExporter")
-Public Sub TestMigrationSheetsTakeTheSameFormat()
-    CustomTestSetTitles Assert, "DiseaseExporter", "TestMigrationSheetsTakeTheSameFormat"
-
-    Dim diseaseNames As BetterArray
-    Dim targetBook As Workbook
-    Dim diseasesSheet As Worksheet
-
-    On Error GoTo Fail
-
-    Dim sourceWorkbook As Workbook
-    Set sourceWorkbook = PrepareMigrationSourceWorkbook()
-
-    Set diseaseNames = New BetterArray
-    diseaseNames.Push "Beta"
-
-    Set targetBook = Exporter.BuildMigrationWorkbook(sourceWorkbook, diseaseNames)
-    Set diseasesSheet = targetBook.Worksheets("Diseases")
-
-    Assert.AreEqual "Consolas", diseasesSheet.Range("A3").Font.Name, "A migration sheet is written in Consolas"
-    Assert.AreEqual 25, diseasesSheet.Columns(1).ColumnWidth, "A written column of a migration sheet is 25 wide"
-    Assert.IsTrue diseasesSheet.Rows(1).Font.Bold, "The header row of a migration sheet is bold"
-    Assert.AreEqual RGB(240, 240, 244), diseasesSheet.Rows(1).Interior.Color, "The header row carries the band colour"
-    Assert.AreEqual 20, diseasesSheet.Rows(1).RowHeight, "The header row keeps its height"
-
-    sourceWorkbook.Close SaveChanges:=False
-    Exit Sub
-
-Fail:
-    'The error is read before the shield below, since On Error GoTo 0 clears
-    'it. A failure before the source workbook exists leaves it Nothing.
-    Dim failNumber As Long
-    Dim failText As String
-    failNumber = Err.Number
-    failText = Err.Description
-    On Error Resume Next
-        If Not sourceWorkbook Is Nothing Then sourceWorkbook.Close SaveChanges:=False
-    On Error GoTo 0
-    CustomTestLogFailure Assert, "TestMigrationSheetsTakeTheSameFormat", failNumber, failText
-End Sub
-
 '@section Fixtures
 '===============================================================================
 
@@ -491,90 +396,4 @@ Private Sub DeleteFixtureSheets()
     DeleteWorksheet TRANSLATION_SHEET
     DeleteWorksheet MASTER_CHOICES_SHEET
     DeleteWorksheet "Alpha"
-End Sub
-
-Private Function PrepareMigrationSourceWorkbook() As Workbook
-    Dim wb As Workbook
-    Dim translations As Worksheet
-    Dim choices As Worksheet
-    Dim variables As Worksheet
-    Dim diseaseBeta As Worksheet
-    Dim diseaseGamma As Worksheet
-    Dim values As Variant
-    Dim rangeObj As Range
-
-    'A new workbook opens with one sheet, so the other sheets are added.
-    Set wb = Workbooks.Add
-
-    Set translations = wb.Worksheets(1)
-    translations.Name = "Translations"
-    Set choices = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
-    choices.Name = "Choices"
-    Set variables = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
-    variables.Name = "Variables"
-    Set diseaseBeta = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
-    diseaseBeta.Name = "Beta"
-    Set diseaseGamma = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
-    diseaseGamma.Name = "Gamma"
-
-    values = RowsToMatrix(Array( _
-        Array("tag", "ENG"), _
-        Array("hello", "hello"), _
-        Array("world", "world") _
-    ))
-    translations.Range("A1").Resize(UBound(values, 1), UBound(values, 2)).Value = values
-    Set rangeObj = translations.Range("A1").Resize(UBound(values, 1), UBound(values, 2))
-    translations.ListObjects.Add SourceType:=xlSrcRange, Source:=rangeObj, XlListObjectHasHeaders:=xlYes
-
-    values = RowsToMatrix(Array( _
-        Array("List", "Label"), _
-        Array("choice_age", "0-4"), _
-        Array("choice_age", "5-14") _
-    ))
-    choices.Range("A1").Resize(UBound(values, 1), UBound(values, 2)).Value = values
-    Set rangeObj = choices.Range("A1").Resize(UBound(values, 1), UBound(values, 2))
-    choices.ListObjects.Add SourceType:=xlSrcRange, Source:=rangeObj, XlListObjectHasHeaders:=xlYes
-
-    values = RowsToMatrix(Array( _
-        Array("Tag", "Label"), _
-        Array("age", "Age"), _
-        Array("fever", "Fever") _
-    ))
-    variables.Range("A1").Resize(UBound(values, 1), UBound(values, 2)).Value = values
-    Set rangeObj = variables.Range("A1").Resize(UBound(values, 1), UBound(values, 2))
-    variables.ListObjects.Add SourceType:=xlSrcRange, Source:=rangeObj, XlListObjectHasHeaders:=xlYes
-
-    PopulateDiseaseSheet diseaseBeta, RowsToMatrix(Array( _
-        Array("Variable Order", "Variable Name", "Variable Section", "Main Label", "Choice", "Choice Values", "Status"), _
-        Array(1, "age", "demographics", "Age", "choice_age", "0-4 | 5-14", "core"), _
-        Array(2, "fever", "symptoms", "Fever", "choice_fever", "yes | no", "core") _
-    )), "ENG", "BETA_CODE"
-
-    PopulateDiseaseSheet diseaseGamma, RowsToMatrix(Array( _
-        Array("Variable Order", "Variable Name", "Variable Section", "Main Label", "Choice", "Choice Values", "Status"), _
-        Array(1, "travel", "history", "Recent travel", "choice_travel", "yes | no", "core") _
-    )), "FRA", "GAMMA_CODE"
-
-    Set PrepareMigrationSourceWorkbook = wb
-End Function
-
-Private Sub PopulateDiseaseSheet(ByVal sheet As Worksheet, _
-                                 ByVal data As Variant, _
-                                 ByVal languageTag As String, _
-                                 ByVal diseaseCode As String)
-
-    Dim rowCount As Long
-    Dim columnCount As Long
-    Dim rangeObj As Range
-
-    sheet.Cells.Clear
-    sheet.Cells(2, 2).Value = languageTag
-    SeedDiseaseTags sheet, languageTag, diseaseCode
-
-    rowCount = UBound(data, 1)
-    columnCount = UBound(data, 2)
-
-    sheet.Range("B4").Resize(rowCount, columnCount).Value = data
-    Set rangeObj = sheet.Range("B4").Resize(rowCount, columnCount)
-    sheet.ListObjects.Add SourceType:=xlSrcRange, Source:=rangeObj, XlListObjectHasHeaders:=xlYes
 End Sub

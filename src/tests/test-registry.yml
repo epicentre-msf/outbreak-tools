@@ -1306,6 +1306,9 @@ suites:
       - name: MasterSetupVariables
       - name: MasterSetupPreparation
       - name: MasterSetupImportService
+      # MasterSetupMigration owns the migration file at both ends: the export
+      # of the whole master setup and its import into a fresh file.
+      - name: MasterSetupMigration
       - name: EventMasterSetup
     modules:
       - MasterSetupHelpers
@@ -1349,6 +1352,11 @@ suites:
       # table and the Choices sheet taking what they lacked.
       - module: TestMasterSetupImportService
         covers: [MasterSetupImportService, MasterSetupVariables, DiseaseSheet]
+      # TestMasterSetupMigration exports the whole fixture master setup into
+      # a migration workbook, wipes the fixture and reads the file back; it
+      # also pins the refusal of a target that already carries data.
+      - module: TestMasterSetupMigration
+        covers: [MasterSetupMigration, MasterSetupImportService, DiseaseSheet]
       - module: TestEventMasterSetup
         covers: [EventMasterSetup]
       - module: TestMasterSetupHelpers

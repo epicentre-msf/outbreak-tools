@@ -575,7 +575,7 @@ Handler:
     Resume Cleanup
 End Sub
 
-'@Description("Export every disease for migration workflows.")
+'@Description("Export the whole master setup into one migration file.")
 '@EntryPoint
 Public Sub clickExp(ByRef ribbonControl As IRibbonControl)
     Dim scope As ApplicationState
@@ -600,17 +600,30 @@ Handler:
     Resume Cleanup
 End Sub
 
-'@Description("Import diseases from a flat migration file.")
+'@Description("Import the whole master setup from a migration file into this empty file.")
 '@EntryPoint
 Public Sub clickImp(ByRef ribbonControl As IRibbonControl)
     Dim scope As ApplicationState
+    Dim passManager As Passwords
 
     On Error GoTo Handler
 
     Set scope = ApplicationState.Create(Application)
     scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, blockSecurity:=True
 
+    Set passManager = MasterSetupHelpers.ResolveMasterPasswords()
+    If passManager Is Nothing Then Err.Raise ProjectError.ElementNotFound, "clickImp", "Passwords worksheet '" & PASSWORD_SHEET_NAME & "' was not found."
+
+    'The migration writes on the Variables, Choices and Translations sheets
+    'and adds one worksheet per disease of the file.
+    SetMasterSheetsProtection passManager, protectSheets:=False
+    passManager.UnProtect TRANSLATIONS_SHEET_NAME
     MasterSetupExports.ImportFlatFile
+    passManager.Protect TRANSLATIONS_SHEET_NAME
+    SetMasterSheetsProtection passManager, protectSheets:=True
+
+    RefreshDropdownCaches
+    ResetMasterSetupFunctionCaches
 
 Cleanup:
     'Shielded: Handler is still armed here, and a raise from Restore
@@ -621,7 +634,13 @@ Cleanup:
 
 Handler:
     Debug.Print "clickImp: "; Err.Number; Err.Description
-    MsgBox "Disease import failed: " & Err.Description, vbCritical + vbOKOnly, "Import"
+    MsgBox "Migration import failed: " & Err.Description, vbCritical + vbOKOnly, "Import"
+    If Not passManager Is Nothing Then
+        On Error Resume Next
+            passManager.Protect TRANSLATIONS_SHEET_NAME
+            SetMasterSheetsProtection passManager, protectSheets:=True
+        On Error GoTo 0
+    End If
     Resume Cleanup
 End Sub
 
