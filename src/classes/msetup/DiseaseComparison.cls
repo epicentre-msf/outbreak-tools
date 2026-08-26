@@ -459,7 +459,18 @@ Private Sub AddDifference(ByVal rowIndex As Long, ByVal differingCounter As Long
 End Sub
 
 '@sub-title Write the counts as one bundle.
+'@details
+'The counts are read from the state here. The public count properties call
+'Compare, and Compare is still running when this sub is called.
 Private Sub CollectStatistics()
+    Dim onlyFirst As Long
+    Dim onlySecond As Long
+    Dim share As Double
+
+    onlyFirst = this.first.rowCount - this.sharedCount
+    onlySecond = this.second.rowCount - this.sharedCount
+    If this.sharedCount > 0 Then share = this.matchingCount / this.sharedCount
+
     this.statistics.Add "stat-count-1", _
                         this.first.displayName & "--" & this.first.rowCount & " variable(s).", checkingInfo
     this.statistics.Add "stat-count-2", _
@@ -467,15 +478,15 @@ Private Sub CollectStatistics()
     this.statistics.Add "stat-shared", _
                         "Both diseases--" & this.sharedCount & " shared variable(s).", checkingInfo
     this.statistics.Add "stat-only-1", _
-                        this.first.displayName & "--" & OnlyInFirstCount & " variable(s) only here.", checkingInfo
+                        this.first.displayName & "--" & onlyFirst & " variable(s) only here.", checkingInfo
     this.statistics.Add "stat-only-2", _
-                        this.second.displayName & "--" & OnlyInSecondCount & " variable(s) only here.", checkingInfo
+                        this.second.displayName & "--" & onlySecond & " variable(s) only here.", checkingInfo
     this.statistics.Add "stat-matching", _
                         "Shared variables--" & this.matchingCount & " with matching choices.", checkingInfo
     this.statistics.Add "stat-differing", _
                         "Shared variables--" & this.differingCount & " with differing choices.", checkingInfo
     this.statistics.Add "stat-share", _
-                        "Shared variables--" & Format$(EquivalentShare, "0.0%") & " are equivalent.", checkingInfo
+                        "Shared variables--" & Format$(share, "0.0%") & " are equivalent.", checkingInfo
 End Sub
 
 '@section Set Helpers
