@@ -2,6 +2,7 @@ Attribute VB_Name = "CustomLinelistFunctions"
 Option Explicit
 
 '@IgnoreModule UnrecognizedAnnotation, IIfSideEffect
+'@depends LinelistEventsManager, EventLinelist, HiddenNames
 
 'USER DEFINE FUNCTIONS FOR THE LINELIST ========================================
 

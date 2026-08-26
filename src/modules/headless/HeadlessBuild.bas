@@ -74,7 +74,7 @@ Option Explicit
 '@depends BetterArray, Checking, ApplicationState, LinelistSpecs, Linelist
 '@depends LLDataEntry, LLSheets, AnalysisOutput, DropdownLists, GenerationLog
 '@depends InitTransfer, EventsDesignerAdvanced, EventsDesignerMulti
-'@depends DesignerEntry, DesignerPreparation
+'@depends DesignerEntry, DesignerPreparation, LLFormat
 
 'The module injected into the target setup, and the entry point it carries.
 Private Const INJECTED_MODULE As String = "OBTSetupImportHeadless"

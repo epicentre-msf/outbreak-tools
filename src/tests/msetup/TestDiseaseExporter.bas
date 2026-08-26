@@ -85,6 +85,8 @@ Public Sub TestBuildDiseaseWorkbookCopiesDictionaryAndChoices()
     Dim dictionaryValues As Variant
     Dim choicesHeaders As Variant
     Dim choicesValues As Variant
+    Dim fixtureHeaders As Variant
+    Dim headerIndex As Long
 
     On Error GoTo Fail
 
@@ -113,12 +115,20 @@ Public Sub TestBuildDiseaseWorkbookCopiesDictionaryAndChoices()
     Assert.AreEqual "Tab_Translations", targetBook.Worksheets("Translations").ListObjects(1).Name, _
                     "The translations block is the table a setup names Tab_Translations"
 
-    Assert.AreEqual "list name", choicesHeaders(1, 1), "The choices sheet carries the setup headers"
-    Assert.AreEqual "ordering list", choicesHeaders(1, 2), "The ordering list is the second setup column"
-    Assert.AreEqual "non translated label", choicesHeaders(1, 3), "The non translated label is the third setup column"
-    Assert.AreEqual "translated label", choicesHeaders(1, 4), "The translated label is the fourth setup column"
-    Assert.AreEqual "label", choicesHeaders(1, 5), "The label is the fifth setup column"
-    Assert.AreEqual "short label", choicesHeaders(1, 6), "The short label is the sixth setup column"
+    Assert.AreEqual "List Name", choicesHeaders(1, 1), "The choices sheet carries the setup headers"
+    Assert.AreEqual "Ordering list", choicesHeaders(1, 2), "The ordering list is the second setup column"
+    Assert.AreEqual "Non Translated Label", choicesHeaders(1, 3), "The non translated label is the third setup column"
+    Assert.AreEqual "Translated Label", choicesHeaders(1, 4), "The translated label is the fourth setup column"
+    Assert.AreEqual "Label", choicesHeaders(1, 5), "The label is the fifth setup column"
+    Assert.AreEqual "Short Label", choicesHeaders(1, 6), "The short label is the sixth setup column"
+
+    'The setup import matches headers byte for byte, so the exported row
+    'and the setup fixture row have to carry the same spelling.
+    fixtureHeaders = SetupChoicesHeaders()
+    For headerIndex = 0 To 5
+        Assert.AreEqual 0, StrComp(fixtureHeaders(headerIndex), choicesHeaders(1, headerIndex + 1), vbBinaryCompare), _
+                        "Exported header " & (headerIndex + 1) & " spells the setup header byte for byte"
+    Next headerIndex
 
     Assert.AreEqual "choice_age", choicesValues(1, 1), "Control name should populate choices sheet"
     Assert.AreEqual "0-4", choicesValues(1, 3), "Choice value should populate the non translated label"

@@ -12,6 +12,7 @@ Attribute VB_Description = "Creates the workbook export of one disease for a set
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Creates the workbook export of one disease for a setup; the migration of the whole file is MasterSetupMigration's")
+'@depends DiseaseExportWorkbook, DiseaseLogger, ApplicationState, LLChoices, TranslationObject, DataSheet, HiddenNames, BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -32,12 +33,15 @@ Private Const METADATA_SHEET As String = "Metadata"
 Private Const TABLE_DICTIONARY As String = "Tab_Dictionary"
 Private Const TABLE_CHOICES As String = "Tab_Choices"
 Private Const TABLE_TRANSLATIONS As String = "Tab_Translations"
-Private Const HEADER_LIST_NAME As String = "list name"
-Private Const HEADER_ORDER As String = "ordering list"
-Private Const HEADER_RAW_LABEL As String = "non translated label"
-Private Const HEADER_TRANSLATED_LABEL As String = "translated label"
-Private Const HEADER_LABEL As String = "label"
-Private Const HEADER_SHORT_LABEL As String = "short label"
+'The six choices headers spell row 4 of the setup Choices sheet byte for
+'byte. The setup import matches headers whole and case-sensitively, so the
+'small l of "Ordering list" is what the setup workbook carries.
+Private Const HEADER_LIST_NAME As String = "List Name"
+Private Const HEADER_ORDER As String = "Ordering list"
+Private Const HEADER_RAW_LABEL As String = "Non Translated Label"
+Private Const HEADER_TRANSLATED_LABEL As String = "Translated Label"
+Private Const HEADER_LABEL As String = "Label"
+Private Const HEADER_SHORT_LABEL As String = "Short Label"
 Private Const HEADER_VARIABLE_ORDER As String = "Variable Order"
 Private Const HEADER_MAIN_SECTION As String = "Main Section"
 Private Const HEADER_VARIABLE_NAME As String = "Variable Name"
@@ -506,19 +510,25 @@ Private Function ReadMasterBlock(ByVal masterChoices As LLChoices, _
 
     block = RangeBlock(data.DataRange("__all__", includeHeaders:=True))
 
+    'A master sheet keeps its own spelling of the headers, so the match
+    'reads both sides without regard to case.
     For columnIndex = 1 To UBound(block, 2)
-        headerText = LCase$(Trim$(TextOf(block(1, columnIndex))))
-        Select Case headerText
-            Case HEADER_LIST_NAME
-                nameColumn = columnIndex
-            Case HEADER_LABEL
-                labelColumn = columnIndex
-            Case HEADER_SHORT_LABEL
-                shortColumn = columnIndex
-        End Select
+        headerText = Trim$(TextOf(block(1, columnIndex)))
+        If SameHeader(headerText, HEADER_LIST_NAME) Then
+            nameColumn = columnIndex
+        ElseIf SameHeader(headerText, HEADER_LABEL) Then
+            labelColumn = columnIndex
+        ElseIf SameHeader(headerText, HEADER_SHORT_LABEL) Then
+            shortColumn = columnIndex
+        End If
     Next columnIndex
 
     ReadMasterBlock = (nameColumn > 0) And (labelColumn > 0)
+End Function
+
+'@sub-title True when two headers are the same text, whatever their case.
+Private Function SameHeader(ByVal headerText As String, ByVal expected As String) As Boolean
+    SameHeader = (StrComp(headerText, expected, vbTextCompare) = 0)
 End Function
 
 '@sub-title Append the master rows of one list; answers how many were added.

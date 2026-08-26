@@ -146,13 +146,15 @@ Public Sub PrepareSetupChoicesSheet(ByVal sheetName As String, _
 End Sub
 
 '@sub-title Return the 6-column header layout used in setup workbooks.
-'@details The setup workbook choices table has 6 columns: list name,
-'   ordering list, non translated label, translated label, label,
-'   short label. This differs from the linelist LLChoices layout (4 columns).
-Private Function SetupChoicesHeaders() As Variant
-    SetupChoicesHeaders = Array("list name", "ordering list", _
-                                "non translated label", "translated label", _
-                                "label", "short label")
+'@details The setup workbook choices table has 6 columns, spelled the way
+'   row 4 of the setup Choices sheet carries them: List Name, Ordering list,
+'   Non Translated Label, Translated Label, Label, Short Label. The setup
+'   import matches headers case-sensitively, so the spelling is exact. The
+'   linelist LLChoices layout has 4 columns.
+Public Function SetupChoicesHeaders() As Variant
+    SetupChoicesHeaders = Array("List Name", "Ordering list", _
+                                "Non Translated Label", "Translated Label", _
+                                "Label", "Short Label")
 End Function
 
 Private Function ChoicesSampleRows() As Variant
