@@ -4,6 +4,7 @@ Attribute VB_Description = "Form code-behind for F_ShowHideSections"
 '@Folder("Linelist Forms")
 '@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
 '@ModuleDescription("Form code-behind for F_ShowHideSections")
+'@depends LinelistEventsManager, EventLinelist, LLTranslation, TranslationObject
 
 ' This module is the complete code-behind of the F_ShowHideSections form and is
 ' copied into the form at deployment. The form hides and shows whole sections of

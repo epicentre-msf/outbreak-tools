@@ -4,6 +4,7 @@ Attribute VB_Description = "Form code-behind for F_ImportRep"
 '@Folder("Linelist Forms")
 '@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
 '@ModuleDescription("Form code-behind for F_ImportRep")
+'@depends LinelistEventsManager, EventLinelist, ImportReport, ImportChecking, LLTranslation, TranslationObject, BetterArray
 
 '@description
 'The code behind F_ImportRep. The form shows the report of the last import,

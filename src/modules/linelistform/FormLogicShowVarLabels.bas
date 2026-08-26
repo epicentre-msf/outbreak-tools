@@ -4,7 +4,7 @@ Attribute VB_Description = "Form code-behind for F_ShowVarLabels"
 '@Folder("Linelist Forms")
 '@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
 '@ModuleDescription("Form code-behind for F_ShowVarLabels")
-'@depends EventLinelist, BetterArray, TranslationObject, LLTranslation
+'@depends EventLinelist, BetterArray, TranslationObject, LLTranslation, LinelistEventsManager
 
 '@description
 'The code behind F_ShowVarLabels. The form shows one row per hlist2D variable

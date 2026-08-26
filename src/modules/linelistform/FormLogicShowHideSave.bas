@@ -4,6 +4,7 @@ Attribute VB_Description = "Form code-behind for F_ShowHideSave"
 '@Folder("Linelist Forms")
 '@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
 '@ModuleDescription("Form code-behind for F_ShowHideSave")
+'@depends LinelistEventsManager, EventLinelist, ShowHideStore, LLTranslation, TranslationObject, Passwords, BetterArray
 
 Option Explicit
 

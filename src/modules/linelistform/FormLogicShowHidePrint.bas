@@ -4,6 +4,7 @@ Attribute VB_Description = "Form code-behind for F_ShowHidePrint"
 '@Folder("Linelist Forms")
 '@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
 '@ModuleDescription("Form code-behind for F_ShowHidePrint")
+'@depends LinelistEventsManager, EventLinelist, LLTranslation, TranslationObject
 
 ' This module is the complete code-behind of the F_ShowHidePrint form and is
 ' copied into the form at deployment. The form is the printed sheet's show/hide:
