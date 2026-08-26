@@ -407,6 +407,45 @@ Fail:
 End Sub
 
 '@TestMethod("MasterSetupEvents")
+'@sub-title Leaving the Choices sheet rebuilds the choices dropdown from the lists it carries.
+Public Sub TestLeavingTheChoicesSheetRefreshesTheChoicesDropdown()
+    CustomTestSetTitles Assert, "MasterSetupEvents", "TestLeavingTheChoicesSheetRefreshesTheChoicesDropdown"
+
+    Dim choicesSheet As Worksheet
+    Dim names As BetterArray
+
+    On Error GoTo Fail
+
+    Set names = MasterSetupEventsManager.MasterSetupService.Dropdowns.Values(CHOICES_LIST)
+    Assert.IsFalse names Is Nothing, "The prepared fixture should carry the choices dropdown"
+    Assert.IsFalse names.Includes("choice_new"), "The dropdown should start without the new list"
+
+    'A new list typed under the others, the table grown over it.
+    Set choicesSheet = ThisWorkbook.Worksheets(CHOICES_SHEET)
+    choicesSheet.Range("A9:E9").Value = Array("choice_new", 1, "", "Yes", "Yes")
+    choicesSheet.ListObjects(1).Resize choicesSheet.Range("A4:E9")
+
+    MasterSetupEventsManager.MsSheetDeactivated choicesSheet
+
+    Set names = MasterSetupEventsManager.MasterSetupService.Dropdowns.Values(CHOICES_LIST)
+    Assert.IsTrue names.Includes("choice_new"), "Leaving the sheet should put the new list in the dropdown"
+    Assert.IsTrue names.Includes("choice_age"), "The lists already there should stay"
+
+    'Leaving any other sheet writes nothing.
+    choicesSheet.Range("A10:E10").Value = Array("choice_late", 1, "", "No", "No")
+    choicesSheet.ListObjects(1).Resize choicesSheet.Range("A4:E10")
+    MasterSetupEventsManager.MsSheetDeactivated ThisWorkbook.Worksheets(VARIABLES_SHEET)
+
+    Set names = MasterSetupEventsManager.MasterSetupService.Dropdowns.Values(CHOICES_LIST)
+    Assert.IsFalse names.Includes("choice_late"), "Leaving the Variables sheet should leave the dropdown alone"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestLeavingTheChoicesSheetRefreshesTheChoicesDropdown", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("MasterSetupEvents")
 Public Sub TestEnsureLanguagesAddsAColumnToTheMasterTable()
     CustomTestSetTitles Assert, "MasterSetupEvents", "TestEnsureLanguagesAddsAColumnToTheMasterTable"
 

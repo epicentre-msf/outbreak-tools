@@ -26,6 +26,10 @@ Option Explicit
 '- A pick in the language cell of a disease sheet is stored in the sheet's
 '  hidden names, so exports read the language the user chose.
 '- An edit on the Translations sheet drops the translation caches.
+'- Leaving the Choices sheet rebuilds __lst_choices, the dropdown table
+'  every Choice and Default Choice validation points at, from the list
+'  names the sheet carries. The lists are edited for the whole life of a
+'  master setup, so the dropdown follows the sheet.
 '
 'The workbook open, the workbook close and a change handler that ended at
 'its error label are the lines this module writes in the user log, the
@@ -151,6 +155,68 @@ Handler:
     Debug.Print "SheetChanged - "; sh.Name; " error "; errDescription
     LogFailureLine "sheet-change", sh.Name & ": " & errDescription, "MsSheetChanged"
     Resume Cleanup
+End Sub
+
+'@sub-title Rebuild the choices dropdown when the user leaves the Choices sheet.
+'@details __lst_choices sits on the very hidden __dropdowns sheet, which is
+'never protected, so the write is safe inside an event. A workbook whose
+'choices helper or dropdown manager answers Nothing leaves the table as it
+'stands.
+Public Sub MsSheetDeactivated(ByVal sh As Worksheet)
+    Dim scope As ApplicationState
+    Dim errDescription As String
+
+    If sh Is Nothing Then Exit Sub
+    If Not SheetIs(sh, "choi") Then Exit Sub
+
+    On Error GoTo Handler
+
+    Set scope = ApplicationState.Create(Application)
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+
+    'The caches drop first, so the helper reads the sheet as it stands.
+    ResetMasterSetupFunctionCaches
+    MasterSetupService.RefreshTranslations
+    RefreshChoicesDropdown
+
+Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Restore
+    'would come straight back to this label and raise again.
+    On Error Resume Next
+    If Not scope Is Nothing Then scope.Restore
+    Exit Sub
+
+Handler:
+    errDescription = Err.Number & " " & Err.Description
+    Debug.Print "SheetDeactivated - "; sh.Name; " error "; errDescription
+    LogFailureLine "sheet-leave", sh.Name & ": " & errDescription, "MsSheetDeactivated"
+    Resume Cleanup
+End Sub
+
+'@sub-title Write the list names of the Choices sheet into __lst_choices.
+'@details The table is resized in place, so every validation pointing at it
+'keeps working. An empty sheet keeps a one-line placeholder, the way the
+'preparation writes it.
+Private Sub RefreshChoicesDropdown()
+    Dim choices As LLChoices
+    Dim dropdowns As DropdownLists
+    Dim names As BetterArray
+
+    Set choices = MasterSetupService.Choices
+    If choices Is Nothing Then Exit Sub
+
+    Set dropdowns = MasterSetupService.Dropdowns
+    If dropdowns Is Nothing Then Exit Sub
+
+    Set names = choices.AllChoices
+    If names Is Nothing Then Exit Sub
+    If names.Length = 0 Then names.Push vbNullString
+
+    If dropdowns.Exists(CHOICES_DROPDOWN) Then
+        dropdowns.Update names, CHOICES_DROPDOWN, removeDuplicates:=True
+    Else
+        dropdowns.Add names, CHOICES_DROPDOWN
+    End If
 End Sub
 
 '@section Sheet handlers
