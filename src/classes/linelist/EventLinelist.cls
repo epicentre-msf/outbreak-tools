@@ -189,9 +189,34 @@ End Sub
 'the cursor it snapshots, so with the standing cursor equal to the busy one an
 'event leaves no visible pointer change. The snapshot used to hold the default
 'cursor, and every selection on a data entry sheet flicked the pointer twice.
+'
+'OPENING THE FILE IS WHAT ENDS A DEBUG SESSION
+'-------------------------------------------------------------------------------
+'A linelist that closed in debug mode reopens with the debug flag still set, and
+'that flag is what Passwords.Protect reads before it does anything: while it is
+'set every re-protect is ignored and only the unprotects go through. The first
+'sheet any event unlocked then stayed unlocked for the rest of the session, with
+'a log line and nothing else to say so. The generation writes a close handler
+'that leaves debug mode, but it is silent on failure and a workbook that never
+'went through the generation carries no handler at all.
+'
+'LeaveDebugMode is the inverse of the EnterDebugMode that started the session:
+'it puts the protection matrix back, re-locks the workbook structure and clears
+'the flag. It returns untouched when the flag is off, so a linelist that was
+'never in debug mode pays one read for it.
 '@export
 Public Sub OnWorkbookOpen()
+    Dim pass As Passwords
+
     ApplyRestingState
+
+    'Nothing on the open is worth an error box.
+    Set pass = PasswordManager()
+    If Not (pass Is Nothing) Then
+        On Error Resume Next
+        pass.LeaveDebugMode this.hostBook
+        On Error GoTo 0
+    End If
 
     On Error Resume Next
     Application.OnKey "^+g", "ClickGeoApp"
