@@ -34,11 +34,16 @@ are matched without regard to case. Excel matches defined names that way
 itself.</p>
 </div>
 </details>
-<details open class="doc-section" id="duplicates-are-coloured-by-group">
-<summary>DUPLICATES ARE COLOURED BY GROUP</summary>
+<details open class="doc-section" id="duplicates-are-coloured-by-group-on-the-translations-only">
+<summary>DUPLICATES ARE COLOURED BY GROUP, ON THE TRANSLATIONS ONLY</summary>
 <div class="section-body">
-<p>ApplyFormatting gives every duplicate group in a column a fill of its own,
-walked off the hue wheel by DuplicateGroupColor. A column painted in one colour
+<p>The key language column carries no duplicate rules at all. It is the source of
+truth the other columns are translated from, DeduplicateLabels already keeps it
+unique, and a repeat there is the sheet's own doing rather than something a
+translator can act on. DuplicateLabels and the summary still answer for any
+column asked of them; what stops at the key column is the colouring.</p>
+<p>For every column after it, ApplyFormatting gives every duplicate group a fill
+of its own, walked off the hue wheel by DuplicateGroupColor. A column in one colour
 says which cells are duplicated and nothing about which of them go together,
 and a translator staring at forty red cells has to read every one to find the
 pairs. One rule per group answers both questions at a glance.</p>
@@ -794,17 +799,22 @@ mismatch that pointed nowhere.</p>
 <p><em>apply-lang-column-formatting</em></p>
 <p><strong>Apply font, sizing, and duplicate highlighting to a language column.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyLangColumnFormatting(ByVal langRng As Range, ByRef painted As Long)
+<pre><code class="language-vb">Private Sub ApplyLangColumnFormatting(ByVal langRng As Range, ByRef painted As Long, _
+                                      ByVal highlightDuplicates As Boolean)
 </code></pre>
 <p>The group rules go on first and the red catch-all goes on last.
 FormatConditions.Add appends, so the rule added last holds the lowest
 priority and shows through only where no group rule claimed the cell.</p>
+<p>The key language column takes the font and the sizing and none of the
+duplicate rules. See ApplyFormatting for why.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>langRng</code>: Range. The language column to format.</li>
 <li><code>painted</code>: ByRef Long. How many groups the pass has coloured so far, carried
 across every column so no two groups share a colour. See
 HighlightDuplicateGroups.</li>
+<li><code>highlightDuplicates</code>: Boolean. False for the key language column, which is
+the source of truth and has nothing to be checked against.</li>
 </ul>
 <hr />
 <h3 id="int-highlightduplicategroups">HighlightDuplicateGroups <a class="anchor-link" href="#int-highlightduplicategroups">#</a></h3>
@@ -1076,9 +1086,10 @@ be heard.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (11 file(s))</summary>
+<summary>Used in (17 file(s))</summary>
 <ul>
 <li><a href="TranslationObject.html">TranslationObject.cls</a></li>
+<li><a href="MasterSetupMigration.html">MasterSetupMigration.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
 <li><a href="SetupImport.html">SetupImport.cls</a></li>
 <li><a href="UpdatedValues.html">UpdatedValues.cls</a></li>
@@ -1087,6 +1098,11 @@ be heard.</p>
 <li>SetupRibbon.bas</li>
 <li>TestDesignerMulti.bas</li>
 <li>SetupImportTestFixture.bas</li>
+<li>TestEventMasterSetup.bas</li>
+<li>TestMasterSetupEvents.bas</li>
+<li>TestMasterSetupExports.bas</li>
+<li>TestMasterSetupImportService.bas</li>
+<li>TestMasterSetupMigration.bas</li>
 <li>TestSetupTranslationsTable.bas</li>
 <li>TestUpdatedValues.bas</li>
 </ul>

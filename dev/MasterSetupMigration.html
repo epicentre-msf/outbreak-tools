@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MasterSetupMigration - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>MasterSetupMigration</h1>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
+<p><strong>Build a migration over the master setup workbook and its managers.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook, _
+                       ByVal dropdowns As DropdownLists, _
+                       ByVal variables As MasterSetupVariables, _
+                       ByVal choices As LLChoices, _
+                       ByVal translationsTable As ListObject, _
+                       ByVal builder As DiseaseSheet, _
+                       ByVal importService As MasterSetupImportService) As MasterSetupMigration
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The master setup workbook: the source of an
+export and the target of an import.</li>
+<li><code>dropdowns</code>: DropdownLists. The master dropdowns.</li>
+<li><code>variables</code>: MasterSetupVariables. The manager of the Variables table.</li>
+<li><code>choices</code>: LLChoices. The master Choices block, headers on row 4.</li>
+<li><code>translationsTable</code>: ListObject. The master translations table.</li>
+<li><code>builder</code>: DiseaseSheet. Builds a disease worksheet on import.</li>
+<li><code>importService</code>: MasterSetupImportService. Lands a block on a disease
+worksheet.</li>
+</ul>
+<p><strong>Returns:</strong> MasterSetupMigration ready to export or import.</p>
+<hr />
+<h2 id="int-configuration">Configuration</h2>
+<h3 id="int-initialise">Initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
+<p><strong>Attach the workbook and the managers the migration reads and writes through.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Initialise(ByVal hostBook As Workbook, _
+                      ByVal dropdowns As DropdownLists, _
+                      ByVal variables As MasterSetupVariables, _
+                      ByVal choices As LLChoices, _
+                      ByVal translationsTable As ListObject, _
+                      ByVal builder As DiseaseSheet, _
+                      ByVal importService As MasterSetupImportService)
+</code></pre>
+<hr />
+<h2 id="int-export">Export</h2>
+<h3 id="int-buildmigrationworkbook">BuildMigrationWorkbook <a class="anchor-link" href="#int-buildmigrationworkbook">#</a></h3>
+<p><strong>Build the migration workbook and answer it open.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function BuildMigrationWorkbook() As Workbook
+</code></pre>
+<p>The five sheets are written in order and take the export format
+DiseaseExporter gives a disease export. The workbook stays open and belongs
+to this class until ExportMigration saves it or the class is released.</p>
+<p><strong>Returns:</strong> Workbook. The migration workbook, open.</p>
+<hr />
+<h3 id="int-exportmigration">ExportMigration <a class="anchor-link" href="#int-exportmigration">#</a></h3>
+<p><strong>Write the migration workbook to disk and answer the saved path.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ExportMigration(ByVal exportFolder As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>exportFolder</code>: String. The folder receiving the file.</li>
+</ul>
+<p><strong>Returns:</strong> String. The path of the saved file.</p>
+<hr />
+<h3 id="int-releaseworkbook">ReleaseWorkbook <a class="anchor-link" href="#int-releaseworkbook">#</a></h3>
+<p><strong>Close the migration workbook this class still holds, without saving.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ReleaseWorkbook()
+</code></pre>
+<hr />
+<h2 id="int-import">Import</h2>
+<h3 id="int-import">Import <a class="anchor-link" href="#int-import">#</a></h3>
+<p><strong>Read a migration file into the host workbook, which has to be empty.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Import(ByVal sourceBook As Workbook, Optional ByVal logger As DiseaseLogger = Nothing)
+</code></pre>
+<p>The file is checked first (its tag and its four sheets), then
+the target: a disease worksheet, a Variables line or a Choices line
+refuses the import with ProjectError.InvalidArgument naming what was
+found, and nothing is written. The steps then run in the order each one
+feeds the next; the staging sheet of the disease blocks goes away on
+every path.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceBook</code>: Workbook. The migration file, open.</li>
+<li><code>logger</code>: Optional DiseaseLogger. Receives one line per step.</li>
+</ul>
+<hr />
+<h2 id="int-results">Results</h2>
+<h3 id="int-importeddiseases">ImportedDiseases <a class="anchor-link" href="#int-importeddiseases">#</a></h3>
+<p><strong>Names of the disease worksheets the last import built.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ImportedDiseases() As BetterArray
+</code></pre>
+<hr />
+<h3 id="int-importeddiseasecount">ImportedDiseaseCount <a class="anchor-link" href="#int-importeddiseasecount">#</a></h3>
+<p><strong>How many disease blocks the last import landed.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ImportedDiseaseCount() As Long
+</code></pre>
+<hr />
+<h3 id="int-addedlanguages">AddedLanguages <a class="anchor-link" href="#int-addedlanguages">#</a></h3>
+<p><strong>The language columns the last import added to the translations table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get AddedLanguages() As BetterArray
+</code></pre>
+<hr />
+<h2 id="int-export-writers">Export Writers</h2>
+<h3 id="int-collectdiseasesheets">CollectDiseaseSheets <a class="anchor-link" href="#int-collectdiseasesheets">#</a></h3>
+<p><strong>The disease worksheets of the host workbook, in sheet order.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CollectDiseaseSheets() As Collection
+</code></pre>
+<hr />
+<h3 id="int-writemetadata">WriteMetadata <a class="anchor-link" href="#int-writemetadata">#</a></h3>
+<p><strong>Write the label and value block of the Metadata sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteMetadata(ByVal metadataSheet As Worksheet, ByVal diseaseCount As Long)
+</code></pre>
+<hr />
+<h3 id="int-writeworkbooktags">WriteWorkbookTags <a class="anchor-link" href="#int-writeworkbooktags">#</a></h3>
+<p><strong>Tag the workbook as a migration file, with its disease count.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteWorkbookTags(ByVal targetBook As Workbook, ByVal diseaseCount As Long)
+</code></pre>
+<hr />
+<h3 id="int-writediseaseblocks">WriteDiseaseBlocks <a class="anchor-link" href="#int-writediseaseblocks">#</a></h3>
+<p><strong>Write every disease block, the first at column 1, then one stride further each.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteDiseaseBlocks(ByVal diseasesSheet As Worksheet, ByVal diseaseSheets As Collection)
+</code></pre>
+<p>The writer keeps the next column itself. The UsedRange of an
+empty sheet is $A$1, so asking the sheet where it ends puts the first
+block at column 3.</p>
+<hr />
+<h3 id="int-writediseaseblock">WriteDiseaseBlock <a class="anchor-link" href="#int-writediseaseblock">#</a></h3>
+<p><strong>Write one disease block: the three tags, then the table as values.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteDiseaseBlock(ByVal diseasesSheet As Worksheet, _
+                              ByVal diseaseWksh As Worksheet, _
+                              ByVal startColumn As Long)
+</code></pre>
+<hr />
+<h3 id="int-writeblock">WriteBlock <a class="anchor-link" href="#int-writeblock">#</a></h3>
+<p><strong>Copy a block of values to A1 of a sheet and wrap it in a plain table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteBlock(ByVal targetSheet As Worksheet, ByVal sourceRange As Range, ByVal tableName As String)
+</code></pre>
+<hr />
+<h3 id="int-masterchoicesrange">MasterChoicesRange <a class="anchor-link" href="#int-masterchoicesrange">#</a></h3>
+<p><strong>The master Choices block with its headers, as the master carries it.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MasterChoicesRange() As Range
+</code></pre>
+<hr />
+<h2 id="int-import-checks">Import Checks</h2>
+<h3 id="int-validatesource">ValidateSource <a class="anchor-link" href="#int-validatesource">#</a></h3>
+<p><strong>Refuse a source that is no migration file or lacks one of its sheets.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateSource(ByVal sourceBook As Workbook)
+</code></pre>
+<hr />
+<h3 id="int-refusefilledtarget">RefuseFilledTarget <a class="anchor-link" href="#int-refusefilledtarget">#</a></h3>
+<p><strong>Refuse a target that already carries data, naming what was found.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RefuseFilledTarget()
+</code></pre>
+<hr />
+<h3 id="int-firstdiseasesheetname">FirstDiseaseSheetName <a class="anchor-link" href="#int-firstdiseasesheetname">#</a></h3>
+<p><strong>The first disease worksheet of the host workbook; empty with none.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FirstDiseaseSheetName() As String
+</code></pre>
+<hr />
+<h3 id="int-variableslinecount">VariablesLineCount <a class="anchor-link" href="#int-variableslinecount">#</a></h3>
+<p><strong>The lines of the Variables table carrying a variable name.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function VariablesLineCount() As Long
+</code></pre>
+<hr />
+<h3 id="int-choiceslinecount">ChoicesLineCount <a class="anchor-link" href="#int-choiceslinecount">#</a></h3>
+<p><strong>The lines under the headers of the master Choices block.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ChoicesLineCount() As Long
+</code></pre>
+<hr />
+<h2 id="int-import-steps">Import Steps</h2>
+<h3 id="int-importtranslations">ImportTranslations <a class="anchor-link" href="#int-importtranslations">#</a></h3>
+<p><strong>The languages first, through SetupTranslationsTable, then the rows.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ImportTranslations(ByVal sourceBook As Workbook, ByVal logger As DiseaseLogger)
+</code></pre>
+<p>A language column the file carries and the target lacks is added
+through EnsureLanguages. The rows are then matched on their label: a row
+the target carries takes the language values of the file, a row it lacks
+is appended whole.</p>
+<hr />
+<h3 id="int-writetranslationrows">WriteTranslationRows <a class="anchor-link" href="#int-writetranslationrows">#</a></h3>
+<p><strong>Write the translation rows of the file onto the target table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteTranslationRows(ByRef sourceBlock As Variant, ByVal logger As DiseaseLogger)
+</code></pre>
+<hr />
+<h3 id="int-writelanguagecells">WriteLanguageCells <a class="anchor-link" href="#int-writelanguagecells">#</a></h3>
+<p><strong>Write the language cells of one source row on one target row.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteLanguageCells(ByRef sourceBlock As Variant, _
+                               ByVal sourceRow As Long, _
+                               ByVal targetRow As Long, _
+                               ByVal columnIndexes As Collection)
+</code></pre>
+<hr />
+<h3 id="int-importvariables">ImportVariables <a class="anchor-link" href="#int-importvariables">#</a></h3>
+<p><strong>The Variables table, through the manager, which matches by header.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ImportVariables(ByVal sourceBook As Workbook, ByVal logger As DiseaseLogger)
+</code></pre>
+<hr />
+<h3 id="int-importchoices">ImportChoices <a class="anchor-link" href="#int-importchoices">#</a></h3>
+<p><strong>The Choices block, onto the headers the target already has.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ImportChoices(ByVal sourceBook As Workbook, ByVal logger As DiseaseLogger)
+</code></pre>
+<hr />
+<h3 id="int-stretchchoicestable">StretchChoicesTable <a class="anchor-link" href="#int-stretchchoicestable">#</a></h3>
+<p><strong>Stretch the choices ListObject over the rows the import wrote under it.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub StretchChoicesTable()
+</code></pre>
+<p>LLChoices writes the sheet and knows nothing of the table; the
+master event handlers read the sheet through the table.</p>
+<hr />
+<h3 id="int-refreshdropdowns">RefreshDropdowns <a class="anchor-link" href="#int-refreshdropdowns">#</a></h3>
+<p><strong>Rebuild the dropdowns, so the languages, the lists and the diseases exist.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RefreshDropdowns()
+</code></pre>
+<p>The preparation reads the languages off the translations table
+headers and the lists off the Choices sheet, which is why it runs after
+those two steps and before any disease sheet is built.</p>
+<hr />
+<h3 id="int-importdiseases">ImportDiseases <a class="anchor-link" href="#int-importdiseases">#</a></h3>
+<p><strong>Every Diseases block, in file order.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ImportDiseases(ByVal sourceBook As Workbook, ByVal logger As DiseaseLogger)
+</code></pre>
+<p>Row 1 is walked for the word Disease, so the blocks can sit at
+any stride and an empty gap between two blocks is passed over.</p>
+<hr />
+<h3 id="int-importoneblock">ImportOneBlock <a class="anchor-link" href="#int-importoneblock">#</a></h3>
+<p><strong>Stage one block on a hidden sheet and land it through the service.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ImportOneBlock(ByVal diseasesSheet As Worksheet, _
+                           ByVal startColumn As Long, _
+                           ByVal diseaseName As String, _
+                           ByVal languageTag As String, _
+                           ByVal logger As DiseaseLogger)
+</code></pre>
+<hr />
+<h3 id="int-buildstagingtable">BuildStagingTable <a class="anchor-link" href="#int-buildstagingtable">#</a></h3>
+<p><strong>Copy one block into the staging sheet and answer its ListObject.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildStagingTable(ByVal diseasesSheet As Worksheet, ByVal startColumn As Long) As ListObject
+</code></pre>
+<hr />
+<h3 id="int-countblockrows">CountBlockRows <a class="anchor-link" href="#int-countblockrows">#</a></h3>
+<p><strong>Count the lines of a block, reading its variable name column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CountBlockRows(ByVal diseasesSheet As Worksheet, ByVal startColumn As Long) As Long
+</code></pre>
+<hr />
+<h3 id="int-removestagingsheet">RemoveStagingSheet <a class="anchor-link" href="#int-removestagingsheet">#</a></h3>
+<p><strong>Drop the staging sheet when the host workbook carries one.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveStagingSheet()
+</code></pre>
+<hr />
+<h2 id="int-lookups">Lookups</h2>
+<h3 id="int-isdiseasesheet">IsDiseaseSheet <a class="anchor-link" href="#int-isdiseasesheet">#</a></h3>
+<p><strong>A disease worksheet is known by its hidden sheetTag.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsDiseaseSheet(ByVal targetSheet As Worksheet) As Boolean
+</code></pre>
+<hr />
+<h3 id="int-tagvalue">TagValue <a class="anchor-link" href="#int-tagvalue">#</a></h3>
+<p><strong>A workbook tag; a file with no hidden names store answers empty.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TagValue(ByVal sourceBook As Workbook, ByVal nameId As String) As String
+</code></pre>
+<hr />
+<h3 id="int-findtable">FindTable <a class="anchor-link" href="#int-findtable">#</a></h3>
+<p><strong>Find a ListObject by name anywhere in the workbook, then by sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindTable(ByVal sourceBook As Workbook, _
+                           ByVal tableName As String, _
+                           ByVal sheetName As String) As ListObject
+</code></pre>
+<hr />
+<h3 id="int-findworksheet">FindWorksheet <a class="anchor-link" href="#int-findworksheet">#</a></h3>
+<p><strong>Locate a worksheet by name without relying on implicit errors.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindWorksheet(ByVal targetBook As Workbook, ByVal sheetName As String) As Worksheet
+</code></pre>
+<hr />
+<h3 id="int-ensureworksheet">EnsureWorksheet <a class="anchor-link" href="#int-ensureworksheet">#</a></h3>
+<p><strong>Ensure a worksheet exists, renaming the given template when there is one.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureWorksheet(ByVal targetBook As Workbook, _
+                                 ByVal sheetName As String, _
+                                 Optional ByVal template As Worksheet = Nothing) As Worksheet
+</code></pre>
+<hr />
+<h3 id="int-lastusedcolumn">LastUsedColumn <a class="anchor-link" href="#int-lastusedcolumn">#</a></h3>
+<p><strong>The last used column of a sheet; 0 for a sheet holding nothing.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LastUsedColumn(ByVal sheet As Worksheet) As Long
+</code></pre>
+<hr />
+<h3 id="int-headernames">HeaderNames <a class="anchor-link" href="#int-headernames">#</a></h3>
+<p><strong>The header names of a ListObject, in column order.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HeaderNames(ByVal table As ListObject) As BetterArray
+</code></pre>
+<hr />
+<h3 id="int-blockheaders">BlockHeaders <a class="anchor-link" href="#int-blockheaders">#</a></h3>
+<p><strong>The header row of a block read with its headers.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BlockHeaders(ByRef block As Variant) As BetterArray
+</code></pre>
+<hr />
+<h3 id="int-joinedlanguages">JoinedLanguages <a class="anchor-link" href="#int-joinedlanguages">#</a></h3>
+<p><strong>The languages joined with the separator the Metadata sheet carries.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function JoinedLanguages(ByVal names As BetterArray) As String
+</code></pre>
+<hr />
+<h3 id="int-labelindex">LabelIndex <a class="anchor-link" href="#int-labelindex">#</a></h3>
+<p><strong>Index of the labels of a translations block: label key to row.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LabelIndex(ByRef block As Variant) As Collection
+</code></pre>
+<p>The first row of the block is the header row; a label found twice
+keeps its first row.</p>
+<hr />
+<h3 id="int-headerindex">HeaderIndex <a class="anchor-link" href="#int-headerindex">#</a></h3>
+<p><strong>Index of the headers of a block: header to column, without regard to case.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HeaderIndex(ByRef block As Variant) As Collection
+</code></pre>
+<hr />
+<h3 id="int-lookuprow">LookupRow <a class="anchor-link" href="#int-lookuprow">#</a></h3>
+<p><strong>The row of a label in the index, 0 when it is not there.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LookupRow(ByVal keys As Collection, ByVal label As String) As Long
+</code></pre>
+<hr />
+<h3 id="int-lookupcolumn">LookupColumn <a class="anchor-link" href="#int-lookupcolumn">#</a></h3>
+<p><strong>The column of a header in the index, 0 when it is not there.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LookupColumn(ByVal keys As Collection, ByVal header As String) As Long
+</code></pre>
+<hr />
+<h3 id="int-labelkey">LabelKey <a class="anchor-link" href="#int-labelkey">#</a></h3>
+<p><strong>A Collection key that carries the case of a label.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LabelKey(ByVal label As String) As String
+</code></pre>
+<p>A Collection matches its keys without regard to case, and a
+translation label carries its case: &quot;Hello&quot; and &quot;hello&quot; are two labels.
+The key spells the capitalisation out beside the label, the way
+SetupTranslationsTable keys its own index.</p>
+<hr />
+<h3 id="int-containskey">ContainsKey <a class="anchor-link" href="#int-containskey">#</a></h3>
+<p><strong>Whether a name has already been seen, without regard to case.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ContainsKey(ByVal keys As BetterArray, ByVal key As String) As Boolean
+</code></pre>
+<hr />
+<h3 id="int-rangeblock">RangeBlock <a class="anchor-link" href="#int-rangeblock">#</a></h3>
+<p><strong>Read a range as a two-dimensional block, one cell included.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RangeBlock(ByVal target As Range) As Variant
+</code></pre>
+<hr />
+<h3 id="int-textof">TextOf <a class="anchor-link" href="#int-textof">#</a></h3>
+<p><strong>Text of a cell value; an error value or an empty cell reads as empty.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TextOf(ByVal cellValue As Variant) As String
+</code></pre>
+<hr />
+<h3 id="int-resettallies">ResetTallies <a class="anchor-link" href="#int-resettallies">#</a></h3>
+<p><strong>Start the tallies of a new import.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetTallies()
+</code></pre>
+<hr />
+<h2 id="int-errorhandling">ErrorHandling</h2>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><strong>Centralised error raising aligned with ProjectError codes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
+</code></pre>
+<hr />
+</details>
+<details>
+<summary>Used in (3 file(s))</summary>
+<ul>
+<li><a href="DiseaseExporter.html">DiseaseExporter.cls</a></li>
+<li>MasterSetupExports.bas</li>
+<li>TestMasterSetupMigration.bas</li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

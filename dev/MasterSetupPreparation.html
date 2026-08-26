@@ -39,6 +39,16 @@
 </code></pre>
 <p>(&quot;Ensure the dropdown worksheet hosts all required dropdown lists.&quot;)</p>
 <hr />
+<h3 id="int-ensurereportsheet">EnsureReportSheet <a class="anchor-link" href="#int-ensurereportsheet">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub EnsureReportSheet()
+</code></pre>
+<p>(&quot;Grow the __compRep report sheet, very hidden, when the workbook lacks it.&quot;)
+An existing sheet keeps its visibility: the Compare button shows
+it and the user may be reading it. A workbook whose structure is protected
+refuses the add; that raise is scoped, so the preparation still finishes
+and the Compare button says the sheet is missing.</p>
+<hr />
 <h3 id="int-ensurevariables">EnsureVariables <a class="anchor-link" href="#int-ensurevariables">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub EnsureVariables()
@@ -240,9 +250,10 @@
 <hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (5 file(s))</summary>
 <ul>
 <li><a href="EventMasterSetup.html">EventMasterSetup.cls</a></li>
+<li><a href="MasterSetupMigration.html">MasterSetupMigration.cls</a></li>
 <li>EventsMasterSetupRibbon.bas</li>
 <li>MasterSetupHelpers.bas</li>
 <li>TestMasterSetupPreparation.bas</li>

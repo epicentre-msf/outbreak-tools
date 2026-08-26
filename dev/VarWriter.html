@@ -39,7 +39,7 @@ same way <code>LLVariables.ResolveColumnIndex</code> re-reads its header snapsho
 A variable name is matched without regard to case here. <code>LLdictionary.Prepare</code>
 makes the names unique, so a name that differs only by case is a fault in the
 sheet.</p>
-<p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLSheets.html">LLSheets</a>, <a href="LLFormat.html">LLFormat</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="FormulaData.html">FormulaData</a>, <a href="Formulas.html">Formulas</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLGeo.html">LLGeo</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, Column index the first variable of a sheet carries when the dictionary is, numbered as <code>LLdictionary.Prepare</code> leaves it. It is the fallback for the table, anchor; the first variable the writer is handed is the primary rule., What an automatic list adds to the name of the variable it collects from, so, its table never lands on the one that variable already owns. An origin very, often has a choice list of its own, and the two used to share a single table:, the first rebuild of the automatic list then replaced the setup choices with, whatever had been typed in the column. EventLinelist carries the same suffix, and rebuilds the table under this name., Checking support, The milestone record of the sheet: one entry per variable written. It is, held apart from internalChecks because the two travel to different places., internalChecks carries the problems and reaches the __check worksheet;, this one reaches the run log's in-memory record and the text file alone.</p>
+<p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLSheets.html">LLSheets</a>, <a href="LLFormat.html">LLFormat</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="FormulaData.html">FormulaData</a>, <a href="Formulas.html">Formulas</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLGeo.html">LLGeo</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, <a href="DataSheet.html">DataSheet</a>, Column index the first variable of a sheet carries when the dictionary is, numbered as <code>LLdictionary.Prepare</code> leaves it. It is the fallback for the table, anchor; the first variable the writer is handed is the primary rule., What an automatic list adds to the name of the variable it collects from, so, its table never lands on the one that variable already owns. An origin very, often has a choice list of its own, and the two used to share a single table:, the first rebuild of the automatic list then replaced the setup choices with, whatever had been typed in the column. EventLinelist carries the same suffix, and rebuilds the table under this name., Checking support, The milestone record of the sheet: one entry per variable written. It is, held apart from internalChecks because the two travel to different places., internalChecks carries the problems and reaches the __check worksheet;, this one reaches the run log's in-memory record and the text file alone.</p>
 <p><strong>Version:</strong> 1.1 (2026-07-31)</p>
 </div>
 </details>
@@ -625,10 +625,10 @@ must be unique across records.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddGeoConditionalFormatting()
 </code></pre>
-<p>For geo-type variables, adds a format condition that highlights the cell
-in orange when the corresponding pcode variable is empty but the geo
-variable itself is not. This alerts users that a geographic name was
-entered but the pcode lookup failed.</p>
+<p>For geo-type variables, adds a format condition that shades the cell
+with a subtle warm tint (#F7F1E8) when the corresponding pcode variable is
+empty but the geo variable itself is not. This alerts users that a
+geographic name was entered but the pcode lookup failed.</p>
 <hr />
 <h3 id="int-addonecondition">AddOneCondition <a class="anchor-link" href="#int-addonecondition">#</a></h3>
 <p><em>add-one-condition</em></p>

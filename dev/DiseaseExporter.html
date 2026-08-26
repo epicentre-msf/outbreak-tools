@@ -72,22 +72,6 @@ column in the translations table.</li>
                               Optional ByVal logger As DiseaseLogger = Nothing) As String
 </code></pre>
 <hr />
-<h2 id="int-migration-export">Migration Export</h2>
-<h3 id="int-buildmigrationworkbook">BuildMigrationWorkbook <a class="anchor-link" href="#int-buildmigrationworkbook">#</a></h3>
-<p><strong>Build a workbook aggregating all diseases for migration.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function BuildMigrationWorkbook(ByVal sourceWorkbook As Workbook, _
-                                       ByVal diseaseNames As BetterArray) As Workbook
-</code></pre>
-<hr />
-<h3 id="int-exportformigration">ExportForMigration <a class="anchor-link" href="#int-exportformigration">#</a></h3>
-<p><strong>Persist the migration workbook to disk and return the saved file path.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function ExportForMigration(ByVal exportFolder As String, _
-                                   ByVal sourceWorkbook As Workbook, _
-                                   ByVal diseaseNames As BetterArray) As String
-</code></pre>
-<hr />
 <h2 id="int-internal-helpers">Internal Helpers</h2>
 <h3 id="int-ensurefreshworkbook">EnsureFreshWorkbook <a class="anchor-link" href="#int-ensurefreshworkbook">#</a></h3>
 <p><strong>Ensure the workbook manager has a pristine workbook.</strong></p>
@@ -115,13 +99,6 @@ column in the translations table.</li>
                                   ByVal languageTag As String)
 </code></pre>
 <hr />
-<h3 id="int-validatemigrationinputs">ValidateMigrationInputs <a class="anchor-link" href="#int-validatemigrationinputs">#</a></h3>
-<p><strong>Validate migration export inputs.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ValidateMigrationInputs(ByVal sourceWorkbook As Workbook, _
-                                    ByVal diseaseNames As BetterArray)
-</code></pre>
-<hr />
 <h3 id="int-validatefolder">ValidateFolder <a class="anchor-link" href="#int-validatefolder">#</a></h3>
 <p><strong>Validate that a folder path was supplied.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -138,22 +115,10 @@ column in the translations table.</li>
                           ByRef translationsSheet As Worksheet)
 </code></pre>
 <hr />
-<h3 id="int-preparemigrationsheets">PrepareMigrationSheets <a class="anchor-link" href="#int-preparemigrationsheets">#</a></h3>
-<p><strong>Prepare migration workbook worksheets.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub PrepareMigrationSheets(ByVal targetBook As Workbook)
-</code></pre>
-<hr />
 <h3 id="int-resolvediseasetable">ResolveDiseaseTable <a class="anchor-link" href="#int-resolvediseasetable">#</a></h3>
 <p><strong>Retrieve the disease table from the worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveDiseaseTable(ByVal diseaseWksh As Worksheet) As ListObject
-</code></pre>
-<hr />
-<h3 id="int-resolvelistobject">ResolveListObject <a class="anchor-link" href="#int-resolvelistobject">#</a></h3>
-<p><strong>Retrieve a ListObject from a named worksheet.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolveListObject(ByVal targetBook As Workbook, ByVal sheetName As String) As ListObject
 </code></pre>
 <hr />
 <h3 id="int-resolvemasterchoices">ResolveMasterChoices <a class="anchor-link" href="#int-resolvemasterchoices">#</a></h3>
@@ -163,12 +128,6 @@ column in the translations table.</li>
 </code></pre>
 <p>Answers Nothing when the workbook carries no Choices sheet; the
 export then falls back on the values the disease sheet carries.</p>
-<hr />
-<h3 id="int-resolvesheets">ResolveSheets <a class="anchor-link" href="#int-resolvesheets">#</a></h3>
-<p><strong>Enumerate worksheets from provided disease names.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolveSheets(ByVal targetBook As Workbook, ByVal diseaseNames As BetterArray) As Collection
-</code></pre>
 <hr />
 <h3 id="int-populatemetadata">PopulateMetadata <a class="anchor-link" href="#int-populatemetadata">#</a></h3>
 <p><strong>Populate metadata worksheet with export details.</strong></p>
@@ -247,6 +206,12 @@ Tab_Choices table.</p>
                                  ByRef shortColumn As Long) As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when the block carries a list name and a label column.</p>
+<hr />
+<h3 id="int-sameheader">SameHeader <a class="anchor-link" href="#int-sameheader">#</a></h3>
+<p><strong>True when two headers are the same text, whatever their case.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SameHeader(ByVal headerText As String, ByVal expected As String) As Boolean
+</code></pre>
 <hr />
 <h3 id="int-appendmasterrows">AppendMasterRows <a class="anchor-link" href="#int-appendmasterrows">#</a></h3>
 <p><strong>Append the master rows of one list; answers how many were added.</strong></p>
@@ -367,12 +332,6 @@ in a ListObject of that name.</li>
 header row alone.</li>
 </ul>
 <hr />
-<h3 id="int-populatemigrationdisease">PopulateMigrationDisease <a class="anchor-link" href="#int-populatemigrationdisease">#</a></h3>
-<p><strong>Populate a migration worksheet with disease data.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub PopulateMigrationDisease(ByVal targetSheet As Worksheet, ByVal diseaseWksh As Worksheet)
-</code></pre>
-<hr />
 <h3 id="int-applysheetcosmetics">ApplySheetCosmetics <a class="anchor-link" href="#int-applysheetcosmetics">#</a></h3>
 <p><strong>Give the four sheets of a disease export their format.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -385,16 +344,11 @@ header row alone.</li>
 export and sees the same thing. The Metadata sheet is a label and value
 block, so its two columns take their own widths.</p>
 <hr />
-<h3 id="int-applymigrationformatting">ApplyMigrationFormatting <a class="anchor-link" href="#int-applymigrationformatting">#</a></h3>
-<p><strong>Give the four sheets of a migration export their format.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyMigrationFormatting(ByVal targetBook As Workbook)
-</code></pre>
-<hr />
-<h3 id="int-formatexportsheet">FormatExportSheet <a class="anchor-link" href="#int-formatexportsheet">#</a></h3>
+<h2 id="int-export-format">Export Format</h2>
+<h3 id="int-formatwrittensheet">FormatWrittenSheet <a class="anchor-link" href="#int-formatwrittensheet">#</a></h3>
 <p><strong>Give one written sheet the export format.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub FormatExportSheet(ByVal targetSheet As Worksheet, _
+<pre><code class="language-vb">Public Sub FormatWrittenSheet(ByVal targetSheet As Worksheet, _
                               Optional ByVal columnWidth As Double = EXPORT_COLUMN_WIDTH)
 </code></pre>
 <p>The shape is the one DataSheet.Export writes for a setup migration: body
@@ -416,13 +370,13 @@ what a reader sees.</p>
 <h3 id="int-formatmetadatasheet">FormatMetadataSheet <a class="anchor-link" href="#int-formatmetadatasheet">#</a></h3>
 <p><strong>Give the Metadata sheet its two widths.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub FormatMetadataSheet(ByVal targetSheet As Worksheet)
+<pre><code class="language-vb">Public Sub FormatMetadataSheet(ByVal targetSheet As Worksheet)
 </code></pre>
 <p>The sheet holds a label column and a value column. The value
 column is the wider of the two; the rest is the export format.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>targetSheet</code>: Worksheet. The Metadata sheet of a disease export.</li>
+<li><code>targetSheet</code>: Worksheet. The Metadata sheet of an export.</li>
 </ul>
 <hr />
 <h3 id="int-writtenblock">WrittenBlock <a class="anchor-link" href="#int-writtenblock">#</a></h3>
@@ -495,26 +449,13 @@ the same refusal the same way.</p>
 <pre><code class="language-vb">Private Function CollectionToMatrix(ByVal rows As Collection, ByVal columnCount As Long) As Variant
 </code></pre>
 <hr />
-<h3 id="int-lastusedcolumn">LastUsedColumn <a class="anchor-link" href="#int-lastusedcolumn">#</a></h3>
-<p><strong>Determine the last used column within the target sheet.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function LastUsedColumn(ByVal sheet As Worksheet) As Long
-</code></pre>
-<p>The UsedRange of a sheet holding nothing is $A$1, so the range
-is counted before its last column is read: an empty sheet answers 0 and the
-first migration block opens at column 1.</p>
-<hr />
 <h3 id="int-builddiseasefilepath">BuildDiseaseFilePath <a class="anchor-link" href="#int-builddiseasefilepath">#</a></h3>
 <p><strong>Build path for disease export.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildDiseaseFilePath(ByVal exportFolder As String, ByVal diseaseName As String) As String
 </code></pre>
-<hr />
-<h3 id="int-buildmigrationfilepath">BuildMigrationFilePath <a class="anchor-link" href="#int-buildmigrationfilepath">#</a></h3>
-<p><strong>Build path for migration export.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function BuildMigrationFilePath(ByVal exportFolder As String) As String
-</code></pre>
+<p>The separator is added only when the folder lacks one, so a
+folder picked at a drive root gives one separator.</p>
 <hr />
 <h3 id="int-sanitizefilename">SanitizeFileName <a class="anchor-link" href="#int-sanitizefilename">#</a></h3>
 <p><strong>Remove characters invalid in file names.</strong></p>
@@ -531,13 +472,15 @@ first migration block opens at column 1.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (6 file(s))</summary>
+<summary>Used in (8 file(s))</summary>
 <ul>
 <li><a href="MasterSetupImportService.html">MasterSetupImportService.cls</a></li>
+<li><a href="MasterSetupMigration.html">MasterSetupMigration.cls</a></li>
 <li>MasterSetupExports.bas</li>
 <li>TestDiseaseExporter.bas</li>
 <li>TestDiseaseIntegration.bas</li>
 <li>TestDiseaseSetupImport.bas</li>
+<li>TestMasterSetupExports.bas</li>
 <li>TestMasterSetupImportService.bas</li>
 </ul>
 </details>

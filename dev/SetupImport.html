@@ -586,7 +586,25 @@ an .xlsx name.</p>
 </code></pre>
 <p>Whatever follows the last dot of the host name is dropped, so a host saved as
 .xlsm or .XLSB no longer carries its extension inside the new name. The stamp
-carries the time as well as the date, so two exports in one day are two files.</p>
+carries the time as well as the date, so two exports in one day are two files.
+Two exports inside the same second still land on one stamp, so a name already
+taken takes a counter behind the stamp rather than a raise from SaveAs.</p>
+<hr />
+<h3 id="int-exportnameistaken">ExportNameIsTaken <a class="anchor-link" href="#int-exportnameistaken">#</a></h3>
+<p><em>export-name-is-taken</em></p>
+<p><strong>Answer whether an export path is already spoken for.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExportNameIsTaken(ByVal filePath As String) As Boolean
+</code></pre>
+<p>Two exports inside the same second build the same stamp, and Excel refuses
+SaveAs against a name one of the open workbooks already carries, whatever
+folder that workbook sits in. Both the disk and the open workbooks are read
+here so the caller can step to the next free name instead of raising.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>filePath</code>: String the candidate path.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean True when a file or an open workbook holds that name.</p>
 <hr />
 <h3 id="int-closeimportworkbook">CloseImportWorkbook <a class="anchor-link" href="#int-closeimportworkbook">#</a></h3>
 <p><em>close-import-workbook</em></p>

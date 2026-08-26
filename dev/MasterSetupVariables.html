@@ -36,6 +36,15 @@
 <li><code>dropdowns</code>: DropdownLists provider used to configure the Default Status validation.</li>
 </ul>
 <hr />
+<h3 id="int-refreshduplicateformatting">RefreshDuplicateFormatting <a class="anchor-link" href="#int-refreshduplicateformatting">#</a></h3>
+<p><strong>Re-apply the duplicate rule of the Variable Name column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RefreshDuplicateFormatting()
+</code></pre>
+<p>Runs on every preparation, outside the Initialised guard, so a
+table prepared before the rule existed gets it, and a table that
+grew rows gets a rule over the rows it has today.</p>
+<hr />
 <h3 id="int-refreshchoices">RefreshChoices <a class="anchor-link" href="#int-refreshchoices">#</a></h3>
 <p><strong>Refresh the concatenated choices values for the supplied variable.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -200,6 +209,16 @@ joined choices values stay empty: RefreshChoices fills them.</p>
 </code></pre>
 <hr />
 <h2 id="int-internal-helpers">Internal helpers</h2>
+<h3 id="int-applyduplicateformatting">ApplyDuplicateFormatting <a class="anchor-link" href="#int-applyduplicateformatting">#</a></h3>
+<p><strong>Delete and re-add the one duplicate rule over the name column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyDuplicateFormatting()
+</code></pre>
+<p>The column range is read fresh on every call, so the rule covers
+the table as it stands. Delete drops every rule of the column: the
+column carries this one rule, and the delete is what keeps the count
+at one across repeated preparations.</p>
+<hr />
 <h3 id="int-writecell">WriteCell <a class="anchor-link" href="#int-writecell">#</a></h3>
 <p><strong>Write any value on the line of the given column.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -226,11 +245,12 @@ joined choices values stay empty: RefreshChoices fills them.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (15 file(s))</summary>
+<summary>Used in (18 file(s))</summary>
 <ul>
 <li><a href="DiseaseSheet.html">DiseaseSheet.cls</a></li>
 <li><a href="EventMasterSetup.html">EventMasterSetup.cls</a></li>
 <li><a href="MasterSetupImportService.html">MasterSetupImportService.cls</a></li>
+<li><a href="MasterSetupMigration.html">MasterSetupMigration.cls</a></li>
 <li><a href="MasterSetupPreparation.html">MasterSetupPreparation.cls</a></li>
 <li>CustomMasterSetupFunctions.bas</li>
 <li>MasterSetupEventsManager.bas</li>
@@ -240,7 +260,9 @@ joined choices values stay empty: RefreshChoices fills them.</p>
 <li>TestDiseaseSheet.bas</li>
 <li>TestEventMasterSetup.bas</li>
 <li>TestMasterSetupEvents.bas</li>
+<li>TestMasterSetupExports.bas</li>
 <li>TestMasterSetupImportService.bas</li>
+<li>TestMasterSetupMigration.bas</li>
 <li>TestMasterSetupPreparation.bas</li>
 <li>TestMasterSetupVariables.bas</li>
 </ul>

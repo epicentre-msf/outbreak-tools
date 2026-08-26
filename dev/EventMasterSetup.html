@@ -40,10 +40,13 @@
 </code></pre>
 <hr />
 <h3 id="int-refreshtranslations">RefreshTranslations <a class="anchor-link" href="#int-refreshtranslations">#</a></h3>
-<p><strong>Refresh translation-backed caches after a language change.</strong></p>
+<p><strong>Drop the choices helper after an edit of the Choices or Translations sheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RefreshTranslations()
 </code></pre>
+<p>The master setup holds its content in English, so the service
+carries no translation object of its own; the choices helper is the one
+cache an edit of those two sheets makes stale.</p>
 <hr />
 <h2 id="int-accessors">Accessors</h2>
 <h3 id="int-hostworkbook">HostWorkbook <a class="anchor-link" href="#int-hostworkbook">#</a></h3>
@@ -70,24 +73,53 @@
 <pre><code class="language-vb">Public Property Get Choices() As LLChoices
 </code></pre>
 <hr />
-<h3 id="int-translations">Translations <a class="anchor-link" href="#int-translations">#</a></h3>
-<p><strong>Provide the workbook-wide translations object.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Translations() As TranslationObject
-</code></pre>
-<hr />
 <h3 id="int-ribbon">Ribbon <a class="anchor-link" href="#int-ribbon">#</a></h3>
 <p><strong>Expose the cached ribbon interface.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Ribbon() As IRibbonUI
 </code></pre>
 <hr />
+<h3 id="int-userlog">UserLog <a class="anchor-link" href="#int-userlog">#</a></h3>
+<p><strong>The user log of the workbook, built once and held.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function UserLog() As MasterSetupLog
+</code></pre>
+<p>The dated record of the user actions, kept on the very hidden __log
+worksheet. The ribbon, the events manager and the exports module write
+their outcome lines through it. An old master setup grows the log sheet on
+the first logged event.</p>
+<p><strong>Returns:</strong> MasterSetupLog. The held log, or Nothing when the build failed.</p>
+<hr />
+<h2 id="int-internal-helpers">Internal helpers</h2>
+<h3 id="int-ensurelog">EnsureLog <a class="anchor-link" href="#int-ensurelog">#</a></h3>
+<p><strong>Build the user log once, growing the __log sheet when it is missing.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureLog()
+</code></pre>
+<p>Adding a worksheet needs the workbook structure open, so a workbook without
+the log sheet is unprotected through its passwords for the build and
+protected again after it. A workbook with no usable password sheet is
+built bare. The tried flag keeps a failed build from repeating on every
+logged line, and a failed build leaves the log at Nothing so every caller
+stays quiet.</p>
+<hr />
+<h3 id="int-resolvepasswords">ResolvePasswords <a class="anchor-link" href="#int-resolvepasswords">#</a></h3>
+<p><strong>The password manager of the workbook, or Nothing.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolvePasswords() As Passwords
+</code></pre>
+<p>Passwords.Create raises on a sheet missing its tables or its names; a
+workbook without a usable password sheet answers Nothing.</p>
+<hr />
 </details>
 <details>
-<summary>Used in (2 file(s))</summary>
+<summary>Used in (5 file(s))</summary>
 <ul>
+<li>EventsMasterSetupRibbon.bas</li>
 <li>MasterSetupEventsManager.bas</li>
+<li>MasterSetupExports.bas</li>
 <li>TestEventMasterSetup.bas</li>
+<li>TestMasterSetupLog.bas</li>
 </ul>
 </details>
   </main>

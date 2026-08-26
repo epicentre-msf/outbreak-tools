@@ -3,33 +3,32 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LLLog - OBT Dev Docs</title>
+  <title>MasterSetupLog - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
-<h1>LLLog</h1>
-<p>Keeps the dated record of the important user actions of a running
-linelist on the very hidden __log worksheet. Each event is one Checking
-bundle: the bundle title is the SECTION the action belongs to, the entry
-label carries the timestamp, the action code and a short detail, and the
-scope carries the outcome. Every bundle is flushed through
-CheckingOutput.PrintOutput, which appends across renders, so the sheet
-grows one line per event and the built-in status and title dropdowns of
-the output sheet filter the log by outcome and by section.</p>
+<h1>MasterSetupLog</h1>
+<p>Keeps the dated record of the important user actions of a master setup
+on the very hidden __log worksheet. It is the master setup copy of LLLog.
+Each event is one Checking bundle: the bundle title is the SECTION the
+action belongs to, the entry label carries the timestamp, the action code
+and a short detail, and the scope carries the outcome. Every bundle is
+flushed through CheckingOutput.PrintOutput in compact mode, so the sheet
+grows one line per event and the status and title dropdowns of the output
+sheet filter the log by outcome and by section.</p>
 <details open class="doc-section" id="what-one-line-says">
 <summary>WHAT ONE LINE SAYS</summary>
 <div class="section-body">
 <p>An entry line reads as the timestamp and the platform, then the procedure
 that raised the event, then the action code and the detail:</p>
-<p>2026-08-15 13:55:45 mac-64 excel-16.112  ClickShowHideSection &gt; showhide-section: Demographics hidden on sheet1</p>
+<p>2026-08-26 13:55:45 win-64 excel-16.0  clickAddSheet &gt; add-disease: Measles</p>
 <p>The procedure is named by the caller. VBA carries no call stack to read a
-name from, and one button can raise the same refusal from four places, so
-a line that names only the action leaves the reader guessing which press
-wrote it. The name is optional: a caller that passes none writes the same
-line as before, opening at the action code.</p>
+name from, so a line that names only the action leaves the reader guessing
+which button wrote it. The name is optional: a caller that passes none
+writes a line opening at the action code.</p>
 </div>
 </details>
 <details open class="doc-section" id="the-three-sections">
@@ -38,45 +37,40 @@ line as before, opening at the action code.</p>
 <p>The log is read by three sections, and the title of an entry is the
 section the action belongs to. The writer runs in compact mode, so a
 section title is written the first time the sheet carries it and never
-again: a session of a hundred actions reads as a hundred lines under at
-most three titles.</p>
-<p>open/close          the workbook open, the workbook close, a log restart
-data input/output   every import, every export, and clearing the data
-linelist lifecycle  everything else the user does inside the workbook</p>
-<p>An action code no case names lands in linelist lifecycle, so a new logged
-action reaches the sheet without touching this class. The action code
-itself moves down to the entry line, beside the timestamp, where it stays
-readable without heading a block of its own.</p>
-<p>A title heads a block of its own kind. An action coming back to a section
-written earlier lands at the foot of THAT block, not at the foot of the
-sheet, so the three blocks stay whole however far apart in time their
-actions were taken, and a blank row stands between them. Inside a block
-the lines keep the order they happened. Each line also carries its section
-in the hidden title column, and that is what the title dropdown of the
-output sheet filters on, so reading the log one section at a time is a
-dropdown away.</p>
-<p>The last thing that happened is therefore no longer the last line of the
-sheet: a close lands under the open it belongs with, near the top, while
-the lifecycle block below carries the bulk of the session.</p>
+again.</p>
+<p>open/close             the workbook open, the workbook close, a log restart
+data input/output      every export, every import, the disease comparison
+master setup lifecycle everything else the user does in the file</p>
+<p>An action code no case names lands in master setup lifecycle, so a new
+logged action reaches the sheet without touching this class. A code that
+opens with export- or import- lands in data input/output for the same
+reason.</p>
 </div>
 </details>
 <details open class="doc-section" id="provisioning">
 <summary>PROVISIONING</summary>
 <div class="section-body">
 <p>Create(wkb) binds to the __log worksheet of the given workbook and builds
-it very hidden when the workbook has none. An old linelist grows the
-sheet on its first logged event, so the generation tree stays untouched.
-Building a sheet wants the workbook structure unprotected, which is the
-caller''s duty.</p>
+it very hidden when the workbook has none, so an older master setup grows
+its log on its first logged event. Building a sheet wants the workbook
+structure unprotected, which is the duty of the caller.</p>
 </div>
 </details>
 <details open class="doc-section" id="rotation">
 <summary>ROTATION</summary>
 <div class="section-body">
-<p>LOG_MAX_ENTRIES is read as a row cap. A flush that finds the last
-written row past the cap clears the sheet and removes the row marker
-CheckingOutput keeps, so the next render re-initialises the sheet, and
-the fresh log opens with one info line (&quot;restarted&quot;).</p>
+<p>LOG_MAX_ENTRIES is read as a row cap. A flush that finds the last written
+row past the cap clears the sheet and removes the row marker
+CheckingOutput keeps, so the next render re-initialises the sheet, and the
+fresh log opens with one info line (&quot;restarted&quot;).</p>
+</div>
+</details>
+<details open class="doc-section" id="text-export">
+<summary>TEXT EXPORT</summary>
+<div class="section-body">
+<p>A master setup has no Metadata sheet, so the header of the text export
+carries the file name, the date, the platform and the count of disease
+worksheets, then the entries in the order they were written.</p>
 </div>
 </details>
 <details open class="doc-section" id="filter-dropdowns">
@@ -84,10 +78,10 @@ the fresh log opens with one info line (&quot;restarted&quot;).</p>
 <div class="section-body">
 <p>The interactive row hiding of the output sheet wants a Worksheet_Change
 handler injected through the VBE, and injecting code wants VBE trust,
-which field machines lack. LLLog leaves the worksheet code module alone;
-the dropdowns stay plain validation cells and the filtering is reachable
+which field machines lack. The worksheet code module is left alone; the
+dropdowns stay plain validation cells and the filtering is reachable
 through CheckingOutput.FilterWorksheet.</p>
-<p><strong>Version:</strong> 1.1 (2026-08-15)</p>
+<p><strong>Version:</strong> 1.0 (2026-08-26)</p>
 </div>
 </details>
 <details open class="doc-section" id="factory">
@@ -97,17 +91,17 @@ through CheckingOutput.FilterWorksheet.</p>
 <p><em>create</em></p>
 <p><strong>Create a log store bound to the __log worksheet of a workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal wkb As Workbook) As LLLog
+<pre><code class="language-vb">Public Function Create(ByVal wkb As Workbook) As MasterSetupLog
 </code></pre>
-<p>Entry point for creating LLLog instances.</p>
+<p>Entry point for creating MasterSetupLog instances.</p>
 <p>Binds to the __log worksheet of the given workbook. When the workbook
 has none, the sheet is appended after the last worksheet and made very
-hidden, so an old linelist grows its log on first use.</p>
+hidden, so an older master setup grows its log on first use.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>wkb</code>: Workbook. The linelist workbook carrying the log.</li>
+<li><code>wkb</code>: Workbook. The master setup workbook carrying the log.</li>
 </ul>
-<p><strong>Returns:</strong> LLLog. Fully initialised instance.</p>
+<p><strong>Returns:</strong> MasterSetupLog. Fully initialised instance.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When wkb is Nothing.</li>
@@ -124,8 +118,8 @@ hidden, so an old linelist grows its log on first use.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SheetName() As String
 </code></pre>
-<p>Answers the internal sheet name so the viewing surface and the close
-guard reach the sheet through the class.</p>
+<p>Answers the internal sheet name so the Open Log door and the deploy list
+reach the sheet through the class.</p>
 <p><strong>Returns:</strong> String. The log worksheet name.</p>
 <hr />
 <h3 id="sectionof">SectionOf <a class="anchor-link" href="#sectionof">#</a></h3>
@@ -136,10 +130,11 @@ guard reach the sheet through the class.</p>
 </code></pre>
 <p>The three sections are the whole title vocabulary of the log sheet. The
 workbook open, the workbook close and a log restart are the session
-boundaries and read as open/close; everything that moves data in or out
-of the workbook reads as data input/output; every other action the user
-takes inside the workbook reads as linelist lifecycle, which is also
-where an action code named by no case below lands.</p>
+boundaries and read as open/close; every export, every import and the
+disease comparison move data in or out of the file and read as data
+input/output; every other action the user takes in the file reads as
+master setup lifecycle, which is also where an action code named by no
+case below lands.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>action</code>: String. The action code of the event.</li>
@@ -155,6 +150,17 @@ where an action code named by no case below lands.</p>
 <p>Answers the cap the rotation reads, so a test can seed a row past it
 without writing ten thousand lines.</p>
 <p><strong>Returns:</strong> Long. The row cap.</p>
+<hr />
+<h3 id="diseasesheetcount">DiseaseSheetCount <a class="anchor-link" href="#diseasesheetcount">#</a></h3>
+<p><em>disease-sheet-count</em></p>
+<p><strong>How many disease worksheets the workbook carries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DiseaseSheetCount() As Long
+</code></pre>
+<p>A disease worksheet is one whose hidden sheetTag name reads disease, the
+same reading MasterSetupHelpers.IsMasterDiseaseSheet makes. The count
+heads the text export.</p>
+<p><strong>Returns:</strong> Long. The count of disease worksheets.</p>
 <hr />
 </div>
 </details>
@@ -172,7 +178,7 @@ without writing ten thousand lines.</p>
 <p>One method per outcome, each flushing one Checking bundle.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>action</code>: String. The action code, used as the bundle title.</li>
+<li><code>action</code>: String. The action code, written on the entry line.</li>
 <li><code>detail</code>: Optional String. Short free text beside the timestamp.</li>
 <li><code>source</code>: Optional String. The procedure that raised the event.</li>
 </ul>
@@ -187,7 +193,7 @@ without writing ten thousand lines.</p>
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>action</code>: String. The action code, used as the bundle title.</li>
+<li><code>action</code>: String. The action code, written on the entry line.</li>
 <li><code>detail</code>: Optional String. Short free text beside the timestamp.</li>
 <li><code>source</code>: Optional String. The procedure that raised the event.</li>
 </ul>
@@ -202,7 +208,7 @@ without writing ten thousand lines.</p>
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>action</code>: String. The action code, used as the bundle title.</li>
+<li><code>action</code>: String. The action code, written on the entry line.</li>
 <li><code>detail</code>: Optional String. Short free text beside the timestamp.</li>
 <li><code>source</code>: Optional String. The procedure that raised the event.</li>
 </ul>
@@ -217,7 +223,7 @@ without writing ten thousand lines.</p>
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>action</code>: String. The action code, used as the bundle title.</li>
+<li><code>action</code>: String. The action code, written on the entry line.</li>
 <li><code>detail</code>: Optional String. Short free text beside the timestamp.</li>
 <li><code>source</code>: Optional String. The procedure that raised the event.</li>
 </ul>
@@ -235,14 +241,10 @@ without writing ten thousand lines.</p>
 </code></pre>
 <p>Writing the log out as a file a user can send on.</p>
 <p>The text a user sends on when something goes wrong, so it stands on its
-own: the workbook it came from and the platform it is written on, then
-every row of the Metadata worksheet, then the log itself in the order it
-was written.
-The log SHEET is the record here, unlike GenerationLog which keeps its run
-in memory, so the rows are read back off the sheet.
-The text is built here rather than inside ExportText so what a file will
-say can be read without a file being written. A log that cannot reach its
-metadata still answers its entries.</p>
+own: the workbook it came from, when and on what platform it was written,
+how many disease worksheets the file carries, then the log itself in the
+order it was written. The text is built here so what a file will say can
+be read without a file being written.</p>
 <p><strong>Returns:</strong> BetterArray. The lines, lower bound 1.</p>
 <p><strong>Throws:</strong></p>
 <ul>
@@ -257,10 +259,9 @@ metadata still answers its entries.</p>
                            Optional ByVal baseName As String = vbNullString) As String
 </code></pre>
 <p>The file lands in the given folder as <baseName>-log.txt. A second export
-of the same linelist overwrites the first, which is what a person sending
-&quot;the log&quot; wants.
-What goes into it is ReportLines. This routine only opens the file, writes
-the lines and closes it.</p>
+of the same master setup overwrites the first, which is what a person
+sending &quot;the log&quot; wants. What goes into it is ReportLines. This routine
+only opens the file, writes the lines and closes it.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>folderPath</code>: String. The folder taking the file.</li>
@@ -308,43 +309,41 @@ the lines and closes it.</p>
 <p>Sheet resolution, entry building, and rotation.</p>
 <p>The sheet is appended after the last worksheet, because a bare Add puts
 a new sheet in front of whatever is active. An existing sheet keeps its
-visibility, so the viewing surface can hold it open across a bind.</p>
+visibility, so the Open Log door can hold it open across a bind.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>wkb</code>: Workbook. The linelist workbook.</li>
+<li><code>wkb</code>: Workbook. The master setup workbook.</li>
 </ul>
 <p><strong>Returns:</strong> Worksheet. The resolved or newly created worksheet.</p>
 <hr />
+<h3 id="int-isdiseasesheet">IsDiseaseSheet <a class="anchor-link" href="#int-isdiseasesheet">#</a></h3>
+<p><em>is-disease-sheet</em></p>
+<p><strong>Whether a worksheet carries the disease tag</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsDiseaseSheet(ByVal sh As Worksheet) As Boolean
+</code></pre>
+<p>HiddenNames.Create raises on a sheet it cannot bind, and a sheet with no
+tag answers an empty string; both read as a plain worksheet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to read.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the sheetTag name reads disease.</p>
+<hr />
 <h3 id="int-appendheadingto">AppendHeadingTo <a class="anchor-link" href="#int-appendheadingto">#</a></h3>
-<p><em>write-heading-to</em></p>
-<p><strong>The first block of the report: which workbook, and on what</strong></p>
+<p><em>append-heading-to</em></p>
+<p><strong>The first block of the report: which workbook, when, on what</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AppendHeadingTo(ByVal lines As BetterArray, ByVal sh As Worksheet)
 </code></pre>
-<p>The platform of the export and the platform of an entry can differ, since
-a linelist travels between machines, and both are worth having.</p>
+<p>A master setup has no Metadata worksheet, so the header says what a
+reader of the file wants to know first: the file, the date and the
+platform of the export, where the file is saved and how many disease
+worksheets it carries.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>lines</code>: BetterArray. The lines built so far.</li>
 <li><code>sh</code>: Worksheet. The log worksheet.</li>
-</ul>
-<hr />
-<h3 id="int-appendmetadatato">AppendMetadataTo <a class="anchor-link" href="#int-appendmetadatato">#</a></h3>
-<p><em>append-metadata-to</em></p>
-<p><strong>Every row of the Metadata worksheet, into the report</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AppendMetadataTo(ByVal lines As BetterArray, ByVal wkb As Workbook)
-</code></pre>
-<p>The whole variable and value block goes out, not a chosen few rows, so a
-linelist built by a later designer carries whatever that designer wrote
-without this routine being touched again. The block below the creation rows
-is the geobase metadata, and it goes out with the rest.
-A linelist with no Metadata worksheet says so and the report goes on: a log
-is worth having even when the metadata is missing.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>lines</code>: BetterArray. The lines built so far.</li>
-<li><code>wkb</code>: Workbook. The linelist workbook.</li>
 </ul>
 <hr />
 <h3 id="int-appendentriesto">AppendEntriesTo <a class="anchor-link" href="#int-appendentriesto">#</a></h3>
@@ -370,15 +369,11 @@ say nothing.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function PlainOutcome(ByVal text As String) As String
 </code></pre>
-<p>Checking paints an outcome with a symbol before the word -- a cross for an
-error, a tick for a success, an i in a circle for an info line -- and that
-symbol is what the sheet shows.
-The text export cannot carry it. Print # writes one byte per character, so
-every one of those symbols reaches the file as a single stray mark, and a
-log a user sends on reads &quot;[_ Error]&quot; and &quot;[_ Info]&quot; throughout. The word
-alone is what the file wants.
-A section title carries no symbol and comes back untouched: only a first
-character outside plain text is taken off.</p>
+<p>Checking paints an outcome with a symbol before the word, and that symbol
+is what the sheet shows. Print # writes one byte per character, so every
+one of those symbols reaches the file as a single stray mark. The word
+alone is what the file wants. A section title carries no symbol and comes
+back untouched: only a first character outside plain text is taken off.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>text</code>: String. The cell value, already trimmed.</li>
@@ -391,8 +386,8 @@ character outside plain text is taken off.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CellText(ByVal cellValue As Variant) As String
 </code></pre>
-<p>A cell holding #N/A or #REF! raises 13 on CStr, and one such cell in a log
-or on a metadata sheet must not take down the export of everything else.</p>
+<p>A cell holding #N/A or #REF! raises 13 on CStr, and one such cell must
+keep the export of everything else alive.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>cellValue</code>: Variant. The value read from a cell.</li>
@@ -409,7 +404,7 @@ or on a metadata sheet must not take down the export of everything else.</p>
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>action</code>: String. The action code, used as the bundle title.</li>
+<li><code>action</code>: String. The action code, written on the entry line.</li>
 <li><code>detail</code>: String. Short free text beside the timestamp.</li>
 <li><code>scope</code>: Byte. CheckingScope value carrying the outcome.</li>
 <li><code>source</code>: String. The procedure that raised the event. May be empty.</li>
@@ -427,10 +422,9 @@ or on a metadata sheet must not take down the export of everything else.</p>
                        ByVal scope As Byte, _
                        Optional ByVal source As String = vbNullString)
 </code></pre>
-<p>The bundle title is the section of the action, not the action itself, so
-the sheet carries three titles rather than one per action code. The
-bundle carries one key, so the key uniqueness of Checking binds inside
-the bundle and every event stays a plain append.</p>
+<p>The bundle title is the section of the action, so the sheet carries three
+titles. The bundle carries one key, so the key uniqueness of Checking
+binds inside the bundle and every event stays a plain append.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>action</code>: String. The action code, written on the entry line.</li>
@@ -448,16 +442,11 @@ the bundle and every event stays a plain append.</p>
 </code></pre>
 <p>The label opens with the timestamp and the platform; the procedure, the
 action code and the detail follow behind the separator, so the two halves
-land in their own columns of the log sheet. The action code moved here when
-the title became the section: the sheet has three titles now, and the line
-has to say which action it records. A separator inside the free text would
-push it past the last written column, so it is softened to a single dash.
-The procedure sits in front of the action because that is the order a
-reader wants: who acted, what they did, and on what.
-The platform rides with the timestamp rather than with the detail, because
-the detail column is what a reader searches and what several tests read
-whole. It is on every line on purpose: a log rotation clears the sheet, so
-a platform written once at the top of a session would not survive one.</p>
+land in their own columns of the log sheet. A separator inside the free
+text would push it past the last written column, so it is softened to a
+single dash. The platform is on every line on purpose: a log rotation
+clears the sheet, so a platform written once at the top of a session
+would be lost with it.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>action</code>: String. The action code of the event.</li>
@@ -487,15 +476,12 @@ line past the last written column and out of the sheet.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function PlatformTag() As String
 </code></pre>
-<p>A log read months later says nothing about where it was written, and the
-same code does not behave the same on the two platforms: a geobase export
-that Windows accepts has refused on this Mac. Every entry therefore names
-its platform.
-The name and the bitness come from the compile constants, so they are the
-build that is running and cannot be misread. The Excel version comes from
-the application and is read once, because it is the same for every line of
-a session and the log writes a line per user action.</p>
-<p><strong>Returns:</strong> String. Something of the shape &quot;mac-64 excel-16.90&quot;.</p>
+<p>A log read months later has to say where it was written, since the same
+code behaves differently on the two platforms. The name and the bitness
+come from the compile constants; the Excel version comes from the
+application and is read once, because it is the same for every line of a
+session.</p>
+<p><strong>Returns:</strong> String. Something of the shape &quot;win-64 excel-16.0&quot;.</p>
 <hr />
 <h3 id="int-rotatewhenpastcap">RotateWhenPastCap <a class="anchor-link" href="#int-rotatewhenpastcap">#</a></h3>
 <p><em>rotate-when-past-cap</em></p>
@@ -516,7 +502,7 @@ info line.</p>
 </code></pre>
 <p>The writer is asked for compact appending, which is the mode a log wants:
 a section title is written the first time the sheet carries it and never
-again, and no blank rows stand between the entries.</p>
+again, and no blank rows stand between the entries of one block.</p>
 <p><strong>Returns:</strong> CheckingOutput. Writer bound to the log worksheet.</p>
 <hr />
 <h3 id="int-hiddenstore">HiddenStore <a class="anchor-link" href="#int-hiddenstore">#</a></h3>
@@ -565,19 +551,15 @@ again, and no blank rows stand between the entries.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (11 file(s))</summary>
+<summary>Used in (7 file(s))</summary>
 <ul>
-<li><a href="FilteredData.html">FilteredData.cls</a></li>
-<li><a href="LLExporter.html">LLExporter.cls</a></li>
-<li><a href="EventLinelist.html">EventLinelist.cls</a></li>
-<li><a href="Linelist.html">Linelist.cls</a></li>
-<li><a href="MasterSetupLog.html">MasterSetupLog.cls</a></li>
-<li>EventsLinelistButtons.bas</li>
-<li>FormLogicAdvanced.bas</li>
-<li>FormLogicExportMig.bas</li>
-<li>TestFilteredData.bas</li>
-<li>TestEventLinelist.bas</li>
-<li>TestLLLog.bas</li>
+<li><a href="DiseaseComparisonReport.html">DiseaseComparisonReport.cls</a></li>
+<li><a href="EventMasterSetup.html">EventMasterSetup.cls</a></li>
+<li><a href="MasterSetupPreparation.html">MasterSetupPreparation.cls</a></li>
+<li>EventsMasterSetupRibbon.bas</li>
+<li>MasterSetupEventsManager.bas</li>
+<li>MasterSetupExports.bas</li>
+<li>TestMasterSetupLog.bas</li>
 </ul>
 </details>
   </main>

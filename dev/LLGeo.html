@@ -20,7 +20,9 @@ rewrites the level labels, Clear and ClearHistoric empty the tables, Import
 reads a geobase in, and ExportToFile and ExportToWkb write it out as flat data
 or as the full structure. Update, UpdateDict and UpdateHistoric carry the
 translated labels across the linelist sheets and the dictionary, and
-SkippedSheets names the sheets an update left alone.</p>
+SkippedSheets names the sheets an update left alone. AddAdminEntry writes
+one admin name under the parents the picker holds, for a place the geobase
+in use is missing.</p>
 <p>The show/hide form takes its geo labels from the dictionary UpdateDict
 rewrites: ShowHide composes &quot;<sub section>: <level label>&quot; itself, every time
 it is built. A third routine here used to write that same string into
@@ -414,6 +416,54 @@ so the row just written is de-duplicated and placed with the rest.</p>
 <ul>
 <li><code>newValue</code>: String. The value to add to the historic list.</li>
 <li><code>scope</code>: Optional Byte. GeoScope value: GeoScopeAdmin (0) for T_HISTOGEO, GeoScopeHF (1) for T_HISTOHF. Defaults to GeoScopeAdmin.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="add-admin-entry">
+<summary>Add Admin Entry</summary>
+<div class="section-body">
+<h3 id="addadminentry">AddAdminEntry <a class="anchor-link" href="#addadminentry">#</a></h3>
+<p><em>add-admin-entry</em></p>
+<p><strong>Add one admin name under the parents the caller names.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function AddAdminEntry(ByVal adminLevel As Byte, _
+                              ByVal parentNames As BetterArray, _
+                              ByVal newName As String) As Boolean
+</code></pre>
+<p>Writes one row into the admin table of the level asked for: the parent names
+in adm1_name to adm<n-1>_name, the new name in adm<n>_name and the joined
+path in adm<n>_concat. The concat is written as a value, the shape the import
+leaves behind: ImportOneTable calculates the concat formula once and replaces
+it with what it answered, so the table carries no live formula and a value is
+what its other rows hold. Every other column of the row, adm<n>_pcode and
+adm<n>_pop on a production geobase, stays empty. A p-code formula over the
+new name therefore reads blank until a real geobase carrying it is imported.</p>
+<p>The columns are found by header through GeoColumnIndex, which reads the raw
+names through the translated labels, so the write works whatever the headers
+carry. The row lands under the table and the table is resized over it, the
+way UpdateHistoric grows the historic tables, including the table whose one
+data row is blank after a Clear.</p>
+<p>The duplicate test runs before the write: the candidate concat is compared
+with the concat column of the table without regard to case, and a match
+answers False and writes nothing. After a write the table is sorted on its
+concat column, which keeps every child under its parent and puts the new name
+in order among its siblings, where the picker shows it. The level memo is
+dropped last: the parent just written under has a stale answer there.</p>
+<p>One table per add. An admin 3 added here writes T_ADM3 alone; T_ADM4 has no
+row for it until an admin 4 is added under it.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>adminLevel</code>: Byte. LevelAdmin2, LevelAdmin3 or LevelAdmin4.</li>
+<li><code>parentNames</code>: BetterArray. One name per level above, from admin 1 down, so its length is the level number minus one.</li>
+<li><code>newName</code>: String. The name to add. It is trimmed first.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the row was written, False when the name is already under those parents.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the level is admin 1 or above admin 4, when the parents are missing, the wrong length or hold an empty name, or when the new name is empty.</li>
+<li>ProjectError.ErrorUnexpectedState When the geobase holds no data.</li>
+<li>ProjectError.ElementNotFound When a column of the admin table is missing.</li>
 </ul>
 <hr />
 </div>

@@ -104,6 +104,23 @@ needing recalculation, resets the translation counter hidden name to zero,
 disables Application.FormatStaleValues to suppress recalculation prompts,
 and applies the full password protection matrix across all setup sheets.
 Silently skips each step when the required helper cannot be created.</p>
+</div>
+</details>
+<details open class="doc-section" id="opening-the-file-is-what-ends-a-debug-session">
+<summary>OPENING THE FILE IS WHAT ENDS A DEBUG SESSION</summary>
+<div class="section-body">
+<p>A workbook saved during a debug session reopens with the debug flag still set,
+and the flag is what Passwords.Protect reads before it does anything: while it
+is set, every re-protect is ignored and only the unprotects go through. Putting
+the matrix back without clearing it left the workbook reading as locked while
+the first sheet any ribbon action unlocked stayed unlocked for the rest of the
+session, with a log line and nothing else.</p>
+<p>LeaveDebugMode is the inverse of the EnterDebugMode that started the session:
+it puts the matrix back, re-locks the workbook structure, and clears the flag,
+so re-protects are honoured again. It returns untouched when the flag is off,
+which is why the matrix is applied on its own below as well. Every open needs
+that, debug session or not: Excel drops UserInterfaceOnly when a file closes,
+and a sheet protected without it is closed to this code as much as to the user.</p>
 <hr />
 <h3 id="onsheetactivate">OnSheetActivate <a class="anchor-link" href="#onsheetactivate">#</a></h3>
 <p><em>on-sheet-activate</em></p>
