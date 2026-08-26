@@ -298,17 +298,10 @@ End Sub
 Private Sub WriteValues()
 
     Dim anchorRng As Range
-    Dim mainLabIndex As Long
-    Dim choiValIndex As Long
-    Dim varNameIndex As Long
-    Dim varChoiceIndex As Long
-    Dim langAddress As String
-
 
     If this.hostSheet Is Nothing Then Exit Sub
     
     Set anchorRng = this.hostSheet.Cells(ANCHORROW, ANCHORCOLUMN)
-    langAddress = anchorRng.Address(True, True)
 
     'The language cell is the one visible control of the header line. Every
     'tag of the sheet lives in its hidden names (owner rule, 2026-08-25):
@@ -319,35 +312,18 @@ Private Sub WriteValues()
     Set anchorRng = anchorRng.Offset(2)
     this.defaultColumns.ToExcelRange anchorRng, TransposeValues:=True
 
-      'Line on values
-    Set anchorRng = anchorRng.Offset(1)
-
-    mainLabIndex = ColumnIndexFor("Main Label")
-    choiValIndex = ColumnIndexFor("Choice Values")
-    varNameIndex = ColumnIndexFor("Variable Name")
-    varChoiceIndex = ColumnIndexFor("Choice")
-    If varNameIndex <= 0 Then Exit Sub
-
-    'Add formulas on specific columns
-    If mainLabIndex > 0 Then
-        anchorRng.Cells(1, mainLabIndex).Formula = LabelFormula(anchorRng.Cells(1, varNameIndex), langAddress)
-    End If
-
-    'The values follow the Choice cell of the line. The events manager fills
-    'that cell with the default choice when a variable is picked, and a hand
-    'pick of another choice reroutes the values with it.
-    If choiValIndex > 0 And varChoiceIndex > 0 Then
-        anchorRng.Cells(1, choiValIndex).Formula = ChoiceValuesFormula(anchorRng.Cells(1, varChoiceIndex), langAddress)
-    End If
-
+    'The two formula columns are written once the table exists, over its
+    'whole body: a new table opens with DEFAULT_ROW_COUNT lines, and a
+    'formula put on the first line alone leaves the others blank.
 End Sub
 
 '@sub-title Put the label and the choice values formulas back on every line of a disease table.
-'@details An import writes values over the two formula columns, because a
-'merge copies whole lines. The master setup answers those two columns
-'itself, through the worksheet functions, so the formulas go back on every
-'line once the values have landed. The table has to be one this class
-'built: the columns are found by the headers it writes.
+'@details The build writes the two columns here once the table exists, an
+'import writes values over them because a merge copies whole lines, and a
+'table grown through Resize takes no formula on its new rows. The master
+'setup answers those two columns itself, through the worksheet functions,
+'so the formulas go on every line each time. The table has to be one this
+'class built: the columns are found by the headers it writes.
 '@param diseaseTable ListObject. The table of a disease worksheet.
 Public Sub WriteLineFormulas(ByVal diseaseTable As ListObject)
     Dim body As Range
@@ -442,6 +418,7 @@ Private Sub WriteData()
 
     WriteValues
     CreateDiseaseTable
+    If Not this.hostTable Is Nothing Then WriteLineFormulas this.hostTable.Table
     AddValidations
     WriteMetadata
 

@@ -116,16 +116,16 @@ Public Sub TestAddExportImportRemove()
     Set summary = Importer.MergeDisease(diseaseTable, importTable, True, DiseaseImportPriority_Foreign, logger)
 
     Assert.AreEqual "LabelAUpdated", diseaseTable.DataBodyRange.Cells(1, 4).Value, "Merge should update existing variable label"
-    'The new variables land on the first free lines under var_a.
-    Assert.AreEqual "var_c", diseaseTable.DataBodyRange.Cells(2, 2).Value, "Merge should land new variables on the first free line"
-    Assert.AreEqual "var_d", diseaseTable.DataBodyRange.Cells(3, 2).Value, "Merge should land every new variable"
+    'The new variables land on the first free lines under var_b.
+    Assert.AreEqual "var_c", diseaseTable.DataBodyRange.Cells(3, 2).Value, "Merge should land new variables on the first free line"
+    Assert.AreEqual "var_d", diseaseTable.DataBodyRange.Cells(4, 2).Value, "Merge should land every new variable"
     Assert.IsTrue summary.RequiresReport, "Summary should indicate report requirement"
 
     Assert.IsTrue logger.HasEntries, "Logger should capture merge operations"
     Set entries = logger.Entries
     Assert.IsTrue entries.Length >= 3, "Logger should contain multiple entries for merge operations"
 
-    'The rows the merge appended carry the dotted frame.
+    'The last line of the merged table carries the dotted frame.
     Set lastCell = diseaseTable.DataBodyRange.Cells(diseaseTable.ListRows.Count, 1)
     Assert.AreEqual CLng(xlDot), CLng(lastCell.Borders(xlEdgeBottom).LineStyle), _
                     "A row appended by the merge should carry the dotted frame"
@@ -236,7 +236,7 @@ Private Sub CleanupEnvironment()
 End Sub
 
 Private Sub PopulateDiseaseTable(ByVal table As ListObject)
-    table.ListRows.Add
+    'A built table opens with fifteen lines: the two rows land on them.
     table.ListRows(1).Range.Value = Array(1, "var_a", "demographics", "LabelA", "choice_age", "0-4 | 5-14", "core")
     table.ListRows(2).Range.Value = Array(2, "var_b", "symptoms", "LabelB", "choice_fever", "yes | no", "core")
 End Sub

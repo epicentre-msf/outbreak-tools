@@ -104,6 +104,10 @@ Public Sub TestBuildCreatesWorksheet()
    
     Set table = diseaseWksh.ListObjects("disTab_001")
     Assert.AreEqual 15&, table.ListRows.Count, "A new disease table opens with fifteen lines."
+    Assert.IsTrue table.ListColumns(labelHeader).DataBodyRange.Cells(15, 1).HasFormula, _
+                 "The label formula reaches the last line of a new table."
+    Assert.IsTrue table.ListColumns(choicesValueHeader).DataBodyRange.Cells(15, 1).HasFormula, _
+                 "The choice values formula reaches the last line of a new table."
 
   
     

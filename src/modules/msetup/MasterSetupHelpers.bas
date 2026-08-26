@@ -293,9 +293,13 @@ Public Sub ManageRows(ByVal targetSheet As Worksheet, ByVal addRows As Boolean)
         Else
             wrapper.RemoveRows totalCount:=EMPTY_ROW_THRESHOLD
         End If
-        'A disease table grown through Resize carries no format on its new
-        'rows; the frame is painted again over the whole table.
-        If addRows And sheetKind = DISEASE_TAG_VALUE Then DiseaseSheet.FrameTable lo
+        'A disease table grown through Resize carries neither format nor
+        'formula on its new rows; the frame and the two line formulas go
+        'back over the whole table.
+        If addRows And sheetKind = DISEASE_TAG_VALUE Then
+            DiseaseSheet.FrameTable lo
+            DiseaseSheet.WriteLineFormulas lo
+        End If
     Next lo
 
     ProtectMasterSetupSheet targetSheet, sheetKind
