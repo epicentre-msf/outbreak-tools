@@ -24,7 +24,6 @@ Private Const PASSWORD_SHEET_NAME As String = "__pass"
 Private Const DROPDOWNS_SHEET_NAME As String = "__dropdowns"
 Private Const REGISTRY_SHEET_NAME As String = "__updated"
 Private Const COMPARE_REPORT_SHEET_NAME As String = "__compRep"
-Private Const IMPORT_REPORT_SHEET_NAME As String = "__impRep"
 Private Const LOG_SHEET_NAME As String = "__log"
 Private Const DEVELOPMENT_SHEET_NAME As String = "Dev"
 Private Const VARIABLES_SHEET_NAME As String = "Variables"
@@ -91,11 +90,24 @@ End Sub
 '@EntryPoint
 Public Sub clickFilters(ByRef ribbonControl As IRibbonControl)
     Dim targetSheet As Worksheet
+    Dim failureText As String
+
     Set targetSheet = ActiveSheet
-    If Not targetSheet Is Nothing Then
-        MasterSetupHelpers.ClearMasterSheetFilters targetSheet
-        LogSuccessLine "clear-filters", targetSheet.Name, "clickFilters"
-    End If
+    If targetSheet Is Nothing Then Exit Sub
+
+    'ClearMasterSheetFilters restores the application state and the
+    'protection itself before it raises, so the failure only has to be
+    'said here.
+    On Error GoTo Handler
+    MasterSetupHelpers.ClearMasterSheetFilters targetSheet
+    LogSuccessLine "clear-filters", targetSheet.Name, "clickFilters"
+    Exit Sub
+
+Handler:
+    failureText = Err.Description
+    Debug.Print "clickFilters: "; Err.Number; Err.Description
+    MsgBox "Unable to clear the filters: " & Err.Description, vbCritical + vbOKOnly, "Filters"
+    LogFailureLine "clear-filters", failureText, "clickFilters"
 End Sub
 
 '@Description("Sort master setup tables on the active worksheet using default ordering.")
@@ -424,7 +436,11 @@ Handler:
     failureText = Err.Description
     Debug.Print "clickAddTrans: "; Err.Number; Err.Description
     MsgBox "An error occurred while updating translations.", vbCritical + vbOKOnly, confirmTitle
-    If Not passManager Is Nothing Then passManager.Protect translationsSheet.Name
+    If Not passManager Is Nothing Then
+        On Error Resume Next
+            passManager.Protect translationsSheet.Name
+        On Error GoTo 0
+    End If
     LogFailureLine "update-translations", failureText, "clickAddTrans"
     Resume Cleanup
 End Sub
@@ -460,10 +476,10 @@ Public Sub clickAddLang(ByRef ribbonControl As IRibbonControl, ByRef text As Str
     Set passManager = MasterSetupHelpers.ResolveMasterPasswords()
     If passManager Is Nothing Then Err.Raise ProjectError.ElementNotFound, "clickAddLang", "Passwords sheet '" & PASSWORD_SHEET_NAME & "' was not found."
 
-    passManager.UnProtect TRANSLATIONS_SHEET_NAME
+    passManager.UnProtect translationsSheet.Name
     Set manager = SetupTranslationsTable.Create(translationsTable)
     manager.EnsureLanguages text
-    passManager.Protect TRANSLATIONS_SHEET_NAME
+    passManager.Protect translationsSheet.Name
 
     LogSuccessLine "add-language", text, "clickAddLang"
     MsgBox "Done!", vbInformation + vbOKOnly, "Confirm"
@@ -482,7 +498,11 @@ Handler:
     failureText = Err.Description
     Debug.Print "clickAddLang: "; Err.Number; Err.Description
     MsgBox "Unable to add the language column.", vbCritical + vbOKOnly, "Confirm"
-    If Not passManager Is Nothing Then passManager.Protect TRANSLATIONS_SHEET_NAME
+    If Not passManager Is Nothing Then
+        On Error Resume Next
+            passManager.Protect translationsSheet.Name
+        On Error GoTo 0
+    End If
     LogFailureLine "add-language", text & ": " & failureText, "clickAddLang"
     Resume Cleanup
 End Sub
@@ -519,10 +539,10 @@ Public Sub clickRemLang(ByRef ribbonControl As IRibbonControl, ByRef text As Str
     Set passManager = MasterSetupHelpers.ResolveMasterPasswords()
     If passManager Is Nothing Then Err.Raise ProjectError.ElementNotFound, "clickRemLang", "Passwords sheet '" & PASSWORD_SHEET_NAME & "' was not found."
 
-    passManager.UnProtect TRANSLATIONS_SHEET_NAME
+    passManager.UnProtect translationsSheet.Name
     Set manager = SetupTranslationsTable.Create(translationsTable)
     manager.RemoveLanguage text
-    passManager.Protect TRANSLATIONS_SHEET_NAME
+    passManager.Protect translationsSheet.Name
 
     LogSuccessLine "remove-language", text, "clickRemLang"
     MsgBox "Done!", vbInformation + vbOKOnly, "Confirm"
@@ -541,7 +561,11 @@ Handler:
     failureText = Err.Description
     Debug.Print "clickRemLang: "; Err.Number; Err.Description
     MsgBox "Unable to remove the language column: " & Err.Description, vbCritical + vbOKOnly, "Confirm"
-    If Not passManager Is Nothing Then passManager.Protect TRANSLATIONS_SHEET_NAME
+    If Not passManager Is Nothing Then
+        On Error Resume Next
+            passManager.Protect translationsSheet.Name
+        On Error GoTo 0
+    End If
     LogFailureLine "remove-language", text & ": " & failureText, "clickRemLang"
     Resume Cleanup
 End Sub
@@ -566,7 +590,8 @@ Public Sub clickMsImpPass(ByRef ribbonControl As IRibbonControl)
         Exit Sub
     End If
 
-    On Error GoTo Cleanup
+    On Error GoTo Handler
+
     Set scope = ApplicationState.Create(Application)
     scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
@@ -582,15 +607,19 @@ Public Sub clickMsImpPass(ByRef ribbonControl As IRibbonControl)
     MsgBox "Done!", vbInformation + vbOKOnly, "Passwords"
 
 Cleanup:
+    'Shielded: Handler is still armed here, and a raise from the close or
+    'from Restore would come straight back to this label and raise again.
+    On Error Resume Next
     If Not importBook Is Nothing Then importBook.Close saveChanges:=False
     If Not scope Is Nothing Then scope.Restore
-    If Err.Number <> 0 Then
-        failureText = Err.Description
-        Debug.Print "clickMsImpPass: "; Err.Number; Err.Description
-        MsgBox "Unable to import passwords: " & Err.Description, vbExclamation + vbOKOnly, "Passwords"
-        Err.Clear
-        LogFailureLine "import-passwords", failureText, "clickMsImpPass"
-    End If
+    Exit Sub
+
+Handler:
+    failureText = Err.Description
+    Debug.Print "clickMsImpPass: "; Err.Number; Err.Description
+    MsgBox "Unable to import passwords: " & Err.Description, vbExclamation + vbOKOnly, "Passwords"
+    LogFailureLine "import-passwords", failureText, "clickMsImpPass"
+    Resume Cleanup
 End Sub
 
 
@@ -701,7 +730,15 @@ End Sub
 Public Sub clickImp(ByRef ribbonControl As IRibbonControl)
     Dim scope As ApplicationState
     Dim passManager As Passwords
+    Dim translationsSheet As Worksheet
     Dim failureText As String
+
+    Set translationsSheet = MasterSetupHelpers.ResolveMasterTranslationsSheet()
+    If translationsSheet Is Nothing Then
+        MsgBox "Translations sheet was not found.", vbExclamation + vbOKOnly, "Import"
+        LogWarningLine "import-migration", "translations sheet was not found", "clickImp"
+        Exit Sub
+    End If
 
     On Error GoTo Handler
 
@@ -714,9 +751,9 @@ Public Sub clickImp(ByRef ribbonControl As IRibbonControl)
     'The migration writes on the Variables, Choices and Translations sheets
     'and adds one worksheet per disease of the file.
     SetMasterSheetsProtection passManager, protectSheets:=False
-    passManager.UnProtect TRANSLATIONS_SHEET_NAME
+    passManager.UnProtect translationsSheet.Name
     MasterSetupExports.ImportFlatFile
-    passManager.Protect TRANSLATIONS_SHEET_NAME
+    passManager.Protect translationsSheet.Name
     SetMasterSheetsProtection passManager, protectSheets:=True
 
     RefreshDropdownCaches
@@ -735,7 +772,7 @@ Handler:
     MsgBox "Migration import failed: " & Err.Description, vbCritical + vbOKOnly, "Import"
     If Not passManager Is Nothing Then
         On Error Resume Next
-            passManager.Protect TRANSLATIONS_SHEET_NAME
+            passManager.Protect translationsSheet.Name
             SetMasterSheetsProtection passManager, protectSheets:=True
         On Error GoTo 0
     End If
@@ -975,8 +1012,8 @@ Private Sub SetMasterSheetsProtection(ByVal passManager As Passwords, ByVal prot
         passManager.Protect ThisWorkbook
     Else
         passManager.UnProtect ThisWorkbook
-        MasterSetupHelpers.UnProtectMasterSetupSheet DeploymentSheet(VARIABLES_SHEET_NAME), "variables"
-        MasterSetupHelpers.UnProtectMasterSetupSheet DeploymentSheet(CHOICES_SHEET_NAME), "choices"
+        MasterSetupHelpers.UnProtectMasterSetupSheet DeploymentSheet(VARIABLES_SHEET_NAME)
+        MasterSetupHelpers.UnProtectMasterSetupSheet DeploymentSheet(CHOICES_SHEET_NAME)
     End If
 End Sub
 
@@ -992,7 +1029,6 @@ Private Sub RegisterDeploymentSheets(ByVal manager As Development)
     HideOnDeploy manager, REGISTRY_SHEET_NAME
     HideOnDeploy manager, PASSWORD_SHEET_NAME
     HideOnDeploy manager, COMPARE_REPORT_SHEET_NAME
-    HideOnDeploy manager, IMPORT_REPORT_SHEET_NAME
     HideOnDeploy manager, LOG_SHEET_NAME
     HideOnDeploy manager, DEVELOPMENT_SHEET_NAME
 

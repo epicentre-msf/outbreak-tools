@@ -12,7 +12,7 @@ Attribute VB_Description = "Workbook-level orchestrator for master setup lifecyc
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Coordinates workbook events and shared services for the master setup workbook.")
-'@depends MasterSetupPreparation, MasterSetupVariables, DropdownLists, LLChoices, TranslationObject, MasterSetupLog, Passwords
+'@depends MasterSetupPreparation, MasterSetupVariables, DropdownLists, LLChoices, MasterSetupLog, Passwords
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -26,7 +26,6 @@ Private Type TEventMasterSetup
     dropdowns As DropdownLists          'Cached dropdown manager
     variables As MasterSetupVariables   'Cached variables manager
     choices As LLChoices                'Cached choices helper
-    translations As TranslationObject   'Cached workbook translations
     ribbon As IRibbonUI                  'Cached ribbon interface for future invalidations
     logStore As MasterSetupLog           'Cached user log on the __log worksheet
     triedLog As Boolean                  'The log build ran once, whatever it answered
@@ -47,9 +46,6 @@ Private Const CHOICES_IDENTIFIER As String = "__master_choices"
 
 Private Const DROPDOWNS_SHEET_NAME As String = "__dropdowns"
 Private Const DROPDOWNS_PREFIX As String = "dropdown_"
-
-Private Const TRANSLATIONS_SHEET_NAME As String = "Translations"
-Private Const TRANSLATIONS_TABLE_NAME As String = "Tab_Translations"
 
 Private Const PASSWORD_SHEET_NAME As String = "__pass"
 
@@ -92,7 +88,10 @@ Public Sub OnRibbonLoad(ByVal ribbon As IRibbonUI)
     Set this.ribbon = ribbon
 End Sub
 
-'@sub-title Refresh translation-backed caches after a language change.
+'@sub-title Drop the choices helper after an edit of the Choices or Translations sheet.
+'@details The master setup holds its content in English, so the service
+'carries no translation object of its own; the choices helper is the one
+'cache an edit of those two sheets makes stale.
 Public Sub RefreshTranslations()
     ResetTranslationCaches
 End Sub
@@ -118,11 +117,6 @@ End Property
 '@sub-title Provide the master setup choices helper.
 Public Property Get Choices() As LLChoices
     Set Choices = EnsureChoicesHelper
-End Property
-
-'@sub-title Provide the workbook-wide translations object.
-Public Property Get Translations() As TranslationObject
-    Set Translations = EnsureWorkbookTranslations
 End Property
 
 '@sub-title Expose the cached ribbon interface.
@@ -199,7 +193,6 @@ Private Function ResolvePasswords() As Passwords
 End Function
 
 Private Sub ResetTranslationCaches()
-    Set this.translations = Nothing
     Set this.choices = Nothing    'The helper re-reads the sheet next time
 End Sub
 
@@ -269,42 +262,6 @@ Private Function EnsureChoicesHelper() As LLChoices
     End If
 
     Set EnsureChoicesHelper = this.choices
-End Function
-
-Private Function EnsureWorkbookTranslations() As TranslationObject
-    Dim table As ListObject
-    Dim languageTag As String
-
-    If this.translations Is Nothing Then
-        Set table = ResolveTranslationTable(TRANSLATIONS_SHEET_NAME, TRANSLATIONS_TABLE_NAME)
-        If table Is Nothing Then Exit Function
-
-        'The file language went away with the ribbon dropdown; the first
-        'language column of the table is the default.
-        languageTag = Trim$(CStr(table.HeaderRowRange.Cells(1, 1).Value))
-
-        Set this.translations = TranslationObject.Create(table, languageTag)
-    End If
-
-    Set EnsureWorkbookTranslations = this.translations
-End Function
-
-Private Function ResolveTranslationTable(ByVal sheetName As String, _
-                                         ByVal tableName As String) As ListObject
-    Dim ws As Worksheet
-
-    Set ws = ResolveWorksheet(sheetName)
-    If ws Is Nothing Then Exit Function
-
-    On Error Resume Next
-        Set ResolveTranslationTable = ws.ListObjects(tableName)
-    On Error GoTo 0
-
-    If ResolveTranslationTable Is Nothing Then
-        If ws.ListObjects.Count = 1 Then
-            Set ResolveTranslationTable = ws.ListObjects(1)
-        End If
-    End If
 End Function
 
 Private Function ResolveWorksheet(ByVal sheetName As String) As Worksheet

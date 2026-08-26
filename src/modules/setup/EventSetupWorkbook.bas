@@ -1,7 +1,7 @@
 Attribute VB_Name = "EventSetupWorkbook"
 Option Explicit
 
-Private mBooting As Boolean
+Private reentrant As Boolean
 
 '@Folder("Setup")
 '@ModuleDescription("Thin workbook-level event handlers delegating to the shared EventSetup service")
@@ -22,13 +22,13 @@ Private Const SHEET_CHECKING As String = "__checkRep"
 Private Sub Workbook_Open()
     Application.ScreenUpdating = False
 
-    mBooting = True
+    reentrant = True
 
     On Error GoTo Clean
     EventsManager.WorkbookOpened
 
 Clean:
-    mBooting = False
+    reentrant = False
 End Sub
 
 Private Sub Workbook_BeforeClose(Cancel As Boolean)
@@ -46,22 +46,22 @@ End Sub
 'the busy state instead, and only for the one sheet whose activation does work
 'worth hiding.
 Private Sub Workbook_SheetActivate(ByVal sh As Object)
-    If mBooting Then Exit Sub
+    If reentrant Then Exit Sub
     If TypeName(sh) <> "Worksheet" Then Exit Sub
     If sh.Name = SHEET_CHECKING Then Exit Sub
 
-    mBooting = True
+    reentrant = True
 
     On Error GoTo Clean
 
     EventsManager.SheetActivated sh
 
 Clean:
-    mBooting = False
+    reentrant = False
 End Sub
 
 Private Sub Workbook_SheetChange(ByVal sh As Object, ByVal Target As Range)
-    If mBooting Then Exit Sub
+    If reentrant Then Exit Sub
     If TypeName(sh) <> "Worksheet" Then Exit Sub
 
     Select Case sh.Name
@@ -70,12 +70,12 @@ Private Sub Workbook_SheetChange(ByVal sh As Object, ByVal Target As Range)
         Exit Sub
     End Select
 
-    mBooting = True
+    reentrant = True
 
     On Error GoTo Clean
 
     EventsManager.SheetChanged sh, Target
 
 Clean:
-    mBooting = False
+    reentrant = False
 End Sub

@@ -558,7 +558,7 @@ End Sub
 'lines, so the success line stays short on a clean run.
 '@param logger DiseaseLogger. The logger the class filled.
 '@return String. ", N warning(s), M error(s)" or an empty string.
-Private Function LoggerSummary(ByVal logger As DiseaseLogger) As String
+Public Function LoggerSummary(ByVal logger As DiseaseLogger) As String
     Dim entries As BetterArray
     Dim entry As BetterArray
     Dim index As Long

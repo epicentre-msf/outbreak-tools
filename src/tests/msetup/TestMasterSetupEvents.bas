@@ -357,6 +357,34 @@ Fail:
     CustomTestLogFailure Assert, "TestVariableDefaultChangePropagatesToDiseases", Err.Number, Err.Description
 End Sub
 
+'@TestMethod("MasterSetupEvents")
+Public Sub TestEnsureLanguagesAddsAColumnToTheMasterTable()
+    CustomTestSetTitles Assert, "MasterSetupEvents", "TestEnsureLanguagesAddsAColumnToTheMasterTable"
+
+    Dim translationsSheet As Worksheet
+    Dim table As ListObject
+    Dim manager As SetupTranslationsTable
+
+    On Error GoTo Fail
+
+    'The Add Language door opens with this same Create over the master
+    'table, so the fixture has to carry the shape the class wants.
+    Set translationsSheet = ThisWorkbook.Worksheets(TRANSLATIONS_SHEET)
+    Set table = translationsSheet.ListObjects(1)
+    Set manager = SetupTranslationsTable.Create(table)
+
+    manager.EnsureLanguages "ESP"
+
+    Assert.AreEqual 3, table.ListColumns.Count, "The table should gain one language column"
+    Assert.AreEqual "ESP", table.ListColumns(3).Name, "The new column should carry the language name"
+    Assert.AreEqual "ENG", table.ListColumns(1).Name, "The default language column should stay first"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestEnsureLanguagesAddsAColumnToTheMasterTable", Err.Number, Err.Description
+End Sub
+
 '@section Fixtures
 '===============================================================================
 
@@ -404,11 +432,14 @@ Private Sub PrepareEnvironment()
     targetSheet.Calculate
 
     'Translations sheet: the language columns feed the languages dropdown.
+    'The table sits one column right of its helper tag column, the way
+    'SetupTranslationsTable wants it.
     Set targetSheet = EnsureWorksheet(TRANSLATIONS_SHEET)
     ClearWorksheet targetSheet
+    targetSheet.Range("A1").Value = "__TagInternal__"
     data = RowsToMatrix(Array(Array("ENG", "FRA"), Array("Age", "Âge")))
-    WriteMatrix targetSheet.Range("A1"), data
-    targetSheet.ListObjects.Add SourceType:=xlSrcRange, Source:=targetSheet.Range("A1").Resize(2, 2), _
+    WriteMatrix targetSheet.Range("B1"), data
+    targetSheet.ListObjects.Add SourceType:=xlSrcRange, Source:=targetSheet.Range("B1").Resize(2, 2), _
                                 XlListObjectHasHeaders:=xlYes
 End Sub
 

@@ -314,12 +314,15 @@ Private Sub PrepareEnvironment()
     AddDropdownList Dropdowns, PROHIBITED_LIST, Array("Variables", "Translations", "Choices")
     AddDropdownList Dropdowns, DISEASES_LIST, Array("", "")
 
-    'Translations sheet: one language column per language the file can carry.
+    'Translations sheet: the table sits one column right of its helper tag
+    'column, the way SetupTranslationsTable wants it; the headers are the
+    'languages, one column per language the file can carry.
     Set translationSheet = EnsureWorksheet(TRANSLATIONS_SHEET)
     ClearWorksheet translationSheet
-    data = RowsToMatrix(Array(Array("tag", "ENG", "FRA"), Array("hello", "Hello", "Bonjour")))
-    WriteMatrix translationSheet.Range("A1"), data
-    translationSheet.ListObjects.Add SourceType:=xlSrcRange, Source:=translationSheet.Range("A1").Resize(2, 3), _
+    translationSheet.Range("A1").Value = "__TagInternal__"
+    data = RowsToMatrix(Array(Array("ENG", "FRA"), Array("Hello", "Bonjour")))
+    WriteMatrix translationSheet.Range("B1"), data
+    translationSheet.ListObjects.Add SourceType:=xlSrcRange, Source:=translationSheet.Range("B1").Resize(2, 2), _
                                       XlListObjectHasHeaders:=xlYes
     Set TranslationTable = translationSheet.ListObjects(1)
 

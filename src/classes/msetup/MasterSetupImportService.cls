@@ -71,12 +71,13 @@ Private Const HEADER_CONTROL As String = "Control"
 Private Const HEADER_STATUS As String = "Status"
 Private Const HEADER_VARIABLE_ORDER As String = "Variable Order"
 
-'Headers of the exported choices, the ones a setup Choices table carries.
-Private Const HEADER_LIST_NAME As String = "list name"
-Private Const HEADER_LABEL As String = "label"
-Private Const HEADER_TRANSLATED_LABEL As String = "translated label"
-Private Const HEADER_RAW_LABEL As String = "non translated label"
-Private Const HEADER_SHORT_LABEL As String = "short label"
+'Headers of the exported choices, spelled the way the setup Choices sheet
+'and DiseaseExporter spell them. Every match stays case-insensitive.
+Private Const HEADER_LIST_NAME As String = "List Name"
+Private Const HEADER_LABEL As String = "Label"
+Private Const HEADER_TRANSLATED_LABEL As String = "Translated Label"
+Private Const HEADER_RAW_LABEL As String = "Non Translated Label"
+Private Const HEADER_SHORT_LABEL As String = "Short Label"
 
 'Headers of a disease table, as DiseaseSheet writes them.
 Private Const DISEASE_HEADER_ORDER As String = "Variable Order"

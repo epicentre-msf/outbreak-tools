@@ -212,7 +212,7 @@ Public Sub TestDiseaseProtectionForbidsColumnDeletes()
     Assert.IsFalse fixtureSheet.Protection.AllowDeletingColumns, "Columns of a disease sheet stay"
     Assert.IsFalse fixtureSheet.Protection.AllowDeletingRows, "Row deletes on a disease sheet go through the ribbon"
 
-    MasterSetupHelpers.UnProtectMasterSetupSheet fixtureSheet, "disease"
+    MasterSetupHelpers.UnProtectMasterSetupSheet fixtureSheet
     Assert.IsFalse fixtureSheet.ProtectContents, "UnProtect should release the sheet"
 
     Exit Sub
@@ -238,7 +238,7 @@ Public Sub TestVariablesProtectionAllowsRowDeletes()
     Assert.IsTrue fixtureSheet.Protection.AllowDeletingRows, "Rows of the variables sheet may be deleted"
     Assert.IsFalse fixtureSheet.Protection.AllowDeletingColumns, "Columns of the variables sheet stay"
 
-    MasterSetupHelpers.UnProtectMasterSetupSheet fixtureSheet, "variables"
+    MasterSetupHelpers.UnProtectMasterSetupSheet fixtureSheet
     Assert.IsFalse fixtureSheet.ProtectContents, "UnProtect should release the sheet"
 
     Exit Sub

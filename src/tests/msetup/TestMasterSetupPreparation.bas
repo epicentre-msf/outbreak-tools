@@ -76,6 +76,31 @@ Fail:
     CustomTestLogFailure Assert, "TestPrepareAdoptsLegacyDiseaseSheets", Err.Number, Err.Description
 End Sub
 
+'@TestMethod("MasterSetupPreparation")
+Public Sub TestPrepareGrowsTheReportSheetVeryHidden()
+    CustomTestSetTitles Assert, "MasterSetupPreparation", "TestPrepareGrowsTheReportSheetVeryHidden"
+
+    Dim reportSheet As Worksheet
+
+    On Error GoTo Fail
+
+    Subject.Prepare
+
+    Set reportSheet = FixtureSheet("__compRep")
+    Assert.IsFalse reportSheet Is Nothing, "A workbook without __compRep should grow it on preparation"
+    Assert.AreEqual CLng(xlSheetVeryHidden), CLng(reportSheet.Visible), "The report sheet should be very hidden"
+
+    'A second preparation leaves the sheet as it stands.
+    reportSheet.Visible = xlSheetVisible
+    Subject.Prepare
+    Assert.AreEqual CLng(xlSheetVisible), CLng(reportSheet.Visible), "An existing report sheet should keep its visibility"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestPrepareGrowsTheReportSheetVeryHidden", Err.Number, Err.Description
+End Sub
+
 '@section Test lifecycle
 '===============================================================================
 '@TestInitialize
@@ -276,6 +301,18 @@ Private Sub PrepareTranslationsFixture(ByVal wsTrans As Worksheet)
     Set lo = wsTrans.ListObjects.Add(xlSrcRange, wsTrans.Range("A1:C2"), , xlYes)
     lo.Name = "TST_MasterTranslations"
 End Sub
+
+'@description A worksheet of the fixture workbook by name, or Nothing.
+Private Function FixtureSheet(ByVal sheetName As String) As Worksheet
+    Dim sh As Worksheet
+
+    For Each sh In FixtureWorkbook.Worksheets
+        If StrComp(sh.Name, sheetName, vbTextCompare) = 0 Then
+            Set FixtureSheet = sh
+            Exit Function
+        End If
+    Next sh
+End Function
 
 Private Function ContainsValue(ByVal items As BetterArray, ByVal expected As String) As Boolean
     Dim idx As Long

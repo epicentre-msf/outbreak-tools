@@ -103,7 +103,6 @@ Public Sub TestOnWorkbookOpenInitialisesDependencies()
     Dim drops As DropdownLists
     Dim vars As MasterSetupVariables
     Dim choices As LLChoices
-    Dim trads As TranslationObject
 
     Set drops = Subject.Dropdowns
     Assert.IsFalse drops Is Nothing, "Dropdown manager should be resolved"
@@ -114,9 +113,6 @@ Public Sub TestOnWorkbookOpenInitialisesDependencies()
 
     Set choices = Subject.Choices
     Assert.IsFalse choices Is Nothing, "Choices helper should be created"
-
-    Set trads = Subject.Translations
-    Assert.IsFalse trads Is Nothing, "Workbook translations should be resolved"
 
     Exit Sub
 
@@ -131,16 +127,16 @@ Public Sub TestRefreshTranslationsResetsCaches()
 
     Subject.OnWorkbookOpen Application
 
-    Dim firstWorkbookTrads As TranslationObject
     Dim firstChoices As LLChoices
+    Dim firstVariables As MasterSetupVariables
 
-    Set firstWorkbookTrads = Subject.Translations
     Set firstChoices = Subject.Choices
+    Set firstVariables = Subject.Variables
 
     Subject.RefreshTranslations
 
-    Assert.IsFalse firstWorkbookTrads Is Subject.Translations, "General translations should refresh after RefreshTranslations"
     Assert.IsFalse firstChoices Is Subject.Choices, "Choices helper should refresh when translations change"
+    Assert.IsTrue firstVariables Is Subject.Variables, "The variables manager stays cached across a refresh"
     Exit Sub
 
 Fail:
@@ -169,15 +165,16 @@ Private Sub PrepareTranslationsFixture(ByVal targetSheet As Worksheet)
 
     If targetSheet Is Nothing Then Exit Sub
 
+    'The table sits one column right of its helper tag column, the way
+    'SetupTranslationsTable wants it; the headers are the languages.
     targetSheet.Cells.Clear
-    targetSheet.Range("A1").Value = "key"
+    targetSheet.Range("A1").Value = "__TagInternal__"
     targetSheet.Range("B1").Value = "en"
     targetSheet.Range("C1").Value = "fr"
-    targetSheet.Range("A2").Value = "askConfirm"
     targetSheet.Range("B2").Value = "Confirm"
     targetSheet.Range("C2").Value = "Confirmer"
 
-    Set lo = targetSheet.ListObjects.Add(xlSrcRange, targetSheet.Range("A1:C2"), , xlYes)
+    Set lo = targetSheet.ListObjects.Add(xlSrcRange, targetSheet.Range("B1:C2"), , xlYes)
     lo.Name = TRANSLATION_TABLE_NAME
 End Sub
 

@@ -284,7 +284,7 @@ Public Sub ManageRows(ByVal targetSheet As Worksheet, ByVal addRows As Boolean)
     Set scope = ApplicationState.Create(Application)
     scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
-    UnProtectMasterSetupSheet targetSheet, sheetKind
+    UnProtectMasterSetupSheet targetSheet
 
     For Each lo In targetSheet.ListObjects
         Set wrapper = CustomTable.Create(lo)
@@ -320,25 +320,38 @@ Handler:
 End Sub
 
 
+'@sub-title Show every filtered row of the tables of a sheet.
+'@details The sheet kind (ResolveMasterSheetKind) decides the protection
+'put back at the end. A failure is raised at the caller once the sheet is
+'protected again and the application state is restored, the way ManageRows
+'does it, so the ribbon can say what went wrong.
 Public Sub ClearMasterSheetFilters(ByVal targetSheet As Worksheet)
 
     Dim lo As ListObject
+    Dim sheetKind As String
     Dim scope As ApplicationState
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
 
     If targetSheet Is Nothing Then Exit Sub
 
-    'The Handler below was never armed, so every raise in this procedure walked
-    'out unhandled and left the screen off. Arm it above ApplyBusyState, which
-    'writes screen updating and alerts before the settings that can refuse.
+    sheetKind = ResolveMasterSheetKind(targetSheet)
+
+    'The handler is armed ABOVE ApplyBusyState. That call writes screen
+    'updating and alerts before the settings that can refuse, so a raise
+    'there leaves the screen off and has to reach Cleanup.
     On Error GoTo Handler
 
     Set scope = ApplicationState.Create(Application)
     scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
-    UnProtectMasterSetupSheet targetSheet, vbNullString
+    UnProtectMasterSetupSheet targetSheet
 
     For Each lo In targetSheet.ListObjects
         If Not lo.AutoFilter Is Nothing Then
+            'ShowAllData raises on a table with nothing filtered; the
+            'table is already in the state wanted.
             On Error Resume Next
                 lo.AutoFilter.ShowAllData
             On Error GoTo Handler
@@ -349,21 +362,31 @@ Public Sub ClearMasterSheetFilters(ByVal targetSheet As Worksheet)
         targetSheet.AutoFilterMode = False
     End If
 
-    ProtectMasterSetupSheet targetSheet, vbNullString
+    ProtectMasterSetupSheet targetSheet, sheetKind
 
 Cleanup:
     'Shielded: Handler is still armed here, and a raise from Restore would
-    'come straight back to this label and raise again.
+    'come straight back to this label and raise again. The failure path puts
+    'the sheet back under protection before the state is restored.
     On Error Resume Next
+    If errNumber <> 0 Then ProtectMasterSetupSheet targetSheet, sheetKind
     If Not scope Is Nothing Then scope.Restore
+    On Error GoTo 0
+
+    If errNumber <> 0 Then
+        Err.Raise errNumber, errSource, errDescription
+    End If
     Exit Sub
 
 Handler:
-    Debug.Print "Clear filters - "; targetSheet.Name; " error "; Err.Number; " "; Err.Description
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    Debug.Print "Clear filters - "; targetSheet.Name; " error "; errNumber; " "; errDescription
     Resume Cleanup
 End Sub
 
-Public Sub UnProtectMasterSetupSheet(ByVal targetSheet As Worksheet, ByVal sheetTag As String)
+Public Sub UnProtectMasterSetupSheet(ByVal targetSheet As Worksheet)
     Dim passManager As Passwords
 
     If targetSheet Is Nothing Then Exit Sub
@@ -543,6 +566,8 @@ Private Function ReplaceInvalidWorksheetChars(ByVal valueText As String) As Stri
     cleaned = Replace(cleaned, "?", "_")
     cleaned = Replace(cleaned, "/", "_")
     cleaned = Replace(cleaned, "\", "_")
+    cleaned = Replace(cleaned, "[", "_")
+    cleaned = Replace(cleaned, "]", "_")
     cleaned = Replace(cleaned, "*", "_")
     cleaned = Replace(cleaned, ".", "_")
     cleaned = Replace(cleaned, """", "_")

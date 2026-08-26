@@ -235,6 +235,9 @@ End Function
 '@return String. The path of the saved file.
 Public Function ExportMigration(ByVal exportFolder As String) As String
     Dim filePath As String
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
 
     If LenB(exportFolder) = 0 Then
         ThrowError ProjectError.InvalidArgument, "Export folder cannot be empty"
@@ -242,12 +245,37 @@ Public Function ExportMigration(ByVal exportFolder As String) As String
 
     BuildMigrationWorkbook
 
-    filePath = exportFolder & Application.PathSeparator & _
-               FILE_PREFIX & Format$(Now, "yyyy-mm-dd") & FILE_EXTENSION
+    'The separator is added only when the folder lacks one, so a folder
+    'picked at a drive root gives one separator.
+    filePath = exportFolder
+    If Right$(filePath, 1) <> Application.PathSeparator Then
+        filePath = filePath & Application.PathSeparator
+    End If
+    filePath = filePath & FILE_PREFIX & Format$(Now, "yyyy-mm-dd") & FILE_EXTENSION
+
+    'A missing folder, a locked file or a name Excel refuses raises on
+    'SaveAs. The built workbook is released at the label, so no workbook
+    'with unsaved changes stays open behind the raise.
+    On Error GoTo Handler
     this.manager.SaveAs filePath
     this.manager.CloseWorkbook False
+    On Error GoTo 0
 
     ExportMigration = filePath
+    Exit Function
+
+Handler:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+
+    'Shielded: the release closes without saving and a raise from it would
+    'replace the real error.
+    On Error Resume Next
+    ReleaseWorkbook
+    On Error GoTo 0
+
+    Err.Raise errNumber, errSource, errDescription
 End Function
 
 '@sub-title Close the migration workbook this class still holds, without saving.

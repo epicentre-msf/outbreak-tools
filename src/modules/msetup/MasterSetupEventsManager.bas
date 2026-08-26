@@ -31,13 +31,25 @@ Option Explicit
 'writes in the user log, the record EventMasterSetup holds on __log. A log
 'fault never takes down the event it records: every write is guarded.
 
-'Column order of a disease table, as DiseaseSheet builds it.
-Private Const DISEASE_NAME_COLUMN As Long = 2
-Private Const DISEASE_SECTION_COLUMN As Long = 3
-Private Const DISEASE_LABEL_COLUMN As Long = 4
-Private Const DISEASE_CHOICE_COLUMN As Long = 5
-Private Const DISEASE_VALUES_COLUMN As Long = 6
-Private Const DISEASE_STATUS_COLUMN As Long = 7
+'Headers of a disease table, as DiseaseSheet writes them. The columns are
+'found by header once per handler call, the way every other reader of the
+'table finds them, so a column the user moved keeps working.
+Private Const DISEASE_HEADER_NAME As String = "Variable Name"
+Private Const DISEASE_HEADER_SECTION As String = "Variable Section"
+Private Const DISEASE_HEADER_LABEL As String = "Main Label"
+Private Const DISEASE_HEADER_CHOICE As String = "Choice"
+Private Const DISEASE_HEADER_VALUES As String = "Choice Values"
+Private Const DISEASE_HEADER_STATUS As String = "Status"
+
+'The column indexes of one disease table, 0 for a header the table lacks.
+Private Type TDiseaseColumns
+    nameIndex As Long
+    sectionIndex As Long
+    labelIndex As Long
+    choiceIndex As Long
+    valuesIndex As Long
+    statusIndex As Long
+End Type
 
 Private Const LANGUAGE_CELL_ROW As Long = 2
 Private Const LANGUAGE_CELL_COLUMN As Long = 2
@@ -46,6 +58,11 @@ Private Const NAME_DISLANG As String = "__Var_DISLANG"
 Private Const HEADER_VARIABLE_NAME As String = "Variable Name"
 Private Const HEADER_DEFAULT_CHOICE As String = "Default Choice"
 Private Const HEADER_CHOICES_VALUES As String = "Choices Values"
+'The three Choices headers this module reads, spelled the way the setup
+'spells them. Every match stays case-insensitive.
+Private Const HEADER_LIST_NAME As String = "List Name"
+Private Const HEADER_TRANSLATED_LABEL As String = "Translated Label"
+Private Const HEADER_LABEL As String = "Label"
 Private Const CHOICES_DROPDOWN As String = "__lst_choices"
 
 Private eventService As EventMasterSetup
@@ -133,11 +150,19 @@ End Sub
 '===============================================================================
 
 '@sub-title Fill the line of a disease table when its variable is picked.
+'@details The sheet is unprotected the first time a line needs a write and
+'protected again at the Cleanup label, so a raise inside the loop still
+'leaves the sheet protected before it reaches MsSheetChanged.
 Private Sub HandleDiseaseSheetChange(ByVal sh As Worksheet, ByVal target As Range)
     Dim table As ListObject
+    Dim layout As TDiseaseColumns
     Dim nameCells As Range
     Dim changedCell As Range
     Dim languageCell As Range
+    Dim unprotected As Boolean
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
 
     'The language pick of the sheet is stored beside it, so exports read the
     'language the user chose.
@@ -150,30 +175,52 @@ Private Sub HandleDiseaseSheetChange(ByVal sh As Worksheet, ByVal target As Rang
     Set table = sh.ListObjects(1)
     If table.DataBodyRange Is Nothing Then Exit Sub
 
+    ResolveDiseaseColumns table, layout
+
     'The two formula columns read the language cell. Under manual calculation
     'the old text would stand until something else recalculated the sheet.
     If Not Intersect(target, languageCell) Is Nothing Then
-        RecalculateDiseaseColumns table
+        RecalculateDiseaseColumns table, layout
     End If
 
-    Set nameCells = Intersect(target, table.DataBodyRange.Columns(DISEASE_NAME_COLUMN))
+    If layout.nameIndex = 0 Then Exit Sub
+    Set nameCells = Intersect(target, table.DataBodyRange.Columns(layout.nameIndex))
     If nameCells Is Nothing Then Exit Sub
 
-    MasterSetupHelpers.UnProtectMasterSetupSheet sh, "disease"
+    On Error GoTo Handler
+
+    EnsureUnprotected sh, "disease", unprotected
 
     For Each changedCell In nameCells.Cells
-        FillDiseaseLine table, changedCell
+        FillDiseaseLine table, changedCell, layout
     Next changedCell
 
-    MasterSetupHelpers.ProtectMasterSetupSheet sh, "disease"
+Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Protect would
+    'come straight back to this label and raise again.
+    On Error Resume Next
+    If unprotected Then MasterSetupHelpers.ProtectMasterSetupSheet sh, "disease"
+    On Error GoTo 0
+
+    If errNumber <> 0 Then
+        Err.Raise errNumber, errSource, errDescription
+    End If
+    Exit Sub
+
+Handler:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    Resume Cleanup
 End Sub
 
 '@sub-title Fill one line of the disease table from the Variables sheet.
 '@details A cleared name cleans the whole line: the filled cells empty and
 'the choice dropdown the fill added goes with them. A picked name fills the
 'section, the default choice and the default status, and puts the choices
-'dropdown on the Choice cell so another choice is one pick away.
-Private Sub FillDiseaseLine(ByVal table As ListObject, ByVal nameCell As Range)
+'dropdown on the Choice cell so another choice is one pick away. A column
+'the table lacks is left alone.
+Private Sub FillDiseaseLine(ByVal table As ListObject, ByVal nameCell As Range, ByRef layout As TDiseaseColumns)
     Dim variables As MasterSetupVariables
     Dim choiceCell As Range
     Dim variableName As String
@@ -181,16 +228,18 @@ Private Sub FillDiseaseLine(ByVal table As ListObject, ByVal nameCell As Range)
 
     rowIndex = nameCell.Row - table.DataBodyRange.Row + 1
     variableName = Trim$(CStr(nameCell.Value))
-    Set choiceCell = table.DataBodyRange.Cells(rowIndex, DISEASE_CHOICE_COLUMN)
+    If layout.choiceIndex > 0 Then
+        Set choiceCell = table.DataBodyRange.Cells(rowIndex, layout.choiceIndex)
+    End If
 
     If LenB(variableName) = 0 Then
-        table.DataBodyRange.Cells(rowIndex, DISEASE_SECTION_COLUMN).Value = vbNullString
-        choiceCell.Value = vbNullString
-        table.DataBodyRange.Cells(rowIndex, DISEASE_STATUS_COLUMN).Value = vbNullString
+        WriteDiseaseCell table, rowIndex, layout.sectionIndex, vbNullString
+        WriteDiseaseCell table, rowIndex, layout.choiceIndex, vbNullString
+        WriteDiseaseCell table, rowIndex, layout.statusIndex, vbNullString
         'A cell with no validation raises on Delete; the clean line matters
         'more than the raise.
         On Error Resume Next
-        choiceCell.Validation.Delete
+        If Not choiceCell Is Nothing Then choiceCell.Validation.Delete
         On Error GoTo 0
         Exit Sub
     End If
@@ -201,12 +250,41 @@ Private Sub FillDiseaseLine(ByVal table As ListObject, ByVal nameCell As Range)
     'An unknown name fills nothing and clears nothing: the user may still be
     'typing it.
     On Error Resume Next
-    table.DataBodyRange.Cells(rowIndex, DISEASE_SECTION_COLUMN).Value = variables.SectionFor(variableName)
-    choiceCell.Value = variables.DefaultChoiceFor(variableName)
-    table.DataBodyRange.Cells(rowIndex, DISEASE_STATUS_COLUMN).Value = variables.DefaultStatusFor(variableName)
-    MasterSetupService.Dropdowns.SetValidation choiceCell, CHOICES_DROPDOWN
+    WriteDiseaseCell table, rowIndex, layout.sectionIndex, variables.SectionFor(variableName)
+    WriteDiseaseCell table, rowIndex, layout.choiceIndex, variables.DefaultChoiceFor(variableName)
+    WriteDiseaseCell table, rowIndex, layout.statusIndex, variables.DefaultStatusFor(variableName)
+    If Not choiceCell Is Nothing Then MasterSetupService.Dropdowns.SetValidation choiceCell, CHOICES_DROPDOWN
     On Error GoTo 0
 End Sub
+
+'@sub-title Write one cell of a disease line; a column index of 0 writes nothing.
+Private Sub WriteDiseaseCell(ByVal table As ListObject, ByVal rowIndex As Long, _
+                             ByVal columnIndex As Long, ByVal cellValue As String)
+    If columnIndex = 0 Then Exit Sub
+    table.DataBodyRange.Cells(rowIndex, columnIndex).Value = cellValue
+End Sub
+
+'@sub-title Find the six columns of a disease table by their headers.
+'@details Resolved once per handler call. A header the table lacks answers
+'0, and every writer checks for it.
+Private Sub ResolveDiseaseColumns(ByVal table As ListObject, ByRef layout As TDiseaseColumns)
+    layout.nameIndex = ColumnIndexOf(table, DISEASE_HEADER_NAME)
+    layout.sectionIndex = ColumnIndexOf(table, DISEASE_HEADER_SECTION)
+    layout.labelIndex = ColumnIndexOf(table, DISEASE_HEADER_LABEL)
+    layout.choiceIndex = ColumnIndexOf(table, DISEASE_HEADER_CHOICE)
+    layout.valuesIndex = ColumnIndexOf(table, DISEASE_HEADER_VALUES)
+    layout.statusIndex = ColumnIndexOf(table, DISEASE_HEADER_STATUS)
+End Sub
+
+'@sub-title The index of a column in its table, 0 when the header is missing.
+Private Function ColumnIndexOf(ByVal table As ListObject, ByVal headerName As String) As Long
+    Dim column As ListColumn
+
+    Set column = FindColumn(table, headerName)
+    If column Is Nothing Then Exit Function
+
+    ColumnIndexOf = column.Index
+End Function
 
 '@sub-title Carry a choices edit into every sheet reading the choices.
 '@details The label column recalculates the way the setup does it; then the
@@ -245,7 +323,7 @@ Private Function EditedChoiceNames(ByVal target As Range) As Collection
     If table.DataBodyRange Is Nothing Then Exit Function
 
     Set wrapper = CustomTable.Create(table)
-    Set listRange = wrapper.DataRange(colName:="list name", includeHeaders:=False, strictSearch:=True, matchCase:=False)
+    Set listRange = wrapper.DataRange(colName:=HEADER_LIST_NAME, includeHeaders:=False, strictSearch:=True, matchCase:=False)
     If listRange Is Nothing Then Exit Function
 
     Set touched = Intersect(target.EntireRow, listRange)
@@ -286,11 +364,11 @@ Private Sub RecalculateChoiceLabels(ByVal target As Range)
 
     Set wrapper = CustomTable.Create(target.ListObject)
 
-    Set translatedRange = wrapper.DataRange(colName:="translated label", includeHeaders:=False, strictSearch:=True, matchCase:=False)
+    Set translatedRange = wrapper.DataRange(colName:=HEADER_TRANSLATED_LABEL, includeHeaders:=False, strictSearch:=True, matchCase:=False)
     If translatedRange Is Nothing Then Exit Sub
     If Intersect(target, translatedRange) Is Nothing Then Exit Sub
 
-    Set labelRange = wrapper.DataRange(colName:="label", includeHeaders:=False, strictSearch:=True, matchCase:=False)
+    Set labelRange = wrapper.DataRange(colName:=HEADER_LABEL, includeHeaders:=False, strictSearch:=True, matchCase:=False)
     If labelRange Is Nothing Then Exit Sub
 
     'A refused calculate on a hidden or protected view is logged by the sheet
@@ -373,6 +451,7 @@ End Sub
 Private Sub CascadeChoicesToDiseases(ByVal editedChoices As Collection, ByVal existingChoices As Collection)
     Dim sh As Worksheet
     Dim table As ListObject
+    Dim layout As TDiseaseColumns
     Dim choiceData As Variant
     Dim rowIndex As Long
     Dim choiceValue As String
@@ -383,8 +462,9 @@ Private Sub CascadeChoicesToDiseases(ByVal editedChoices As Collection, ByVal ex
         If MasterSetupHelpers.IsMasterDiseaseSheet(sh) Then
             If sh.ListObjects.Count > 0 Then
                 Set table = sh.ListObjects(1)
-                If Not table.DataBodyRange Is Nothing Then
-                    choiceData = ColumnBlock(table.DataBodyRange.Columns(DISEASE_CHOICE_COLUMN))
+                ResolveDiseaseColumns table, layout
+                If Not table.DataBodyRange Is Nothing And layout.choiceIndex > 0 Then
+                    choiceData = ColumnBlock(table.DataBodyRange.Columns(layout.choiceIndex))
                     needsRecalc = False
                     unprotected = False
 
@@ -393,7 +473,7 @@ Private Sub CascadeChoicesToDiseases(ByVal editedChoices As Collection, ByVal ex
                         If LenB(choiceValue) > 0 Then
                             If Not HasKey(existingChoices, choiceValue) Then
                                 EnsureUnprotected sh, "disease", unprotected
-                                table.DataBodyRange.Cells(rowIndex, DISEASE_CHOICE_COLUMN).Value = vbNullString
+                                table.DataBodyRange.Cells(rowIndex, layout.choiceIndex).Value = vbNullString
                                 needsRecalc = True
                             ElseIf HasKey(editedChoices, choiceValue) Then
                                 needsRecalc = True
@@ -403,7 +483,7 @@ Private Sub CascadeChoicesToDiseases(ByVal editedChoices As Collection, ByVal ex
 
                     If needsRecalc Then
                         EnsureUnprotected sh, "disease", unprotected
-                        RecalculateDiseaseColumns table
+                        RecalculateDiseaseColumns table, layout
                     End If
                     If unprotected Then MasterSetupHelpers.ProtectMasterSetupSheet sh, "disease"
                 End If
@@ -418,6 +498,7 @@ End Sub
 Private Sub PropagateDefaultChoice(ByVal variableName As String, ByVal choiceValue As String)
     Dim sh As Worksheet
     Dim table As ListObject
+    Dim layout As TDiseaseColumns
     Dim nameData As Variant
     Dim rowIndex As Long
     Dim unprotected As Boolean
@@ -428,19 +509,20 @@ Private Sub PropagateDefaultChoice(ByVal variableName As String, ByVal choiceVal
         If MasterSetupHelpers.IsMasterDiseaseSheet(sh) Then
             If sh.ListObjects.Count > 0 Then
                 Set table = sh.ListObjects(1)
-                If Not table.DataBodyRange Is Nothing Then
-                    nameData = ColumnBlock(table.DataBodyRange.Columns(DISEASE_NAME_COLUMN))
+                ResolveDiseaseColumns table, layout
+                If Not table.DataBodyRange Is Nothing And layout.nameIndex > 0 And layout.choiceIndex > 0 Then
+                    nameData = ColumnBlock(table.DataBodyRange.Columns(layout.nameIndex))
                     unprotected = False
 
                     For rowIndex = 1 To UBound(nameData, 1)
                         If StrComp(Trim$(CStr(nameData(rowIndex, 1))), variableName, vbTextCompare) = 0 Then
                             EnsureUnprotected sh, "disease", unprotected
-                            table.DataBodyRange.Cells(rowIndex, DISEASE_CHOICE_COLUMN).Value = choiceValue
+                            table.DataBodyRange.Cells(rowIndex, layout.choiceIndex).Value = choiceValue
                         End If
                     Next rowIndex
 
                     If unprotected Then
-                        RecalculateDiseaseColumns table
+                        RecalculateDiseaseColumns table, layout
                         MasterSetupHelpers.ProtectMasterSetupSheet sh, "disease"
                     End If
                 End If
@@ -450,9 +532,11 @@ Private Sub PropagateDefaultChoice(ByVal variableName As String, ByVal choiceVal
 End Sub
 
 '@sub-title Unprotect a sheet the first time a write needs it.
+'@details The tag names the sheet kind for the reader; the unprotect
+'itself is the same for every sheet.
 Private Sub EnsureUnprotected(ByVal sh As Worksheet, ByVal sheetTag As String, ByRef unprotected As Boolean)
     If unprotected Then Exit Sub
-    MasterSetupHelpers.UnProtectMasterSetupSheet sh, sheetTag
+    MasterSetupHelpers.UnProtectMasterSetupSheet sh
     unprotected = True
 End Sub
 
@@ -492,16 +576,19 @@ Private Function HasKey(ByVal keys As Collection, ByVal keyValue As String) As B
 End Function
 
 '@sub-title Recalculate the two formula columns of a disease table.
-Private Sub RecalculateDiseaseColumns(ByVal table As ListObject)
+Private Sub RecalculateDiseaseColumns(ByVal table As ListObject, ByRef layout As TDiseaseColumns)
     'The label and the choice values columns carry the two worksheet
     'functions; a refused calculate leaves the old text standing.
     On Error Resume Next
-        table.DataBodyRange.Columns(DISEASE_LABEL_COLUMN).Calculate
-        table.DataBodyRange.Columns(DISEASE_VALUES_COLUMN).Calculate
+        If layout.labelIndex > 0 Then table.DataBodyRange.Columns(layout.labelIndex).Calculate
+        If layout.valuesIndex > 0 Then table.DataBodyRange.Columns(layout.valuesIndex).Calculate
     On Error GoTo 0
 End Sub
 
 '@sub-title Refresh the choices values when a default choice is picked.
+'@details The sheet is unprotected the first time a line needs a write and
+'protected again at the Cleanup label, so a raise inside the loop still
+'leaves the sheet protected before it reaches MsSheetChanged.
 Private Sub HandleVariablesSheetChange(ByVal sh As Worksheet, ByVal target As Range)
     Dim table As ListObject
     Dim choiceColumn As ListColumn
@@ -510,6 +597,10 @@ Private Sub HandleVariablesSheetChange(ByVal sh As Worksheet, ByVal target As Ra
     Dim changedCell As Range
     Dim variableName As String
     Dim rowIndex As Long
+    Dim unprotected As Boolean
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
 
     If sh.ListObjects.Count = 0 Then Exit Sub
     Set table = sh.ListObjects(1)
@@ -522,7 +613,9 @@ Private Sub HandleVariablesSheetChange(ByVal sh As Worksheet, ByVal target As Ra
     Set changedCells = Intersect(target, choiceColumn.DataBodyRange)
     If changedCells Is Nothing Then Exit Sub
 
-    MasterSetupHelpers.UnProtectMasterSetupSheet sh, "variables"
+    On Error GoTo Handler
+
+    EnsureUnprotected sh, "variables", unprotected
 
     For Each changedCell In changedCells.Cells
         rowIndex = changedCell.Row - table.DataBodyRange.Row + 1
@@ -532,7 +625,7 @@ Private Sub HandleVariablesSheetChange(ByVal sh As Worksheet, ByVal target As Ra
             'nothing and raises nothing at the user.
             On Error Resume Next
             MasterSetupService.Variables.RefreshChoices variableName, MasterSetupService.Choices
-            On Error GoTo 0
+            On Error GoTo Handler
 
             'The new default follows onto every disease line carrying the
             'variable.
@@ -540,7 +633,23 @@ Private Sub HandleVariablesSheetChange(ByVal sh As Worksheet, ByVal target As Ra
         End If
     Next changedCell
 
-    MasterSetupHelpers.ProtectMasterSetupSheet sh, "variables"
+Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Protect would
+    'come straight back to this label and raise again.
+    On Error Resume Next
+    If unprotected Then MasterSetupHelpers.ProtectMasterSetupSheet sh, "variables"
+    On Error GoTo 0
+
+    If errNumber <> 0 Then
+        Err.Raise errNumber, errSource, errDescription
+    End If
+    Exit Sub
+
+Handler:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    Resume Cleanup
 End Sub
 
 '@section Internal helpers

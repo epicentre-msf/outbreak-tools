@@ -11,18 +11,18 @@ Option Explicit
 'handler stays thin and forwards to MasterSetupEventsManager, which is the
 'one place master setup events are handled.
 
-Private mBooting As Boolean
+Private reentrant As Boolean
 
 Private Sub Workbook_Open()
     Application.ScreenUpdating = False
 
-    mBooting = True
+    reentrant = True
 
     On Error GoTo Clean
     MasterSetupEventsManager.MsWorkbookOpened
 
 Clean:
-    mBooting = False
+    reentrant = False
 End Sub
 
 Private Sub Workbook_BeforeClose(Cancel As Boolean)
@@ -32,14 +32,14 @@ Private Sub Workbook_BeforeClose(Cancel As Boolean)
 End Sub
 
 Private Sub Workbook_SheetChange(ByVal sh As Object, ByVal target As Range)
-    If mBooting Then Exit Sub
+    If reentrant Then Exit Sub
     If TypeName(sh) <> "Worksheet" Then Exit Sub
 
-    mBooting = True
+    reentrant = True
 
     On Error GoTo Clean
     MasterSetupEventsManager.MsSheetChanged sh, target
 
 Clean:
-    mBooting = False
+    reentrant = False
 End Sub

@@ -32,42 +32,22 @@ Private Const NAME_DISCODE As String = "__Var_DISCODE"
 
 Private Const DEFAULT_ANCHOR_SHEET As String = "Variables"
 Private Const DEFAULT_TABLE_PREFIX As String = "disTab_"
-Private Const DEFAULT_LANGUAGE_LIST As String = "__languages"
-Private Const DEFAULT_STATUS_LIST As String = "__var_status"
-Private Const DEFAULT_VAR_NAME_LIST As String = "PARAMVARNAME"
-Private Const DEFAULT_VAR_CHOICE_LIST As String = "PARAMCHOICESLIST"
 Private Const DEFAULT_DISEASE_CODE As String = "DISSHEET"
 
-Private Const MESSAGE_SELECT_VALUE_KEY As String = "selectValue"
-Private Const MESSAGE_LANGUAGE_ERROR_KEY As String = "errLang"
 
 Private Const STATUS_DROPDOWN As String = "__var_status"
 Private Const DISEASES_DROPDOWN_PROHIBITED As String = "__prohibited_diseases_list"
-Private Const DISEASES_DROPODWN As String  = "__diseases_list"
+Private Const DISEASES_DROPDOWN As String = "__diseases_list"
 Private Const CHOICES_DROPDOWN As String = "__lst_choices"
 Private Const LANGUAGES_DROPDOWN As String = "__data_languages"
 
-
-Private DEFAULTDISEASECOLUMNS As BetterArray
-
 Private Const ANCHORROW As Long = 2
 Private Const ANCHORCOLUMN As Long = 2
-Private Const DISEASE_MARKER_COLUMN As Long = 4
 
 '@section State
 '===============================================================================
 
-Private Type TBuilderState
-    hostwb As Workbook
-    dropdowns As DropdownLists
-    initialised As Boolean
-    hostSheet As Worksheet
-    hostIndex As Long
-    hostTable As CustomTable
-    hostVariables As MasterSetupVariables
-    hostLanguage As String
-End Type
-
+'The seven headers of a disease table, in the order the table carries them.
 Private Type TCurrentHeaders
     varOrder As String
     varSection As String
@@ -78,9 +58,20 @@ Private Type TCurrentHeaders
     varStatus As String
 End Type
 
+Private Type TBuilderState
+    hostwb As Workbook
+    dropdowns As DropdownLists
+    initialised As Boolean
+    hostSheet As Worksheet
+    hostIndex As Long
+    hostTable As CustomTable
+    hostVariables As MasterSetupVariables
+    hostLanguage As String
+    defaultColumns As BetterArray       'The headers as a list, built once
+    headers As TCurrentHeaders          'The same headers by name
+End Type
 
 Private this As TBuilderState
-Private hostHeaders As TCurrentHeaders
 
 '@section Factory
 '===============================================================================
@@ -148,35 +139,35 @@ Public Sub Reset()
     Set this.hostTable = Nothing
     Set this.hostVariables = Nothing
     this.hostLanguage = vbNullString
-    Set DEFAULTDISEASECOLUMNS = Nothing
+    Set this.defaultColumns = Nothing
 End Sub
 
 '@section Internal Helpers
 '===============================================================================
 Private Sub EnsureColumnsInitialized()
 
-    If DEFAULTDISEASECOLUMNS Is Nothing Then
+    If this.defaultColumns Is Nothing Then
 
-        Set DEFAULTDISEASECOLUMNS = New BetterArray
+        Set this.defaultColumns = New BetterArray
         
-        DEFAULTDISEASECOLUMNS.LowerBound = 1
+        this.defaultColumns.LowerBound = 1
 
-        hostHeaders.varOrder    = "Variable Order"
-        hostHeaders.varName     = "Variable Name"
-        hostHeaders.varSection  = "Variable Section"
-        hostHeaders.varLabel    = "Main Label"
-        hostHeaders.varChoice   = "Choice"
-        hostHeaders.choiceVal   = "Choice Values"
-        hostHeaders.varStatus   = "Status"
+        this.headers.varOrder    = "Variable Order"
+        this.headers.varName     = "Variable Name"
+        this.headers.varSection  = "Variable Section"
+        this.headers.varLabel    = "Main Label"
+        this.headers.varChoice   = "Choice"
+        this.headers.choiceVal   = "Choice Values"
+        this.headers.varStatus   = "Status"
 
 
-        DEFAULTDISEASECOLUMNS.Push  hostHeaders.varOrder, _
-                                    hostHeaders.varName, _
-                                    hostHeaders.varSection, _
-                                    hostHeaders.varLabel, _
-                                    hostHeaders.varChoice, _
-                                    hostHeaders.choiceVal, _
-                                    hostHeaders.varStatus
+        this.defaultColumns.Push  this.headers.varOrder, _
+                                    this.headers.varName, _
+                                    this.headers.varSection, _
+                                    this.headers.varLabel, _
+                                    this.headers.varChoice, _
+                                    this.headers.choiceVal, _
+                                    this.headers.varStatus
     End If
 End Sub
 
@@ -242,7 +233,7 @@ Private Sub ValidateBuildInputs(ByVal diseaseName As String, Optional ByVal lang
                   "The name " & diseaseName & " is incorrect because it is reserved. Please use another name."
     End If
 
-    Set temp = this.dropdowns.Values(DISEASES_DROPODWN)
+    Set temp = this.dropdowns.Values(DISEASES_DROPDOWN)
     If Not temp Is Nothing And temp.Includes(diseaseName) Then
         ThrowError ProjectError.InvalidArgument, _
                   "The name " & diseaseName & " already exists, please choose another name."
@@ -274,7 +265,7 @@ End Sub
 Private Sub UpdateInternalElements(ByVal hostsheet As Worksheet)
     
     Dim temp As BetterArray
-    Set temp = this.dropdowns.Values(DISEASES_DROPODWN)
+    Set temp = this.dropdowns.Values(DISEASES_DROPDOWN)
 
     If temp Is Nothing Then
         Set temp = New BetterArray
@@ -283,7 +274,7 @@ Private Sub UpdateInternalElements(ByVal hostsheet As Worksheet)
 
     temp.Push hostsheet.Name
 
-    this.dropdowns.Update temp, DISEASES_DROPODWN
+    this.dropdowns.Update temp, DISEASES_DROPDOWN
     Set this.hostSheet = hostsheet
 End Sub
 
@@ -310,7 +301,7 @@ Private Sub WriteValues()
 
     EnsureColumnsInitialized
     Set anchorRng = anchorRng.Offset(2)
-    DEFAULTDISEASECOLUMNS.ToExcelRange anchorRng, TransposeValues:=True
+    this.defaultColumns.ToExcelRange anchorRng, TransposeValues:=True
 
       'Line on values
     Set anchorRng = anchorRng.Offset(1)
@@ -400,7 +391,7 @@ Private Sub CreateDiseaseTable()
     
     EnsureColumnsInitialized
     Set anchorRng = this.hostSheet.Cells(ANCHORROW, ANCHORCOLUMN).Offset(2)
-    Set dataEnd = anchorRng.Offset(1, DEFAULTDISEASECOLUMNS.Length - 1)
+    Set dataEnd = anchorRng.Offset(1, this.defaultColumns.Length - 1)
     Set tableRange = this.hostSheet.Range(anchorRng, dataEnd)
     Set table = this.hostSheet.ListObjects.Add(xlSrcRange, tableRange, , xlYes)
     table.Name = DEFAULT_TABLE_PREFIX & Format$(this.hostIndex, "000")
@@ -421,9 +412,9 @@ Private Sub AddValidations()
     EnsureColumnsInitialized
 
     'set validation
-    this.hostVariables.SetVariableValidation this.hostTable.DataRange(hostHeaders.varName)
-    this.hostTable.SetValidation colName:=hostHeaders.varStatus, drop:=this.dropdowns, dropName:=STATUS_DROPDOWN
-    this.hostTable.SetValidation colName:=hostHeaders.varChoice, drop:=this.dropdowns, dropName:=CHOICES_DROPDOWN
+    this.hostVariables.SetVariableValidation this.hostTable.DataRange(this.headers.varName)
+    this.hostTable.SetValidation colName:=this.headers.varStatus, drop:=this.dropdowns, dropName:=STATUS_DROPDOWN
+    this.hostTable.SetValidation colName:=this.headers.varChoice, drop:=this.dropdowns, dropName:=CHOICES_DROPDOWN
     
     Set anchorRng = this.hostSheet.Cells(ANCHORROW, ANCHORCOLUMN)
 
@@ -506,8 +497,8 @@ Private Sub FormatDiseaseSheet()
     'choice values are answered by the worksheet functions and never typed.
     languageCell.Locked = False
     this.hostTable.Table.DataBodyRange.Locked = False
-    this.hostTable.DataRange(hostHeaders.choiceVal).Locked = True
-    this.hostTable.DataRange(hostHeaders.varLabel).Locked = True
+    this.hostTable.DataRange(this.headers.choiceVal).Locked = True
+    this.hostTable.DataRange(this.headers.varLabel).Locked = True
 
 End Sub
 
@@ -528,7 +519,7 @@ End Sub
 
 Private Function ColumnIndexFor(ByVal header As String) As Long
     EnsureColumnsInitialized
-    ColumnIndexFor = DEFAULTDISEASECOLUMNS.IndexOf(header)
+    ColumnIndexFor = this.defaultColumns.IndexOf(header)
 End Function
 
 Private Function FindWorksheet(ByVal wb As Workbook, ByVal sheetName As String) As Worksheet

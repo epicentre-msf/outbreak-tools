@@ -12,7 +12,7 @@ Attribute VB_Description = "Writes a disease comparison onto the __compRep works
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Writes a disease comparison onto the __compRep worksheet")
-'@depends DiseaseComparison, CheckingOutput
+'@depends DiseaseComparison, CheckingOutput, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -26,8 +26,11 @@ Option Explicit
 'ONE REPORT AT A TIME
 '-------------------------------------------------------------------------------
 'The sheet is cleared before anything is written, so an old report never
-'survives a new run. The next render restarts at the first output row and the
-'sheet ends up carrying the last comparison alone.
+'survives a new run. The clear takes the row marker CheckingOutput keeps in
+'the sheet names with it, so the next render initialises the sheet again:
+'the font, the header formatting and the hidden column widths come back with
+'the first output row, and the sheet ends up carrying the last comparison
+'alone.
 '
 'PROTECTION AND VISIBILITY
 '-------------------------------------------------------------------------------
@@ -41,6 +44,9 @@ Option Explicit
 
 Private Const CLASS_NAME As String = "DiseaseComparisonReport"
 Private Const REPORT_SHEET_NAME As String = "__compRep"
+'The hidden name CheckingOutput writes on a first render; it survives a
+'Cells.Clear, so it is removed with the cells.
+Private Const ROW_MARKER_NAME As String = "CheckingOutputStartingRow"
 
 '@section State
 '===============================================================================
@@ -117,7 +123,7 @@ Public Sub PrintReport(ByVal comparison As DiseaseComparison)
     ShowReport targetSheet
 
     'An old report never survives a new run.
-    targetSheet.Cells.Clear
+    ClearReport targetSheet
     Set checkOutput = CheckingOutput.Create(targetSheet)
 
     'An earlier render may have left rows filtered out of sight.
@@ -163,6 +169,21 @@ Private Sub ShowReport(ByVal targetSheet As Worksheet)
     If targetSheet.Visible <> xlSheetVisible Then
         targetSheet.Visible = xlSheetVisible
     End If
+End Sub
+
+'@sub-title Clear the report sheet and the row marker of the last render.
+'@details
+'CheckingOutput formats the sheet on its first render and marks the start
+'row in a hidden name. The name survives a Cells.Clear, and a render that
+'finds it re-applies none of the formatting, so the marker goes with the
+'cells, the way MasterSetupLog.RotateWhenPastCap does it.
+Private Sub ClearReport(ByVal targetSheet As Worksheet)
+    Dim store As HiddenNames
+
+    targetSheet.Cells.Clear
+
+    Set store = HiddenNames.Create(targetSheet)
+    If store.HasName(ROW_MARKER_NAME) Then store.RemoveName ROW_MARKER_NAME
 End Sub
 
 '@sub-title Find a worksheet of the host workbook by name.

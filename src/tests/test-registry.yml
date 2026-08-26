@@ -1301,7 +1301,6 @@ suites:
       - name: DiseaseImporter
       - name: DiseaseExporter
       - name: DiseaseWorksheetManager
-      - name: DiseaseReportManager
       - name: DiseaseSheet
       - name: MasterSetupVariables
       - name: MasterSetupPreparation
@@ -1349,8 +1348,6 @@ suites:
         covers: [DiseaseExporter]
       - module: TestDiseaseWorksheetManager
         covers: [DiseaseWorksheetManager]
-      - module: TestDiseaseReportManager
-        covers: [DiseaseReportManager]
       - module: TestDiseaseSheet
         covers: [DiseaseSheet]
       - module: TestDiseaseIntegration
@@ -1398,6 +1395,12 @@ suites:
       # DictionaryTestFixture and PasswordsTestFixture under `helpers`.
       - module: TestDiseaseSetupImport
         covers: [DiseaseExporter]
+      # TestMasterSetupExports drives the three seams of the exports module
+      # that need no picker: the setup import over an open export, the
+      # logger summary, and the two worksheet functions of
+      # CustomMasterSetupFunctions over the fixture sheets.
+      - module: TestMasterSetupExports
+        covers: [MasterSetupExports, CustomMasterSetupFunctions, MasterSetupImportService]
 
 # ---------------------------------------------------------------------------
 # TEMPLATE -- copy per folder as coverage is added. Delete fields left empty.
