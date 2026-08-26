@@ -55,6 +55,20 @@ and the Compare button says the sheet is missing.</p>
 </code></pre>
 <p>(&quot;Ensure the variables worksheet exposes an initialised manager with validations applied.&quot;)</p>
 <hr />
+<h3 id="int-ensureupdatedregistry">EnsureUpdatedRegistry <a class="anchor-link" href="#int-ensureupdatedregistry">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub EnsureUpdatedRegistry()
+</code></pre>
+<p>(&quot;Rebuild the _<em>updated registry from the tagged columns of the Variables and Choices sheets.&quot;)
+The registry is dropped and built again, the way
+SetupPreparation.ResetUpdatedRegistry does it: every registry table goes,
+the watched sheets are read for the tags above their headers (watch for
+update, translate as text, translate as formula), one registry row and one
+RNG</em> workbook name are written per tagged column, and every flag is set
+back to yes. The Update Translations button reads those rows. A watched
+sheet the workbook lacks is skipped: a fresh file has its Variables table
+from EnsureVariables and may carry no Choices sheet yet.</p>
+<hr />
 <h3 id="int-dropdowns">Dropdowns <a class="anchor-link" href="#int-dropdowns">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Dropdowns() As DropdownLists
@@ -79,6 +93,14 @@ and the Compare button says the sheet is missing.</p>
 <pre><code class="language-vb">Private Sub ResetCaches()
 </code></pre>
 <p>(&quot;Reset cached dependencies after reconfiguration.&quot;)</p>
+<hr />
+<h3 id="int-ensureupdatedvalueswatcher">EnsureUpdatedValuesWatcher <a class="anchor-link" href="#int-ensureupdatedvalueswatcher">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureUpdatedValuesWatcher() As UpdatedValues
+</code></pre>
+<p>(&quot;Bind the updated values watcher to the registry sheet, growing the sheet hidden when it is missing.&quot;)
+An existing registry sheet keeps its visibility; Deploy makes it
+very hidden later.</p>
 <hr />
 <h3 id="int-ensuredropdownmanager">EnsureDropdownManager <a class="anchor-link" href="#int-ensuredropdownmanager">#</a></h3>
 <p><strong>Signature:</strong></p>
@@ -252,10 +274,10 @@ and the Compare button says the sheet is missing.</p>
 <details>
 <summary>Used in (5 file(s))</summary>
 <ul>
-<li><a href="EventMasterSetup.html">EventMasterSetup.cls</a></li>
 <li><a href="MasterSetupMigration.html">MasterSetupMigration.cls</a></li>
 <li>EventsMasterSetupRibbon.bas</li>
 <li>MasterSetupHelpers.bas</li>
+<li>TestMasterSetupEvents.bas</li>
 <li>TestMasterSetupPreparation.bas</li>
 </ul>
 </details>

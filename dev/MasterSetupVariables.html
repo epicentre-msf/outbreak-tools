@@ -45,6 +45,20 @@
 table prepared before the rule existed gets it, and a table that
 grew rows gets a rule over the rows it has today.</p>
 <hr />
+<h3 id="int-refreshchoicevalidation">RefreshChoiceValidation <a class="anchor-link" href="#int-refreshchoicevalidation">#</a></h3>
+<p><strong>Put the choices dropdown on the Default Choice column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RefreshChoiceValidation(ByVal dropdowns As DropdownLists)
+</code></pre>
+<p>Runs on every preparation, outside the Initialised guard, so a
+table initialised while the Choices sheet was empty gets the
+dropdown once the list exists. A dropdown manager without the
+choices list leaves the column as it stands.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dropdowns</code>: DropdownLists provider carrying the choices list.</li>
+</ul>
+<hr />
 <h3 id="int-refreshchoices">RefreshChoices <a class="anchor-link" href="#int-refreshchoices">#</a></h3>
 <p><strong>Refresh the concatenated choices values for the supplied variable.</strong></p>
 <p><strong>Signature:</strong></p>
