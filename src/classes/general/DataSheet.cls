@@ -1118,7 +1118,13 @@ Private Sub ApplyFormat(ByVal actRng As Range, ByVal impRng As Range)
     Dim interiorColor As Long
     Dim fontColor As Long
 
-    actRng.ClearFormats
+    With actRng
+        .Interior.ColorIndex = xlColorIndexNone
+        .Font.ColorIndex = xlColorIndexAutomatic
+        .Font.Bold = False
+        .Font.Italic = False
+    End With
+
     Set cellRng = impRng.Cells(1, 1)
     Set actCellRng = actRng.Cells(1, 1)
 
