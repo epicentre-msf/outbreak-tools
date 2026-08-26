@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MasterSetupImportService - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>MasterSetupImportService</h1>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
+<p><strong>Build a service over the master setup workbook and its managers.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal targetBook As Workbook, _
+                       ByVal builder As DiseaseSheet, _
+                       ByVal dropdowns As DropdownLists, _
+                       ByVal variables As MasterSetupVariables, _
+                       Optional ByVal choices As LLChoices = Nothing, _
+                       Optional ByVal importer As DiseaseImporter = Nothing) As MasterSetupImportService
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetBook</code>: Workbook. The master setup workbook receiving the import.</li>
+<li><code>builder</code>: DiseaseSheet. Builds a disease sheet that is gone and puts
+the line formulas back after a merge.</li>
+<li><code>dropdowns</code>: DropdownLists. The master dropdowns: the languages list
+and the diseases list.</li>
+<li><code>variables</code>: MasterSetupVariables. The manager of the Variables table.</li>
+<li><code>choices</code>: Optional LLChoices. The master Choices sheet; with none the
+lists of a file are left out and logged.</li>
+<li><code>importer</code>: Optional DiseaseImporter. Defaults to a fresh importer.</li>
+</ul>
+<p><strong>Returns:</strong> MasterSetupImportService ready to import.</p>
+<hr />
+<h2 id="int-configuration">Configuration</h2>
+<h3 id="int-initialise">Initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
+<p><strong>Attach the workbook and the managers the imports write through.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Initialise(ByVal targetBook As Workbook, _
+                      ByVal builder As DiseaseSheet, _
+                      ByVal dropdowns As DropdownLists, _
+                      ByVal variables As MasterSetupVariables, _
+                      Optional ByVal choices As LLChoices = Nothing, _
+                      Optional ByVal importer As DiseaseImporter = Nothing)
+</code></pre>
+<hr />
+<h2 id="int-setup-export-import">Setup Export Import</h2>
+<h3 id="int-importsetupexport">ImportSetupExport <a class="anchor-link" href="#int-importsetupexport">#</a></h3>
+<p><strong>Fold a workbook exported for a setup back into the master setup.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ImportSetupExport(ByVal sourceBook As Workbook, _
+                                  Optional ByVal logger As DiseaseLogger = Nothing, _
+                                  Optional ByVal diseaseName As String = vbNullString) As DiseaseImportSummary
+</code></pre>
+<p>The Metadata sheet is read first, then the Variables table takes
+the variables it lacks, the Choices sheet takes the lists it lacks, and
+the dictionary is staged as a disease table on a hidden sheet and landed
+on the disease worksheet. The staging sheet goes away on every path.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceBook</code>: Workbook. The exported workbook, open.</li>
+<li><code>logger</code>: Optional DiseaseLogger. Receives one line per variable and
+list added, and one warning per thing left out.</li>
+<li><code>diseaseName</code>: Optional String. The name to use when the file carries
+none; it also wins over the one the file carries when given.</li>
+</ul>
+<p><strong>Returns:</strong> DiseaseImportSummary of the merge, or Nothing when no disease
+worksheet could take the block.</p>
+<hr />
+<h2 id="int-disease-table-import">Disease Table Import</h2>
+<h3 id="int-importdiseasetable">ImportDiseaseTable <a class="anchor-link" href="#int-importdiseasetable">#</a></h3>
+<p><strong>Land a table shaped as a disease table on the disease worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ImportDiseaseTable(ByVal sourceTable As ListObject, _
+                                   ByVal diseaseName As String, _
+                                   ByVal languageTag As String, _
+                                   Optional ByVal restoreFormulas As Boolean = False, _
+                                   Optional ByVal logger As DiseaseLogger = Nothing) As DiseaseImportSummary
+</code></pre>
+<p>A worksheet of that name that is gone is built again, on the
+language given when the languages list carries it and on the default
+language otherwise; the block then replaces its table whole. A worksheet
+that is there is merged, with the imported values winning on the lines
+both carry. A worksheet of that name that is no disease worksheet is left
+alone and logged.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceTable</code>: ListObject. Seven columns in the disease table order.</li>
+<li><code>diseaseName</code>: String. Name of the disease worksheet.</li>
+<li><code>languageTag</code>: String. Language the sheet takes when it is built.</li>
+<li><code>restoreFormulas</code>: Optional Boolean. When True the label and the choice
+values formulas go back on every line once the values have landed,
+which is what a setup export wants: the master setup answers those two
+columns itself. A migration block keeps the values it carries.</li>
+<li><code>logger</code>: Optional DiseaseLogger.</li>
+</ul>
+<p><strong>Returns:</strong> DiseaseImportSummary of the merge, or Nothing when the block was
+left out.</p>
+<hr />
+<h2 id="int-name-resolution">Name Resolution</h2>
+<h3 id="int-readdiseasename">ReadDiseaseName <a class="anchor-link" href="#int-readdiseasename">#</a></h3>
+<p><strong>The disease name a file carries: its workbook tag, then its Metadata sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ReadDiseaseName(ByVal sourceBook As Workbook) As String
+</code></pre>
+<p><strong>Returns:</strong> String, empty when the file names no disease.</p>
+<hr />
+<h3 id="int-diseasenameisfree">DiseaseNameIsFree <a class="anchor-link" href="#int-diseasenameisfree">#</a></h3>
+<p><strong>Whether a name can take a new disease worksheet in the target workbook.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function DiseaseNameIsFree(ByVal candidate As String) As Boolean
+</code></pre>
+<p>Empty names, names of a worksheet already there and names of the
+prohibited list are refused. A name already there would merge the file
+into a sheet the user did not name.</p>
+<hr />
+<h2 id="int-results">Results</h2>
+<h3 id="int-addedvariables">AddedVariables <a class="anchor-link" href="#int-addedvariables">#</a></h3>
+<p><strong>Names of the variables the last import added to the Variables table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get AddedVariables() As BetterArray
+</code></pre>
+<hr />
+<h3 id="int-addedchoices">AddedChoices <a class="anchor-link" href="#int-addedchoices">#</a></h3>
+<p><strong>Names of the lists the last import added to the Choices sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get AddedChoices() As BetterArray
+</code></pre>
+<hr />
+<h3 id="int-diseasename">DiseaseName <a class="anchor-link" href="#int-diseasename">#</a></h3>
+<p><strong>Disease name read from the Metadata sheet of the last file.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DiseaseName() As String
+</code></pre>
+<hr />
+<h3 id="int-languagetag">LanguageTag <a class="anchor-link" href="#int-languagetag">#</a></h3>
+<p><strong>Language read from the Metadata sheet of the last file.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LanguageTag() As String
+</code></pre>
+<hr />
+<h3 id="int-diseasecode">DiseaseCode <a class="anchor-link" href="#int-diseasecode">#</a></h3>
+<p><strong>Disease code read from the Metadata sheet of the last file.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DiseaseCode() As String
+</code></pre>
+<hr />
+<h2 id="int-metadata">Metadata</h2>
+<h3 id="int-readmetadata">ReadMetadata <a class="anchor-link" href="#int-readmetadata">#</a></h3>
+<p><strong>Settle the disease name, the language and the code of the file.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ReadMetadata(ByVal sourceBook As Workbook, ByVal givenName As String)
+</code></pre>
+<p>The workbook tags come first, the Metadata sheet fills what they
+leave empty, and a name given by the caller wins. A file with no name from
+any of the three is refused.</p>
+<hr />
+<h3 id="int-tagvalue">TagValue <a class="anchor-link" href="#int-tagvalue">#</a></h3>
+<p><strong>A workbook tag; a file with no hidden names store answers empty.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TagValue(ByVal sourceBook As Workbook, ByVal nameId As String) As String
+</code></pre>
+<hr />
+<h3 id="int-metadatavalue">MetadataValue <a class="anchor-link" href="#int-metadatavalue">#</a></h3>
+<p><strong>One value of the Metadata sheet, read by its label; empty without the sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MetadataValue(ByVal sourceBook As Workbook, ByVal metaLabel As String) As String
+</code></pre>
+<p>The Metadata sheet is a two-column block of labels and values,
+read by label so the order of the lines carries no weight.</p>
+<hr />
+<h2 id="int-variables">Variables</h2>
+<h3 id="int-updatevariables">UpdateVariables <a class="anchor-link" href="#int-updatevariables">#</a></h3>
+<p><strong>Add to the Variables table every variable of the dictionary it lacks.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub UpdateVariables(ByVal dictionaryTable As ListObject, ByVal logger As DiseaseLogger)
+</code></pre>
+<p>One read of the dictionary block serves every line. A name the
+table carries, or one the file names twice, is passed over.</p>
+<hr />
+<h3 id="int-refreshaddedvariables">RefreshAddedVariables <a class="anchor-link" href="#int-refreshaddedvariables">#</a></h3>
+<p><strong>Fill the joined choices values of the variables just added.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RefreshAddedVariables()
+</code></pre>
+<p>Only a default choice the Choices sheet carried before this import
+is joined: the labels of a list added by the same import sit where the
+user types them, and the label column follows once the sheet is edited.</p>
+<hr />
+<h2 id="int-choices">Choices</h2>
+<h3 id="int-updatechoices">UpdateChoices <a class="anchor-link" href="#int-updatechoices">#</a></h3>
+<p><strong>Add to the Choices sheet every list of the file it lacks.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub UpdateChoices(ByVal choicesTable As ListObject, ByVal logger As DiseaseLogger)
+</code></pre>
+<p>The labels travel only when the file is in English; otherwise the
+list lands with its name and its rows and every label empty. The choices
+ListObject of the master sheet, when there is one, is stretched over the
+rows added so the event handlers keep reading them.</p>
+<hr />
+<h3 id="int-collectlistlabels">CollectListLabels <a class="anchor-link" href="#int-collectlistlabels">#</a></h3>
+<p><strong>Gather the labels of one list, in the order the file carries them.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CollectListLabels(ByRef block As Variant, _
+                              ByVal listNameColumn As Long, _
+                              ByVal listName As String, _
+                              ByVal labelColumn As Long, _
+                              ByVal translatedColumn As Long, _
+                              ByVal rawColumn As Long, _
+                              ByVal shortColumn As Long, _
+                              ByVal keepLabels As Boolean, _
+                              ByVal labels As BetterArray, _
+                              ByVal shortLabels As BetterArray)
+</code></pre>
+<p>The label of a row is the label column when filled, then the
+translated label, then the non translated label. The short label falls
+back on the label. With keepLabels False both come out empty.</p>
+<hr />
+<h3 id="int-stretchchoicestable">StretchChoicesTable <a class="anchor-link" href="#int-stretchchoicestable">#</a></h3>
+<p><strong>Stretch the choices ListObject over the rows AddChoice wrote under it.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub StretchChoicesTable()
+</code></pre>
+<p>LLChoices writes below the last filled line and knows nothing of
+the table; the master event handlers read the sheet through the table.</p>
+<hr />
+<h2 id="int-staging">Staging</h2>
+<h3 id="int-buildstagingtable">BuildStagingTable <a class="anchor-link" href="#int-buildstagingtable">#</a></h3>
+<p><strong>Write the dictionary as a disease table on a hidden staging sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildStagingTable(ByVal dictionaryTable As ListObject) As ListObject
+</code></pre>
+<p>Seven columns in the disease table order. The order column takes
+the dictionary order when it is a number and the position of the line
+otherwise; the choice values column stays empty, its formula comes back
+once the block has landed. A dictionary with no named line stages a
+header-only table.</p>
+<hr />
+<h3 id="int-ordervalue">OrderValue <a class="anchor-link" href="#int-ordervalue">#</a></h3>
+<p><strong>The dictionary order of a line when it is a number, its position otherwise.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function OrderValue(ByRef block As Variant, ByVal rowIndex As Long, _
+                            ByVal orderColumn As Long, ByVal position As Long) As Variant
+</code></pre>
+<hr />
+<h3 id="int-countnamedrows">CountNamedRows <a class="anchor-link" href="#int-countnamedrows">#</a></h3>
+<p><strong>Count the lines of a block carrying a variable name.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CountNamedRows(ByRef block As Variant, ByVal nameColumn As Long) As Long
+</code></pre>
+<hr />
+<h2 id="int-disease-worksheet">Disease Worksheet</h2>
+<h3 id="int-builddiseasesheet">BuildDiseaseSheet <a class="anchor-link" href="#int-builddiseasesheet">#</a></h3>
+<p><strong>Build a disease sheet for an imported block.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildDiseaseSheet(ByVal diseaseName As String, _
+                                   ByVal languageTag As String, _
+                                   ByVal logger As DiseaseLogger) As Worksheet
+</code></pre>
+<hr />
+<h3 id="int-purgestalediseasename">PurgeStaleDiseaseName <a class="anchor-link" href="#int-purgestalediseasename">#</a></h3>
+<p><strong>Drop a diseases-list entry whose worksheet is gone.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub PurgeStaleDiseaseName(ByVal diseaseName As String)
+</code></pre>
+<hr />
+<h3 id="int-isdiseasesheet">IsDiseaseSheet <a class="anchor-link" href="#int-isdiseasesheet">#</a></h3>
+<p><strong>A disease worksheet is known by its hidden sheetTag.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsDiseaseSheet(ByVal targetSheet As Worksheet) As Boolean
+</code></pre>
+<hr />
+<h2 id="int-lookups">Lookups</h2>
+<h3 id="int-findtable">FindTable <a class="anchor-link" href="#int-findtable">#</a></h3>
+<p><strong>Find a ListObject by name anywhere in the workbook, then by sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindTable(ByVal sourceBook As Workbook, _
+                           ByVal tableName As String, _
+                           ByVal sheetName As String) As ListObject
+</code></pre>
+<p>The exported tables carry the names a setup gives its own. A file
+edited by hand can have lost the table name and kept the sheet, so the
+first table of the named sheet is the fallback.</p>
+<hr />
+<h3 id="int-findworksheet">FindWorksheet <a class="anchor-link" href="#int-findworksheet">#</a></h3>
+<p><strong>Locate a worksheet by name without relying on implicit errors.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindWorksheet(ByVal targetBook As Workbook, ByVal sheetName As String) As Worksheet
+</code></pre>
+<hr />
+<h3 id="int-tableblock">TableBlock <a class="anchor-link" href="#int-tableblock">#</a></h3>
+<p><strong>Read a ListObject with its header row as a two-dimensional block.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TableBlock(ByVal table As ListObject) As Variant
+</code></pre>
+<hr />
+<h3 id="int-headercolumn">HeaderColumn <a class="anchor-link" href="#int-headercolumn">#</a></h3>
+<p><strong>Column of a header in a block read with its header row, 0 when absent.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HeaderColumn(ByRef block As Variant, ByVal headerName As String) As Long
+</code></pre>
+<hr />
+<h3 id="int-cellat">CellAt <a class="anchor-link" href="#int-cellat">#</a></h3>
+<p><strong>Text of a block cell; a column of 0 reads as empty.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CellAt(ByRef block As Variant, ByVal rowIndex As Long, ByVal columnIndex As Long) As String
+</code></pre>
+<hr />
+<h3 id="int-distinctvalues">DistinctValues <a class="anchor-link" href="#int-distinctvalues">#</a></h3>
+<p><strong>Distinct values of one column of a block, in first-use order.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DistinctValues(ByRef block As Variant, ByVal columnIndex As Long) As BetterArray
+</code></pre>
+<hr />
+<h3 id="int-containskey">ContainsKey <a class="anchor-link" href="#int-containskey">#</a></h3>
+<p><strong>Whether a name has already been seen, without regard to case.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ContainsKey(ByVal keys As BetterArray, ByVal key As String) As Boolean
+</code></pre>
+<hr />
+<h3 id="int-textof">TextOf <a class="anchor-link" href="#int-textof">#</a></h3>
+<p><strong>Text of a cell value; an error value or an empty cell reads as empty.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TextOf(ByVal cellValue As Variant) As String
+</code></pre>
+<hr />
+<h3 id="int-isenglish">IsEnglish <a class="anchor-link" href="#int-isenglish">#</a></h3>
+<p><strong>A language tag starting with &quot;en&quot; is English.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsEnglish(ByVal languageTag As String) As Boolean
+</code></pre>
+<hr />
+<h3 id="int-resettallies">ResetTallies <a class="anchor-link" href="#int-resettallies">#</a></h3>
+<p><strong>Start the tallies of a new import.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetTallies()
+</code></pre>
+<hr />
+<h2 id="int-errorhandling">ErrorHandling</h2>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><strong>Centralised error raising aligned with ProjectError codes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
+</code></pre>
+<hr />
+</details>
+<details>
+<summary>Used in (3 file(s))</summary>
+<ul>
+<li>EventsMasterSetupRibbon.bas</li>
+<li>MasterSetupExports.bas</li>
+<li>TestMasterSetupImportService.bas</li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

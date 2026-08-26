@@ -22,12 +22,41 @@
                        ByVal varObj As MasterSetupVariables) As DiseaseSheet
 </code></pre>
 <hr />
+<h2 id="int-internal-helpers">Internal Helpers</h2>
+<h3 id="int-writelineformulas">WriteLineFormulas <a class="anchor-link" href="#int-writelineformulas">#</a></h3>
+<p><strong>Put the label and the choice values formulas back on every line of a disease table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub WriteLineFormulas(ByVal diseaseTable As ListObject)
+</code></pre>
+<p>An import writes values over the two formula columns, because a
+merge copies whole lines. The master setup answers those two columns
+itself, through the worksheet functions, so the formulas go back on every
+line once the values have landed. The table has to be one this class
+built: the columns are found by the headers it writes.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>diseaseTable</code>: ListObject. The table of a disease worksheet.</li>
+</ul>
+<hr />
+<h3 id="int-labelformula">LabelFormula <a class="anchor-link" href="#int-labelformula">#</a></h3>
+<p><strong>The label formula of a line: the worksheet function over the name cell.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LabelFormula(ByVal nameCell As Range, ByVal langAddress As String) As String
+</code></pre>
+<hr />
+<h3 id="int-choicevaluesformula">ChoiceValuesFormula <a class="anchor-link" href="#int-choicevaluesformula">#</a></h3>
+<p><strong>The choice values formula of a line: the worksheet function over the choice cell.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ChoiceValuesFormula(ByVal choiceCell As Range, ByVal langAddress As String) As String
+</code></pre>
+<hr />
 </details>
 <details>
-<summary>Used in (10 file(s))</summary>
+<summary>Used in (12 file(s))</summary>
 <ul>
 <li><a href="DiseaseExporter.html">DiseaseExporter.cls</a></li>
 <li><a href="DiseaseImporter.html">DiseaseImporter.cls</a></li>
+<li><a href="MasterSetupImportService.html">MasterSetupImportService.cls</a></li>
 <li>CustomMasterSetupFunctions.bas</li>
 <li>EventsMasterSetupRibbon.bas</li>
 <li>MasterSetupEventsManager.bas</li>
@@ -36,6 +65,7 @@
 <li>TestDiseaseIntegration.bas</li>
 <li>TestDiseaseSheet.bas</li>
 <li>TestMasterSetupEvents.bas</li>
+<li>TestMasterSetupImportService.bas</li>
 </ul>
 </details>
   </main>

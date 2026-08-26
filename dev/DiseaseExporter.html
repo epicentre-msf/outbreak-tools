@@ -43,8 +43,22 @@
                                      ByVal translationTable As ListObject, _
                                      ByVal diseaseName As String, _
                                      ByVal languageTag As String, _
-                                     Optional ByVal diseaseCode As String = vbNullString) As Workbook
+                                     Optional ByVal diseaseCode As String = vbNullString, _
+                                     Optional ByVal logger As DiseaseLogger = Nothing) As Workbook
 </code></pre>
+<p>The Choices sheet is the master Choices sheet cut down to the lists the
+disease uses, in the six-column layout of a setup. The two editable label
+columns are then translated into the language of the disease, and the
+label column carries the formula a setup keeps there: the translated label
+when present, the plain label otherwise. The dictionary, choices and
+translations blocks are each wrapped in a ListObject named the way a setup
+names its own, so SetupImport finds them by name.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>logger</code>: Optional DiseaseLogger. Receives one warning per list the
+master Choices sheet does not carry, and one when the language has no
+column in the translations table.</li>
+</ul>
 <hr />
 <h3 id="int-exportdisease">ExportDisease <a class="anchor-link" href="#int-exportdisease">#</a></h3>
 <p><strong>Export the disease workbook to disk and return the saved file path.</strong></p>
@@ -54,7 +68,8 @@
                               ByVal translationTable As ListObject, _
                               ByVal diseaseName As String, _
                               ByVal languageTag As String, _
-                              Optional ByVal diseaseCode As String = vbNullString) As String
+                              Optional ByVal diseaseCode As String = vbNullString, _
+                              Optional ByVal logger As DiseaseLogger = Nothing) As String
 </code></pre>
 <hr />
 <h2 id="int-migration-export">Migration Export</h2>
@@ -141,6 +156,14 @@
 <pre><code class="language-vb">Private Function ResolveListObject(ByVal targetBook As Workbook, ByVal sheetName As String) As ListObject
 </code></pre>
 <hr />
+<h3 id="int-resolvemasterchoices">ResolveMasterChoices <a class="anchor-link" href="#int-resolvemasterchoices">#</a></h3>
+<p><strong>Wrap the master Choices sheet of the workbook holding the disease.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveMasterChoices(ByVal diseaseWksh As Worksheet) As LLChoices
+</code></pre>
+<p>Answers Nothing when the workbook carries no Choices sheet; the
+export then falls back on the values the disease sheet carries.</p>
+<hr />
 <h3 id="int-resolvesheets">ResolveSheets <a class="anchor-link" href="#int-resolvesheets">#</a></h3>
 <p><strong>Enumerate worksheets from provided disease names.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -156,11 +179,26 @@
                              ByVal diseaseCode As String)
 </code></pre>
 <hr />
+<h3 id="int-writeworkbooktags">WriteWorkbookTags <a class="anchor-link" href="#int-writeworkbooktags">#</a></h3>
+<p><strong>Write the disease name, language and code as hidden names of the workbook.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteWorkbookTags(ByVal targetBook As Workbook, _
+                              ByVal diseaseName As String, _
+                              ByVal languageTag As String, _
+                              ByVal diseaseCode As String)
+</code></pre>
+<p>The Metadata sheet says the same for a person reading the file;
+the tags are what the import reads, and they survive a file that lost its
+Metadata sheet on the way.</p>
+<hr />
 <h3 id="int-populatedictionary">PopulateDictionary <a class="anchor-link" href="#int-populatedictionary">#</a></h3>
-<p><strong>Populate dictionary sheet using array-based assignment.</strong></p>
+<p><strong>Populate the dictionary sheet in the Tab_Dictionary table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PopulateDictionary(ByVal dictionarySheet As Worksheet, ByVal diseaseTable As ListObject)
 </code></pre>
+<p>The headers are the ones of a setup dictionary, so CustomTable.Import
+matches them by name. Variable Order stays as the first column: the
+setup dictionary has no such column and the import skips it.</p>
 <hr />
 <h3 id="int-builddictionarymatrix">BuildDictionaryMatrix <a class="anchor-link" href="#int-builddictionarymatrix">#</a></h3>
 <p><strong>Build a dictionary matrix selecting required columns.</strong></p>
@@ -168,21 +206,124 @@
 <pre><code class="language-vb">Private Function BuildDictionaryMatrix(ByRef sourceData As Variant, ByVal rowCount As Long) As Variant
 </code></pre>
 <hr />
+<h2 id="int-choices-export">Choices Export</h2>
 <h3 id="int-populatechoices">PopulateChoices <a class="anchor-link" href="#int-populatechoices">#</a></h3>
-<p><strong>Populate the choices sheet.</strong></p>
+<p><strong>Populate the choices sheet with the lists the disease uses.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PopulateChoices(ByVal choicesSheet As Worksheet, _
-                            ByVal diseaseTable As ListObject)
+                            ByVal diseaseTable As ListObject, _
+                            ByVal masterChoices As LLChoices, _
+                            ByVal logger As DiseaseLogger)
 </code></pre>
+<p>Six columns, in the order of a setup Choices table: list name, ordering
+list, non translated label, translated label, label, short label. The rows
+come from the master Choices sheet, read once as a block and kept to the
+lists the disease names. A list the master sheet does not carry takes the
+values the disease sheet holds for it, and is logged. The label column is
+written as the formula a setup keeps there. The block is wrapped in the
+Tab_Choices table.</p>
 <hr />
 <h3 id="int-buildchoicerows">BuildChoiceRows <a class="anchor-link" href="#int-buildchoicerows">#</a></h3>
-<p><strong>Build a collection containing distinct choice rows.</strong></p>
+<p><strong>Build the choice rows: the master rows of every list the disease names.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function BuildChoiceRows(ByRef sourceData As Variant) As Collection
+<pre><code class="language-vb">Private Function BuildChoiceRows(ByRef sourceData As Variant, _
+                                 ByVal masterChoices As LLChoices, _
+                                 ByVal logger As DiseaseLogger) As Collection
 </code></pre>
 <hr />
+<h3 id="int-diseaselistnames">DiseaseListNames <a class="anchor-link" href="#int-diseaselistnames">#</a></h3>
+<p><strong>Distinct list names of the disease table, in first-use order.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DiseaseListNames(ByRef sourceData As Variant) As BetterArray
+</code></pre>
+<hr />
+<h3 id="int-readmasterblock">ReadMasterBlock <a class="anchor-link" href="#int-readmasterblock">#</a></h3>
+<p><strong>Read the master Choices block with its headers, once.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ReadMasterBlock(ByVal masterChoices As LLChoices, _
+                                 ByRef block As Variant, _
+                                 ByRef nameColumn As Long, _
+                                 ByRef labelColumn As Long, _
+                                 ByRef shortColumn As Long) As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when the block carries a list name and a label column.</p>
+<hr />
+<h3 id="int-appendmasterrows">AppendMasterRows <a class="anchor-link" href="#int-appendmasterrows">#</a></h3>
+<p><strong>Append the master rows of one list; answers how many were added.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function AppendMasterRows(ByVal rows As Collection, _
+                                  ByRef block As Variant, _
+                                  ByVal nameColumn As Long, _
+                                  ByVal labelColumn As Long, _
+                                  ByVal shortColumn As Long, _
+                                  ByVal listName As String) As Long
+</code></pre>
+<hr />
+<h3 id="int-appenddiseaserows">AppendDiseaseRows <a class="anchor-link" href="#int-appenddiseaserows">#</a></h3>
+<p><strong>Append the values the disease sheet carries for a list the master lacks.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AppendDiseaseRows(ByVal rows As Collection, _
+                              ByRef sourceData As Variant, _
+                              ByVal listName As String)
+</code></pre>
+<hr />
+<h3 id="int-choicerow">ChoiceRow <a class="anchor-link" href="#int-choicerow">#</a></h3>
+<p><strong>Build one export row; the label column is filled by its formula later.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ChoiceRow(ByVal listName As String, _
+                           ByVal position As Long, _
+                           ByVal labelValue As String, _
+                           ByVal shortValue As String) As Variant
+</code></pre>
+<hr />
+<h3 id="int-writelabelformulas">WriteLabelFormulas <a class="anchor-link" href="#int-writelabelformulas">#</a></h3>
+<p><strong>Write the label formula on every exported choice row.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteLabelFormulas(ByVal choicesSheet As Worksheet, ByVal rowCount As Long)
+</code></pre>
+<p>The translated label when present, the non translated label
+otherwise, which is the formula the setup Choices sheet keeps.</p>
+<hr />
+<h3 id="int-translatechoices">TranslateChoices <a class="anchor-link" href="#int-translatechoices">#</a></h3>
+<p><strong>Translate the exported choices into the language of the disease.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub TranslateChoices(ByVal choicesSheet As Worksheet, _
+                             ByVal translationTable As ListObject, _
+                             ByVal languageTag As String, _
+                             ByVal logger As DiseaseLogger)
+</code></pre>
+<p>LLChoices.Translate writes the translated label and the short
+label columns; the non translated label keeps the master value and the
+label formula follows. A language the translations table has no column for
+leaves the values as they are and is logged.</p>
+<hr />
+<h3 id="int-tablehascolumn">TableHasColumn <a class="anchor-link" href="#int-tablehascolumn">#</a></h3>
+<p><strong>Whether a ListObject carries a header of the given name.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TableHasColumn(ByVal table As ListObject, ByVal headerName As String) As Boolean
+</code></pre>
+<hr />
+<h3 id="int-warn">Warn <a class="anchor-link" href="#int-warn">#</a></h3>
+<p><strong>Record a warning on the logger when one is given.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Warn(ByVal logger As DiseaseLogger, ByVal message As String)
+</code></pre>
+<hr />
+<h3 id="int-rangeblock">RangeBlock <a class="anchor-link" href="#int-rangeblock">#</a></h3>
+<p><strong>Read a range as a two-dimensional block, one cell included.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RangeBlock(ByVal target As Range) As Variant
+</code></pre>
+<hr />
+<h3 id="int-textof">TextOf <a class="anchor-link" href="#int-textof">#</a></h3>
+<p><strong>Text of a cell value; an error value reads as empty.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TextOf(ByVal cellValue As Variant) As String
+</code></pre>
+<hr />
+<h2 id="int-shared-helpers">Shared Helpers</h2>
 <h3 id="int-containskey">ContainsKey <a class="anchor-link" href="#int-containskey">#</a></h3>
-<p><strong>Determine whether a key has already been processed.</strong></p>
+<p><strong>Determine whether a name has already been seen, without regard to case.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ContainsKey(ByVal keys As BetterArray, ByVal key As String) As Boolean
 </code></pre>
@@ -200,10 +341,31 @@
 </code></pre>
 <hr />
 <h3 id="int-populatetranslations">PopulateTranslations <a class="anchor-link" href="#int-populatetranslations">#</a></h3>
-<p><strong>Populate a worksheet with a ListObject using a single array assignment.</strong></p>
+<p><strong>Copy the values of a ListObject to a worksheet in one assignment.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub PopulateTranslations(ByVal targetSheet As Worksheet, ByVal sourceTable As ListObject)
+<pre><code class="language-vb">Private Sub PopulateTranslations(ByVal targetSheet As Worksheet, _
+                                 ByVal sourceTable As ListObject, _
+                                 Optional ByVal tableName As String = vbNullString)
 </code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tableName</code>: Optional String. When given, the copied block is wrapped
+in a ListObject of that name.</li>
+</ul>
+<hr />
+<h3 id="int-wrapastable">WrapAsTable <a class="anchor-link" href="#int-wrapastable">#</a></h3>
+<p><strong>Wrap a block anchored on A1 in a plain ListObject of the given name.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WrapAsTable(ByVal targetSheet As Worksheet, _
+                        ByVal dataRowCount As Long, _
+                        ByVal columnCount As Long, _
+                        ByVal tableName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dataRowCount</code>: Long. The rows under the header row; zero wraps the
+header row alone.</li>
+</ul>
 <hr />
 <h3 id="int-populatemigrationdisease">PopulateMigrationDisease <a class="anchor-link" href="#int-populatemigrationdisease">#</a></h3>
 <p><strong>Populate a migration worksheet with disease data.</strong></p>
@@ -212,25 +374,100 @@
 </code></pre>
 <hr />
 <h3 id="int-applysheetcosmetics">ApplySheetCosmetics <a class="anchor-link" href="#int-applysheetcosmetics">#</a></h3>
-<p><strong>Apply light formatting to export worksheets.</strong></p>
+<p><strong>Give the four sheets of a disease export their format.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplySheetCosmetics(ByVal metadataSheet As Worksheet, _
                                 ByVal dictionarySheet As Worksheet, _
                                 ByVal choicesSheet As Worksheet, _
                                 ByVal translationsSheet As Worksheet)
 </code></pre>
+<p>A reader opens an exported disease file and a setup migration
+export and sees the same thing. The Metadata sheet is a label and value
+block, so its two columns take their own widths.</p>
 <hr />
 <h3 id="int-applymigrationformatting">ApplyMigrationFormatting <a class="anchor-link" href="#int-applymigrationformatting">#</a></h3>
-<p><strong>Apply formatting to migration workbook sheets.</strong></p>
+<p><strong>Give the four sheets of a migration export their format.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyMigrationFormatting(ByVal targetBook As Workbook)
 </code></pre>
 <hr />
-<h3 id="int-autofitsheet">AutoFitSheet <a class="anchor-link" href="#int-autofitsheet">#</a></h3>
-<p><strong>Auto fit worksheet columns and style header row.</strong></p>
+<h3 id="int-formatexportsheet">FormatExportSheet <a class="anchor-link" href="#int-formatexportsheet">#</a></h3>
+<p><strong>Give one written sheet the export format.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AutoFitSheet(ByVal sheet As Worksheet)
+<pre><code class="language-vb">Private Sub FormatExportSheet(ByVal targetSheet As Worksheet, _
+                              Optional ByVal columnWidth As Double = EXPORT_COLUMN_WIDTH)
 </code></pre>
+<p>The shape is the one DataSheet.Export writes for a setup migration: body
+font Consolas 9, a header band of RGB(240, 240, 244) carrying a bold 10,
+wrapped text and a column width of 25.</p>
+<p>Only the written block is formatted. Running this over Cells meant the
+auto-fit walked a million empty rows and the width was set on every column
+of the sheet.</p>
+<p>The header height is written after the auto-fit. The auto-fit reads the
+wrapped body and sizes row 1 with it, so a height set before it is lost.</p>
+<p>The exported tables carry no table style, so this format is the whole of
+what a reader sees.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetSheet</code>: Worksheet. The sheet holding the written block.</li>
+<li><code>columnWidth</code>: Optional Double. Width given to the written columns.</li>
+</ul>
+<hr />
+<h3 id="int-formatmetadatasheet">FormatMetadataSheet <a class="anchor-link" href="#int-formatmetadatasheet">#</a></h3>
+<p><strong>Give the Metadata sheet its two widths.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatMetadataSheet(ByVal targetSheet As Worksheet)
+</code></pre>
+<p>The sheet holds a label column and a value column. The value
+column is the wider of the two; the rest is the export format.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetSheet</code>: Worksheet. The Metadata sheet of a disease export.</li>
+</ul>
+<hr />
+<h3 id="int-writtenblock">WrittenBlock <a class="anchor-link" href="#int-writtenblock">#</a></h3>
+<p><strong>The written block of a sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function WrittenBlock(ByVal targetSheet As Worksheet) As Range
+</code></pre>
+<p>A sheet holding nothing answers Nothing. The UsedRange of an
+empty sheet is $A$1, and formatting it would band the first row of a sheet
+a reader was given nothing on.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetSheet</code>: Worksheet. The sheet to read.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The used block, or Nothing when the sheet is empty.</p>
+<hr />
+<h3 id="int-hidegridlines">HideGridLines <a class="anchor-link" href="#int-hidegridlines">#</a></h3>
+<p><strong>Turn the gridlines off on one written sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub HideGridLines(ByVal targetSheet As Worksheet)
+</code></pre>
+<p>The view of a sheet is reached through the window of its
+workbook, the way LLExporter.RemoveGridLines reaches it. A workbook with
+no window leaves the sheet as it is. The zeros stay on show: a 0 in the
+ordering column is a value a reader needs.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetSheet</code>: Worksheet. The sheet whose gridlines go.</li>
+</ul>
+<hr />
+<h3 id="int-freezeheaderrow">FreezeHeaderRow <a class="anchor-link" href="#int-freezeheaderrow">#</a></h3>
+<p><strong>Freeze the header row of one written sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FreezeHeaderRow(ByVal targetSheet As Worksheet)
+</code></pre>
+<p>The freeze needs the sheet in front and a window to write on, so the sheet
+is activated first. A window can refuse it: an Excel running off screen
+answers 1004, &quot;Unable to set the FreezePanes property of the Window
+class&quot;. A frozen header is how a sheet looks, so a refusal leaves the
+sheet written and the export carries on. LLDataEntry.FreezeHeader answers
+the same refusal the same way.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetSheet</code>: Worksheet. The sheet whose header row is frozen.</li>
+</ul>
 <hr />
 <h3 id="int-ensureworksheet">EnsureWorksheet <a class="anchor-link" href="#int-ensureworksheet">#</a></h3>
 <p><strong>Ensure a worksheet exists and optionally rename the provided template.</strong></p>
@@ -258,17 +495,14 @@
 <pre><code class="language-vb">Private Function CollectionToMatrix(ByVal rows As Collection, ByVal columnCount As Long) As Variant
 </code></pre>
 <hr />
-<h3 id="int-keyof">KeyOf <a class="anchor-link" href="#int-keyof">#</a></h3>
-<p><strong>Build a unique key for deduplication.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function KeyOf(ByVal controlName As String, ByVal choiceValue As String) As String
-</code></pre>
-<hr />
 <h3 id="int-lastusedcolumn">LastUsedColumn <a class="anchor-link" href="#int-lastusedcolumn">#</a></h3>
 <p><strong>Determine the last used column within the target sheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LastUsedColumn(ByVal sheet As Worksheet) As Long
 </code></pre>
+<p>The UsedRange of a sheet holding nothing is $A$1, so the range
+is counted before its last column is read: an empty sheet answers 0 and the
+first migration block opens at column 1.</p>
 <hr />
 <h3 id="int-builddiseasefilepath">BuildDiseaseFilePath <a class="anchor-link" href="#int-builddiseasefilepath">#</a></h3>
 <p><strong>Build path for disease export.</strong></p>
@@ -297,12 +531,14 @@
 <hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (6 file(s))</summary>
 <ul>
+<li><a href="MasterSetupImportService.html">MasterSetupImportService.cls</a></li>
 <li>MasterSetupExports.bas</li>
 <li>TestDiseaseExporter.bas</li>
 <li>TestDiseaseIntegration.bas</li>
 <li>TestDiseaseSetupImport.bas</li>
+<li>TestMasterSetupImportService.bas</li>
 </ul>
 </details>
   </main>

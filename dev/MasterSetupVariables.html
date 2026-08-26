@@ -47,6 +47,38 @@
 <li><code>choices</code>: LLChoices providing category listings.</li>
 </ul>
 <hr />
+<h3 id="int-hasvariable">HasVariable <a class="anchor-link" href="#int-hasvariable">#</a></h3>
+<p><strong>Whether the table carries a line for the variable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function HasVariable(ByVal variableName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>variableName</code>: String identifier of the variable, matched without regard to case.</li>
+</ul>
+<hr />
+<h3 id="int-addvariable">AddVariable <a class="anchor-link" href="#int-addvariable">#</a></h3>
+<p><strong>Add a variable on the first free line of the table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddVariable(ByVal variableName As String, _
+                       Optional ByVal section As String = vbNullString, _
+                       Optional ByVal label As String = vbNullString, _
+                       Optional ByVal defaultChoice As String = vbNullString, _
+                       Optional ByVal defaultStatus As String = vbNullString)
+</code></pre>
+<p>A free line is a line with no variable name, which is what Add
+Rows leaves behind; with none a row is added to the table. The line takes
+the next order number, so a sort keeps the new variable at the end. The
+joined choices values stay empty: RefreshChoices fills them.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>variableName</code>: String identifier of the new variable.</li>
+<li><code>section</code>: Optional String written in the Variable Section column.</li>
+<li><code>label</code>: Optional String written in the Label column.</li>
+<li><code>defaultChoice</code>: Optional String written in the Default Choice column.</li>
+<li><code>defaultStatus</code>: Optional String written in the Default Status column.</li>
+</ul>
+<hr />
 <h3 id="int-labelfor">LabelFor <a class="anchor-link" href="#int-labelfor">#</a></h3>
 <p><strong>Retrieve the label for the supplied variable.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -167,20 +199,48 @@
                           Optional ByVal includeHeaders As Boolean = False) As Range
 </code></pre>
 <hr />
+<h2 id="int-internal-helpers">Internal helpers</h2>
+<h3 id="int-writecell">WriteCell <a class="anchor-link" href="#int-writecell">#</a></h3>
+<p><strong>Write any value on the line of the given column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteCell(ByVal rowIndex As Long, ByVal headerName As String, ByVal newValue As Variant)
+</code></pre>
+<hr />
+<h3 id="int-firstfreerow">FirstFreeRow <a class="anchor-link" href="#int-firstfreerow">#</a></h3>
+<p><strong>The first line with no variable name, or a new line at the end.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FirstFreeRow() As Long
+</code></pre>
+<hr />
+<h3 id="int-nextordernumber">NextOrderNumber <a class="anchor-link" href="#int-nextordernumber">#</a></h3>
+<p><strong>One past the highest order number of the table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NextOrderNumber() As Long
+</code></pre>
+<hr />
+<h3 id="int-orderof">OrderOf <a class="anchor-link" href="#int-orderof">#</a></h3>
+<p><strong>The order number a cell carries; anything else reads as 0.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function OrderOf(ByVal cellValue As Variant) As Long
+</code></pre>
+<hr />
 </details>
 <details>
-<summary>Used in (12 file(s))</summary>
+<summary>Used in (15 file(s))</summary>
 <ul>
 <li><a href="DiseaseSheet.html">DiseaseSheet.cls</a></li>
 <li><a href="EventMasterSetup.html">EventMasterSetup.cls</a></li>
+<li><a href="MasterSetupImportService.html">MasterSetupImportService.cls</a></li>
 <li><a href="MasterSetupPreparation.html">MasterSetupPreparation.cls</a></li>
 <li>CustomMasterSetupFunctions.bas</li>
 <li>MasterSetupEventsManager.bas</li>
+<li>MasterSetupExports.bas</li>
 <li>MasterSetupHelpers.bas</li>
 <li>TestDiseaseIntegration.bas</li>
 <li>TestDiseaseSheet.bas</li>
 <li>TestEventMasterSetup.bas</li>
 <li>TestMasterSetupEvents.bas</li>
+<li>TestMasterSetupImportService.bas</li>
 <li>TestMasterSetupPreparation.bas</li>
 <li>TestMasterSetupVariables.bas</li>
 </ul>
