@@ -3,6 +3,7 @@ Option Explicit
 
 '@Folder("Msetup")
 '@ModuleDescription("Disease exports, the setup import and the migration round trip for the master setup workbook.")
+'@depends MasterSetupEventsManager, EventMasterSetup, MasterSetupLog, MasterSetupHelpers, MasterSetupImportService, MasterSetupMigration, MasterSetupVariables, DiseaseExporter, DiseaseExportWorkbook, DiseaseComparisonReport, DiseaseSheet, DiseaseLogger, LLChoices, DropdownLists, ApplicationState, OSFiles, HiddenNames, BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Five doors to the outside world, all built on the msetup classes:
@@ -21,6 +22,13 @@ Option Explicit
 'The landing of a block on a disease worksheet is MasterSetupImportService's
 'work, and the migration format at both ends is MasterSetupMigration's; this
 'module walks the pickers and builds the classes over the master managers.
+'
+'Every door writes its outcome in the user log EventMasterSetup holds on
+'__log: one success line naming the file or the diseases, one warning line
+'on a refusal or a cancelled picker. The failure line is written by the
+'ribbon callback that opened the door, because the raise lands there. The
+'DiseaseLogger the exporter and the migration fill is read back here and
+'folded into the success line as one count.
 
 Private Const NAME_DISLANG As String = "__Var_DISLANG"
 Private Const NAME_DISCODE As String = "__Var_DISCODE"
@@ -39,6 +47,7 @@ Public Sub ExportToSetup()
     Dim exporter As DiseaseExporter
     Dim translationTable As ListObject
     Dim store As HiddenNames
+    Dim logger As DiseaseLogger
     Dim filePath As String
 
     Set targetSheet = ActiveSheet
@@ -46,24 +55,31 @@ Public Sub ExportToSetup()
 
     If Not MasterSetupHelpers.IsMasterDiseaseSheet(targetSheet) Then
         MsgBox "Select a disease worksheet before exporting it.", vbExclamation + vbOKOnly, "Export"
+        LogWarningLine "export-setup", "'" & targetSheet.Name & "' is no disease worksheet", "ExportToSetup"
         Exit Sub
     End If
 
     Set io = OSFiles.Create()
     io.LoadFolder
-    If Not io.HasValidFolder() Then Exit Sub
+    If Not io.HasValidFolder() Then
+        LogWarningLine "export-setup", "folder picker cancelled", "ExportToSetup"
+        Exit Sub
+    End If
 
     Set translationTable = ResolveTranslationsTable(ThisWorkbook)
 
     'The language and the code of the sheet live in its hidden names.
     Set store = HiddenNames.Create(targetSheet)
 
+    Set logger = DiseaseLogger.Create()
     Set exporter = BuildExporter()
     filePath = exporter.ExportDisease(io.Folder(), targetSheet, translationTable, _
                                       targetSheet.Name, _
                                       store.ValueAsString(NAME_DISLANG), _
-                                      store.ValueAsString(NAME_DISCODE))
+                                      store.ValueAsString(NAME_DISCODE), _
+                                      logger)
 
+    LogSuccessLine "export-setup", targetSheet.Name & " to " & filePath & LoggerSummary(logger), "ExportToSetup"
     MsgBox "Done! The disease file is saved at:" & vbNewLine & filePath, vbInformation + vbOKOnly, "Export"
 End Sub
 
@@ -77,16 +93,21 @@ Public Sub ExportForMigration()
     Set diseaseNames = CollectDiseaseNames()
     If diseaseNames.Length = 0 Then
         MsgBox "This workbook carries no disease worksheet to export.", vbExclamation + vbOKOnly, "Export"
+        LogWarningLine "export-migration", "no disease worksheet to export", "ExportForMigration"
         Exit Sub
     End If
 
     Set io = OSFiles.Create()
     io.LoadFolder
-    If Not io.HasValidFolder() Then Exit Sub
+    If Not io.HasValidFolder() Then
+        LogWarningLine "export-migration", "folder picker cancelled", "ExportForMigration"
+        Exit Sub
+    End If
 
     Set migration = BuildMigration(ThisWorkbook)
     filePath = migration.ExportMigration(io.Folder())
 
+    LogSuccessLine "export-migration", diseaseNames.Length & " disease(s) to " & filePath, "ExportForMigration"
     MsgBox "Done! The migration file is saved at:" & vbNewLine & filePath, vbInformation + vbOKOnly, "Export"
 End Sub
 
@@ -105,6 +126,7 @@ Public Sub ImportFromSetup()
     Dim io As OSFiles
     Dim sourceBook As Workbook
     Dim service As MasterSetupImportService
+    Dim logger As DiseaseLogger
     Dim diseaseName As String
     Dim errNumber As Long
     Dim errSource As String
@@ -112,7 +134,10 @@ Public Sub ImportFromSetup()
 
     Set io = OSFiles.Create()
     io.LoadFile IMPORT_FILTERS
-    If Not io.HasValidFile() Then Exit Sub
+    If Not io.HasValidFile() Then
+        LogWarningLine "import-setup", "file picker cancelled", "ImportFromSetup"
+        Exit Sub
+    End If
 
     Set sourceBook = Application.Workbooks.Open(fileName:=io.File(), ReadOnly:=True)
 
@@ -123,8 +148,13 @@ Public Sub ImportFromSetup()
     diseaseName = service.ReadDiseaseName(sourceBook)
     If LenB(diseaseName) = 0 Then diseaseName = AskDiseaseName(service)
 
-    service.ImportSetupExport sourceBook, diseaseName:=diseaseName
+    Set logger = DiseaseLogger.Create()
+    service.ImportSetupExport sourceBook, logger, diseaseName
 
+    LogSuccessLine "import-setup", service.DiseaseName & " from " & io.File() & ", " & _
+                   service.AddedVariables.Length & " variable(s) and " & _
+                   service.AddedChoices.Length & " list(s) added" & LoggerSummary(logger), _
+                   "ImportFromSetup"
     MsgBox "Done! The disease '" & service.DiseaseName & "' is imported." & vbNewLine & _
            service.AddedVariables.Length & " variable(s) added to the Variables sheet, " & _
            service.AddedChoices.Length & " list(s) added to the Choices sheet.", _
@@ -208,21 +238,29 @@ Public Sub ImportFlatFile()
     Dim io As OSFiles
     Dim sourceBook As Workbook
     Dim migration As MasterSetupMigration
+    Dim logger As DiseaseLogger
     Dim errNumber As Long
     Dim errSource As String
     Dim errDescription As String
 
     Set io = OSFiles.Create()
     io.LoadFile IMPORT_FILTERS
-    If Not io.HasValidFile() Then Exit Sub
+    If Not io.HasValidFile() Then
+        LogWarningLine "import-migration", "file picker cancelled", "ImportFlatFile"
+        Exit Sub
+    End If
 
     Set sourceBook = Application.Workbooks.Open(fileName:=io.File(), ReadOnly:=True)
 
     On Error GoTo Handler
 
+    Set logger = DiseaseLogger.Create()
     Set migration = BuildMigration(ThisWorkbook)
-    migration.Import sourceBook
+    migration.Import sourceBook, logger
 
+    LogSuccessLine "import-migration", migration.ImportedDiseaseCount & " disease(s) from " & io.File() & _
+                   ", " & migration.AddedLanguages.Length & " language(s) added" & LoggerSummary(logger), _
+                   "ImportFlatFile"
     MsgBox "Done! " & migration.ImportedDiseaseCount & " disease worksheet(s) imported, " & _
            migration.AddedLanguages.Length & " language(s) added to the translations table.", _
            vbInformation + vbOKOnly, "Import"
@@ -269,15 +307,22 @@ Public Sub CompareDiseaseSheets()
     Set diseaseNames = CollectDiseaseNames()
     If diseaseNames.Length < 2 Then
         MsgBox "This workbook needs two disease worksheets to compare.", vbExclamation + vbOKOnly, COMPARE_TITLE
+        LogWarningLine "compare-diseases", "fewer than two disease worksheets", "CompareDiseaseSheets"
         Exit Sub
     End If
 
     firstName = PromptDiseaseName(diseaseNames, "Select the first disease to compare:")
-    If LenB(firstName) = 0 Then Exit Sub
+    If LenB(firstName) = 0 Then
+        LogWarningLine "compare-diseases", "no first disease picked", "CompareDiseaseSheets"
+        Exit Sub
+    End If
 
     Set remainingNames = NamesWithout(diseaseNames, firstName)
     secondName = PromptDiseaseName(remainingNames, "Select the disease to compare with '" & firstName & "':")
-    If LenB(secondName) = 0 Then Exit Sub
+    If LenB(secondName) = 0 Then
+        LogWarningLine "compare-diseases", "no second disease picked", "CompareDiseaseSheets"
+        Exit Sub
+    End If
 
     On Error GoTo Handler
 
@@ -288,6 +333,7 @@ Public Sub CompareDiseaseSheets()
     report.PrintComparison ResolveDiseaseTable(ThisWorkbook.Worksheets(firstName)), _
                            ResolveDiseaseTable(ThisWorkbook.Worksheets(secondName)), _
                            firstName, secondName
+    LogSuccessLine "compare-diseases", firstName & " with " & secondName, "CompareDiseaseSheets"
 
 Cleanup:
     'Shielded: Handler is still armed here, and a raise from Restore
@@ -367,12 +413,12 @@ End Function
 '@sub-title The table of a disease worksheet.
 '@details A disease worksheet carries one ListObject; a sheet without one
 'is refused with ElementNotFound.
-Private Function ResolveDiseaseTable(ByVal diseaseSheet As Worksheet) As ListObject
-    If diseaseSheet.ListObjects.Count = 0 Then
+Private Function ResolveDiseaseTable(ByVal targetSheet As Worksheet) As ListObject
+    If targetSheet.ListObjects.Count = 0 Then
         Err.Raise ProjectError.ElementNotFound, "MasterSetupExports.CompareDiseaseSheets", _
-                  "The disease worksheet '" & diseaseSheet.Name & "' carries no table."
+                  "The disease worksheet '" & targetSheet.Name & "' carries no table."
     End If
-    Set ResolveDiseaseTable = diseaseSheet.ListObjects(1)
+    Set ResolveDiseaseTable = targetSheet.ListObjects(1)
 End Function
 
 '@section Shared helpers
@@ -459,6 +505,80 @@ Private Function CollectDiseaseNames() As BetterArray
             CollectDiseaseNames.Push sh.Name
         End If
     Next sh
+End Function
+
+'@section User log
+'===============================================================================
+
+'@sub-title The user log the event service holds.
+'@details A workbook whose log cannot be built answers Nothing and every
+'log line of this module stays quiet.
+Private Function UserLogOf() As MasterSetupLog
+    Dim service As EventMasterSetup
+
+    Set service = MasterSetupEventsManager.MasterSetupService()
+    If service Is Nothing Then Exit Function
+
+    Set UserLogOf = service.UserLog()
+End Function
+
+'@sub-title Write the success line of a finished door.
+'@details The write is guarded so a log fault never takes down the walk
+'it records.
+Private Sub LogSuccessLine(ByVal action As String, _
+                           Optional ByVal detail As String = vbNullString, _
+                           Optional ByVal source As String = vbNullString)
+    Dim logStore As MasterSetupLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.LogSuccess action, detail, source
+    On Error GoTo 0
+End Sub
+
+'@sub-title Write the warning line of a refused or cancelled door.
+Private Sub LogWarningLine(ByVal action As String, _
+                           Optional ByVal detail As String = vbNullString, _
+                           Optional ByVal source As String = vbNullString)
+    Dim logStore As MasterSetupLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.LogWarning action, detail, source
+    On Error GoTo 0
+End Sub
+
+'@sub-title The warnings and errors of a DiseaseLogger, as one short count.
+'@details Every entry of the logger is a BetterArray whose third item is
+'the severity. Answers an empty string when the logger holds only info
+'lines, so the success line stays short on a clean run.
+'@param logger DiseaseLogger. The logger the class filled.
+'@return String. ", N warning(s), M error(s)" or an empty string.
+Private Function LoggerSummary(ByVal logger As DiseaseLogger) As String
+    Dim entries As BetterArray
+    Dim entry As BetterArray
+    Dim index As Long
+    Dim severity As Long
+    Dim warningCount As Long
+    Dim errorCount As Long
+
+    If logger Is Nothing Then Exit Function
+    If Not logger.HasEntries Then Exit Function
+
+    Set entries = logger.Entries
+    For index = entries.LowerBound To entries.UpperBound
+        Set entry = entries.Item(index)
+        severity = CLng(entry.Item(entry.LowerBound + 2))
+        If severity = DiseaseLogWarning Then warningCount = warningCount + 1
+        If severity = DiseaseLogError Then errorCount = errorCount + 1
+    Next index
+
+    If warningCount = 0 And errorCount = 0 Then Exit Function
+    LoggerSummary = ", " & warningCount & " warning(s), " & errorCount & " error(s)"
 End Function
 
 '@sub-title The translations table of a master setup workbook, or Nothing.

@@ -3,6 +3,7 @@ Option Explicit
 
 '@Folder("Msetup")
 '@ModuleDescription("The one place master setup events are handled and shared services live.")
+'@depends EventMasterSetup, MasterSetupLog, MasterSetupHelpers, MasterSetupVariables, LLChoices, CustomTable, ApplicationState, HiddenNames, BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'The workbook code-behind (EventMasterSetupWorkbook) forwards every event
@@ -25,6 +26,10 @@ Option Explicit
 '- A pick in the language cell of a disease sheet is stored in the sheet's
 '  hidden names, so exports read the language the user chose.
 '- An edit on the Translations sheet drops the translation caches.
+'
+'The workbook open and the workbook close are the two lines this module
+'writes in the user log, the record EventMasterSetup holds on __log. A log
+'fault never takes down the event it records: every write is guarded.
 
 'Column order of a disease table, as DiseaseSheet builds it.
 Private Const DISEASE_NAME_COLUMN As Long = 2
@@ -57,7 +62,12 @@ Public Function MasterSetupService() As EventMasterSetup
 End Function
 
 '@sub-title Drop the service and every cache derived from it.
+'@details The close line is written first: the log lives on the service,
+'and a dropped service holds no log to write through.
 Public Sub DisposeMasterSetup()
+    If Not eventService Is Nothing Then
+        LogInfoLine "workbook-close", ThisWorkbook.Name, "DisposeMasterSetup"
+    End If
     Set eventService = Nothing
     ResetMasterSetupFunctionCaches
 End Sub
@@ -69,6 +79,9 @@ End Sub
 Public Sub MsWorkbookOpened()
     ResetMasterSetupFunctionCaches
     MasterSetupService.OnWorkbookOpen Application
+    'The open is the first line of the session in the user log, so a reader
+    'of the log sees where each working session started.
+    LogInfoLine "workbook-open", ThisWorkbook.Name, "MsWorkbookOpened"
 End Sub
 
 '@sub-title Remember the ribbon for later invalidations.
@@ -532,6 +545,34 @@ End Sub
 
 '@section Internal helpers
 '===============================================================================
+
+'@sub-title The user log the event service holds.
+'@details A workbook whose log cannot be built answers Nothing and every
+'log line of this module stays quiet.
+Private Function UserLogOf() As MasterSetupLog
+    Dim service As EventMasterSetup
+
+    Set service = MasterSetupService()
+    If service Is Nothing Then Exit Function
+
+    Set UserLogOf = service.UserLog()
+End Function
+
+'@sub-title Write one lifecycle line of the user log.
+'@details The write is guarded so a log fault never takes down the event
+'it records.
+Private Sub LogInfoLine(ByVal action As String, _
+                        Optional ByVal detail As String = vbNullString, _
+                        Optional ByVal source As String = vbNullString)
+    Dim logStore As MasterSetupLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.LogInfo action, detail, source
+    On Error GoTo 0
+End Sub
 
 Private Sub StoreDiseaseLanguage(ByVal sh As Worksheet, ByVal languageTag As String)
     Dim store As HiddenNames

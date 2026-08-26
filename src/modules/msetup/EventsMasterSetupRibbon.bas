@@ -3,12 +3,20 @@ Option Explicit
 
 '@Folder("Msetup")
 '@ModuleDescription("Ribbon callbacks supporting master setup operations.")
-'@depends MasterSetupPreparation, MasterSetupHelpers, MasterSetupExports, MasterSetupImportService, DiseaseComparisonReport, DropdownLists, Passwords, TranslationObject, ApplicationState, SetupTranslationsTable, UpdatedValues, DiseaseSheet, Development, RibbonDev
+'@depends MasterSetupEventsManager, EventMasterSetup, MasterSetupLog, MasterSetupPreparation, MasterSetupHelpers, MasterSetupExports, DiseaseSheet, DropdownLists, SetupTranslationsTable, UpdatedValues, Development, RibbonDev, Passwords, ApplicationState, OSFiles
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'The master setup file itself stays in English: every prompt below is a plain
 'English string, and the ribbon carries no translation dropdown. The only
 'translatable content is the values inside a disease worksheet.
+'
+'Every callback writes its outcome in the user log EventMasterSetup holds
+'on __log: one success line when the walk ends well, one warning line when
+'the user cancels or the walk is refused, one failure line at the error
+'label. The doors of MasterSetupExports write their own success and warning
+'lines; the callbacks that open them write the failure line, because the
+'raise lands here. Every write is guarded so a log fault never takes down
+'the walk it records.
 
 Private Const TRANSLATIONS_SHEET_NAME As String = "Translations"
 Private Const TRANSLATIONS_TABLE_NAME As String = "Tab_Translations"
@@ -39,6 +47,7 @@ End Sub
 '@EntryPoint
 Public Sub clickAddRows(ByRef ribbonControl As IRibbonControl)
     Dim targetSheet As Worksheet
+    Dim failureText As String
 
     Set targetSheet = ActiveSheet
     If targetSheet Is Nothing Then Exit Sub
@@ -47,28 +56,35 @@ Public Sub clickAddRows(ByRef ribbonControl As IRibbonControl)
     'before it raises, so the failure only has to be said here.
     On Error GoTo Handler
     MasterSetupHelpers.ManageRows targetSheet, True
+    LogSuccessLine "add-rows", targetSheet.Name, "clickAddRows"
     Exit Sub
 
 Handler:
+    failureText = Err.Description
     Debug.Print "clickAddRows: "; Err.Number; Err.Description
     MsgBox "Unable to add rows: " & Err.Description, vbCritical + vbOKOnly, "Rows"
+    LogFailureLine "add-rows", failureText, "clickAddRows"
 End Sub
 
 '@Description("Trim table rows on the active worksheet, preserving header rows.")
 '@EntryPoint
 Public Sub clickResize(ByRef ribbonControl As IRibbonControl)
     Dim targetSheet As Worksheet
+    Dim failureText As String
 
     Set targetSheet = ActiveSheet
     If targetSheet Is Nothing Then Exit Sub
 
     On Error GoTo Handler
     MasterSetupHelpers.ManageRows targetSheet, False
+    LogSuccessLine "resize-tables", targetSheet.Name, "clickResize"
     Exit Sub
 
 Handler:
+    failureText = Err.Description
     Debug.Print "clickResize: "; Err.Number; Err.Description
     MsgBox "Unable to resize the tables: " & Err.Description, vbCritical + vbOKOnly, "Rows"
+    LogFailureLine "resize-tables", failureText, "clickResize"
 End Sub
 
 '@Description("Clear all active filters applied to tables on the active worksheet.")
@@ -78,6 +94,7 @@ Public Sub clickFilters(ByRef ribbonControl As IRibbonControl)
     Set targetSheet = ActiveSheet
     If Not targetSheet Is Nothing Then
         MasterSetupHelpers.ClearMasterSheetFilters targetSheet
+        LogSuccessLine "clear-filters", targetSheet.Name, "clickFilters"
     End If
 End Sub
 
@@ -86,6 +103,7 @@ End Sub
 Public Sub clickRibbonSortTable(ByRef ribbonControl As IRibbonControl)
     Dim scope As ApplicationState
     Dim targetSheet As Worksheet
+    Dim failureText As String
 
     On Error GoTo Handler
 
@@ -96,6 +114,7 @@ Public Sub clickRibbonSortTable(ByRef ribbonControl As IRibbonControl)
     scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
     MasterSetupHelpers.SortMasterVariablesTables targetSheet
+    LogSuccessLine "sort-tables", targetSheet.Name, "clickRibbonSortTable"
 
 Cleanup:
     'Shielded: Handler is still armed here, and a raise from Restore
@@ -105,7 +124,9 @@ Cleanup:
     Exit Sub
 
 Handler:
+    failureText = Err.Description
     Debug.Print "clickRibbonSortTable: "; Err.Number; Err.Description
+    LogFailureLine "sort-tables", failureText, "clickRibbonSortTable"
     Resume Cleanup
 End Sub
 
@@ -122,6 +143,7 @@ Public Sub clickAddSheet(ByRef ribbonControl As IRibbonControl)
     Dim diseaseWksh As Worksheet
     Dim diseaseName As String
     Dim attempt As Long
+    Dim failureText As String
 
     If MsgBox("Add a new disease worksheet?", vbYesNo + vbQuestion, "Confirm") <> vbYes Then Exit Sub
 
@@ -132,6 +154,7 @@ Public Sub clickAddSheet(ByRef ribbonControl As IRibbonControl)
 
     If LenB(diseaseName) = 0 Then
         If attempt > 5 Then MsgBox "Unable to capture the disease name.", vbCritical + vbOKOnly, "Confirm"
+        LogWarningLine "add-disease", "no disease name given", "clickAddSheet"
         Exit Sub
     End If
 
@@ -155,6 +178,7 @@ Public Sub clickAddSheet(ByRef ribbonControl As IRibbonControl)
     passManager.Protect ThisWorkbook
 
     RefreshDropdownCaches
+    LogSuccessLine "add-disease", diseaseName, "clickAddSheet"
     MsgBox "Done!", vbInformation + vbOKOnly, "Confirm"
 
 Cleanup:
@@ -165,6 +189,7 @@ Cleanup:
     Exit Sub
 
 Handler:
+    failureText = Err.Description
     Debug.Print "clickAddSheet: "; Err.Number; Err.Description
     MsgBox "Unable to create the disease worksheet.", vbCritical + vbOKOnly, "Confirm"
     If Not passManager Is Nothing Then
@@ -172,6 +197,7 @@ Handler:
             passManager.Protect ThisWorkbook
         On Error GoTo 0
     End If
+    LogFailureLine "add-disease", diseaseName & ": " & failureText, "clickAddSheet"
     Resume Cleanup
 End Sub
 
@@ -182,6 +208,8 @@ Public Sub clickRemSheet(ByRef ribbonControl As IRibbonControl)
     Dim passManager As Passwords
     Dim targetSheet As Worksheet
     Dim alertsState As Boolean
+    Dim removedName As String
+    Dim failureText As String
 
     Set targetSheet = ActiveSheet
     If targetSheet Is Nothing Then Exit Sub
@@ -201,6 +229,7 @@ Public Sub clickRemSheet(ByRef ribbonControl As IRibbonControl)
     Set passManager = MasterSetupHelpers.ResolveMasterPasswords()
     If passManager Is Nothing Then Err.Raise ProjectError.ElementNotFound, "clickRemSheet", "Passwords worksheet '" & PASSWORD_SHEET_NAME & "' was not found."
 
+    removedName = targetSheet.Name
     passManager.UnProtect targetSheet.Name
     passManager.UnProtect ThisWorkbook
 
@@ -212,6 +241,7 @@ Public Sub clickRemSheet(ByRef ribbonControl As IRibbonControl)
     passManager.Protect ThisWorkbook
 
     RefreshDropdownCaches
+    LogSuccessLine "remove-disease", removedName, "clickRemSheet"
 
 Cleanup:
     'Shielded: Handler is still armed here, and a raise from Restore
@@ -221,6 +251,7 @@ Cleanup:
     Exit Sub
 
 Handler:
+    failureText = Err.Description
     Debug.Print "clickRemSheet: "; Err.Number; Err.Description
     Application.DisplayAlerts = True
     If Not passManager Is Nothing Then
@@ -230,6 +261,7 @@ Handler:
         On Error GoTo 0
     End If
     MsgBox "Unable to remove the selected worksheet.", vbCritical + vbOKOnly, "Confirm"
+    LogFailureLine "remove-disease", removedName & ": " & failureText, "clickRemSheet"
     Resume Cleanup
 End Sub
 
@@ -239,6 +271,7 @@ Public Sub clickClearSheet(ByRef ribbonControl As IRibbonControl)
     Dim scope As ApplicationState
     Dim passManager As Passwords
     Dim targetSheet As Worksheet
+    Dim failureText As String
 
     Set targetSheet = ActiveSheet
     If targetSheet Is Nothing Then Exit Sub
@@ -261,6 +294,7 @@ Public Sub clickClearSheet(ByRef ribbonControl As IRibbonControl)
     passManager.UnProtect targetSheet.Name
     MasterSetupHelpers.ClearMasterSheetData targetSheet
     passManager.Protect targetSheet.Name
+    LogSuccessLine "clear-disease", targetSheet.Name, "clickClearSheet"
 
 Cleanup:
     'Shielded: Handler is still armed here, and a raise from Restore
@@ -270,6 +304,7 @@ Cleanup:
     Exit Sub
 
 Handler:
+    failureText = Err.Description
     Debug.Print "clickClearSheet: "; Err.Number; Err.Description
     MsgBox "Unable to clear the disease worksheet.", vbCritical + vbOKOnly, "Confirm"
     If Not passManager Is Nothing Then
@@ -277,6 +312,7 @@ Handler:
             passManager.Protect targetSheet.Name
         On Error GoTo 0
     End If
+    LogFailureLine "clear-disease", targetSheet.Name & ": " & failureText, "clickClearSheet"
     Resume Cleanup
 End Sub
 
@@ -285,6 +321,7 @@ End Sub
 '@EntryPoint
 Public Sub clickCompare(ByRef ribbonControl As IRibbonControl)
     Dim scope As ApplicationState
+    Dim failureText As String
 
     On Error GoTo Handler
 
@@ -301,8 +338,10 @@ Cleanup:
     Exit Sub
 
 Handler:
+    failureText = Err.Description
     Debug.Print "clickCompare: "; Err.Number; Err.Description
     MsgBox "Disease comparison failed: " & Err.Description, vbCritical + vbOKOnly, "Compare"
+    LogFailureLine "compare-diseases", failureText, "clickCompare"
     Resume Cleanup
 End Sub
 
@@ -323,6 +362,7 @@ Public Sub clickAddTrans(ByRef ribbonControl As IRibbonControl)
     Dim updater As UpdatedValues
     Dim passManager As Passwords
     Dim confirmTitle As String
+    Dim failureText As String
 
     confirmTitle = "Translations"
     If MsgBox("Do you want to update the translation sheet?", vbYesNo + vbQuestion, confirmTitle) <> vbYes Then Exit Sub
@@ -371,6 +411,7 @@ Public Sub clickAddTrans(ByRef ribbonControl As IRibbonControl)
 
     'The worksheet functions read the translations; their caches are stale now.
     ResetMasterSetupFunctionCaches
+    LogSuccessLine "update-translations", vbNullString, "clickAddTrans"
 
 Cleanup:
     'Shielded: Handler is still armed here, and a raise from Restore
@@ -380,9 +421,11 @@ Cleanup:
     Exit Sub
 
 Handler:
+    failureText = Err.Description
     Debug.Print "clickAddTrans: "; Err.Number; Err.Description
     MsgBox "An error occurred while updating translations.", vbCritical + vbOKOnly, confirmTitle
     If Not passManager Is Nothing Then passManager.Protect translationsSheet.Name
+    LogFailureLine "update-translations", failureText, "clickAddTrans"
     Resume Cleanup
 End Sub
 
@@ -394,6 +437,7 @@ Public Sub clickAddLang(ByRef ribbonControl As IRibbonControl, ByRef text As Str
     Dim translationsTable As ListObject
     Dim manager As SetupTranslationsTable
     Dim passManager As Passwords
+    Dim failureText As String
 
     text = Trim$(text)
     If LenB(text) = 0 Then Exit Sub
@@ -421,6 +465,7 @@ Public Sub clickAddLang(ByRef ribbonControl As IRibbonControl, ByRef text As Str
     manager.EnsureLanguages text
     passManager.Protect TRANSLATIONS_SHEET_NAME
 
+    LogSuccessLine "add-language", text, "clickAddLang"
     MsgBox "Done!", vbInformation + vbOKOnly, "Confirm"
 
     RefreshDropdownCaches
@@ -434,9 +479,11 @@ Cleanup:
     Exit Sub
 
 Handler:
+    failureText = Err.Description
     Debug.Print "clickAddLang: "; Err.Number; Err.Description
     MsgBox "Unable to add the language column.", vbCritical + vbOKOnly, "Confirm"
     If Not passManager Is Nothing Then passManager.Protect TRANSLATIONS_SHEET_NAME
+    LogFailureLine "add-language", text & ": " & failureText, "clickAddLang"
     Resume Cleanup
 End Sub
 
@@ -449,6 +496,7 @@ Public Sub clickRemLang(ByRef ribbonControl As IRibbonControl, ByRef text As Str
     Dim translationsTable As ListObject
     Dim manager As SetupTranslationsTable
     Dim passManager As Passwords
+    Dim failureText As String
 
     text = Trim$(text)
     If LenB(text) = 0 Then Exit Sub
@@ -476,6 +524,7 @@ Public Sub clickRemLang(ByRef ribbonControl As IRibbonControl, ByRef text As Str
     manager.RemoveLanguage text
     passManager.Protect TRANSLATIONS_SHEET_NAME
 
+    LogSuccessLine "remove-language", text, "clickRemLang"
     MsgBox "Done!", vbInformation + vbOKOnly, "Confirm"
 
     RefreshDropdownCaches
@@ -489,9 +538,11 @@ Cleanup:
     Exit Sub
 
 Handler:
+    failureText = Err.Description
     Debug.Print "clickRemLang: "; Err.Number; Err.Description
     MsgBox "Unable to remove the language column: " & Err.Description, vbCritical + vbOKOnly, "Confirm"
     If Not passManager Is Nothing Then passManager.Protect TRANSLATIONS_SHEET_NAME
+    LogFailureLine "remove-language", text & ": " & failureText, "clickRemLang"
     Resume Cleanup
 End Sub
 
@@ -504,10 +555,16 @@ Public Sub clickMsImpPass(ByRef ribbonControl As IRibbonControl)
     Dim target As Passwords
     Dim scope As ApplicationState
     Dim passSheet As Worksheet
+    Dim failureText As String
 
     Set io = OSFiles.Create()
     io.LoadFile "*.xlsx"
-    If Not io.HasValidFile() Then Exit Sub
+    If Not io.HasValidFile() Then
+        'The cancel is worth a line: a user who says the import did nothing
+        'has the record of their own cancel.
+        LogWarningLine "import-passwords", "file picker cancelled", "clickMsImpPass"
+        Exit Sub
+    End If
 
     On Error GoTo Cleanup
     Set scope = ApplicationState.Create(Application)
@@ -521,15 +578,18 @@ Public Sub clickMsImpPass(ByRef ribbonControl As IRibbonControl)
     Set target = Passwords.Create(passSheet)
     target.ImportFrom importer
 
+    LogSuccessLine "import-passwords", io.File(), "clickMsImpPass"
     MsgBox "Done!", vbInformation + vbOKOnly, "Passwords"
 
 Cleanup:
     If Not importBook Is Nothing Then importBook.Close saveChanges:=False
     If Not scope Is Nothing Then scope.Restore
     If Err.Number <> 0 Then
+        failureText = Err.Description
         Debug.Print "clickMsImpPass: "; Err.Number; Err.Description
         MsgBox "Unable to import passwords: " & Err.Description, vbExclamation + vbOKOnly, "Passwords"
         Err.Clear
+        LogFailureLine "import-passwords", failureText, "clickMsImpPass"
     End If
 End Sub
 
@@ -540,6 +600,7 @@ End Sub
 '@EntryPoint
 Public Sub clickExpSheet(ByRef ribbonControl As IRibbonControl)
     Dim scope As ApplicationState
+    Dim failureText As String
 
     On Error GoTo Handler
 
@@ -556,8 +617,10 @@ Cleanup:
     Exit Sub
 
 Handler:
+    failureText = Err.Description
     Debug.Print "clickExpSheet: "; Err.Number; Err.Description
     MsgBox "Disease export failed: " & Err.Description, vbCritical + vbOKOnly, "Export"
+    LogFailureLine "export-setup", failureText, "clickExpSheet"
     Resume Cleanup
 End Sub
 
@@ -566,6 +629,7 @@ End Sub
 Public Sub clickImpSheet(ByRef ribbonControl As IRibbonControl)
     Dim scope As ApplicationState
     Dim passManager As Passwords
+    Dim failureText As String
 
     On Error GoTo Handler
 
@@ -592,6 +656,7 @@ Cleanup:
     Exit Sub
 
 Handler:
+    failureText = Err.Description
     Debug.Print "clickImpSheet: "; Err.Number; Err.Description
     MsgBox "Disease import failed: " & Err.Description, vbCritical + vbOKOnly, "Import"
     If Not passManager Is Nothing Then
@@ -599,6 +664,7 @@ Handler:
             SetMasterSheetsProtection passManager, protectSheets:=True
         On Error GoTo 0
     End If
+    LogFailureLine "import-setup", failureText, "clickImpSheet"
     Resume Cleanup
 End Sub
 
@@ -606,6 +672,7 @@ End Sub
 '@EntryPoint
 Public Sub clickExp(ByRef ribbonControl As IRibbonControl)
     Dim scope As ApplicationState
+    Dim failureText As String
 
     On Error GoTo Handler
 
@@ -622,8 +689,10 @@ Cleanup:
     Exit Sub
 
 Handler:
+    failureText = Err.Description
     Debug.Print "clickExp: "; Err.Number; Err.Description
     MsgBox "Migration export failed: " & Err.Description, vbCritical + vbOKOnly, "Export"
+    LogFailureLine "export-migration", failureText, "clickExp"
     Resume Cleanup
 End Sub
 
@@ -632,6 +701,7 @@ End Sub
 Public Sub clickImp(ByRef ribbonControl As IRibbonControl)
     Dim scope As ApplicationState
     Dim passManager As Passwords
+    Dim failureText As String
 
     On Error GoTo Handler
 
@@ -660,6 +730,7 @@ Cleanup:
     Exit Sub
 
 Handler:
+    failureText = Err.Description
     Debug.Print "clickImp: "; Err.Number; Err.Description
     MsgBox "Migration import failed: " & Err.Description, vbCritical + vbOKOnly, "Import"
     If Not passManager Is Nothing Then
@@ -668,6 +739,7 @@ Handler:
             SetMasterSheetsProtection passManager, protectSheets:=True
         On Error GoTo 0
     End If
+    LogFailureLine "import-migration", failureText, "clickImp"
     Resume Cleanup
 End Sub
 
@@ -716,6 +788,63 @@ End Function
 Private Sub RefreshDropdownCaches()
     On Error Resume Next
         Preparation.EnsureDropdowns
+    On Error GoTo 0
+End Sub
+
+'@section User log
+'===============================================================================
+'The user log the event service holds. A workbook whose log cannot be built
+'answers Nothing and every log line of this module stays quiet.
+Private Function UserLogOf() As MasterSetupLog
+    Dim service As EventMasterSetup
+
+    Set service = MasterSetupEventsManager.MasterSetupService()
+    If service Is Nothing Then Exit Function
+
+    Set UserLogOf = service.UserLog()
+End Function
+
+'Write the success line of a finished walk. The write is guarded so a log
+'fault never takes down the walk it records.
+Private Sub LogSuccessLine(ByVal action As String, _
+                           Optional ByVal detail As String = vbNullString, _
+                           Optional ByVal source As String = vbNullString)
+    Dim logStore As MasterSetupLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.LogSuccess action, detail, source
+    On Error GoTo 0
+End Sub
+
+'Write the warning line of a refused or cancelled walk.
+Private Sub LogWarningLine(ByVal action As String, _
+                           Optional ByVal detail As String = vbNullString, _
+                           Optional ByVal source As String = vbNullString)
+    Dim logStore As MasterSetupLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.LogWarning action, detail, source
+    On Error GoTo 0
+End Sub
+
+'Write the failure line of a walk that ended at its error label. The caller
+'copies Err.Description before calling: the guard below resets Err.
+Private Sub LogFailureLine(ByVal action As String, _
+                           Optional ByVal detail As String = vbNullString, _
+                           Optional ByVal source As String = vbNullString)
+    Dim logStore As MasterSetupLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.LogFailure action, detail, source
     On Error GoTo 0
 End Sub
 

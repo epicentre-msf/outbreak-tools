@@ -13,14 +13,16 @@ Option Explicit
 'which appends across renders. The suite covers the provisioning, the three
 'sections, the append across two flushes, the outcome colours, the rotation
 'past the row cap, the separator guard on the detail and the source, and
-'the text report with its disease worksheet count.
+'the text report with its disease worksheet count. The last two tests
+'reach the log the way the master setup modules do, through the one
+'EventMasterSetup of the workbook.
 '
 'THE ROTATION IS REACHED BY SEEDING
 '-------------------------------------------------------------------------------
 'The cap is ten thousand rows. The test writes one cell past the cap in
 'the output column and logs one event, so the rotation runs without the
 'suite writing ten thousand lines.
-'@depends MasterSetupLog, CustomTest, Checking, HiddenNames
+'@depends MasterSetupLog, EventMasterSetup, CustomTest, Checking, HiddenNames
 
 Private Assert As CustomTest
 Private FixtureWkb As Workbook
@@ -809,5 +811,82 @@ Public Sub TestExportTextRefusesAnEmptyFolder()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestExportTextRefusesAnEmptyFolder", _
+                         Err.Number, Err.Description
+End Sub
+
+'@section Event Service Tests
+'===============================================================================
+
+'@sub-title The event service builds the log once and answers the same one.
+'@details
+'Every module reaches the log through EventMasterSetup.UserLog, so one
+'workbook has one log and one __log sheet whatever the number of callers.
+'@TestMethod("MasterSetupLog")
+Public Sub TestTheEventServiceHoldsOneLog()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheEventServiceHoldsOneLog"
+    On Error GoTo TestFail
+
+    Dim service As EventMasterSetup
+    Dim firstLog As MasterSetupLog
+    Dim secondLog As MasterSetupLog
+    Dim countBefore As Long
+
+    countBefore = FixtureWkb.Worksheets.Count
+    Set service = EventMasterSetup.Create(FixtureWkb)
+
+    Set firstLog = service.UserLog()
+    Set secondLog = service.UserLog()
+
+    Assert.IsTrue (Not firstLog Is Nothing), "The service answers a log"
+    Assert.IsTrue (firstLog Is secondLog), "The second call answers the held log"
+    Assert.AreEqual countBefore + 1, FixtureWkb.Worksheets.Count, _
+                    "The workbook gained one log sheet"
+    Assert.AreEqual LOG_SHEET, firstLog.Wksh().Name, _
+                    "The held log is bound to the log sheet"
+    Assert.AreEqual CLng(xlSheetVeryHidden), CLng(FixtureWkb.Worksheets(LOG_SHEET).Visible), _
+                    "The sheet the service built is very hidden"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheEventServiceHoldsOneLog", Err.Number, Err.Description
+End Sub
+
+'@sub-title An open, a disease added and an export leave three lines in three sections.
+'@details
+'The acceptance line of the wiring: the three actions a session takes
+'first, written through the held log the way MasterSetupEventsManager,
+'EventsMasterSetupRibbon and MasterSetupExports write them.
+'@TestMethod("MasterSetupLog")
+Public Sub TestAnOpenAnAddAndAnExportLeaveThreeLines()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAnOpenAnAddAndAnExportLeaveThreeLines"
+    On Error GoTo TestFail
+
+    Dim service As EventMasterSetup
+    Dim heldLog As MasterSetupLog
+    Dim sh As Worksheet
+
+    Set service = EventMasterSetup.Create(FixtureWkb)
+    Set heldLog = service.UserLog()
+
+    heldLog.LogInfo "workbook-open", FixtureWkb.Name, "MsWorkbookOpened"
+    heldLog.LogSuccess "add-disease", "Measles", "clickAddSheet"
+    heldLog.LogSuccess "export-setup", "Measles to C:\exports\measles.xlsx", "ExportToSetup"
+    Set sh = heldLog.Wksh()
+
+    Assert.IsTrue (RowOfText(sh, DETAIL_COLUMN, "workbook-open") > 0), "The open line is on the sheet"
+    Assert.IsTrue (RowOfText(sh, DETAIL_COLUMN, "add-disease: Measles") > 0), "The add line is on the sheet"
+    Assert.IsTrue (RowOfText(sh, DETAIL_COLUMN, "export-setup: Measles") > 0), "The export line is on the sheet"
+    Assert.AreEqual 1&, CountOfText(sh, OUTPUT_COLUMN, SECTION_OPENCLOSE), _
+                    "The open line sits under open/close"
+    Assert.AreEqual 1&, CountOfText(sh, OUTPUT_COLUMN, SECTION_LIFECYCLE), _
+                    "The add line sits under master setup lifecycle"
+    Assert.AreEqual 1&, CountOfText(sh, OUTPUT_COLUMN, SECTION_DATAIO), _
+                    "The export line sits under data input/output"
+    Assert.IsTrue (RowOfText(sh, DETAIL_COLUMN, "clickAddSheet") > 0), _
+                  "The add line names the callback that wrote it"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAnOpenAnAddAndAnExportLeaveThreeLines", _
                          Err.Number, Err.Description
 End Sub

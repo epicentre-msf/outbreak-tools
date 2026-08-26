@@ -12,7 +12,7 @@ Attribute VB_Description = "Workbook-level orchestrator for master setup lifecyc
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Coordinates workbook events and shared services for the master setup workbook.")
-'@depends MasterSetupPreparation, MasterSetupVariables, DropdownLists, LLChoices, TranslationObject
+'@depends MasterSetupPreparation, MasterSetupVariables, DropdownLists, LLChoices, TranslationObject, MasterSetupLog, Passwords
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -28,6 +28,8 @@ Private Type TEventMasterSetup
     choices As LLChoices                'Cached choices helper
     translations As TranslationObject   'Cached workbook translations
     ribbon As IRibbonUI                  'Cached ribbon interface for future invalidations
+    logStore As MasterSetupLog           'Cached user log on the __log worksheet
+    triedLog As Boolean                  'The log build ran once, whatever it answered
 End Type
 
 Private this As TEventMasterSetup
@@ -48,6 +50,8 @@ Private Const DROPDOWNS_PREFIX As String = "dropdown_"
 
 Private Const TRANSLATIONS_SHEET_NAME As String = "Translations"
 Private Const TRANSLATIONS_TABLE_NAME As String = "Tab_Translations"
+
+Private Const PASSWORD_SHEET_NAME As String = "__pass"
 
 
 
@@ -126,6 +130,18 @@ Public Property Get Ribbon() As IRibbonUI
     Set Ribbon = this.ribbon
 End Property
 
+'@sub-title The user log of the workbook, built once and held.
+'@details
+'The dated record of the user actions, kept on the very hidden __log
+'worksheet. The ribbon, the events manager and the exports module write
+'their outcome lines through it. An old master setup grows the log sheet on
+'the first logged event.
+'@return MasterSetupLog. The held log, or Nothing when the build failed.
+Public Function UserLog() As MasterSetupLog
+    EnsureLog
+    Set UserLog = this.logStore
+End Function
+
 
 '@section Internal helpers
 '===============================================================================
@@ -134,8 +150,53 @@ Private Sub ResetCaches()
     Set this.dropdowns = Nothing
     Set this.variables = Nothing
     Set this.choices = Nothing
+    Set this.logStore = Nothing
+    this.triedLog = False
     ResetTranslationCaches
 End Sub
+
+'@sub-title Build the user log once, growing the __log sheet when it is missing.
+'@details
+'Adding a worksheet needs the workbook structure open, so a workbook without
+'the log sheet is unprotected through its passwords for the build and
+'protected again after it. A workbook with no usable password sheet is
+'built bare. The tried flag keeps a failed build from repeating on every
+'logged line, and a failed build leaves the log at Nothing so every caller
+'stays quiet.
+Private Sub EnsureLog()
+    Dim mustBuild As Boolean
+    Dim passManager As Passwords
+
+    If Not (this.logStore Is Nothing) Then Exit Sub
+    If this.triedLog Then Exit Sub
+    If this.hostBook Is Nothing Then Exit Sub
+
+    this.triedLog = True
+
+    mustBuild = (ResolveWorksheet(MasterSetupLog.SheetName) Is Nothing)
+    If mustBuild Then Set passManager = ResolvePasswords()
+
+    On Error Resume Next
+    If Not (passManager Is Nothing) Then passManager.UnProtect this.hostBook
+    Set this.logStore = MasterSetupLog.Create(this.hostBook)
+    If Not (passManager Is Nothing) Then passManager.Protect this.hostBook
+    On Error GoTo 0
+End Sub
+
+'@sub-title The password manager of the workbook, or Nothing.
+'@details
+'Passwords.Create raises on a sheet missing its tables or its names; a
+'workbook without a usable password sheet answers Nothing.
+Private Function ResolvePasswords() As Passwords
+    Dim passSheet As Worksheet
+
+    Set passSheet = ResolveWorksheet(PASSWORD_SHEET_NAME)
+    If passSheet Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set ResolvePasswords = Passwords.Create(passSheet)
+    On Error GoTo 0
+End Function
 
 Private Sub ResetTranslationCaches()
     Set this.translations = Nothing
