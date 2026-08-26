@@ -17,8 +17,8 @@ Attribute VB_Description = "Provides a safe lifecycle for export workbooks used 
 
 Option Explicit
 
-'DiseaseExportWorkbook.cls without interface -- single implementation, no test
-'fake, no compile cycle.
+'Owns the lifecycle of one export workbook: creates it on demand, saves it,
+'closes it and releases it so no orphan workbook survives a failed export.
 
 '@section Types
 '===============================================================================

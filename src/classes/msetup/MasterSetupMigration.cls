@@ -17,9 +17,6 @@ Attribute VB_Description = "Writes the whole master setup into one migration fil
 
 Option Explicit
 
-'MasterSetupMigration.cls without interface -- single implementation, no test
-'fake, no compile cycle.
-'
 'The migration is the whole configuration of a master setup file, as it
 'stands, for the next version of that file. One class owns the format at
 'both ends, so the writer and the reader agree on it.

@@ -12,7 +12,7 @@ Attribute VB_Description = "Implementation for Master Setup preparation and conf
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Implementation for Master Setup preparation and configuration")
-'@depends ApplicationState, DropdownLists, DropdownLists, BetterArray, MasterSetupVariables, ProjectError, HiddenNames
+'@depends MasterSetupVariables, DropdownLists, LLChoices, ApplicationState, ProjectError, HiddenNames, BetterArray
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit

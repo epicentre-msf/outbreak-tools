@@ -28,9 +28,6 @@ Option Explicit
 'grows one line per event and the status and title dropdowns of the output
 'sheet filter the log by outcome and by section.
 '
-'MasterSetupLog.cls without interface: single implementation, no test fake,
-'no compile cycle (see project-rules.md 4.4).
-'
 'WHAT ONE LINE SAYS
 '-------------------------------------------------------------------------------
 'An entry line reads as the timestamp and the platform, then the procedure

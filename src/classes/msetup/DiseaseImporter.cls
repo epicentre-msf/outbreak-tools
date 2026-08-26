@@ -17,8 +17,8 @@ Attribute VB_Description = "Coordinates disease worksheet imports with merge and
 
 Option Explicit
 
-'DiseaseImporter.cls without interface -- single implementation, no test fake,
-'no compile cycle.
+'Merges a foreign disease table into an existing one, existing or foreign
+'values winning by priority, and answers a DiseaseImportSummary of the merge.
 
 '@section Enumerations
 '===============================================================================

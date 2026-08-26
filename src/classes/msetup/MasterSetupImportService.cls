@@ -17,9 +17,6 @@ Attribute VB_Description = "Folds an exported disease workbook or a migration bl
 
 Option Explicit
 
-'MasterSetupImportService.cls without interface -- single implementation, no
-'test fake, no compile cycle.
-'
 'Two doors, both landing a disease table on a disease worksheet of the
 'master setup workbook:
 '- ImportSetupExport reads a workbook DiseaseExporter wrote for a setup. Its

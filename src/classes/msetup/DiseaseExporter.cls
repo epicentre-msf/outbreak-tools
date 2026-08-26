@@ -17,8 +17,8 @@ Attribute VB_Description = "Creates the workbook export of one disease for a set
 
 Option Explicit
 
-'DiseaseExporter.cls without interface -- single implementation, no test fake,
-'no compile cycle.
+'Writes one disease of the master setup into a workbook a setup can import:
+'Metadata, Dictionary, Choices and Translations sheets, then saves it to disk.
 
 '@section Constants
 '===============================================================================

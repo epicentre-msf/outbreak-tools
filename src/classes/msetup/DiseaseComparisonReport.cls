@@ -17,9 +17,6 @@ Attribute VB_Description = "Writes a disease comparison onto the __compRep works
 
 Option Explicit
 
-'DiseaseComparisonReport.cls without interface -- single implementation, no
-'test fake, no compile cycle.
-
 '@class DiseaseComparisonReport
 '@description
 'Takes the five Checking bundles a DiseaseComparison answers and renders them

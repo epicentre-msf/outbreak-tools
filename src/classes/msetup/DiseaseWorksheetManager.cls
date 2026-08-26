@@ -12,12 +12,12 @@ Attribute VB_Description = "Provides safe worksheet removal utilities for diseas
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Provides safe worksheet removal utilities for disease setup workflows")
+'@depends ApplicationState
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
-'DiseaseWorksheetManager.cls without interface -- single implementation, no
-'test fake, no compile cycle.
+'Removes disease worksheets safely and tells whether one exists.
 
 '@section Factory
 '===============================================================================

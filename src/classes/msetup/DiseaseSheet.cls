@@ -12,12 +12,13 @@ Attribute VB_Description = "Builds disease worksheets with translated headers, v
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Builds disease worksheets with translated headers, validations, and formatting")
+'@depends MasterSetupVariables, CustomTable, DropdownLists, HiddenNames, BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
-'DiseaseSheet.cls without interface -- single implementation, no test fake,
-'no compile cycle.
+'Builds a disease worksheet of the master setup: the table with translated
+'headers, its validations, hidden names and formatting.
 
 '@section Constants
 '===============================================================================

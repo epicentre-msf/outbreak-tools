@@ -17,8 +17,8 @@ Attribute VB_Description = "Collects lightweight log entries for disease workflo
 
 Option Explicit
 
-'DiseaseLogger.cls without interface -- single implementation, no test fake,
-'no compile cycle.
+'Keeps the info, warning and error entries a disease workflow records so the
+'caller can flush them once the work is done.
 
 '@section Enumerations
 '===============================================================================

@@ -17,9 +17,6 @@ Attribute VB_Description = "Compares two disease tables and answers the differen
 
 Option Explicit
 
-'DiseaseComparison.cls without interface -- single implementation, no test
-'fake, no compile cycle.
-
 '@class DiseaseComparison
 '@description
 'Reads two disease ListObjects and answers five Checking bundles: the
