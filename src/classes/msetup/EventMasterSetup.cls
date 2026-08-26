@@ -12,7 +12,7 @@ Attribute VB_Description = "Workbook-level orchestrator for master setup lifecyc
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Coordinates workbook events and shared services for the master setup workbook.")
-'@depends MasterSetupVariables, DropdownLists, LLChoices, MasterSetupLog, Passwords
+'@depends MasterSetupVariables, DropdownLists, LLChoices, UpdatedValues, MasterSetupLog, Passwords
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -25,6 +25,7 @@ Private Type TEventMasterSetup
     dropdowns As DropdownLists          'Cached dropdown manager
     variables As MasterSetupVariables   'Cached variables manager
     choices As LLChoices                'Cached choices helper
+    updater As UpdatedValues            'Cached update watcher over the __updated registry
     ribbon As IRibbonUI                  'Cached ribbon interface for future invalidations
     logStore As MasterSetupLog           'Cached user log on the __log worksheet
     triedLog As Boolean                  'The log build ran once, whatever it answered
@@ -47,6 +48,7 @@ Private Const DROPDOWNS_SHEET_NAME As String = "__dropdowns"
 Private Const DROPDOWNS_PREFIX As String = "dropdown_"
 
 Private Const PASSWORD_SHEET_NAME As String = "__pass"
+Private Const REGISTRY_SHEET_NAME As String = "__updated"
 
 
 
@@ -71,17 +73,42 @@ Public Sub Configure(ByVal hostBook As Workbook)
     ResetCaches
 End Sub
 
-'@sub-title Handle the workbook open by dropping every held manager.
+'@sub-title Handle the workbook open the way the setup does.
 '@details
-'The managers are built from the sheets on the first read after the open.
-'The preparation of the workbook is a dev-time step: it writes on the
-'sheets, and the Initialize button of the Dev tab is its one door. A change
-'handler on a shipped file reads protected sheets, so the open writes
-'nothing. The application argument is kept for the callers that pass it.
+'The managers are dropped and built from the sheets on the first read after
+'the open. The preparation of the workbook is a dev-time step: it writes on
+'the sheets, and the Initialize button of the Dev tab is its one door.
+'
+'Two things the open does write, the same two EventSetup.OnWorkbookOpen
+'writes. Every flag of the __updated registry goes to yes, so the next
+'Update Translations reads every watched column. And a workbook saved during
+'a debug session reopens with the debug flag still set, and that flag is
+'what Passwords.Protect reads before it does anything: while it is set every
+'re-protect is ignored. LeaveDebugMode puts the matrix back and clears the
+'flag, and returns untouched when the flag is off; the matrix is applied on
+'its own after it because Excel drops UserInterfaceOnly when a file closes,
+'and a sheet protected without it is closed to this code as much as to the
+'user. Each step is skipped when its helper cannot be built. The application
+'argument is kept for the callers that pass it.
 Public Sub OnWorkbookOpen(Optional ByVal excelApplication As Application)
+    Dim pass As Passwords
+
     Set this.dropdowns = Nothing
     Set this.variables = Nothing
     ResetTranslationCaches
+
+    EnsureUpdater
+    If Not (this.updater Is Nothing) Then
+        On Error Resume Next
+            this.updater.SwitchTagsToYes
+        On Error GoTo 0
+    End If
+
+    Set pass = ResolvePasswords()
+    If pass Is Nothing Then Exit Sub
+
+    pass.LeaveDebugMode this.hostBook
+    pass.ApplyProtectionMatrix this.hostBook
 End Sub
 
 '@sub-title Store the ribbon reference for future invalidation support.
@@ -126,6 +153,13 @@ Public Property Get Choices() As LLChoices
     Set Choices = EnsureChoicesHelper
 End Property
 
+'@sub-title The update watcher over the __updated registry, or Nothing.
+'@details Nothing when the workbook has no registry sheet.
+Public Function Updater() As UpdatedValues
+    EnsureUpdater
+    Set Updater = this.updater
+End Function
+
 '@sub-title Expose the cached ribbon interface.
 Public Property Get Ribbon() As IRibbonUI
     Set Ribbon = this.ribbon
@@ -150,9 +184,26 @@ Private Sub ResetCaches()
     Set this.dropdowns = Nothing
     Set this.variables = Nothing
     Set this.choices = Nothing
+    Set this.updater = Nothing
     Set this.logStore = Nothing
     this.triedLog = False
     ResetTranslationCaches
+End Sub
+
+'@sub-title Build the update watcher over the __updated sheet, once.
+'@details A workbook without the sheet answers Nothing. Create is guarded
+'the way EventSetup guards its watcher.
+Private Sub EnsureUpdater()
+    Dim registrySheet As Worksheet
+
+    If Not (this.updater Is Nothing) Then Exit Sub
+
+    Set registrySheet = ResolveWorksheet(REGISTRY_SHEET_NAME)
+    If registrySheet Is Nothing Then Exit Sub
+
+    On Error Resume Next
+        Set this.updater = UpdatedValues.Create(registrySheet)
+    On Error GoTo 0
 End Sub
 
 '@sub-title Build the user log once, growing the __log sheet when it is missing.

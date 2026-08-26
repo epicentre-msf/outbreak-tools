@@ -22,6 +22,8 @@ Private Const CHOICES_SHEET_NAME As String = "Choices"
 Private Const TRANSLATIONS_SHEET_NAME As String = "Translations"
 Private Const TRANSLATION_TABLE_NAME As String = "Tab_Translations"
 Private Const VARIABLES_TABLE_NAME As String = "Tab_Variables"
+Private Const REGISTRY_SHEET_NAME As String = "__updated"
+Private Const PASSWORDS_SHEET_NAME As String = "__pass"
 
 
 '@section Module lifecycle
@@ -139,6 +141,73 @@ Public Sub TestOnWorkbookOpenLeavesTheSheetsAlone()
 
 Fail:
     ReportTestFailure "TestOnWorkbookOpenLeavesTheSheetsAlone"
+End Sub
+
+'@TestMethod("EventMasterSetup")
+'@sub-title The open switches every flag of the __updated registry to yes, the way the setup does.
+Public Sub TestOnWorkbookOpenSwitchesTheRegistryTagsToYes()
+    CustomTestSetTitles Assert, "EventMasterSetup", "TestOnWorkbookOpenSwitchesTheRegistryTagsToYes"
+
+    Dim registryTable As ListObject
+    Dim flagCell As Range
+
+    On Error GoTo Fail
+
+    'A registry built over one tagged column, its flag at no, the way a
+    'file stands after an Update Translations.
+    ChoicesSheet.Range("B3").Value = "translate as text"
+    ChoicesSheet.ListObjects.Add(xlSrcRange, ChoicesSheet.Range("A4:D5"), , xlYes).Name = "Tab_Choices"
+    MasterSetupPreparation.Create(FixtureWorkbook).EnsureUpdatedRegistry
+
+    Set registryTable = FixtureWorkbook.Worksheets(REGISTRY_SHEET_NAME).ListObjects(1)
+    Set flagCell = registryTable.ListColumns("updated").DataBodyRange.Cells(1, 1)
+    Subject.Updater.SwitchTagsToNo
+    Assert.AreEqual "no", LCase$(Trim$(CStr(flagCell.Value))), "The flag should start this test at no"
+
+    Subject.OnWorkbookOpen Application
+
+    Assert.AreEqual "yes", LCase$(Trim$(CStr(flagCell.Value))), "The open should switch the flag to yes"
+
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestOnWorkbookOpenSwitchesTheRegistryTagsToYes"
+End Sub
+
+'@TestMethod("EventMasterSetup")
+'@sub-title The open ends a debug session and puts the protection matrix back.
+'@details A file saved in debug mode reopens with its flag set and its sheets
+'open; the open clears the flag and protects every sheet the table lists.
+Public Sub TestOnWorkbookOpenLeavesDebugModeAndProtects()
+    CustomTestSetTitles Assert, "EventMasterSetup", "TestOnWorkbookOpenLeavesDebugModeAndProtects"
+
+    Dim passSheet As Worksheet
+    Dim pass As Passwords
+
+    On Error GoTo Fail
+
+    PreparePasswordsFixture PASSWORDS_SHEET_NAME, FixtureWorkbook
+    Set passSheet = FixtureWorkbook.Worksheets(PASSWORDS_SHEET_NAME)
+    Set pass = Passwords.Create(passSheet)
+    pass.DisplayPrompts = False
+
+    'The Variables sheet is listed in the protection table, then the
+    'workbook goes into debug mode: every sheet open, the flag set.
+    pass.Protect VariablesSheet.Name
+    pass.EnterDebugMode FixtureWorkbook
+    Assert.IsFalse VariablesSheet.ProtectContents, "Debug mode should leave the Variables sheet open"
+    Assert.IsTrue pass.IsInDebugMode, "The debug flag should be set before the open"
+
+    Subject.OnWorkbookOpen Application
+
+    Assert.IsTrue VariablesSheet.ProtectContents, "The open should protect the Variables sheet again"
+    Set pass = Passwords.Create(passSheet)
+    Assert.IsFalse pass.IsInDebugMode, "The open should clear the debug flag"
+
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestOnWorkbookOpenLeavesDebugModeAndProtects"
 End Sub
 
 '@TestMethod("EventMasterSetup")
