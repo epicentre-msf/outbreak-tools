@@ -409,9 +409,13 @@ Public Sub clickAddTrans(ByRef ribbonControl As IRibbonControl)
 
     passManager.UnProtect translationsSheet.Name
 
+    'Re-armed, not cleared. On Error GoTo 0 cancels Handler for the rest of the
+    'procedure, and UpdateFromRegistry below used to run with nothing watching
+    'it: a failure there left the translations sheet unprotected and the
+    'application still in its busy state.
     On Error Resume Next
         translationsTable.AutoFilter.ShowAllData
-    On Error GoTo 0
+    On Error GoTo Handler
 
     Set manager = SetupTranslationsTable.Create(translationsTable)
     manager.UpdateFromRegistry registrySheet

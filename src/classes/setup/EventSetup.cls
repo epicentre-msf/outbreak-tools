@@ -161,8 +161,20 @@ End Sub
 'disables Application.FormatStaleValues to suppress recalculation prompts,
 'and applies the full password protection matrix across all setup sheets.
 'Silently skips each step when the required helper cannot be created.
+'
+'THE MATRIX IS NOT REAPPLIED IN DEBUG MODE
+'-------------------------------------------------------------------------------
+'A workbook saved during a debug session reopens with the debug flag still set.
+'ApplyProtectionMatrix goes straight to the Excel call and never reads that
+'flag, so it used to lock every sheet again while Passwords.Protect carried on
+'ignoring each re-protect. The workbook then read as locked, and the first sheet
+'a ribbon action unlocked stayed unlocked for the rest of the session, with a
+'log line and nothing else. The flag is what says whether this workbook is
+'locked, so a workbook that says it is in debug mode is left open.
 '@export
 Public Sub OnWorkbookOpen()
+    Dim pass As Passwords
+
     EnsureUpdatedValues
     If Not (this.updater Is Nothing) Then
         On Error Resume Next
@@ -176,7 +188,9 @@ Public Sub OnWorkbookOpen()
         Application.FormatStaleValues = False
     On Error GoTo 0
 
-    PasswordManager.ApplyProtectionMatrix this.hostBook
+    Set pass = CachedPasswordManager()
+    If pass Is Nothing Then Exit Sub
+    If Not pass.IsInDebugMode() Then pass.ApplyProtectionMatrix this.hostBook
 End Sub
 
 '@label:on-sheet-activate

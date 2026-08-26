@@ -52,6 +52,10 @@ Public Sub DeleteListColumnAt(ByVal sheetName As String, ByVal targetCell As Ran
     Dim lo As ListObject
     Dim colIndex As Long
     Dim svc As EventSetup
+    Dim sheetUnlocked As Boolean
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
 
     If targetCell Is Nothing Then Exit Sub
 
@@ -71,9 +75,34 @@ Public Sub DeleteListColumnAt(ByVal sheetName As String, ByVal targetCell As Ran
 
     Set svc = EventsManager.EventSetupService
 
+    'The restore belongs here rather than in the caller, because this is where
+    'the sheet is opened. Excel refuses a column delete often enough to matter,
+    'and clickDelLoColumn only ends the busy state, so a refusal used to leave
+    'the Translations sheet unprotected.
+    On Error GoTo DeleteFailed
+
     svc.UnprotectSetupSheet sheetName
-        lo.ListColumns(colIndex).Delete
-    svc.ProtectSetupSheet sheetName
+    sheetUnlocked = True
+
+    lo.ListColumns(colIndex).Delete
+
+DeleteCleanup:
+    'Reached through Resume, which leaves the handler. A second error raised
+    'while a handler is still active is not trappable.
+    On Error Resume Next
+        If sheetUnlocked Then
+            svc.ProtectSetupSheet sheetName
+            sheetUnlocked = False
+        End If
+    On Error GoTo 0
+    If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
+    Exit Sub
+
+DeleteFailed:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    Resume DeleteCleanup
 End Sub
 
 '@section Sheet name resolution
