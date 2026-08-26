@@ -151,7 +151,7 @@ workbooks:
 
       - area: Debugging
         tests:
-          - By clicking a certain amount of times on the Clear form, you are prompted for a debugging password
+          - By clicking a certain amount of times on the Import form, you are prompted for a debugging password
           - Adding Debugging password 1234 unprotects all the worksheets
           - You can close the setup after all the worksheets are unprotected
           - When reopening the setup, all the worksheets are protected
