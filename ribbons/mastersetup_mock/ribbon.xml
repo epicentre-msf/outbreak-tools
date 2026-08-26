@@ -20,6 +20,7 @@
                     <button id="btnTransAdd" image="translation" label="Update Translations" size="large" onAction="clickAddTrans"/>
                     <editBox id="editLang" label="Add Language" imageMso="translationPane" onChange="clickAddLang"/>
                     <editBox id="editRemLang" label="Remove Language" imageMso="Delete" onChange="clickRemLang"/>
+                    <button id="btnTagUpdate" label="Reset Translation Tags" image="headertag" size="normal" onAction="clickResetTags"/>
                 </group>
                 <group id="customGroupAdv" label="Exports">
                     <button id="btnExp" label="Export To Setup" image="anaexport" size="large" onAction="clickExpSheet"/>

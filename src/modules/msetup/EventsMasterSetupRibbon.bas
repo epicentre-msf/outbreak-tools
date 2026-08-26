@@ -469,6 +469,40 @@ Handler:
     Resume Cleanup
 End Sub
 
+'@Description("Rebuild the __updated registry and set every translation tag back to yes.")
+'@details The mirror of the setup's Reset translation tags button: the
+'registry is dropped and built again from the tagged columns of the
+'Variables and Choices sheets, and every flag reads yes, so the next Update
+'Translations reads every watched column.
+'@EntryPoint
+Public Sub clickResetTags(ByRef ribbonControl As IRibbonControl)
+    Dim scope As ApplicationState
+    Dim failureText As String
+
+    On Error GoTo Handler
+
+    Set scope = ApplicationState.Create(Application)
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+
+    Preparation.EnsureUpdatedRegistry
+    LogSuccessLine "reset-tags", vbNullString, "clickResetTags"
+    MsgBox "Done!", vbInformation + vbOKOnly, "Translations"
+
+Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Restore
+    'would come straight back to this label and raise again.
+    On Error Resume Next
+    If Not scope Is Nothing Then scope.Restore
+    Exit Sub
+
+Handler:
+    failureText = Err.Description
+    Debug.Print "clickResetTags: "; Err.Number; Err.Description
+    MsgBox "Unable to reset the translation tags: " & Err.Description, vbCritical + vbOKOnly, "Translations"
+    LogFailureLine "reset-tags", failureText, "clickResetTags"
+    Resume Cleanup
+End Sub
+
 '@Description("Add a new language column to the translations table.")
 '@EntryPoint
 Public Sub clickAddLang(ByRef ribbonControl As IRibbonControl, ByRef text As String)
