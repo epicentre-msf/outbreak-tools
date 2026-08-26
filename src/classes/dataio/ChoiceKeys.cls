@@ -12,6 +12,7 @@ Attribute VB_Description = "The key a custom dropdown is stored under on a Choic
 '@PredeclaredId
 '@Folder("DataIO")
 '@ModuleDescription("The key a custom dropdown is stored under on a Choices sheet")
+'@depends None
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ProcedureNotUsed
 
 Option Explicit

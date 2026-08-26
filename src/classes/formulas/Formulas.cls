@@ -37,7 +37,7 @@ Option Explicit
 '-------------------------------------------------------------------------------
 'Entries filed while an expression is read leave through HasChecking and
 'CheckingValues.
-'@depends BetterArray, Checking, LLdictionary, LLVariables, LLSheets, CaseWhen, ChoiceFormula, ValueOfFormula
+'@depends BetterArray, Checking, LLdictionary, LLVariables, LLSheets, CaseWhen, ChoiceFormula, ValueOfFormula, FormulaData, FormulaCondition
 '@version 1.0 (2026-02-09)
 
 

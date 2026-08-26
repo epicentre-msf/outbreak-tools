@@ -51,7 +51,7 @@ Option Explicit
 '@depends LinelistSpecs, LLdictionary, LLSheets, TranslationObject,
 '  LLFormat, DropdownLists, CustomPivotTable, TemporaryRepos,
 '  Buttons, CodeTransfer, Passwords, HiddenNames, AnaTabIds,
-'  ShowHideStore, AnalysisRanges, Checking, BetterArray
+'  ShowHideStore, AnalysisRanges, Checking, BetterArray, LLTranslation
 '@version 1.4 (2026-08-01)
 
 

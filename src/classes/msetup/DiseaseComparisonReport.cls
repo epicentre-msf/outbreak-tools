@@ -12,6 +12,7 @@ Attribute VB_Description = "Writes a disease comparison onto the __compRep works
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Writes a disease comparison onto the __compRep worksheet")
+'@depends DiseaseComparison, CheckingOutput
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit

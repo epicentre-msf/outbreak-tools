@@ -4,6 +4,7 @@ Option Explicit
 
 '@Folder("Setup")
 '@ModuleDescription("The import and clean flow of the setup, and the accessors its form and ribbon share")
+'@depends EventsManager, EventSetup, SetupPreparation, SetupImport, SetupErrors, UpdatedValues, Passwords, OSFiles, BetterArray
 '@IgnoreModule UnrecognizedAnnotation, SheetAccessedUsingString
 
 'This module owns the import and clean flow and the few accessors the Imports

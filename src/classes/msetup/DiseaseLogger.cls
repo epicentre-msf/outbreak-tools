@@ -12,6 +12,7 @@ Attribute VB_Description = "Collects lightweight log entries for disease workflo
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Collects lightweight log entries for disease workflows")
+'@depends BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit

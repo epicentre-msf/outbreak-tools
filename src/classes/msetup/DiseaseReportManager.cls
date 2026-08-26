@@ -12,6 +12,7 @@ Attribute VB_Description = "Maintains disease import report tables without mutat
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Maintains disease import report tables without mutating legacy logic")
+'@depends BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit

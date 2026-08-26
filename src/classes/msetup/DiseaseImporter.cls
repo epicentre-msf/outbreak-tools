@@ -12,6 +12,7 @@ Attribute VB_Description = "Coordinates disease worksheet imports with merge and
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Coordinates disease worksheet imports with merge and reporting support")
+'@depends DiseaseImportSummary, DiseaseLogger, BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit

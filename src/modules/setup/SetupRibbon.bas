@@ -4,6 +4,7 @@ Option Explicit
 
 '@Folder("Events")
 '@IgnoreModule UnrecognizedAnnotation, SheetAccessedUsingString, ParameterCanBeByVal, ParameterNotUsed : some parameters of controls are not used
+'@depends EventsManager, EventSetup, SetupHelpers, SetupPreparation, SetupImport, SetupTranslationsTable, UpdatedValues, RibbonDev, TranslationObject, Passwords, BetterArray
 
 'Every callback here reaches the setup service through
 'EventsManager.EventSetupService. Row work, sorting, sheet protection and

@@ -12,6 +12,7 @@ Attribute VB_Description = "Collects the outcome of disease import merge operati
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Collects the outcome of disease import merge operations")
+'@depends BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit

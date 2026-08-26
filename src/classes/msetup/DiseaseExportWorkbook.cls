@@ -12,6 +12,7 @@ Attribute VB_Description = "Provides a safe lifecycle for export workbooks used 
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Provides a safe lifecycle for export workbooks used by disease workflows")
+'@depends None
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit

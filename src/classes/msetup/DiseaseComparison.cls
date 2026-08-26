@@ -12,6 +12,7 @@ Attribute VB_Description = "Compares two disease tables and answers the differen
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Compares two disease tables and answers the differences as Checking bundles")
+'@depends BetterArray, Checking
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit

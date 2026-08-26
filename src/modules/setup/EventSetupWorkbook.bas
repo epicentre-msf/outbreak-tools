@@ -5,6 +5,7 @@ Private mBooting As Boolean
 
 '@Folder("Setup")
 '@ModuleDescription("Thin workbook-level event handlers delegating to the shared EventSetup service")
+'@depends EventsManager
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 'The four sheets SetupPreparation.WatchedSheetNames registers a watcher on. A

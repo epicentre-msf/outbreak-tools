@@ -29,7 +29,7 @@ Option Explicit
 'binding alive. That caller is the F_Export code-behind, which keeps one
 'instance per button in a module-level collection for as long as the form
 'carries the buttons.
-'@depends LLExporter, FilteredData, ApplicationState, OSFiles
+'@depends LLExporter, FilteredData, ApplicationState, OSFiles, TranslationObject, BetterArray
 
 
 '@section Constants

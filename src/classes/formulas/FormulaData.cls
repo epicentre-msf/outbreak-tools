@@ -12,6 +12,7 @@ Attribute VB_Description = "Provides cached lookups of allowed excel functions f
 '@PredeclaredId
 '@Folder("Formulas")
 '@ModuleDescription("Provides cached lookups of allowed excel functions for formula parsing")
+'@depends None
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
