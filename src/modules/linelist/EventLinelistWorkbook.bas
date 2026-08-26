@@ -3,6 +3,7 @@ Option Explicit
 
 '@Folder("Linelist Events")
 '@ModuleDescription("Thin workbook-level event handlers delegating to the shared LinelistEventsManager")
+'@depends LinelistEventsManager, GeoModule
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Private mBooting As Boolean

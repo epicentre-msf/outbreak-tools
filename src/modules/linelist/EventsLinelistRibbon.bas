@@ -5,6 +5,7 @@ Option Explicit
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed
 '@Folder("Linelist Events")
 '@ModuleDescription("Events associated with the Ribbon Menu in the linelist")
+'@depends LinelistEventsManager, EventLinelist, LLTranslation, TranslationObject
 
 '@description
 'NO Option Private Module HERE, AND THAT IS DELIBERATE.

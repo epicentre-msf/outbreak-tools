@@ -3,6 +3,7 @@ Option Explicit
 
 '@Folder("Linelist Events")
 '@ModuleDescription("Centralised workbook-level event and BusyState manager delegating to EventLinelist")
+'@depends EventLinelist, CustomLinelistFunctions, ApplicationState
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 '@description

@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Linelist")
 '@ModuleDescription("The worksheet an import writes what it found onto.")
-'@depends CheckingOutput, Checking, BetterArray, Passwords
+'@depends CheckingOutput, Checking, BetterArray, Passwords, LinelistEventsManager, EventLinelist
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, UseMeaningfulName
 
 '@description

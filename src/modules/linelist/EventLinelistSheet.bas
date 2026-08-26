@@ -3,6 +3,7 @@ Option Explicit
 
 '@Folder("Linelist Events")
 '@ModuleDescription("Worksheet-level event template injected into HList sheets during build")
+'@depends LinelistEventsManager
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, UseMeaningfulName
 
 'This module serves as a source template during linelist generation.

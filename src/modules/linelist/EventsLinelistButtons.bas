@@ -5,6 +5,7 @@ Option Private Module
 
 '@Folder("Linelist Events")
 '@ModuleDescription("Events associated to eventual buttons in the Linelist")
+'@depends LinelistEventsManager, EventLinelist, LLdictionary, LLExport, LLLog, LLTranslation, TranslationObject, ShowHide, ShowHideLayout, ShowHideStore, SectionShowHide, SectionMap, ImportChecking, CustomTable, Passwords, HiddenNames, BetterArray
 
 
 Private Const DICTSHEET As String = "Dictionary"

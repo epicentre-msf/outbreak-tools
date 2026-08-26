@@ -3,6 +3,7 @@ Attribute VB_Description = "Combined geo and spatial analysis logic for the line
 
 '@Folder("Geo")
 '@ModuleDescription("Combined geo and spatial analysis logic for the linelist")
+'@depends LinelistEventsManager, EventLinelist, LLGeo, LLSpatial, GeoFormCache, AnalysisRanges, DropdownLists, Passwords, BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ImplicitActiveSheetReference, UseMeaningfulName, HungarianNotation
 
 Option Explicit

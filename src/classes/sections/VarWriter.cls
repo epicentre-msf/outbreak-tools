@@ -57,7 +57,7 @@ End Enum
 'sheet.
 '@depends LinelistSpecs, LLdictionary, LLVariables, LLSheets, LLFormat,
 'TranslationObject, FormulaData, Formulas, DropdownLists, LLGeo, HiddenNames,
-'Checking, BetterArray
+'Checking, BetterArray, DataSheet
 '@version 1.1 (2026-07-31)
 
 
