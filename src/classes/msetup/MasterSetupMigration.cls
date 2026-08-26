@@ -583,6 +583,9 @@ Private Sub ImportTranslations(ByVal sourceBook As Workbook, ByVal logger As Dis
     Next index
 
     WriteTranslationRows sourceBlock, logger
+
+    'The next update reviews the labels no range produces with the user.
+    manager.MarkImported
 End Sub
 
 '@sub-title Write the translation rows of the file onto the target table.

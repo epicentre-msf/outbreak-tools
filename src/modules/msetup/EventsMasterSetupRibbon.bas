@@ -478,6 +478,8 @@ End Sub
 Public Sub clickResetTags(ByRef ribbonControl As IRibbonControl)
     Dim scope As ApplicationState
     Dim failureText As String
+    Dim translationsSheet As Worksheet
+    Dim translationsTable As ListObject
 
     On Error GoTo Handler
 
@@ -485,6 +487,18 @@ Public Sub clickResetTags(ByRef ribbonControl As IRibbonControl)
     scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
     Preparation.EnsureUpdatedRegistry
+
+    'The next update reads every range again; it also asks about the
+    'labels none of them produces, the one other time that question comes.
+    Set translationsSheet = MasterSetupHelpers.ResolveMasterTranslationsSheet()
+    If Not translationsSheet Is Nothing Then
+        On Error Resume Next
+            Set translationsTable = translationsSheet.ListObjects(TRANSLATIONS_TABLE_NAME)
+        On Error GoTo Handler
+        If Not translationsTable Is Nothing Then
+            SetupTranslationsTable.Create(translationsTable).RequestUnseenReview
+        End If
+    End If
     LogSuccessLine "reset-tags", vbNullString, "clickResetTags"
     MsgBox "Done!", vbInformation + vbOKOnly, "Translations"
 

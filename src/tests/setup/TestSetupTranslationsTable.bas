@@ -25,6 +25,8 @@ Private Const TRANSLATIONS_TABLE_NAME As String = "Tab_Translations"
 Private Const REGISTRY_TABLE_NAME As String = "Tab_Registry"
 Private Const COUNTER_NAME As String = "_SetupTranslationsCounter"
 Private Const TAG_SEPARATOR As String = "__"
+'The tag MarkImported writes on every imported row.
+Private Const IMPORTED_TAG As String = "__imported__" & TAG_SEPARATOR & "0"
 Private Const LANGUAGES_NAME_ID As String = "__SetupTranslationsLanguages__"
 Private Const LARGE_RANGE_NAME As String = "RNG_Large"
 Private Const MARKER_BELOW_TABLE As String = "Below the table"
@@ -648,6 +650,10 @@ Public Sub TestUpdateFromRegistryKeepsEldestDuplicateRow()
     'Manually add a duplicate "Hello" with an older tag (sequence 0)
     AppendTaggedLabel "Hello", "EXTRA" & TAG_SEPARATOR & "0"
 
+    'EXTRA names no registry range, so the row is unseen and would go; a
+    'review answered no (the preset) keeps it for the dedup to judge.
+    Subject.RequestUnseenReview
+
     'Second update with all statuses "yes" triggers dedup
     SetRegistryStatus "yes", "yes", "yes"
     Subject.UpdateFromRegistry RegistrySheet
@@ -659,6 +665,108 @@ Public Sub TestUpdateFromRegistryKeepsEldestDuplicateRow()
 
 Fail:
     CustomTestLogFailure Assert, "TestUpdateFromRegistryKeepsEldestDuplicateRow", Err.Number, Err.Description
+End Sub
+
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateFromRegistryRemovesUnseenLabelsSilently()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateFromRegistryRemovesUnseenLabelsSilently"
+    On Error GoTo Fail
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    'An imported label, a row left by a range the registry has dropped, and
+    'a hand-written row. No review was requested: the first two go, the
+    'hand-written one is the user's and stays.
+    AppendTaggedLabel "Imported orphan", IMPORTED_TAG
+    AppendTaggedLabel "Retired chunk", "RNG_Retired" & TAG_SEPARATOR & "1"
+    AppendTaggedLabel "Handmade", vbNullString
+    SetRegistryStatus "no", "no", "no"
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.AreEqual CLng(2), Subject.UnseenLabels.Length, "Both rows no registry range produces are reported as unseen"
+    Assert.IsFalse LabelExists("Imported orphan"), "An unseen label goes without a question between imports"
+    Assert.IsFalse LabelExists("Retired chunk"), "A label of a dropped range goes without a question between imports"
+    Assert.IsTrue LabelExists("Handmade"), "A hand-written row is never unseen"
+    Assert.AreEqual CLng(7), TranslationsTable.ListRows.Count, "The rows of the registry ranges and the hand-written row all stay"
+    Assert.AreEqual ExpectedTag("RNG_Farewell", 2), TagForLabel("Farewell"), _
+                    "A cycle with unclaimed rows reads every range, whatever its status"
+    Assert.IsTrue InStr(1, Subject.NumberOfMissing(), "2 labels came from no range", vbTextCompare) > 0, _
+                  "The summary counts the removed labels"
+
+    'A third update finds nothing left.
+    Subject.UpdateFromRegistry RegistrySheet
+    Assert.AreEqual CLng(0), Subject.UnseenLabels.Length, "Nothing is unseen once the orphans are gone"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateFromRegistryRemovesUnseenLabelsSilently", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateFromRegistryAsksAboutUnseenLabelsAfterReviewRequest()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateFromRegistryAsksAboutUnseenLabelsAfterReviewRequest"
+    On Error GoTo Fail
+
+    Subject.UpdateFromRegistry RegistrySheet
+    AppendTaggedLabel "Imported orphan", IMPORTED_TAG
+    AppendTaggedLabel "Retired chunk", "RNG_Retired" & TAG_SEPARATOR & "1"
+    SetRegistryStatus "no", "no", "no"
+
+    'Reset tags asks the next update to review; prompts are off, so the
+    'preset answers, and it keeps the labels by default.
+    Subject.RequestUnseenReview
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.AreEqual CLng(2), Subject.UnseenLabels.Length, "The reviewed labels are reported"
+    Assert.IsTrue LabelExists("Imported orphan"), "A reviewed label is kept when the answer is no"
+    Assert.IsTrue LabelExists("Retired chunk"), "A reviewed label of a dropped range is kept when the answer is no"
+    Assert.IsTrue InStr(1, Subject.NumberOfMissing(), "2 labels come from no range", vbTextCompare) > 0, _
+                  "The summary counts the kept labels"
+
+    'The request is spent: the next update is silent again and removes them.
+    Subject.UpdateFromRegistry RegistrySheet
+    Assert.IsFalse LabelExists("Imported orphan"), "The update after the review removes the unseen labels again"
+    Assert.IsFalse LabelExists("Retired chunk"), "The update after the review removes every unseen label"
+
+    'A review answered yes removes them at once.
+    AppendTaggedLabel "Second orphan", IMPORTED_TAG
+    Subject.SetRemoveUnseenLabels True
+    Subject.RequestUnseenReview
+    Subject.UpdateFromRegistry RegistrySheet
+    Assert.IsFalse LabelExists("Second orphan"), "A reviewed label goes when the answer is yes"
+    Assert.AreEqual CLng(6), TranslationsTable.ListRows.Count, "The rows of the registry ranges all stay"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateFromRegistryAsksAboutUnseenLabelsAfterReviewRequest", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestMarkImportedClearsTagsAndRequestsReview()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestMarkImportedClearsTagsAndRequestsReview"
+    On Error GoTo Fail
+
+    Subject.UpdateFromRegistry RegistrySheet
+    AppendTaggedLabel "Imported orphan", vbNullString
+    SetRegistryStatus "no", "no", "no"
+
+    Subject.MarkImported
+
+    Assert.AreEqual IMPORTED_TAG, TagForLabel("Hello"), "An import marks every row of the helper column as imported"
+    Assert.AreEqual IMPORTED_TAG, TagForLabel("Imported orphan"), "A row with no tag is marked as imported too"
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.AreEqual ExpectedTag("RNG_Greetings", 2), TagForLabel("Hello"), "The update after an import tags every row again"
+    Assert.AreEqual ExpectedTag("RNG_Farewell", 2), TagForLabel("Farewell"), "The update after an import reads every range"
+    Assert.AreEqual CLng(1), Subject.UnseenLabels.Length, "The update after an import reports the unseen labels"
+    Assert.IsTrue LabelExists("Imported orphan"), "The update after an import asks before removing, and the preset keeps"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestMarkImportedClearsTagsAndRequestsReview", Err.Number, Err.Description
 End Sub
 
 

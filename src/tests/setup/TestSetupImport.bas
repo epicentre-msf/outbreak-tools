@@ -1727,9 +1727,11 @@ Private Sub AssertImportedTranslations()
                     CStr(lo.DataBodyRange.Cells(1, englishIdx).Value), _
                     "Translations import should copy the English values from the source table."
 
+    'The host tag described a row the import wrote over; every imported row
+    'now carries the imported marker, for the next update to review.
     firstTag = CStr(translationSheet.Cells(TRANSLATION_HOST_START_ROW + 1, TRANSLATION_HOST_START_COLUMN - 1).Value)
-    Assert.AreEqual HOST_TRANSLATION_TAG, firstTag, _
-                    "Translations import should leave existing tags untouched."
+    Assert.AreEqual "__imported____0", firstTag, _
+                    "Translations import should mark every imported row for review."
 
     Assert.AreEqual CLng(0), RegistryCounterValue(), _
                     "Translations registry counter should remain unchanged after import."

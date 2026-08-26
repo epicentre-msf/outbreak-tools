@@ -201,6 +201,7 @@ End Sub
 
 Public Sub clickResetTag(ByRef ribbonControl As IRibbonControl)
    Dim prep As SetupPreparation
+   Dim translationsTable As ListObject
 
    On Error GoTo Handler
 
@@ -208,6 +209,13 @@ Public Sub clickResetTag(ByRef ribbonControl As IRibbonControl)
 
    Set prep = SetupPreparation.Create(ThisWorkbook)
    prep.ResetUpdatedRegistry
+
+   'The next update reads every range again; it also asks about the
+   'labels none of them produces, the one other time that question comes.
+   Set translationsTable = SetupHelpers.ResolveTranslationsTable
+   If Not translationsTable Is Nothing Then
+       SetupTranslationsTable.Create(translationsTable).RequestUnseenReview
+   End If
 
    EventsManager.ExitBusyState
    MsgBox "Done!", vbInformation

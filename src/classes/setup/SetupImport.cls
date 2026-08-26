@@ -877,6 +877,10 @@ Private Sub ImportTranslationsUsingClass(ByVal pass As Passwords, _
         Set sourceTableAdapter = DataSheet.Create(sourceSheet, TRANSLATION_SOURCE_START_ROW, TRANSLATION_SOURCE_START_COLUMN)
         hostTableAdapter.Import sourceTableAdapter, keepSourceHeaders:=True
 
+        'The rows are new to the table: the next update reviews the labels
+        'no range of the setup produces with the user.
+        SetupTranslationsTable.Create(hostTable).MarkImported
+
 ImportCleanup:
         On Error Resume Next
             If sheetUnlocked Then

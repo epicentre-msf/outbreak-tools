@@ -125,6 +125,12 @@ Private Type TSetupTranslations
     tagCapacity As Long               'Allocated size of the tag buffer
     metadataStore As HiddenNames      'Cached hidden name store on the host worksheet
     dirty As Boolean                  'Tracks whether rows were added or removed during the current update
+    registryNames As Collection       'Range names the registry carries, keyed lower-case, for the cycle
+    scanEveryRange As Boolean         'The cycle reads every registry range, not only the updated ones
+    removeUnseen As Boolean           'Preset answer to the unseen labels question when prompts are off
+    unseenLabels As BetterArray       'Labels no registry range produced, found by the last update
+    unseenRemoved As Boolean          'The last update removed the unseen labels
+    reviewUnseen As Boolean           'The cycle asks about the unseen labels instead of removing them
 End Type
 
 Private this As TSetupTranslations
@@ -139,6 +145,9 @@ Private Const TAG_HEADER_TITLE As String = "__TagInternal__"
 Private Const TAG_SEPARATOR As String = "__"
 Private Const KEY_CASE_SEPARATOR As String = "|"
 Private Const LANGUAGES_NAME_ID As String = "__SetupTranslationsLanguages__"
+'Hidden name on the host sheet raised by an import or a tag reset: the next
+'update asks about the unseen labels instead of removing them.
+Private Const UNSEEN_REVIEW_NAME_ID As String = "__SetupTranslationsUnseenReview__"
 
 'Registry column headers, as UpdatedValues writes them. Each column is found
 'by header name first and falls back to its published position, so an older
@@ -156,6 +165,12 @@ Private Const REGISTRY_COLUMN_COUNT As Long = 4
 'Sequence 0 is the lowest, so a hand-written row wins over a regenerated one
 'when the two carry the same label.
 Private Const MANUAL_TAG_NAME As String = "__manual__"
+'Tag an import gives every row it wrote. Such a row is unseen until a
+'registry range claims it, unlike a hand-written row, which stays.
+Private Const IMPORTED_TAG_NAME As String = "__imported__"
+
+'Labels named in the unseen labels question before the list is cut short.
+Private Const MAX_UNSEEN_LISTED As Long = 10
 
 Private Const BUFFER_GROWTH_MARGIN As Long = 16
 Private Const MAX_LANGUAGE_SCAN As Long = 64
@@ -236,6 +251,78 @@ End Property
 Public Sub SetDisplayPrompts(ByVal state As Boolean)
     this.displayPrompts = state
 End Sub
+
+'@label:set-remove-unseen-labels
+'@sub-title Preset the answer to the unseen labels question.
+'@details The question is asked by the first update after an import or a
+'         tag reset. With prompts on the user answers it; with prompts off
+'         this preset answers instead, and it defaults to keeping them.
+'@param state Boolean. True removes the unseen labels without asking.
+Public Sub SetRemoveUnseenLabels(ByVal state As Boolean)
+    this.removeUnseen = state
+End Sub
+
+'@label:request-unseen-review
+'@sub-title Ask the next update to review the unseen labels with the user.
+'@details Raised by the Reset tags button. Every update removes the labels
+'         no registry range produces without a word, except the first one
+'         after this call, which lists them and asks.
+Public Sub RequestUnseenReview()
+    Dim store As HiddenNames
+
+    ValidateInitialised
+    Set store = MetadataStore()
+    If store Is Nothing Then Exit Sub
+
+    store.EnsureName UNSEEN_REVIEW_NAME_ID, 1, HiddenNameTypeLong
+    store.SetValue UNSEEN_REVIEW_NAME_ID, 1
+End Sub
+
+'@label:mark-imported
+'@sub-title Record that the table was just imported.
+'@details An import writes rows over the table and leaves the helper column
+'         beside rows it no longer describes, so every row that carries a
+'         label takes the imported tag: the next update reads every range,
+'         tags the rows a range claims, and asks about the rest. A
+'         hand-written row is not marked, and stays.
+Public Sub MarkImported()
+    Dim tagRange As Range
+    Dim labelBlock As Variant
+    Dim tags() As Variant
+    Dim rowIndex As Long
+    Dim rowCount As Long
+
+    ValidateInitialised
+
+    Set tagRange = TagColumnDataRange()
+    If Not tagRange Is Nothing Then
+        rowCount = tagRange.Rows.Count
+        labelBlock = ColumnBlock(LabelColumnData())
+        ReDim tags(1 To rowCount, 1 To 1)
+        For rowIndex = 1 To rowCount
+            If LenB(BlockText(labelBlock, rowIndex)) > 0 Then
+                tags(rowIndex, 1) = IMPORTED_TAG_NAME & TAG_SEPARATOR & "0"
+            Else
+                tags(rowIndex, 1) = vbNullString
+            End If
+        Next rowIndex
+        tagRange.Value = tags
+    End If
+
+    RequestUnseenReview
+End Sub
+
+'@label:unseen-labels
+'@prop-title Labels no registry range produced, as the last update found them.
+'@details Filled whether the rows were removed or kept. Empty when the last
+'         update found none, or when no update has run.
+Public Property Get UnseenLabels() As BetterArray
+    If this.unseenLabels Is Nothing Then
+        Set this.unseenLabels = CreateBuffer()
+    End If
+
+    Set UnseenLabels = this.unseenLabels.Clone()
+End Property
 
 '@label:languages-name-id
 '@prop-title The HiddenName key of the persisted language list.
@@ -691,11 +778,20 @@ Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, _
 
     InitLabelBuffer
     InitTagBuffer
+
+    'A row nothing in the registry claims - an imported label, or one
+    'left by a range the registry has dropped - can only be proven unseen
+    'by reading every range, so such a cycle reads them all.
+    Set this.registryNames = CollectRegistryNames(registrySheet)
+    this.reviewUnseen = TakeUnseenReviewRequest()
+    this.scanEveryRange = HasUnclaimedRows()
+
     ProcessRegistry registrySheet, updateSequence
     FlushPendingRows
     FlushTagBuffer
 
     RemoveObsoleteLabels updateSequence
+    OfferUnseenLabels updateSequence
     DeduplicateLabels
     PersistCounterValue registrySheet, updateSequence
 
@@ -748,7 +844,6 @@ Private Sub ProcessRegistryTable(ByVal registryTable As ListObject, ByVal update
     Dim dataRange As Range
     Dim values As Variant
     Dim rowIndex As Long
-    Dim columnCount As Long
     Dim columnLower As Long
     Dim nameColumn As Long
     Dim statusColumn As Long
@@ -758,24 +853,7 @@ Private Sub ProcessRegistryTable(ByVal registryTable As ListObject, ByVal update
     Set dataRange = registryTable.DataBodyRange
     If dataRange Is Nothing Then Exit Sub
 
-    nameColumn = RegistryColumnByHeader(registryTable, REGISTRY_HEADER_RANGE)
-    columnCount = registryTable.ListColumns.Count
-
-    'The sheet that holds the registries also holds the name index table
-    'UpdatedValues keeps beside them. That one carries three columns and no
-    'rngname header, so it is skipped. Reading it as a registry would take a
-    'table name for a range name.
-    If nameColumn = 0 And columnCount < REGISTRY_COLUMN_COUNT Then Exit Sub
-
-    'Anything that names a range column, or is wide enough to be read by
-    'position, has to carry the whole published shape.
-    If columnCount < REGISTRY_COLUMN_COUNT Then
-        ThrowRegistryShape registryTable, columnCount
-    End If
-
-    If nameColumn = 0 Then nameColumn = REGISTRY_COLUMN_RANGE
-    statusColumn = RegistryColumn(registryTable, REGISTRY_HEADER_STATUS, REGISTRY_COLUMN_STATUS)
-    modeColumn = RegistryColumn(registryTable, REGISTRY_HEADER_MODE, REGISTRY_COLUMN_MODE)
+    If Not ResolveRegistryColumns(registryTable, nameColumn, statusColumn, modeColumn) Then Exit Sub
 
     values = dataRange.Value2
     If Not IsArray(values) Then Exit Sub
@@ -803,6 +881,112 @@ Private Sub ProcessRegistryTable(ByVal registryTable As ListObject, ByVal update
         End If
     Next rowIndex
 End Sub
+
+'@label:resolve-registry-columns
+'@sub-title Locate the three registry columns of a table; False for a table that is no registry.
+'@details The sheet that holds the registries also holds the name index table
+'         UpdatedValues keeps beside them. That one carries three columns and
+'         no rngname header, so it is skipped: reading it as a registry would
+'         take a table name for a range name. Anything that names a range
+'         column, or is wide enough to be read by position, has to carry the
+'         whole published shape.
+Private Function ResolveRegistryColumns(ByVal registryTable As ListObject, _
+                                        ByRef nameColumn As Long, _
+                                        ByRef statusColumn As Long, _
+                                        ByRef modeColumn As Long) As Boolean
+    Dim columnCount As Long
+
+    nameColumn = RegistryColumnByHeader(registryTable, REGISTRY_HEADER_RANGE)
+    columnCount = registryTable.ListColumns.Count
+
+    If nameColumn = 0 And columnCount < REGISTRY_COLUMN_COUNT Then Exit Function
+
+    If columnCount < REGISTRY_COLUMN_COUNT Then
+        ThrowRegistryShape registryTable, columnCount
+    End If
+
+    If nameColumn = 0 Then nameColumn = REGISTRY_COLUMN_RANGE
+    statusColumn = RegistryColumn(registryTable, REGISTRY_HEADER_STATUS, REGISTRY_COLUMN_STATUS)
+    modeColumn = RegistryColumn(registryTable, REGISTRY_HEADER_MODE, REGISTRY_COLUMN_MODE)
+    ResolveRegistryColumns = True
+End Function
+
+'@label:collect-registry-names
+'@sub-title Every range name the registry tables carry, whatever their status.
+Private Function CollectRegistryNames(ByVal registrySheet As Worksheet) As Collection
+    Dim names As Collection
+    Dim registryTable As ListObject
+    Dim dataRange As Range
+    Dim values As Variant
+    Dim rowIndex As Long
+    Dim nameColumn As Long
+    Dim statusColumn As Long
+    Dim modeColumn As Long
+    Dim rngName As String
+
+    Set names = New Collection
+
+    For Each registryTable In registrySheet.ListObjects
+        Set dataRange = registryTable.DataBodyRange
+        If Not dataRange Is Nothing Then
+            If ResolveRegistryColumns(registryTable, nameColumn, statusColumn, modeColumn) Then
+                values = dataRange.Value2
+                If IsArray(values) Then
+                    For rowIndex = LBound(values, 1) To UBound(values, 1)
+                        rngName = SafeText(values(rowIndex, LBound(values, 2) + nameColumn - 1))
+                        If LenB(rngName) > 0 Then
+                            'A name the registry lists twice is added once.
+                            On Error Resume Next
+                                names.Add rngName, LCase$(rngName)
+                            On Error GoTo 0
+                        End If
+                    Next rowIndex
+                End If
+            End If
+        End If
+    Next registryTable
+
+    Set CollectRegistryNames = names
+End Function
+
+'@label:is-unclaimed-range
+'@sub-title True for a tag range no registry row names: the imported tag, or a range the registry dropped.
+'@details The manual tag is not unclaimed: a hand-written row is the
+'         user's, and no range can declare it obsolete.
+Private Function IsUnclaimedRange(ByVal rangeName As String) As Boolean
+    Dim probe As Variant
+
+    If StrComp(rangeName, MANUAL_TAG_NAME, vbTextCompare) = 0 Then Exit Function
+
+    If StrComp(rangeName, IMPORTED_TAG_NAME, vbTextCompare) = 0 Then
+        IsUnclaimedRange = True
+        Exit Function
+    End If
+
+    If this.registryNames Is Nothing Then Exit Function
+
+    On Error Resume Next
+        probe = this.registryNames.Item(LCase$(Trim$(rangeName)))
+        IsUnclaimedRange = (Err.Number <> 0)
+    On Error GoTo 0
+End Function
+
+'@label:has-unclaimed-rows
+'@sub-title True when the tag buffer holds a row no registry range claims.
+Private Function HasUnclaimedRows() As Boolean
+    Dim idx As Long
+    Dim rangeName As String
+    Dim sequenceValue As Long
+
+    For idx = 1 To this.tagBufferSize
+        If ParseTag(SafeText(this.tagBuffer(idx)), rangeName, sequenceValue) Then
+            If IsUnclaimedRange(rangeName) Then
+                HasUnclaimedRows = True
+                Exit Function
+            End If
+        End If
+    Next idx
+End Function
 
 '@label:registry-column
 '@sub-title Resolve a registry column by header name, falling back to its published position.
@@ -838,7 +1022,7 @@ End Sub
 '@label:should-process-range
 '@sub-title Determine whether the named range should be processed this cycle.
 Private Function ShouldProcessRange(ByVal status As String, ByVal updateSequence As Long) As Boolean
-    If updateSequence = 1 Then
+    If updateSequence = 1 Or this.scanEveryRange Then
         ShouldProcessRange = True
     Else
         ShouldProcessRange = (StrComp(status, STATUS_UPDATED, vbTextCompare) = 0)
@@ -1317,6 +1501,9 @@ Private Sub ReleaseUpdateBuffers()
 
     Set this.labelIndex = Nothing
     Set this.processedRanges = Nothing
+    Set this.registryNames = Nothing
+    this.scanEveryRange = False
+    this.reviewUnseen = False
 End Sub
 
 
@@ -1452,6 +1639,108 @@ Private Sub RemoveObsoleteLabels(ByVal updateSequence As Long)
         this.dirty = True
     End If
 End Sub
+
+'@label:offer-unseen-labels
+'@sub-title Remove the labels no registry range produced, or ask about them after an import or a reset.
+'@details Runs only on a cycle that read every range: a row still tagged
+'         to the imported marker, or to a range the registry no longer names,
+'         then holds a label nothing in the setup produces. A row tagged to
+'         a registry range that did not resolve is not in question. The
+'         rows go without a word, except on the first update after an
+'         import or a tag reset, which asks: the user with prompts on, the
+'         preset otherwise.
+Private Sub OfferUnseenLabels(ByVal updateSequence As Long)
+    Dim rowCount As Long
+    Dim rowIndex As Long
+    Dim tagValues As Variant
+    Dim labelBlock As Variant
+    Dim tagRange As Range
+    Dim rangeName As String
+    Dim sequenceValue As Long
+    Dim unseenRows() As Long
+    Dim unseenCount As Long
+
+    Set this.unseenLabels = CreateBuffer()
+    this.unseenRemoved = False
+    If Not this.scanEveryRange Then Exit Sub
+
+    rowCount = this.table.ListRows.Count
+    If rowCount = 0 Then Exit Sub
+
+    Set tagRange = TagColumnDataRange()
+    If tagRange Is Nothing Then Exit Sub
+
+    tagValues = ColumnBlock(tagRange)
+    labelBlock = ColumnBlock(LabelColumnData())
+
+    ReDim unseenRows(1 To rowCount)
+
+    For rowIndex = 1 To rowCount
+        If ParseTag(BlockText(tagValues, rowIndex), rangeName, sequenceValue) Then
+            If sequenceValue < updateSequence And IsUnclaimedRange(rangeName) Then
+                unseenCount = unseenCount + 1
+                unseenRows(unseenCount) = rowIndex
+                this.unseenLabels.Push BlockText(labelBlock, rowIndex)
+            End If
+        End If
+    Next rowIndex
+
+    If unseenCount = 0 Then Exit Sub
+
+    If ConfirmUnseenRemoval() Then
+        DeleteRowsByIndex unseenRows, unseenCount
+        this.unseenRemoved = True
+        this.dirty = True
+    End If
+End Sub
+
+'@label:take-unseen-review-request
+'@sub-title Read the review flag an import or a reset raised, and lower it.
+'@details The flag is lowered as it is read, so one update asks and the
+'         following ones are silent again until the next import or reset.
+Private Function TakeUnseenReviewRequest() As Boolean
+    Dim store As HiddenNames
+
+    Set store = MetadataStore()
+    If store Is Nothing Then Exit Function
+    If Not store.HasName(UNSEEN_REVIEW_NAME_ID) Then Exit Function
+
+    TakeUnseenReviewRequest = (store.ValueAsLong(UNSEEN_REVIEW_NAME_ID, 0) <> 0)
+    store.RemoveName UNSEEN_REVIEW_NAME_ID
+End Function
+
+'@label:confirm-unseen-removal
+'@sub-title Answer whether the unseen labels go: silently yes, unless a review was requested.
+Private Function ConfirmUnseenRemoval() As Boolean
+    Dim message As String
+    Dim listed As Long
+    Dim idx As Long
+
+    If Not this.reviewUnseen Then
+        ConfirmUnseenRemoval = True
+        Exit Function
+    End If
+
+    If Not this.displayPrompts Then
+        ConfirmUnseenRemoval = this.removeUnseen
+        Exit Function
+    End If
+
+    message = CStr(this.unseenLabels.Length) & " labels of the translations table come from no range of the setup:" & vbLf
+
+    listed = this.unseenLabels.Length
+    If listed > MAX_UNSEEN_LISTED Then listed = MAX_UNSEEN_LISTED
+    For idx = 1 To listed
+        message = message & vbLf & "  - " & CStr(this.unseenLabels.Item(this.unseenLabels.LowerBound + idx - 1))
+    Next idx
+    If this.unseenLabels.Length > listed Then
+        message = message & vbLf & "  ... and " & CStr(this.unseenLabels.Length - listed) & " more."
+    End If
+
+    message = message & vbLf & vbLf & "Remove them from the translations table?"
+
+    ConfirmUnseenRemoval = (MsgBox(message, vbQuestion + vbYesNo + vbDefaultButton2, "Unseen labels") = vbYes)
+End Function
 
 '@label:deduplicate-labels
 '@sub-title Remove duplicate labels keeping the row with the oldest (lowest) tag sequence.
@@ -1675,6 +1964,7 @@ Public Function NumberOfMissing() As String
 
 BuildSummary:
     AppendUnresolvedLine messageLines
+    AppendUnseenLine messageLines
     summary = messageLines.ToString(Separator:=vbLf, OpeningDelimiter:=vbNullString, ClosingDelimiter:=vbNullString)
     UpdateMissingSummary messageLines
     NumberOfMissing = summary
@@ -1692,6 +1982,19 @@ Private Sub AppendUnresolvedLine(ByVal messageLines As BetterArray)
 
     messageLines.Push "These ranges could not be found: " & _
                       this.unresolvedRanges.ToString(Separator:=", ", OpeningDelimiter:=vbNullString, ClosingDelimiter:=vbNullString) & "."
+End Sub
+
+'@label:append-unseen-line
+'@sub-title Count the labels no registry range produced, kept or removed.
+Private Sub AppendUnseenLine(ByVal messageLines As BetterArray)
+    If this.unseenLabels Is Nothing Then Exit Sub
+    If this.unseenLabels.Length = 0 Then Exit Sub
+
+    If this.unseenRemoved Then
+        messageLines.Push CStr(this.unseenLabels.Length) & " labels came from no range of the setup and were removed."
+    Else
+        messageLines.Push CStr(this.unseenLabels.Length) & " labels come from no range of the setup and were kept."
+    End If
 End Sub
 
 '@label:update-missing-summary
