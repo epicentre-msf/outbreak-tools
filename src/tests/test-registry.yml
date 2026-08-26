@@ -1312,6 +1312,11 @@ suites:
       # DiseaseComparison reads two disease tables and answers the
       # differences as Checking bundles; it holds no worksheet of its own.
       - name: DiseaseComparison
+      # DiseaseComparisonReport renders those bundles on __compRep through
+      # CheckingOutput, clearing the sheet so one report stands at a time.
+      # CheckingOutput and Checking are baked into the driver workbook, so it
+      # opens nothing further either.
+      - name: DiseaseComparisonReport
       - name: EventMasterSetup
     modules:
       - MasterSetupHelpers
@@ -1364,6 +1369,10 @@ suites:
       # over a fixture pair of disease tables.
       - module: TestDiseaseComparison
         covers: [DiseaseComparison]
+      # TestDiseaseComparisonReport writes a fixture comparison on __compRep
+      # and runs it twice, so the sheet is read for one report alone.
+      - module: TestDiseaseComparisonReport
+        covers: [DiseaseComparisonReport, DiseaseComparison]
       - module: TestEventMasterSetup
         covers: [EventMasterSetup]
       - module: TestMasterSetupHelpers
