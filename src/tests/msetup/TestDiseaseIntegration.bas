@@ -92,6 +92,7 @@ Public Sub TestAddExportImportRemove()
     Dim entries As BetterArray
     Dim importTable As ListObject
     Dim manager As DiseaseWorksheetManager
+    Dim lastCell As Range
 
     On Error GoTo Fail
 
@@ -115,13 +116,27 @@ Public Sub TestAddExportImportRemove()
     Set summary = Importer.MergeDisease(diseaseTable, importTable, True, DiseaseImportPriority_Foreign, logger)
 
     Assert.AreEqual "LabelAUpdated", diseaseTable.DataBodyRange.Cells(1, 4).Value, "Merge should update existing variable label"
-    Assert.AreEqual "var_c", diseaseTable.DataBodyRange.Cells(3, 2).Value, "Merge should append new variables"
-    Assert.AreEqual "var_d", diseaseTable.DataBodyRange.Cells(4, 2).Value, "Merge should append every new variable"
+    'The new variables land on the first free lines under var_a.
+    Assert.AreEqual "var_c", diseaseTable.DataBodyRange.Cells(2, 2).Value, "Merge should land new variables on the first free line"
+    Assert.AreEqual "var_d", diseaseTable.DataBodyRange.Cells(3, 2).Value, "Merge should land every new variable"
     Assert.IsTrue summary.RequiresReport, "Summary should indicate report requirement"
 
     Assert.IsTrue logger.HasEntries, "Logger should capture merge operations"
     Set entries = logger.Entries
     Assert.IsTrue entries.Length >= 3, "Logger should contain multiple entries for merge operations"
+
+    'The rows the merge appended carry the dotted frame.
+    Set lastCell = diseaseTable.DataBodyRange.Cells(diseaseTable.ListRows.Count, 1)
+    Assert.AreEqual CLng(xlDot), CLng(lastCell.Borders(xlEdgeBottom).LineStyle), _
+                    "A row appended by the merge should carry the dotted frame"
+
+    'The rows the ribbon adds carry it too.
+    MasterSetupHelpers.ManageRows diseaseWksh, True
+    Set lastCell = diseaseTable.DataBodyRange.Cells(diseaseTable.ListRows.Count, 1)
+    Assert.AreEqual CLng(xlDot), CLng(lastCell.Borders(xlEdgeBottom).LineStyle), _
+                    "A row added through Add Rows should carry the dotted frame"
+    Assert.AreEqual CLng(xlDot), CLng(lastCell.Borders(xlEdgeTop).LineStyle), _
+                    "A row added through Add Rows should carry its top edge"
 
     Set manager = DiseaseWorksheetManager.Create()
     Assert.IsTrue manager.RemoveWorksheet(ThisWorkbook, "Alpha"), "Worksheet manager should remove disease sheet"

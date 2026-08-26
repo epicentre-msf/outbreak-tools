@@ -12,7 +12,7 @@ Attribute VB_Description = "Coordinates disease worksheet imports with merge and
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Coordinates disease worksheet imports with merge and reporting support")
-'@depends DiseaseImportSummary, DiseaseLogger, BetterArray
+'@depends DiseaseImportSummary, DiseaseLogger, DiseaseSheet, BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -214,6 +214,7 @@ Private Sub AppendImportedRows(ByVal targetTable As ListObject, ByVal appendedRo
     Dim columnCount As Long
     Dim appendedMatrix As Variant
     Dim startRow As Long
+    Dim freeRows As Long
     Dim rowIndex As Long
     Dim rowValues As Variant
 
@@ -222,10 +223,14 @@ Private Sub AppendImportedRows(ByVal targetTable As ListObject, ByVal appendedRo
     If appendCount = 0 Then Exit Sub
 
     columnCount = targetTable.ListColumns.Count
-    AppendBlankRows targetTable, appendCount
+
+    'The rows land under the last named line. A built disease table carries
+    'blank lines, so those are filled before any row is added.
+    startRow = LastNamedRow(targetTable) + 1
+    freeRows = targetTable.ListRows.Count - startRow + 1
+    If freeRows < appendCount Then AppendBlankRows targetTable, appendCount - freeRows
 
     appendedMatrix = ConvertRowsToMatrix(appendedRows, appendCount, columnCount)
-    startRow = targetTable.ListRows.Count - appendCount + 1
 
     targetTable.DataBodyRange.Rows(startRow).Resize(appendCount, columnCount).Value = appendedMatrix
 
@@ -270,13 +275,47 @@ Private Sub ClearTable(ByVal targetTable As ListObject)
     Loop
 End Sub
 
+'@sub-title The index of the last line carrying a variable name, 0 when none does.
+Private Function LastNamedRow(ByVal targetTable As ListObject) As Long
+    Dim names As Variant
+    Dim rowIndex As Long
+
+    If targetTable.DataBodyRange Is Nothing Then Exit Function
+
+    names = targetTable.DataBodyRange.Columns(VARIABLE_NAME_COLUMN).Value2
+    If Not IsArray(names) Then
+        If LenB(CleanName(names)) > 0 Then LastNamedRow = 1
+        Exit Function
+    End If
+
+    For rowIndex = UBound(names, 1) To 1 Step -1
+        If LenB(CleanName(names(rowIndex, 1))) > 0 Then
+            LastNamedRow = rowIndex
+            Exit Function
+        End If
+    Next rowIndex
+End Function
+
+'@sub-title A cell value as trimmed text; an error value reads as empty.
+Private Function CleanName(ByVal candidate As Variant) As String
+    If IsError(candidate) Then Exit Function
+    CleanName = Trim$(CStr(candidate))
+End Function
+
 '@sub-title Append blank rows to the target table.
+'@details A row added through ListRows.Add takes the vertical edges of the
+'row above and no horizontal edge, so the disease frame is painted again
+'over the grown table.
 Private Sub AppendBlankRows(ByVal targetTable As ListObject, ByVal rowCount As Long)
     Dim counter As Long
+
+    If rowCount <= 0 Then Exit Sub
 
     For counter = 1 To rowCount
         targetTable.ListRows.Add
     Next counter
+
+    DiseaseSheet.FrameTable targetTable
 End Sub
 
 '@sub-title Create a row array from the source matrix.

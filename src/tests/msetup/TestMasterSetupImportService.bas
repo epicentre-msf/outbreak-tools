@@ -165,8 +165,8 @@ Public Sub TestSetupExportAddsMissingVariablesAndLists()
 
     Set summary = Service.ImportSetupExport(ExportBook, logger)
 
-    Assert.AreEqual 2, diseaseTable.ListRows.Count, "The merge appends the line the sheet lost"
-    Assert.AreEqual "var_new", diseaseTable.DataBodyRange.Cells(2, 2).Value, "The appended line carries the variable"
+    Assert.AreEqual "var_new", diseaseTable.DataBodyRange.Cells(2, 2).Value, "The merge lands the lost line on the first free line"
+    Assert.AreEqual vbNullString, CStr(diseaseTable.DataBodyRange.Cells(3, 2).Value), "The line after it stays free"
     Assert.AreEqual 1, summary.AppendedVariables.Length, "One variable is appended on the sheet"
     Assert.AreEqual 1, summary.UpdatedVariables.Length, "The line both carry is updated"
 

@@ -43,6 +43,9 @@ Private Const LANGUAGES_DROPDOWN As String = "__data_languages"
 
 Private Const ANCHORROW As Long = 2
 Private Const ANCHORCOLUMN As Long = 2
+'A new disease table opens with this many lines, so the user picks before
+'reaching for Add Rows.
+Private Const DEFAULT_ROW_COUNT As Long = 15
 
 '@section State
 '===============================================================================
@@ -130,6 +133,19 @@ End Function
 
 '@section Maintenance
 '===============================================================================
+
+'@sub-title Frame every cell of a disease table with the dotted gray border.
+'@details The door for the two paths that grow a disease table after its
+'build: the ribbon's Add Rows and the importer's append. A row added
+'through ListRows.Add takes the vertical edges of the row above and no
+'horizontal edge, and a table grown through ListObject.Resize takes no
+'format at all, so the frame is painted again over the whole table. The
+'call is stateless and runs on the predeclared instance.
+'@param diseaseTable ListObject. The disease table to frame.
+Public Sub FrameTable(ByVal diseaseTable As ListObject)
+    If diseaseTable Is Nothing Then Exit Sub
+    PaintTableBorders diseaseTable.Range
+End Sub
 
 Public Sub Reset()
     Set this.hostwb = Nothing
@@ -391,7 +407,7 @@ Private Sub CreateDiseaseTable()
     
     EnsureColumnsInitialized
     Set anchorRng = this.hostSheet.Cells(ANCHORROW, ANCHORCOLUMN).Offset(2)
-    Set dataEnd = anchorRng.Offset(1, this.defaultColumns.Length - 1)
+    Set dataEnd = anchorRng.Offset(DEFAULT_ROW_COUNT, this.defaultColumns.Length - 1)
     Set tableRange = this.hostSheet.Range(anchorRng, dataEnd)
     Set table = this.hostSheet.ListObjects.Add(xlSrcRange, tableRange, , xlYes)
     table.Name = DEFAULT_TABLE_PREFIX & Format$(this.hostIndex, "000")
@@ -486,7 +502,7 @@ Private Sub FormatDiseaseSheet()
     End With
 
     'The frame goes on before the header fill, so the header keeps its blue.
-    PaintTableBorders this.hostTable.Table.Range
+    FrameTable this.hostTable.Table
 
     With this.hostTable.HeaderRange
         .Font.Bold = True

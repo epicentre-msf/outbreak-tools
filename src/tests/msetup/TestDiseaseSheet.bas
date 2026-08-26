@@ -103,6 +103,7 @@ Public Sub TestBuildCreatesWorksheet()
     
    
     Set table = diseaseWksh.ListObjects("disTab_001")
+    Assert.AreEqual 15&, table.ListRows.Count, "A new disease table opens with fifteen lines."
 
   
     
