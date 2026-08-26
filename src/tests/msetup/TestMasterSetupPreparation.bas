@@ -205,6 +205,40 @@ Fail:
 End Sub
 
 '@TestMethod("MasterSetupPreparation")
+'@sub-title A second Prepare over an initialised workbook leaves one duplicate rule over the grown name column.
+Public Sub TestPrepareTwiceKeepsOneDuplicateRuleOverTheNameColumn()
+    Dim table As ListObject
+    Dim nameRange As Range
+    Dim ruleRange As Range
+
+    CustomTestSetTitles Assert, "MasterSetupPreparation", "TestPrepareTwiceKeepsOneDuplicateRuleOverTheNameColumn"
+    On Error GoTo Fail
+
+    Subject.Prepare Application
+    Assert.IsTrue Subject.Variables.Initialised, "The first preparation should initialise the variables table"
+
+    'The table grows between the two preparations, the way a master setup
+    'grows between two saves.
+    Set table = Subject.Variables.Table
+    table.ListRows.Add
+    table.ListRows.Add
+
+    Subject.Prepare Application
+
+    Set nameRange = Subject.Variables.DataRange("Variable Name")
+    Assert.IsFalse nameRange Is Nothing, "The name column should expose a data range after the second preparation"
+    Assert.AreEqual 1&, nameRange.FormatConditions.Count, "The second preparation should leave exactly one rule on the name column"
+
+    Set ruleRange = nameRange.FormatConditions(1).AppliesTo
+    Assert.AreEqual nameRange.Address(False, False), ruleRange.Address(False, False), _
+                    "The duplicate rule should cover the whole name column as it stands"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareTwiceKeepsOneDuplicateRuleOverTheNameColumn"
+End Sub
+
+'@TestMethod("MasterSetupPreparation")
 Public Sub TestEnsureDropdownsLoadsLanguages()
     CustomTestSetTitles Assert, "MasterSetupPreparation", "TestEnsureDropdownsLoadsLanguages"
     On Error GoTo Fail

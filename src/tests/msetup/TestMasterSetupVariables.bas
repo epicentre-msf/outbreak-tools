@@ -143,6 +143,74 @@ Public Sub TestInitialisePersistsMetadataAndValidation()
 End Sub
 
 '@TestMethod("MasterSetupVariables")
+'@sub-title A refresh after the table grew leaves one rule over the whole name column.
+Public Sub TestDuplicateFormattingSurvivesASecondPreparation()
+    Dim lo As ListObject
+    Dim nameRange As Range
+    Dim ruleRange As Range
+
+    CustomTestSetTitles Assert, "MasterSetupVariables", "TestDuplicateFormattingSurvivesASecondPreparation"
+    On Error GoTo Fail
+
+    Manager.Initialise BuildDropdownsStub()
+
+    'The table grows two rows after the first preparation, the way a master
+    'setup grows between two saves.
+    Set lo = FixtureSheet.ListObjects(VARIABLE_TABLE_NAME)
+    lo.ListRows.Add
+    lo.ListRows.Add
+    lo.DataBodyRange.Cells(2, 3).Value = "patient_status"
+    lo.DataBodyRange.Cells(3, 3).Value = "onset_date"
+
+    Manager.RefreshDuplicateFormatting
+
+    Assert.IsTrue Manager.Initialised, "A refresh must leave the initialised flag standing."
+
+    Set nameRange = lo.ListColumns("Variable Name").DataBodyRange
+    Assert.AreEqual 3&, nameRange.Rows.Count, "The name column should carry three rows after the growth."
+    Assert.AreEqual 1&, nameRange.FormatConditions.Count, "The name column should carry exactly one rule."
+
+    Set ruleRange = nameRange.FormatConditions(1).AppliesTo
+    Assert.AreEqual nameRange.Address(False, False), ruleRange.Address(False, False), _
+                    "The duplicate rule should cover the whole name column as it stands."
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDuplicateFormattingSurvivesASecondPreparation", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("MasterSetupVariables")
+'@sub-title Repeated refreshes keep the rule count of the name column at one.
+Public Sub TestDuplicateFormatConditionsDoNotAccumulate()
+    Dim nameRange As Range
+    Dim countBefore As Long
+    Dim countAfter As Long
+    Dim runIndex As Long
+
+    CustomTestSetTitles Assert, "MasterSetupVariables", "TestDuplicateFormatConditionsDoNotAccumulate"
+    On Error GoTo Fail
+
+    Manager.Initialise BuildDropdownsStub()
+
+    Set nameRange = FixtureSheet.ListObjects(VARIABLE_TABLE_NAME).ListColumns("Variable Name").DataBodyRange
+    countBefore = nameRange.FormatConditions.Count
+
+    For runIndex = 1 To 5
+        Manager.RefreshDuplicateFormatting
+    Next runIndex
+
+    countAfter = nameRange.FormatConditions.Count
+    Assert.LogSuccesses "TestDuplicateFormatConditionsDoNotAccumulate: before=" & CStr(countBefore) & " after=" & CStr(countAfter)
+
+    Assert.AreEqual 1&, countBefore, "Initialise should leave one duplicate rule on the name column."
+    Assert.AreEqual countBefore, countAfter, "Repeated refreshes must not pile up conditional format rules."
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDuplicateFormatConditionsDoNotAccumulate", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("MasterSetupVariables")
 Public Sub TestDataRangeExposesRequestedColumn()
     Dim expectedData As Range
     Dim expectedWithHeaders As Range

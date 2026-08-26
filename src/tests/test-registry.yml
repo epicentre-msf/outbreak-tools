@@ -1309,6 +1309,9 @@ suites:
       # MasterSetupMigration owns the migration file at both ends: the export
       # of the whole master setup and its import into a fresh file.
       - name: MasterSetupMigration
+      # DiseaseComparison reads two disease tables and answers the
+      # differences as Checking bundles; it holds no worksheet of its own.
+      - name: DiseaseComparison
       - name: EventMasterSetup
     modules:
       - MasterSetupHelpers
@@ -1357,6 +1360,10 @@ suites:
       # also pins the refusal of a target that already carries data.
       - module: TestMasterSetupMigration
         covers: [MasterSetupMigration, MasterSetupImportService, DiseaseSheet]
+      # TestDiseaseComparison drives the four sections and the statistics
+      # over a fixture pair of disease tables.
+      - module: TestDiseaseComparison
+        covers: [DiseaseComparison]
       - module: TestEventMasterSetup
         covers: [EventMasterSetup]
       - module: TestMasterSetupHelpers

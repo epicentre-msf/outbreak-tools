@@ -171,6 +171,11 @@ Public Sub EnsureVariables()
         manager.Initialise Dropdowns
     End If
 
+    'The duplicate rule is refreshed on every preparation. Initialised is a
+    'hidden name that survives every save, so a file prepared before the rule
+    'existed, or one whose table grew rows, would keep no rule or a short one.
+    manager.RefreshDuplicateFormatting
+
     EnsureVariableNameColumnName manager
 End Sub
 

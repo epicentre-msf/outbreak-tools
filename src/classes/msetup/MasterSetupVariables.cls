@@ -99,6 +99,15 @@ Public Sub Initialise(ByVal dropdowns As DropdownLists)
     ApplyDuplicateFormatting
 End Sub
 
+'@sub-title Re-apply the duplicate rule of the Variable Name column.
+'@details Runs on every preparation, outside the Initialised guard, so a
+'         table prepared before the rule existed gets it, and a table that
+'         grew rows gets a rule over the rows it has today.
+Public Sub RefreshDuplicateFormatting()
+    ValidateReady
+    ApplyDuplicateFormatting
+End Sub
+
 '@sub-title Refresh the concatenated choices values for the supplied variable.
 '@param variableName String identifier of the variable row to update.
 '@param choices LLChoices providing category listings.
@@ -484,6 +493,11 @@ Private Sub ApplyDropdownValidation(ByVal dropdowns As DropdownLists)
     End If
 End Sub
 
+'@sub-title Delete and re-add the one duplicate rule over the name column.
+'@details The column range is read fresh on every call, so the rule covers
+'         the table as it stands. Delete drops every rule of the column: the
+'         column carries this one rule, and the delete is what keeps the count
+'         at one across repeated preparations.
 Private Sub ApplyDuplicateFormatting()
     Dim nameRange As Range
     Dim condition As FormatCondition
@@ -491,6 +505,7 @@ Private Sub ApplyDuplicateFormatting()
     Set nameRange = ColumnRange(HEADER_NAME)
     If nameRange Is Nothing Then Exit Sub
 
+    'A refused delete (a protected sheet) leaves the old rule standing.
     On Error Resume Next
         nameRange.FormatConditions.Delete
     On Error GoTo 0
