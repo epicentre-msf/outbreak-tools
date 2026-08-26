@@ -744,6 +744,85 @@ Handler:
 End Sub
 
 
+'@Description("Show the very hidden __log worksheet and land the user on it.")
+'@EntryPoint
+'The workbook structure guards sheet visibility, so the walk unprotects the
+'workbook around the change and protects it again on both paths. A workbook
+'whose log cannot be built has no sheet to show and the walk leaves quietly.
+Public Sub clickOpenLog(ByRef ribbonControl As IRibbonControl)
+    Dim logStore As MasterSetupLog
+    Dim passManager As Passwords
+    Dim failureText As String
+
+    On Error GoTo Handler
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    Set passManager = MasterSetupHelpers.ResolveMasterPasswords()
+    If Not passManager Is Nothing Then passManager.UnProtect ThisWorkbook
+
+    logStore.Wksh.Visible = xlSheetVisible
+    logStore.Wksh.Activate
+
+    If Not passManager Is Nothing Then passManager.Protect ThisWorkbook
+    LogSuccessLine "open-log", vbNullString, "clickOpenLog"
+    Exit Sub
+
+Handler:
+    failureText = Err.Description
+    Debug.Print "clickOpenLog: "; Err.Number; Err.Description
+    MsgBox "Unable to open the log: " & Err.Description, vbCritical + vbOKOnly, "Log"
+    If Not passManager Is Nothing Then
+        On Error Resume Next
+            passManager.Protect ThisWorkbook
+        On Error GoTo 0
+    End If
+    LogFailureLine "open-log", failureText, "clickOpenLog"
+End Sub
+
+'@Description("Write the user log out as a plain text file in a folder the user picks.")
+'@EntryPoint
+'The walk holds no busy state: a folder picker needs the screen, and the
+'write is one small file. The success line is written before the box, so it
+'is on the sheet whatever the user does with the box.
+Public Sub clickExportLog(ByRef ribbonControl As IRibbonControl)
+    Dim logStore As MasterSetupLog
+    Dim io As OSFiles
+    Dim folderPath As String
+    Dim filePath As String
+    Dim failureText As String
+
+    On Error GoTo Handler
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    Set io = OSFiles.Create()
+    io.LoadFolder
+    If io.HasValidFolder() Then folderPath = io.Folder()
+
+    'The cancel is worth a line: a user who says the export did nothing
+    'has the record of their own cancel.
+    If LenB(folderPath) = 0 Then
+        LogWarningLine "export-log", "no folder was picked", "clickExportLog"
+        Exit Sub
+    End If
+
+    filePath = logStore.ExportText(folderPath, BaseNameOf(ThisWorkbook))
+
+    LogSuccessLine "export-log", FileNameOf(filePath), "clickExportLog"
+    MsgBox filePath, vbInformation + vbOKOnly, "Log"
+    Exit Sub
+
+Handler:
+    failureText = Err.Description
+    Debug.Print "clickExportLog: "; Err.Number; Err.Description
+    MsgBox "Unable to export the log: " & Err.Description, vbCritical + vbOKOnly, "Log"
+    LogFailureLine "export-log", failureText, "clickExportLog"
+End Sub
+
+
 '@section Dev group callbacks
 '===============================================================================
 'The rest of the Dev group is served by RibbonDev, which every product shares.
@@ -847,6 +926,32 @@ Private Sub LogFailureLine(ByVal action As String, _
     logStore.LogFailure action, detail, source
     On Error GoTo 0
 End Sub
+
+'The workbook name without its extension, for a written file to be named
+'after. A workbook that is Nothing answers a plain name, because the file is
+'worth having either way.
+Private Function BaseNameOf(ByVal wkb As Workbook) As String
+    Dim wkbName As String
+    Dim dotAt As Long
+
+    BaseNameOf = "master-setup"
+    If wkb Is Nothing Then Exit Function
+
+    wkbName = wkb.Name
+    dotAt = InStrRev(wkbName, ".")
+    If dotAt > 1 Then wkbName = Left$(wkbName, dotAt - 1)
+    If LenB(Trim$(wkbName)) = 0 Then Exit Function
+
+    BaseNameOf = wkbName
+End Function
+
+'The file name at the end of a full path, for a log line to carry.
+Private Function FileNameOf(ByVal filePath As String) As String
+    Dim sepAt As Long
+
+    sepAt = InStrRev(filePath, Application.PathSeparator)
+    FileNameOf = Mid$(filePath, sepAt + 1)
+End Function
 
 'The workbook, the Variables and Choices sheets and every disease worksheet
 'open before a setup import and close after it: the import can write on any

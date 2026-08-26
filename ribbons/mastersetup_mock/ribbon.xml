@@ -25,6 +25,8 @@
                     <button id="btnImpSheet" label="Import From Setup" image="download" size="large" onAction="clickImpSheet"/>
                     <button id="btnExpMig" label="Export For Migration" imageMso="GridSettings" size="normal" onAction="clickExp"/>
                     <button id="btnImpMig" label="Import Migration File" imageMso="GridSettings" size="normal" onAction="clickImp"/>
+                    <button id="btnOpenLog" label="Open Log" imageMso="ErrorChecking" size="normal" onAction="clickOpenLog"/>
+                    <button id="btnExpLog" label="Export Log" imageMso="FileSaveAsOtherFormats" size="normal" onAction="clickExportLog"/>
                 </group>
                 <group id="customGroupDev" label="Dev" getVisible="DevGroupVisible">
                     <button id="btnInit" label="Initialize" image="initialise" size="large" onAction="clickDevInitialize"/>
