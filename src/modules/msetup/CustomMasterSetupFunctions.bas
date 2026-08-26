@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Msetup")
 '@ModuleDescription("Worksheet functions filling disease sheet lines from the Variables and Choices sheets.")
-'@depends MasterSetupHelpers, MasterSetupVariables, LLChoices, TranslationObject
+'@depends MasterSetupHelpers, MasterSetupVariables, TranslationObject
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed
 
 'The disease table carries two formulas per line, written by DiseaseSheet:
@@ -15,12 +15,27 @@ Option Explicit
 'failure is answered with an empty string, and the resolved managers are
 'cached at module level. MasterSetupEventsManager clears the caches when the
 'workbook opens or the translations change.
+'
+'THE CHOICES ARE JOINED IN MEMORY
+'-------------------------------------------------------------------------------
+'Excel refuses a change of the sheet from inside a calculation, and
+'LLChoices reads the categories of a list through an AutoFilter. Called from
+'a formula, that filter fails without a word and every label of the sheet
+'comes back joined. So the two columns of the Choices block, list name and
+'label, are read once into memory and the join runs there.
 
 Private Const CHOICE_SEPARATOR As String = " | "
+Private Const CHOICES_HEADER_ROW As Long = 4
+Private Const CHOICES_START_COLUMN As Long = 1
+Private Const HEADER_LIST_NAME As String = "list name"
+Private Const HEADER_LABEL As String = "label"
 
 Private cachedVariables As MasterSetupVariables
-Private cachedChoices As LLChoices
 Private cachedTranslations As Collection
+Private cachedChoiceNames As Variant       'One column: the list name of every Choices line
+Private cachedChoiceLabels As Variant      'One column: the label of every Choices line
+Private cachedChoiceRows As Long           'Lines the two blocks carry
+Private cachedChoiceLoaded As Boolean      'The block was read once, whatever it answered
 
 '@section Worksheet functions
 '===============================================================================
@@ -53,23 +68,24 @@ Public Function MainLabelValue(ByVal variableName As Variant, ByVal languageTag 
 End Function
 
 '@sub-title Answer the joined values of a choice, translated to the given language.
+'@details The disease sheets pass their language cell. The Variables sheet
+'passes no language: the master setup is in English, and the function then
+'answers the labels of the choice as the Choices sheet carries them.
 '@param choiceName Variant cell value naming the choice list.
-'@param languageTag Variant cell value naming the language column.
+'@param languageTag Optional Variant cell value naming the language column.
 '@return String values joined with " | ", or an empty string.
-Public Function ChoiceValues(ByVal choiceName As Variant, ByVal languageTag As Variant) As String
+Public Function ChoiceValues(ByVal choiceName As Variant, Optional ByVal languageTag As Variant) As String
     Dim resolvedName As String
-    Dim choices As LLChoices
+    Dim resolvedLanguage As String
 
     resolvedName = CleanText(choiceName)
     If LenB(resolvedName) = 0 Then Exit Function
 
-    Set choices = ChoicesManager()
-    If choices Is Nothing Then Exit Function
+    If Not IsMissing(languageTag) Then resolvedLanguage = CleanText(languageTag)
 
     ' A worksheet function answers empty on any resolver failure.
     On Error Resume Next
-    ChoiceValues = choices.ConcatenateCategories(resolvedName, CHOICE_SEPARATOR, _
-                                                 TranslationsFor(CleanText(languageTag)))
+    ChoiceValues = JoinedLabels(resolvedName, TranslationsFor(resolvedLanguage))
     On Error GoTo 0
 End Function
 
@@ -79,8 +95,11 @@ End Function
 '@sub-title Drop every cached manager so the next call re-reads the sheets.
 Public Sub ResetMasterSetupFunctionCaches()
     Set cachedVariables = Nothing
-    Set cachedChoices = Nothing
     Set cachedTranslations = Nothing
+    cachedChoiceNames = Empty
+    cachedChoiceLabels = Empty
+    cachedChoiceRows = 0
+    cachedChoiceLoaded = False
 End Sub
 
 '@section Resolvers
@@ -93,11 +112,96 @@ Private Function VariablesManager() As MasterSetupVariables
     Set VariablesManager = cachedVariables
 End Function
 
-Private Function ChoicesManager() As LLChoices
-    If cachedChoices Is Nothing Then
-        Set cachedChoices = MasterSetupHelpers.ResolveMasterChoices()
+'@sub-title Join the labels of one list, in sheet order, translated when asked.
+Private Function JoinedLabels(ByVal listName As String, ByVal trads As TranslationObject) As String
+    Dim idx As Long
+    Dim label As String
+    Dim joined As String
+
+    EnsureChoiceBlock
+
+    For idx = 1 To cachedChoiceRows
+        If StrComp(CleanText(cachedChoiceNames(idx, 1)), listName, vbTextCompare) = 0 Then
+            label = CleanText(cachedChoiceLabels(idx, 1))
+            If Not trads Is Nothing Then label = trads.TranslatedValue(label)
+            If LenB(joined) > 0 Then joined = joined & CHOICE_SEPARATOR
+            joined = joined & label
+        End If
+    Next idx
+
+    JoinedLabels = joined
+End Function
+
+'@sub-title Read the list name and label columns of the Choices sheet once.
+'@details The master file carries its choices in a table; a sheet without
+'one is read as the block under the header row. A sheet missing either
+'header leaves the block empty, and every join answers empty.
+Private Sub EnsureChoiceBlock()
+    Dim choicesSheet As Worksheet
+    Dim block As Range
+    Dim headers As Variant
+    Dim nameIndex As Long
+    Dim labelIndex As Long
+    Dim lastRow As Long
+    Dim lastColumn As Long
+    Dim bodyRows As Long
+
+    If cachedChoiceLoaded Then Exit Sub
+    cachedChoiceLoaded = True
+    cachedChoiceRows = 0
+
+    Set choicesSheet = MasterSetupHelpers.ResolveMasterChoicesSheet()
+    If choicesSheet Is Nothing Then Exit Sub
+
+    If choicesSheet.ListObjects.Count > 0 Then
+        Set block = choicesSheet.ListObjects(1).Range
+    Else
+        lastRow = choicesSheet.Cells(choicesSheet.Rows.Count, CHOICES_START_COLUMN).End(xlUp).Row
+        lastColumn = choicesSheet.Cells(CHOICES_HEADER_ROW, choicesSheet.Columns.Count).End(xlToLeft).Column
+        If lastRow <= CHOICES_HEADER_ROW Then Exit Sub
+        If lastColumn < CHOICES_START_COLUMN Then Exit Sub
+        Set block = choicesSheet.Range(choicesSheet.Cells(CHOICES_HEADER_ROW, CHOICES_START_COLUMN), _
+                                       choicesSheet.Cells(lastRow, lastColumn))
     End If
-    Set ChoicesManager = cachedChoices
+
+    bodyRows = block.Rows.Count - 1
+    If bodyRows < 1 Then Exit Sub
+    If block.Columns.Count < 2 Then Exit Sub
+
+    headers = block.Rows(1).Value2
+    nameIndex = HeaderIndex(headers, HEADER_LIST_NAME)
+    labelIndex = HeaderIndex(headers, HEADER_LABEL)
+    If nameIndex = 0 Or labelIndex = 0 Then Exit Sub
+
+    cachedChoiceNames = ColumnBlock(block.Columns(nameIndex).Offset(1).Resize(bodyRows))
+    cachedChoiceLabels = ColumnBlock(block.Columns(labelIndex).Offset(1).Resize(bodyRows))
+    cachedChoiceRows = bodyRows
+End Sub
+
+'@sub-title The index of a header in a one-row block, 0 when it is missing.
+Private Function HeaderIndex(ByRef headers As Variant, ByVal headerName As String) As Long
+    Dim idx As Long
+
+    For idx = 1 To UBound(headers, 2)
+        If StrComp(CleanText(headers(1, idx)), headerName, vbTextCompare) = 0 Then
+            HeaderIndex = idx
+            Exit Function
+        End If
+    Next idx
+End Function
+
+'@sub-title Read a one-column range as a 2D block, whatever its height.
+Private Function ColumnBlock(ByVal columnRange As Range) As Variant
+    Dim values As Variant
+    Dim scalar(1 To 1, 1 To 1) As Variant
+
+    values = columnRange.Value2
+    If IsArray(values) Then
+        ColumnBlock = values
+    Else
+        scalar(1, 1) = values
+        ColumnBlock = scalar
+    End If
 End Function
 
 '@sub-title Answer a translation object for the language, cached per language.

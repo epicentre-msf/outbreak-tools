@@ -522,7 +522,7 @@ Private Sub CascadeChoicesToVariables(ByVal editedChoices As Collection, ByVal e
                 EnsureUnprotected variablesSheet, "variables", unprotected
                 choiceColumn.DataBodyRange.Cells(rowIndex, 1).Value = vbNullString
                 If Not valuesColumn Is Nothing Then
-                    valuesColumn.DataBodyRange.Cells(rowIndex, 1).Value = vbNullString
+                    ClearChoicesValue valuesColumn.DataBodyRange.Cells(rowIndex, 1)
                 End If
             ElseIf HasKey(editedChoices, choiceValue) Then
                 variableName = Trim$(CStr(nameData(rowIndex, 1)))
@@ -539,6 +539,17 @@ Private Sub CascadeChoicesToVariables(ByVal editedChoices As Collection, ByVal e
     Next rowIndex
 
     If unprotected Then MasterSetupHelpers.ProtectMasterSetupSheet variablesSheet, "variables"
+End Sub
+
+'@sub-title Empty a Choices Values cell, or recalculate its formula.
+'@details A prepared Variables sheet carries the ChoiceValues formula on the
+'column, and the formula answers empty for a choice that is gone.
+Private Sub ClearChoicesValue(ByVal target As Range)
+    If target.HasFormula Then
+        target.Calculate
+    Else
+        target.Value = vbNullString
+    End If
 End Sub
 
 '@sub-title Refresh the disease lines a choices edit reaches.

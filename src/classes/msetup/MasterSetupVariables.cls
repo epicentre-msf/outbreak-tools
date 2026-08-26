@@ -129,6 +129,34 @@ Public Sub RefreshChoiceValidation(ByVal dropdowns As DropdownLists)
     dropdowns.SetValidation choiceRange, CHOICES_DROPDOWN_NAME, alertType:="info"
 End Sub
 
+'@sub-title Put the ChoiceValues formula on the Choices Values column.
+'@details Runs on every preparation, outside the Initialised guard, the way
+'         the disease sheets carry their line formulas: every line reads its
+'         own Default Choice cell through the ChoiceValues worksheet function.
+'         The master setup is in English, so the language is left out and the
+'         function answers the labels of the choice.
+'         The column is set to General first: a text cell stores a formula as
+'         its own text. A value a user typed in the column takes the formula.
+Public Sub WriteChoiceValuesFormula()
+    Dim valuesRange As Range
+    Dim choiceRange As Range
+
+    ValidateReady
+    Set valuesRange = ColumnRange(HEADER_CHOICES)
+    If valuesRange Is Nothing Then Exit Sub
+    Set choiceRange = ColumnRange(HEADER_DEFAULT_CHOICE)
+    If choiceRange Is Nothing Then Exit Sub
+
+    valuesRange.NumberFormat = "General"
+    'A formula written on a whole column keeps its row reference relative,
+    'so every line reads its own choice cell.
+    valuesRange.Formula = ChoiceValuesFormula(choiceRange.Cells(1, 1))
+
+    'Under manual calculation the old text would stand until something else
+    'recalculated the sheet.
+    valuesRange.Calculate
+End Sub
+
 '@sub-title Refresh the concatenated choices values for the supplied variable.
 '@param variableName String identifier of the variable row to update.
 '@param choices LLChoices providing category listings.
@@ -156,7 +184,7 @@ Public Sub RefreshChoices(ByVal variableName As String, ByVal choices As LLChoic
         concatenated = choices.ConcatenateCategories(choiceValue, " | ")
     End If
 
-    WriteValue rowIndex, HEADER_CHOICES, concatenated
+    WriteChoicesValue rowIndex, concatenated
 End Sub
 
 '@sub-title Whether the table carries a line for the variable.
@@ -801,6 +829,30 @@ Private Sub WriteValue(ByVal rowIndex As Long, ByVal headerName As String, ByVal
 
     targetRange.Cells(rowIndex, 1).Value = newValue
 End Sub
+
+'@sub-title Write the joined values of a line, or recalculate its formula.
+'@details A line carrying the ChoiceValues formula answers through the
+'         worksheet function; a write would replace the formula with text.
+Private Sub WriteChoicesValue(ByVal rowIndex As Long, ByVal newValue As String)
+    Dim targetRange As Range
+    Dim targetCell As Range
+
+    Set targetRange = ColumnRange(HEADER_CHOICES)
+    If targetRange Is Nothing Then Exit Sub
+    If rowIndex <= 0 Or rowIndex > targetRange.Rows.Count Then Exit Sub
+
+    Set targetCell = targetRange.Cells(rowIndex, 1)
+    If targetCell.HasFormula Then
+        targetCell.Calculate
+    Else
+        targetCell.Value = newValue
+    End If
+End Sub
+
+'@sub-title The choice values formula of a line: the worksheet function over the choice cell.
+Private Function ChoiceValuesFormula(ByVal choiceCell As Range) As String
+    ChoiceValuesFormula = "=ChoiceValues(" & choiceCell.Address(RowAbsolute:=False) & ")"
+End Function
 
 '@sub-title Write any value on the line of the given column.
 Private Sub WriteCell(ByVal rowIndex As Long, ByVal headerName As String, ByVal newValue As Variant)

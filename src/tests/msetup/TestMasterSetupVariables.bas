@@ -121,6 +121,22 @@ Public Sub TestRefreshChoicesPopulatesConcatenatedValues()
 End Sub
 
 '@TestMethod("MasterSetupVariables")
+'@sub-title RefreshChoices recalculates a line that carries a formula and leaves the formula standing.
+Public Sub TestRefreshChoicesKeepsTheFormulaOfTheLine()
+    Dim valuesCell As Range
+
+    CustomTestSetTitles Assert, "MasterSetupVariables", "TestRefreshChoicesKeepsTheFormulaOfTheLine"
+
+    Set valuesCell = FixtureSheet.ListObjects(VARIABLE_TABLE_NAME).ListColumns("Choices Values").DataBodyRange.Cells(1, 1)
+    valuesCell.Formula = "=" & Chr$(34) & "kept" & Chr$(34)
+
+    Manager.RefreshChoices "patient_status", BuildChoicesStub()
+
+    Assert.IsTrue valuesCell.HasFormula, "The refresh should leave the formula on the line"
+    Assert.AreEqual "kept", CStr(valuesCell.Value), "The refresh should recalculate the formula"
+End Sub
+
+'@TestMethod("MasterSetupVariables")
 Public Sub TestInitialisePersistsMetadataAndValidation()
     Dim dropdowns As DropdownLists
     Dim statusRange As Range

@@ -299,6 +299,27 @@ Fail:
 End Sub
 
 '@TestMethod("MasterSetupPreparation")
+'@sub-title Prepare puts the ChoiceValues formula on the Choices Values column.
+Public Sub TestPrepareWritesTheChoiceValuesFormula()
+    Dim valuesCell As Range
+
+    CustomTestSetTitles Assert, "MasterSetupPreparation", "TestPrepareWritesTheChoiceValuesFormula"
+    On Error GoTo Fail
+
+    Subject.Prepare Application
+
+    Set valuesCell = Subject.Variables.DataRange("Choices Values").Cells(1, 1)
+    Assert.IsTrue valuesCell.HasFormula, "The Choices Values column should carry a formula after Prepare"
+    Assert.IsTrue InStr(1, valuesCell.Formula, "ChoiceValues(", vbTextCompare) > 0, _
+                  "The formula should call the ChoiceValues worksheet function"
+    Assert.AreEqual "General", valuesCell.NumberFormat, "The column should leave the text format so the formula runs"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareWritesTheChoiceValuesFormula"
+End Sub
+
+'@TestMethod("MasterSetupPreparation")
 '@sub-title Prepare builds the __updated registry from the tagged columns, and a second Prepare keeps one table per sheet.
 '@details The fixture Choices sheet carries a "translate as text" tag above
 'its label column, the way the master setup file does. The registry row for

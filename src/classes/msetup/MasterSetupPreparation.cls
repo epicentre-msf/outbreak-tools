@@ -204,6 +204,11 @@ Public Sub EnsureVariables()
     'preparation.
     manager.RefreshChoiceValidation Dropdowns
 
+    'The Choices Values column carries the ChoiceValues formula, the way the
+    'disease sheets carry theirs, so every line follows its Default Choice
+    'and the Choices sheet through the worksheet function.
+    manager.WriteChoiceValuesFormula
+
     EnsureVariableNameColumnName manager
 End Sub
 
