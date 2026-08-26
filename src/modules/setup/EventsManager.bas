@@ -3,6 +3,7 @@ Option Explicit
 
 '@Folder("Setup")
 '@ModuleDescription("Centralised workbook-level event and BusyState manager delegating to EventSetup")
+'@depends EventSetup, ApplicationState, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Private setupService As EventSetup

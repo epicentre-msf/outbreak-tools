@@ -2,6 +2,7 @@ Attribute VB_Name = "ImportForm"
 Attribute VB_Description = "Imports form logics"
 
 '@IgnoreModule UnrecognizedAnnotation, SheetAccessedUsingString
+'@depends SetupHelpers, EventsManager, Passwords
 Option Explicit
 Private NumberOfClicks As Long
 Private Const LimitOfClicks As Long = 5

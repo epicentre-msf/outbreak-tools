@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Msetup")
 '@ModuleDescription("Utility helpers shared across master setup modules.")
-'@depends DropdownLists, CustomTable, Passwords, BetterArray
+'@depends DropdownLists, CustomTable, Passwords, BetterArray, MasterSetupVariables, LLdictionary, LLVariables, LLChoices, UpdatedValues, Development, ApplicationState, HiddenNames
 
 Private Const VARIABLES_SHEETNAME As String = "Variables"
 Private Const TRANSLATIONS_SHEETNAME As String = "Translations"

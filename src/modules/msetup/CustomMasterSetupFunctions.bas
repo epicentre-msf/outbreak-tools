@@ -3,6 +3,7 @@ Option Explicit
 
 '@Folder("Msetup")
 '@ModuleDescription("Worksheet functions filling disease sheet lines from the Variables and Choices sheets.")
+'@depends MasterSetupHelpers, MasterSetupVariables, LLChoices, TranslationObject
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed
 
 'The disease table carries two formulas per line, written by DiseaseSheet:

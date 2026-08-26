@@ -3,6 +3,7 @@ Option Explicit
 
 '@Folder("Msetup")
 '@ModuleDescription("Thin workbook-level event handlers delegating to MasterSetupEventsManager.")
+'@depends MasterSetupEventsManager
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 'This is the code the master setup workbook carries in its ThisWorkbook
