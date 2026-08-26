@@ -395,6 +395,23 @@ Private Sub LST_Adm4_Click()
                         Me.LST_Adm4.Value
 End Sub
 
+'A double click on the list of level 2, 3 or 4 adds a name the geobase is
+'missing at that level, under the parents selected above it. The Click fires
+'first on an MSForms list, so the level below is already filled by the time
+'the double click arrives; AddAdminName empties it again. Admin 1 has no
+'parent and the facility lists carry a p-code, so neither gets this.
+Private Sub LST_Adm2_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
+    AddAdminName 2
+End Sub
+
+Private Sub LST_Adm3_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
+    AddAdminName 3
+End Sub
+
+Private Sub LST_Adm4_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
+    AddAdminName 4
+End Sub
+
 Private Sub LST_AdmF1_Click()
     ShowAdminList 2, Me.LST_AdmF1.Value, GeoScopeHF
 End Sub

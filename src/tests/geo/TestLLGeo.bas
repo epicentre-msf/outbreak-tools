@@ -32,7 +32,7 @@ Option Explicit
 'Every fixture build drops them first, and ModuleCleanup leaves five empty
 'ones behind for whatever else in the workbook resolves them.
 '@depends LLGeo, BetterArray, CustomTest, TestHelpersLite, HiddenNames,
-'  Passwords, GeoTestFixture
+'  Passwords, GeoTestFixture, GeoFormCache
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const GEO_FIXTURE As String = "GeoFixture"
@@ -1537,4 +1537,288 @@ Public Sub TestGeoLevelCountsTwoSpellingsOfOneNameOnce()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestGeoLevelCountsTwoSpellingsOfOneNameOnce", Err.Number, Err.Description
+End Sub
+'@section Add admin entry tests
+'===============================================================================
+
+'@sub-title Read the row position of one concat value in an admin table.
+'@param Lo ListObject. The admin table.
+'@param concatValue String. The concat looked for.
+'@return Long. The 1-based data row holding it, or 0 when it is missing.
+Private Function ConcatRowOf(ByVal Lo As ListObject, ByVal concatValue As String) As Long
+    Dim concatRng As Range
+    Dim rowIdx As Long
+
+    Set concatRng = Lo.ListColumns(Lo.ListColumns.Count).DataBodyRange
+    For rowIdx = 1 To concatRng.Rows.Count
+        If CStr(concatRng.Cells(rowIdx, 1).Value) = concatValue Then
+            ConcatRowOf = rowIdx
+            Exit Function
+        End If
+    Next
+End Function
+
+'@sub-title Build the parents of one add as a 1-based list.
+'@param firstName String. The admin 1 name.
+'@param secondName Optional String. The admin 2 name.
+'@param thirdName Optional String. The admin 3 name.
+'@return BetterArray. The parents in order from admin 1.
+Private Function ParentsOf(ByVal firstName As String, _
+                           Optional ByVal secondName As String = vbNullString, _
+                           Optional ByVal thirdName As String = vbNullString) As BetterArray
+    Dim parents As BetterArray
+
+    Set parents = New BetterArray
+    parents.LowerBound = 1
+    parents.Push firstName
+    If LenB(secondName) > 0 Then parents.Push secondName
+    If LenB(thirdName) > 0 Then parents.Push thirdName
+
+    Set ParentsOf = parents
+End Function
+
+'@sub-title An added admin 2 lands as one row with its concat written.
+'@details
+'Arranges a filled geobase. Acts by adding an admin 2 under P1. Asserts the
+'function answers True, T_ADM2 gained one row, and the row carries the parent,
+'the name and the joined concat as a value.
+'@TestMethod("LLGeo")
+Public Sub TestAddAdminEntryWritesTheRowAndItsConcat()
+    CustomTestSetTitles Assert, "LLGeo", "TestAddAdminEntryWritesTheRowAndItsConcat"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim geo As LLGeo
+    Dim Lo As ListObject
+    Dim rowsBefore As Long
+    Dim written As Boolean
+    Dim rowIdx As Long
+
+    Set sh = BuildGeoFixture(withData:=True)
+    Set geo = LLGeo.Create(sh)
+    Set Lo = sh.ListObjects("T_ADM2")
+    rowsBefore = Lo.ListRows.Count
+
+    written = geo.AddAdminEntry(LevelAdmin2, ParentsOf("P1"), " Dnew ")
+
+    Assert.IsTrue written, "A name under a parent it is missing from should be written"
+    Assert.AreEqual rowsBefore + 1, CLng(Lo.ListRows.Count), _
+                    "T_ADM2 should gain exactly one row"
+
+    rowIdx = ConcatRowOf(Lo, "P1 | Dnew")
+    Assert.IsTrue rowIdx > 0, "The concat of the new row should read P1 | Dnew"
+    If rowIdx > 0 Then
+        Assert.AreEqual "P1", CStr(Lo.DataBodyRange.Cells(rowIdx, 1).Value), _
+                        "adm1_name of the new row should hold the parent"
+        Assert.AreEqual "Dnew", CStr(Lo.DataBodyRange.Cells(rowIdx, 2).Value), _
+                        "adm2_name of the new row should hold the trimmed name"
+        Assert.IsFalse Lo.DataBodyRange.Cells(rowIdx, 3).HasFormula, _
+                       "The concat should be written as a value"
+    End If
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAddAdminEntryWritesTheRowAndItsConcat", Err.Number, Err.Description
+End Sub
+
+'@sub-title An added name sorts among its siblings on the concat column.
+'@details
+'Arranges a filled geobase, where P1 holds D1 and D2. Acts by adding a name
+'that sorts before both. Asserts its row sits above the row of D1, so the
+'picker shows it first under P1.
+'@TestMethod("LLGeo")
+Public Sub TestAddAdminEntrySortsTheTable()
+    CustomTestSetTitles Assert, "LLGeo", "TestAddAdminEntrySortsTheTable"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim geo As LLGeo
+    Dim Lo As ListObject
+    Dim newRow As Long
+    Dim siblingRow As Long
+
+    Set sh = BuildGeoFixture(withData:=True)
+    Set geo = LLGeo.Create(sh)
+    Set Lo = sh.ListObjects("T_ADM2")
+
+    geo.AddAdminEntry LevelAdmin2, ParentsOf("P1"), "A0"
+
+    newRow = ConcatRowOf(Lo, "P1 | A0")
+    siblingRow = ConcatRowOf(Lo, "P1 | D1")
+
+    Assert.IsTrue newRow > 0, "The new row should be in the table"
+    Assert.IsTrue siblingRow > 0, "D1 should still be in the table"
+    Assert.IsTrue newRow < siblingRow, _
+                  "A0 sorts before D1, so its row should sit above (rows " & _
+                  newRow & " and " & siblingRow & ")"
+    Assert.AreEqual newRow + 1, siblingRow, _
+                    "The new row should sit right above its first sibling"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAddAdminEntrySortsTheTable", Err.Number, Err.Description
+End Sub
+
+'@sub-title A name already under those parents is refused.
+'@details
+'Arranges a filled geobase. Acts by adding one name twice, the second time in
+'another case. Asserts the second add answers False and the row count stays.
+'@TestMethod("LLGeo")
+Public Sub TestAddAdminEntryRefusesADuplicate()
+    CustomTestSetTitles Assert, "LLGeo", "TestAddAdminEntryRefusesADuplicate"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim geo As LLGeo
+    Dim Lo As ListObject
+    Dim rowsAfterFirst As Long
+    Dim secondWrite As Boolean
+
+    Set sh = BuildGeoFixture(withData:=True)
+    Set geo = LLGeo.Create(sh)
+    Set Lo = sh.ListObjects("T_ADM2")
+
+    Assert.IsTrue geo.AddAdminEntry(LevelAdmin2, ParentsOf("P1"), "Dnew"), _
+                  "The first add should be written"
+    rowsAfterFirst = Lo.ListRows.Count
+
+    secondWrite = geo.AddAdminEntry(LevelAdmin2, ParentsOf("P1"), "dnew")
+
+    Assert.IsFalse secondWrite, "The same name in another case should be refused"
+    Assert.AreEqual rowsAfterFirst, CLng(Lo.ListRows.Count), _
+                    "A refused add should leave the row count alone"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAddAdminEntryRefusesADuplicate", Err.Number, Err.Description
+End Sub
+
+'@sub-title Admin 1, a wrong parent count and an empty name are refused.
+'@details
+'Arranges a filled geobase. Acts by asking for an admin 1, an admin 3 with one
+'parent, and an admin 2 with a blank name, each under On Error Resume Next.
+'Asserts every one raises InvalidArgument.
+'@TestMethod("LLGeo")
+Public Sub TestAddAdminEntryRejectsAdminOneAndWrongParents()
+    CustomTestSetTitles Assert, "LLGeo", "TestAddAdminEntryRejectsAdminOneAndWrongParents"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim geo As LLGeo
+    Dim errAdminOne As Long
+    Dim errWrongParents As Long
+    Dim errEmptyName As Long
+
+    Set sh = BuildGeoFixture(withData:=True)
+    Set geo = LLGeo.Create(sh)
+
+    On Error Resume Next
+    geo.AddAdminEntry LevelAdmin1, New BetterArray, "Pnew"
+    errAdminOne = Err.Number
+    Err.Clear
+
+    geo.AddAdminEntry LevelAdmin3, ParentsOf("P1"), "Cnew"
+    errWrongParents = Err.Number
+    Err.Clear
+
+    geo.AddAdminEntry LevelAdmin2, ParentsOf("P1"), "   "
+    errEmptyName = Err.Number
+    Err.Clear
+    On Error GoTo TestFail
+
+    Assert.AreEqual CLng(ProjectError.InvalidArgument), errAdminOne, _
+                    "Admin 1 is never added here"
+    Assert.AreEqual CLng(ProjectError.InvalidArgument), errWrongParents, _
+                    "An admin 3 with one parent should raise InvalidArgument"
+    Assert.AreEqual CLng(ProjectError.InvalidArgument), errEmptyName, _
+                    "A blank name should raise InvalidArgument"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAddAdminEntryRejectsAdminOneAndWrongParents", Err.Number, Err.Description
+End Sub
+
+'@sub-title The cascade sees a child added after it was asked for.
+'@details
+'Arranges a filled geobase and asks for the children of P1, so the answer is
+'held in the level memo. Acts by adding a child under P1 and asking again.
+'Asserts the second answer holds the new name, which is the memo reset.
+'@TestMethod("LLGeo")
+Public Sub TestGeoLevelSeesAnAddedChild()
+    CustomTestSetTitles Assert, "LLGeo", "TestGeoLevelSeesAnAddedChild"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim geo As LLGeo
+    Dim before As BetterArray
+    Dim after As BetterArray
+
+    Set sh = BuildGeoFixture(withData:=True)
+    Set geo = LLGeo.Create(sh)
+
+    Set before = geo.GeoLevel(LevelAdmin2, GeoScopeAdmin, "P1")
+    Assert.IsFalse before.Includes("Dnew"), "Dnew is absent before the add" & AnswerSeen(before)
+
+    geo.AddAdminEntry LevelAdmin2, ParentsOf("P1"), "Dnew"
+
+    Set after = geo.GeoLevel(LevelAdmin2, GeoScopeAdmin, "P1")
+    Assert.IsTrue after.Includes("Dnew"), _
+                  "The children of P1 should hold the added name" & AnswerSeen(after)
+    Assert.AreEqual before.Length + 1, after.Length, _
+                    "P1 should answer one child more than before" & AnswerSeen(after)
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestGeoLevelSeesAnAddedChild", Err.Number, Err.Description
+End Sub
+
+'@sub-title An added admin 4 lands in T_ADM4 and reaches the concat search list.
+'@details
+'Arranges a workbook of its own carrying a filled geobase and the adm4_concat
+'name the fixture writes. Acts by adding an admin 4 under P1, D1 and C1, then
+'refreshing a GeoFormCache built over that workbook. Asserts the row carries a
+'four-part concat and the refreshed concat list holds it.
+'@TestMethod("LLGeo")
+Public Sub TestAddAdminEntryWritesAnAdminFour()
+    CustomTestSetTitles Assert, "LLGeo", "TestAddAdminEntryWritesAnAdminFour"
+    On Error GoTo TestFail
+
+    Dim wb As Workbook
+    Dim sh As Worksheet
+    Dim geo As LLGeo
+    Dim Lo As ListObject
+    Dim cache As GeoFormCache
+    Dim concatList As BetterArray
+    Dim rowsBefore As Long
+
+    'A workbook of its own: the cache reads the adm4_concat name of the
+    'workbook, and the shared fixture sits in the driver workbook.
+    Set wb = BuildGeoWorkbook(withData:=True)
+    Set sh = wb.Worksheets(GEO_SHEET_NAME)
+    Set geo = LLGeo.Create(sh)
+    Set Lo = sh.ListObjects("T_ADM4")
+    rowsBefore = Lo.ListRows.Count
+
+    Set cache = GeoFormCache.Create(wb)
+    Set concatList = cache.ConcatList(GeoScopeAdmin)
+    Assert.IsFalse concatList.Includes("P1 | D1 | C1 | Vnew"), _
+                   "The concat list holds no Vnew before the add"
+
+    Assert.IsTrue geo.AddAdminEntry(LevelAdmin4, ParentsOf("P1", "D1", "C1"), "Vnew"), _
+                  "An admin 4 under three parents should be written"
+    Assert.AreEqual rowsBefore + 1, CLng(Lo.ListRows.Count), _
+                    "T_ADM4 should gain exactly one row"
+    Assert.IsTrue ConcatRowOf(Lo, "P1 | D1 | C1 | Vnew") > 0, _
+                  "The new row should carry the four-part concat"
+
+    cache.Refresh
+    Set concatList = cache.ConcatList(GeoScopeAdmin)
+    Assert.IsTrue concatList.Includes("P1 | D1 | C1 | Vnew"), _
+                  "The refreshed concat list should hold the new admin 4"
+
+    DeleteWorkbook wb
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAddAdminEntryWritesAnAdminFour", Err.Number, Err.Description
 End Sub

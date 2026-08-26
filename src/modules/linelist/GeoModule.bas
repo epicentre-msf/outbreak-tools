@@ -3,7 +3,7 @@ Attribute VB_Description = "Combined geo and spatial analysis logic for the line
 
 '@Folder("Geo")
 '@ModuleDescription("Combined geo and spatial analysis logic for the linelist")
-'@depends LinelistEventsManager, EventLinelist, LLGeo, LLSpatial, GeoFormCache, AnalysisRanges, DropdownLists, Passwords, BetterArray
+'@depends LinelistEventsManager, EventLinelist, LLGeo, LLSpatial, GeoFormCache, AnalysisRanges, DropdownLists, Passwords, BetterArray, LLTranslation, TranslationObject
 '@IgnoreModule UnrecognizedAnnotation, ImplicitActiveSheetReference, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -18,6 +18,9 @@ Private Const PASSSHEET As String = "__pass"
 
 ' How many admin levels a geobase carries.
 Private Const MAX_ADMIN_LEVEL As Long = 4
+
+' The separator of a joined admin path, the one the caption of the form uses.
+Private Const GEO_SEPARATOR As String = " | "
 
 '@section Module-Level State
 '===============================================================================
@@ -384,6 +387,159 @@ Private Function ListValueOf(ByVal listControl As Object) As String
     If IsNull(listControl.Value) Then Exit Function
     ListValueOf = CStr(listControl.Value)
 End Function
+
+' @description Add one admin name where the user stands in the geo picker.
+'              A double click on the list of level 2, 3 or 4 arrives here.
+'              The lists below the level are emptied and the selection of the
+'              level is dropped, so the user stands at that level with
+'              nothing chosen there yet; the caption shows the parents alone.
+'              A parent list with no selection stops the walk with a warning,
+'              which is what keeps an admin 4 from landing with no admin 3
+'              behind it. A prompt then asks for the name, LLGeo writes the
+'              row under the parents, the concat search list is dropped so
+'              the next search reads the new row, and the list refills with
+'              the new name selected, which runs its Click and fills the level
+'              below the way a click by hand does.
+'              The prompt is Application.InputBox in text mode. A cancelled
+'              box answers the Boolean False, so the answer is read into a
+'              Variant and its type tested before it is treated as text.
+'              The cursor follows ShowAdminList: the arrow is put back on
+'              every exit.
+' @param level The level of the list double-clicked, 2 to 4
+'@EntryPoint
+Public Sub AddAdminName(ByVal level As Long)
+    Dim geoObj As LLGeo
+    Dim linelistEvents As EventLinelist
+    Dim lltrads As LLTranslation
+    Dim tradmess As TranslationObject
+    Dim parentNames As BetterArray
+    Dim parentValue As String
+    Dim parentPath As String
+    Dim levelLabel As String
+    Dim prompt As String
+    Dim answer As Variant
+    Dim newName As String
+    Dim levelWanted As Byte
+    Dim counter As Long
+    Dim listControl As Object
+
+    On Error GoTo ErrAddAdmin
+    Application.Cursor = xlNorthwestArrow
+
+    'The form outlives any dead module state, so the manager is read fresh on
+    'every double click.
+    Set geoObj = GeoOf()
+    If geoObj Is Nothing Then
+        Application.Cursor = xlNorthwestArrow
+        ReportGeoError "AddAdminName", "The geobase manager could not be built"
+        Exit Sub
+    End If
+
+    Select Case level
+    Case 2
+        levelWanted = LevelAdmin2
+    Case 3
+        levelWanted = LevelAdmin3
+    Case 4
+        levelWanted = LevelAdmin4
+    Case Else
+        Err.Raise 5, "GeoModule", "The picker adds no admin " & level
+    End Select
+
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    Set lltrads = linelistEvents.Translation()
+    If lltrads Is Nothing Then _
+        Err.Raise ProjectError.ObjectNotInitialized, "GeoModule", _
+                  "This linelist carries no usable translation sheet"
+    Set tradmess = lltrads.TransObject()
+
+    Set parentNames = New BetterArray
+    parentNames.LowerBound = 1
+
+    With F_Geo
+        'The user stands at the level double-clicked with nothing chosen
+        'there. The Click that fired before this double click filled the
+        'level below, and that fill goes with the rest.
+        For counter = level + 1 To MAX_ADMIN_LEVEL
+            .Controls("LST_Adm" & counter).Clear
+        Next
+        .Controls("LST_Adm" & level).ListIndex = -1
+
+        'The parents are read off the lists above, the way ShowAdminList
+        'reads them. The caption shows the ones found, so a stopped walk
+        'still leaves the path the user stands on.
+        For counter = 1 To level - 1
+            parentValue = ListValueOf(.Controls("LST_Adm" & counter))
+            If LenB(parentValue) = 0 Then
+                .TXT_Msg.Value = parentPath
+                Application.Cursor = xlNorthwestArrow
+                linelistEvents.Warn "MSG_AddAdminNoParent", "AddAdminName"
+                Exit Sub
+            End If
+            parentNames.Push parentValue
+            If counter = 1 Then
+                parentPath = parentValue
+            Else
+                parentPath = parentPath & GEO_SEPARATOR & parentValue
+            End If
+        Next
+
+        .TXT_Msg.Value = parentPath
+    End With
+
+    'The prompt names the level in the words of the geobase in use, and the
+    'path the name will sit under.
+    levelLabel = geoObj.GeoNames("adm" & level & "_name")
+    prompt = tradmess.TranslatedValue("MSG_AddAdminName") & vbNewLine & _
+             levelLabel & ": " & parentPath
+
+    answer = Application.InputBox(prompt, _
+                                  tradmess.TranslatedValue("MSG_AddAdminTitle"), _
+                                  Type:=2)
+
+    'A cancelled box answers the Boolean False. A blank answer changes
+    'nothing either: the form stays as the double click left it.
+    If VarType(answer) = vbBoolean Then
+        Application.Cursor = xlNorthwestArrow
+        Exit Sub
+    End If
+
+    newName = Trim$(CStr(answer))
+    If LenB(newName) = 0 Then
+        Application.Cursor = xlNorthwestArrow
+        Exit Sub
+    End If
+
+    If Not geoObj.AddAdminEntry(levelWanted, parentNames, newName) Then
+        Application.Cursor = xlNorthwestArrow
+        linelistEvents.Warn "MSG_AddAdminExists", "AddAdminName"
+        Exit Sub
+    End If
+
+    'The concat search list is held in memory from the open, and an admin 4
+    'add changes adm4_concat. The next search re-reads the named range.
+    GeoFormCache.Refresh
+
+    'The list refills with the new name in its sorted place, and selecting
+    'it runs its Click, which fills the level below and writes the caption
+    'down to the new name.
+    ShowAdminList level, parentNames.Item(level - 1), GeoScopeAdmin, GEO_SEPARATOR
+
+    Set listControl = F_Geo.Controls("LST_Adm" & level)
+    For counter = 0 To listControl.ListCount - 1
+        If StrComp(CStr(listControl.List(counter)), newName, vbTextCompare) = 0 Then
+            listControl.ListIndex = counter
+            Exit For
+        End If
+    Next
+
+    Application.Cursor = xlNorthwestArrow
+    Exit Sub
+
+ErrAddAdmin:
+    Application.Cursor = xlNorthwestArrow
+    ReportGeoError "AddAdminName", Err.Description
+End Sub
 
 '@section Spatial Table Updates
 '===============================================================================

@@ -27,7 +27,9 @@ Option Explicit
 'headers alone, which is what the factory and flag tests of TestLLGeo need.
 'With withData True it fills them: 3 admin1, 2 admin2 under each, 2 admin3
 'under each of those, one admin4 per admin3, three health facilities and the
-'five level translations in an EN column.
+'five level translations in an EN column. Every build also leaves the
+'adm4_concat workbook name behind, the one GeoFormCache reads, pointing at the
+'concat column of T_ADM4.
 '
 'THE THIRD ADMIN1 VALUE IS THE NUMBER 3
 '-------------------------------------------------------------------------------
@@ -49,6 +51,9 @@ Option Explicit
 'The paste anchor LLGeo resolves. It stays a real cell.
 Private Const PASTING_ANCHOR As String = "RNG_PastingGeoCol"
 Private Const PASTING_ANCHOR_CELL As String = "A40"
+
+'The separator of a concat value, the one the import formula joins with.
+Private Const SEP As String = " | "
 
 
 '@section Public entry points
@@ -115,6 +120,7 @@ Public Sub BuildGeoFixtureTables(ByVal sh As Worksheet, ByVal withData As Boolea
     geoStore.EnsureName "RNG_MetaLang", vbNullString, HiddenNameTypeString
 
     DropGeoLevelNames sh.Parent
+    EnsureConcatName sh.Parent
 
     If withData Then FillGeoData sh, geoStore
 End Sub
@@ -178,6 +184,24 @@ End Sub
 '@section Private
 '===============================================================================
 
+'@sub-title Add the adm4_concat workbook name when the workbook has none.
+'@details
+'LLGeo.ExportToWkb writes this name on every linelist, as =T_ADM4[adm4_concat],
+'and GeoFormCache reads the concat search list through it. A table column
+'reference grows with the table, so the name survives a rebuild of the tables
+'and is added once per workbook.
+'@param wb Workbook. The workbook holding the geobase sheet.
+Private Sub EnsureConcatName(ByVal wb As Workbook)
+    Dim found As Boolean
+
+    On Error Resume Next
+    found = (LenB(wb.Names("adm4_concat").Name) > 0)
+    On Error GoTo 0
+
+    If found Then Exit Sub
+    wb.Names.Add Name:="adm4_concat", RefersToR1C1:="=T_ADM4[adm4_concat]"
+End Sub
+
 '@sub-title Write the header row of one geobase table.
 '@param sh Worksheet. The fixture worksheet.
 '@param tableName String. The table whose headers are wanted.
@@ -237,7 +261,8 @@ End Sub
 '@details
 'Three admin1 values, two admin2 under each and two admin3 under each of those,
 'one admin4 per admin3, three health facilities and the five level translations
-'in an EN column. The third admin1 value is the number 3.
+'in an EN column. The third admin1 value is the number 3. The concat column of
+'each admin table is filled with the joined path, the value an import leaves.
 '@param sh Worksheet. The fixture worksheet.
 '@param geoStore HiddenNames. The hidden name store of that worksheet.
 Private Sub FillGeoData(ByVal sh As Worksheet, ByVal geoStore As HiddenNames)
@@ -269,12 +294,15 @@ Private Sub FillGeoData(ByVal sh As Worksheet, ByVal geoStore As HiddenNames)
     For adm1Idx = 0 To 2
         adm1Value = adm1Values(adm1Idx)
         GeoFixtureWriteCell sh, loAdm1, adm1Idx + 1, 0, adm1Value
+        GeoFixtureWriteCell sh, loAdm1, adm1Idx + 1, 1, CStr(adm1Value)
 
         For childIdx = 1 To 2
             adm2Row = adm2Row + 1
             adm2Value = "D" & adm2Row
             GeoFixtureWriteCell sh, loAdm2, adm2Row, 0, adm1Value
             GeoFixtureWriteCell sh, loAdm2, adm2Row, 1, adm2Value
+            GeoFixtureWriteCell sh, loAdm2, adm2Row, 2, _
+                                CStr(adm1Value) & SEP & adm2Value
 
             For grandIdx = 1 To 2
                 adm3Row = adm3Row + 1
@@ -283,11 +311,16 @@ Private Sub FillGeoData(ByVal sh As Worksheet, ByVal geoStore As HiddenNames)
                 GeoFixtureWriteCell sh, loAdm3, adm3Row, 0, adm1Value
                 GeoFixtureWriteCell sh, loAdm3, adm3Row, 1, adm2Value
                 GeoFixtureWriteCell sh, loAdm3, adm3Row, 2, adm3Value
+                GeoFixtureWriteCell sh, loAdm3, adm3Row, 3, _
+                                    CStr(adm1Value) & SEP & adm2Value & SEP & adm3Value
 
                 GeoFixtureWriteCell sh, loAdm4, adm3Row, 0, adm1Value
                 GeoFixtureWriteCell sh, loAdm4, adm3Row, 1, adm2Value
                 GeoFixtureWriteCell sh, loAdm4, adm3Row, 2, adm3Value
                 GeoFixtureWriteCell sh, loAdm4, adm3Row, 3, "V" & adm3Row
+                GeoFixtureWriteCell sh, loAdm4, adm3Row, 4, _
+                                    CStr(adm1Value) & SEP & adm2Value & SEP & _
+                                    adm3Value & SEP & "V" & adm3Row
             Next grandIdx
         Next childIdx
     Next adm1Idx

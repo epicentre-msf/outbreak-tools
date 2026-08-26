@@ -51,7 +51,9 @@ End Enum
 'reads a geobase in, and ExportToFile and ExportToWkb write it out as flat data
 'or as the full structure. Update, UpdateDict and UpdateHistoric carry the
 'translated labels across the linelist sheets and the dictionary, and
-'SkippedSheets names the sheets an update left alone.
+'SkippedSheets names the sheets an update left alone. AddAdminEntry writes
+'one admin name under the parents the picker holds, for a place the geobase
+'in use is missing.
 '
 'The show/hide form takes its geo labels from the dictionary UpdateDict
 'rewrites: ShowHide composes "<sub section>: <level label>" itself, every time
@@ -2310,6 +2312,142 @@ Public Sub UpdateHistoric(ByVal newValue As String, _
         Lo.Range.Sort Key1:=Lo.ListColumns(1).Range, Header:=xlYes
     End If
 End Sub
+
+'@section Add Admin Entry
+'===============================================================================
+
+'@label:add-admin-entry
+'@sub-title Add one admin name under the parents the caller names.
+'@details
+'Writes one row into the admin table of the level asked for: the parent names
+'in adm1_name to adm<n-1>_name, the new name in adm<n>_name and the joined
+'path in adm<n>_concat. The concat is written as a value, the shape the import
+'leaves behind: ImportOneTable calculates the concat formula once and replaces
+'it with what it answered, so the table carries no live formula and a value is
+'what its other rows hold. Every other column of the row, adm<n>_pcode and
+'adm<n>_pop on a production geobase, stays empty. A p-code formula over the
+'new name therefore reads blank until a real geobase carrying it is imported.
+'
+'The columns are found by header through GeoColumnIndex, which reads the raw
+'names through the translated labels, so the write works whatever the headers
+'carry. The row lands under the table and the table is resized over it, the
+'way UpdateHistoric grows the historic tables, including the table whose one
+'data row is blank after a Clear.
+'
+'The duplicate test runs before the write: the candidate concat is compared
+'with the concat column of the table without regard to case, and a match
+'answers False and writes nothing. After a write the table is sorted on its
+'concat column, which keeps every child under its parent and puts the new name
+'in order among its siblings, where the picker shows it. The level memo is
+'dropped last: the parent just written under has a stale answer there.
+'
+'One table per add. An admin 3 added here writes T_ADM3 alone; T_ADM4 has no
+'row for it until an admin 4 is added under it.
+'@param adminLevel Byte. LevelAdmin2, LevelAdmin3 or LevelAdmin4.
+'@param parentNames BetterArray. One name per level above, from admin 1 down, so its length is the level number minus one.
+'@param newName String. The name to add. It is trimmed first.
+'@return Boolean. True when the row was written, False when the name is already under those parents.
+'@throws ProjectError.InvalidArgument When the level is admin 1 or above admin 4, when the parents are missing, the wrong length or hold an empty name, or when the new name is empty.
+'@throws ProjectError.ErrorUnexpectedState When the geobase holds no data.
+'@throws ProjectError.ElementNotFound When a column of the admin table is missing.
+'@export
+Public Function AddAdminEntry(ByVal adminLevel As Byte, _
+                              ByVal parentNames As BetterArray, _
+                              ByVal newName As String) As Boolean
+    Dim sh As Worksheet
+    Dim Lo As ListObject
+    Dim LoRng As Range
+    Dim rowRng As Range
+    Dim levelNumber As Long
+    Dim trimmedName As String
+    Dim candidate As String
+    Dim concatCol As Long
+    Dim counter As Long
+    Dim parentName As String
+    Dim concatValues As Variant
+    Dim rowIdx As Long
+    Dim writeRow As Long
+
+    levelNumber = CLng(adminLevel) + 1
+
+    If adminLevel = LevelAdmin1 Then _
+        ThrowError InvalidArgument, "Admin 1 is never added here; import a geobase carrying it"
+
+    If adminLevel > LevelAdmin4 Then _
+        ThrowError InvalidArgument, "The geobase has no admin " & levelNumber
+
+    If parentNames Is Nothing Then _
+        ThrowError InvalidArgument, _
+            "Admin " & levelNumber & " needs the names of the " & _
+            CLng(adminLevel) & " levels above it"
+
+    If parentNames.Length <> CLng(adminLevel) Then _
+        ThrowError InvalidArgument, _
+            "Admin " & levelNumber & " needs a table of length " & _
+            CLng(adminLevel) & ", one name per level above it"
+
+    For counter = parentNames.LowerBound To parentNames.UpperBound
+        If LenB(Trim$(CStr(parentNames.Item(counter)))) = 0 Then _
+            ThrowError InvalidArgument, "A parent name of the new entry is empty"
+    Next
+
+    trimmedName = Trim$(newName)
+    If LenB(trimmedName) = 0 Then _
+        ThrowError InvalidArgument, "The new name is empty"
+
+    If HasNoData() Then _
+        ThrowError ErrorUnexpectedState, "The geobase holds no data to add a name to"
+
+    Set sh = Wksh()
+    Set Lo = sh.ListObjects(TableNameAt(adminLevel))
+    concatCol = GeoColumnIndex("adm" & levelNumber & "_concat", adminLevel)
+
+    'The candidate path, joined the way the import formula joins it.
+    For counter = parentNames.LowerBound To parentNames.UpperBound
+        candidate = candidate & Trim$(CStr(parentNames.Item(counter))) & " | "
+    Next
+    candidate = candidate & trimmedName
+
+    'The duplicate test, before anything is written.
+    If Lo.ListRows.Count > 0 Then
+        concatValues = RangeValues(Lo.ListColumns(concatCol).DataBodyRange)
+        For rowIdx = LBound(concatValues, 1) To UBound(concatValues, 1)
+            If StrComp(CellText(concatValues(rowIdx, 1)), candidate, vbTextCompare) = 0 Then _
+                Exit Function
+        Next
+    End If
+
+    'The row under the table, or the blank data row a cleared table keeps.
+    Set LoRng = Lo.Range
+    writeRow = LoRng.Row + LoRng.Rows.Count
+
+    If Lo.ListRows.Count = 0 Then
+        writeRow = LoRng.Row + 1
+    ElseIf Lo.ListRows.Count = 1 Then
+        If LenB(CellText(Lo.DataBodyRange.Cells(1, 1).Value)) = 0 Then _
+            writeRow = LoRng.Row + 1
+    End If
+
+    Set rowRng = sh.Rows(writeRow)
+
+    For counter = 1 To CLng(adminLevel)
+        parentName = Trim$(CStr(parentNames.Item(parentNames.LowerBound + counter - 1)))
+        rowRng.Cells(1, LoRng.Column + GeoColumnIndex("adm" & counter & "_name", adminLevel) - 1).Value = parentName
+    Next
+
+    rowRng.Cells(1, LoRng.Column + GeoColumnIndex("adm" & levelNumber & "_name", adminLevel) - 1).Value = trimmedName
+    rowRng.Cells(1, LoRng.Column + concatCol - 1).Value = candidate
+
+    Lo.Resize sh.Range(LoRng.Cells(1, 1), _
+                       sh.Cells(writeRow, LoRng.Column + LoRng.Columns.Count - 1))
+
+    If Lo.ListRows.Count > 1 Then
+        Lo.Range.Sort Key1:=Lo.ListColumns(concatCol).Range, Header:=xlYes
+    End If
+
+    ResetLevelMemo
+    AddAdminEntry = True
+End Function
 
 '@section AdminCode
 '===============================================================================
