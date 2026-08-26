@@ -1542,10 +1542,10 @@ End Sub
 '@label:add-geo-conditional-formatting
 '@sub-title Add geo pcode conditional formatting (HList only)
 '@details
-'For geo-type variables, adds a format condition that highlights the cell
-'in orange when the corresponding pcode variable is empty but the geo
-'variable itself is not. This alerts users that a geographic name was
-'entered but the pcode lookup failed.
+'For geo-type variables, adds a format condition that shades the cell
+'with a subtle warm tint (#F7F1E8) when the corresponding pcode variable is
+'empty but the geo variable itself is not. This alerts users that a
+'geographic name was entered but the pcode lookup failed.
 Private Sub AddGeoConditionalFormatting()
     Dim varValid As String
     Dim cellRng As Range
@@ -1579,7 +1579,7 @@ Private Sub AddGeoConditionalFormatting()
     If Not AddOneCondition(cellRng, OScondForm, "=" & condForm) Then Exit Sub
 
     With cellRng.FormatConditions(cellRng.FormatConditions.Count)
-        .Interior.Color = RGB(242, 147, 12)
+        .Interior.Color = RGB(247, 241, 232)
         .SetFirstPriority
         .StopIfTrue = True
     End With
