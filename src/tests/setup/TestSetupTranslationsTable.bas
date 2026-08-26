@@ -2056,6 +2056,39 @@ Fail:
 End Sub
 
 
+'@TestMethod("SetupTranslationsTable")
+'@details The key language is the source of truth every other column is
+'         translated from. A repeat there is the sheet's own doing, not
+'         something a translator can act on, so it takes no rule at all: not the
+'         group fills and not the red catch-all. The translations still take
+'         both, which is what the second half of this checks.
+Public Sub TestKeyLanguageColumnTakesNoDuplicateRules()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestKeyLanguageColumnTakesNoDuplicateRules"
+    On Error GoTo Fail
+
+    Dim keyRules As Long
+    Dim translationRules As Long
+
+    Subject.UpdateFromRegistry RegistrySheet, "French"
+    FillLanguageColumn "French", Array("Salut", "Salut")
+
+    RunUpdateThatAddsARow
+
+    keyRules = ColumnRuleCount("English")
+    translationRules = ColumnRuleCount("French")
+
+    Assert.LogSuccesses "TestKeyLanguageColumnTakesNoDuplicateRules: key=" & CStr(keyRules) & _
+                        " translation=" & CStr(translationRules)
+
+    Assert.AreEqual CLng(0), keyRules, "The key language column carries no duplicate rule"
+    Assert.IsTrue translationRules > 0, "A translation column still carries its duplicate rules"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestKeyLanguageColumnTakesNoDuplicateRules", Err.Number, Err.Description
+End Sub
+
+
 '@section Helpers
 '===============================================================================
 '@sub-title Write one value per row into a language column, top down.
@@ -2105,6 +2138,16 @@ Private Function GroupRuleColors(ByVal columnName As String) As BetterArray
             colors.Push CLng(dataRange.FormatConditions(idx).Interior.Color)
         End If
     Next idx
+End Function
+
+'@sub-title Count the conditional formatting rules on a language column.
+Private Function ColumnRuleCount(ByVal columnName As String) As Long
+    Dim dataRange As Range
+
+    Set dataRange = TranslationsTable.ListColumns(columnName).DataBodyRange
+    If dataRange Is Nothing Then Exit Function
+
+    ColumnRuleCount = dataRange.FormatConditions.Count
 End Function
 
 '@sub-title Read the fill of the lowest priority rule on a language column.

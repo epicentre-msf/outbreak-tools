@@ -42,10 +42,16 @@ Option Explicit
 'are matched without regard to case. Excel matches defined names that way
 'itself.
 '
-'DUPLICATES ARE COLOURED BY GROUP
+'DUPLICATES ARE COLOURED BY GROUP, ON THE TRANSLATIONS ONLY
 '-------------------------------------------------------------------------------
-'ApplyFormatting gives every duplicate group in a column a fill of its own,
-'walked off the hue wheel by DuplicateGroupColor. A column painted in one colour
+'The key language column carries no duplicate rules at all. It is the source of
+'truth the other columns are translated from, DeduplicateLabels already keeps it
+'unique, and a repeat there is the sheet's own doing rather than something a
+'translator can act on. DuplicateLabels and the summary still answer for any
+'column asked of them; what stops at the key column is the colouring.
+'
+'For every column after it, ApplyFormatting gives every duplicate group a fill
+'of its own, walked off the hue wheel by DuplicateGroupColor. A column in one colour
 'says which cells are duplicated and nothing about which of them go together,
 'and a translator staring at forty red cells has to read every one to find the
 'pairs. One rule per group answers both questions at a glance.
@@ -1988,11 +1994,17 @@ End Sub
 '@details The group rules go on first and the red catch-all goes on last.
 '         FormatConditions.Add appends, so the rule added last holds the lowest
 '         priority and shows through only where no group rule claimed the cell.
+'
+'         The key language column takes the font and the sizing and none of the
+'         duplicate rules. See ApplyFormatting for why.
 '@param langRng Range. The language column to format.
 '@param painted ByRef Long. How many groups the pass has coloured so far, carried
 '       across every column so no two groups share a colour. See
 '       HighlightDuplicateGroups.
-Private Sub ApplyLangColumnFormatting(ByVal langRng As Range, ByRef painted As Long)
+'@param highlightDuplicates Boolean. False for the key language column, which is
+'       the source of truth and has nothing to be checked against.
+Private Sub ApplyLangColumnFormatting(ByVal langRng As Range, ByRef painted As Long, _
+                                      ByVal highlightDuplicates As Boolean)
 
     If langRng Is Nothing Then Exit Sub
 
@@ -2007,6 +2019,8 @@ Private Sub ApplyLangColumnFormatting(ByVal langRng As Range, ByRef painted As L
         .Cells.VerticalAlignment = xlVAlignCenter
 
     End With
+
+    If Not highlightDuplicates Then Exit Sub
 
     HighlightDuplicateGroups langRng, painted
 
@@ -2423,6 +2437,7 @@ Private Sub ApplyFormatting()
     Dim unlockOffset As Long
     Dim unlockWidth As Long
     Dim paintedGroups As Long
+    Dim isKeyColumn As Boolean
 
 
     Set dataRange = this.table.DataBodyRange
@@ -2463,8 +2478,16 @@ Private Sub ApplyFormatting()
 
     'One counter for the whole pass, so the first duplicate group of the second
     'language does not draw the colour the first language already used.
+    '
+    'The loop opens on LabelColumnIndex(), the key language, and that column is
+    'the source of truth: DeduplicateLabels already keeps it unique, and a value
+    'repeated there is the sheet's own doing rather than a translator's. Every
+    'column after it is a translation of that one, and a repeat there is two
+    'source labels given the same wording, which is what the colours are for.
+    isKeyColumn = True
     Do While Not columnRange Is Nothing And Not Intersect(columnRange, dataRange) Is Nothing
-        ApplyLangColumnFormatting columnRange, paintedGroups
+        ApplyLangColumnFormatting columnRange, paintedGroups, Not isKeyColumn
+        isKeyColumn = False
         Set columnRange = columnRange.Offset(0, 1)
         If columnRange.Column > dataRange.Columns(dataRange.Columns.Count).Column Then Exit Do
     Loop
