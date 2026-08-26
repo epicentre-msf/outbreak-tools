@@ -10,7 +10,5 @@ ribbons/**/ribbon.xml -text
 # HTML must not be detectable (useless)
 *.applescript linguist-detectable=false
 *.scpt linguist-detectable=false
-*.vbs linguist-detectable=false
-*.vba linguist-detectable=false
 *.html linguist-detectable=false
 *.htm linguist-detectable=false
