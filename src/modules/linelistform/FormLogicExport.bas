@@ -3,7 +3,7 @@ Attribute VB_Name = "FormLogicExport"
 '@Folder("Linelist Forms")
 '@ModuleDescription("Complete code-behind of F_Export -- key commands and export button setup")
 '@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
-'@depends ExportButton, LLExport, TranslationObject, LLTranslation, Passwords, BetterArray
+'@depends ExportButton, LLExport, TranslationObject, LLTranslation, Passwords, BetterArray, LinelistEventsManager, EventLinelist
 
 ' This module is the complete code-behind of the F_Export form and is copied
 ' into the form at deployment. EventsLinelistButtons.ClickExport reaches

@@ -4,6 +4,7 @@ Attribute VB_Description = "Events for epiweek start selection"
 '@Folder("Linelist Forms")
 '@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
 '@ModuleDescription("Events for epiweek start selection")
+'@depends LinelistEventsManager, EventLinelist, LLTranslation, TranslationObject, HiddenNames, BetterArray
 
 Option Explicit
 

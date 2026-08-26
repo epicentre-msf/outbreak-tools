@@ -3,7 +3,7 @@ Attribute VB_Name = "FormLogicExportMig"
 '@Folder("Linelist Forms")
 '@ModuleDescription("Complete code-behind of F_ExportMig -- migration, geo and other-linelist exports")
 '@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
-'@depends LLExporter, ApplicationState, OSFiles, TranslationObject, LLTranslation, LLLog
+'@depends LLExporter, ApplicationState, OSFiles, TranslationObject, LLTranslation, LLLog, LinelistEventsManager, EventLinelist
 
 ' This module is the complete code-behind of the F_ExportMig form and is
 ' copied into the form at deployment, so every control callback, the

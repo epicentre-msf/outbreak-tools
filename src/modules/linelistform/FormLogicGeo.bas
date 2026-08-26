@@ -3,6 +3,7 @@ Attribute VB_Description = "Form callbacks for F_Geo — delegates to GeoModule"
 
 '@Folder("Linelist Forms")
 '@ModuleDescription("Form callbacks for F_Geo -- delegates to GeoModule")
+'@depends LinelistEventsManager, EventLinelist, LLGeo, GeoFormCache, LLTranslation, TranslationObject, HiddenNames, BetterArray
 '@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable, ImplicitActiveSheetReference, UseMeaningfulName, HungarianNotation
 
 Option Explicit

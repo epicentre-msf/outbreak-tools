@@ -3,7 +3,7 @@ Attribute VB_Name = "FormLogicAdvanced"
 '@Folder("Linelist Forms")
 '@ModuleDescription("Complete code-behind of F_Advanced -- imports, clears, reset and saved layouts")
 '@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
-'@depends LLImporter, ImportMetadata, ApplicationState, OSFiles, LLdictionary, ShowHide, ShowHideLayout, ShowHideStore, HiddenNames, Passwords, LLGeo, LLTranslation, TranslationObject, LLLog
+'@depends LLImporter, ImportMetadata, ApplicationState, OSFiles, LLdictionary, ShowHide, ShowHideLayout, ShowHideStore, HiddenNames, Passwords, LLGeo, LLTranslation, TranslationObject, LLLog, LinelistEventsManager, EventLinelist, ImportChecking
 
 ' This module is the complete code-behind of the F_Advanced form and is
 ' copied into the form at deployment, so the control callbacks, the
