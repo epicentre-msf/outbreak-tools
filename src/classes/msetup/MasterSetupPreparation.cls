@@ -384,13 +384,13 @@ End Function
 '@Description("Return the default list of worksheets excluded from disease dropdowns.")
 Private Function DefaultDiseaseExclusions() As Variant
     DefaultDiseaseExclusions = Array("Choices", "Variables", "Translations", "Dev", _
-                                     "__pass", "__updated", "__compRep", _
+                                     "__pass", "__updated", "__compRep", "__log", _
                                     "__dropdowns")
 End Function
 
 '@Description("Return the default configuration worksheets list.")
 Private Function DefaultConfigSheets() As Variant
-    DefaultConfigSheets = Array("Dev", "__pass", "__updated", "__compRep", "__dropdowns")
+    DefaultConfigSheets = Array("Dev", "__pass", "__updated", "__compRep", "__dropdowns", "__log")
 End Function
 
 '@Description("Populate the choices dropdown from the list names of the Choices sheet.")

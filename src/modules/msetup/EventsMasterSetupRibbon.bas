@@ -17,6 +17,7 @@ Private Const DROPDOWNS_SHEET_NAME As String = "__dropdowns"
 Private Const REGISTRY_SHEET_NAME As String = "__updated"
 Private Const COMPARE_REPORT_SHEET_NAME As String = "__compRep"
 Private Const IMPORT_REPORT_SHEET_NAME As String = "__impRep"
+Private Const LOG_SHEET_NAME As String = "__log"
 Private Const DEVELOPMENT_SHEET_NAME As String = "Dev"
 Private Const VARIABLES_SHEET_NAME As String = "Variables"
 Private Const CHOICES_SHEET_NAME As String = "Choices"
@@ -758,6 +759,7 @@ Private Sub RegisterDeploymentSheets(ByVal manager As Development)
     HideOnDeploy manager, PASSWORD_SHEET_NAME
     HideOnDeploy manager, COMPARE_REPORT_SHEET_NAME
     HideOnDeploy manager, IMPORT_REPORT_SHEET_NAME
+    HideOnDeploy manager, LOG_SHEET_NAME
     HideOnDeploy manager, DEVELOPMENT_SHEET_NAME
 
     'Variables and Choices keep row deletion, the same permission

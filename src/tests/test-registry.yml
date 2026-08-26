@@ -1317,6 +1317,10 @@ suites:
       # CheckingOutput and Checking are baked into the driver workbook, so it
       # opens nothing further either.
       - name: DiseaseComparisonReport
+      # MasterSetupLog keeps the dated user log on the very hidden __log
+      # worksheet, the master setup copy of LLLog; Checking, CheckingOutput
+      # and HiddenNames are baked into the driver workbook.
+      - name: MasterSetupLog
       - name: EventMasterSetup
     modules:
       - MasterSetupHelpers
@@ -1375,6 +1379,11 @@ suites:
         covers: [DiseaseComparisonReport, DiseaseComparison]
       - module: TestEventMasterSetup
         covers: [EventMasterSetup]
+      # TestMasterSetupLog drives the log store over a bare workbook per
+      # test: the provisioning, the three sections, the rotation and the
+      # text report with its disease worksheet count.
+      - module: TestMasterSetupLog
+        covers: [MasterSetupLog]
       - module: TestMasterSetupHelpers
         covers: [MasterSetupHelpers]
       # TestMasterSetupEvents drives the whole event chain: the workbook
