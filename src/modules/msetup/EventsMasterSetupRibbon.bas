@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Msetup")
 '@ModuleDescription("Ribbon callbacks supporting master setup operations.")
-'@depends MasterSetupPreparation, MasterSetupHelpers, MasterSetupExports, MasterSetupImportService, DropdownLists, Passwords, TranslationObject, ApplicationState, SetupTranslationsTable, UpdatedValues, DiseaseSheet, Development, RibbonDev
+'@depends MasterSetupPreparation, MasterSetupHelpers, MasterSetupExports, MasterSetupImportService, DiseaseComparisonReport, DropdownLists, Passwords, TranslationObject, ApplicationState, SetupTranslationsTable, UpdatedValues, DiseaseSheet, Development, RibbonDev
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'The master setup file itself stays in English: every prompt below is a plain
@@ -276,6 +276,32 @@ Handler:
             passManager.Protect targetSheet.Name
         On Error GoTo 0
     End If
+    Resume Cleanup
+End Sub
+
+
+'@Description("Compare two disease worksheets and open the report on __compRep.")
+'@EntryPoint
+Public Sub clickCompare(ByRef ribbonControl As IRibbonControl)
+    Dim scope As ApplicationState
+
+    On Error GoTo Handler
+
+    Set scope = ApplicationState.Create(Application)
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+
+    MasterSetupExports.CompareDiseaseSheets
+
+Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Restore
+    'would come straight back to this label and raise again.
+    On Error Resume Next
+    If Not scope Is Nothing Then scope.Restore
+    Exit Sub
+
+Handler:
+    Debug.Print "clickCompare: "; Err.Number; Err.Description
+    MsgBox "Disease comparison failed: " & Err.Description, vbCritical + vbOKOnly, "Compare"
     Resume Cleanup
 End Sub
 

@@ -13,6 +13,7 @@
                     <button id="btnAddSheet" label="New Disease" image="addsheet" size="large" onAction="clickAddSheet"/>
                     <button id="btnRemSheet" label="Remove Disease" imageMso="ClearGrid" size="normal" onAction="clickRemSheet"/>
                     <button id="btnClear" label="Clear Disease" imageMso="ClearAll" size="normal" onAction="clickClearSheet"/>
+                    <button id="btnCompare" label="Compare Diseases" imageMso="ReviewCompare" size="normal" onAction="clickCompare"/>
                 </group>
                 <group id="customGroupTrans" label="Translations">
                     <button id="btnTransAdd" image="translation" label="Update Translations" size="large" onAction="clickAddTrans"/>

@@ -5,7 +5,7 @@ Option Explicit
 '@ModuleDescription("Disease exports, the setup import and the migration round trip for the master setup workbook.")
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, ExcelMemberMayReturnNothing, UseMeaningfulName
 
-'Four doors to the outside world, all built on the msetup classes:
+'Five doors to the outside world, all built on the msetup classes:
 '- ExportToSetup writes one disease as a dictionary workbook a setup imports.
 '- ImportFromSetup reads such a workbook back: the disease worksheet is
 '  rebuilt or merged, and the Variables and Choices sheets take what they
@@ -15,6 +15,8 @@ Option Explicit
 '  translations.
 '- ImportFlatFile reads such a migration file into this workbook, which
 '  has to be empty of diseases, variables and choices.
+'- CompareDiseaseSheets asks for two diseases and writes their differences
+'  on the __compRep worksheet.
 '
 'The landing of a block on a disease worksheet is MasterSetupImportService's
 'work, and the migration format at both ends is MasterSetupMigration's; this
@@ -25,6 +27,7 @@ Private Const NAME_DISCODE As String = "__Var_DISCODE"
 Private Const IMPORT_FILTERS As String = "*.xlsx;*.xlsb;*.xlsm"
 'How many times the door asks for a disease name before it gives up.
 Private Const MAX_NAME_ATTEMPTS As Long = 4
+Private Const COMPARE_TITLE As String = "Compare"
 
 '@section Exports
 '===============================================================================
@@ -242,6 +245,135 @@ Handler:
     errDescription = Err.Description
     Resume CloseSource
 End Sub
+
+'@section Disease comparison
+'===============================================================================
+
+'@sub-title Compare two disease worksheets and write the report on __compRep.
+'@details The user picks disease 1 from a numbered list of every disease
+'worksheet, then disease 2 from the same list with disease 1 taken out, so
+'one disease is never compared with itself. A workbook with fewer than two
+'disease worksheets is refused with one message. The comparison runs in a
+'busy scope and ends on the report sheet.
+Public Sub CompareDiseaseSheets()
+    Dim scope As ApplicationState
+    Dim diseaseNames As BetterArray
+    Dim remainingNames As BetterArray
+    Dim firstName As String
+    Dim secondName As String
+    Dim report As DiseaseComparisonReport
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
+
+    Set diseaseNames = CollectDiseaseNames()
+    If diseaseNames.Length < 2 Then
+        MsgBox "This workbook needs two disease worksheets to compare.", vbExclamation + vbOKOnly, COMPARE_TITLE
+        Exit Sub
+    End If
+
+    firstName = PromptDiseaseName(diseaseNames, "Select the first disease to compare:")
+    If LenB(firstName) = 0 Then Exit Sub
+
+    Set remainingNames = NamesWithout(diseaseNames, firstName)
+    secondName = PromptDiseaseName(remainingNames, "Select the disease to compare with '" & firstName & "':")
+    If LenB(secondName) = 0 Then Exit Sub
+
+    On Error GoTo Handler
+
+    Set scope = ApplicationState.Create(Application)
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+
+    Set report = DiseaseComparisonReport.Create(ThisWorkbook)
+    report.PrintComparison ResolveDiseaseTable(ThisWorkbook.Worksheets(firstName)), _
+                           ResolveDiseaseTable(ThisWorkbook.Worksheets(secondName)), _
+                           firstName, secondName
+
+Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Restore
+    'would come straight back to this label and raise again.
+    On Error Resume Next
+    If Not scope Is Nothing Then scope.Restore
+    On Error GoTo 0
+
+    If errNumber <> 0 Then
+        Err.Raise errNumber, errSource, errDescription
+    End If
+    Exit Sub
+
+Handler:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    Resume Cleanup
+End Sub
+
+'@sub-title Ask the user to pick one disease out of a numbered list.
+'@details The list is written into the prompt, one name per line, and the
+'answer is the number of the line. A cancel answers an empty string. A
+'number that is not whole or falls outside the list is refused with one
+'message and answers an empty string too.
+'@param diseaseNames BetterArray. The names to choose from, based at 1.
+'@param prompt String. The question shown above the list.
+'@return String. The chosen name, or an empty string.
+Private Function PromptDiseaseName(ByVal diseaseNames As BetterArray, ByVal prompt As String) As String
+    Dim idx As Long
+    Dim promptText As String
+    Dim response As Variant
+    Dim numericResponse As Double
+    Dim selection As Long
+
+    If diseaseNames Is Nothing Then Exit Function
+    If diseaseNames.Length = 0 Then Exit Function
+
+    promptText = prompt & vbLf
+    For idx = diseaseNames.LowerBound To diseaseNames.UpperBound
+        promptText = promptText & CStr(idx - diseaseNames.LowerBound + 1) & ". " & _
+                     CStr(diseaseNames.Item(idx)) & vbLf
+    Next idx
+
+    response = Application.InputBox(promptText, COMPARE_TITLE, Type:=1)
+    'A cancel answers False.
+    If VarType(response) = vbBoolean Then Exit Function
+
+    numericResponse = CDbl(response)
+    If numericResponse <> Int(numericResponse) Then GoTo InvalidSelection
+    If numericResponse < 1 Or numericResponse > diseaseNames.Length Then GoTo InvalidSelection
+
+    selection = CLng(numericResponse)
+    PromptDiseaseName = Trim$(CStr(diseaseNames.Item(diseaseNames.LowerBound + selection - 1)))
+    Exit Function
+
+InvalidSelection:
+    MsgBox "Invalid selection.", vbExclamation + vbOKOnly, COMPARE_TITLE
+End Function
+
+'@sub-title A copy of a name list with one name taken out.
+Private Function NamesWithout(ByVal diseaseNames As BetterArray, ByVal excludedName As String) As BetterArray
+    Dim idx As Long
+    Dim candidate As String
+
+    Set NamesWithout = New BetterArray
+    NamesWithout.LowerBound = 1
+
+    For idx = diseaseNames.LowerBound To diseaseNames.UpperBound
+        candidate = CStr(diseaseNames.Item(idx))
+        If StrComp(candidate, excludedName, vbTextCompare) <> 0 Then
+            NamesWithout.Push candidate
+        End If
+    Next idx
+End Function
+
+'@sub-title The table of a disease worksheet.
+'@details A disease worksheet carries one ListObject; a sheet without one
+'is refused with ElementNotFound.
+Private Function ResolveDiseaseTable(ByVal diseaseSheet As Worksheet) As ListObject
+    If diseaseSheet.ListObjects.Count = 0 Then
+        Err.Raise ProjectError.ElementNotFound, "MasterSetupExports.CompareDiseaseSheets", _
+                  "The disease worksheet '" & diseaseSheet.Name & "' carries no table."
+    End If
+    Set ResolveDiseaseTable = diseaseSheet.ListObjects(1)
+End Function
 
 '@section Shared helpers
 '===============================================================================
