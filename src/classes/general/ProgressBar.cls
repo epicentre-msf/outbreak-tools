@@ -23,15 +23,13 @@ Option Explicit
 'to reflect completion ratio and optionally writes status text to
 'a companion cell.
 '
-'THE REPAINT SEAM
+'THE BAR PAINTS IN THE INSTANCE IT LIVES IN
 '-------------------------------------------------------------------------------
-'Update and StepBy take an optional forceRepaint flag, default False.
-'When True the render wraps itself in ScreenUpdating = True, DoEvents,
-'ScreenUpdating = False, so a tick shows on screen while a driver holds
-'the application busy. The flag serves long busy loops and belongs in
-'drivers; ScreenUpdating is False when the call returns, and the
-'driver's captured ApplicationState stays the single owner of the real
-'restore.
+'Every render writes the cells and calls DoEvents once, so the paint lands
+'before the caller goes on. The bar leaves the screen switch alone. It is
+'driven from an instance whose screen is on, where a cell write paints by
+'itself, and a bar that switched the screen on and off would be the
+'flicker the in-place build keeps out.
 '
 'THE BAR CELLS CARRY COLOUR ONLY
 '-------------------------------------------------------------------------------
@@ -48,7 +46,7 @@ Option Explicit
 'write, since the driver's text can be anything, a setup file named for a
 'date included.
 '@depends ProjectError
-'@version 1.2 (2026-08-27)
+'@version 1.3 (2026-08-27)
 
 
 Private Type TProgressBar
@@ -147,34 +145,30 @@ End Sub
 '@sub-title Update progress to a specific value
 '@param currentValue Long. Absolute progress value.
 '@param statusMessage String. Message pushed to the status cell. Defaults to vbNullString.
-'@param forceRepaint Boolean. When True, the render repaints the screen inside itself and leaves ScreenUpdating False. Defaults to False.
 '@export
 Public Sub Update(ByVal currentValue As Long, _
-                  Optional ByVal statusMessage As String = vbNullString, _
-                  Optional ByVal forceRepaint As Boolean = False)
+                  Optional ByVal statusMessage As String = vbNullString)
     EnsureInitialised
 
     this.value = ClampValue(currentValue)
     RenderProgress
     RenderStatus statusMessage
-    If forceRepaint Then RepaintNow
+    Settle
 End Sub
 
 '@label:step-by
 '@sub-title Increment progress by the provided step
 '@param stepValue Long. Increment. Defaults to 1.
 '@param statusMessage String. Message pushed to the status cell. Defaults to vbNullString.
-'@param forceRepaint Boolean. When True, the render repaints the screen inside itself and leaves ScreenUpdating False. Defaults to False.
 '@export
 Public Sub StepBy(Optional ByVal stepValue As Long = 1, _
-                  Optional ByVal statusMessage As String = vbNullString, _
-                  Optional ByVal forceRepaint As Boolean = False)
+                  Optional ByVal statusMessage As String = vbNullString)
     EnsureInitialised
 
     Dim targetValue As Long
     targetValue = this.value + stepValue
 
-    Update targetValue, statusMessage, forceRepaint
+    Update targetValue, statusMessage
 End Sub
 
 '@label:complete
@@ -196,6 +190,7 @@ Public Sub Reset(Optional ByVal statusMessage As String = vbNullString)
     this.value = 0
     RenderProgress
     RenderStatus statusMessage
+    Settle
 End Sub
 
 '@section Properties
@@ -342,16 +337,13 @@ Private Sub RenderProgress()
     PaintBar ratio
 End Sub
 
-'@label:repaint-now
-'@sub-title Show the latest render on screen during a busy loop
+'@label:settle
+'@sub-title Let the latest render paint before the caller goes on
 '@details
-'One screen refresh, self-contained: ScreenUpdating on, one DoEvents
-'so the paint lands, ScreenUpdating off. Events stay wherever the
-'driver put them, so sheet handlers stay quiet under a busy state.
-Private Sub RepaintNow()
-    Application.ScreenUpdating = True
+'One DoEvents. The screen of the instance the bar lives in is on, so the
+'cell writes paint on their own once the message loop gets a turn.
+Private Sub Settle()
     DoEvents
-    Application.ScreenUpdating = False
 End Sub
 
 '@label:render-status

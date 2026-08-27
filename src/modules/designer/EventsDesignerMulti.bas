@@ -838,8 +838,7 @@ Public Sub GenerateMultipleRows(ByVal lo As ListObject, _
             processed = processed + 1
             If Not bar Is Nothing Then
                 EventsDesignerAdvanced.BringToFront designerBook
-                bar.Update processed - 1, RowStatus(bar, processed, setupPath), _
-                           forceRepaint:=True
+                bar.Update processed - 1, RowStatus(bar, processed, setupPath)
             End If
 
             EventsDesignerAdvanced.OpenLogSection _
@@ -866,8 +865,7 @@ Public Sub GenerateMultipleRows(ByVal lo As ListObject, _
 
             If Not bar Is Nothing Then
                 EventsDesignerAdvanced.BringToFront designerBook
-                bar.Update processed, RowStatus(bar, processed, setupPath), _
-                           forceRepaint:=True
+                bar.Update processed, RowStatus(bar, processed, setupPath)
             End If
         ElseIf RowHasContent(lo, rowIdx) Then
             WriteRowCell lo, rowIdx, COL_RESULT, _

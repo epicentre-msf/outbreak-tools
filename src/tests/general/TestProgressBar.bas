@@ -35,9 +35,9 @@ Option Explicit
 '     5. Rendering            -- Verifying that Update paints cells with the
 '                                correct completed/pending colours and leaves
 '                                every cell of the bar range empty.
-'     6. Repaint seam         -- Verifying that the forceRepaint flag on
-'                                Update and StepBy leaves ScreenUpdating
-'                                False after the render.
+'     6. Screen switch        -- Verifying that Update and StepBy leave
+'                                Application.ScreenUpdating as they found
+'                                it, on or off.
 '
 ' @depends ProgressBar, CustomTest, TestHelpersLite
 ' =============================================================================
@@ -610,44 +610,42 @@ TestFail:
     CustomTestLogFailure Assert, "TestRenderLeavesBarCellsEmpty", Err.Number, Err.Description
 End Sub
 
-'@section Tests - Repaint seam
+'@section Tests - Screen switch
 '===============================================================================
 
-' @sub-title TestForceRepaintLeavesScreenUpdatingFalse
+' @sub-title TestRenderLeavesScreenUpdatingAlone
 ' @details
-'   Verifies the forceRepaint seam on Update and StepBy. The seam serves a
-'   driver that holds the application busy for a whole generation: each
-'   forced tick repaints the screen inside itself and hands ScreenUpdating
-'   back turned off, so the driver's captured ApplicationState stays the
-'   single owner of the real restore. The test drives Update with the flag
-'   from a ScreenUpdating False start and StepBy with the flag from a
-'   ScreenUpdating True start, and asserts that ScreenUpdating is False
-'   after both calls and that the values still land.
+'   The bar is driven from an instance whose screen is on, where a cell
+'   write paints by itself. It writes its cells and calls DoEvents once,
+'   and it never touches Application.ScreenUpdating. The test drives Update
+'   from a ScreenUpdating True start and StepBy from a ScreenUpdating False
+'   start, and asserts that the switch reads the same after each call and
+'   that the values still land.
 '@TestMethod("ProgressBar")
-Public Sub TestForceRepaintLeavesScreenUpdatingFalse()
-    CustomTestSetTitles Assert, "ProgressBar", "TestForceRepaintLeavesScreenUpdatingFalse"
+Public Sub TestRenderLeavesScreenUpdatingAlone()
+    CustomTestSetTitles Assert, "ProgressBar", "TestRenderLeavesScreenUpdatingAlone"
     On Error GoTo TestFail
 
     Dim sut As ProgressBar
     Set sut = ProgressBar.Create(FixtureSheet.Range("A1:E1"), 10)
 
-    Application.ScreenUpdating = False
-    sut.Update 3, "step three", forceRepaint:=True
-
-    Assert.IsTrue (Application.ScreenUpdating = False), _
-                   "Update with forceRepaint should leave ScreenUpdating False"
-    Assert.AreEqual CLng(3), sut.Value, _
-                     "Update with forceRepaint should still set the value"
-
     Application.ScreenUpdating = True
-    sut.StepBy 1, "step four", forceRepaint:=True
+    sut.Update 3, "step three"
+
+    Assert.IsTrue (Application.ScreenUpdating = True), _
+                   "Update should leave ScreenUpdating True when it was True"
+    Assert.AreEqual CLng(3), sut.Value, _
+                     "Update should still set the value"
+
+    Application.ScreenUpdating = False
+    sut.StepBy 1, "step four"
 
     Assert.IsTrue (Application.ScreenUpdating = False), _
-                   "StepBy with forceRepaint should leave ScreenUpdating False"
+                   "StepBy should leave ScreenUpdating False when it was False"
     Assert.AreEqual CLng(4), sut.Value, _
-                     "StepBy with forceRepaint should still increment the value"
+                     "StepBy should still increment the value"
     Exit Sub
 
 TestFail:
-    CustomTestLogFailure Assert, "TestForceRepaintLeavesScreenUpdatingFalse", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestRenderLeavesScreenUpdatingAlone", Err.Number, Err.Description
 End Sub

@@ -489,7 +489,7 @@ Public Sub clickGenerate()
     'the build knows it.
     Set bar = ResolveMainProgressBar(entry)
     If Not bar Is Nothing Then
-        bar.Update 1, entry.TranslateMessage("MSG_ReadSetup"), forceRepaint:=True
+        bar.Update 1, entry.TranslateMessage("MSG_ReadSetup")
     End If
 
     'The whole build: specifications, linelist, sheets, dropdowns, analyses,
@@ -792,7 +792,7 @@ Private Sub TickProgress(ByVal bar As ProgressBar, _
     BringToFront designerBook
 
     If Not bar Is Nothing Then
-        bar.StepBy 1, statusText, forceRepaint:=True
+        bar.StepBy 1, statusText
     ElseIf Not statusTarget Is Nothing Then
         Application.ScreenUpdating = True
         DoEvents
