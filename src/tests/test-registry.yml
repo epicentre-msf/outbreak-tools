@@ -767,6 +767,34 @@ suites:
         covers: [LLSpatial]
       - module: TestGeoFormCache
         covers: [GeoFormCache]
+      # TestGeoModule drives the module behind the F_Geo geo picker. The module
+      # itself is registered under `linelist`, because a module row resolves
+      # against src/modules/<the suite folder>/ and the file is
+      # src/modules/linelist/GeoModule.bas; the test module sits here because a
+      # test row resolves against src/tests/<the suite folder>/ and the file is
+      # src/tests/geo/TestGeoModule.bas. So this row opens nothing new: the
+      # whole compile closure came in with the GeoModule and F_Geo rows.
+      #
+      # It raises the three test seams of GeoModule for the whole module and
+      # puts them back in ModuleCleanup. Each one holds back a window that
+      # waits for a hand -- the picker, the failure box, the name prompt -- and
+      # a headless run has nobody to close one.
+      #
+      # The failures are read back off the __log worksheet. GeoSuppressBox
+      # keeps the box shut by emptying the fallback EventLinelist.ShowMessage
+      # needs to raise one, and the log line is written either way.
+      #
+      # It arranges its own geobase in the driver workbook through
+      # PrepareGeoFixture in GeoTestFixture under `helpers`, on a worksheet
+      # named Geo, which is what EventLinelist builds its manager from. Half
+      # the tests want that manager and half want it missing, so both states
+      # are arranged by hand and the tests hold in any order. The worksheet,
+      # the __dropdown_lists worksheet LoadGeo needs and the four workbook
+      # names the picker reads its lists through are all dropped in
+      # ModuleCleanup. Its other helper calls are unqualified, so they resolve
+      # to TestHelpersLite.
+      - module: TestGeoModule
+        covers: [GeoModule]
 
   # --- designer (DesignerPreparation, DesignerEntry, DesignerTranslation) ---
   # LinelistSpecs.Prepare calls InitTransfer.TransferToLinelist and its seven
