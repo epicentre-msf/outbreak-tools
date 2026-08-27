@@ -1259,6 +1259,32 @@ Private Function LastKeptRowOf(ByRef bodyValues As Variant, ByVal tabRowCount As
     Next rowIndex
 End Function
 
+'@label:ensure-one-body-row
+'@sub-title Put a row back under the header only when the table has none
+'@details
+'A ListObject that Excel has emptied does not always answer 0 rows the same
+'way. When the last data row goes, or a Resize lands on a header plus one
+'blank row, Excel keeps that blank row as the INSERT ROW: Range still spans
+'the header and the row under it, DataBodyRange answers that row, and
+'ListRows.Count answers 0, because the insert row is not a list row. Reading
+'ListRows.Count alone takes that state for an empty table and adds a SECOND
+'row, and a row added through ListRows.Add takes the format of the row above
+'it. With only the header above, the new row comes out wearing the header
+'format.
+'
+'So the table is asked how far it reaches rather than how many rows it counts.
+'One that already covers a row under its header is left alone, whether Excel
+'calls that row a list row or an insert row.
+'@param lo ListObject. The table to check.
+Private Sub EnsureOneBodyRow(ByVal lo As ListObject)
+    If lo Is Nothing Then Exit Sub
+    If Not lo.DataBodyRange Is Nothing Then Exit Sub
+    If Not lo.InsertRowRange Is Nothing Then Exit Sub
+    If lo.ListRows.Count >= 1 Then Exit Sub
+
+    lo.ListRows.Add
+End Sub
+
 '@label:drop-trailing-rows
 '@sub-title Shrink the table over its trailing empty rows in one operation
 '@details
@@ -1317,7 +1343,7 @@ Private Function DropTrailingRows(ByVal lo As ListObject, ByVal firstBodyRow As 
     'first one was empty the resize lands on a block that is blank throughout,
     'and Excel can answer that with a header-only table. DeleteRowsAt puts a
     'row back the same way.
-    If lo.ListRows.Count < 1 Then lo.ListRows.Add
+    EnsureOneBodyRow lo
 
     DropTrailingRows = True
 End Function
@@ -1510,7 +1536,7 @@ Public Sub DeleteRowsAt(ByVal targetCell As Range, _
 
     'A ListObject cannot live with no data row, so put a blank one back.
     If pendingRowCount <= 0 Then
-        lo.ListRows.Add
+        EnsureOneBodyRow lo
     End If
 
     ResetCaches
