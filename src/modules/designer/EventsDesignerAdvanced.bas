@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, DesignerEntry, EventsDesignerCore, RibbonDev, LLGeo, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, LinelistSpecs, Linelist, LLDataEntry, LLSheets, AnalysisOutput, Checking, GenerationLog, InitTransfer, SetupTranslationsTable, ProgressBar
+'@depends DesignerPreparation, DesignerEntry, EventsDesignerCore, RibbonDev, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, LinelistSpecs, Linelist, LLDataEntry, LLSheets, AnalysisOutput, Checking, GenerationLog, InitTransfer, SetupTranslationsTable, ProgressBar
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -15,7 +15,6 @@ Option Explicit
 'EventsDesignerCore.EntryManager(). It carries the held translator with it,
 'so a press reads no translation table.
 
-Private Const SHEET_GEO As String = "Geo"
 Private Const SHEET_MAIN As String = "Main"
 Private Const SHEET_DROPDOWNS As String = "__dropdowns"
 Private Const PROMPT_TITLE As String = "Designer"
@@ -220,39 +219,6 @@ End Sub
 
 '@section Manage group callbacks
 '===============================================================================
-
-'@Description("Clear all geobase data from the Geo worksheet.")
-'@EntryPoint
-Public Sub clickDelGeo(ByRef ribbonControl As IRibbonControl)
-    Dim geoSheet As Worksheet
-    Dim geo As LLGeo
-    Dim appScope As ApplicationState
-
-    On Error GoTo Cleanup
-    Set appScope = ApplicationState.Create(Application)
-    appScope.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
-
-    Set geoSheet = ThisWorkbook.Worksheets(SHEET_GEO)
-    Set geo = LLGeo.Create(geoSheet)
-    geo.Clear
-
-Cleanup:
-    Dim errNumber As Long
-    Dim errDesc As String
-    errNumber = Err.Number
-    errDesc = Err.Description
-
-    On Error Resume Next
-    If Not appScope Is Nothing Then appScope.Restore
-    Application.Cursor = xlDefault
-    On Error GoTo 0
-
-    If errNumber <> 0 Then
-        Debug.Print "clickDelGeo: "; errNumber; errDesc
-        MsgBox "Unable to clear geobase: " & errDesc, _
-               vbExclamation + vbOKOnly, PROMPT_TITLE
-    End If
-End Sub
 
 '@Description("Clear all entry input ranges on the Main sheet.")
 '@EntryPoint

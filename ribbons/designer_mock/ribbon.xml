@@ -3,7 +3,6 @@
         <tabs>
             <tab id="customTab" label="OutbreakTools">
                 <group id="customGroupManage" getLabel="LangLabel">
-                    <button id="btnDelGeo" imageMso="ClearAll" getLabel="LangLabel" size="large" onAction="clickDelGeo"/>
                     <button id="btnClear" getLabel="LangLabel" imageMso="WordArtClear" size="large" onAction="clickClearEnt"/>
                     <dropDown id="langDrop" imageMso="TranslationPane" onAction="clickLangChange" getLabel="LangLabel">
                         <item id="FRA" label="Français"/>

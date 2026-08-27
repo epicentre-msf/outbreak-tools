@@ -484,11 +484,12 @@ End Sub
 '@label:hide-worksheets
 '@sub-title Hide internal worksheets and register them with the dev manager
 '@details
-'Sets __pass, __formula and __dropdowns to xlSheetVeryHidden. __formatter
-'and __check are deliberately left as they are: __formatter carries the
-'formats a user picks and __check carries the generation report, so a
-'prepared designer keeps both on screen. Sets LinelistTranslation and
-'DesignerTranslation to
+'Sets __pass, __formula, __dropdowns and Geo to xlSheetVeryHidden. The Geo
+'sheet of the designer is an empty template: the geobase is imported on the
+'linelist, never here, so nobody edits it by hand. __formatter and __check
+'are deliberately left as they are: __formatter carries the formats a user
+'picks and __check carries the generation report, so a prepared designer
+'keeps both on screen. Sets LinelistTranslation and DesignerTranslation to
 'xlSheetHidden (visible in the VBA editor for developers). When a
 'development manager is provided, all sheets are also registered via
 'AddHiddenSheet for deployment. Silently skips any worksheet that does
@@ -498,6 +499,7 @@ Private Sub HideWorksheets(ByRef devManager As Development)
     SetSheetVisibility SHEET_PASS, xlSheetVeryHidden
     SetSheetVisibility SHEET_FORMULA, xlSheetVeryHidden
     SetSheetVisibility SHEET_DROPDOWNS, xlSheetVeryHidden
+    SetSheetVisibility SHEET_GEO, xlSheetVeryHidden
     SetSheetVisibility SHEET_LL_TRANSLATION, xlSheetHidden
     SetSheetVisibility SHEET_DES_TRANSLATION, xlSheetHidden
 
@@ -505,8 +507,10 @@ Private Sub HideWorksheets(ByRef devManager As Development)
         RegisterHiddenSheet devManager, SHEET_PASS
         RegisterHiddenSheet devManager, SHEET_FORMULA
         RegisterHiddenSheet devManager, SHEET_DROPDOWNS
+        RegisterHiddenSheet devManager, SHEET_GEO
         RegisterHiddenSheet devManager, SHEET_LL_TRANSLATION
         RegisterHiddenSheet devManager, SHEET_DES_TRANSLATION
+        RegisterHiddenSheet devManager, SHEET_DEV
     End If
 End Sub
 
