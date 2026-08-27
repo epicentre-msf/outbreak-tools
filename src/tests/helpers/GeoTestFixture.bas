@@ -72,11 +72,12 @@ Private Const SEP As String = " | "
 Public Function PrepareGeoFixture(ByVal sheetName As String, _
                                   Optional ByVal targetBook As Workbook, _
                                   Optional ByVal withData As Boolean = False, _
-                                  Optional ByVal visibility As Long = xlSheetHidden) As Worksheet
+                                  Optional ByVal visibility As Long = xlSheetHidden, _
+                                  Optional ByVal withCodes As Boolean = False) As Worksheet
     Dim sh As Worksheet
 
     Set sh = EnsureWorksheet(sheetName, targetBook, clearSheet:=True, visibility:=visibility)
-    BuildGeoFixtureTables sh, withData
+    BuildGeoFixtureTables sh, withData, withCodes
 
     Set PrepareGeoFixture = sh
 End Function
@@ -86,9 +87,16 @@ End Function
 'Creates T_ADM1 through T_ADM4, T_HF, T_NAMES, T_HISTOGEO, T_HISTOHF and
 'T_METADATA side by side with one blank column between them, the paste anchor
 'cell, and the four hidden names the LLGeo factory asks for.
+'
+'With withCodes True, each admin table also carries its pcode and pop columns
+'and T_HF its concat column, appended after the columns above so no offset
+'moves. ExportToWkb adds workbook names over those columns, so the tests that
+'drive it need them; every other test keeps the narrow shape.
 '@param sh Worksheet. The worksheet to build on.
 '@param withData Boolean. True to fill the tables with geographic data.
-Public Sub BuildGeoFixtureTables(ByVal sh As Worksheet, ByVal withData As Boolean)
+'@param withCodes Boolean. True to append the pcode, pop and hf concat columns.
+Public Sub BuildGeoFixtureTables(ByVal sh As Worksheet, ByVal withData As Boolean, _
+                                 Optional ByVal withCodes As Boolean = False)
     Dim rng As Range
     Dim counter As Long
     Dim tblNames As Variant
@@ -98,7 +106,11 @@ Public Sub BuildGeoFixtureTables(ByVal sh As Worksheet, ByVal withData As Boolea
 
     tblNames = Array("T_ADM1", "T_ADM2", "T_ADM3", "T_ADM4", "T_HF", _
                      "T_NAMES", "T_HISTOGEO", "T_HISTOHF", "T_METADATA")
-    tblCols = Array(2, 3, 4, 5, 6, 2, 1, 1, 2)
+    If withCodes Then
+        tblCols = Array(4, 5, 6, 7, 7, 2, 1, 1, 2)
+    Else
+        tblCols = Array(2, 3, 4, 5, 6, 2, 1, 1, 2)
+    End If
 
     startCol = 1
     For counter = LBound(tblNames) To UBound(tblNames)
@@ -106,6 +118,7 @@ Public Sub BuildGeoFixtureTables(ByVal sh As Worksheet, ByVal withData As Boolea
                            sh.Cells(2, startCol + CLng(tblCols(counter)) - 1))
 
         WriteTableHeaders sh, CStr(tblNames(counter)), startCol
+        If withCodes Then WriteCodeHeaders sh, CStr(tblNames(counter)), startCol
 
         sh.ListObjects.Add(xlSrcRange, rng, , xlYes).Name = CStr(tblNames(counter))
         startCol = startCol + CLng(tblCols(counter)) + 1
@@ -253,6 +266,39 @@ Private Sub WriteTableHeaders(ByVal sh As Worksheet, ByVal tableName As String, 
     Case "T_METADATA"
         sh.Cells(1, startCol).Value = "variable"
         sh.Cells(1, startCol + 1).Value = "value"
+
+    End Select
+End Sub
+
+'@sub-title Append the pcode, pop and hf concat headers of one table.
+'@details
+'Each goes after the last column WriteTableHeaders wrote for that table, so the
+'offsets the other tests rely on stay where they are.
+'@param sh Worksheet. The fixture worksheet.
+'@param tableName String. The table whose extra headers are wanted.
+'@param startCol Long. The column the table starts in.
+Private Sub WriteCodeHeaders(ByVal sh As Worksheet, ByVal tableName As String, _
+                             ByVal startCol As Long)
+    Select Case tableName
+
+    Case "T_ADM1"
+        sh.Cells(1, startCol + 2).Value = "adm1_pcode"
+        sh.Cells(1, startCol + 3).Value = "adm1_pop"
+
+    Case "T_ADM2"
+        sh.Cells(1, startCol + 3).Value = "adm2_pcode"
+        sh.Cells(1, startCol + 4).Value = "adm2_pop"
+
+    Case "T_ADM3"
+        sh.Cells(1, startCol + 4).Value = "adm3_pcode"
+        sh.Cells(1, startCol + 5).Value = "adm3_pop"
+
+    Case "T_ADM4"
+        sh.Cells(1, startCol + 5).Value = "adm4_pcode"
+        sh.Cells(1, startCol + 6).Value = "adm4_pop"
+
+    Case "T_HF"
+        sh.Cells(1, startCol + 6).Value = "hf_concat"
 
     End Select
 End Sub

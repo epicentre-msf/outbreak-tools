@@ -186,6 +186,15 @@ Private Function BuildGeoFixture(Optional ByVal withData As Boolean = False) As 
     Set BuildGeoFixture = sh
 End Function
 
+'@sub-title Build a filled fixture wide enough for ExportToWkb.
+'@details
+'ExportToWkb adds workbook names over the pcode, pop and hf concat columns,
+'which the narrow fixture does not carry. This one does.
+Private Function BuildExportableGeoFixture() As Worksheet
+    Set BuildExportableGeoFixture = GeoTestFixture.PrepareGeoFixture( _
+        GEO_FIXTURE, ThisWorkbook, withData:=True, withCodes:=True)
+End Function
+
 '@sub-title Build a workbook of its own carrying a geobase worksheet.
 '@details
 'Update walks every worksheet of the workbook that owns the geo sheet, so
@@ -514,6 +523,89 @@ Public Sub TestHasNoDataSurvivesAnExport()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestHasNoDataSurvivesAnExport", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify an export to a workbook leaves a raw source raw.
+'@details
+'Arranges a raw geobase fixture with T_NAMES data. Acts by exporting it to a
+'new workbook, which translates the headers to copy them. Asserts the source
+'is not flagged translated afterwards and its T_ADM1 header is the raw name
+'again. The success path used to leave the source translated, so the next
+'export in another language found the flag set and skipped the level names.
+'@TestMethod("LLGeo")
+Public Sub TestExportToWkbLeavesARawSourceRaw()
+    CustomTestSetTitles Assert, "LLGeo", "TestExportToWkbLeavesARawSourceRaw"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim geo As LLGeo
+    Dim outWkb As Workbook
+    Dim geoStore As HiddenNames
+
+    Set sh = BuildExportableGeoFixture()
+    Set geo = LLGeo.Create(sh)
+
+    Set outWkb = NewWorkbook()
+    geo.ExportToWkb outWkb
+    DeleteWorkbook outWkb
+
+    Set geoStore = HiddenNames.Create(sh)
+    Assert.IsFalse geoStore.ValueAsBoolean("RNG_GeoTranslated"), _
+                   "A source that started raw should be raw again after the export"
+    Assert.AreEqual "adm1_name", CStr(sh.ListObjects("T_ADM1").HeaderRowRange.Cells(1, 1).Value), _
+                    "The T_ADM1 header should be the raw name again after the export"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestExportToWkbLeavesARawSourceRaw", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify a second export in another language carries the new labels.
+'@details
+'Arranges a raw geobase fixture with T_NAMES data in an EN column and an FR
+'column. Acts by exporting once with EN, switching RNG_GeoLangCode to FR and
+'exporting again. Asserts the second target carries the FR label in
+'RNG_ADM1NAME, which the stale translated flag of the first export used to
+'block.
+'@TestMethod("LLGeo")
+Public Sub TestSecondExportInAnotherLanguageCarriesTheNewLabels()
+    CustomTestSetTitles Assert, "LLGeo", "TestSecondExportInAnotherLanguageCarriesTheNewLabels"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim geo As LLGeo
+    Dim geoStore As HiddenNames
+    Dim loNames As ListObject
+    Dim firstWkb As Workbook
+    Dim secondWkb As Workbook
+    Dim secondLabel As String
+
+    Set sh = BuildExportableGeoFixture()
+    Set geoStore = HiddenNames.Create(sh)
+
+    'An FR column beside the EN one of the fixture
+    Set loNames = sh.ListObjects("T_NAMES")
+    loNames.ListColumns.Add.Name = "FR"
+    WriteTableCell sh, loNames, 1, 2, "Region"
+
+    Set geo = LLGeo.Create(sh)
+    Set firstWkb = NewWorkbook()
+    geo.ExportToWkb firstWkb
+    DeleteWorkbook firstWkb
+
+    geoStore.SetValue "RNG_GeoLangCode", "FR"
+    Set geo = LLGeo.Create(sh)
+    Set secondWkb = NewWorkbook()
+    geo.ExportToWkb secondWkb
+    secondLabel = LevelLabel(secondWkb, "RNG_ADM1NAME")
+    DeleteWorkbook secondWkb
+
+    Assert.AreEqual "Region", secondLabel, _
+                    "The second export should carry the label of the language set before it"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSecondExportInAnotherLanguageCarriesTheNewLabels", Err.Number, Err.Description
 End Sub
 
 '@section GeoNames cache tests
@@ -1227,6 +1319,57 @@ Public Sub TestImportLandsTheRowsAndFillsTheConcatColumn()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestImportLandsTheRowsAndFillsTheConcatColumn", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify Import keeps the language of the sheet over the source's.
+'@details
+'Arranges a geobase fixture with a language code of EN and a source workbook
+'whose Metadata sheet carries the hidden names of a geobase exported in FR.
+'Acts by importing it. Asserts RNG_GeoLangCode still reads EN on the sheet.
+'The metadata names used to overwrite it, right before the translate resolved
+'the level labels with the source's language instead of the linelist's.
+'@TestMethod("LLGeo")
+Public Sub TestImportKeepsTheSheetLanguageOverTheSourceMetadata()
+    CustomTestSetTitles Assert, "LLGeo", "TestImportKeepsTheSheetLanguageOverTheSourceMetadata"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim geo As LLGeo
+    Dim geoStore As HiddenNames
+    Dim sourceWkb As Workbook
+    Dim sourceSh As Worksheet
+    Dim metaStore As HiddenNames
+
+    Set sh = BuildGeoFixture()
+    Set geoStore = HiddenNames.Create(sh)
+    geoStore.SetValue "RNG_GeoLangCode", "EN"
+    geoStore.SetValue "RNG_MetaLang", "English"
+
+    Set sourceWkb = NewWorkbook()
+    Set sourceSh = sourceWkb.Worksheets(1)
+    sourceSh.Name = "ADM1"
+    WriteColumn sourceSh.Cells(1, 1), "adm1_name", "P1"
+
+    Set sourceSh = sourceWkb.Worksheets.Add
+    sourceSh.Name = "Metadata"
+    Set metaStore = HiddenNames.Create(sourceSh)
+    metaStore.EnsureName "RNG_GeoLangCode", "FR", HiddenNameTypeString
+    metaStore.EnsureName "RNG_MetaLang", "Francais", HiddenNameTypeString
+    metaStore.EnsureName "RNG_GeoName", "geo-fr", HiddenNameTypeString
+
+    Set geo = LLGeo.Create(sh)
+    geo.Import sourceWkb
+    DeleteWorkbook sourceWkb
+
+    Set geoStore = HiddenNames.Create(sh)
+    Assert.AreEqual "EN", geoStore.ValueAsString("RNG_GeoLangCode"), _
+                    "The language code of the sheet should survive the source's metadata"
+    Assert.AreEqual "English", geoStore.ValueAsString("RNG_MetaLang"), _
+                    "The meta language of the sheet should survive the source's metadata"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestImportKeepsTheSheetLanguageOverTheSourceMetadata", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify Import reads a source whose first rows are blank.

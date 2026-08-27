@@ -1375,8 +1375,10 @@ End Sub
 'main admin/HF data is left intact.
 '
 'A source workbook carrying a Metadata sheet also carries the hidden names
-'ExportToFile wrote there, including the language code, and those are read
-'back before the flags are set. The geobase is marked as carrying data only
+'ExportToFile wrote there, and those are read back before the flags are set,
+'except the two language names: the sheet keeps the language its workbook
+'set on it, so the level labels resolve in that language whatever language
+'the geobase file was exported in. The geobase is marked as carrying data only
 'when the ADM1 table came across, so a workbook holding none of the expected
 'sheets leaves the flag alone.
 '@param fromWkb Workbook. Source workbook containing geo data sheets.
@@ -1389,6 +1391,8 @@ Public Sub Import(ByVal fromWkb As Workbook, _
     Dim metash As Worksheet
     Dim admNames As BetterArray
     Dim importedAdmin1 As Boolean
+    Dim langCode As String
+    Dim metaLang As String
 
     Set admNames = New BetterArray
     admNames.Push HISTOGEO, HISTOHF, METADATA
@@ -1412,9 +1416,17 @@ Public Sub Import(ByVal fromWkb As Workbook, _
         End If
     Next
 
-    'The hidden names ExportToFile wrote travel on the Metadata sheet
+    'The hidden names ExportToFile wrote travel on the Metadata sheet. The
+    'two language names are not among what is taken: the language of the
+    'sheet being filled is the one its own workbook asked for, and a geobase
+    'file exported in another language used to overwrite it here, right
+    'before the translate below resolved the level labels with it.
     If Not metash Is Nothing Then
+        langCode = GeoHiddenStore().ValueAsString(HN_GEO_LANG_CODE)
+        metaLang = GeoHiddenStore().ValueAsString(HN_META_LANG)
         GeoHiddenStore().ImportNames metash
+        GeoHiddenStore().SetValue HN_GEO_LANG_CODE, langCode
+        GeoHiddenStore().SetValue HN_META_LANG, metaLang
         ResetFlagsCache
         'The headers are raw at this point, so the flag says so whatever the
         'source workbook carried.
@@ -1981,6 +1993,12 @@ Public Sub ExportToWkb(ByVal outputWkb As Workbook, _
         .Add Name:="histo_geo", RefersToR1C1:="=T_HISTOGEO[HistoGeo]"
         .Add Name:="histo_hf", RefersToR1C1:="=T_HISTOHF[HistoFacility]"
     End With
+
+    'The source goes back to the state it was in. A source that started raw
+    'used to be left translated on the success path, and the next export in
+    'another language then found the headers flagged translated: Translate
+    'exited before UpdateLevelNames and the old labels went out again.
+    If Not wasTranslated Then Translate rawNames:=True
 
     Exit Sub
 
