@@ -107,11 +107,13 @@ Public Sub TestPrepareHidesInternalSheets()
     Dim formatterSheet As Worksheet
     Dim formulaSheet As Worksheet
     Dim checkSheet As Worksheet
+    Dim geoSheet As Worksheet
 
     Set passSheet = EnsureWorksheet("__pass", FixtureWorkbook)
     Set formatterSheet = EnsureWorksheet("__formatter", FixtureWorkbook)
     Set formulaSheet = EnsureWorksheet("__formula", FixtureWorkbook)
     Set checkSheet = EnsureWorksheet("__check", FixtureWorkbook)
+    Set geoSheet = EnsureWorksheet("Geo", FixtureWorkbook)
 
     'Act
     Dim subject As DesignerPreparation
@@ -125,6 +127,8 @@ Public Sub TestPrepareHidesInternalSheets()
     'preparation" set, and it is the behaviour this test now holds.
     Assert.AreEqual CLng(xlSheetVeryHidden), CLng(passSheet.Visible), "__pass should be VeryHidden."
     Assert.AreEqual CLng(xlSheetVeryHidden), CLng(formulaSheet.Visible), "__formula should be VeryHidden."
+    Assert.AreEqual CLng(xlSheetVeryHidden), CLng(geoSheet.Visible), _
+                    "Geo should be VeryHidden: the geobase is imported on the linelist, never here."
     Assert.AreEqual CLng(xlSheetVisible), CLng(formatterSheet.Visible), "__formatter should stay visible."
     Assert.AreEqual CLng(xlSheetVisible), CLng(checkSheet.Visible), "__check should stay visible."
     Exit Sub
