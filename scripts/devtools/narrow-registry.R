@@ -18,9 +18,14 @@
 # -----------------------------------------------------------------------------
 # Every `- module:` row under a `tests:` key, together with its `covers:`
 # continuation line, for every folder except the target. Nothing else is
-# touched: each `classes:`, `modules:` and `fixtures:` row stays exactly where
-# it was, because the compile closure has to stay whole or the project does not
-# build and the run answers the opaque -50.
+# touched: each `classes:`, `modules:`, `fixtures:` and `forms:` row stays
+# exactly where it was, because the compile closure has to stay whole or the
+# project does not build and the run answers the opaque -50.
+#
+# Every key a suite can carry is named in the key alternation below, `forms:`
+# included. The alternation is what tells the loop which key the rows under it
+# belong to: a key it misses leaves the reader on the key before it, so a
+# `forms:` block written after `tests:` would be read as more test rows.
 #
 # The whole `helpers` block is always kept. Every CustomTest module calls
 # TestHelpersLite, and the fixture modules beside it build the sheets the
@@ -60,7 +65,7 @@ for (i in seq_along(lines)) {
     next
   }
 
-  m <- regmatches(line, regexec("^    (classes|modules|tests|fixtures):\\s*$", line))[[1]]
+  m <- regmatches(line, regexec("^    (classes|modules|tests|fixtures|forms):\\s*$", line))[[1]]
   if (length(m)) {
     key <- m[2]
     next

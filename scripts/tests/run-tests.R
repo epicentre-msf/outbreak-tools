@@ -32,7 +32,8 @@
 # What it does (all portable logic lives here; the OS-specific trigger is thin):
 #   1. copy <home>/unit_tests_dev.xlsb -> the stable run dir (NEVER touch original)
 #      and assemble the registered probe sources + manifest + harness from src/.
-#   2. (optional, --build) regenerate the registry intermediates (src/tests/.generated).
+#   2. (optional, --build) regenerate the registry intermediates (src/tests/.generated)
+#      and merge the FormLogic code into the exported forms (<home>/forms/merged).
 #   3. quit any running Excel (run VB macro fails against an already-open one),
 #      then shell out to the macOS trigger, which opens the copy fresh, runs the
 #      OBT* macros (refresh -> build -> import -> run), and quits Excel.
@@ -89,6 +90,9 @@ test_home <- if (length(home_opt) && nzchar(home_opt[1])) {
 if (!grepl("^(/|~|[A-Za-z]:)", test_home)) test_home <- file.path(repo_root, test_home)
 
 workbook_src <- file.path(test_home, "unit_tests_dev.xlsb")
+# Where merge-form-code.R writes the importable forms. The merger defaults to
+# this same path, so both scripts name one tree.
+merged_forms <- file.path(test_home, "forms", "merged")
 scripts_dir  <- file.path(repo_root, "scripts", "tests")
 # The trigger is the only OS-specific piece; both drive the same OBT* entry
 # points in the same order, so a difference in results is a difference in the
@@ -127,6 +131,20 @@ if (do_build) {
   message("run-tests.R: rebuilding registry intermediates ...")
   rc <- system2("Rscript", file.path(scripts_dir, "build-registry.R"))
   if (rc != 0L) stop("run-tests.R: build-registry.R failed (exit ", rc, ").")
+}
+
+# --- optional: merge the form code -------------------------------------------
+# merge-form-code.R rewrites the code part of every exported .frm with the
+# current src/modules/linelistform/FormLogic*.bas body and copies the .frx
+# beside it. The pair is what the VBE imports, so a form staged from a merged
+# tree runs the code the linelist ships. It reads .mock/forms/designer, a
+# tracked tree, so this adds no untracked dependency. --build is the flag that
+# already means "regenerate the intermediates", and the merged tree is one.
+if (do_build) {
+  message("run-tests.R: merging FormLogic code into the exported forms ...")
+  merger <- file.path(repo_root, "scripts", "headless", "merge-form-code.R")
+  rc <- system2("Rscript", c(shQuote(merger), "--out", shQuote(merged_forms)))
+  if (rc != 0L) stop("run-tests.R: merge-form-code.R failed (exit ", rc, ").")
 }
 
 # --- 1) per-run working copy -------------------------------------------------
@@ -168,7 +186,7 @@ keep <- c(basename(work_copy), basename(csv_path), basename(log_path))
 # left src/ is left behind here, which costs nothing: Development.ImportAll
 # imports what the code-tables manifest names, never what the folder happens to
 # hold, so a stale file is never imported and never runs.
-keep_dirs <- c("classes", "modules", "tests", "bootstrap", ".generated")
+keep_dirs <- c("classes", "modules", "tests", "forms", "bootstrap", ".generated")
 
 if (dir.exists(run_dir)) {
   stale <- list.files(run_dir, all.files = TRUE, full.names = TRUE, no.. = TRUE)
@@ -226,17 +244,23 @@ tag_srcs <- list(
   "tests modules"   = c(file.path(repo_root, "src", "tests"),
                         file.path(staging, "tests")),
   "tests classes"   = c(file.path(repo_root, "src", "tests"),
-                        file.path(staging, "tests"))
+                        file.path(staging, "tests")),
+  # The forms come from the merged tree the step above writes, and that tree is
+  # FLAT: F_Geo.frm and F_Geo.frx sit in it side by side. The two loops below
+  # both walk <base>/<folder>, so the forms are staged by their own loop.
+  "general forms"   = c(merged_forms)
 )
 tag_runs <- list(
   "general classes" = file.path(run_dir, "classes"),
   "general modules" = file.path(run_dir, "modules"),
   "tests modules"   = file.path(run_dir, "tests"),
-  "tests classes"   = file.path(run_dir, "tests")
+  "tests classes"   = file.path(run_dir, "tests"),
+  "general forms"   = file.path(run_dir, "forms")
 )
 tbl <- read.delim(file.path(generated, "code-tables.tsv"), stringsAsFactors = FALSE)
 pairs <- unique(tbl[, c("folder", "tag")])
 for (i in seq_len(nrow(pairs))) {
+  if (identical(pairs$tag[i], "general forms")) next   # flat tree; staged below
   cands   <- tag_srcs[[pairs$tag[i]]]
   run_base <- tag_runs[[pairs$tag[i]]]
   if (is.null(cands)) next
@@ -277,8 +301,31 @@ copy_every_subfolder <- function(bases, run_base) {
     }
   }
 }
-for (tag in names(tag_srcs)) {
+for (tag in setdiff(names(tag_srcs), "general forms")) {
   copy_every_subfolder(tag_srcs[[tag]], tag_runs[[tag]])
+}
+
+# THE MERGED FORMS ARE STAGED PER SUITE FOLDER, FROM ONE FLAT TREE.
+# Development reads a form at forms/<folder>/<Name>.frm, the same shape it reads
+# a class or a module at. The merged tree is flat, so it is copied whole into
+# run/forms/<folder> for every folder the manifest names -- the rule the loop
+# above follows, and for the same reason: a folder that drops out of a narrowed
+# manifest keeps its files and their inodes, so macOS keeps its grants. A folder
+# holding forms no table asks for costs a few small files; ImportAll imports
+# what the manifest names.
+forms_src <- tag_srcs[["general forms"]][1]
+forms_run <- tag_runs[["general forms"]]
+if (dir.exists(forms_src)) {
+  for (suite_folder in unique(tbl$folder)) {
+    dir.create(forms_run, recursive = TRUE, showWarnings = FALSE)
+    copy_tree_in_place(forms_src, file.path(forms_run, suite_folder))
+  }
+} else {
+  # A missing merged tree warns and lets the rest of the run go on, the way a
+  # missing source folder does above. Only a suite carrying a `forms:` key
+  # needs it, and --build is what writes it.
+  message("run-tests.R: WARNING - no merged forms tree at ", forms_src,
+          "; no .frm is staged. Re-run with --build to write it.")
 }
 
 dir.create(file.path(run_dir, ".generated"), showWarnings = FALSE)
@@ -293,7 +340,7 @@ for (f in c("OBTImport.bas", "OBTHeadless.bas")) {
   src_f <- file.path(repo_root, "src", "tests", "rubberduck", f)
   if (file.exists(src_f)) file.copy(src_f, file.path(run_dir, "bootstrap", f), overwrite = TRUE)
 }
-message("run-tests.R: run dir assembled from src/ (classes/, tests/, .generated/, bootstrap/)")
+message("run-tests.R: run dir assembled from src/ (classes/, tests/, forms/, .generated/, bootstrap/)")
 
 # --- 2a) ensure Excel is fully closed before we launch a fresh instance ------
 # `run VB macro` returns AppleScript Parameter error (-50) against an Excel that

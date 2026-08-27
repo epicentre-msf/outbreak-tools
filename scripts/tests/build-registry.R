@@ -77,6 +77,7 @@ if (is.null(suites) || !length(suites)) {
 # tag mapping (see repo-knowledge/testing.md section 5)
 #   classes  -> "general classes"   modules -> "general modules"
 #   fixtures -> "tests classes"      tests   -> "tests modules"
+#   forms    -> "general forms"
 yn <- function(flag) if (isTRUE(flag)) "yes" else "no"
 
 rows <- list()          # each: c(folder, tag, component, interface)
@@ -101,6 +102,14 @@ for (suite in suites) {
   # test-only fixture classes
   for (fx in suite$fixtures) {
     rows[[length(rows) + 1L]] <- c(folder, "tests classes", fx$name, yn(fx$interface))
+  }
+
+  # userforms — the .frm files come from the merged forms tree that
+  # merge-form-code.R writes. The tag `general forms` means "import this .frm
+  # from disk". The older `general form modules` tag means "copy a module's
+  # code into a form already in the workbook", and it stays as it was.
+  for (frm in suite$forms) {
+    rows[[length(rows) + 1L]] <- c(folder, "general forms", frm$name, "no")
   }
 
   # test modules — also feed the ModulesForTesting Name
