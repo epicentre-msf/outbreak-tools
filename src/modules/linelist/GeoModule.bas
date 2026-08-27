@@ -22,6 +22,18 @@ Private Const MAX_ADMIN_LEVEL As Long = 4
 ' The separator of a joined admin path, the one the caption of the form uses.
 Private Const GEO_SEPARATOR As String = " | "
 
+' Whether the tab strip of each frame has been put back on its first page. The
+' picker keeps its state between opens through its default instance, so the tab
+' it comes up on the very first time is the tab the form was saved on, which is
+' whichever one the designer happened to close. The user starts on the four
+' admin lists, not on the concatenated list and not on the historic.
+'
+' One flag per frame, because the two pickers open independently and the first
+' open of each is the one that needs it. Every later open gives the user back
+' the tab they left.
+Private adminPageSettled As Boolean
+Private facilityPageSettled As Boolean
+
 '@section Module-Level State
 '===============================================================================
 
@@ -86,17 +98,7 @@ Private Function GeoOf() As LLGeo
     Set GeoOf = linelistEvents.GeoManager()
 End Function
 
-' Whether the tab strip of each frame has been put back on its first page. The
-' picker keeps its state between opens through its default instance, so the tab
-' it comes up on the very first time is the tab the form was saved on, which is
-' whichever one the designer happened to close. The user starts on the four
-' admin lists, not on the concatenated list and not on the historic.
-'
-' One flag per frame, because the two pickers open independently and the first
-' open of each is the one that needs it. Every later open gives the user back
-' the tab they left.
-Private adminPageSettled As Boolean
-Private facilityPageSettled As Boolean
+
 
 '@section LoadGeo — Form Display
 '===============================================================================
