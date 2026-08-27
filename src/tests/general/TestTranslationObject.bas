@@ -380,30 +380,38 @@ End Sub
 '@TestMethod("TranslationObject")
 '@sub-title Verify a table with no data row translates instead of raising
 '@details
-'Arranges a second table on the fixture sheet resized onto its header row
-'alone, so it carries no body range at all. Acts by translating a tag through
-'it and by asking whether that tag exists. Asserts the tag comes back
-'unchanged and is reported absent, and that neither call raises.
+'Arranges a second table on the fixture sheet and deletes its one data row,
+'so it carries no body range at all. Acts by translating a tag through it and
+'by asking whether that tag exists. Asserts the tag comes back unchanged and
+'is reported absent, and that neither call raises.
 '
 'The signature of the copy in memory reads the address of the body range.
 'Written as an IIf, that address was read even when the body range was
 'Nothing and raised 91, "object variable not set", out of every public call
 'of this class. A worksheet function calling through here then answered
 '#VALUE! on the sheet.
+'
+'The row goes through ListRows.Delete, not through Resize onto the header row
+'alone: Resize is refused on a sheet carrying another table and takes the run
+'into the debugger, where a hidden Excel sits until it is killed.
+'
+'The handler is what the rest of this module does without. A raise here is a
+'failure row; unhandled, it breaks the whole run on a headless Excel.
 Public Sub TestEmptyTableTranslatesWithoutRaising()
     Dim emptyTable As ListObject
     Dim emptyTranslator As TranslationObject
 
     CustomTestSetTitles Assert, "TranslationObject", "TestEmptyTableTranslatesWithoutRaising"
 
+    On Error GoTo Fail
+
     TranslationSheet.Range("E1:F1").Value = Array("Tag", "ENG")
     TranslationSheet.Range("E2:F2").Value = Array("greeting", "Hello")
 
     Set emptyTable = TranslationSheet.ListObjects.Add(xlSrcRange, TranslationSheet.Range("E1:F2"), , xlYes)
-    'A table resized onto its header row alone carries no body range, which
-    'is the state a translations sheet is in before its first tag is written.
-    emptyTable.Resize TranslationSheet.Range("E1:F1")
-    TranslationSheet.Range("E2:F2").Clear
+    'A table left with its header row alone carries no body range, which is
+    'the state a translations sheet is in before its first tag is written.
+    emptyTable.ListRows(1).Delete
 
     Assert.IsTrue emptyTable.DataBodyRange Is Nothing, "The fixture table should carry no body range."
 
@@ -415,6 +423,11 @@ Public Sub TestEmptyTableTranslatesWithoutRaising()
                      "A table with no data row holds no tag."
     Assert.AreEqual 1&, emptyTranslator.LanguagesList.Length, _
                      "The one language column should still be listed."
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestEmptyTableTranslatesWithoutRaising", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("TranslationObject")
@@ -430,6 +443,8 @@ Public Sub TestLanguagesListIgnoresTheCellPastTheTable()
 
     CustomTestSetTitles Assert, "TranslationObject", "TestLanguagesListIgnoresTheCellPastTheTable"
 
+    On Error GoTo Fail
+
     TranslationSheet.Range("H1").Value = "Tag"
     TranslationSheet.Range("H2").Value = "greeting"
     TranslationSheet.Range("I1").Value = "NotALanguage"
@@ -439,6 +454,11 @@ Public Sub TestLanguagesListIgnoresTheCellPastTheTable()
 
     Assert.AreEqual 0&, tagOnlyTranslator.LanguagesList.Length, _
                      "A table carrying only its tag column should list no language."
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestLanguagesListIgnoresTheCellPastTheTable", Err.Number, Err.Description
 End Sub
 
 
