@@ -517,6 +517,13 @@ Public Sub Import(ByVal pass As Passwords, ByVal sheetsList As BetterArray)
                                               formatHeaders:=formatList, _
                                               insertShift:=SameSheetName(sheetName, ANALYSIS_SHEET_NAME), _
                                               strictColumnSearch:=True
+
+                            If SameSheetName(sheetName, TRANSLATIONS_SHEET_NAME) Then
+                                'The rows are new to the table: the next update reviews the labels
+                                'no range of the setup produces with the user.
+                                SetupTranslationsTable.Create(hostList).MarkImported
+                            End If
+                            
                         End If
                     Next importList
 

@@ -300,6 +300,62 @@ CleanupFailure:
     Exit Sub
 End Sub
 
+
+'@TestMethod("SetupImport")
+Public Sub TestImportMarksTranslationsForReview()
+    CustomTestSetTitles Assert, "SetupImport", "TestImportMarksTranslationsForReview"
+    Dim sourceBook As Workbook
+    Dim exportFolder As String
+    Dim workbookPath As String
+    Dim sheetsList As BetterArray
+    Dim translationSheet As Worksheet
+    Dim firstTag As String
+
+    On Error GoTo CleanupFailure
+
+    PrepareHostSetupSheets
+
+    Set sourceBook = BuildImportWorkbookFixture()
+    exportFolder = BuildTempFolder(ThisWorkbook, "SetupImportReviewTests")
+    workbookPath = BuildWorkbookPath(exportFolder, "setup_import_review", ".xlsx")
+
+    sourceBook.SaveAs Filename:=workbookPath, FileFormat:=xlOpenXMLWorkbook
+    sourceBook.Close SaveChanges:=False
+    Set sourceBook = Nothing
+
+    Service.Path = workbookPath
+    Set sheetsList = SheetsListOf(DICTIONARY_SHEET_NAME, TRANSLATIONS_SHEET_NAME)
+
+    'The sheet-list path, not ImportFromWorkbook: both must leave the review behind.
+    Service.Import PasswordsHandler, sheetsList
+
+    Set translationSheet = ThisWorkbook.Worksheets(TRANSLATIONS_SHEET_NAME)
+    firstTag = CStr(translationSheet.Cells(TRANSLATION_HOST_START_ROW + 1, TRANSLATION_HOST_START_COLUMN - 1).Value)
+    Assert.AreEqual "__imported____0", firstTag, _
+                    "Import should mark every imported translation row for review."
+    Assert.IsTrue HiddenNames.Create(translationSheet).HasName("__SetupTranslationsUnseenReview__"), _
+                  "Import should ask the next update to review the unseen labels."
+
+    DeleteFileIfExists workbookPath
+    Exit Sub
+
+CleanupFailure:
+    Dim errNumber As Long
+    Dim errDescription As String
+
+    errNumber = Err.Number
+    errDescription = Err.Description
+
+    On Error Resume Next
+        If Not sourceBook Is Nothing Then sourceBook.Close SaveChanges:=False
+    On Error GoTo 0
+    DeleteFileIfExists workbookPath
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestImportMarksTranslationsForReview", errNumber, errDescription
+        Err.Clear
+    End If
+    Exit Sub
+End Sub
 '@TestMethod("SetupImport")
 Public Sub TestImportFromWorkbookSkipsMissingSheets()
     CustomTestSetTitles Assert, "SetupImport", "TestImportFromWorkbookSkipsMissingSheets"
