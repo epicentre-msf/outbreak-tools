@@ -287,8 +287,8 @@ End Sub
 '@details
 'Activating the Analysis sheet primes three table wrappers and rebuilds the
 'dropdowns over them, which writes to the sheet and wants the screen still.
-'Every other activation invalidates at most three ribbon controls, and only
-'when the Translations boundary is crossed.
+'Every other activation reaches the service and comes straight back: the
+'ribbon buttons no longer change with the sheet.
 '
 'The workbook handler used to switch screen updating off for all of them and
 'never switch it back, leaving Excel to do that when the handler returned. So

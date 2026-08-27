@@ -16,6 +16,35 @@ Option Explicit
 
 'Private constants for Ribbon Events
 Private Const TRADSHEETNAME As String = "Translations"
+Private Const SHEET_DICTIONARY As String = "Dictionary"
+Private Const SHEET_CHOICES As String = "Choices"
+Private Const SHEET_ANALYSIS As String = "Analysis"
+Private Const SHEET_EXPORTS As String = "Exports"
+
+'The row buttons, the column button and the sort button are always visible.
+'They used to hide themselves through a getVisible callback that the events
+'invalidated on each sheet change; now each one checks the active sheet when
+'it is clicked and tells the user where it works instead.
+
+'@sub-title Whether the active sheet holds the tables the row buttons work on.
+Private Function IsRowSheet(ByVal sheetName As String) As Boolean
+    Select Case LCase$(sheetName)
+        Case LCase$(SHEET_DICTIONARY), LCase$(SHEET_CHOICES), _
+             LCase$(SHEET_ANALYSIS), LCase$(SHEET_EXPORTS)
+            IsRowSheet = True
+    End Select
+End Function
+
+'@sub-title Tell the user a button was clicked on a sheet it does not work on.
+Private Sub WarnWrongSheet(ByVal actionName As String, ByVal sheetList As String)
+    MsgBox actionName & " works only on the " & sheetList & ".", vbExclamation, actionName
+End Sub
+
+'@sub-title Warn when a row button is clicked outside the four table sheets.
+Private Function OnRowSheet(ByVal sheetName As String, ByVal actionName As String) As Boolean
+    OnRowSheet = IsRowSheet(sheetName)
+    If Not OnRowSheet Then WarnWrongSheet actionName, "Dictionary, Choices, Analysis and Exports sheets"
+End Function
 
 
 '@section Table Management: callbacks for group CustomGroupManage
@@ -107,6 +136,7 @@ Public Sub clickSortTables(ByRef ribbonControl As IRibbonControl)
 
     If ActiveSheet Is Nothing Then Exit Sub
     sheetName = ActiveSheet.Name
+    If Not OnRowSheet(sheetName, "Sort tables") Then Exit Sub
     Set svc = EventsManager.EventSetupService
 
     On Error GoTo Cleanup
@@ -129,6 +159,7 @@ Public Sub clickInsertRow(ByRef ribbonControl As IRibbonControl)
     If TypeName(Selection) <> "Range" Then Exit Sub
 
     sheetName = ActiveSheet.Name
+    If Not OnRowSheet(sheetName, "Insert row") Then Exit Sub
     Set targetCell = Selection
     Set svc = EventsManager.EventSetupService
 
@@ -150,6 +181,7 @@ Public Sub clickDelLoRows(ByRef ribbonControl As IRibbonControl)
 
     If ActiveSheet Is Nothing Then Exit Sub
     If TypeName(Selection) <> "Range" Then Exit Sub
+    If Not OnRowSheet(ActiveSheet.Name, "Delete table row") Then Exit Sub
 
     'Asked before the screen freezes.
     If MsgBox("Delete the selected rows?" & vbCrLf & "THIS OPERATION IS IRREVERSIBLE.", _
@@ -178,7 +210,10 @@ Public Sub clickDelLoColumn(ByRef ribbonControl As IRibbonControl)
     sheetName = ActiveSheet.Name
 
     'Only the Translations sheet has columns a user may remove.
-    If StrComp(sheetName, TRADSHEETNAME, vbTextCompare) <> 0 Then Exit Sub
+    If StrComp(sheetName, TRADSHEETNAME, vbTextCompare) <> 0 Then
+        WarnWrongSheet "Delete table column", "Translations sheet"
+        Exit Sub
+    End If
 
     'Asked before the screen freezes.
     If MsgBox("Delete the selected Column?" & vbCrLf & "THIS OPERATION IS IRREVERSIBLE.", _
@@ -581,19 +616,6 @@ Public Sub clickCheck(ByRef ribbonControl As IRibbonControl)
 
 Cleanup:
     EventsManager.ExitBusyState
-End Sub
-
-
-'@section Visibility of some buttons
-'===============================================================================
-Public Sub SetupButtonVisible(ribbonControl As IRibbonControl, ByRef returnedVal)
-    If (ribbonControl.Id = "btnDelLoRow") Or (ribbonControl.Id = "btnSort") Then
-        returnedVal = CBool((ActiveSheet.Name <> TRADSHEETNAME))
-    ElseIf (ribbonControl.Id = "btnDelLoCol") Then
-        returnedVal = CBool((ActiveSheet.Name = TRADSHEETNAME))
-    Else
-        returnedVal = True
-    End If
 End Sub
 
 

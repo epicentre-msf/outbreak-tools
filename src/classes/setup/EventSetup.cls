@@ -45,7 +45,7 @@ Option Explicit
 'setup sheet, and BeginSheetUpdate and EndSheetUpdate go through it. The ribbon
 'calls it too, so a sheet unlocked on one path and locked again on the other
 'comes back with the flags it started with.
-'@depends BetterArray, HiddenNames, Passwords, TranslationObject, UpdatedValues, DropdownLists, LLdictionary, LLVariables, LLChoices, LLExport, Analysis, CustomTable, ChoiceFormula, RibbonDev, ProjectError
+'@depends BetterArray, HiddenNames, Passwords, TranslationObject, UpdatedValues, DropdownLists, LLdictionary, LLVariables, LLChoices, LLExport, Analysis, CustomTable, ChoiceFormula, ProjectError
 
 
 '@section State
@@ -54,7 +54,6 @@ Private Type TEventSetup
     hostBook            As Workbook          'Workbook owning the setup sheets
     updater             As UpdatedValues    'Registry tracker for watched columns
     drop                As DropdownLists    'Cached dropdown manager
-    ribbon              As IRibbonUI         'Cached ribbon instance when available
     tsTable             As CustomTable      'Analysis time-series table wrapper
     graphTable          As CustomTable      'Analysis graph table wrapper
     graphLabTable       As CustomTable      'Analysis graph table label wrapper
@@ -67,8 +66,6 @@ Private Type TEventSetup
     exportSpecs             As LLExport         'Cached exports manager
     passManager           As Passwords        'Cached password helper (lazily created once)
     choicesTable        As CustomTable      'Cached Choices table wrapper
-    buttonsOnTranslations As Boolean        'Answer the ribbon buttons were last given
-    buttonsAnswered     As Boolean          'Whether that answer has been given once
 End Type
 
 Private this As TEventSetup
@@ -204,16 +201,14 @@ End Sub
 '@label:on-sheet-activate
 '@sub-title Handle worksheet activation events.
 '@details
-'Refreshes the three ribbon controls whose visibility depends on the active
-'sheet, and only when the answer they were last given has changed. When the
-'Analysis sheet becomes active, primes the analysis table wrappers and asks the
-'update watcher whether the dropdowns need rebuilding.
+'When the Analysis sheet becomes active, primes the analysis table wrappers and
+'asks the update watcher whether the dropdowns need rebuilding. Every other
+'sheet activates without work: the ribbon buttons no longer change with the
+'sheet, each callback checks the sheet it was clicked on instead.
 '@param sh Worksheet. The worksheet that became active.
 '@export
 Public Sub OnSheetActivate(ByVal sh As Worksheet)
     If (sh Is Nothing) Then Exit Sub
-
-    RefreshSheetButtons sh
 
     If StrComp(sh.Name, SHEET_ANALYSIS, vbTextCompare) = 0 Then
         'Pre-init analysis tables so first SheetChange doesn't pay init cost
@@ -222,36 +217,6 @@ Public Sub OnSheetActivate(ByVal sh As Worksheet)
         EnsureAnalysisTable this.spatioTable, LIST_SPATIO_TEMPORAL, "section"
         UpdateAnalysisDropdowns
     End If
-End Sub
-
-'@label:refresh-sheet-buttons
-'@sub-title Invalidate the three sheet-dependent ribbon controls when their answer changes.
-'@details
-'SetupButtonVisible answers one question for all three controls: whether the
-'active sheet is Translations. Invalidating them on every activation asks the
-'ribbon to re-read an answer it already has, so the answer is remembered here
-'and the three calls are made only when the Translations boundary is crossed.
-'The first activation of a session always refreshes, because no answer has been
-'given yet.
-'@param sh Worksheet. The worksheet that became active.
-Private Sub RefreshSheetButtons(ByVal sh As Worksheet)
-    Dim onTranslations As Boolean
-
-    onTranslations = (StrComp(sh.Name, SHEET_TRANSLATIONS, vbTextCompare) = 0)
-
-    If this.buttonsAnswered Then
-        If onTranslations = this.buttonsOnTranslations Then Exit Sub
-    End If
-
-    this.buttonsOnTranslations = onTranslations
-    this.buttonsAnswered = True
-
-    EnsureRibbon
-    If this.ribbon Is Nothing Then Exit Sub
-
-    this.ribbon.InvalidateControl "btnDelLoRow"
-    this.ribbon.InvalidateControl "btnDelLoCol"
-    this.ribbon.InvalidateControl "btnSort"
 End Sub
 
 '@label:on-sheet-change
@@ -819,7 +784,6 @@ End Sub
 Private Sub ResetInternalCaches()
     Set this.updater = Nothing
     Set this.drop = Nothing
-    Set this.ribbon = Nothing
     Set this.tsTable = Nothing
     Set this.graphTable = Nothing
     Set this.graphLabTable = Nothing
@@ -832,9 +796,6 @@ Private Sub ResetInternalCaches()
     Set this.exportSpecs = Nothing
     Set this.passManager = Nothing
     Set this.choicesTable = Nothing
-
-    this.buttonsOnTranslations = False
-    this.buttonsAnswered = False
 End Sub
 
 '@label:add-or-update-drop
@@ -892,13 +853,6 @@ Private Sub EnsureDropdownValues()
     On Error Resume Next
         Set this.drop = DropdownLists.Create(dropSheet, DROPDOWN_PREFIX)
     On Error GoTo 0
-End Sub
-
-'@label:ensure-ribbon
-'@sub-title Lazily cache the ribbon instance.
-Private Sub EnsureRibbon()
-    If Not (this.ribbon Is Nothing) Then Exit Sub
-    Set this.ribbon = RibbonDev.ActualRibbon()
 End Sub
 
 '@label:ensure-dictionary
