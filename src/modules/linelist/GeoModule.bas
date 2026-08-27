@@ -40,6 +40,57 @@ Private facilityPageSettled As Boolean
 Private drop As DropdownLists
 Private pass As Passwords
 
+' The test seams of this module. Three statements of the geo path put a window
+' on the screen and wait for a hand: the picker of LoadGeo, the name prompt of
+' AddAdminName and the failure box every handler reports through. A headless run
+' has nobody to close them, so it stops there and writes no result file. Each
+' flag below turns its own statement off and leaves the rest of the procedure
+' whole, which is what makes the procedure worth testing at all.
+'
+' The flags live here with the rest of the module state, where a reader finds
+' every declaration of the module in one place.
+Private suppressGeoShow As Boolean
+Private suppressGeoBox As Boolean
+Private stubbedAdminNameSet As Boolean
+Private stubbedAdminName As Variant
+
+'@section Test Seams
+'===============================================================================
+
+' @description Hold the picker back. LoadGeo fills every control and returns, so
+'              a test reads the form the way the user would see it. The cleanup
+'              of the test module calls this with False.
+' @param suppress True holds the form back, False gives it back
+Public Sub GeoSuppressShow(ByVal suppress As Boolean)
+    suppressGeoShow = suppress
+End Sub
+
+' @description Hold the failure box of ReportGeoError back. The log line is
+'              still written, so a test reads the failure back off the __log
+'              worksheet. The cleanup of the test module calls this with False.
+' @param suppress True holds the box back, False gives it back
+Public Sub GeoSuppressBox(ByVal suppress As Boolean)
+    suppressGeoBox = suppress
+End Sub
+
+' @description Answer the name prompt of AddAdminName from a test. The prompt
+'              stays closed and the value given here goes through the rest of
+'              the procedure.
+'              The value is a Variant because the box answers two shapes: a
+'              String for a typed name, and the Boolean False for a cancel. So
+'              GeoStubAdminName False walks the cancel path.
+' @param answer What the prompt gives back
+Public Sub GeoStubAdminName(ByVal answer As Variant)
+    stubbedAdminName = answer
+    stubbedAdminNameSet = True
+End Sub
+
+' @description Drop the stubbed answer. The prompt opens again from here on.
+Public Sub GeoClearAdminNameStub()
+    stubbedAdminName = Empty
+    stubbedAdminNameSet = False
+End Sub
+
 '@section Initialization
 '===============================================================================
 
@@ -71,15 +122,24 @@ End Sub
 '              member. A chained call is invisible to it, and this module carries
 '              no registry row, so a chain here would be checked by nothing.
 '              The caller names itself in source. VBA carries no call stack to
-'              read a name from, four procedures of this module report through
-'              here, and a log line that names none of them leaves a reader
-'              with a reason and no idea which press produced it.
+'              read a name from, nine call sites in five procedures of this
+'              module report through here, and a log line that names none of
+'              them leaves a reader with a reason and no idea which press
+'              produced it.
+'              GeoSuppressBox empties the fallback. A filled fallback is the one
+'              thing that carries EventLinelist.ShowMessage past its early exit
+'              to the MsgBox, so emptying it is what keeps a headless run going.
+'              The log line is written either way, and that is where a test
+'              reads the failure back.
 Private Sub ReportGeoError(ByVal source As String, ByVal detail As String)
     Dim linelistEvents As EventLinelist
+    Dim spokenFallback As String
+
+    spokenFallback = "The geobase could not be read"
+    If suppressGeoBox Then spokenFallback = vbNullString
 
     Set linelistEvents = LinelistEventsManager.EventLinelistService()
-    linelistEvents.Fail "MSG_ErrGeo", detail, "The geobase could not be read", _
-                        source
+    linelistEvents.Fail "MSG_ErrGeo", detail, spokenFallback, source
 End Sub
 
 ' @description The one geobase manager of the workbook. EventLinelist builds it
@@ -212,8 +272,10 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
     'raised over a frozen screen. Show blocks until the form hides, so it
     'stands outside the block above: nothing holds a reference to the form
     'while the form runs.
+    'Under GeoSuppressShow the open ends here, with every control of the form
+    'already filled by the block above.
     LinelistEventsManager.LLExitBusyState
-    F_Geo.Show
+    If Not suppressGeoShow Then F_Geo.Show
     Exit Sub
 
 ErrLoadGeo:
@@ -495,9 +557,14 @@ Public Sub AddAdminName(ByVal level As Long)
     prompt = tradmess.TranslatedValue("MSG_AddAdminName") & vbNewLine & _
              levelLabel & ": " & parentPath
 
-    answer = Application.InputBox(prompt, _
-                                  tradmess.TranslatedValue("MSG_AddAdminTitle"), _
-                                  Type:=2)
+    'GeoStubAdminName gives the answer straight, and the box stays closed.
+    If stubbedAdminNameSet Then
+        answer = stubbedAdminName
+    Else
+        answer = Application.InputBox(prompt, _
+                                      tradmess.TranslatedValue("MSG_AddAdminTitle"), _
+                                      Type:=2)
+    End If
 
     'A cancelled box answers the Boolean False. A blank answer changes
     'nothing either: the form stays as the double click left it.
