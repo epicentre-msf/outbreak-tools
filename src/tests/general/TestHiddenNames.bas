@@ -278,39 +278,42 @@ UnexpectedError:
 End Sub
 
 '@TestMethod("HiddenNames")
-'@sub-title A name Excel reserves for itself is never tracked or exported
+'@sub-title A name Excel reserves for itself is stored under a safe name
 '@details
 'Excel writes hidden names of its own -- _xlfn.* for a function it cannot
 'resolve, _xleta.* and _xlpm.* for LAMBDA -- whose RefersTo reads "=#NAME?".
-'They are invisible in the Name Manager and Excel REFUSES to create one, so an
-'export that carried one raised 1004, "the syntax of this name isn't correct",
-'and took a whole linelist generation down with it.
+'A workbook-scoped Names.Add on one raises 1004, "the syntax of this name
+'isn't correct", and an export that carried one took a whole linelist
+'generation down with it.
 '
-'The fixture cannot use Names.Add to plant one, for exactly the reason the bug
-'exists: Excel will not create it. So the test drives the filter through the
-'public surface instead -- a reserved identifier must not be storable, and the
-'export must carry only the real name beside it.
-Public Sub TestExcelReservedNamesAreNotTracked()
-    CustomTestSetTitles Assert, "HiddenNames", "TestExcelReservedNamesAreNotTracked"
+'The store keeps the caller's name anyway: the Excel tag is stripped and the
+'rest goes under the "__obt_xl_" prefix. The test asserts that the raw
+'reserved name is never written, that the caller reads it back under the
+'name it gave, that the safe name is what the sheet carries, and that the
+'export carries the safe name beside the ordinary one.
+Public Sub TestExcelReservedNamesAreRewritten()
+    CustomTestSetTitles Assert, "HiddenNames", "TestExcelReservedNamesAreRewritten"
 
     Dim names As HiddenNames
     Dim targetWb As Workbook
     Dim destination As HiddenNames
+    Dim rawDefinition As Name
 
     On Error GoTo UnexpectedError
 
     Set names = EnsureManager()
     names.EnsureName "__hn_real__", "kept", HiddenNameTypeString
+    names.EnsureName "_xlfn.SINGLE", "stored safe", HiddenNameTypeString
 
-    'Excel refuses a reserved name, which is the whole point of the guard that
-    'now reports it. The attempt is made anyway and its refusal swallowed, so
-    'the assertions below read the same on a build of Excel that allowed it.
-    On Error Resume Next
-        names.EnsureName "_xlfn.SINGLE", "should never be stored", HiddenNameTypeString
-    On Error GoTo UnexpectedError
-
-    Assert.IsFalse names.HasName("_xlfn.SINGLE"), _
-                   "A name in Excel's reserved _xl namespace should never be tracked."
+    Set rawDefinition = NameDefinition(testSh, "_xlfn.SINGLE")
+    Assert.IsTrue (rawDefinition Is Nothing), _
+                  "The raw reserved name should never be written to the sheet."
+    Assert.IsTrue names.HasName("__obt_xl_SINGLE"), _
+                  "The reserved name should be stored under the safe prefix."
+    Assert.IsTrue names.HasName("_xlfn.SINGLE"), _
+                  "The caller should find the name under the identifier it gave."
+    Assert.AreEqual "stored safe", names.ValueAsString("_xlfn.SINGLE"), _
+                     "The caller should read the value back under the identifier it gave."
 
     Set targetWb = NewTemporaryWorkbook()
     names.ExportNamesToWorkbook targetWb
@@ -318,15 +321,17 @@ Public Sub TestExcelReservedNamesAreNotTracked()
     Set destination = HiddenNames.Create(targetWb)
     Assert.IsTrue destination.HasName("__hn_real__"), _
                   "The export should still carry the ordinary name."
-    Assert.IsFalse destination.HasName("_xlfn.SINGLE"), _
-                   "The export should not carry a name Excel reserves."
+    Assert.IsTrue destination.HasName("__obt_xl_SINGLE"), _
+                  "The export should carry the safe name."
+    Assert.IsTrue (NameDefinition(targetWb.Worksheets(1), "_xlfn.SINGLE") Is Nothing), _
+                  "The export should never write the raw reserved name."
 
     CloseTemporaryWorkbook targetWb
     Exit Sub
 
 UnexpectedError:
     CloseTemporaryWorkbook targetWb
-    CustomTestLogFailure Assert, "TestExcelReservedNamesAreNotTracked", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestExcelReservedNamesAreRewritten", Err.Number, Err.Description
     Err.Clear
 End Sub
 

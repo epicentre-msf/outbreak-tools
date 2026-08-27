@@ -51,7 +51,7 @@ End Enum
 'A caller that wants ONE value off a host it will not touch again calls
 'QuickValue instead, which skips the walk entirely.
 '@depends Checking, BetterArray
-'@version 1.0 (2026-02-09)
+'@version 1.1 (2026-08-27)
 
 
 Private Type THiddenNames
@@ -64,6 +64,8 @@ End Type
 Private this As THiddenNames
 
 Private Const CLASSNAME As String = "HiddenNames"
+'Prefix taking the rest of an Excel-reserved identifier, see SanitizeNameId.
+Private Const RESERVED_REWRITE_PREFIX As String = "__obt_xl_"
 Private Const COMMENT_PREFIX As String = "HiddenNames:"
 Private Const COMMENT_SEPARATOR As String = ";"
 Private Const COMMENT_TYPE_PREFIX As String = "type="
@@ -427,7 +429,39 @@ Private Function SanitizeNameId(ByVal nameId As String) As String
         result = "_" & result
     End If
 
+    'Excel owns every "_xl" identifier. A worksheet-scoped Names.Add accepts
+    'one, the scan then refuses to track it, and a workbook-scoped Add takes
+    'a build down. The tag is stripped and the rest is kept under a prefix
+    'nothing else uses, so the caller's name still lands and reads back.
+    If IsExcelReservedName(result) Then
+        result = RESERVED_REWRITE_PREFIX & StripExcelTag(result)
+    End If
+
     SanitizeNameId = result
+End Function
+
+'@label:strip-excel-tag
+'@sub-title Drop the Excel tag from a reserved identifier
+'@details
+'"_xlfn.SINGLE" keeps "SINGLE": everything up to and including the first
+'period goes. An identifier with no period, "_xlws", keeps what follows the
+'"_xl" prefix. An empty rest answers "name" so the rewritten identifier is
+'still a legal one.
+'@param nameId String. A sanitized identifier that starts "_xl".
+'@return String. The part of the identifier that is the caller's.
+Private Function StripExcelTag(ByVal nameId As String) As String
+    Dim dotAt As Long
+    Dim rest As String
+
+    dotAt = InStr(1, nameId, ".")
+    If dotAt > 0 Then
+        rest = Mid$(nameId, dotAt + 1)
+    Else
+        rest = Mid$(nameId, 4)
+    End If
+
+    If LenB(rest) = 0 Then rest = "name"
+    StripExcelTag = rest
 End Function
 
 '@label:metadata-key
