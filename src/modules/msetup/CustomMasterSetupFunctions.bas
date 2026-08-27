@@ -59,12 +59,17 @@ Public Function MainLabelValue(ByVal variableName As Variant, ByVal languageTag 
 
     If LenB(label) = 0 Then Exit Function
 
+    ' The untranslated label is the answer from here on. A fault in the
+    ' translations table then costs the translation, never the label: the
+    ' resolver ran outside a guard once and the cell read #VALUE!.
+    MainLabelValue = label
+
+    On Error Resume Next
     Set trads = TranslationsFor(CleanText(languageTag))
-    If trads Is Nothing Then
-        MainLabelValue = label
-    Else
-        MainLabelValue = trads.TranslatedValue(label)
-    End If
+    On Error GoTo 0
+    If trads Is Nothing Then Exit Function
+
+    MainLabelValue = TranslatedOrSame(trads, label)
 End Function
 
 '@sub-title Answer the joined values of a choice, translated to the given language.
@@ -77,15 +82,22 @@ End Function
 Public Function ChoiceValues(ByVal choiceName As Variant, Optional ByVal languageTag As Variant) As String
     Dim resolvedName As String
     Dim resolvedLanguage As String
+    Dim trads As TranslationObject
 
     resolvedName = CleanText(choiceName)
     If LenB(resolvedName) = 0 Then Exit Function
 
     If Not IsMissing(languageTag) Then resolvedLanguage = CleanText(languageTag)
 
-    ' A worksheet function answers empty on any resolver failure.
+    ' A worksheet function answers empty on any resolver failure. The
+    ' translator is resolved on a guard of its own: resolved inside the join,
+    ' a fault there abandoned the join and the cell came back empty.
     On Error Resume Next
-    ChoiceValues = JoinedLabels(resolvedName, TranslationsFor(resolvedLanguage))
+    Set trads = TranslationsFor(resolvedLanguage)
+    On Error GoTo 0
+
+    On Error Resume Next
+    ChoiceValues = JoinedLabels(resolvedName, trads)
     On Error GoTo 0
 End Function
 
@@ -123,13 +135,25 @@ Private Function JoinedLabels(ByVal listName As String, ByVal trads As Translati
     For idx = 1 To cachedChoiceRows
         If StrComp(CleanText(cachedChoiceNames(idx, 1)), listName, vbTextCompare) = 0 Then
             label = CleanText(cachedChoiceLabels(idx, 1))
-            If Not trads Is Nothing Then label = trads.TranslatedValue(label)
+            If Not trads Is Nothing Then label = TranslatedOrSame(trads, label)
             If LenB(joined) > 0 Then joined = joined & CHOICE_SEPARATOR
             joined = joined & label
         End If
     Next idx
 
     JoinedLabels = joined
+End Function
+
+'@sub-title The translated label, or the label itself when the translation faults.
+'@details A translations table the translator cannot read is a fault of the
+'workbook, not of the line being written. The line then carries the label as
+'it is typed, which is what a master setup in English reads anyway.
+Private Function TranslatedOrSame(ByVal trads As TranslationObject, ByVal label As String) As String
+    TranslatedOrSame = label
+
+    On Error Resume Next
+    TranslatedOrSame = trads.TranslatedValue(label)
+    On Error GoTo 0
 End Function
 
 '@sub-title Read the list name and label columns of the Choices sheet once.

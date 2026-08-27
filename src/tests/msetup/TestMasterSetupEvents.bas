@@ -446,6 +446,96 @@ Fail:
 End Sub
 
 '@TestMethod("MasterSetupEvents")
+'@sub-title Opening the Variables sheet rejoins the choices values from the Choices sheet.
+'@details The ChoiceValues formula names no cell of the Choices sheet, so a
+'label edited there leaves the Variables line standing on what it last
+'answered. The edit below goes straight onto the sheet, the way a paste, an
+'undo or a fill does, without the change handler ever running.
+Public Sub TestOpeningTheVariablesSheetRejoinsTheChoicesValues()
+    CustomTestSetTitles Assert, "MasterSetupEvents", "TestOpeningTheVariablesSheetRejoinsTheChoicesValues"
+
+    Dim variablesSheet As Worksheet
+    Dim choicesSheet As Worksheet
+    Dim variablesTable As ListObject
+    Dim choiceCell As Range
+    Dim valuesCell As Range
+
+    On Error GoTo Fail
+
+    Dim preparedVariables As MasterSetupVariables
+    Set preparedVariables = MasterSetupEventsManager.MasterSetupService.Variables
+
+    Set variablesSheet = ThisWorkbook.Worksheets(VARIABLES_SHEET)
+    Set variablesTable = variablesSheet.ListObjects(1)
+    Set choiceCell = variablesTable.ListColumns("Default Choice").DataBodyRange.Cells(1, 1)
+    Set valuesCell = variablesTable.ListColumns("Choices Values").DataBodyRange.Cells(1, 1)
+
+    choiceCell.Value = "choice_age"
+    MasterSetupEventsManager.MsSheetChanged variablesSheet, choiceCell
+    Assert.AreEqual "0-4 | 5-14", valuesCell.Value, "The joined values should start from the labels"
+
+    'The label column is written straight, no handler behind it.
+    Set choicesSheet = ThisWorkbook.Worksheets(CHOICES_SHEET)
+    choicesSheet.Range("C5").Value = "zero-four"
+    choicesSheet.Calculate
+
+    MasterSetupEventsManager.MsSheetActivated variablesSheet
+    Assert.AreEqual "zero-four | 5-14", valuesCell.Value, _
+                    "Opening the Variables sheet should rejoin the values from the Choices sheet"
+
+    'Opening any other sheet recalculates nothing.
+    choicesSheet.Range("C6").Value = "five-fourteen"
+    choicesSheet.Calculate
+    MasterSetupEventsManager.MsSheetActivated choicesSheet
+
+    Assert.AreEqual "zero-four | 5-14", valuesCell.Value, _
+                    "Opening the Choices sheet should leave the Variables line alone"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestOpeningTheVariablesSheetRejoinsTheChoicesValues", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("MasterSetupEvents")
+'@sub-title Opening a disease sheet recalculates its label and choice values columns.
+Public Sub TestOpeningADiseaseSheetRecalculatesItsFormulaColumns()
+    CustomTestSetTitles Assert, "MasterSetupEvents", "TestOpeningADiseaseSheetRecalculatesItsFormulaColumns"
+
+    Dim diseaseWksh As Worksheet
+    Dim choicesSheet As Worksheet
+    Dim table As ListObject
+    Dim nameCell As Range
+    Dim valuesCell As Range
+
+    On Error GoTo Fail
+
+    Set diseaseWksh = BuildDiseaseFixture()
+    Set table = diseaseWksh.ListObjects(1)
+    Set nameCell = table.DataBodyRange.Cells(1, 2)
+    Set valuesCell = table.DataBodyRange.Cells(1, 6)
+
+    nameCell.Value = "var_age"
+    MasterSetupEventsManager.MsSheetChanged diseaseWksh, nameCell
+    Assert.AreEqual "0-4 | 5-14", valuesCell.Value, "The line should start from the labels of the choice"
+
+    Set choicesSheet = ThisWorkbook.Worksheets(CHOICES_SHEET)
+    choicesSheet.Range("C5").Value = "zero-four"
+    choicesSheet.Calculate
+
+    MasterSetupEventsManager.MsSheetActivated diseaseWksh
+    Assert.AreEqual "zero-four | 5-14", valuesCell.Value, _
+                    "Opening the disease sheet should rejoin the values of the line"
+    Assert.AreEqual "Age", table.DataBodyRange.Cells(1, 4).Value, _
+                    "The main label should answer, never #VALUE!"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestOpeningADiseaseSheetRecalculatesItsFormulaColumns", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("MasterSetupEvents")
 Public Sub TestEnsureLanguagesAddsAColumnToTheMasterTable()
     CustomTestSetTitles Assert, "MasterSetupEvents", "TestEnsureLanguagesAddsAColumnToTheMasterTable"
 

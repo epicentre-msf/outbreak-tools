@@ -34,6 +34,19 @@ Private Sub Workbook_BeforeClose(Cancel As Boolean)
     On Error GoTo 0
 End Sub
 
+Private Sub Workbook_SheetActivate(ByVal sh As Object)
+    If reentrant Then Exit Sub
+    If TypeName(sh) <> "Worksheet" Then Exit Sub
+
+    reentrant = True
+
+    On Error GoTo Clean
+    MasterSetupEventsManager.MsSheetActivated sh
+
+Clean:
+    reentrant = False
+End Sub
+
 Private Sub Workbook_SheetDeactivate(ByVal sh As Object)
     If reentrant Then Exit Sub
     If TypeName(sh) <> "Worksheet" Then Exit Sub

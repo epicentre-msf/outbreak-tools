@@ -157,6 +157,36 @@ Handler:
     Resume Cleanup
 End Sub
 
+'@sub-title Recalculate the worksheet function columns when a sheet opens.
+'@details MainLabelValue and ChoiceValues answer out of the caches this
+'module keeps, and neither formula names the Choices sheet, so Excel has no
+'dependency to mark dirty when a choices row is edited: the cells stand on
+'what they last answered. Opening the Variables sheet or a disease sheet
+'drops the caches and recalculates the columns carrying the two functions,
+'so what the user reads is what the Choices sheet says now. A recalculation
+'writes no cell of its own, so a protected sheet needs no unprotecting.
+Public Sub MsSheetActivated(ByVal sh As Worksheet)
+    Dim errDescription As String
+
+    If sh Is Nothing Then Exit Sub
+
+    On Error GoTo Handler
+
+    If SheetIs(sh, "vars") Then
+        ResetMasterSetupFunctionCaches
+        RecalculateVariablesChoicesValues
+    ElseIf MasterSetupHelpers.IsMasterDiseaseSheet(sh) Then
+        ResetMasterSetupFunctionCaches
+        RecalculateDiseaseSheet sh
+    End If
+    Exit Sub
+
+Handler:
+    errDescription = Err.Number & " " & Err.Description
+    Debug.Print "SheetActivated - "; sh.Name; " error "; errDescription
+    LogFailureLine "sheet-open", sh.Name & ": " & errDescription, "MsSheetActivated"
+End Sub
+
 '@sub-title Rebuild the choices dropdown when the user leaves the Choices sheet.
 '@details __lst_choices sits on the very hidden __dropdowns sheet, which is
 'never protected, so the write is safe inside an event. A workbook whose
@@ -682,6 +712,47 @@ Private Function HasKey(ByVal keys As Collection, ByVal keyValue As String) As B
     HasKey = (Err.Number = 0)
     On Error GoTo 0
 End Function
+
+'@sub-title Recalculate the Choices Values column of the Variables table.
+'@details The column carries the ChoiceValues formula, written by the
+'preparation. A sheet whose column was left as typed text carries no formula
+'and a calculate leaves it alone; the choices cascade writes that one.
+Private Sub RecalculateVariablesChoicesValues()
+    Dim variablesSheet As Worksheet
+    Dim table As ListObject
+    Dim valuesColumn As ListColumn
+
+    Set variablesSheet = MasterSetupHelpers.ResolveMasterVariablesSheet()
+    If variablesSheet Is Nothing Then Exit Sub
+    If variablesSheet.ListObjects.Count = 0 Then Exit Sub
+
+    Set table = variablesSheet.ListObjects(1)
+    If table.DataBodyRange Is Nothing Then Exit Sub
+
+    Set valuesColumn = FindColumn(table, HEADER_CHOICES_VALUES)
+    If valuesColumn Is Nothing Then Exit Sub
+    If valuesColumn.DataBodyRange Is Nothing Then Exit Sub
+
+    'A refused calculate leaves the old text standing; opening a sheet never
+    'raises at the user.
+    On Error Resume Next
+        valuesColumn.DataBodyRange.Calculate
+    On Error GoTo 0
+End Sub
+
+'@sub-title Recalculate the two formula columns of the table of a disease sheet.
+Private Sub RecalculateDiseaseSheet(ByVal sh As Worksheet)
+    Dim table As ListObject
+    Dim layout As TDiseaseColumns
+
+    If sh.ListObjects.Count = 0 Then Exit Sub
+
+    Set table = sh.ListObjects(1)
+    If table.DataBodyRange Is Nothing Then Exit Sub
+
+    ResolveDiseaseColumns table, layout
+    RecalculateDiseaseColumns table, layout
+End Sub
 
 '@sub-title Recalculate the two formula columns of a disease table.
 Private Sub RecalculateDiseaseColumns(ByVal table As ListObject, ByRef layout As TDiseaseColumns)

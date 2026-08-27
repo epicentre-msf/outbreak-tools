@@ -377,6 +377,71 @@ Public Sub TestNonBreakingSpaceBecomesOrdinarySpace()
 End Sub
 
 
+'@TestMethod("TranslationObject")
+'@sub-title Verify a table with no data row translates instead of raising
+'@details
+'Arranges a second table on the fixture sheet resized onto its header row
+'alone, so it carries no body range at all. Acts by translating a tag through
+'it and by asking whether that tag exists. Asserts the tag comes back
+'unchanged and is reported absent, and that neither call raises.
+'
+'The signature of the copy in memory reads the address of the body range.
+'Written as an IIf, that address was read even when the body range was
+'Nothing and raised 91, "object variable not set", out of every public call
+'of this class. A worksheet function calling through here then answered
+'#VALUE! on the sheet.
+Public Sub TestEmptyTableTranslatesWithoutRaising()
+    Dim emptyTable As ListObject
+    Dim emptyTranslator As TranslationObject
+
+    CustomTestSetTitles Assert, "TranslationObject", "TestEmptyTableTranslatesWithoutRaising"
+
+    TranslationSheet.Range("E1:F1").Value = Array("Tag", "ENG")
+    TranslationSheet.Range("E2:F2").Value = Array("greeting", "Hello")
+
+    Set emptyTable = TranslationSheet.ListObjects.Add(xlSrcRange, TranslationSheet.Range("E1:F2"), , xlYes)
+    'A table resized onto its header row alone carries no body range, which
+    'is the state a translations sheet is in before its first tag is written.
+    emptyTable.Resize TranslationSheet.Range("E1:F1")
+    TranslationSheet.Range("E2:F2").Clear
+
+    Assert.IsTrue emptyTable.DataBodyRange Is Nothing, "The fixture table should carry no body range."
+
+    Set emptyTranslator = TranslationObject.Create(emptyTable, "ENG")
+
+    Assert.AreEqual "greeting", emptyTranslator.TranslatedValue("greeting"), _
+                     "A table with no data row should answer the tag unchanged."
+    Assert.IsFalse emptyTranslator.ValueExists("greeting"), _
+                     "A table with no data row holds no tag."
+    Assert.AreEqual 1&, emptyTranslator.LanguagesList.Length, _
+                     "The one language column should still be listed."
+End Sub
+
+'@TestMethod("TranslationObject")
+'@sub-title Verify a table carrying only its tag column lists no language
+'@details
+'Arranges a one column table with a value typed in the cell just right of it.
+'Acts by reading LanguagesList. Asserts the list is empty: the header block
+'used to be read as a plain Offset of the header row, which reached that one
+'cell past the table and answered whatever the sheet held there.
+Public Sub TestLanguagesListIgnoresTheCellPastTheTable()
+    Dim tagOnlyTable As ListObject
+    Dim tagOnlyTranslator As TranslationObject
+
+    CustomTestSetTitles Assert, "TranslationObject", "TestLanguagesListIgnoresTheCellPastTheTable"
+
+    TranslationSheet.Range("H1").Value = "Tag"
+    TranslationSheet.Range("H2").Value = "greeting"
+    TranslationSheet.Range("I1").Value = "NotALanguage"
+
+    Set tagOnlyTable = TranslationSheet.ListObjects.Add(xlSrcRange, TranslationSheet.Range("H1:H2"), , xlYes)
+    Set tagOnlyTranslator = TranslationObject.Create(tagOnlyTable, "ENG")
+
+    Assert.AreEqual 0&, tagOnlyTranslator.LanguagesList.Length, _
+                     "A table carrying only its tag column should list no language."
+End Sub
+
+
 '@section Helpers
 '===============================================================================
 

@@ -112,6 +112,10 @@ End Property
 '@label:languages-list
 '@prop-title List of available language headers
 '@return BetterArray. Each language header, excluding the helper/tag column.
+'@details A table carrying its tag column alone answers an empty list. The
+'language block is resized onto the columns the table has: read as a plain
+'Offset it reached one cell past the table, and whatever the sheet held
+'there was answered as a language.
 '@export
 Public Property Get LanguagesList() As BetterArray
     Dim headerRow As Range
@@ -122,20 +126,21 @@ Public Property Get LanguagesList() As BetterArray
 
     Set languages = New BetterArray
     languages.LowerBound = 1
+    Set LanguagesList = languages
 
     'Read the header row afresh on every call: columns can be added or
     'removed from the table while this object is alive.
     Set headerRow = HeaderRowRange()
+    If headerRow Is Nothing Then Exit Property
+    If headerRow.Columns.Count < 2 Then Exit Property
 
-    If Not headerRow Is Nothing Then
-        headerBlock = RangeBlock(headerRow.Offset(, 1))
-        For idx = LBound(headerBlock, 2) To UBound(headerBlock, 2)
-            valueText = Trim$(TextOf(headerBlock(1, idx)))
-            If LenB(valueText) > 0 Then languages.Push valueText
-        Next idx
-    End If
+    headerBlock = RangeBlock(headerRow.Offset(, 1).Resize(1, headerRow.Columns.Count - 1))
+    If Not IsArray(headerBlock) Then Exit Property
 
-    Set LanguagesList = languages
+    For idx = LBound(headerBlock, 2) To UBound(headerBlock, 2)
+        valueText = Trim$(TextOf(headerBlock(1, idx)))
+        If LenB(valueText) > 0 Then languages.Push valueText
+    Next idx
 End Property
 
 
@@ -381,12 +386,18 @@ End Function
 '@details
 'Range.Value hands back a plain value for a single cell, so that case is
 'wrapped to keep one shape for every caller.
+'A range that is Nothing answers a one cell block holding nothing, not Empty:
+'every caller walks the answer with LBound and UBound, and those raise 13 on
+'an Empty. The reader then finds no tag, which is what an absent range means.
 '@param target Range. The range to read.
-'@return Variant. A two dimensional array, or Empty when target is Nothing.
+'@return Variant. A two dimensional array, always.
 Private Function RangeBlock(ByVal target As Range) As Variant
     Dim oneCell(1 To 1, 1 To 1) As Variant
 
-    If target Is Nothing Then Exit Function
+    If target Is Nothing Then
+        RangeBlock = oneCell
+        Exit Function
+    End If
 
     If target.Cells.Count = 1 Then
         oneCell(1, 1) = target.Value
@@ -450,9 +461,14 @@ End Sub
 'The table name, the address of its body and the target language. A row added
 'or removed, a column added or removed, a table replaced or a language switched
 'all change it, and each one is a reason to read the table again.
+'
+'The empty table is spelled out with If, not with IIf: IIf evaluates both of
+'its arms, so the address of a body range that is Nothing was read on a table
+'with no data row and raised 91 through every public translation call.
 '@return String. The signature of the table as it stands now.
 Private Function TableSignature() As String
     Dim bodyRange As Range
+    Dim bodyPart As String
 
     If this.transLo Is Nothing Then Exit Function
 
@@ -461,8 +477,13 @@ Private Function TableSignature() As String
     Set bodyRange = this.transLo.DataBodyRange
     On Error GoTo 0
 
-    TableSignature = this.transLo.Name & "|" & this.transLng & "|" & _
-                     IIf(bodyRange Is Nothing, "empty", bodyRange.Address(External:=True))
+    If bodyRange Is Nothing Then
+        bodyPart = "empty"
+    Else
+        bodyPart = bodyRange.Address(External:=True)
+    End If
+
+    TableSignature = this.transLo.Name & "|" & this.transLng & "|" & bodyPart
 End Function
 
 '@label:refresh-lookup
