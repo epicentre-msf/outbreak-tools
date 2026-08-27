@@ -817,12 +817,15 @@ suites:
     modules:
       - InitTransfer
       # EventsDesignerCore holds the session's entry-and-translator pair;
-      # EventsDesignerAdvanced carries the build core (GenerateOne,
+      # EventsDesignerAdvanced drives the build in place (GenerateOne,
       # ValidateEntries, SetupLanguages) and holds the run log;
       # EventsDesignerMulti drives T_Multi and the multi build loop.
+      # BuildSteps carries the build itself as steps answering outcome
+      # strings; GenerateOne and the headless multi loop run through it.
       - EventsDesignerCore
       - EventsDesignerAdvanced
       - EventsDesignerMulti
+      - BuildSteps
     tests:
       - module: TestDesignerPreparation
         covers: [DesignerPreparation]

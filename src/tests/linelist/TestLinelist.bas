@@ -12,8 +12,9 @@ Option Explicit
 'Prepare, SaveLL and PrepareAdmin need a real designer, a setup file and a
 'template on disk, so what this suite reaches is everything below them: the
 'worksheet accessors, the scoped-name cut that decides what a sheet is called,
-'the two managers whose state the generation report reads, and the guard that
-'stops a build over unprepared specifications.
+'the two managers whose state the generation report reads, the discard that
+'keeps a stopped build on disk, and the guard that stops a build over
+'unprepared specifications.
 '
 'THE FIXTURE IS BUILT ONCE PER MODULE
 '-------------------------------------------------------------------------------
@@ -176,6 +177,22 @@ Private Function FixtureReady(ByVal testName As String) As Boolean
 End Function
 
 
+'@sub-title Drop the output folder entry and the files the discard test wrote.
+'@param keepFolder String. The folder the entry named.
+'@param keptPath String. The kept file, or empty.
+Private Sub DiscardFixtureFolder(ByVal keepFolder As String, ByVal keptPath As String)
+    On Error Resume Next
+    SpecsWkb.Names("RNG_LLDir").Delete
+    SpecsWkb.Worksheets("Main").Range("A1").ClearContents
+    If LenB(keptPath) > 0 Then Kill keptPath
+    If LenB(keepFolder) > 0 Then
+        RmDir keepFolder & Application.PathSeparator & "OBTApp_"
+        RmDir keepFolder
+    End If
+    On Error GoTo 0
+End Sub
+
+
 '@section Factory tests
 '===============================================================================
 
@@ -234,8 +251,10 @@ Public Sub TestDiscardBuildClosesTheOutputWorkbook()
     Dim sut As Linelist
     Set sut = Linelist.Create(ownSpecs)
 
-    'Act
-    sut.DiscardBuild
+    'Act. The fixture Main carries no output folder, so there is no
+    'repository to keep the file in.
+    Dim keptPath As String
+    keptPath = sut.DiscardBuild()
 
     'Closing a workbook hands the screen to whichever workbook Excel
     'activates, and PrintResults raises 1004 when the driver workbook has
@@ -243,6 +262,8 @@ Public Sub TestDiscardBuildClosesTheOutputWorkbook()
     ThisWorkbook.Activate
 
     'Assert: the workbook is closed and both references are dropped
+    Assert.AreEqual vbNullString, keptPath, _
+                    "With no output folder known DiscardBuild should keep nothing"
     Assert.IsTrue ownSpecs.LLWorkbook Is Nothing, _
                   "DiscardBuild should release the specifications' workbook reference"
 
@@ -283,14 +304,94 @@ Public Sub TestDiscardBuildWithNoWorkbookIsQuiet()
     Set sut = Linelist.Create(ownSpecs)
 
     'Act: with no workbook the call exits quietly
-    sut.DiscardBuild
+    Dim keptPath As String
+    keptPath = sut.DiscardBuild()
 
+    Assert.AreEqual vbNullString, keptPath, _
+                    "With no workbook DiscardBuild should answer an empty path"
     Assert.IsTrue ownSpecs.LLWorkbook Is Nothing, _
                   "DiscardBuild should leave the empty reference as it is"
 
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestDiscardBuildWithNoWorkbookIsQuiet", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("Linelist")
+Public Sub TestDiscardBuildKeepsTheFileWhenTheFolderIsKnown()
+    CustomTestSetTitles Assert, TESTMODULE, "TestDiscardBuildKeepsTheFileWhenTheFolderIsKnown"
+    If Not FixtureReady("TestDiscardBuildKeepsTheFileWhenTheFolderIsKnown") Then Exit Sub
+    On Error GoTo TestFail
+
+    'Arrange: an output folder entry on the fixture Main, the way a filled
+    'designer carries one, and a throwaway workbook standing in for the
+    'output. The name is dropped again below so the other tests keep a
+    'Main with no folder.
+    Dim keepFolder As String
+    Dim mainSheet As Worksheet
+    Dim tempWkb As Workbook
+    Dim tempName As String
+    Dim expectedPath As String
+    Dim keptPath As String
+
+    keepFolder = BuildTempFolder(Nothing, "obt_linelist_discard")
+    Set mainSheet = SpecsWkb.Worksheets("Main")
+    mainSheet.Range("A1").Value = keepFolder
+    SpecsWkb.Names.Add Name:="RNG_LLDir", RefersTo:=mainSheet.Range("A1")
+
+    Set tempWkb = NewWorkbook()
+    tempName = tempWkb.Name
+
+    Dim ownSpecs As LinelistSpecs
+    Set ownSpecs = LinelistSpecs.Create(SpecsWkb)
+    ownSpecs.TestAssignLLWorkbook tempWkb
+
+    Dim sut As Linelist
+    Set sut = Linelist.Create(ownSpecs)
+
+    expectedPath = keepFolder & Application.PathSeparator & "OBTApp_" & _
+                   Application.PathSeparator & "__temp.xlsb"
+
+    'Act
+    keptPath = sut.DiscardBuild()
+    ThisWorkbook.Activate
+
+    'Assert: the file is where the report will name it, and the workbook is closed
+    Assert.AreEqual expectedPath, keptPath, _
+                    "DiscardBuild should keep the workbook as __temp.xlsb in the repository"
+    Assert.IsTrue LenB(Dir$(keptPath)) > 0, _
+                  "The kept file should be on disk"
+    Assert.IsTrue ownSpecs.LLWorkbook Is Nothing, _
+                  "DiscardBuild should release the specifications' workbook reference"
+
+    Dim stillOpen As Boolean
+    On Error Resume Next
+    stillOpen = LenB(Application.Workbooks(tempName).Name) > 0
+    On Error GoTo TestFail
+    Assert.IsFalse stillOpen, _
+                   "DiscardBuild should close the output workbook once it is kept"
+
+    'The kept file survives the drop of the linelist and its repository
+    Set sut = Nothing
+    Set ownSpecs = Nothing
+    Assert.IsTrue LenB(Dir$(keptPath)) > 0, _
+                  "The kept file should survive the drop of the repository"
+
+    DiscardFixtureFolder keepFolder, keptPath
+    Exit Sub
+TestFail:
+    'An On Error statement clears Err, so the fault is captured first
+    Dim failNumber As Long
+    Dim failDesc As String
+    failNumber = Err.Number
+    failDesc = Err.Description
+
+    On Error Resume Next
+    If Not tempWkb Is Nothing Then tempWkb.Close savechanges:=False
+    ThisWorkbook.Activate
+    DiscardFixtureFolder keepFolder, keptPath
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestDiscardBuildKeepsTheFileWhenTheFolderIsKnown", failNumber, failDesc
 End Sub
 
 

@@ -384,6 +384,77 @@ TestFail:
                          Err.Number, Err.Description
 End Sub
 
+'@sub-title A file KeepFile marked survives the drop of the instance.
+'@details
+'This is what a failed build relies on: it saves the unfinished linelist
+'as __temp.xlsb, marks it, and drops the repository with the rest of the
+'working files.
+'@TestMethod("TemporaryRepos")
+Public Sub TestKeepFileSurvivesTheInstanceDrop()
+    CustomTestSetTitles Assert, "TemporaryRepos", "TestKeepFileSurvivesTheInstanceDrop"
+    On Error GoTo TestFail
+
+    Dim repos As TemporaryRepos
+    Dim root As String
+    Dim keptPath As String
+
+    Set repos = TemporaryRepos.Create(BaseFolder)
+    root = repos.RootPath()
+    keptPath = repos.CreateFilePath("__temp.xlsb")
+    WriteTextFile keptPath, "x"
+    WriteTextFile repos.CreateFilePath("component.bas"), "x"
+
+    repos.KeepFile "__temp.xlsb"
+    Set repos = Nothing
+
+    Assert.AreEqual CLng(1), FileCountIn(root), _
+                    "Dropping the instance takes every file but the kept one"
+    Assert.IsTrue FileExists(keptPath), "The kept file is still on disk"
+
+    'Leave nothing behind for the next test
+    On Error Resume Next
+    Kill keptPath
+    On Error GoTo TestFail
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestKeepFileSurvivesTheInstanceDrop", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Reset wipes the kept file and forgets the mark.
+'@details
+'Reset runs after a linelist is saved, so the folder has to start clean:
+'the file goes, and a later drop of the instance takes a new file of the
+'same name with it.
+'@TestMethod("TemporaryRepos")
+Public Sub TestResetForgetsTheKeptFile()
+    CustomTestSetTitles Assert, "TemporaryRepos", "TestResetForgetsTheKeptFile"
+    On Error GoTo TestFail
+
+    Dim repos As TemporaryRepos
+    Dim root As String
+
+    Set repos = TemporaryRepos.Create(BaseFolder)
+    root = repos.RootPath()
+    WriteTextFile repos.CreateFilePath("__temp.xlsb"), "x"
+    repos.KeepFile "__temp.xlsb"
+
+    repos.Reset
+
+    Assert.AreEqual CLng(0), FileCountIn(root), "Reset takes the kept file too"
+
+    WriteTextFile repos.CreateFilePath("__temp.xlsb"), "y"
+    Set repos = Nothing
+
+    Assert.AreEqual CLng(0), FileCountIn(root), _
+                    "After a reset the mark is gone and the drop takes the new file"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestResetForgetsTheKeptFile", Err.Number, Err.Description
+End Sub
+
 '@section Fixture helpers
 '===============================================================================
 

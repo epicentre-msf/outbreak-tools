@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, DesignerEntry, EventsDesignerCore, RibbonDev, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, LinelistSpecs, Linelist, LLDataEntry, LLSheets, AnalysisOutput, Checking, GenerationLog, InitTransfer, SetupTranslationsTable, ProgressBar
+'@depends DesignerPreparation, DesignerEntry, EventsDesignerCore, RibbonDev, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, Checking, GenerationLog, SetupTranslationsTable, BuildSteps
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -28,17 +28,24 @@ Private Const DROP_SETUP_LANGUAGES As String = "__setup_languages"
 'The fallback header read drops these before the dropdown update.
 Private Const INTERNAL_TAG_LEAD As String = "__"
 
-'Progress over the milestones of one build. The bar range is owner hand
-'work on the Main sheet of the mock; a missing name means no bar and no
-'raise, so this code lands before the hand work and wakes up with it.
-'The status cell is the edition cell the entry already writes.
-Private Const RNG_PROGRESS_BAR As String = "RNG_ProgressBar"
-Private Const RNG_EDITION As String = "RNG_Edition"
+'The status texts GenerateOne writes at its milestones, for a status
+'target that shows them (the multi driver's row result cell).
+Private Const STATUS_TRANSFER As String = "transfer"
+Private Const STATUS_LINELIST As String = "linelist"
+Private Const STATUS_DROPDOWNS As String = "dropdowns"
+Private Const STATUS_ANALYSES As String = "analyses"
+Private Const STATUS_SAVE As String = "save"
 
-'The fixed milestones of one build: entry checks, transfer, linelist
-'prepare, the two dropdown flushes, analyses, save. Each data entry
-'sheet built adds one step, and Complete is the finalise message.
-Private Const FIXED_STEPS As Long = 7
+'The lead of a step outcome that failed, and the mark before the kept
+'path at its end. Both are the shape BuildSteps answers.
+Private Const OUTCOME_ERROR_LEAD As String = "ERROR "
+Private Const KEPT_MARK As String = " | kept "
+
+'The separator of the two totals BuildSteps.BuildCounts answers
+Private Const COUNTS_SEP As String = "|"
+
+'The bundle a failed build files to name the kept file
+Private Const TITLE_BUILD_ABORTED As String = "build aborted"
 
 'The log of the current or last generation run. Both drivers open it
 'through StartRunLog and every flush goes through CollectIntoLog, so
@@ -47,11 +54,16 @@ Private Const FIXED_STEPS As Long = 7
 'stays open.
 Private heldLog As GenerationLog
 
-'What the run has built so far. GenerateOne adds to them per sheet, so a
-'multi run counts every row of the batch, and FinishRunLog hands them to
-'the closing bundle. StartRunLog puts them back to zero.
+'What the run has built so far. GenerateOne adds the totals of each build,
+'so a multi run counts every row of the batch, and FinishRunLog hands them
+'to the closing bundle. StartRunLog puts them back to zero.
 Private builtSheets As Long
 Private builtVariables As Long
+
+'The path of the file the last failed build kept, or empty. GenerateOne
+'sets it from the step outcome; clickGenerate's cleanup names it in the
+'report.
+Private keptFilePath As String
 
 
 '@section Run log services
@@ -448,13 +460,16 @@ End Sub
 '===============================================================================
 
 '@Description("Import setup, prepare specifications, build output linelist workbook, and save.")
+'@details
+'The in-place build. The screen goes off with the busy state and comes
+'back at the restore, so the user sees the designer once, at the end,
+'with the report in front. A build that fails keeps its unfinished
+'workbook on disk: the report names the kept file and the message box
+'carries the fault. Nothing asks a question.
 '@EntryPoint
 Public Sub clickGenerate()
     Dim entry As DesignerEntry
     Dim appScope As ApplicationState
-    Dim ll As Linelist
-    Dim bar As ProgressBar
-    Dim savedPath As String
 
     On Error GoTo Cleanup
     Set appScope = ApplicationState.Create(Application)
@@ -483,32 +498,19 @@ Public Sub clickGenerate()
 
     entry.AddInfo entry.TranslateMessage("MSG_ReadSetup"), "edition"
 
-    'The bar over the milestones. During the build it owns the edition
-    'cell; the first tick is the entry checks that just passed. The
-    'maximum starts at the fixed steps and grows by the sheet count once
-    'the build knows it.
-    Set bar = ResolveMainProgressBar(entry)
-    If Not bar Is Nothing Then
-        bar.Update 1, entry.TranslateMessage("MSG_ReadSetup")
-    End If
-
     'The whole build: specifications, linelist, sheets, dropdowns, analyses,
-    'save. The phase checkings flush to the log as each phase completes.
-    savedPath = GenerateOne(entry, ll, bar)
+    'save. The phase checkings flush to the log after each step.
+    GenerateOne entry
 
     'Close the log and write the text record beside the generated linelist
     FinishRunLog entry.TranslateMessage("MSG_LLCreated")
     heldLog.ExportText entry.ValueOf("lldir"), entry.ValueOf("llname")
 
     entry.AddInfo entry.TranslateMessage("MSG_LLCreated"), "edition"
-    If Not bar Is Nothing Then bar.Complete entry.TranslateMessage("MSG_LLCreated")
 
     appScope.Restore
 
-    'The report, last of all. FinishRunLog shows it too, but the three calls
-    'above run after it and the built linelist is in front by then, so the
-    'user was left looking at the new workbook and never saw the report. This
-    'is the call that lands, with the screen already back on.
+    'The report, once, with the screen already back on.
     ShowRunLog
     MsgBox entry.TranslateMessage("MSG_LLCreated"), vbInformation + vbOKOnly, PROMPT_TITLE
     Exit Sub
@@ -520,30 +522,21 @@ Cleanup:
     errDesc = Err.Description
 
     On Error Resume Next
-    'A half-drawn bar never survives the run; the error rides the
-    'edition cell through the bar's status write.
-    If Not bar Is Nothing Then bar.Reset errDesc
-    'Close the log over whatever was written before the error
+    'The kept file, named in the report before the log closes over the
+    'failure. The build has already saved and closed it.
+    FileKeptPathWarning
     FinishRunLog "Failed: " & errDesc
     If Not appScope Is Nothing Then appScope.Restore
     Application.Cursor = xlDefault
     'A run that failed is the run whose report is worth most: it names the
-    'phase that raised. ErrorManage below may put the half-built workbook in
-    'front on the user's say-so, and that is their choice to make.
+    'phase that raised and the file the user may open.
     ShowRunLog
     On Error GoTo 0
 
     If errNumber <> 0 Then
         Debug.Print "clickGenerate: "; errNumber; errDesc
-
-        'When the linelist object exists, offer the user to view the
-        'incomplete workbook or close it; otherwise show a simple error
-        If Not ll Is Nothing Then
-            ll.ErrorManage errDesc
-        Else
-            MsgBox "Generation failed: " & errDesc, _
-                   vbExclamation + vbOKOnly, PROMPT_TITLE
-        End If
+        MsgBox "Generation failed: " & errDesc, _
+               vbExclamation + vbOKOnly, PROMPT_TITLE
     End If
 End Sub
 
@@ -577,317 +570,169 @@ End Function
 
 '@Description("Run one whole build over the Main entries and return the written path.")
 '@details
-'The single-build core: specifications, linelist workbook, data entry
-'sheets, dropdowns, analyses, save. clickGenerate runs it once over the
-'entries the user typed; the multi driver writes one T_Multi row onto
-'Main and runs it per row. The setup workbook is opened once, inside
-'LinelistSpecs.Prepare.
+'The in-place driver over the steps of BuildSteps: begin (specifications
+'and transfer), linelist, one step per data entry sheet, dropdowns,
+'analyses, save. clickGenerate runs it once over the entries the user
+'typed; the multi driver writes one T_Multi row onto Main and runs it per
+'row. After every step the checkings the step filed are pulled into the
+'run log, so the report of a build that dies still carries the phases
+'that finished. The status target takes the milestone texts as plain
+'writes, which is how a multi row's result cell reads "sheet 3 of 15"
+'while the row builds; it arrives as Nothing when unused.
 '
-'The phase checkings flush to the run log as each phase completes, so
-'the report of a build that dies still carries the phases that
-'finished. The caller owns everything around the build: the entry
-'checks (ValidateEntries), the log lifecycle (StartRunLog and
-'FinishRunLog), the busy state and every dialog. A build fault raises
-'to the caller; builtLinelist is set as soon as the linelist exists, so
-'the caller's handler holds it for ErrorManage or DiscardBuild.
-'
-'The build ticks at its milestones: transfer, linelist prepare, one
-'tick per data entry sheet, the two dropdown flushes, analyses, save.
-'The bar hangs off those ticks and repaints itself under the caller's
-'busy state; the status target takes the same texts as plain writes,
-'which is how a multi row's result cell reads "sheet 3 of 15" while
-'the row builds. Both arrive as Nothing when unused.
+'The caller owns everything around the build: the entry checks
+'(ValidateEntries), the log lifecycle (StartRunLog and FinishRunLog), the
+'busy state and every dialog. A step that answers an error has already
+'kept the unfinished workbook as __temp.xlsb and closed it; the outcome
+'is raised to the caller with the kept path in the description, and
+'LastKeptPath answers the path on its own. The totals of the build are
+'added to the run's counts on both exits.
 '@param entry DesignerEntry. The entry manager over the Main worksheet.
-'@param builtLinelist Linelist. Answers the linelist of the build, set before any build step runs.
-'@param bar ProgressBar. The bar over the milestones. Nothing means no bar.
 '@param statusTarget Range. One cell taking the milestone texts. Nothing means no writes.
 '@return String. The full path of the written linelist file.
 Public Function GenerateOne(ByVal entry As DesignerEntry, _
-                            ByRef builtLinelist As Linelist, _
-                            Optional ByVal bar As ProgressBar = Nothing, _
                             Optional ByVal statusTarget As Range = Nothing) As String
-    Dim specs As LinelistSpecs
-    Dim ll As Linelist
-    Dim setupPath As String
-    Dim sheetLists As BetterArray
-    Dim counter As Long
-    Dim anaOut As AnalysisOutput
     Dim designerBook As Workbook
+    Dim sheetCount As Long
+    Dim counter As Long
 
-    setupPath = entry.ValueOf("setuppath")
+    keptFilePath = vbNullString
 
     'The designer is the workbook the entry sits on. A ribbon press builds
     'the entry over ThisWorkbook.Worksheets("Main"), so a designer press
     'reads the same workbook it always did. A caller from outside the
     'designer -- the headless build -- hands over an entry on the Main
-    'sheet of the designer copy, and the specifications then read that copy
-    'instead of the workbook this code is running inside.
+    'sheet of the designer copy, and the steps then read that copy.
     Set designerBook = entry.HostSheet.Parent
 
-    'Prepare creates the output workbook and hands it to InitTransfer,
-    'which fills it from the setup file and from this designer.
-    Set specs = LinelistSpecs.Create(designerBook)
-    specs.Prepare setupPath
+    RunStep BuildSteps.BuildBegin(designerBook)
+    WriteStatus statusTarget, STATUS_TRANSFER
 
-    'Flush Phase 1: specification checkings (dictionary, choices, exports,
-    'etc.), then the transfer record. A setup whose translations table is
-    'missing is filed there: the linelist then keeps the designer's own
-    'translation rows. The class never calls the module, so the pull of
-    'the transfer record lives here with the driver.
-    If Not heldLog Is Nothing Then heldLog.Harvest specs
-    If InitTransfer.HasCheckings() Then CollectIntoLog InitTransfer.CheckingValues()
+    RunStep BuildSteps.BuildLinelist()
+    WriteStatus statusTarget, STATUS_LINELIST
 
-    TickProgress bar, statusTarget, "transfer", designerBook:=designerBook
+    sheetCount = CLng(RunStep(BuildSteps.BuildSheetCount()))
+    For counter = 1 To sheetCount
+        'The status leads the sheet it names, so the cell reads the sheet
+        'under construction while the build runs.
+        WriteStatus statusTarget, "sheet " & CStr(counter) & " of " & CStr(sheetCount)
+        RunStep BuildSteps.BuildSheet(counter)
+    Next counter
 
-    'After the preparation step of the specifications, internal specifications
-    'object shift focus from the designer to the linelist workbook as they
-    'are now exported.
+    WriteStatus statusTarget, STATUS_DROPDOWNS
+    RunStep BuildSteps.BuildDropdowns()
 
-    'Build the output linelist workbook (sheets, temp sheets, admin, code transfer)
-    Set ll = Linelist.Create(specs)
-    Set builtLinelist = ll
-    ll.Prepare
+    WriteStatus statusTarget, STATUS_ANALYSES
+    RunStep BuildSteps.BuildAnalyses()
 
-    'Flush Phase 1b: code transfer checkings. A component the output workbook
-    'already carried was replaced by the designer's copy, and this is where the
-    'report names it.
-    If ll.HasCheckings Then CollectIntoLog ll.CheckingValues
+    WriteStatus statusTarget, STATUS_SAVE
+    RunStep BuildSteps.BuildSave()
+    TakeBuildCounts
 
-    TickProgress bar, statusTarget, "linelist", designerBook:=designerBook
-
-    'Build data entry worksheets (sections, variables, formatting). The sheet
-    'name list is the one Linelist.Prepare already walked the dictionary for.
-    Set sheetLists = ll.SheetNames
-
-    'The maximum was provisional until here: the fixed steps plus one
-    'step per sheet the loop below will build.
-    If Not bar Is Nothing Then bar.Maximum = FIXED_STEPS + sheetLists.Length
-
-    If sheetLists.Length > 0 Then
-        Dim listBld As LLDataEntry
-        Dim llSheetInfo As LLSheets
-
-        'The shared LLSheets the linelist holds. This loop and TransferAllCode
-        'each created their own over the same dictionary, so every row
-        'resolution was computed twice.
-        Set llSheetInfo = ll.SheetInfoManager
-
-        For counter = sheetLists.LowerBound To sheetLists.UpperBound
-            'The tick leads the sheet it names, so the bar reads the
-            'sheet under construction while the build runs.
-            TickProgress bar, statusTarget, _
-                         CStr(sheetLists.Item(counter)), _
-                         "sheet " & CStr(counter - sheetLists.LowerBound + 1) & _
-                         " of " & CStr(sheetLists.Length) & " - " & _
-                         CStr(sheetLists.Item(counter)), _
-                         designerBook
-            Set listBld = BuildOneSheet(llSheetInfo, ll, sheetLists.Item(counter))
-
-            'Flush Phase 2: the sheet's build checkings, one bundle per
-            'sheet, so the report grows with the build. The per-variable
-            'record follows it record-only, which keeps a few hundred
-            'entries out of the worksheet and in the text file.
-            If Not listBld Is Nothing Then
-                If listBld.HasCheckings Then CollectIntoLog listBld.CheckingValues
-                If listBld.HasMilestones Then CollectIntoLog listBld.MilestoneValues, True
-
-                builtSheets = builtSheets + 1
-                builtVariables = builtVariables + listBld.VariablesWritten
-            End If
-        Next
-    End If
-
-    'Flush Phase 2b: shared dropdown checkings, one bundle per store
-    Dim dropStd As DropdownLists
-    Set dropStd = ll.Dropdown(1)
-    If dropStd.HasCheckings Then CollectIntoLog dropStd.CheckingValues
-    TickProgress bar, statusTarget, "dropdowns", designerBook:=designerBook
-
-    Dim dropCust As DropdownLists
-    Set dropCust = ll.Dropdown(2)
-    If dropCust.HasCheckings Then CollectIntoLog dropCust.CheckingValues
-    TickProgress bar, statusTarget, "dropdowns", designerBook:=designerBook
-
-    'Build the analyses
-    TickProgress bar, statusTarget, "analyses", designerBook:=designerBook
-    Set anaOut = AnalysisOutput.Create(specs.AnalysisObject.Wksh(), ll)
-    ' All four analysis sheets. The call used to stop after the time series
-    ' tables, so the generated linelist carried no time series chart, no
-    ' navigation dropdown on that sheet, and two empty sheets where the spatial
-    ' and spatio-temporal analyses belong.
-    '
-    'THE HANDLER IS HERE SO A FAILED STAGE STILL FILES ITS OWN LOG.
-    '
-    'WriteAnalysis catches everything and re-raises it, and the flush on the
-    'next line never ran when it did, so the analyses took their entries with
-    'them. AnalysisOutput logs the scope it reached and the table that refused;
-    'losing that leaves the report saying only "Failed: <description>", which
-    'names nothing. A type mismatch on a Windows build read exactly that way: an
-    'error box carrying a description, no analyses on the sheet, and no record
-    'of which table or which scope raised it.
-    '
-    'The comment on this function promises the report of a build that dies
-    'carries the phases that finished. This is the phase that did not keep it.
-    On Error GoTo AnalysesFailed
-    anaOut.WriteAnalysis AnalysisBuildStageAll
-    On Error GoTo 0
-
-    'Flush Phase 3: analysis checkings
-    If anaOut.HasCheckings Then CollectIntoLog anaOut.CheckingValues
-
-    'Save the linelist as .xlsb with password protection
-    TickProgress bar, statusTarget, "save", designerBook:=designerBook
-    ll.SaveLL
-
-    'The path SaveLL wrote, read from the same values it read
-    GenerateOne = specs.Value("lldir") & Application.PathSeparator & _
-                  specs.Value("llname") & ".xlsb"
-    Exit Function
-
-AnalysesFailed:
-    Dim anaErrNumber As Long
-    Dim anaErrDesc As String
-
-    anaErrNumber = Err.Number
-    anaErrDesc = Err.Description
-
-    'Silently: the analyses fault is the one worth reporting, and a flush that
-    'raises on top of it would replace the description the caller is about to
-    'show with its own.
-    On Error Resume Next
-    If anaOut.HasCheckings Then CollectIntoLog anaOut.CheckingValues
-    On Error GoTo 0
-
-    'Re-raised unchanged, so the caller's handler keeps the behaviour it had:
-    'the bar resets on the description, the log closes over it, and
-    'Linelist.ErrorManage offers the incomplete workbook.
-    Err.Raise anaErrNumber, "EventsDesignerAdvanced.GenerateOne", anaErrDesc
+    'The path SaveLL wrote, read from the same entries it read
+    GenerateOne = entry.ValueOf("lldir") & Application.PathSeparator & _
+                  entry.ValueOf("llname") & ".xlsb"
 End Function
 
-'@Description("Move the progress displays one milestone forward.")
+'@Description("The path of the file the last failed build kept. Empty when nothing was kept.")
+Public Function LastKeptPath() As String
+    LastKeptPath = keptFilePath
+End Function
+
+'@Description("Take one step outcome: pull its checkings, raise on a failure.")
 '@details
-'One tick, three observers: the designer window comes back to the front,
-'the bar steps with its own repaint, and the status target takes the text
-'as a plain write. When the tick has a bar the bar's repaint shows the
-'target's write too; a target alone repaints here, since the busy state
-'keeps every write invisible without it.
-'@param bar ProgressBar. The bar over the milestones. Nothing means no bar.
-'@param statusTarget Range. One cell taking the milestone text. Nothing means no write.
+'The checkings of the step are pulled first, whatever the step answered,
+'since a failed step files the phase it reached before it answers. An
+'outcome that failed has already aborted the build; the totals are taken,
+'the kept path is read off the outcome and the fault is raised with the
+'number the step reported and the rest of the outcome as description.
+'@param outcome String. What the step answered.
+'@return String. The outcome, for the steps that answer a value.
+Private Function RunStep(ByVal outcome As String) As String
+    Dim errNumber As Long
+    Dim errDesc As String
+
+    If Not heldLog Is Nothing Then heldLog.CollectText BuildSteps.BuildCheckings()
+
+    If Left$(outcome, Len(OUTCOME_ERROR_LEAD)) <> OUTCOME_ERROR_LEAD Then
+        RunStep = outcome
+        Exit Function
+    End If
+
+    TakeBuildCounts
+    keptFilePath = KeptPathOf(outcome)
+
+    errNumber = ErrorNumberOf(outcome)
+    errDesc = outcome
+    If InStr(outcome, ": ") > 0 Then errDesc = Mid$(outcome, InStr(outcome, ": ") + 2)
+
+    Err.Raise errNumber, "EventsDesignerAdvanced.GenerateOne", errDesc
+End Function
+
+'@Description("The error number a failed outcome carries. A missing number reads as an unexpected state.")
+'@param outcome String. An outcome starting with the error lead.
+'@return Long. The number.
+Private Function ErrorNumberOf(ByVal outcome As String) As Long
+    Dim number As Long
+
+    number = CLng(Val(Mid$(outcome, Len(OUTCOME_ERROR_LEAD) + 1)))
+    If number = 0 Then number = ProjectError.ErrorUnexpectedState
+
+    ErrorNumberOf = number
+End Function
+
+'@Description("The kept path at the end of an outcome, or empty.")
+'@param outcome String. What the step answered.
+'@return String. The path after the kept mark.
+Private Function KeptPathOf(ByVal outcome As String) As String
+    Dim markAt As Long
+
+    markAt = InStr(outcome, KEPT_MARK)
+    If markAt = 0 Then Exit Function
+    KeptPathOf = Trim$(Mid$(outcome, markAt + Len(KEPT_MARK)))
+End Function
+
+'@Description("Add the totals of the current build to the run's counts.")
+'@details
+'Read once per build: on the failure exit before the raise, and after the
+'save on the success path.
+Private Sub TakeBuildCounts()
+    Dim parts() As String
+
+    parts = Split(BuildSteps.BuildCounts(), COUNTS_SEP)
+    If UBound(parts) < 1 Then Exit Sub
+
+    builtSheets = builtSheets + CLng(Val(parts(0)))
+    builtVariables = builtVariables + CLng(Val(parts(1)))
+End Sub
+
+'@Description("Write one milestone text into the status target, when there is one.")
+'@details
+'A plain write. The in-place build runs with the screen off, so the text
+'shows when the screen comes back; a multi row's result cell then reads
+'the last milestone the row reached before its outcome overwrites it.
+'@param statusTarget Range. One cell, or Nothing.
 '@param statusText String. The milestone text.
-'@param targetText String. Text for the status target when it differs from the bar's. Defaults to statusText.
-'@param designerBook Workbook. The designer the bar lives on. Nothing leaves the front window alone.
-Private Sub TickProgress(ByVal bar As ProgressBar, _
-                         ByVal statusTarget As Range, _
-                         ByVal statusText As String, _
-                         Optional ByVal targetText As String = vbNullString, _
-                         Optional ByVal designerBook As Workbook = Nothing)
-    If Not statusTarget Is Nothing Then
-        If LenB(targetText) = 0 Then targetText = statusText
-        statusTarget.Value = targetText
-    End If
-
-    'The bar and the status cell both live on the designer, and the build
-    'puts the new linelist workbook in front of them. Bringing the designer
-    'back before the repaint is what makes the tick visible.
-    BringToFront designerBook
-
-    If Not bar Is Nothing Then
-        bar.StepBy 1, statusText
-    ElseIf Not statusTarget Is Nothing Then
-        Application.ScreenUpdating = True
-        DoEvents
-        Application.ScreenUpdating = False
-    End If
+Private Sub WriteStatus(ByVal statusTarget As Range, ByVal statusText As String)
+    If statusTarget Is Nothing Then Exit Sub
+    statusTarget.Value = statusText
 End Sub
 
-'@Description("Put one workbook window back in front of the others.")
-'@details
-'A generation creates the output linelist workbook, and Excel puts its
-'window in front. Every progress display of the run lives on the designer,
-'so the user watched a bar they could not see. This is called at each
-'milestone, right before the repaint that shows the tick.
-'
-'The build activates worksheets of the output workbook as it goes
-'(the frozen panes of a data entry sheet want the sheet in front), so the
-'designer is brought back at every milestone.
-'
-'A workbook with no window, a window Excel refuses to activate, and a
-'call with Nothing all leave the screen as it is. The progress display is
-'worth no raise.
-'@param book Workbook. The workbook to bring to the front. Nothing exits.
-Public Sub BringToFront(ByVal book As Workbook)
-    If book Is Nothing Then Exit Sub
+'@Description("File a warning naming the kept file of the failed build, when there is one.")
+Private Sub FileKeptPathWarning()
+    Dim aborted As Checking
 
-    'Activate is a window move and costs a repaint, so the workbook that is
-    'already in front is left alone.
-    On Error Resume Next
-    If Not Application.ActiveWorkbook Is book Then book.Activate
-    On Error GoTo 0
+    If LenB(keptFilePath) = 0 Then Exit Sub
+
+    Set aborted = Checking.Create(TITLE_BUILD_ABORTED)
+    aborted.Add "kept file", "The unfinished linelist was kept at " & keptFilePath, _
+                checkingWarning
+    CollectIntoLog aborted
 End Sub
-
-'@Description("Build the bar over the milestones when the Main sheet carries its range.")
-'@details
-'The bar range is owner hand work on the mock. A missing name means no
-'bar and no raise; the generation runs the same. A name that resolves
-'outside the Main sheet is treated as missing, so the multi bar on the
-'GenerateMultiple sheet keeps its own range. The edition cell rides
-'along as the status cell, which is how the milestone texts land where
-'the entry writes its start and end messages.
-'@param entry DesignerEntry. The entry manager over the Main worksheet.
-'@return ProgressBar. The bar, or Nothing when the range is missing.
-Private Function ResolveMainProgressBar(ByVal entry As DesignerEntry) As ProgressBar
-    Dim mainSheet As Worksheet
-    Dim barRange As Range
-    Dim statusRange As Range
-    Dim bar As ProgressBar
-
-    Set mainSheet = entry.HostSheet
-
-    On Error Resume Next
-    Set barRange = mainSheet.Range(RNG_PROGRESS_BAR)
-    Set statusRange = mainSheet.Range(RNG_EDITION)
-    On Error GoTo 0
-
-    If barRange Is Nothing Then Exit Function
-    If Not barRange.Worksheet Is mainSheet Then Exit Function
-
-    'A malformed hand-made range stops the bar alone; the generation runs on
-    On Error Resume Next
-    Set bar = ProgressBar.Create(barRange, FIXED_STEPS)
-    If Not statusRange Is Nothing Then bar.AttachStatusCell statusRange
-    On Error GoTo 0
-
-    Set ResolveMainProgressBar = bar
-End Function
 
 
 '@section Internal helpers
 '===============================================================================
-
-'@Description("Build a data entry worksheet from the dictionary and return the builder.")
-Private Function BuildOneSheet(ByVal llshs As LLSheets, ByVal ll As Linelist, ByVal sheetName As String) As LLDataEntry
-    Dim sheetType As String
-    Dim layer As Byte
-    Dim listBld As LLDataEntry
-
-    sheetType = llshs.SheetInfo(sheetName)
-
-    If sheetType = "vlist1D" Then
-        layer = LLDataEntryLayerVList
-    ElseIf sheetType = "hlist2D" Then
-        layer = LLDataEntryLayerHList
-    Else
-        Exit Function
-    End If
-
-    'The builder takes the LLSheets this loop already holds. It used to build
-    'its own, and so did each of the three members inside it, so one sheet cost
-    'five searches of the dictionary for the same row.
-    Set listBld = LLDataEntry.Create(layer, sheetName, ll, llshs)
-    listBld.Build
-
-    Set BuildOneSheet = listBld
-End Function
 
 '@Description("Read the language names of a setup Translations sheet.")
 '@details

@@ -48,6 +48,21 @@ Option Explicit
 'lands once as a level one heading and every part of that build reads as
 'a subsection under it. Without an open section a bundle is written on
 'its own, which is what the single build does.
+'
+'BUNDLES CARRIED AS TEXT
+'-------------------------------------------------------------------------------
+'The build runs as steps, and a step may run in another Excel instance
+'where the log cannot reach. BundleText turns one bundle into a string
+'that ends on a form feed, so the texts of several bundles are joined by
+'plain concatenation; CollectText takes such a string back and collects
+'every bundle in it, record-only flag included. Both sit on this class
+'so the two sides of the carriage share one shape. A label carrying a
+'tab or a vertical tab is cut at that character.
+'
+'SHOWING THE REPORT
+'-------------------------------------------------------------------------------
+'Finish closes the run and leaves the worksheet where it is. The driver
+'shows it once, at the end, through ShowReport, with the screen back on.
 '@depends CheckingOutput, Checking, HiddenNames, BetterArray, LinelistSpecs
 
 
@@ -80,6 +95,17 @@ Private Const EXPORT_SUFFIX As String = "-generation.txt"
 'there). Start drops it so a cleared sheet is formatted as a first
 'render on every run.
 Private Const ROW_MARKER_NAME As String = "CheckingOutputStartingRow"
+
+'The separators of a bundle carried as text. BundleText writes them and
+'CollectText reads them: a form feed closes a bundle, a vertical tab
+'closes a line inside it, and a tab splits the fields of a line. The
+'first line of a bundle is its title, subtitle and record-only flag;
+'every other line is one entry: key, label, scope word.
+Private Const BUNDLE_END As String = vbFormFeed
+Private Const LINE_END As String = vbVerticalTab
+Private Const FIELD_SEP As String = vbTab
+Private Const FLAG_RECORD_ONLY As String = "1"
+Private Const FLAG_WORKSHEET As String = "0"
 
 
 '@section Factory
@@ -418,36 +444,185 @@ End Function
 '@param specs LinelistSpecs. The specifications after Prepare.
 '@throws ProjectError.InvalidArgument When specs is Nothing.
 Public Sub Harvest(ByVal specs As LinelistSpecs)
+    Dim bundles As BetterArray
+    Dim index As Long
+
     If specs Is Nothing Then
         ThrowError ProjectError.InvalidArgument, _
             "Harvest needs the specifications of the run"
     End If
     If this.writer Is Nothing Then Exit Sub
 
-    If specs.Dictionary.HasCheckings Then Collect specs.Dictionary.CheckingValues
-    If specs.Choices.HasCheckings Then Collect specs.Choices.CheckingValues
-    If specs.ExportObject.HasCheckings Then Collect specs.ExportObject.CheckingValues
-    If specs.AnalysisObject.HasCheckings Then Collect specs.AnalysisObject.CheckingValues
-    If specs.Password.HasCheckings Then Collect specs.Password.CheckingValues
-    If specs.DesignFormat.HasCheckings Then Collect specs.DesignFormat.CheckingValues
+    Set bundles = SpecificationBundles(specs)
+    For index = bundles.LowerBound To bundles.UpperBound
+        Collect bundles.Item(index)
+    Next index
+End Sub
+
+'@label:specification-bundles
+'@sub-title The bundles the specification collaborators filed, in harvest order
+'@details
+'The list Harvest walks, answered on its own so a build step running
+'away from the log can carry the same bundles as text. The order is the
+'dictionary, the choices, the exports, the analysis, the passwords, the
+'format and the specifications themselves. A collaborator with nothing
+'filed is skipped. Works on the predeclared instance: it reads no state.
+'@param specs LinelistSpecs. The specifications after Prepare.
+'@return BetterArray. The Checking bundles, 1-based. Empty when nothing was filed.
+'@throws ProjectError.InvalidArgument When specs is Nothing.
+'@export
+Public Function SpecificationBundles(ByVal specs As LinelistSpecs) As BetterArray
+    Dim bundles As BetterArray
+
+    If specs Is Nothing Then
+        ThrowError ProjectError.InvalidArgument, _
+            "The specification bundles need the specifications of the run"
+    End If
+
+    Set bundles = New BetterArray
+    bundles.LowerBound = 1
+
+    If specs.Dictionary.HasCheckings Then bundles.Push specs.Dictionary.CheckingValues
+    If specs.Choices.HasCheckings Then bundles.Push specs.Choices.CheckingValues
+    If specs.ExportObject.HasCheckings Then bundles.Push specs.ExportObject.CheckingValues
+    If specs.AnalysisObject.HasCheckings Then bundles.Push specs.AnalysisObject.CheckingValues
+    If specs.Password.HasCheckings Then bundles.Push specs.Password.CheckingValues
+    If specs.DesignFormat.HasCheckings Then bundles.Push specs.DesignFormat.CheckingValues
 
     'The specifications themselves. A geobase the user asked for that would
     'not open is filed here, and it used to leave the linelist with no
     'geographic data and nothing said.
-    If specs.HasCheckings Then Collect specs.CheckingValues
+    If specs.HasCheckings Then bundles.Push specs.CheckingValues
+
+    Set SpecificationBundles = bundles
+End Function
+
+'@label:bundle-text
+'@sub-title One bundle as text, ready to be joined with others
+'@details
+'The title line, then one line per entry, then the bundle end. An empty
+'bundle answers an empty string, so a caller may append the answer
+'without looking at it. Works on the predeclared instance.
+'@param checks Checking. The bundle to carry.
+'@param recordOnly Optional Boolean. True marks the bundle for the record alone.
+'@return String. The bundle text, or empty when the bundle holds nothing.
+'@export
+Public Function BundleText(ByVal checks As Checking, _
+                           Optional ByVal recordOnly As Boolean = False) As String
+    Dim keys As BetterArray
+    Dim keyIndex As Long
+    Dim keyName As String
+    Dim flagText As String
+    Dim textOut As String
+
+    If checks Is Nothing Then Exit Function
+    If checks.Length = 0 Then Exit Function
+
+    flagText = FLAG_WORKSHEET
+    If recordOnly Then flagText = FLAG_RECORD_ONLY
+
+    textOut = checks.CheckingTitle & FIELD_SEP & checks.CheckingSubTitle & _
+              FIELD_SEP & flagText & LINE_END
+
+    Set keys = checks.ListOfKeys
+    For keyIndex = keys.LowerBound To keys.UpperBound
+        keyName = CStr(keys.Item(keyIndex))
+        textOut = textOut & keyName & FIELD_SEP & _
+                  checks.ValueOf(keyName, checkingLabel) & FIELD_SEP & _
+                  ScopeText(checks, keyName) & LINE_END
+    Next keyIndex
+
+    BundleText = textOut & BUNDLE_END
+End Function
+
+'@label:collect-text
+'@sub-title Take every bundle carried in one text into the run
+'@details
+'The text is what one or more BundleText answers make when joined. Each
+'bundle is rebuilt as a Checking with its title, subtitle and scopes and
+'handed to Collect with its record-only flag. A line short of its three
+'fields is skipped, and a key the bundle already carries is skipped too.
+'An empty text, and a run that is closed, take nothing.
+'@param bundlesText String. The joined bundle texts.
+'@export
+Public Sub CollectText(ByVal bundlesText As String)
+    Dim bundles() As String
+    Dim bundleIndex As Long
+
+    If LenB(bundlesText) = 0 Then Exit Sub
+    If this.writer Is Nothing Then Exit Sub
+
+    bundles = Split(bundlesText, BUNDLE_END)
+    For bundleIndex = LBound(bundles) To UBound(bundles)
+        If LenB(bundles(bundleIndex)) > 0 Then CollectOneText bundles(bundleIndex)
+    Next bundleIndex
 End Sub
 
+'@label:collect-one-text
+'@sub-title Rebuild one bundle from its text and collect it
+'@param bundleText String. One bundle without its end mark.
+Private Sub CollectOneText(ByVal bundleText As String)
+    Dim lines() As String
+    Dim fields() As String
+    Dim lineIndex As Long
+    Dim checks As Checking
+    Dim recordOnly As Boolean
+
+    lines = Split(bundleText, LINE_END)
+
+    fields = Split(lines(LBound(lines)), FIELD_SEP)
+    If UBound(fields) < 2 Then Exit Sub
+
+    Set checks = Checking.Create(fields(0), fields(1))
+    recordOnly = (fields(2) = FLAG_RECORD_ONLY)
+
+    For lineIndex = LBound(lines) + 1 To UBound(lines)
+        If LenB(lines(lineIndex)) > 0 Then
+            fields = Split(lines(lineIndex), FIELD_SEP)
+            If UBound(fields) >= 2 Then
+                If Not checks.KeyExists(fields(0)) Then
+                    checks.Add fields(0), fields(1), ScopeFromWord(fields(2))
+                End If
+            End If
+        End If
+    Next lineIndex
+
+    Collect checks, recordOnly
+End Sub
+
+'@label:scope-from-word
+'@sub-title The scope a plain scope word stands for
+'@details
+'The reverse of ScopeText. A word this class does not know answers the
+'note scope, the way Checking reads an unknown type label.
+'@param scopeWord String. Error, Warning, Info, Success or Note.
+'@return Byte. The CheckingScope value.
+Private Function ScopeFromWord(ByVal scopeWord As String) As Byte
+    Select Case LCase$(Trim$(scopeWord))
+        Case "error"
+            ScopeFromWord = checkingError
+        Case "warning"
+            ScopeFromWord = checkingWarning
+        Case "info"
+            ScopeFromWord = checkingInfo
+        Case "success"
+            ScopeFromWord = checkingSuccess
+        Case Else
+            ScopeFromWord = checkingNote
+    End Select
+End Function
+
 '@label:finish
-'@sub-title Close the run and show the worksheet
+'@sub-title Close the run
 '@details
 'Writes the closing bundle (the outcome, the elapsed seconds, and the
 'sheet and variable counts when the driver passes them), installs the
-'worksheet filter handler, makes the worksheet visible and brings it to
-'the front, then releases the writer. A workbook that refuses the code
-'injection the filter needs gets a warning entry in the closing bundle
-'and the run still closes whole. The record stays alive for the text
-'export. A log that never started, or already finished, ignores the
-'call.
+'worksheet filter handler, then releases the writer. A workbook that
+'refuses the code injection the filter needs gets a warning entry in the
+'closing bundle and the run still closes whole. The record stays alive
+'for the text export. A log that never started, or already finished,
+'ignores the call. The worksheet is left as it is: the driver shows it
+'through ShowReport once its screen is back on.
 '@param outcome String. The outcome text of the run.
 '@param sheetCount Optional Long. Data entry sheets built. A value below 0 skips the entry.
 '@param variableCount Optional Long. Variables written. A value below 0 skips the entry.
@@ -483,18 +658,15 @@ Public Sub Finish(ByVal outcome As String, _
     closing.Add "elapsed", CStr(DateDiff("s", this.startedAt, Now)) & " seconds", checkingInfo
     Collect closing
 
-    'Show the report so the user can read it.
-    ShowReport
-
     Set this.writer = Nothing
 End Sub
 
 '@label:show-report
 '@sub-title Bring the report worksheet to the front
 '@details
-'The one owner of showing the report. Finish calls it at the end of a run and
-'the ribbon calls it whenever the user asks for the last report, so a report
-'opened either way opens the same way.
+'The one owner of showing the report. The drivers call it once, at the end
+'of a run, and the ribbon calls it whenever the user asks for the last
+'report, so a report opened either way opens the same way.
 '
 'WHY THE WORKBOOK IS ACTIVATED FIRST
 '-------------------------------------------------------------------------------

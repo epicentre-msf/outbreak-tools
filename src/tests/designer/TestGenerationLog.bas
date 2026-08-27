@@ -4,7 +4,7 @@ Attribute VB_Description = "Unit tests for the GenerationLog class"
 Option Explicit
 
 '@Folder("CustomTests.Designer")
-'@ModuleDescription("Validates GenerationLog: the run header, the stamped in-memory record, the append across two flushes, the run window, the report sections and their subsections, the closing bundle, the text export and the re-run reset.")
+'@ModuleDescription("Validates GenerationLog: the run header, the stamped in-memory record, the append across two flushes, the run window, the report sections and their subsections, the bundles carried as text, the closing bundle, the text export and the re-run reset.")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As CustomTest
@@ -377,8 +377,8 @@ End Sub
 '@section Finish Tests
 '===============================================================================
 '@TestMethod("GenerationLog.Finish")
-Public Sub TestFinishWritesOutcomeAndShowsSheet()
-    CustomTestSetTitles Assert, "GenerationLog", "TestFinishWritesOutcomeAndShowsSheet"
+Public Sub TestFinishWritesOutcomeAndClosesTheRun()
+    CustomTestSetTitles Assert, "GenerationLog", "TestFinishWritesOutcomeAndClosesTheRun"
     On Error GoTo Fail
 
     'Arrange
@@ -401,10 +401,11 @@ Public Sub TestFinishWritesOutcomeAndShowsSheet()
     Assert.IsTrue InStr(1, runLog.RecordLine(4), "42 variable(s) written") > 0, _
                   "The variable count should be written when the driver knows it."
 
-    'Assert: the sheet is shown, and a second Finish changes nothing
-    Assert.AreEqual CLng(xlSheetVisible), _
-                    CLng(FixtureWorkbook.Worksheets(SHEET_CHECKING).Visible), _
-                    "Finish should make the report sheet visible."
+    'Assert: the sheet is left as it was, and a second Finish changes nothing.
+    'The driver shows the report once its screen is back on.
+    Assert.AreNotEqual CLng(xlSheetVisible), _
+                       CLng(FixtureWorkbook.Worksheets(SHEET_CHECKING).Visible), _
+                       "Finish should leave the report sheet as it was."
     Dim closedLength As Long
     closedLength = runLog.RecordLength
     runLog.Finish "again"
@@ -413,7 +414,86 @@ Public Sub TestFinishWritesOutcomeAndShowsSheet()
 
     Exit Sub
 Fail:
-    CustomTestLogFailure Assert, "TestFinishWritesOutcomeAndShowsSheet", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestFinishWritesOutcomeAndClosesTheRun", Err.Number, Err.Description
+End Sub
+
+
+'@section Text carriage Tests
+'===============================================================================
+'A build step may run where the log cannot reach, so its bundles travel as
+'one string. The two tests below are the two ends of that carriage.
+
+'@TestMethod("GenerationLog.CollectText")
+Public Sub TestBundleTextRoundTripsThroughCollectText()
+    CustomTestSetTitles Assert, "GenerationLog", "TestBundleTextRoundTripsThroughCollectText"
+    On Error GoTo Fail
+
+    'Arrange: an open run, one bundle for the worksheet with two scopes and
+    'a subtitle, one bundle for the record alone
+    Dim runLog As GenerationLog
+    Set runLog = GenerationLog.Create(FixtureWorkbook)
+    runLog.Start
+
+    Dim shown As Checking
+    Set shown = Checking.Create("phase one", "part")
+    shown.Add "first key", "first label", checkingWarning
+    shown.Add "second key", "second label", checkingError
+
+    Dim hidden As Checking
+    Set hidden = Checking.Create("phase two")
+    hidden.Add "third key", "third label", checkingInfo
+
+    Dim carried As String
+    carried = GenerationLog.BundleText(shown) & GenerationLog.BundleText(hidden, True)
+
+    'Act
+    runLog.CollectText carried
+
+    'Assert: three entries after the header, with their scopes and titles
+    Assert.AreEqual CLng(4), runLog.RecordLength, _
+                    "The three carried entries should follow the header in the record."
+    Assert.IsTrue InStr(1, runLog.RecordLine(2), "first label") > 0, _
+                  "The first entry should keep its label."
+    Assert.IsTrue InStr(1, runLog.RecordLine(2), "Warning") > 0, _
+                  "The first entry should keep its warning scope."
+    Assert.IsTrue InStr(1, runLog.RecordLine(3), "Error") > 0, _
+                  "The second entry should keep its error scope."
+    Assert.IsTrue InStr(1, runLog.RecordLine(2), "phase one") > 0, _
+                  "The entries should keep the title of their bundle."
+
+    'Assert: the worksheet bundle landed, the record-only bundle stayed off
+    Dim sh As Worksheet
+    Set sh = FixtureWorkbook.Worksheets(SHEET_CHECKING)
+    Assert.IsNotNothing sh.Cells.Find(What:="first label", LookIn:=xlValues, LookAt:=xlPart), _
+                        "The worksheet bundle should reach the sheet."
+    Assert.IsNothing sh.Cells.Find(What:="third label", LookIn:=xlValues, LookAt:=xlPart), _
+                     "The record-only bundle should stay off the sheet."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestBundleTextRoundTripsThroughCollectText", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("GenerationLog.CollectText")
+Public Sub TestEmptyTextAndEmptyBundleCarryNothing()
+    CustomTestSetTitles Assert, "GenerationLog", "TestEmptyTextAndEmptyBundleCarryNothing"
+    On Error GoTo Fail
+
+    Dim runLog As GenerationLog
+    Set runLog = GenerationLog.Create(FixtureWorkbook)
+    runLog.Start
+
+    'An empty bundle answers an empty text, and an empty text collects nothing
+    Assert.AreEqual vbNullString, GenerationLog.BundleText(Checking.Create("nothing filed")), _
+                    "An empty bundle should answer an empty text."
+
+    runLog.CollectText vbNullString
+    Assert.AreEqual CLng(1), runLog.RecordLength, _
+                    "An empty text should add nothing to the record."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestEmptyTextAndEmptyBundleCarryNothing", Err.Number, Err.Description
 End Sub
 
 

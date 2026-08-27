@@ -46,13 +46,20 @@ Option Explicit
 'WHAT THIS CLASS REPORTS
 '-------------------------------------------------------------------------------
 'Prepare files its own entries and folds in the ones CodeTransfer filed, so
-'HasCheckings and CheckingValues answer over both. clickGenerate flushes them
-'into the generation report right after Prepare returns.
+'HasCheckings and CheckingValues answer over both. The build driver flushes
+'them into the generation report right after Prepare returns.
+'
+'A BUILD THAT STOPS KEEPS ITS FILE
+'-------------------------------------------------------------------------------
+'DiscardBuild is the one exit of a build that stops before SaveLL. It saves
+'the unfinished workbook as __temp.xlsb in the temporary repository, closes
+'it and answers the path, so the report can name what the user may open.
+'No question is asked: the build may run in an instance nobody sees.
 '@depends LinelistSpecs, LLdictionary, LLSheets, TranslationObject,
 '  LLFormat, DropdownLists, CustomPivotTable, TemporaryRepos,
 '  Buttons, CodeTransfer, Passwords, HiddenNames, AnaTabIds,
 '  ShowHideStore, AnalysisRanges, Checking, BetterArray, LLTranslation
-'@version 1.5 (2026-08-27)
+'@version 1.6 (2026-08-28)
 
 
 
@@ -69,6 +76,11 @@ Private Const CRF_PREFIX As String = "crf_"
 'a dictionary sheet name of 25 characters created `print_` + 30 characters and
 'PrintWksh then asked for the 31-character name and raised.
 Private Const SHEET_NAME_MAX_LENGTH As Long = 31
+
+'The name of the unfinished workbook a stopped build leaves in the
+'temporary repository. LinelistSpecs.Prepare saves a template copy under
+'the same name, so a template build is kept where it already stood.
+Private Const KEPT_FILE_NAME As String = "__temp.xlsb"
 
 Private Const WORKBOOK_MODULE_NAME As String = "EventLinelistWorkbook"
 Private Const SHEET_MODULE_NAME As String = "EventLinelistSheet"
@@ -528,8 +540,8 @@ End Sub
 '
 'Both cached references to the workbook are dropped once it is closed. This
 'instance held one and LinelistSpecs held the other, and a read of either after
-'the close raised an automation error. The read that mattered was ErrorManage,
-'reached from clickGenerate's cleanup, so the failure landed inside the error
+'the close raised an automation error. The read that mattered was the discard
+'reached from a driver's cleanup, so the failure landed inside the error
 'handler and hid the error that got it there.
 '@export
 Public Sub SaveLL()
@@ -641,68 +653,90 @@ Private Function FirstVisibleSheet(ByVal outWkb As Workbook) As Worksheet
     Next
 End Function
 
-'@label:error-manage
-'@sub-title Display an error dialog for incomplete linelist operations
-'@details
-'Shows a message box with the error details and asks the user whether
-'they want to view the incomplete linelist workbook or close it without
-'saving. If the user chooses Yes the workbook's Application is made
-'visible; otherwise the workbook is closed without saving.
-'
-'A workbook SaveLL has already closed leaves nothing to show, and the message
-'says so. This routine is reached from a caller's error handler, so it has to
-'finish whatever state the build left behind.
-'@param textMessage Optional String. Error description to display.
-'Defaults to vbNullString.
-'@export
-Public Sub ErrorManage(Optional ByVal textMessage As String = vbNullString)
-    Dim outWkb As Workbook
-    Dim answer As Long
-
-    Set outWkb = this.outWkb
-    If outWkb Is Nothing Then Set outWkb = this.specs.LLWorkbook
-
-    If outWkb Is Nothing Then
-        MsgBox "An internal error occurred with specified information: " & Chr(10) & _
-               textMessage & Chr(10) & _
-               "The linelist workbook is already closed.", _
-               vbExclamation + vbOKOnly, "ERROR"
-        Exit Sub
-    End If
-
-    answer = MsgBox("An internal error occurred with specified information: " & Chr(10) & _
-                    textMessage & Chr(10) & _
-                    "Do you want to see the uncompleted linelist?", _
-                    vbExclamation + vbYesNo, "ERROR")
-
-    If answer = vbYes Then
-        outWkb.Application.Visible = True
-    Else
-        DiscardBuild
-    End If
-End Sub
-
 '@label:discard-build
-'@sub-title Close the incomplete output workbook and drop the references to it
+'@sub-title Keep the unfinished output workbook on disk and close it
 '@details
-'Closes the output workbook of a build that stopped before SaveLL, with its
-'changes thrown away, and drops both cached references to it: the one this
-'instance holds and the one LinelistSpecs holds. The multi generation driver
-'calls it after a failed row, so the loop moves to the next row with no
-'workbook left open behind it; ErrorManage routes its close branch here. When
-'there is no output workbook the call exits quietly.
+'A build that stopped before SaveLL leaves its output workbook open. This
+'saves it as __temp.xlsb in the temporary repository, closes it and drops
+'both cached references to it: the one this instance holds and the one
+'LinelistSpecs holds. The file is marked to survive the drop of the
+'repository, so the user can open what the build managed to write, and
+'the path is answered so the caller can name it in the report.
+'
+'The repository is the one Prepare took from the specifications. Before
+'Prepare it is built over the output folder entry; with no folder known
+'the workbook is closed with its changes thrown away and the answer is
+'empty. With no output workbook at all the call exits quietly.
+'
+'A save that fails raises nothing here: this runs from failure paths, and
+'the fault that got the caller here is the one to report. The workbook is
+'closed either way and the answer is then empty.
+'@return String. The full path of the kept file, or empty when nothing was kept.
 '@export
-Public Sub DiscardBuild()
+Public Function DiscardBuild() As String
     Dim outWkb As Workbook
+    Dim repos As TemporaryRepos
+    Dim keptPath As String
+    Dim hostApp As Application
+    Dim prevAlerts As Boolean
 
     Set outWkb = this.outWkb
     If outWkb Is Nothing Then Set outWkb = this.specs.LLWorkbook
-    If outWkb Is Nothing Then Exit Sub
+    If outWkb Is Nothing Then Exit Function
+
+    Set repos = ResolveTemporaryRepos()
+
+    If Not repos Is Nothing Then
+        keptPath = repos.CreateFilePath(KEPT_FILE_NAME)
+        Set hostApp = outWkb.Application
+        prevAlerts = hostApp.DisplayAlerts
+
+        'Silently: the file of an earlier failed run is overwritten, and the
+        'confirmation box Excel would open has nobody to answer it on a
+        'hidden instance. A refused save leaves nothing kept.
+        On Error Resume Next
+        hostApp.DisplayAlerts = False
+        outWkb.SaveAs fileName:=keptPath, fileFormat:=xlExcel12, _
+                      ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+        If Err.Number <> 0 Then
+            Debug.Print CLASS_NAME & ".DiscardBuild: "; Err.Number; Err.Description
+            keptPath = vbNullString
+        End If
+        hostApp.DisplayAlerts = prevAlerts
+        On Error GoTo 0
+
+        If LenB(keptPath) > 0 Then repos.KeepFile KEPT_FILE_NAME
+    End If
 
     outWkb.Close savechanges:=False
     Set this.outWkb = Nothing
     this.specs.ReleaseLLWorkbook
-End Sub
+
+    DiscardBuild = keptPath
+End Function
+
+'@label:resolve-temporary-repos
+'@sub-title The temporary repository of the build, found or built over the output folder
+'@details
+'Prepare takes the repository from the specifications. A build that stops
+'before Prepare has none yet, so one is built over the output folder entry
+'when that entry is filled. An empty entry answers Nothing, and the read of
+'it is shielded: this is called from failure paths.
+'@return TemporaryRepos. The repository, or Nothing when no folder is known.
+Private Function ResolveTemporaryRepos() As TemporaryRepos
+    Dim folderPath As String
+
+    If this.tempRepos Is Nothing Then Set this.tempRepos = this.specs.OutputTemporaryRepos
+
+    If this.tempRepos Is Nothing Then
+        On Error Resume Next
+        folderPath = Trim$(this.specs.Value("lldir"))
+        On Error GoTo 0
+        If LenB(folderPath) > 0 Then Set this.tempRepos = TemporaryRepos.Create(folderPath)
+    End If
+
+    Set ResolveTemporaryRepos = this.tempRepos
+End Function
 
 '@section Private - Workbook management
 '===============================================================================

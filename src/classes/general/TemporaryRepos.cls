@@ -26,8 +26,16 @@ Option Explicit
 'DeleteAll empties the folder and creates it again, and Reset empties it and
 'marks the object as needing another EnsureReady. Terminating an instance
 'empties the folder.
+'
+'THE KEPT FILE
+'-------------------------------------------------------------------------------
+'A build that fails saves its unfinished workbook in this folder and drops
+'the instance right after. KeepFile marks one file name to survive that
+'drop: Class_Terminate deletes every other file and leaves the marked ones.
+'Reset and DeleteAll are explicit calls and wipe the folder whole, marks
+'included, so the next run that saves its linelist starts clean.
 '@depends ProjectError
-'@version 1.0 (2026-02-09)
+'@version 1.1 (2026-08-28)
 
 
 '@section State and constants
@@ -35,10 +43,14 @@ Option Explicit
 Private Type TTempService
     rootPath As String
     isReady As Boolean
+    'The file names KeepFile marked, each wrapped in the separator so a
+    'name is matched whole: |__temp.xlsb|
+    keptNames As String
 End Type
 
 Private this As TTempService
 Private Const DEFAULT_FOLDER_NAME As String = "OBTApp_"
+Private Const KEPT_SEPARATOR As String = "|"
 
 
 '@section Factory helpers
@@ -61,6 +73,7 @@ End Function
 Friend Sub Initialise(Optional ByVal baseDirectory As String)
     this.rootPath = ResolveRootPath(baseDirectory)
     this.isReady = False
+    this.keptNames = vbNullString
 End Sub
 
 
@@ -78,9 +91,12 @@ End Sub
 
 '@label:reset
 '@sub-title Remove all temporary artefacts and mark repository as uninitialised
+'@details
+'The kept marks go with the files: a reset repository starts clean.
 '@export
 Public Sub Reset()
     DeleteAllInternal
+    this.keptNames = vbNullString
     this.isReady = False
 End Sub
 
@@ -121,12 +137,42 @@ End Sub
 
 '@label:delete-all
 '@sub-title Remove every file within the repository, then recreate the root folder
+'@details
+'The kept marks go with the files, the way Reset drops them.
 '@export
 Public Sub DeleteAll()
     EnsureReady
     DeleteAllInternal
+    this.keptNames = vbNullString
     EnsureDirectoryExists this.rootPath
 End Sub
+
+'@label:keep-file
+'@sub-title Mark one file of the repository to survive the drop of the instance
+'@details
+'The name is cleaned the way CreateFilePath cleans it, so the mark matches
+'the file that call wrote. Marking the same name twice is one mark. The
+'mark holds until Reset or DeleteAll wipes the folder.
+'@param fileName String. The file name inside the repository.
+'@export
+Public Sub KeepFile(ByVal fileName As String)
+    Dim wrapped As String
+
+    wrapped = KEPT_SEPARATOR & SanitizeFileName(fileName) & KEPT_SEPARATOR
+    If InStr(1, this.keptNames, wrapped, vbTextCompare) > 0 Then Exit Sub
+
+    this.keptNames = this.keptNames & wrapped
+End Sub
+
+'@label:is-kept
+'@sub-title Whether a file name carries the keep mark
+'@param fileName String. The bare file name.
+'@return Boolean. True when KeepFile marked it.
+Private Function IsKept(ByVal fileName As String) As Boolean
+    If LenB(this.keptNames) = 0 Then Exit Function
+    IsKept = InStr(1, this.keptNames, _
+                   KEPT_SEPARATOR & fileName & KEPT_SEPARATOR, vbTextCompare) > 0
+End Function
 
 
 '@section Internal helpers
@@ -318,7 +364,11 @@ End Function
 'folder through state the host holds, and deleting an entry part way through
 'that walk makes the rest of the listing unreliable, so files were left behind.
 'The listing is small: this folder holds the working files of one generation.
-Private Sub DeleteAllInternal()
+'
+'A file KeepFile marked is left alone when skipKept is True, which is what
+'the instance drop asks for. The explicit wipes pass False.
+'@param skipKept Optional Boolean. True leaves the marked files on disk.
+Private Sub DeleteAllInternal(Optional ByVal skipKept As Boolean = False)
     Dim fileName As String
     Dim names As Collection
     Dim entry As Variant
@@ -336,17 +386,22 @@ Private Sub DeleteAllInternal()
     On Error GoTo 0
 
     For Each entry In names
-        On Error Resume Next
-            Kill this.rootPath & CStr(entry)
-        On Error GoTo 0
+        If Not (skipKept And IsKept(CStr(entry))) Then
+            On Error Resume Next
+                Kill this.rootPath & CStr(entry)
+            On Error GoTo 0
+        End If
     Next entry
 End Sub
 
 '@label:class-terminate
 '@sub-title Clean up temporary files when the instance is destroyed
+'@details
+'The files KeepFile marked stay: the unfinished linelist of a failed build
+'is saved here right before the instance is dropped.
 Private Sub Class_Terminate()
     On Error Resume Next
-        DeleteAllInternal
+        DeleteAllInternal skipKept:=True
     On Error GoTo 0
 End Sub
 

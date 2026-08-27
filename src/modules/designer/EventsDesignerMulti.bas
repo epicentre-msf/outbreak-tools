@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the Multi group on the designer workbook, and the driver that generates one linelist per row.")
-'@depends CustomTable, ApplicationState, OSFiles, DropdownLists, BetterArray, EventsDesignerAdvanced, EventsDesignerCore, DesignerEntry, DesignerPreparation, GenerationLog, Checking, ProgressBar, Linelist
+'@depends CustomTable, ApplicationState, OSFiles, DropdownLists, BetterArray, EventsDesignerAdvanced, EventsDesignerCore, DesignerEntry, DesignerPreparation, GenerationLog, Checking, ProgressBar
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Ribbon callbacks for the Multi group manage the T_Multi ListObject on
@@ -40,6 +40,8 @@ Option Explicit
 'workbook of a row is opened once, inside the build. Every row flushes
 'its checkings into the one generation report of the run, its outcome
 'lands in the result column, and a failed row leaves the loop running.
+'The screen stays off from the press to the restore, and the report is
+'shown once, at the end.
 '
 'THE RIBBON FILE OF THE RUN
 '-------------------------------------------------------------------------------
@@ -624,8 +626,8 @@ End Sub
 '@details
 'The multi driver. One generation report serves the whole run and one
 'progress bar moves over the rows when the sheet carries its range. The
-'summary message closes the run; each row's own outcome is in the
-'result column.
+'report is shown once the screen is back, then the summary message closes
+'the run; each row's own outcome is in the result column.
 '
 'The ribbon file of the run is settled before the busy state, because it
 'may open a dialog. Every row is built with it.
@@ -678,16 +680,15 @@ Public Sub clickGenerateMulti(ByRef ribbonControl As IRibbonControl)
 
     GenerateMultipleRows lo, entry, bar, builtCount, failedCount, templatePath
 
-    'The run ends with the last built linelist in front, and the bar the
-    'user is watching is here.
-    EventsDesignerAdvanced.BringToFront designerBook
-
     If Not bar Is Nothing Then bar.Complete CStr(builtCount) & " built"
     EventsDesignerAdvanced.FinishRunLog CStr(builtCount) & " linelist(s) built, " & _
                                         CStr(failedCount) & " failed"
 
     appScope.Restore
     Set appScope = Nothing
+
+    'The report, once, with the screen already back on.
+    EventsDesignerAdvanced.ShowRunLog
     MsgBox CStr(builtCount) & " linelist(s) built, " & CStr(failedCount) & _
            " failed. The " & Chr(34) & COL_RESULT & Chr(34) & _
            " column carries each row's outcome.", _
@@ -701,9 +702,10 @@ Cleanup:
     errDesc = Err.Description
 
     On Error Resume Next
-    'Show whatever was logged before the error
+    'Close the log over whatever was logged before the error, and show it
     EventsDesignerAdvanced.FinishRunLog "Failed: " & errDesc
     If Not appScope Is Nothing Then appScope.Restore
+    EventsDesignerAdvanced.ShowRunLog
     On Error GoTo 0
 
     If errNumber <> 0 Then
@@ -820,16 +822,11 @@ Public Sub GenerateMultipleRows(ByVal lo As ListObject, _
     Dim setupPath As String
     Dim outcomeText As String
     Dim rowBuilt As Boolean
-    Dim designerBook As Workbook
 
     builtCount = 0
     failedCount = 0
 
     If lo.DataBodyRange Is Nothing Then Exit Sub
-
-    'The bar and the result cells live here, and the build puts each new
-    'linelist workbook in front of them.
-    Set designerBook = lo.Parent.Parent
 
     For rowIdx = 1 To lo.ListRows.Count
         setupPath = CellText(lo, rowIdx, COL_SETUPS)
@@ -837,7 +834,6 @@ Public Sub GenerateMultipleRows(ByVal lo As ListObject, _
         If LenB(setupPath) > 0 Then
             processed = processed + 1
             If Not bar Is Nothing Then
-                EventsDesignerAdvanced.BringToFront designerBook
                 bar.Update processed - 1, RowStatus(bar, processed, setupPath)
             End If
 
@@ -864,7 +860,6 @@ Public Sub GenerateMultipleRows(ByVal lo As ListObject, _
             EventsDesignerAdvanced.CloseLogSection
 
             If Not bar Is Nothing Then
-                EventsDesignerAdvanced.BringToFront designerBook
                 bar.Update processed, RowStatus(bar, processed, setupPath)
             End If
         ElseIf RowHasContent(lo, rowIdx) Then
@@ -983,11 +978,13 @@ End Function
 '@Description("Run the entry checks and one build; answer the outcome with no raise.")
 '@details
 'The one place a row's fault is caught, so the loop keeps running. A
-'refused row answers False with a pointer at the report, where the
-'checks landed; a failed row answers False with the error text, and the
-'incomplete output workbook is discarded quietly. The status target is
-'the row's result cell: the build writes its milestones into it, and
-'the caller overwrites it with the row's outcome.
+'refused row answers False with the names of the entries that failed; a
+'failed row answers False with the error text, which names the kept
+'__temp.xlsb when the build got far enough to keep one. The build has
+'already closed that workbook, so the loop moves to the next row with
+'nothing left open behind it. The status target is the row's result
+'cell: the build writes its milestones into it, and the caller
+'overwrites it with the row's outcome.
 '@param entry DesignerEntry. The entry manager, already loaded with the row.
 '@param outcomeText String. Answers the written path on success and the fault text otherwise.
 '@param statusTarget Range. One cell taking the build's milestone texts. Nothing means no writes.
@@ -995,7 +992,6 @@ End Function
 Private Function BuildRow(ByVal entry As DesignerEntry, _
                           ByRef outcomeText As String, _
                           Optional ByVal statusTarget As Range = Nothing) As Boolean
-    Dim ll As Linelist
     Dim faults As Checking
 
     On Error GoTo Fail
@@ -1009,18 +1005,12 @@ Private Function BuildRow(ByVal entry As DesignerEntry, _
         Exit Function
     End If
 
-    outcomeText = EventsDesignerAdvanced.GenerateOne(entry, ll, Nothing, statusTarget)
+    outcomeText = EventsDesignerAdvanced.GenerateOne(entry, statusTarget)
     BuildRow = True
     Exit Function
 
 Fail:
     outcomeText = "Failed: " & Err.Description
-
-    'The failed build leaves its output workbook open; the batch closes
-    'it quietly and moves to the next row.
-    On Error Resume Next
-    If Not ll Is Nothing Then ll.DiscardBuild
-    On Error GoTo 0
 End Function
 
 '@Description("Flush one log bundle naming the row before its build starts.")
