@@ -15,6 +15,13 @@ Private priorEvents As Boolean
 
 Private Const SNAPSHOT_KEY As String = "APPSTATE_SNAPSHOT"
 
+'The pointer the setup session rests on, and the pointer every busy state of it
+'shows. The two being equal is what makes an operation leave no visible pointer
+'change: ApplicationState snapshots the standing cursor and puts it back, so
+'arrow follows arrow. On xlDefault Excel shows its own busy pointer for the
+'length of every macro, which is the hourglass the setup used to flash.
+Private Const RESTING_CURSOR As Long = xlNorthwestArrow
+
 'Sheets whose change handler writes to a worksheet other than the hidden
 'registry. Everything else the workbook lets through only records a flag.
 Private Const SHEET_ANALYSIS As String = "Analysis"
@@ -31,10 +38,10 @@ Private Const SHEET_ANALYSIS As String = "Analysis"
 'busyDepth.  When persist is False, HiddenNames I/O is skipped entirely for
 'fast event handlers and lightweight ribbon operations.
 '@param calculateOnSave Optional Boolean. Value for CalculateBeforeSave. Defaults to True.
-'@param busyCursor Optional Long. Cursor shown while busy. When 0 (default), leaves cursor unchanged.
+'@param busyCursor Optional Long. Cursor shown while busy. Defaults to the resting arrow.
 '@param persist Optional Boolean. When True (default), persists snapshot to HiddenNames for crash recovery.
 Public Sub EnterBusyState(Optional ByVal calculateOnSave As Boolean = True, _
-                          Optional ByVal busyCursor As Long = 0, _
+                          Optional ByVal busyCursor As Long = RESTING_CURSOR, _
                           Optional ByVal persist As Boolean = True)
 
     If persist Then RecoverIfNeeded
@@ -76,7 +83,8 @@ End Sub
 '@details
 'Decrements the nesting counter.  On the outermost exit: restores the
 'ApplicationState snapshot, clears the persisted HiddenName (only when
-'persistence was used), resets the cursor, and releases the scope reference.
+'persistence was used), parks the pointer back on the resting arrow, and
+'releases the scope reference.
 'When the outermost call was EnterQuietState, only Application.EnableEvents is
 'put back.
 Public Sub ExitBusyState()
@@ -99,8 +107,14 @@ Public Sub ExitBusyState()
     On Error Resume Next
     If Not appScope Is Nothing Then appScope.Restore
     If persisted Then ClearPersistedSnapshot
-    Application.Cursor = xlDefault
     On Error GoTo 0
+
+    'The restore has already put the snapshot cursor back. This is for the
+    'snapshot that was taken on xlDefault -- a session that had another
+    'workbook open before the setup arrived, or a modal form that handed the
+    'pointer back on the default. Writing the arrow here is what keeps the
+    'invariant the busy cursor relies on.
+    RestPointer
 
     Set appScope = Nothing
     persisted = False
@@ -115,6 +129,22 @@ End Property
 Public Property Get IsQuietState() As Boolean
     IsQuietState = ((busyDepth > 0) And eventsOnly)
 End Property
+
+'@sub-title Put the mouse pointer back on the arrow the session rests on
+'@details
+'The setup opens on this arrow and every busy state shows it, so an operation
+'leaves no visible pointer change at all. A modal form breaks that: Excel hands
+'the pointer back on the default cursor once the form closes, and from there
+'every macro of the session flashes Excel's own busy pointer. One call on the
+'way out of a form session puts the invariant back.
+'
+'It is here rather than inline because the arrow is the manager's own answer,
+'and a caller naming it would be a second owner of it.
+Public Sub RestPointer()
+    On Error Resume Next
+    Application.Cursor = RESTING_CURSOR
+    On Error GoTo 0
+End Sub
 
 
 '@section Crash Recovery
@@ -237,6 +267,12 @@ End Sub
 '@section Workbook Entry Points
 '===============================================================================
 
+'@sub-title Answer the open, and leave the session on the resting pointer
+'@details
+'The open runs inside a busy state whose snapshot was taken before the setup
+'had said anything about how it wants to run, so the exit puts back whatever
+'pointer the host Excel was on. The arrow is applied again once that state has
+'closed, and every busy state of the session then opens and closes on it.
 Public Sub WorkbookOpened()
     On Error GoTo Cleanup
     EnterBusyState
@@ -244,6 +280,7 @@ Public Sub WorkbookOpened()
 Cleanup:
     If Err.Number <> 0 Then LogHandlerFailure "WorkbookOpened", ThisWorkbook.Name
     ExitBusyState
+    RestPointer
 End Sub
 
 '@sub-title Route an activation under the lightest state it needs
@@ -302,7 +339,7 @@ End Sub
 
 Public Sub RefreshAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
     On Error GoTo Cleanup
-    EnterBusyState busyCursor:=xlNorthWestArrow, persist:=False
+    EnterBusyState persist:=False
     Service.UpdateAnalysisDropdowns forceUpdate
 Cleanup:
     If Err.Number <> 0 Then LogHandlerFailure "RefreshAnalysisDropdowns", ThisWorkbook.Name
@@ -311,7 +348,7 @@ End Sub
 
 Public Sub RecalculateAnalysis()
     On Error GoTo Cleanup
-    EnterBusyState busyCursor:=xlNorthWestArrow, persist:=False
+    EnterBusyState persist:=False
     Service.RecalculateAnalysis
 Cleanup:
     If Err.Number <> 0 Then LogHandlerFailure "RecalculateAnalysis", ThisWorkbook.Name

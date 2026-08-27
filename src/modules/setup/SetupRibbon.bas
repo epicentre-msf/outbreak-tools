@@ -512,6 +512,11 @@ End Sub
 Public Sub clickImport(ByRef ribbonControl As IRibbonControl)
     SetupHelpers.PrepareImportsForm cleanSetup:=False
     [Imports].Show
+
+    'Excel hands the pointer back on the default cursor when a modal form
+    'closes, and from there every macro of the session flashes its busy
+    'pointer. The manager parks it back on the arrow the setup rests on.
+    EventsManager.RestPointer
 End Sub
 
 
@@ -520,6 +525,11 @@ End Sub
 Public Sub clickClearSetup(ByRef ribbonControl As IRibbonControl)
     SetupHelpers.PrepareImportsForm cleanSetup:=True
     [Imports].Show
+
+    'Excel hands the pointer back on the default cursor when a modal form
+    'closes, and from there every macro of the session flashes its busy
+    'pointer. The manager parks it back on the arrow the setup rests on.
+    EventsManager.RestPointer
 End Sub
 
 '@Description("Callback for btnImpExp onAction: import setup elements from a workbook using table mode")

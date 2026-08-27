@@ -58,7 +58,6 @@ Private this As TSetupPreparation
 '@section Constants
 '===============================================================================
 Private Const SHEET_DROPDOWNS As String = "__variables"
-Private Const SHEET_FORMATTER As String = "__formatter"
 Private Const SHEET_UPDATED As String = "__updated"
 Private Const SHEET_FORMULA As String = "__formula"
 Private Const SHEET_DICTIONARY As String = "Dictionary"
@@ -282,7 +281,6 @@ Private Sub EnsureHiddenSheets(ByRef manager As Development)
 
     manager.AddHiddenSheet SHEET_UPDATED
     manager.AddHiddenSheet SHEET_DROPDOWNS
-    manager.AddHiddenSheet SHEET_FORMATTER
     manager.AddHiddenSheet SHEET_PASS
     manager.AddHiddenSheet SHEET_FORMULA
     manager.AddHiddenSheet SHEET_DEV

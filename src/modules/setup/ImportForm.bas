@@ -85,7 +85,7 @@ DebugCleanup:
     'state was left on after a failure.
     On Error Resume Next
     EventsManager.ExitBusyState
-    Application.Cursor = xlDefault
+    EventsManager.RestPointer
     On Error GoTo 0
     Resume cleanExit
 End Sub
