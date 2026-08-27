@@ -71,7 +71,7 @@ End Enum
 '@depends Linelist, LLSheets, LinelistSpecs, LLdictionary, LLFormat,
 '  DropdownLists, Passwords, TranslationObject, Buttons, CustomPivotTable,
 '  HiddenNames, SectionBuilder, Checking, BetterArray
-'@version 1.1 (2026-07-31)
+'@version 1.2 (2026-08-27)
 
 
 
@@ -478,7 +478,7 @@ Private Sub BuildHList()
     'How many cells an untouched data row carries. Every reader compares a row
     'against this to decide whether the row holds anything a user typed.
     With Lo.ListRows(1)
-        blankRowCells = Application.WorksheetFunction.CountA(.Range)
+        blankRowCells = Lo.Parent.Application.WorksheetFunction.CountA(.Range)
         EnsureAndSet shHn, "blank_row_count", blankRowCells, HiddenNameTypeLong
         EnsureAndSet printHiddenNames, "blank_row_count", blankRowCells, HiddenNameTypeLong
     End With
@@ -676,7 +676,9 @@ End Sub
 'ActiveWindow belongs to whichever sheet is active, so the activation is tested
 'before the three writes. A sheet that refuses to activate - a hidden one, or a
 'workbook whose structure is protected - used to have the freeze applied to
-'whatever worksheet was active at the time, with no message.
+'whatever worksheet was active at the time, with no message. The active sheet
+'and the active window are read from the Application the sheet lives in, so the
+'test holds in whatever Excel instance the build runs in.
 '@param sh Worksheet. The sheet whose panes are frozen.
 '@param splitRow Long. The row the horizontal split sits under.
 '@param splitColumn Optional Long. The column the vertical split sits after.
@@ -684,18 +686,21 @@ End Sub
 Private Sub FreezeHeader(ByVal sh As Worksheet, ByVal splitRow As Long, _
                          Optional ByVal splitColumn As Long = 0)
     Dim freezeError As Long
+    Dim excelApp As Application
+
+    Set excelApp = sh.Application
 
     On Error Resume Next
         sh.Activate
     On Error GoTo 0
 
-    If Not (ActiveSheet Is sh) Then
+    If Not (excelApp.ActiveSheet Is sh) Then
         LogInfo "The panes of " & this.sheetName & " were left unfrozen: the " & _
                 "worksheet could not be brought to the front.", checkingWarning
         Exit Sub
     End If
 
-    If ActiveWindow Is Nothing Then
+    If excelApp.ActiveWindow Is Nothing Then
         LogInfo "The panes of " & this.sheetName & " were left unfrozen: the " & _
                 "workbook has no window.", checkingWarning
         Exit Sub
@@ -710,7 +715,7 @@ Private Sub FreezeHeader(ByVal sh As Worksheet, ByVal splitRow As Long, _
     'data entry sheet and delivered a linelist with none.
     freezeError = 0
     On Error Resume Next
-        With ActiveWindow
+        With excelApp.ActiveWindow
             .SplitRow = splitRow
             If splitColumn > 0 Then .SplitColumn = splitColumn
             .FreezePanes = True

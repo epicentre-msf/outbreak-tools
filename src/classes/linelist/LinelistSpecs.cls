@@ -60,8 +60,15 @@ End Enum
 '@depends LLdictionary, LLChoices, LLTranslation, LLGeo, LLExport, Analysis
 '@depends Passwords, LLFormat, FormulaData, LLVariables, Formulas
 '@depends InitTransfer, TemporaryRepos, ApplicationState
+'
+'THE APPLICATION THE BUILD RUNS IN
+'-------------------------------------------------------------------------------
+'Create takes an optional Application and keeps it as the host. Every workbook
+'the facade opens or adds, and the busy state Prepare enters, go through that
+'host, so the same build runs in whatever Excel instance it is handed. The
+'default is the Application the code runs in. HostApplication answers it.
 '@depends TranslationObject, HiddenNames, Checking, BetterArray
-'@version 1.2 (2026-07-30)
+'@version 1.3 (2026-08-27)
 
 
 
@@ -71,6 +78,7 @@ End Enum
 
 Private Type TLinelistSpecs
     specsWkb As Workbook
+    excelApp As Application
     dictionary As LLdictionary
     choices As LLChoices
     translations As LLTranslation
@@ -147,16 +155,24 @@ Private Const RANGE_DEBUG_PASSWORD As String = "RNG_LLPassword"
 'worksheets and named ranges), then constructs a new LinelistSpecs
 'instance with caches initialised. Returns the LinelistSpecs interface.
 '@param specsWorkbook Workbook. The specifications workbook to wrap.
+'@param excelApplication Optional Application. The Excel instance the build
+'  opens and adds its workbooks in. Defaults to the running Application.
 '@return LinelistSpecs. A fully initialised facade ready for use.
 '@throws ProjectError.ObjectNotInitialized When specsWorkbook is Nothing.
 '@throws ProjectError.ElementNotFound When required worksheets are missing.
 '@export
-Public Function Create(ByVal specsWorkbook As Workbook) As LinelistSpecs
+Public Function Create(ByVal specsWorkbook As Workbook, _
+                       Optional ByVal excelApplication As Application = Nothing) As LinelistSpecs
     ValidateWorkbookReference specsWorkbook
 
     Dim newSpecs As LinelistSpecs
     Set newSpecs = New LinelistSpecs
     Set newSpecs.InternalWorkbook = specsWorkbook
+    If excelApplication Is Nothing Then
+        Set newSpecs.InternalApplication = Application
+    Else
+        Set newSpecs.InternalApplication = excelApplication
+    End If
     newSpecs.ResetCaches
     newSpecs.Seal
     Set Create = newSpecs
@@ -197,6 +213,32 @@ End Property
 Public Property Set InternalWorkbook(ByVal specsWorkbook As Workbook)
     GuardNotSealed "InternalWorkbook"
     Set this.specsWkb = specsWorkbook
+End Property
+
+'@label:internal-application
+'@prop-title Setter for the host Application
+'@details
+'Used during construction to keep the Excel instance the build runs in.
+'Not part of the public interface.
+Public Property Set InternalApplication(ByVal excelApplication As Application)
+    GuardNotSealed "InternalApplication"
+    Set this.excelApp = excelApplication
+End Property
+
+'@label:host-application
+'@prop-title The Excel instance the build opens its workbooks in
+'@details
+'Set at creation. The template, the output workbook and the geobase are
+'opened or added through it, and the busy state of Prepare is taken on it.
+'@return Application. The host Application.
+'@throws ProjectError.ObjectNotInitialized When no Application was kept.
+'@export
+Public Property Get HostApplication() As Application
+    If this.excelApp Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, _
+                   "LinelistSpecs has no host Application. Build it through Create."
+    End If
+    Set HostApplication = this.excelApp
 End Property
 
 '@label:prepared
@@ -360,7 +402,7 @@ End Function
 '@param busyScope ApplicationState (ByRef). The state object to manage.
 Private Sub EnterBusyState(ByRef busyScope As ApplicationState)
     If busyScope Is Nothing Then
-        Set busyScope = ApplicationState.Create(Application)
+        Set busyScope = ApplicationState.Create(HostApplication)
     ElseIf Not busyScope.HasSnapshot Then
         busyScope.RefreshSnapshot
     End If
@@ -368,8 +410,8 @@ Private Sub EnterBusyState(ByRef busyScope As ApplicationState)
     If Not busyScope.IsBusy Then
         busyScope.ApplyBusyState _
             suppressEvents:=False, _
-            calculateOnSave:=Application.CalculateBeforeSave, _
-            busyCursor:=Application.Cursor
+            calculateOnSave:=HostApplication.CalculateBeforeSave, _
+            busyCursor:=HostApplication.Cursor
     End If
 End Sub
 
@@ -405,7 +447,7 @@ Private Sub ImportGeobase(ByVal geoObj As LLGeo)
     End If
 
     On Error Resume Next
-        Set geoWkb = Workbooks.Open(fileName:=geoPath, ReadOnly:=True)
+        Set geoWkb = HostApplication.Workbooks.Open(fileName:=geoPath, ReadOnly:=True)
         openError = Err.Description
     On Error GoTo 0
 
@@ -1336,7 +1378,7 @@ Public Property Get Value(ByVal tagName As String) As String
                 retVal = MainSheet().Range("RNG_LLTemp").Value
             On Error GoTo 0
             If retVal = "_default" Or retVal = "default" Then
-                retVal = this.specsWkb.Path & Application.PathSeparator & _
+                retVal = this.specsWkb.Path & HostApplication.PathSeparator & _
                          "_ribbontemplate.xlsb"
             End If
             Value = retVal
@@ -1428,7 +1470,7 @@ Public Sub Prepare(ByVal setupPath As String)
     'Create the output workbook (from template when configured)
     If HasTemplate() Then
         templatePath = Trim$(Value("temppath"))
-        Set outWkb = Workbooks.Open(templatePath)
+        Set outWkb = HostApplication.Workbooks.Open(templatePath)
         tempPath = this.tempRepos.CreateFilePath("__temp.xlsb")
         outWkb.SaveAs fileName:=tempPath, fileFormat:=xlExcel12
         'The template ships an empty placeholder worksheet of its own -- Sheet1
@@ -1439,7 +1481,7 @@ Public Sub Prepare(ByVal setupPath As String)
         'exported sheet can be mistaken for it later.
         Set defaultSheet = EmptyFirstSheet(outWkb)
     Else
-        Set outWkb = Workbooks.Add
+        Set outWkb = HostApplication.Workbooks.Add
         'The reference to the empty worksheet Workbooks.Add made is taken here,
         'before the first exporter writes to the workbook. Linelist used to
         'record Worksheets(1).Name on its own first read and delete that sheet
@@ -1458,8 +1500,8 @@ Public Sub Prepare(ByVal setupPath As String)
     'A refusal is reported rather than raised: an extra empty sheet is a blemish
     'on the delivered file, and losing the whole generation over it is worse.
     If Not defaultSheet Is Nothing Then
-        prevAlert = Application.DisplayAlerts
-        Application.DisplayAlerts = False
+        prevAlert = HostApplication.DisplayAlerts
+        HostApplication.DisplayAlerts = False
 
         On Error Resume Next
             defaultSheet.Delete
@@ -1471,7 +1513,7 @@ Public Sub Prepare(ByVal setupPath As String)
             End If
         On Error GoTo CleanFail
 
-        Application.DisplayAlerts = prevAlert
+        HostApplication.DisplayAlerts = prevAlert
         Set defaultSheet = Nothing
     End If
 

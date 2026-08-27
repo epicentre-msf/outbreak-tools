@@ -141,6 +141,46 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateRejectsANothingWorkbook", Err.Number, Err.Description
 End Sub
 
+'@sub-title A facade built with no Application runs in the current one.
+'@TestMethod("LinelistSpecs")
+Public Sub TestCreateDefaultsToTheRunningApplication()
+    CustomTestSetTitles Assert, "LinelistSpecs", "TestCreateDefaultsToTheRunningApplication"
+    On Error GoTo TestFail
+
+    Dim facade As LinelistSpecs
+
+    Set facade = LinelistSpecs.Create(SpecsWorkbook)
+
+    Assert.IsTrue facade.HostApplication Is Application, _
+                  "The host of a facade built with no Application is the running one"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestCreateDefaultsToTheRunningApplication", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title The Application handed to Create is the one the facade keeps.
+'@TestMethod("LinelistSpecs")
+Public Sub TestCreateKeepsTheApplicationItWasGiven()
+    CustomTestSetTitles Assert, "LinelistSpecs", "TestCreateKeepsTheApplicationItWasGiven"
+    On Error GoTo TestFail
+
+    Dim facade As LinelistSpecs
+    Dim hostApp As Application
+
+    Set hostApp = SpecsWorkbook.Application
+    Set facade = LinelistSpecs.Create(SpecsWorkbook, hostApp)
+
+    Assert.IsTrue facade.HostApplication Is hostApp, _
+                  "HostApplication answers the Application Create was given"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestCreateKeepsTheApplicationItWasGiven", _
+                         Err.Number, Err.Description
+End Sub
+
 '@section Caching
 '===============================================================================
 

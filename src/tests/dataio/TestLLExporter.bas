@@ -895,6 +895,50 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateFromFileOwnsTheFileItOpened", Err.Number, Err.Description
 End Sub
 
+'@sub-title The file opens in the Application handed to CreateFromFile.
+'@details
+'The exporter looks the path up and opens it in the instance it is given, so
+'the source workbook it binds belongs to that instance.
+'@TestMethod("LLExporter")
+Public Sub TestCreateFromFileOpensInTheGivenApplication()
+    CustomTestSetTitles Assert, TESTMODULE, "TestCreateFromFileOpensInTheGivenApplication"
+    On Error GoTo TestFail
+
+    Dim exporter As LLExporter
+    Dim filePath As String
+    Dim savedName As String
+    Dim hostApp As Application
+
+    filePath = BuildWorkbookPath(BuildTempFolder(ThisWorkbook, FILES_FOLDER), _
+                                 "hosted_linelist")
+    savedName = SaveLinelistShell(filePath)
+    Set hostApp = ThisWorkbook.Application
+
+    Set exporter = LLExporter.CreateFromFile(filePath, excelApplication:=hostApp)
+
+    Assert.IsTrue exporter.OpenedFromFile, _
+                  "The instance opened the file itself"
+    Assert.IsTrue exporter.SourceWorkbook.Application Is hostApp, _
+                  "The source workbook lives in the Application that was handed in"
+
+    exporter.CloseAll
+
+    Assert.IsFalse WorkbookOpenByName(savedName), _
+                   "CloseAll closes the source it opened in that Application"
+
+    Kill filePath
+    Exit Sub
+TestFail:
+    On Error Resume Next
+    If LenB(savedName) > 0 And WorkbookOpenByName(savedName) Then _
+        Application.Workbooks(savedName).Close savechanges:=False
+    If LenB(filePath) > 0 Then
+        If Dir$(filePath) <> vbNullString Then Kill filePath
+    End If
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestCreateFromFileOpensInTheGivenApplication", Err.Number, Err.Description
+End Sub
+
 '@sub-title A workbook already open in the session is used as it stands.
 '@details
 'This is also what protects the current linelist: a path already open is

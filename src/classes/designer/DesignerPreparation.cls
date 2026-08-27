@@ -422,7 +422,7 @@ Public Sub ImportTranslations(Optional ByVal source As Workbook = Nothing)
         If Not io.HasValidFile() Then Exit Sub
 
         On Error GoTo ImportCleanup
-        Set importBook = Workbooks.Open(io.File(), ReadOnly:=True)
+        Set importBook = wb.Application.Workbooks.Open(io.File(), ReadOnly:=True)
         openedHere = True
     Else
         Set importBook = source

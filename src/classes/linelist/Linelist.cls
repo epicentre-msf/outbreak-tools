@@ -52,7 +52,7 @@ Option Explicit
 '  LLFormat, DropdownLists, CustomPivotTable, TemporaryRepos,
 '  Buttons, CodeTransfer, Passwords, HiddenNames, AnaTabIds,
 '  ShowHideStore, AnalysisRanges, Checking, BetterArray, LLTranslation
-'@version 1.4 (2026-08-01)
+'@version 1.5 (2026-08-27)
 
 
 
@@ -544,7 +544,7 @@ Public Sub SaveLL()
     Set msgTrads = this.specs.TransObject
 
     passwd = this.specs.Value("llpassword")
-    outPath = this.specs.Value("lldir") & Application.PathSeparator & _
+    outPath = this.specs.Value("lldir") & outWkb.Application.PathSeparator & _
               this.specs.Value("llname") & ".xlsb"
 
     'Land the workbook on the sheet the user should open it on.

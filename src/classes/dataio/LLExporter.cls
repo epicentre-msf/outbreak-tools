@@ -36,6 +36,12 @@ Option Explicit
 'LastExportPassword answers the password the last export was saved under.
 'LastFailure answers what the last export failed on, for a caller writing the
 'failure into the log.
+'
+'THE APPLICATION THE EXPORTS RUN IN
+'-------------------------------------------------------------------------------
+'Every output workbook is added in the Application of the source linelist, and
+'CreateFromFile opens its file in the Application it is given, the running one
+'by default. The class reaches Excel through those two objects alone.
 '@depends LLdictionary, LLVariables, LLExport, Passwords, CustomTable, LLLog
 '@depends DataSheet, AnaTabIds, LLGeo, LLChoices, HiddenNames, LLTranslation
 '@depends ShowHide, ShowHideLayout, ShowHideStore, BetterArray, Checking
@@ -177,30 +183,40 @@ End Function
 'state, events suppressed, before calling here.
 '@param filePath String. Full path of the linelist file.
 '@param password Optional String. The password the file opens with. Defaults to none.
+'@param excelApplication Optional Application. The Excel instance the file is
+'  looked up and opened in. Defaults to the running Application.
 '@return LLExporter. An instance bound to the opened workbook.
 '@throws ProjectError.ElementNotFound When no file sits at the given path.
 '@throws ProjectError.ErrorUnexpectedState When the file does not open with the
 '  given password, or when the opened workbook misses a linelist sheet.
 '@export
 Public Function CreateFromFile(ByVal filePath As String, _
-                               Optional ByVal password As String = vbNullString) As LLExporter
+                               Optional ByVal password As String = vbNullString, _
+                               Optional ByVal excelApplication As Application = Nothing) As LLExporter
 
     Dim wkb As Workbook
     Dim missingSheet As String
     Dim openedHere As Boolean
+    Dim excelApp As Application
 
     If LenB(Dir(filePath)) = 0 Then
         ThrowError ProjectError.ElementNotFound, _
                    "There is no file at " & filePath
     End If
 
-    Set wkb = FindOpenWorkbook(filePath)
+    If excelApplication Is Nothing Then
+        Set excelApp = Application
+    Else
+        Set excelApp = excelApplication
+    End If
+
+    Set wkb = FindOpenWorkbook(filePath, excelApp)
 
     If wkb Is Nothing Then
         'A wrong password or an unreadable file raises inside Workbooks.Open,
         'and the raise below is what carries the failure to the caller.
         On Error Resume Next
-        Set wkb = Workbooks.Open(fileName:=filePath, ReadOnly:=True, password:=password)
+        Set wkb = excelApp.Workbooks.Open(fileName:=filePath, ReadOnly:=True, password:=password)
         On Error GoTo 0
         openedHere = True
     End If
@@ -226,13 +242,15 @@ Public Function CreateFromFile(ByVal filePath As String, _
 End Function
 
 '@label:find-open-workbook
-'@sub-title The workbook of this session already open on a path, or Nothing
+'@sub-title The workbook of an Excel instance already open on a path, or Nothing
 '@param filePath String. Full path to look for.
+'@param excelApp Application. The instance whose open workbooks are searched.
 '@return Workbook. The open workbook, or Nothing when the path is open nowhere.
-Private Function FindOpenWorkbook(ByVal filePath As String) As Workbook
+Private Function FindOpenWorkbook(ByVal filePath As String, _
+                                  ByVal excelApp As Application) As Workbook
     Dim wkb As Workbook
 
-    For Each wkb In Application.Workbooks
+    For Each wkb In excelApp.Workbooks
         If LCase$(wkb.FullName) = LCase$(filePath) Then
             Set FindOpenWorkbook = wkb
             Exit Function
@@ -1125,12 +1143,22 @@ End Function
 '@section Private - Output Workbook Management
 '===============================================================================
 
+'@label:host-application
+'@sub-title The Excel instance the source linelist lives in
+'@details
+'Every output workbook is added there, so an export runs in the instance that
+'holds its source, whichever instance that is.
+'@return Application. The Application of the source workbook.
+Private Function HostApplication() As Application
+    Set HostApplication = this.sourceWkb.Application
+End Function
+
 '@label:create-output-workbook
 '@sub-title Create a new minimized output workbook
 '@return Workbook. The newly created workbook.
 Private Function CreateOutputWorkbook() As Workbook
-    Set this.activeWkb = Workbooks.Add
-    ActiveWindow.WindowState = xlMinimized
+    Set this.activeWkb = HostApplication.Workbooks.Add
+    HostApplication.ActiveWindow.WindowState = xlMinimized
     Set CreateOutputWorkbook = this.activeWkb
 End Function
 
@@ -1175,11 +1203,11 @@ Private Function BuildFilePath(ByVal folderPath As String, ByVal fileName As Str
 
     cleanPath = folderPath
     ' Remove trailing separator if present
-    If InStrRev(cleanPath, Application.PathSeparator, Len(cleanPath)) = Len(cleanPath) Then
+    If InStrRev(cleanPath, HostApplication.PathSeparator, Len(cleanPath)) = Len(cleanPath) Then
         cleanPath = Left$(cleanPath, Len(cleanPath) - 1)
     End If
 
-    BuildFilePath = cleanPath & Application.PathSeparator & fileName & "." & fileExt
+    BuildFilePath = cleanPath & HostApplication.PathSeparator & fileName & "." & fileExt
 End Function
 
 
@@ -1774,7 +1802,7 @@ Private Sub DropExcludedFromCopy(ByVal outDict As LLdictionary, _
             If deleteRng Is Nothing Then
                 Set deleteRng = namesRng.Cells(counter, 1)
             Else
-                Set deleteRng = Application.Union(deleteRng, namesRng.Cells(counter, 1))
+                Set deleteRng = HostApplication.Union(deleteRng, namesRng.Cells(counter, 1))
             End If
         End If
     Next counter
@@ -2216,11 +2244,11 @@ Private Sub AddAnalysisSheets(ByVal outwb As Workbook, ByVal afterSheetName As S
         If Not inpsh Is Nothing Then
             ' The clipboard steps, and only those
             On Error Resume Next
-            Application.CutCopyMode = False
+            HostApplication.CutCopyMode = False
             inpsh.Cells.Copy
             outsh.Cells.PasteSpecial xlPasteValues
 
-            Application.CutCopyMode = False
+            HostApplication.CutCopyMode = False
             inpsh.Cells.Copy
             outsh.Cells.PasteSpecial xlPasteFormats
             On Error GoTo 0

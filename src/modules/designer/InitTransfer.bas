@@ -151,8 +151,10 @@ Public Sub TransferToLinelist(ByVal designerBook As Workbook, _
     'entries of that generation alone
     Set transferChecks = Nothing
 
+    'The setup opens in the Excel instance the target workbook lives in, so the
+    'transfer runs in whatever instance the build was handed.
     On Error Resume Next
-    Set setupBook = Workbooks.Open(setupPath, ReadOnly:=True)
+    Set setupBook = targetBook.Application.Workbooks.Open(setupPath, ReadOnly:=True)
     On Error GoTo 0
 
     If setupBook Is Nothing Then
