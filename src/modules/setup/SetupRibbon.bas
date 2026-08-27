@@ -573,41 +573,6 @@ Cleanup:
     EventsManager.ExitBusyState
 End Sub
 
-'@section Formatter
-'===============================================================================
-Public Sub clickEditStyle(ByRef ribbonControl As IRibbonControl)
-    Const FORMATSHEET As String = "__formatter"
-
-    Dim pass As Passwords
-    Dim targetSheet As Worksheet
-
-    On Error GoTo Handler
-
-    Set pass = SetupHelpers.ResolveSetupPasswords()
-
-    pass.UnProtect ThisWorkbook
-    Set targetSheet = ThisWorkbook.Worksheets(FORMATSHEET)
-
-    'The sheet carries the open state. A Static variable used to, and any VBA
-    'state reset made it disagree with the sheet, so the next click hid a sheet
-    'that was already hidden.
-    If targetSheet.Visible = xlSheetVisible Then
-        targetSheet.Visible = xlSheetVeryHidden
-    Else
-        targetSheet.Visible = xlSheetVisible
-        targetSheet.Activate
-    End If
-
-Cleanup:
-    On Error Resume Next
-    If Not pass Is Nothing Then pass.Protect ThisWorkbook
-    On Error GoTo 0
-    Exit Sub
-
-Handler:
-    Debug.Print "clickEditStyle: "; Err.Number; Err.Description
-    Resume Cleanup
-End Sub
 
 '@section Visibility of some buttons
 '===============================================================================

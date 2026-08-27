@@ -25,7 +25,6 @@
         <group id="customGroupAdvanced">
           <button id="btnChk" label="Check current setup for errors" imageMso="ErrorChecking" size="large" onAction="clickCheck"/>
           <button id="btnClear" label="Clear data in current setup" imageMso="ClearAll" size="large" onAction="clickClearSetup"/>
-          <button id="btnEditStyle" label="Edit formatter" image="format" size="large" onAction="clickEditStyle"/>
         </group>
         <group id="customGroupDev" label="Dev" getVisible="DevGroupVisible">
           <button id="btnInit" label="Initialize" image="initialise" size="large" onAction="clickDevInitialize"/>
