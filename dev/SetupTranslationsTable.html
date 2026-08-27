@@ -189,6 +189,52 @@ leaves the rest to the red catch-all.</p>
 <pre><code class="language-vb">Public Sub SetDisplayPrompts(ByVal state As Boolean)
 </code></pre>
 <hr />
+<h3 id="int-setremoveunseenlabels">SetRemoveUnseenLabels <a class="anchor-link" href="#int-setremoveunseenlabels">#</a></h3>
+<p><em>set-remove-unseen-labels</em></p>
+<p><strong>Preset the answer to the unseen labels question.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SetRemoveUnseenLabels(ByVal state As Boolean)
+</code></pre>
+<p>The question is asked by the first update after an import or a
+tag reset. With prompts on the user answers it; with prompts off
+this preset answers instead, and it defaults to keeping them.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>state</code>: Boolean. True removes the unseen labels without asking.</li>
+</ul>
+<hr />
+<h3 id="int-requestunseenreview">RequestUnseenReview <a class="anchor-link" href="#int-requestunseenreview">#</a></h3>
+<p><em>request-unseen-review</em></p>
+<p><strong>Ask the next update to review the unseen labels with the user.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RequestUnseenReview()
+</code></pre>
+<p>Raised by the Reset tags button. Every update removes the labels
+no registry range produces without a word, except the first one
+after this call, which lists them and asks; that one offers the
+hand-written rows too, which the silent updates leave alone.</p>
+<hr />
+<h3 id="int-markimported">MarkImported <a class="anchor-link" href="#int-markimported">#</a></h3>
+<p><em>mark-imported</em></p>
+<p><strong>Record that the table was just imported.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub MarkImported()
+</code></pre>
+<p>An import writes rows over the table and leaves the helper column
+beside rows it no longer describes, so every row that carries a
+label takes the imported tag: the next update reads every range,
+tags the rows a range claims, and asks about the rest. A
+hand-written row is not marked, and stays.</p>
+<hr />
+<h3 id="int-unseenlabels">UnseenLabels <a class="anchor-link" href="#int-unseenlabels">#</a></h3>
+<p><em>unseen-labels</em></p>
+<p><strong>Labels no registry range produced, as the last update found them.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get UnseenLabels() As BetterArray
+</code></pre>
+<p>Filled whether the rows were removed or kept. Empty when the last
+update found none, or when no update has run.</p>
+<hr />
 <h3 id="int-resolvescope">ResolveScope <a class="anchor-link" href="#int-resolvescope">#</a></h3>
 <p><em>resolve-scope</em></p>
 <p><strong>Guarded access to the application scope.</strong></p>
@@ -352,6 +398,46 @@ the same sequence and the rows the failed run tagged survive.</p>
 <p><strong>Process a single registry ListObject.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ProcessRegistryTable(ByVal registryTable As ListObject, ByVal updateSequence As Long)
+</code></pre>
+<hr />
+<h3 id="int-resolveregistrycolumns">ResolveRegistryColumns <a class="anchor-link" href="#int-resolveregistrycolumns">#</a></h3>
+<p><em>resolve-registry-columns</em></p>
+<p><strong>Locate the three registry columns of a table; False for a table that is no registry.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveRegistryColumns(ByVal registryTable As ListObject, _
+                                        ByRef nameColumn As Long, _
+                                        ByRef statusColumn As Long, _
+                                        ByRef modeColumn As Long) As Boolean
+</code></pre>
+<p>The sheet that holds the registries also holds the name index table
+UpdatedValues keeps beside them. That one carries three columns and
+no rngname header, so it is skipped: reading it as a registry would
+take a table name for a range name. Anything that names a range
+column, or is wide enough to be read by position, has to carry the
+whole published shape.</p>
+<hr />
+<h3 id="int-collectregistrynames">CollectRegistryNames <a class="anchor-link" href="#int-collectregistrynames">#</a></h3>
+<p><em>collect-registry-names</em></p>
+<p><strong>Every range name the registry tables carry, whatever their status.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CollectRegistryNames(ByVal registrySheet As Worksheet) As Collection
+</code></pre>
+<hr />
+<h3 id="int-isunclaimedrange">IsUnclaimedRange <a class="anchor-link" href="#int-isunclaimedrange">#</a></h3>
+<p><em>is-unclaimed-range</em></p>
+<p><strong>True for a tag range no registry row names: the imported tag, or a range the registry dropped.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsUnclaimedRange(ByVal rangeName As String) As Boolean
+</code></pre>
+<p>The manual tag is unclaimed only during a review: a hand-written
+row is the user's, so no update removes it without asking, but
+a review asks, and offers it with the rest.</p>
+<hr />
+<h3 id="int-hasunclaimedrows">HasUnclaimedRows <a class="anchor-link" href="#int-hasunclaimedrows">#</a></h3>
+<p><em>has-unclaimed-rows</em></p>
+<p><strong>True when the tag buffer holds a row no registry range claims.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HasUnclaimedRows() As Boolean
 </code></pre>
 <hr />
 <h3 id="int-registrycolumn">RegistryColumn <a class="anchor-link" href="#int-registrycolumn">#</a></h3>
@@ -600,6 +686,36 @@ never claimed by a watched range, so it must survive the update.</p>
 a label nor a tag is dropped, and that is the blank row a ListObject
 keeps when it holds no data.</p>
 <hr />
+<h3 id="int-offerunseenlabels">OfferUnseenLabels <a class="anchor-link" href="#int-offerunseenlabels">#</a></h3>
+<p><em>offer-unseen-labels</em></p>
+<p><strong>Remove the labels no registry range produced, or ask about them after an import or a reset.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub OfferUnseenLabels(ByVal updateSequence As Long)
+</code></pre>
+<p>Runs only on a cycle that read every range: a row still tagged
+to the imported marker, or to a range the registry no longer names,
+then holds a label nothing in the setup produces. A row tagged to
+a registry range that did not resolve is not in question. The
+rows go without a word, except on the first update after an
+import or a tag reset, which asks: the user with prompts on, the
+preset otherwise.</p>
+<hr />
+<h3 id="int-takeunseenreviewrequest">TakeUnseenReviewRequest <a class="anchor-link" href="#int-takeunseenreviewrequest">#</a></h3>
+<p><em>take-unseen-review-request</em></p>
+<p><strong>Read the review flag an import or a reset raised, and lower it.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TakeUnseenReviewRequest() As Boolean
+</code></pre>
+<p>The flag is lowered as it is read, so one update asks and the
+following ones are silent again until the next import or reset.</p>
+<hr />
+<h3 id="int-confirmunseenremoval">ConfirmUnseenRemoval <a class="anchor-link" href="#int-confirmunseenremoval">#</a></h3>
+<p><em>confirm-unseen-removal</em></p>
+<p><strong>Answer whether the unseen labels go: silently yes, unless a review was requested.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ConfirmUnseenRemoval() As Boolean
+</code></pre>
+<hr />
 <h3 id="int-deduplicatelabels">DeduplicateLabels <a class="anchor-link" href="#int-deduplicatelabels">#</a></h3>
 <p><em>deduplicate-labels</em></p>
 <p><strong>Remove duplicate labels keeping the row with the oldest (lowest) tag sequence.</strong></p>
@@ -667,6 +783,13 @@ carries the separator still yields its sequence number.</p>
 <p><strong>Name the registry ranges that could not be resolved during the update.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AppendUnresolvedLine(ByVal messageLines As BetterArray)
+</code></pre>
+<hr />
+<h3 id="int-appendunseenline">AppendUnseenLine <a class="anchor-link" href="#int-appendunseenline">#</a></h3>
+<p><em>append-unseen-line</em></p>
+<p><strong>Count the labels no registry range produced, kept or removed.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AppendUnseenLine(ByVal messageLines As BetterArray)
 </code></pre>
 <hr />
 <h3 id="int-updatemissingsummary">UpdateMissingSummary <a class="anchor-link" href="#int-updatemissingsummary">#</a></h3>

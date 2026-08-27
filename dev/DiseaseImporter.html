@@ -82,11 +82,26 @@
 <pre><code class="language-vb">Private Sub ClearTable(ByVal targetTable As ListObject)
 </code></pre>
 <hr />
+<h3 id="int-lastnamedrow">LastNamedRow <a class="anchor-link" href="#int-lastnamedrow">#</a></h3>
+<p><strong>The index of the last line carrying a variable name, 0 when none does.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LastNamedRow(ByVal targetTable As ListObject) As Long
+</code></pre>
+<hr />
+<h3 id="int-cleanname">CleanName <a class="anchor-link" href="#int-cleanname">#</a></h3>
+<p><strong>A cell value as trimmed text; an error value reads as empty.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CleanName(ByVal candidate As Variant) As String
+</code></pre>
+<hr />
 <h3 id="int-appendblankrows">AppendBlankRows <a class="anchor-link" href="#int-appendblankrows">#</a></h3>
 <p><strong>Append blank rows to the target table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AppendBlankRows(ByVal targetTable As ListObject, ByVal rowCount As Long)
 </code></pre>
+<p>A row added through ListRows.Add takes the vertical edges of the
+row above and no horizontal edge, so the disease frame is painted again
+over the grown table.</p>
 <hr />
 <h3 id="int-buildrow">BuildRow <a class="anchor-link" href="#int-buildrow">#</a></h3>
 <p><strong>Create a row array from the source matrix.</strong></p>

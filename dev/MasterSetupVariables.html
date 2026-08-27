@@ -59,6 +59,19 @@ choices list leaves the column as it stands.</p>
 <li><code>dropdowns</code>: DropdownLists provider carrying the choices list.</li>
 </ul>
 <hr />
+<h3 id="int-writechoicevaluesformula">WriteChoiceValuesFormula <a class="anchor-link" href="#int-writechoicevaluesformula">#</a></h3>
+<p><strong>Put the ChoiceValues formula on the Choices Values column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub WriteChoiceValuesFormula()
+</code></pre>
+<p>Runs on every preparation, outside the Initialised guard, the way
+the disease sheets carry their line formulas: every line reads its
+own Default Choice cell through the ChoiceValues worksheet function.
+The master setup is in English, so the language is left out and the
+function answers the labels of the choice.
+The column is set to General first: a text cell stores a formula as
+its own text. A value a user typed in the column takes the formula.</p>
+<hr />
 <h3 id="int-refreshchoices">RefreshChoices <a class="anchor-link" href="#int-refreshchoices">#</a></h3>
 <p><strong>Refresh the concatenated choices values for the supplied variable.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -232,6 +245,20 @@ joined choices values stay empty: RefreshChoices fills them.</p>
 the table as it stands. Delete drops every rule of the column: the
 column carries this one rule, and the delete is what keeps the count
 at one across repeated preparations.</p>
+<hr />
+<h3 id="int-writechoicesvalue">WriteChoicesValue <a class="anchor-link" href="#int-writechoicesvalue">#</a></h3>
+<p><strong>Write the joined values of a line, or recalculate its formula.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteChoicesValue(ByVal rowIndex As Long, ByVal newValue As String)
+</code></pre>
+<p>A line carrying the ChoiceValues formula answers through the
+worksheet function; a write would replace the formula with text.</p>
+<hr />
+<h3 id="int-choicevaluesformula">ChoiceValuesFormula <a class="anchor-link" href="#int-choicevaluesformula">#</a></h3>
+<p><strong>The choice values formula of a line: the worksheet function over the choice cell.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ChoiceValuesFormula(ByVal choiceCell As Range) As String
+</code></pre>
 <hr />
 <h3 id="int-writecell">WriteCell <a class="anchor-link" href="#int-writecell">#</a></h3>
 <p><strong>Write any value on the line of the given column.</strong></p>
