@@ -278,6 +278,59 @@ UnexpectedError:
 End Sub
 
 '@TestMethod("HiddenNames")
+'@sub-title A name Excel reserves for itself is never tracked or exported
+'@details
+'Excel writes hidden names of its own -- _xlfn.* for a function it cannot
+'resolve, _xleta.* and _xlpm.* for LAMBDA -- whose RefersTo reads "=#NAME?".
+'They are invisible in the Name Manager and Excel REFUSES to create one, so an
+'export that carried one raised 1004, "the syntax of this name isn't correct",
+'and took a whole linelist generation down with it.
+'
+'The fixture cannot use Names.Add to plant one, for exactly the reason the bug
+'exists: Excel will not create it. So the test drives the filter through the
+'public surface instead -- a reserved identifier must not be storable, and the
+'export must carry only the real name beside it.
+Public Sub TestExcelReservedNamesAreNotTracked()
+    CustomTestSetTitles Assert, "HiddenNames", "TestExcelReservedNamesAreNotTracked"
+
+    Dim names As HiddenNames
+    Dim targetWb As Workbook
+    Dim destination As HiddenNames
+
+    On Error GoTo UnexpectedError
+
+    Set names = EnsureManager()
+    names.EnsureName "__hn_real__", "kept", HiddenNameTypeString
+
+    'Excel refuses a reserved name, which is the whole point of the guard that
+    'now reports it. The attempt is made anyway and its refusal swallowed, so
+    'the assertions below read the same on a build of Excel that allowed it.
+    On Error Resume Next
+        names.EnsureName "_xlfn.SINGLE", "should never be stored", HiddenNameTypeString
+    On Error GoTo UnexpectedError
+
+    Assert.IsFalse names.HasName("_xlfn.SINGLE"), _
+                   "A name in Excel's reserved _xl namespace should never be tracked."
+
+    Set targetWb = NewTemporaryWorkbook()
+    names.ExportNamesToWorkbook targetWb
+
+    Set destination = HiddenNames.Create(targetWb)
+    Assert.IsTrue destination.HasName("__hn_real__"), _
+                  "The export should still carry the ordinary name."
+    Assert.IsFalse destination.HasName("_xlfn.SINGLE"), _
+                   "The export should not carry a name Excel reserves."
+
+    CloseTemporaryWorkbook targetWb
+    Exit Sub
+
+UnexpectedError:
+    CloseTemporaryWorkbook targetWb
+    CustomTestLogFailure Assert, "TestExcelReservedNamesAreNotTracked", Err.Number, Err.Description
+    Err.Clear
+End Sub
+
+'@TestMethod("HiddenNames")
 '@sub-title ImportNamesFromWorkbook honours the overwriteExisting flag
 '@details
 'Creates a Long name on the fixture manager, then creates a separate

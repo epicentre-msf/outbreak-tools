@@ -549,6 +549,24 @@ Private Function ShouldTrack(ByVal definition As Name) As Boolean
     Dim parentType As String
 
     If definition Is Nothing Then Exit Function
+
+    'EXCEL'S OWN HIDDEN NAMES ARE NOT OURS TO CARRY
+    '---------------------------------------------------------------------------
+    'Excel writes hidden names of its own: _xlfn.* marks a function the file
+    'names that this build of Excel cannot resolve, _xleta.* and _xlpm.* are
+    'LAMBDA scaffolding. Their RefersTo reads "=#NAME?" and they are invisible
+    'in the Name Manager, so nobody finds or deletes one by hand.
+    '
+    'This test is the only thing standing between them and the export. READING
+    'one costs nothing, which is why it went unnoticed for so long; WRITING one
+    'is refused outright -- Names.Add answers "the syntax of this name isn't
+    'correct" -- so a setup that had picked one up took a whole linelist
+    'generation down inside ExportNamesToWorkbook, before a single sheet was
+    'built and with nothing in the log naming the culprit. A COM fill that
+    'writes formulas Excel cannot resolve at write time is enough to leave one
+    'behind, and the linelist template carries an _xleta.N of its own.
+    If IsExcelReservedName(ExtractSimpleName(definition.Name)) Then Exit Function
+
     If definition.Visible Then Exit Function
 
     Set container = NameOwner()
@@ -634,6 +652,22 @@ End Function
 '@sub-title Case-insensitive comparison of a Name definition to an expected identifier
 Private Function CompareName(ByVal definition As Name, ByVal expected As String) As Boolean
     CompareName = (StrComp(ExtractSimpleName(definition.Name), expected, vbTextCompare) = 0)
+End Function
+
+'@label:excel-reserved-name
+'@sub-title Whether an identifier belongs to Excel's own reserved namespace
+'@details
+'Everything Excel reserves for itself starts "_xl": _xlfn and _xlfnodbc for
+'future functions, _xleta and _xlpm for LAMBDA, _xludf, _xlws. The family grows
+'with each release, so the prefix is matched rather than the members listed --
+'a list would be one Excel version behind the first time it mattered.
+'
+'Nothing in this project names anything "_xl...". Its own hidden names carry
+'the "__" and "RNG_" shapes, so the prefix costs no real name.
+'@param nameId String. The simple (unqualified) identifier.
+'@return Boolean. True when the name is Excel's own.
+Private Function IsExcelReservedName(ByVal nameId As String) As Boolean
+    IsExcelReservedName = (Left$(LCase$(Trim$(nameId)), 3) = "_xl")
 End Function
 
 '@label:extract-simple-name
