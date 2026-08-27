@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Fills a new linelist workbook straight from the setup file and the designer, with no intermediate copy.")
-'@depends ProjectError, LLdictionary, LLChoices, LLExport, Analysis, LLGeo, LLFormat, LLTranslation, Passwords, HiddenNames, Checking, DesignerPreparation
+'@depends ProjectError, LLdictionary, LLChoices, LLExport, Analysis, LLGeo, LLFormat, LLTranslation, Passwords, HiddenNames, Checking
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 '@description
@@ -18,16 +18,14 @@ Option Explicit
 'once, at their setup anchors, and written at row 1 of a very hidden sheet in
 'the linelist. Nothing lands on the designer on the way.
 '
-'The geo sheet, the passwords, the five translation tables and the designer's
-'own hidden names come from the designer. The formatter comes from whichever
-'of the two holds the live copy: the designer when the styles import button
-'was pressed for the setup that is loaded now, the setup otherwise. Loading a
-'setup file clears that flag, so the designer's formatter has to be imported
-'again for each setup.
+'The geo sheet, the passwords, the five translation tables, the formatter and
+'the designer's own hidden names come from the designer. A setup file carries
+'no formatter any more, so the designer's __formatter sheet is the only copy.
 '
-'Either way the exported format sheet carries the design name of the run, the
-'DESIGNTYPE value the designer's format sheet holds, which is the design
-'LinelistSpecs builds every sheet with.
+'The design of the run is the one picked in the RNG_DesignLL dropdown on Main.
+'SyncDesignerDesignName copies it into the DESIGNTYPE range of the designer's
+'format sheet before anything reads it, so LinelistSpecs.EnsureFormat builds
+'every sheet with it and the exported format sheet names it too.
 '
 'WHY THE SETUP TRANSLATION TABLE IS ITS OWN STEP
 '-------------------------------------------------------------------------------
@@ -67,8 +65,9 @@ Private Const SHEET_MAIN As String = "Main"
 Private Const SHEET_GEO As String = "Geo"
 Private Const SHEET_PASS As String = "__pass"
 
-'The design the build applies, read from the designer's format sheet.
-'LinelistSpecs.EnsureFormat reads the same range for the same reason.
+'The design the build applies, on the designer's format sheet.
+'LinelistSpecs.EnsureFormat reads the same range for the same reason, and
+'SyncDesignerDesignName writes the Main selection into it first.
 Private Const RANGE_DESIGN_TYPE As String = "DESIGNTYPE"
 
 'Named ranges on the Main sheet
@@ -76,6 +75,7 @@ Private Const RNG_LL_NAME As String = "RNG_LLName"
 Private Const RNG_PATH_DICO As String = "RNG_PathDico"
 Private Const RNG_LANG_SETUP As String = "RNG_LangSetup"
 Private Const RNG_LL_FORM As String = "RNG_LLForm"
+Private Const RNG_DESIGN_LL As String = "RNG_DesignLL"
 
 'Workbook-level HiddenName tags for language codes
 Private Const TAG_DICT_LANG As String = "RNG_DictionaryLanguage"
@@ -117,9 +117,8 @@ Private transferChecks As Checking
 '   written after the setup's on purpose, so a name both workbooks carry comes
 '   out of the linelist holding the designer's answer.
 '3. The setup translation table lands on the LINELIST's translation sheet.
-'4. The formatter comes from the designer when the styles import button was
-'   pressed for the setup that is loaded now, and from the setup otherwise.
-'   Both branches name the design of the run on the exported sheet.
+'4. The formatter comes from the designer, in the design picked on Main. The
+'   exported sheet names that design.
 '
 'The setup workbook is opened read-only and is always closed on the way out,
 'including when a step raises.
@@ -171,10 +170,13 @@ Public Sub TransferToLinelist(ByVal designerBook As Workbook, _
     ExportHiddenNamesFromSetup setupBook, targetBook
 
     'Designer components: designer -> linelist. The hidden names go first of
-    'these five, after the setup's, because the designer's answer wins.
+    'these five, after the setup's, because the designer's answer wins. The
+    'design picked on Main lands on the format sheet here, before anything
+    'reads that sheet.
     SyncDesignerLanguageNames designerBook
+    SyncDesignerDesignName designerBook
     ExportDesignerHiddenNames designerBook, targetBook
-    ExportGeoFromDesigner designerBook, targetBook
+    ExportEmptyGeoFromDesigner designerBook, targetBook
     ExportPasswordsFromDesigner designerBook, targetBook
     ExportTranslationsFromDesigner designerBook, targetBook
 
@@ -183,14 +185,9 @@ Public Sub TransferToLinelist(ByVal designerBook As Workbook, _
     'export just created.
     ImportSetupTranslationTable setupBook, targetBook
 
-    'The formatter lives on one of the two workbooks, never on both. Both
-    'branches carry the design name of the run, so the formatter sheet the
-    'linelist ships names the design the build applied.
-    If FormatterAlreadyImported(designerBook) Then
-        ExportFormatterFromDesigner designerBook, targetBook, DesignerDesignName(designerBook)
-    Else
-        ExportFormatterFromSetup setupBook, targetBook, DesignerDesignName(designerBook)
-    End If
+    'The formatter lives on the designer. The shipped sheet names the design
+    'of the run, so the linelist says which design the build applied.
+    ExportFormatterFromDesigner designerBook, targetBook, DesignerDesignName(designerBook)
 
 TransferCleanup:
     'This label is reached with the handler still armed, so it opens with an
@@ -381,30 +378,6 @@ Private Sub ExportHiddenNamesFromSetup(ByVal setupBook As Workbook, ByVal target
     store.ExportNamesToWorkbook targetBook
 End Sub
 
-'@sub-title Export the formatter from the setup to the linelist
-'@details
-'Public so a suite drives the setup branch with fixture workbooks.
-'@param setupBook Workbook. The setup workbook holding the format sheet.
-'@param targetBook Workbook. The linelist workbook receiving it.
-'@param designName String. The design of the run, empty when the designer names none.
-Public Sub ExportFormatterFromSetup(ByVal setupBook As Workbook, _
-                                     ByVal targetBook As Workbook, _
-                                     ByVal designName As String)
-    Dim setupSheet As Worksheet
-    Dim formatManager As LLFormat
-
-    Set setupSheet = ResolveWorksheet(setupBook, SHEET_FORMATTER)
-    If setupSheet Is Nothing Then Exit Sub
-
-    Set formatManager = CreateFormatter(setupSheet, designName)
-    formatManager.Export targetBook
-    WriteExportedDesignName targetBook, designName
-
-    If WorksheetExists(targetBook, SHEET_FORMATTER) Then
-        targetBook.Worksheets(SHEET_FORMATTER).Visible = xlSheetVeryHidden
-    End If
-End Sub
-
 '@sub-title Put the setup's translation table on the linelist's translation sheet
 '@details
 'Tab_Translations is the setup's own table, and it is what translates the
@@ -456,14 +429,19 @@ End Sub
 '@section Designer to linelist
 '===============================================================================
 
-'@sub-title Export the geo sheet from the designer to the linelist
+'@sub-title Export the empty geo template from the designer to the linelist
 '@details
+'The designer's Geo sheet holds no geobase: it is the empty table layout plus
+'the T_NAMES level labels per language, and the geobase file itself is
+'imported on the LINELIST's copy afterwards by LinelistSpecs.ImportGeobase.
+'What travels here is the template.
+'
 'RNG_MetaLang and RNG_GeoLangCode are written on the designer's geo sheet
 'first. The meta language is the one picked on the Main sheet, out of the
 'languages the setup translation table carries, and UpdateLevelNames needs both
 'to resolve the level names while ExportToWkb runs. The geobase itself is
 'imported later, on the linelist's own copy of the sheet.
-Private Sub ExportGeoFromDesigner(ByVal designerBook As Workbook, ByVal targetBook As Workbook)
+Private Sub ExportEmptyGeoFromDesigner(ByVal designerBook As Workbook, ByVal targetBook As Workbook)
     Dim designerSheet As Worksheet
     Dim geoManager As LLGeo
     Dim geoStore As HiddenNames
@@ -685,25 +663,13 @@ End Sub
 '@section Internal helpers
 '===============================================================================
 
-'@fun-title Whether the formatter was loaded through the designer ribbon
-'@details
-'The flag has one home, DesignerPreparation. The styles import button sets
-'it and loading a setup file clears it, so it reads True only after an
-'explicit styles import for the setup that is loaded now.
-'@return Boolean. True when the designer holds the live formatter.
-Private Function FormatterAlreadyImported(ByVal designerBook As Workbook) As Boolean
-    Dim prep As DesignerPreparation
-
-    Set prep = DesignerPreparation.Create(designerBook)
-    FormatterAlreadyImported = prep.FormatterImported
-End Function
-
 '@fun-title The design name of the run
 '@details
-'Read from the DESIGNTYPE named range of the designer's format sheet. That
-'is the value LinelistSpecs.EnsureFormat builds its LLFormat with, so it is
-'the design every sheet of the run is written in. Public so a suite drives
-'it with a fixture workbook.
+'Read from the DESIGNTYPE named range of the designer's format sheet, once
+'SyncDesignerDesignName has put the Main selection there. That is the value
+'LinelistSpecs.EnsureFormat builds its LLFormat with, so it is the design
+'every sheet of the run is written in. Public so a suite drives it with a
+'fixture workbook.
 '@return String. The design name, empty when the designer names none.
 Public Function DesignerDesignName(ByVal designerBook As Workbook) As String
     Dim formatSheet As Worksheet
@@ -719,6 +685,37 @@ Public Function DesignerDesignName(ByVal designerBook As Workbook) As String
 
     DesignerDesignName = Trim$(CStr(designRange.Cells(1, 1).Value))
 End Function
+
+'@sub-title Write the design picked on Main onto the designer's format sheet
+'@details
+'RNG_DesignLL on Main is the dropdown a person fills, and DESIGNTYPE on the
+'format sheet is what the build reads. The two used to drift apart: the
+'format sheet kept whatever design it was last given, and a run went out in
+'that design whatever Main said. The Main value is copied here at the start
+'of every transfer. An empty selection leaves DESIGNTYPE as it is, so a
+'designer whose Main says nothing still builds in the design its format
+'sheet holds.
+'
+'Public so a suite drives it with a fixture workbook.
+'@param designerBook Workbook. The designer workbook.
+Public Sub SyncDesignerDesignName(ByVal designerBook As Workbook)
+    Dim formatSheet As Worksheet
+    Dim designRange As Range
+    Dim designName As String
+
+    designName = Trim$(ReadMainRange(designerBook, RNG_DESIGN_LL))
+    If LenB(designName) = 0 Then Exit Sub
+
+    Set formatSheet = ResolveWorksheet(designerBook, SHEET_FORMATTER)
+    If formatSheet Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    Set designRange = formatSheet.Range(RANGE_DESIGN_TYPE)
+    On Error GoTo 0
+    If designRange Is Nothing Then Exit Sub
+
+    designRange.Cells(1, 1).Value = designName
+End Sub
 
 '@fun-title Build a formatter over a format sheet for the design of the run
 '@details

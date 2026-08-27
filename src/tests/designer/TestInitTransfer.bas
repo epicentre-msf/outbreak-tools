@@ -280,30 +280,56 @@ Fail:
 End Sub
 
 
-'@section Formatter Branch Tests
+'@section Design Sync Tests
 '===============================================================================
-'@TestMethod("InitTransfer.Formatter")
-Public Sub TestExportFormatterFromSetupWritesDesignName()
-    CustomTestSetTitles Assert, "InitTransfer", "TestExportFormatterFromSetupWritesDesignName"
+'@TestMethod("InitTransfer.DesignName")
+Public Sub TestSyncDesignerDesignNameWritesMainSelection()
+    CustomTestSetTitles Assert, "InitTransfer", "TestSyncDesignerDesignNameWritesMainSelection"
     On Error GoTo Fail
 
-    'Arrange: the setup workbook holds the format sheet
-    Set SourceWorkbook = NewWorkbook
-    PrepareLLFormatFixture "__formatter", SourceWorkbook
+    'Arrange: Main picks one design, the format sheet still holds another
+    ArrangeMainDesignRange "  design 2  "
+    ArrangeFormatDesignRange "design 1"
 
-    'Act: the setup branch of the transfer, with the design of the run
-    InitTransfer.ExportFormatterFromSetup SourceWorkbook, FixtureWorkbook, "design 2"
+    'Act
+    InitTransfer.SyncDesignerDesignName FixtureWorkbook
 
-    'Assert: the sheet lands very hidden and DESIGNTYPE names the design of
-    'the run. The export used to keep the source's own DESIGNTYPE value, so
-    'the shipped sheet named a design the build never applied.
-    AssertExportedFormatter "design 2", "the setup branch"
+    'Assert: DESIGNTYPE now carries the Main selection, trimmed, and the
+    'design of the run reads it back
+    Assert.AreEqual "design 2", CStr(FixtureWorkbook.Names("DESIGNTYPE").RefersToRange.Value), _
+                    "The Main selection should land on DESIGNTYPE."
+    Assert.AreEqual "design 2", InitTransfer.DesignerDesignName(FixtureWorkbook), _
+                    "The design of the run should be the one picked on Main."
 
     Exit Sub
 Fail:
-    CustomTestLogFailure Assert, "TestExportFormatterFromSetupWritesDesignName", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestSyncDesignerDesignNameWritesMainSelection", Err.Number, Err.Description
 End Sub
 
+'@TestMethod("InitTransfer.DesignName")
+Public Sub TestSyncDesignerDesignNameKeepsFormatValueWhenMainEmpty()
+    CustomTestSetTitles Assert, "InitTransfer", "TestSyncDesignerDesignNameKeepsFormatValueWhenMainEmpty"
+    On Error GoTo Fail
+
+    'Arrange: nothing picked on Main
+    ArrangeMainDesignRange vbNullString
+    ArrangeFormatDesignRange "design 1"
+
+    'Act
+    InitTransfer.SyncDesignerDesignName FixtureWorkbook
+
+    'Assert: the format sheet keeps its own design
+    Assert.AreEqual "design 1", InitTransfer.DesignerDesignName(FixtureWorkbook), _
+                    "An empty Main selection should leave DESIGNTYPE alone."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestSyncDesignerDesignNameKeepsFormatValueWhenMainEmpty", Err.Number, Err.Description
+End Sub
+
+
+'@section Formatter Export Tests
+'===============================================================================
 '@TestMethod("InitTransfer.Formatter")
 Public Sub TestExportFormatterFromDesignerWritesDesignName()
     CustomTestSetTitles Assert, "InitTransfer", "TestExportFormatterFromDesignerWritesDesignName"
@@ -313,11 +339,13 @@ Public Sub TestExportFormatterFromDesignerWritesDesignName()
     Set SourceWorkbook = NewWorkbook
     PrepareLLFormatFixture "__formatter", SourceWorkbook
 
-    'Act: the designer branch of the transfer
+    'Act: the formatter export of the transfer, with the design of the run
     InitTransfer.ExportFormatterFromDesigner SourceWorkbook, FixtureWorkbook, "design 2"
 
-    'Assert
-    AssertExportedFormatter "design 2", "the designer branch"
+    'Assert: the sheet lands very hidden and DESIGNTYPE names the design of
+    'the run. The export used to keep the source's own DESIGNTYPE value, so
+    'the shipped sheet named a design the build never applied.
+    AssertExportedFormatter "design 2", "the formatter export"
 
     Exit Sub
 Fail:
@@ -362,6 +390,24 @@ Private Sub ArrangeMainLanguageRanges(ByVal dictLang As String, ByVal llForm As 
     FixtureWorkbook.Names.Add Name:="RNG_LLForm", RefersTo:=mainSheet.Range("A2")
     mainSheet.Range("A1").Value = dictLang
     mainSheet.Range("A2").Value = llForm
+End Sub
+
+'@sub-title Put a design selection on the Main sheet of the fixture
+Private Sub ArrangeMainDesignRange(ByVal designName As String)
+    Dim mainSheet As Worksheet
+    Set mainSheet = EnsureWorksheet("Main", FixtureWorkbook)
+
+    FixtureWorkbook.Names.Add Name:="RNG_DesignLL", RefersTo:=mainSheet.Range("A3")
+    mainSheet.Range("A3").Value = designName
+End Sub
+
+'@sub-title Put a DESIGNTYPE value on the format sheet of the fixture
+Private Sub ArrangeFormatDesignRange(ByVal designName As String)
+    Dim sh As Worksheet
+    Set sh = EnsureWorksheet("__formatter", FixtureWorkbook)
+
+    FixtureWorkbook.Names.Add Name:="DESIGNTYPE", RefersTo:=sh.Range("B2")
+    sh.Range("B2").Value = designName
 End Sub
 
 '@sub-title Assert the exported format sheet of the target workbook
