@@ -16,8 +16,8 @@ Option Explicit
 '   Tests cover the full lifecycle of a progress bar: factory construction
 '   with argument validation, value updates with boundary clamping, step-based
 '   increments, completion and reset behaviour, optional status cell messaging,
-'   dynamic maximum adjustment, value format configuration, and visual
-'   rendering of completed/pending cells with formatted text output.
+'   dynamic maximum adjustment, and visual rendering of completed/pending
+'   cells over a bar range that stays empty of text.
 '
 '   The suite is organised into six logical sections:
 '     1. Factory and Attach   -- Create with explicit/default max, guard
@@ -32,12 +32,10 @@ Option Explicit
 '                                state, and rejecting multi-cell ranges.
 '     4. Maximum Property     -- Changing Maximum at runtime and verifying
 '                                that existing Value is re-clamped accordingly.
-'     5. ConfigureValueFormat -- Guard clause rejecting blank format patterns.
-'     6. Rendering            -- Verifying that Update paints cells with the
-'                                correct completed/pending colours and writes
-'                                a formatted "current / max" string to the
-'                                first cell of the bar range.
-'     7. Repaint seam         -- Verifying that the forceRepaint flag on
+'     5. Rendering            -- Verifying that Update paints cells with the
+'                                correct completed/pending colours and leaves
+'                                every cell of the bar range empty.
+'     6. Repaint seam         -- Verifying that the forceRepaint flag on
 '                                Update and StepBy leaves ScreenUpdating
 '                                False after the render.
 '
@@ -526,34 +524,6 @@ TestFail:
     CustomTestLogFailure Assert, "TestMaximumSetterReclampsValue", Err.Number, Err.Description
 End Sub
 
-'@section Tests - ConfigureValueFormat
-'===============================================================================
-
-' @sub-title TestConfigureValueFormatRejectsBlank
-' @details
-'   Verifies that ConfigureValueFormat rejects an empty format pattern string.
-'   Creates a bar and calls ConfigureValueFormat with vbNullString. Expects
-'   InvalidArgument to be raised. A blank pattern would produce empty or
-'   meaningless rendered text in the bar cells, so the guard clause prevents
-'   misconfiguration.
-'@TestMethod("ProgressBar")
-Public Sub TestConfigureValueFormatRejectsBlank()
-    CustomTestSetTitles Assert, "ProgressBar", "TestConfigureValueFormatRejectsBlank"
-    On Error GoTo ExpectError
-
-    Dim sut As ProgressBar
-    Set sut = ProgressBar.Create(FixtureSheet.Range("A1:E1"), 10)
-
-    sut.ConfigureValueFormat vbNullString
-
-    Assert.LogFailure "ConfigureValueFormat should raise for blank pattern"
-    Exit Sub
-
-ExpectError:
-    Assert.AreEqual ProjectError.InvalidArgument, Err.Number, _
-                     "ConfigureValueFormat should raise InvalidArgument for blank pattern"
-End Sub
-
 '@section Tests - Rendering
 '===============================================================================
 
@@ -600,35 +570,44 @@ TestFail:
     CustomTestLogFailure Assert, "TestRenderPaintsCompletedCells", Err.Number, Err.Description
 End Sub
 
-' @sub-title TestRenderWritesFormattedValueToFirstCell
+' @sub-title TestRenderLeavesBarCellsEmpty
 ' @details
-'   Verifies that Update writes a formatted "current / max" string into the
-'   first cell of the bar range. Creates a bar with maximum 200 on a
-'   five-cell range and updates to 50. Reads the text from the first cell
-'   and asserts it equals "50 / 200". This confirms the default value
-'   format pattern renders correctly in the visible cell.
+'   Verifies that the bar shows progress by tint alone. The bar cells used
+'   to carry the value pair, which gave a second thing to read at every
+'   tick and which Excel parsed as a date over a milestone count: "3 / 12"
+'   was stored as 12-Mar under a dd-mmm format, so the cell showed dates
+'   while the band moved. The test pre-formats the range as dd-mmm, drives
+'   a bar of maximum 12 to 3, and asserts every cell of the range is empty.
 '@TestMethod("ProgressBar")
-Public Sub TestRenderWritesFormattedValueToFirstCell()
-    CustomTestSetTitles Assert, "ProgressBar", "TestRenderWritesFormattedValueToFirstCell"
+Public Sub TestRenderLeavesBarCellsEmpty()
+    CustomTestSetTitles Assert, "ProgressBar", "TestRenderLeavesBarCellsEmpty"
     On Error GoTo TestFail
 
     Dim barRange As Range
-    Set barRange = FixtureSheet.Range("A1:E1")
+    Set barRange = FixtureSheet.Range("A3:E3")
+    barRange.NumberFormat = "dd-mmm"
 
     Dim sut As ProgressBar
-    Set sut = ProgressBar.Create(barRange, 200)
+    Set sut = ProgressBar.Create(barRange, 12)
 
-    sut.Update 50
+    sut.Update 3
 
-    Dim cellText As String
-    cellText = CStr(barRange.Cells(1).Value)
+    Dim filledCount As Long
+    Dim cell As Range
 
-    Assert.AreEqual "50 / 200", cellText, _
-                     "First cell should display formatted current/max values"
+    filledCount = 0
+    For Each cell In barRange.Cells
+        If LenB(CStr(cell.Value)) > 0 Then
+            filledCount = filledCount + 1
+        End If
+    Next cell
+
+    Assert.AreEqual CLng(0), filledCount, _
+                     "Every cell of the bar range should stay empty"
     Exit Sub
 
 TestFail:
-    CustomTestLogFailure Assert, "TestRenderWritesFormattedValueToFirstCell", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestRenderLeavesBarCellsEmpty", Err.Number, Err.Description
 End Sub
 
 '@section Tests - Repaint seam

@@ -32,8 +32,23 @@ Option Explicit
 'drivers; ScreenUpdating is False when the call returns, and the
 'driver's captured ApplicationState stays the single owner of the real
 'restore.
+'
+'THE BAR CELLS CARRY COLOUR ONLY
+'-------------------------------------------------------------------------------
+'The bar shows progress by tint. Attach clears its cells and they stay
+'empty for the whole run, so one band of colour moving along the range is
+'the whole display.
+'
+'The bar used to write the value pair into its first cell. It gave the
+'user a second thing to read at every tick, and Excel parsed the pair a
+'milestone count produces -- "3 / 12" -- as a date, so the cell showed
+'12-Mar under a dd-mmm format while the band moved.
+'
+'Words go to the status cell. It is set to the text format at the point of
+'write, since the driver's text can be anything, a setup file named for a
+'date included.
 '@depends ProjectError
-'@version 1.1 (2026-08-13)
+'@version 1.2 (2026-08-27)
 
 
 Private Type TProgressBar
@@ -44,7 +59,6 @@ Private Type TProgressBar
     isInitialised As Boolean
     completedColor As Long
     pendingColor As Long
-    valueFormat As String
     statusText As String
 End Type
 
@@ -52,7 +66,7 @@ Private this As TProgressBar
 
 Private Const CLASSNAME As String = "ProgressBar"
 Private Const DEFAULT_MAXIMUM As Long = 100
-Private Const DEFAULT_VALUE_FORMAT As String = "#,##0"
+Private Const TEXT_NUMBER_FORMAT As String = "@"
 Private Const DEFAULT_COMPLETED_COLOR As Long = &H4DB870 '  Clean green
 Private Const DEFAULT_PENDING_COLOR As Long = &HEEF1F5   '  Light grey
 
@@ -61,12 +75,11 @@ Private Const DEFAULT_PENDING_COLOR As Long = &HEEF1F5   '  Light grey
 'Initialisation and factory.
 
 '@label:class-initialize
-'@sub-title Set default values for colours, format, and maximum
+'@sub-title Set default values for colours and maximum
 Private Sub Class_Initialize()
     this.maximum = DEFAULT_MAXIMUM
     this.completedColor = DEFAULT_COMPLETED_COLOR
     this.pendingColor = DEFAULT_PENDING_COLOR
-    this.valueFormat = DEFAULT_VALUE_FORMAT
 End Sub
 
 '@label:create
@@ -114,22 +127,6 @@ End Sub
 Public Sub ConfigureColors(ByVal completedColor As Long, ByVal pendingColor As Long)
     this.completedColor = completedColor
     this.pendingColor = pendingColor
-
-    If this.isInitialised Then
-        RenderProgress
-    End If
-End Sub
-
-'@label:configure-value-format
-'@sub-title Configure the number format for progress text
-'@param formatPattern String. VBA format pattern.
-'@export
-Public Sub ConfigureValueFormat(ByVal formatPattern As String)
-    If LenB(formatPattern) = 0 Then
-        ThrowError ProjectError.InvalidArgument, "formatPattern cannot be blank"
-    End If
-
-    this.valueFormat = formatPattern
 
     If this.isInitialised Then
         RenderProgress
@@ -338,12 +335,11 @@ Private Function ClampRatio(ByVal ratio As Double) As Double
 End Function
 
 '@label:render-progress
-'@sub-title Re-render the bar and value text
+'@sub-title Re-render the bar
 Private Sub RenderProgress()
     Dim ratio As Double
     ratio = ComputeRatio(this.value)
     PaintBar ratio
-    WriteValue
 End Sub
 
 '@label:repaint-now
@@ -367,6 +363,7 @@ Private Sub RenderStatus(ByVal statusMessage As String)
 
     If this.statusRange Is Nothing Then Exit Sub
 
+    this.statusRange.NumberFormat = TEXT_NUMBER_FORMAT
     this.statusRange.Value = this.statusText
 End Sub
 
@@ -414,21 +411,6 @@ Private Sub PaintBar(ByVal ratio As Double)
             cell.Interior.Color = this.pendingColor
         End If
     Next cell
-End Sub
-
-'@label:write-value
-'@sub-title Write the formatted progress text to the first cell
-Private Sub WriteValue()
-    If this.barRange Is Nothing Then Exit Sub
-
-    Dim formattedValue As String
-    formattedValue = Format$(this.value, this.valueFormat) & " / " & Format$(this.maximum, this.valueFormat)
-
-    With this.barRange.Cells(1)
-        .Value = formattedValue
-        .HorizontalAlignment = xlCenter
-        .VerticalAlignment = xlCenter
-    End With
 End Sub
 
 '@label:resolve-maximum
