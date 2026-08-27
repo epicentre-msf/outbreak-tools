@@ -48,7 +48,7 @@ Option Explicit
 'import. Both routines unhide every column before they write and hide the same
 'columns again after.
 '@depends BetterArray, Checking, HiddenNames, DropdownLists
-'@version 1.2 (2026-08-24)
+'@version 1.3 (2026-08-27)
 
 
 Private Type TCustomTable
@@ -1262,27 +1262,23 @@ End Function
 '@label:ensure-one-body-row
 '@sub-title Put a row back under the header only when the table has none
 '@details
-'A ListObject that Excel has emptied does not always answer 0 rows the same
-'way. When the last data row goes, or a Resize lands on a header plus one
-'blank row, Excel keeps that blank row as the INSERT ROW: Range still spans
-'the header and the row under it, DataBodyRange answers that row, and
-'ListRows.Count answers 0, because the insert row is not a list row. Reading
-'ListRows.Count alone takes that state for an empty table and adds a SECOND
-'row, and a row added through ListRows.Add takes the format of the row above
-'it. With only the header above, the new row comes out wearing the header
-'format.
+'When the last data row goes, Excel keeps a blank INSERT ROW under the
+'header: Range still spans the header and that row, DataBodyRange answers
+'Nothing and ListRows.Count answers 0. Every reader of this class goes
+'through DataBodyRange, so that state counts as an empty table.
 '
-'So the table is asked how far it reaches rather than how many rows it counts.
-'One that already covers a row under its header is left alone, whether Excel
-'calls that row a list row or an insert row.
+'ListRows.Add on that state turns the insert row into the one data row.
+'The range stays the same, so a second row never appears. The row takes the
+'format of the row above it, and with only the header above it comes out
+'wearing the header format. ClearFormats on the body puts it back on the
+'table style. The header and the style are left as they are.
 '@param lo ListObject. The table to check.
 Private Sub EnsureOneBodyRow(ByVal lo As ListObject)
     If lo Is Nothing Then Exit Sub
     If Not lo.DataBodyRange Is Nothing Then Exit Sub
-    If Not lo.InsertRowRange Is Nothing Then Exit Sub
-    If lo.ListRows.Count >= 1 Then Exit Sub
 
     lo.ListRows.Add
+    If Not lo.DataBodyRange Is Nothing Then lo.DataBodyRange.ClearFormats
 End Sub
 
 '@label:drop-trailing-rows
