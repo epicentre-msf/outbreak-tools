@@ -31,6 +31,13 @@
 #     modules          -> src/modules/F/<name>.bas
 #     tests[].module   -> src/tests/F/<module>.bas
 #     fixtures         -> src/tests/F/<name>.cls          (imported as "tests classes")
+#     forms[].name     -> the merged .frm tree, staged into run/forms/F/<name>.frm
+#
+# `forms` is the one key whose source sits outside src/. merge-form-code.R
+# writes .test-runner/forms/merged on every --build run, and run-tests.R copies
+# that flat tree whole into run/forms/F for every folder the manifest names. So
+# the folder of a forms row picks the staged copy Development reads, and the row
+# belongs beside the code that drives the form.
 #
 # Test modules and their fixture classes now live TOGETHER in one per-suite
 # folder, src/tests/F/. The former src/tests/modules/F + src/tests/classes/F
@@ -42,6 +49,7 @@
 # The tag written above each generated table (read by Development.cls) is:
 #     classes  -> "general classes"      modules  -> "general modules"
 #     tests    -> "tests modules"        fixtures -> "tests classes"
+#     forms    -> "general forms"
 # `interface: true` on a class also imports the matching I<name>.cls.
 #
 # ----------------------------------------------------------------------------
@@ -55,8 +63,9 @@
 # Comment out the `- module:` rows under a non-helpers `tests:` key that the
 # probe does not need, each one WITH its `covers:` continuation line -- comment
 # one and leave the other and the YAML dies on a duplicate key. Leave every
-# `classes:`, `modules:` and `fixtures:` row alone: the compile closure has to
-# stay whole or the project does not build and the run answers the opaque -50.
+# `classes:`, `modules:`, `fixtures:` and `forms:` row alone: the compile closure
+# has to stay whole or the project does not build and the run answers the opaque
+# -50.
 # The whole `helpers` block below stays in every probe, `TestHelpersLite` above
 # all, because every CustomTest module calls it.
 #
@@ -945,13 +954,14 @@ suites:
       # TranslationObject are baked into the driver workbook.
       #
       # ONE THING HAD TO MOVE BEFORE THIS ROW COULD LAND. OnDoubleClick used to
-      # call GeoModule.LoadGeo, and GeoModule can never be registered: it drives
-      # the F_Geo UserForm, no .frm lives under src/, and this schema has no
-      # forms key. So OnDoubleClick now ANSWERS the geo scope the click asked
-      # for and EventLinelistWorkbook makes the call. That module carries the
-      # worksheet event handlers, is never registered, and travels into the
-      # generated linelist beside GeoModule and F_Geo, so the call still binds
-      # at run time. Modules call modules, which is what the house rule wants.
+      # call GeoModule.LoadGeo. It now ANSWERS the geo scope the click asked for,
+      # and EventLinelistWorkbook makes the call. That module carries the
+      # worksheet event handlers, stays unregistered, and travels into the
+      # generated linelist beside GeoModule and F_Geo, so the call binds at run
+      # time. Modules call modules, which is what the house rule wants.
+      #
+      # GeoModule carries a row of its own since 2026-08-28: it sits under
+      # `modules:` below, with F_Geo beside it under `forms:`.
       - name: EventLinelist
       # LLLog keeps the dated user-action log of a running linelist on the
       # very hidden __log worksheet, one Checking bundle per event flushed
@@ -972,6 +982,46 @@ suites:
       # LinelistEventsManager above and names nothing else. Its eighteen public
       # names clash with nothing already in the workbook.
       - CustomLinelistFunctions
+      # GeoModule drives the geo picker of a running linelist: the four admin
+      # lists, the health facility list, the name a user adds through the form,
+      # and the two spatial entry points. It joined on 2026-08-28, the first row
+      # in this file that needs a form. Its row sits in this suite because a
+      # module row resolves against src/modules/<the suite folder>/ and the file
+      # is src/modules/linelist/GeoModule.bas.
+      #
+      # THIS ROW OPENS NOTHING NEW. GeoModule names LinelistEventsManager and
+      # LLTranslation above, EventLinelist above, LLGeo, LLSpatial and
+      # GeoFormCache (`geo`), AnalysisRanges (`analyses`) and DropdownLists
+      # (`general`); Passwords, TranslationObject, HiddenNames, Checking and
+      # BetterArray are baked into the driver workbook. Its nine public names
+      # clash with nothing already in the workbook.
+      #
+      # Four of those nine are test seams: GeoSuppressShow, GeoSuppressBox,
+      # GeoStubAdminName and GeoClearAdminNameStub. Each holds back one window
+      # that waits for a hand -- the picker, the failure box, the name prompt. A
+      # headless run has nobody to close such a window and stops there with no
+      # result file, so the seams are what make this module testable at all.
+      - GeoModule
+    forms:
+      # F_Geo is the geo picker GeoModule drives. It arrives from the merged
+      # .frm tree that merge-form-code.R writes under .test-runner/forms/merged
+      # on every --build run: the control tree and the .frx come from the form
+      # exported to .mock/forms/designer, and the code behind them is the
+      # current src/modules/linelistform/FormLogicGeo.bas body. This is the one
+      # row in the file whose source sits outside src/.
+      #
+      # FormLogicGeo names LinelistEventsManager, EventLinelist, LLGeo,
+      # GeoFormCache and LLTranslation, all above or under `geo`, plus
+      # TranslationObject, HiddenNames and BetterArray, which are baked in. A
+      # form module is private to its own form, so its procedure names reach
+      # nothing outside F_Geo.
+      #
+      # THE .frm HAS TO ARRIVE WITH CRLF ENDINGS. Given LF the VBE cannot read
+      # the `Begin ... End` control tree, imports the file as a STANDARD module
+      # whose first lines are the header text, and reports no error at all. The
+      # tell is F_Geo showing up as a module in the driver workbook.
+      # merge-form-code.R writes CRLF for exactly that reason.
+      - name: F_Geo
     tests:
       # TestCustomLinelistFunctions closes issue 340, which reported EPIWEEK
       # answering week 53 for 29 to 31 December 2025. The implementation that
