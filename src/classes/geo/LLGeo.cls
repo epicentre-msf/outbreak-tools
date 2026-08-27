@@ -160,6 +160,11 @@ Private Const NAMES_LEVEL_COL As String = "level"
 'Worksheet-level hidden name holding the kind of a linelist sheet
 Private Const SHEET_TAG As String = "sheet_type"
 
+'The name the linelist expects its geobase worksheet under. Linelist.Prepare
+'anchors every worksheet insert on it, so a build with no readable geobase
+'still needs a worksheet of this name.
+Private Const GEO_SHEET_NAME As String = "Geo"
+
 'The key UniqueRangeValue dedupes with. The prefix is load-bearing twice over:
 'a Collection refuses an empty key, and an empty cell is a real entry of a
 'geobase column, so the prefix is what lets one be held. The length cap is
@@ -2098,6 +2103,43 @@ Private Sub ExportLevelNames(ByVal outputWkb As Workbook)
         destination.SetValue nameId, label
     Next
 End Sub
+
+'@label:ensure-geo-sheet
+'@fun-title Lay down an empty Geo worksheet on a workbook and answer it.
+'@details
+'Answers the worksheet named Geo of the target workbook, adding an empty one
+'after the last sheet when the workbook has none. The sheet carries nothing:
+'no table, no name, no hidden name. It exists so a linelist whose designer
+'cannot supply a geobase still has the anchor Linelist.Prepare needs. Called
+'on the predeclared instance, since a designer whose geo sheet refuses Create
+'is the case it serves.
+'
+'A workbook that already carries a Geo worksheet is left as it is and that
+'sheet is answered, so a call after a part-way ExportToWkb makes no second
+'sheet.
+'@param targetBook Workbook. The workbook to lay the sheet on.
+'@return Worksheet. The Geo worksheet of the target workbook.
+'@throws ProjectError.ObjectNotInitialized When the workbook is Nothing.
+'@export
+Public Function EnsureGeoSheet(ByVal targetBook As Workbook) As Worksheet
+    Dim sh As Worksheet
+
+    If targetBook Is Nothing Then _
+        ThrowError ObjectNotInitialized, "Target workbook not defined"
+
+    Set sh = Nothing
+    On Error Resume Next
+    Set sh = targetBook.Worksheets(GEO_SHEET_NAME)
+    On Error GoTo 0
+
+    If sh Is Nothing Then
+        Set sh = targetBook.Worksheets.Add( _
+            After:=targetBook.Worksheets(targetBook.Worksheets.Count))
+        sh.Name = GEO_SHEET_NAME
+    End If
+
+    Set EnsureGeoSheet = sh
+End Function
 
 '@section Update
 '===============================================================================

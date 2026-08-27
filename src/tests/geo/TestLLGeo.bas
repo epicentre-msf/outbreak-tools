@@ -608,6 +608,112 @@ TestFail:
     CustomTestLogFailure Assert, "TestSecondExportInAnotherLanguageCarriesTheNewLabels", Err.Number, Err.Description
 End Sub
 
+'@section EnsureGeoSheet tests
+'===============================================================================
+
+'@sub-title Verify EnsureGeoSheet lays a Geo worksheet down last.
+'@details
+'Arranges a new workbook with no Geo sheet. Acts by calling EnsureGeoSheet on
+'the predeclared instance. Asserts the answer is named Geo, sits last in the
+'workbook, and carries no table.
+'@TestMethod("LLGeo")
+Public Sub TestEnsureGeoSheetAddsAnEmptyGeoSheetLast()
+    CustomTestSetTitles Assert, "LLGeo", "TestEnsureGeoSheetAddsAnEmptyGeoSheetLast"
+    On Error GoTo TestFail
+
+    Dim outWkb As Workbook
+    Dim sh As Worksheet
+    Dim sheetName As String
+    Dim sheetIndex As Long
+    Dim sheetCount As Long
+    Dim tableCount As Long
+
+    Set outWkb = NewWorkbook()
+    Set sh = LLGeo.EnsureGeoSheet(outWkb)
+    sheetName = sh.Name
+    sheetIndex = sh.Index
+    sheetCount = outWkb.Worksheets.Count
+    tableCount = sh.ListObjects.Count
+    DeleteWorkbook outWkb
+
+    Assert.AreEqual GEO_SHEET_NAME, sheetName, _
+                    "The sheet laid down should carry the Geo name"
+    Assert.AreEqual sheetCount, sheetIndex, _
+                    "The sheet laid down should sit last in the workbook"
+    Assert.AreEqual CLng(0), tableCount, _
+                    "The sheet laid down should carry no table"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestEnsureGeoSheetAddsAnEmptyGeoSheetLast", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify EnsureGeoSheet answers the Geo sheet already there.
+'@details
+'Arranges a workbook whose first sheet is named Geo and holds a marker value.
+'Acts by calling EnsureGeoSheet twice. Asserts the workbook still holds one
+'sheet, the answer is that sheet, and the marker is untouched.
+'@TestMethod("LLGeo")
+Public Sub TestEnsureGeoSheetKeepsTheGeoSheetAlreadyThere()
+    CustomTestSetTitles Assert, "LLGeo", "TestEnsureGeoSheetKeepsTheGeoSheetAlreadyThere"
+    On Error GoTo TestFail
+
+    Dim outWkb As Workbook
+    Dim sh As Worksheet
+    Dim answered As Worksheet
+    Dim sameSheet As Boolean
+    Dim sheetCount As Long
+    Dim marker As String
+
+    Set outWkb = NewWorkbook()
+    Set sh = outWkb.Worksheets(1)
+    sh.Name = GEO_SHEET_NAME
+    sh.Range("A1").Value = "marker"
+
+    LLGeo.EnsureGeoSheet outWkb
+    Set answered = LLGeo.EnsureGeoSheet(outWkb)
+    sameSheet = (answered Is sh)
+    sheetCount = outWkb.Worksheets.Count
+    marker = CStr(sh.Range("A1").Value)
+    DeleteWorkbook outWkb
+
+    Assert.IsTrue sameSheet, _
+                  "The Geo sheet already there should be the one answered"
+    Assert.AreEqual CLng(1), sheetCount, _
+                    "A workbook carrying a Geo sheet should gain no second sheet"
+    Assert.AreEqual "marker", marker, _
+                    "The Geo sheet already there should be left as it is"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestEnsureGeoSheetKeepsTheGeoSheetAlreadyThere", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify EnsureGeoSheet refuses a Nothing workbook.
+'@details
+'Acts by calling EnsureGeoSheet with Nothing. Asserts ObjectNotInitialized is
+'raised.
+'@TestMethod("LLGeo")
+Public Sub TestEnsureGeoSheetRejectsNothingWorkbook()
+    CustomTestSetTitles Assert, "LLGeo", "TestEnsureGeoSheetRejectsNothingWorkbook"
+    On Error GoTo TestFail
+
+    Dim errNumber As Long
+
+    On Error Resume Next
+    LLGeo.EnsureGeoSheet Nothing
+    errNumber = Err.Number
+    Err.Clear
+    On Error GoTo TestFail
+
+    Assert.AreEqual CLng(ProjectError.ObjectNotInitialized), errNumber, _
+                    "A Nothing workbook should raise ObjectNotInitialized"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestEnsureGeoSheetRejectsNothingWorkbook", Err.Number, Err.Description
+End Sub
+
 '@section GeoNames cache tests
 '===============================================================================
 

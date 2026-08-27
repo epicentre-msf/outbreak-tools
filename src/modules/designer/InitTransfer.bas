@@ -440,8 +440,9 @@ End Sub
 'first. The meta language is the one picked on the Main sheet, out of the
 'languages the setup translation table carries, and UpdateLevelNames needs both
 'to resolve the level names while ExportToWkb runs. The geobase itself is
-'imported later, on the linelist's own copy of the sheet.
-Private Sub ExportEmptyGeoFromDesigner(ByVal designerBook As Workbook, ByVal targetBook As Workbook)
+'imported later, on the linelist's own copy of the sheet. Public so a suite
+'drives the degraded case with a fixture designer whose Geo sheet is bare.
+Public Sub ExportEmptyGeoFromDesigner(ByVal designerBook As Workbook, ByVal targetBook As Workbook)
     Dim designerSheet As Worksheet
     Dim geoManager As LLGeo
     Dim geoStore As HiddenNames
@@ -477,11 +478,11 @@ Private Sub ExportEmptyGeoFromDesigner(ByVal designerBook As Workbook, ByVal tar
     End If
 
     'A designer whose Geo sheet cannot build a geobase manager still ships a
-    'linelist: the sheet is copied as it is and the fault is filed with the
-    'error scope. The linelist NEEDS the worksheet whatever its state, because
-    'Linelist.Prepare anchors every worksheet insert on Geo. The headless flow
-    'is where this happens -- a designer built by hand carries the full geo
-    'machinery, a mock or a stripped one may not.
+    'linelist: an empty Geo worksheet is laid down and the fault is filed with
+    'the error scope. The linelist NEEDS the worksheet whatever its state,
+    'because Linelist.Prepare anchors every worksheet insert on Geo. The
+    'headless flow is where this happens -- a designer built by hand carries
+    'the full geo machinery, a mock or a stripped one may not.
     On Error GoTo GeoUnusable
     Set geoManager = LLGeo.Create(designerSheet)
     geoManager.ExportToWkb targetBook, _
@@ -493,14 +494,16 @@ GeoUnusable:
     Dim geoFault As String
     geoFault = Err.Description
 
-    'THE COPY ONLY HAPPENS WHEN THERE IS NOTHING THERE YET.
+    'THE EMPTY SHEET ONLY GOES DOWN WHEN THERE IS NOTHING THERE YET.
     'This handler covers LLGeo.Create AND ExportToWkb, and those two fail very
-    'differently. Create fails before anything is written, and then the raw copy
-    'below is the whole point: Linelist.Prepare anchors every worksheet insert
-    'on Geo, so the linelist needs that worksheet whatever state it is in.
+    'differently. Create fails before anything is written, and then the empty
+    'sheet LLGeo.EnsureGeoSheet lays down is the whole point: Linelist.Prepare
+    'anchors every worksheet insert on Geo, so the linelist needs that
+    'worksheet whatever state it is in. The transfer never copies a worksheet
+    'across workbooks; the anchor comes from the geo class.
     '
     'ExportToWkb fails HALFWAY, with the geo worksheet and its nine tables
-    'already written. Copying on top of that gave the linelist a SECOND geo
+    'already written. Adding on top of that gave the linelist a SECOND geo
     'worksheet -- Excel names it "Geo (2)" -- carrying a second copy of every
     'table under an auto-renamed name, T_ADM1 beside T_ADM124. Two geobases,
     'one of them unreachable by name, is worse than one that is short of its
@@ -508,7 +511,7 @@ GeoUnusable:
     On Error Resume Next
         Err.Clear
         If Not WorksheetExists(targetBook, designerSheet.Name) Then
-            designerSheet.Copy After:=targetBook.Worksheets(targetBook.Worksheets.Count)
+            LLGeo.EnsureGeoSheet targetBook
             LogCheck "geo-unusable", _
                      "The designer's Geo worksheet could not be read as a geobase (" & _
                      geoFault & "). The sheet was copied as it is, and the linelist " & _

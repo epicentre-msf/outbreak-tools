@@ -353,6 +353,70 @@ Fail:
 End Sub
 
 
+'@section Degraded Geo Tests
+'===============================================================================
+'@TestMethod("InitTransfer.DegradedGeo")
+Public Sub TestUnusableGeoLaysDownOneEmptyGeoSheet()
+    CustomTestSetTitles Assert, "InitTransfer", "TestUnusableGeoLaysDownOneEmptyGeoSheet"
+    On Error GoTo Fail
+
+    'Arrange: a designer whose Geo sheet is bare, so LLGeo.Create refuses it,
+    'and a target with no Geo sheet yet
+    Set SourceWorkbook = NewWorkbook
+    EnsureWorksheet "Geo", SourceWorkbook
+
+    'Act
+    InitTransfer.ExportEmptyGeoFromDesigner SourceWorkbook, FixtureWorkbook
+
+    'Assert: one empty Geo sheet, no "Geo (2)", and the fault filed under
+    'geo-unusable. The handler used to copy the designer sheet across.
+    Assert.IsTrue WorksheetExists("Geo", FixtureWorkbook), _
+                  "The linelist should carry a Geo sheet when the geobase is unusable."
+    Assert.IsFalse WorksheetExists("Geo (2)", FixtureWorkbook), _
+                   "The linelist should carry no second Geo sheet."
+    Assert.AreEqual CLng(1), CountSheetsNamed(FixtureWorkbook, "Geo"), _
+                    "Exactly one sheet should be named Geo."
+    Assert.IsTrue InitTransfer.HasCheckings(), _
+                  "An unusable geobase should file a report entry."
+    Assert.IsTrue InitTransfer.CheckingValues().KeyExists("geo-unusable"), _
+                  "The entry should carry the geo-unusable key."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestUnusableGeoLaysDownOneEmptyGeoSheet", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("InitTransfer.DegradedGeo")
+Public Sub TestUnusableGeoKeepsTheGeoSheetAlreadyThere()
+    CustomTestSetTitles Assert, "InitTransfer", "TestUnusableGeoKeepsTheGeoSheetAlreadyThere"
+    On Error GoTo Fail
+
+    'Arrange: the target already carries a Geo sheet, the state a part-way
+    'export leaves behind, and the designer's Geo sheet is bare
+    Set SourceWorkbook = NewWorkbook
+    EnsureWorksheet "Geo", SourceWorkbook
+    EnsureWorksheet "Geo", FixtureWorkbook
+    FixtureWorkbook.Worksheets("Geo").Range("A1").Value = "marker"
+
+    'Act
+    InitTransfer.ExportEmptyGeoFromDesigner SourceWorkbook, FixtureWorkbook
+
+    'Assert: the sheet is left as it is and the fault is filed as partial
+    Assert.AreEqual CLng(1), CountSheetsNamed(FixtureWorkbook, "Geo"), _
+                    "Exactly one sheet should be named Geo."
+    Assert.IsFalse WorksheetExists("Geo (2)", FixtureWorkbook), _
+                   "The linelist should carry no second Geo sheet."
+    Assert.AreEqual "marker", CStr(FixtureWorkbook.Worksheets("Geo").Range("A1").Value), _
+                    "The Geo sheet already there should be left as it is."
+    Assert.IsTrue InitTransfer.CheckingValues().KeyExists("geo-partial"), _
+                  "The entry should carry the geo-partial key."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestUnusableGeoKeepsTheGeoSheetAlreadyThere", Err.Number, Err.Description
+End Sub
+
+
 '@section Report Entry Tests
 '===============================================================================
 '@TestMethod("InitTransfer.ReportEntries")
@@ -409,6 +473,18 @@ Private Sub ArrangeFormatDesignRange(ByVal designName As String)
     FixtureWorkbook.Names.Add Name:="DESIGNTYPE", RefersTo:=sh.Range("B2")
     sh.Range("B2").Value = designName
 End Sub
+
+'@sub-title Count the worksheets of a workbook carrying one name
+Private Function CountSheetsNamed(ByVal wb As Workbook, ByVal sheetName As String) As Long
+    Dim sh As Worksheet
+    Dim found As Long
+
+    For Each sh In wb.Worksheets
+        If StrComp(sh.Name, sheetName, vbTextCompare) = 0 Then found = found + 1
+    Next
+
+    CountSheetsNamed = found
+End Function
 
 '@sub-title Assert the exported format sheet of the target workbook
 Private Sub AssertExportedFormatter(ByVal designName As String, ByVal branchName As String)
