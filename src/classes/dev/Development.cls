@@ -47,6 +47,7 @@ Private Const CONFIRM_TITLE As String = "Development helper"
 Private Const MODULE_CODES_NAME As String = "ModulesCodes"
 Private Const CLASS_CODES_NAME As String = "ClassesImplementation"
 Private Const TEST_CODES_NAME As String = "TestsCodes"
+Private Const FORM_CODES_NAME As String = "FormsCodes"
 Private Const CODE_SHEET_NAMEDEF As String = "Development_CodeSheet"
 Private Const WORKBOOK_DEPLOYMENT_FLAG As String = "inDeployment"
 
@@ -54,15 +55,21 @@ Private Const COUNTER_CLASSES As String = "Development_ClassesCounter"
 Private Const COUNTER_MODULES As String = "Development_ModulesCounter"
 Private Const COUNTER_FORMS As String = "Development_FormsCounter"
 Private Const COUNTER_TESTS As String = "Development_TestsCounter"
+Private Const COUNTER_FORM_FILES As String = "Development_FormFilesCounter"
 
 Private Const PREFIX_CLASSES As String = "ClassesLo"
 Private Const PREFIX_MODULES As String = "ModulesLo"
 Private Const PREFIX_FORMS As String = "FormsLo"
 Private Const PREFIX_TESTS As String = "TestsLo"
+Private Const PREFIX_FORM_FILES As String = "FormFilesLo"
 
 Private Const TAG_CLASSES As String = "general classes"
 Private Const TAG_MODULES As String = "general modules"
 Private Const TAG_FORMS As String = "general form modules"
+'TAG_FORMS above drives the deployment job: it copies a standard module's code
+'into a UserForm already in the workbook. TAG_FORM_FILES below drives the import
+'job: it reads a .frm file from disk into the workbook. Two jobs, two tags.
+Private Const TAG_FORM_FILES As String = "general forms"
 Private Const TAG_TESTS As String = "tests modules"
 Private Const TAG_TEST_CLASSES As String = "tests classes"
 
@@ -73,6 +80,7 @@ Private Const DEFAULT_ANCHOR As String = "E5"
 Private Enum DevelopmentTransferScope
     transferModules = 1
     transferClasses = 2
+    transferForms = 3
 End Enum
 
 Private Enum DevelopmentTransferMode
@@ -84,6 +92,7 @@ Private Type TFolderSettings
     modulesPath As String
     classesPath As String
     testsPath As String
+    formsPath As String
 End Type
 
 
@@ -276,6 +285,30 @@ Public Function AddFormsTable() As ListObject
                                          TAG_FORMS, _
                                          COUNTER_FORMS, _
                                          PREFIX_FORMS)
+End Function
+
+'@label:add-form-files-table
+'@sub-title Create a form files table on the code worksheet.
+'@details
+'Creates a new ListObject with a single "forms" column. Each entry names a
+'UserForm whose .frm file is read from the forms folder and imported into
+'the workbook. The .frx file beside it is picked up by the VBE on its own.
+'This table carries the tag "general forms". AddFormsTable carries
+'"general form modules" and does the deployment copy job.
+'A confirmation dialog is shown when prompts are enabled.
+'@return ListObject. The newly created table, or Nothing when the user
+'declines the confirmation prompt.
+'@throws ProjectError.ObjectNotInitialized When Initialise has not been called.
+'@Description("Create a form files table used to import .frm files from disk.")
+Public Function AddFormFilesTable() As ListObject
+    EnsureInitialised
+
+    If Not RequestConfirmation("add forms files table") Then Exit Function
+
+    Set AddFormFilesTable = CreateListObject(Array("forms"), _
+                                             TAG_FORM_FILES, _
+                                             COUNTER_FORM_FILES, _
+                                             PREFIX_FORM_FILES)
 End Function
 
 '@label:add-test-table
@@ -826,8 +859,8 @@ End Sub
 '@details
 'Reads folder settings from the Dev sheet, then walks every ListObject on
 'each host worksheet. Each table is passed to ProcessListObject, which
-'interprets the tag above the table to decide scope (modules or classes),
-'target folder, and whether interfaces should be included.
+'interprets the tag above the table to decide scope (modules, classes or
+'form files), target folder, and whether interfaces should be included.
 '@param mode DevelopmentTransferMode. Whether to import or export.
 '@Description("Iterate every development table and process it for import/export.")
 Private Sub ProcessAllTables(ByVal mode As DevelopmentTransferMode)
@@ -853,6 +886,9 @@ Private Function ResolveFolderSettings() As TFolderSettings
     ResolveFolderSettings.modulesPath = ReadSheetValue(MODULE_CODES_NAME, required:=True)
     ResolveFolderSettings.classesPath = ReadSheetValue(CLASS_CODES_NAME, required:=True)
     ResolveFolderSettings.testsPath = ReadSheetValue(TEST_CODES_NAME, required:=False)
+    'A workbook whose OBTImport predates the forms range still imports
+    'everything else, so this read is optional.
+    ResolveFolderSettings.formsPath = ReadSheetValue(FORM_CODES_NAME, required:=False)
 End Function
 
 '@label:read-sheet-value
@@ -902,12 +938,12 @@ End Function
 '@sub-title Process a single ListObject for import or export.
 '@details
 'Reads the tag cell above the table to determine the scope (modules,
-'classes, tests, or forms) and the base folder. Reads the folder cell two
+'classes, tests, or form files) and the base folder. Reads the folder cell two
 'rows above the table to determine the subfolder. Combines both paths and
 'verifies the directory exists on disk. Delegates to TransferListEntries
-'for actual component-by-component processing. Forms-tagged tables are
-'skipped here (handled by SynchroniseFormsTables instead). Returns True
-'when at least one component was transferred.
+'for actual component-by-component processing. A table tagged
+'"general form modules" is skipped here; SynchroniseFormsTables owns it.
+'Returns True when at least one component was transferred.
 '@param lo ListObject. The development table to process.
 '@param mode DevelopmentTransferMode. Whether to import or export.
 '@param folders TFolderSettings. The resolved folder paths.
@@ -951,6 +987,13 @@ Private Function ProcessListObject(ByVal lo As ListObject, _
             baseFolder = folders.testsPath
             scope = transferClasses
             includeInterface = True
+
+        Case TAG_FORM_FILES
+            If LenB(folders.formsPath) = 0 Then Exit Function
+            'Form files are read from the merged forms tree (forms/<folder>).
+            'The tag selects form scope so the entry imports as a .frm.
+            baseFolder = folders.formsPath
+            scope = transferForms
 
         Case TAG_FORMS
             Exit Function
@@ -1173,6 +1216,9 @@ Private Sub TransferComponent(ByVal componentName As String, _
             filePath = destinationFolder & sep & componentName & ".bas"
         Case transferClasses
             filePath = destinationFolder & sep & componentName & ".cls"
+        Case transferForms
+            'Only the .frm is named. The VBE reads the .frx sitting beside it.
+            filePath = destinationFolder & sep & componentName & ".frm"
         Case Else
             filePath = destinationFolder & sep & componentName
     End Select
@@ -1242,7 +1288,7 @@ End Sub
 '@label:append-information-log
 '@sub-title Append a timestamped entry describing the transfer action performed.
 '@param targetPath String. The folder path that was processed.
-'@param scope DevelopmentTransferScope. Whether modules or classes were transferred.
+'@param scope DevelopmentTransferScope. Which kind of component was transferred.
 '@param mode DevelopmentTransferMode. Whether an import or export was performed.
 '@Description("Append a timestamped entry describing the import/export action performed.")
 Private Sub AppendInformationLog(ByVal targetPath As String, _
@@ -1260,6 +1306,7 @@ Private Sub AppendInformationLog(ByVal targetPath As String, _
     Select Case scope
         Case transferModules: scopeLabel = "Modules using path: "
         Case transferClasses: scopeLabel = "Classes using path: "
+        Case transferForms: scopeLabel = "Forms using path: "
         Case Else: scopeLabel = "Items using path: "
     End Select
 

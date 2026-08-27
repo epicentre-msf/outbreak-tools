@@ -35,11 +35,12 @@ Option Explicit
 ' Run-dir layout the wrappers read (assembled by run-tests.R next to the copy):
 '   Root()/classes/draft/*.cls        general classes the import pulls
 '   Root()/tests/draft/*.bas          test modules + fixtures the import pulls
+'   Root()/forms/<folder>/*.frm       merged userforms the import pulls (.frx beside)
 '   Root()/.generated/*               code-tables.tsv + modules-for-testing.txt
 '
 ' Codes-sheet layout these wrappers own:
 '   * folder path value cells (named ModulesCodes / ClassesImplementation /
-'     TestsCodes) in column A, written by EnsureFolderRanges.
+'     TestsCodes / FormsCodes) in column A, written by EnsureFolderRanges.
 '   * ModulesForTesting rebuilt anchored at B2 (header) downwards.
 '   * Development import tables rebuilt from E5 rightwards (its default).
 ' =============================================================================
@@ -57,12 +58,14 @@ Private Const LOG_FILE As String = "obt-import.log"
 Private Const MODULES_RANGE As String = "ModulesCodes"
 Private Const CLASSES_RANGE As String = "ClassesImplementation"
 Private Const TESTS_RANGE As String = "TestsCodes"
+Private Const FORMS_RANGE As String = "FormsCodes"
 
 ' Development table tags (mirror Development.cls; used to pick the create method).
 Private Const TAG_CLASSES As String = "general classes"
 Private Const TAG_MODULES As String = "general modules"
 Private Const TAG_TESTS As String = "tests modules"
 Private Const TAG_TEST_CLASSES As String = "tests classes"
+Private Const TAG_FORM_FILES As String = "general forms"
 
 ' code-tables.tsv column order (produced by build-registry.R).
 Private Const COL_FOLDER As Long = 0
@@ -105,7 +108,10 @@ Public Sub OBTBuildCodeTables()
     LogStep "  testsOutputs sheet resolved: " & outputSheet.Name
 
     EnsureFolderRanges codeSheet
-    LogStep "  folder ranges written: classes=" & StagePath("classes") & " tests=" & StagePath("tests")
+    LogStep "  folder ranges written: modules=" & StagePath("modules") & _
+            " classes=" & StagePath("classes") & _
+            " tests=" & StagePath("tests") & _
+            " forms=" & StagePath("forms")
 
     Dim manager As Development
     Set manager = Development.Create(codeSheet, codeSheet)
@@ -326,9 +332,38 @@ Private Function CreateTableForTag(ByVal manager As Development, ByVal tag As St
             Set CreateTableForTag = manager.AddModuleTable(False)
         Case TAG_TESTS
             Set CreateTableForTag = manager.AddTestTable()
+        Case TAG_FORM_FILES
+            Set CreateTableForTag = FormFilesTable(manager)
         Case Else
             ' Unknown tag: leave CreateTableForTag as Nothing so the caller skips it.
     End Select
+End Function
+
+'@fun-title Create the form files table through a late call, and log a driver workbook that is too old.
+'@details
+'AddFormFilesTable arrived with the forms tag. This module is re-imported from
+'run/bootstrap on every run, while Development is baked into the driver workbook
+'and only a hand re-import refreshes it. A direct call would therefore stop the
+'whole project compiling on a workbook that still carries the older Development,
+'and the runner reports that as the opaque -50. Calling through an Object keeps
+'such a workbook importing everything else, and the log names what was skipped.
+'@param manager Development. The initialised manager.
+'@return ListObject. The new table, or Nothing when the factory is missing.
+Private Function FormFilesTable(ByVal manager As Development) As ListObject
+    Dim factory As Object
+    Set factory = manager
+
+    Dim failure As Long
+    On Error Resume Next
+        ' Late call: an older baked Development answers 438 here.
+        Set FormFilesTable = factory.AddFormFilesTable()
+        failure = Err.Number
+    On Error GoTo 0
+
+    If failure <> 0 Then
+        LogStep "  forms table skipped: Development in this workbook has no " & _
+                "AddFormFilesTable (error " & failure & "). Re-import Development.cls."
+    End If
 End Function
 
 '@sub-title Write component names (and interface flags for classes) into a table body.
@@ -429,17 +464,19 @@ End Function
 '@section Path And File Helpers
 '===============================================================================
 
-'@sub-title Write the three src/ folder paths (in code) and point the named ranges at them.
+'@sub-title Write the four src/ folder paths (in code) and point the named ranges at them.
 '@details
 'So the operator never wires the Dev sheet by hand: the ModulesCodes /
-'ClassesImplementation / TestsCodes value cells are written in column A from
-'the run root, and each workbook-scoped name is redefined to refer to its cell.
+'ClassesImplementation / TestsCodes / FormsCodes value cells are written in
+'column A from the run root, and each workbook-scoped name is redefined to
+'refer to its cell.
 'Development.ImportAll then resolves the staging paths from these ranges.
 '@param sh Worksheet. The Codes worksheet.
 Private Sub EnsureFolderRanges(ByVal sh As Worksheet)
     SetFolderRange sh, sh.Range("A1"), MODULES_RANGE, StagePath("modules")
     SetFolderRange sh, sh.Range("A2"), CLASSES_RANGE, StagePath("classes")
     SetFolderRange sh, sh.Range("A3"), TESTS_RANGE, StagePath("tests")
+    SetFolderRange sh, sh.Range("A4"), FORMS_RANGE, StagePath("forms")
 End Sub
 
 '@sub-title Write a folder path into a cell and (re)define a workbook name over it.
