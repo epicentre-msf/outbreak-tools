@@ -266,7 +266,8 @@ End Sub
 '@sub-title Ask the next update to review the unseen labels with the user.
 '@details Raised by the Reset tags button. Every update removes the labels
 '         no registry range produces without a word, except the first one
-'         after this call, which lists them and asks.
+'         after this call, which lists them and asks; that one offers the
+'         hand-written rows too, which the silent updates leave alone.
 Public Sub RequestUnseenReview()
     Dim store As HiddenNames
 
@@ -951,12 +952,16 @@ End Function
 
 '@label:is-unclaimed-range
 '@sub-title True for a tag range no registry row names: the imported tag, or a range the registry dropped.
-'@details The manual tag is not unclaimed: a hand-written row is the
-'         user's, and no range can declare it obsolete.
+'@details The manual tag is unclaimed only during a review: a hand-written
+'         row is the user's, so no update removes it without asking, but
+'         a review asks, and offers it with the rest.
 Private Function IsUnclaimedRange(ByVal rangeName As String) As Boolean
     Dim probe As Variant
 
-    If StrComp(rangeName, MANUAL_TAG_NAME, vbTextCompare) = 0 Then Exit Function
+    If StrComp(rangeName, MANUAL_TAG_NAME, vbTextCompare) = 0 Then
+        IsUnclaimedRange = this.reviewUnseen
+        Exit Function
+    End If
 
     If StrComp(rangeName, IMPORTED_TAG_NAME, vbTextCompare) = 0 Then
         IsUnclaimedRange = True

@@ -712,30 +712,36 @@ Public Sub TestUpdateFromRegistryAsksAboutUnseenLabelsAfterReviewRequest()
     Subject.UpdateFromRegistry RegistrySheet
     AppendTaggedLabel "Imported orphan", IMPORTED_TAG
     AppendTaggedLabel "Retired chunk", "RNG_Retired" & TAG_SEPARATOR & "1"
+    AppendTaggedLabel "Handmade", vbNullString
     SetRegistryStatus "no", "no", "no"
 
     'Reset tags asks the next update to review; prompts are off, so the
-    'preset answers, and it keeps the labels by default.
+    'preset answers, and it keeps the labels by default. The review offers
+    'the hand-written row as well.
     Subject.RequestUnseenReview
     Subject.UpdateFromRegistry RegistrySheet
 
-    Assert.AreEqual CLng(2), Subject.UnseenLabels.Length, "The reviewed labels are reported"
+    Assert.AreEqual CLng(3), Subject.UnseenLabels.Length, "The reviewed labels are reported, the hand-written one included"
     Assert.IsTrue LabelExists("Imported orphan"), "A reviewed label is kept when the answer is no"
     Assert.IsTrue LabelExists("Retired chunk"), "A reviewed label of a dropped range is kept when the answer is no"
-    Assert.IsTrue InStr(1, Subject.NumberOfMissing(), "2 labels come from no range", vbTextCompare) > 0, _
+    Assert.IsTrue LabelExists("Handmade"), "A reviewed hand-written label is kept when the answer is no"
+    Assert.IsTrue InStr(1, Subject.NumberOfMissing(), "3 labels come from no range", vbTextCompare) > 0, _
                   "The summary counts the kept labels"
 
-    'The request is spent: the next update is silent again and removes them.
+    'The request is spent: the next update is silent again, removes the
+    'imported and retired rows, and leaves the hand-written one alone.
     Subject.UpdateFromRegistry RegistrySheet
     Assert.IsFalse LabelExists("Imported orphan"), "The update after the review removes the unseen labels again"
     Assert.IsFalse LabelExists("Retired chunk"), "The update after the review removes every unseen label"
+    Assert.IsTrue LabelExists("Handmade"), "A silent update never removes a hand-written row"
 
-    'A review answered yes removes them at once.
+    'A review answered yes removes them at once, the hand-written row too.
     AppendTaggedLabel "Second orphan", IMPORTED_TAG
     Subject.SetRemoveUnseenLabels True
     Subject.RequestUnseenReview
     Subject.UpdateFromRegistry RegistrySheet
     Assert.IsFalse LabelExists("Second orphan"), "A reviewed label goes when the answer is yes"
+    Assert.IsFalse LabelExists("Handmade"), "A reviewed hand-written label goes when the answer is yes"
     Assert.AreEqual CLng(6), TranslationsTable.ListRows.Count, "The rows of the registry ranges all stay"
     Exit Sub
 

@@ -201,7 +201,6 @@ End Sub
 
 Public Sub clickResetTag(ByRef ribbonControl As IRibbonControl)
    Dim prep As SetupPreparation
-   Dim translationsTable As ListObject
 
    On Error GoTo Handler
 
@@ -210,15 +209,12 @@ Public Sub clickResetTag(ByRef ribbonControl As IRibbonControl)
    Set prep = SetupPreparation.Create(ThisWorkbook)
    prep.ResetUpdatedRegistry
 
-   'The next update reads every range again; it also asks about the
-   'labels none of them produces, the one other time that question comes.
-   Set translationsTable = SetupHelpers.ResolveTranslationsTable
-   If Not translationsTable Is Nothing Then
-       SetupTranslationsTable.Create(translationsTable).RequestUnseenReview
-   End If
-
    EventsManager.ExitBusyState
-   MsgBox "Done!", vbInformation
+
+   'Every range is read again on the spot, with the review on: the labels
+   'no range produces are listed and the user says whether they go. The
+   'update's own summary is the closing word.
+   RunTranslationsUpdate reviewUnseen:=True
 
    Exit Sub
 Handler:
@@ -283,27 +279,34 @@ End Sub
 '@Description("Callback for btnTransAdd onAction: update translations from registry")
 '@EntryPoint
 Public Sub clickAddTrans(ByRef ribbonControl As IRibbonControl)
+    If MsgBox("Do you want to update the translation sheet?", vbYesNo + vbQuestion, "Confirm") <> vbYes Then Exit Sub
+    RunTranslationsUpdate reviewUnseen:=False
+End Sub
+
+'@sub-title Update the translations table from the registry, the shared body of the two ribbon buttons.
+'@details Update Translations runs it as is. Reset tags runs it with the
+'review on: the update then offers the labels no range of the setup
+'produces and asks whether they go, right on the click.
+'@param reviewUnseen Boolean. True asks about the unseen labels.
+'@return Boolean. True when the update ran through.
+Private Function RunTranslationsUpdate(ByVal reviewUnseen As Boolean) As Boolean
     Dim svc As EventSetup
-    Dim answer As VbMsgBoxResult
     Dim translationsTable As ListObject
     Dim registrySheet As Worksheet
     Dim manager As SetupTranslationsTable
     Dim sheetUnlocked As Boolean
     Dim upVal As UpdatedValues
 
-    answer = MsgBox("Do you want to update the translation sheet?", vbYesNo + vbQuestion, "Confirm")
-    If answer <> vbYes Then Exit Sub
-
     Set translationsTable = SetupHelpers.ResolveTranslationsTable
     If translationsTable Is Nothing Then
         MsgBox "Translations table was not found.", vbExclamation
-        Exit Sub
+        Exit Function
     End If
 
     Set registrySheet = SetupHelpers.ResolveRegistrySheet
     If registrySheet Is Nothing Then
         MsgBox "Registry sheet was not found.", vbExclamation
-        Exit Sub
+        Exit Function
     End If
 
     Set svc = EventsManager.EventSetupService
@@ -320,6 +323,7 @@ Public Sub clickAddTrans(ByRef ribbonControl As IRibbonControl)
     On Error GoTo Handler
 
     Set manager = SetupTranslationsTable.Create(translationsTable)
+    If reviewUnseen Then manager.RequestUnseenReview
     manager.UpdateFromRegistry registrySheet
 
     svc.ProtectSetupSheet TRADSHEETNAME
@@ -327,19 +331,20 @@ Public Sub clickAddTrans(ByRef ribbonControl As IRibbonControl)
 
     Set upVal = SetupHelpers.ResolveUpdatedValues()
     upVal.SwitchTagsToNo
+    RunTranslationsUpdate = True
 
 Cleanup:
     On Error Resume Next
     If sheetUnlocked Then svc.ProtectSetupSheet TRADSHEETNAME
     On Error GoTo 0
     EventsManager.ExitBusyState
-    Exit Sub
+    Exit Function
 
 Handler:
     Debug.Print "clickAddTrans: "; Err.Number; Err.Description
     MsgBox "An error occurred while updating translations.", vbCritical
     Resume Cleanup
-End Sub
+End Function
 
 '@Description("Callback for btnTransChange onAction: translate the setup to a selected language")
 '@EntryPoint

@@ -383,6 +383,22 @@ End Sub
 '@Description("Synchronise the translations table with the registry entries.")
 '@EntryPoint
 Public Sub clickAddTrans(ByRef ribbonControl As IRibbonControl)
+    If MsgBox("Do you want to update the translation sheet?", vbYesNo + vbQuestion, "Translations") <> vbYes Then Exit Sub
+    RunTranslationsUpdate reviewUnseen:=False, actionTag:="update-translations", callerName:="clickAddTrans"
+End Sub
+
+'@sub-title Update the translations table from the registry, the shared body of the two ribbon buttons.
+'@details Update Translations runs it as is. Reset tags runs it with the
+'review on: the update then offers the labels no range of the setup
+'produces and asks whether they go, right on the click. The translations
+'sheet is unlocked for the update and locked back on every path.
+'@param reviewUnseen Boolean. True asks about the unseen labels.
+'@param actionTag String. The log line tag.
+'@param callerName String. The ribbon callback, for the log and the debug line.
+'@return Boolean. True when the update ran through.
+Private Function RunTranslationsUpdate(ByVal reviewUnseen As Boolean, _
+                                       ByVal actionTag As String, _
+                                       ByVal callerName As String) As Boolean
     Dim scope As ApplicationState
     Dim translationsSheet As Worksheet
     Dim translationsTable As ListObject
@@ -397,12 +413,11 @@ Public Sub clickAddTrans(ByRef ribbonControl As IRibbonControl)
     Dim failureText As String
 
     confirmTitle = "Translations"
-    If MsgBox("Do you want to update the translation sheet?", vbYesNo + vbQuestion, confirmTitle) <> vbYes Then Exit Sub
 
     Set translationsSheet = MasterSetupHelpers.ResolveMasterTranslationsSheet()
     If translationsSheet Is Nothing Then
         MsgBox "Translations sheet was not found.", vbExclamation + vbOKOnly, confirmTitle
-        Exit Sub
+        Exit Function
     End If
 
     On Error Resume Next
@@ -410,13 +425,13 @@ Public Sub clickAddTrans(ByRef ribbonControl As IRibbonControl)
     On Error GoTo 0
     If translationsTable Is Nothing Then
         MsgBox "Translations table was not found.", vbExclamation + vbOKOnly, confirmTitle
-        Exit Sub
+        Exit Function
     End If
 
     Set registrySheet = MasterSetupHelpers.ResolveMasterRegistrySheet()
     If registrySheet Is Nothing Then
         MsgBox "Registry sheet was not found.", vbExclamation + vbOKOnly, confirmTitle
-        Exit Sub
+        Exit Function
     End If
 
     On Error GoTo Handler
@@ -425,7 +440,7 @@ Public Sub clickAddTrans(ByRef ribbonControl As IRibbonControl)
     scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
     Set passManager = MasterSetupHelpers.ResolveMasterPasswords()
-    If passManager Is Nothing Then Err.Raise ProjectError.ElementNotFound, "clickAddTrans", "Passwords sheet '" & PASSWORD_SHEET_NAME & "' was not found."
+    If passManager Is Nothing Then Err.Raise ProjectError.ElementNotFound, callerName, "Passwords sheet '" & PASSWORD_SHEET_NAME & "' was not found."
 
     passManager.UnProtect translationsSheet.Name
 
@@ -438,6 +453,7 @@ Public Sub clickAddTrans(ByRef ribbonControl As IRibbonControl)
     On Error GoTo Handler
 
     Set manager = SetupTranslationsTable.Create(translationsTable)
+    If reviewUnseen Then manager.RequestUnseenReview
     manager.UpdateFromRegistry registrySheet
 
     passManager.Protect translationsSheet.Name
@@ -447,39 +463,40 @@ Public Sub clickAddTrans(ByRef ribbonControl As IRibbonControl)
 
     'The worksheet functions read the translations; their caches are stale now.
     ResetMasterSetupFunctionCaches
-    LogSuccessLine "update-translations", vbNullString, "clickAddTrans"
+    LogSuccessLine actionTag, vbNullString, callerName
+    RunTranslationsUpdate = True
 
 Cleanup:
     'Shielded: Handler is still armed here, and a raise from Restore
     'would come straight back to this label and raise again.
     On Error Resume Next
     If Not scope Is Nothing Then scope.Restore
-    Exit Sub
+    Exit Function
 
 Handler:
     failureText = Err.Description
-    Debug.Print "clickAddTrans: "; Err.Number; Err.Description
+    Debug.Print callerName; ": "; Err.Number; Err.Description
     MsgBox "An error occurred while updating translations.", vbCritical + vbOKOnly, confirmTitle
     If Not passManager Is Nothing Then
         On Error Resume Next
             passManager.Protect translationsSheet.Name
         On Error GoTo 0
     End If
-    LogFailureLine "update-translations", failureText, "clickAddTrans"
+    LogFailureLine actionTag, failureText, callerName
     Resume Cleanup
-End Sub
+End Function
 
-'@Description("Rebuild the __updated registry and set every translation tag back to yes.")
+'@Description("Rebuild the __updated registry, read every range again and review the unseen labels.")
 '@details The mirror of the setup's Reset translation tags button: the
 'registry is dropped and built again from the tagged columns of the
-'Variables and Choices sheets, and every flag reads yes, so the next Update
-'Translations reads every watched column.
+'Variables and Choices sheets with every flag reading yes, and the
+'translations are updated on the spot with the review on, so the labels
+'no range produces are listed and the user says whether they go. This is
+'the one place, with an import, where that question is asked.
 '@EntryPoint
 Public Sub clickResetTags(ByRef ribbonControl As IRibbonControl)
     Dim scope As ApplicationState
     Dim failureText As String
-    Dim translationsSheet As Worksheet
-    Dim translationsTable As ListObject
 
     On Error GoTo Handler
 
@@ -487,26 +504,11 @@ Public Sub clickResetTags(ByRef ribbonControl As IRibbonControl)
     scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
     Preparation.EnsureUpdatedRegistry
+    scope.Restore
+    Set scope = Nothing
 
-    'The next update reads every range again; it also asks about the
-    'labels none of them produces, the one other time that question comes.
-    Set translationsSheet = MasterSetupHelpers.ResolveMasterTranslationsSheet()
-    If Not translationsSheet Is Nothing Then
-        On Error Resume Next
-            Set translationsTable = translationsSheet.ListObjects(TRANSLATIONS_TABLE_NAME)
-        On Error GoTo Handler
-        If Not translationsTable Is Nothing Then
-            SetupTranslationsTable.Create(translationsTable).RequestUnseenReview
-        End If
-    End If
-    LogSuccessLine "reset-tags", vbNullString, "clickResetTags"
-    MsgBox "Done!", vbInformation + vbOKOnly, "Translations"
-
-Cleanup:
-    'Shielded: Handler is still armed here, and a raise from Restore
-    'would come straight back to this label and raise again.
-    On Error Resume Next
-    If Not scope Is Nothing Then scope.Restore
+    'The update's own summary is the closing word, and it logs the action.
+    RunTranslationsUpdate reviewUnseen:=True, actionTag:="reset-tags", callerName:="clickResetTags"
     Exit Sub
 
 Handler:
@@ -514,7 +516,10 @@ Handler:
     Debug.Print "clickResetTags: "; Err.Number; Err.Description
     MsgBox "Unable to reset the translation tags: " & Err.Description, vbCritical + vbOKOnly, "Translations"
     LogFailureLine "reset-tags", failureText, "clickResetTags"
-    Resume Cleanup
+    'Shielded: Handler is still armed here, and a raise from Restore
+    'would come straight back to this label and raise again.
+    On Error Resume Next
+    If Not scope Is Nothing Then scope.Restore
 End Sub
 
 '@Description("Add a new language column to the translations table.")
