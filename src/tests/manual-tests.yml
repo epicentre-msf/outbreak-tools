@@ -176,7 +176,7 @@ workbooks:
           - "Load a new version setup (setup with the current version of the designer)"
           - "Load an old version of the setup (old versions of the setup)"
           - "Generate a linelist with the new version of the setup"
-          - "Can not generate with old version of the setup"
+          - "Can generate with old version of the setup"
           - "Generate a linelist with setup language empty"
           - "Generate a linelist with a xlsx measles setup file"
           - "Generate a linelist with a xlsb measles setup file"
