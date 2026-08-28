@@ -804,9 +804,10 @@ Fail:
     CustomTestLogFailure Assert, "TestDeleteRowsAtRemovesSelectedRows", Err.Number, Err.Description
 End Sub
 
-'@sub-title Verifies that DeleteRowsAt preserves at least one blank template row
-'@details Reduces the fixture to a single row, then attempts to delete it. Asserts that
-'   the table still contains one row (the template row) and that the row is blank, ensuring
+'@sub-title Verifies that DeleteRowsAt leaves the sheet's own insert row as the blank template row
+'@details Reduces the fixture to a single row, then deletes it. Excel turns the deleted
+'   row into its own blank insert row, so the table carries zero committed rows and the
+'   insert row is what stands in for the template row, blank, ensuring
 '   the table structure is never fully emptied.
 '@TestMethod("CustomTable")
 Public Sub TestDeleteRowsAtKeepsTemplateRow()
@@ -827,10 +828,12 @@ Public Sub TestDeleteRowsAtKeepsTemplateRow()
 
     tableObject.DeleteRowsAt selectionRange
 
-    Assert.AreEqual 1, lo.ListRows.Count, _
-                     "DeleteRowsAt should always preserve at least one template row"
-    Assert.AreEqual vbNullString, CStr(lo.ListColumns("Name").DataBodyRange.Cells(1, 1).Value), _
-                     "Template row should be blank after deletion"
+    Assert.AreEqual 0, lo.ListRows.Count, _
+                     "DeleteRowsAt should leave the insert row as the only row once the table empties"
+    Assert.IsTrue (Not lo.InsertRowRange Is Nothing), _
+                     "The insert row should stand in as the template row"
+    Assert.AreEqual vbNullString, CStr(lo.InsertRowRange.Cells(1, 1).Value), _
+                     "The insert row should be blank after deletion"
     Exit Sub
 
 Fail:
@@ -1799,9 +1802,10 @@ Fail:
     CustomTestLogFailure Assert, "TestRemoveRowsClosesInteriorGaps", Err.Number, Err.Description
 End Sub
 
-'@sub-title Verifies that the first data row is kept even when it is empty
-'@details A ListObject cannot live with no data row, and the first one carries
-'   the formulas and the formats every new row is built from.
+'@sub-title Verifies that the insert row stands in when every row is empty
+'@details A ListObject cannot live with no data row. When every row is empty,
+'   the table shrinks to the insert row instead of a committed one, and that
+'   insert row carries the formats every new row is built from.
 '@TestMethod("CustomTable")
 Public Sub TestRemoveRowsKeepsTheFirstRowWhenAllAreEmpty()
     CustomTestSetTitles Assert, "CustomTable", "TestRemoveRowsKeepsTheFirstRowWhenAllAreEmpty"
@@ -1815,8 +1819,10 @@ Public Sub TestRemoveRowsKeepsTheFirstRowWhenAllAreEmpty()
 
     trimTable.RemoveRows totalCount:=0, includeIds:=False
 
-    Assert.AreEqual 1&, trimLo.ListRows.Count, _
-                    "The table should be left with its first data row"
+    Assert.AreEqual 0&, trimLo.ListRows.Count, _
+                    "The table should be left with the insert row as its only row"
+    Assert.IsTrue (Not trimLo.InsertRowRange Is Nothing), _
+                    "The insert row should stand in as the first row"
     Exit Sub
 
 Fail:
