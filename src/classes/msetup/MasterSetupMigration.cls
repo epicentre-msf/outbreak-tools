@@ -108,6 +108,7 @@ Private Type TMigration
     manager As DiseaseExportWorkbook
     importedDiseases As BetterArray
     addedLanguages As BetterArray
+    lastRefusal As String
 End Type
 
 Private this As TMigration
@@ -291,15 +292,18 @@ End Sub
 '@details The file is checked first (its tag and its four sheets), then
 'the target: a disease worksheet, a Variables line or a Choices line
 'refuses the import with ProjectError.InvalidArgument naming what was
-'found, and nothing is written. The steps then run in the order each one
-'feeds the next; the staging sheet of the disease blocks goes away on
-'every path.
+'found, and nothing is written. LastRefusal answers that name afterwards on
+'either platform; Err.Description carries it on Windows only. The steps then
+'run in the order each one feeds the next; the staging sheet of the disease
+'blocks goes away on every path.
 '@param sourceBook Workbook. The migration file, open.
 '@param logger Optional DiseaseLogger. Receives one line per step.
 Public Sub Import(ByVal sourceBook As Workbook, Optional ByVal logger As DiseaseLogger = Nothing)
     Dim errNumber As Long
     Dim errSource As String
     Dim errDescription As String
+
+    this.lastRefusal = vbNullString
 
     ValidateSource sourceBook
     RefuseFilledTarget
@@ -334,6 +338,16 @@ End Sub
 
 '@section Results
 '===============================================================================
+
+'@sub-title Why the last import was refused, empty when it was not.
+'@details
+'Err.Description carries this too on Windows, and does NOT on Mac Excel, which
+'replaces it as the error leaves the class. Read this rather than the
+'description whenever the reason has to be shown or tested.
+'@return String. What the refusal found, or empty.
+Public Property Get LastRefusal() As String
+    LastRefusal = this.lastRefusal
+End Property
 
 '@sub-title Names of the disease worksheets the last import built.
 Public Property Get ImportedDiseases() As BetterArray
@@ -468,8 +482,8 @@ Private Sub ValidateSource(ByVal sourceBook As Workbook)
     End If
 
     If StrComp(TagValue(sourceBook, NAME_MIGRATION), MIGRATION_TAG_VALUE, vbTextCompare) <> 0 Then
-        ThrowError ProjectError.InvalidArgument, "The workbook '" & sourceBook.Name & _
-                   "' is no migration file: it carries no '" & NAME_MIGRATION & "' tag"
+        Refuse "The workbook '" & sourceBook.Name & _
+               "' is no migration file: it carries no '" & NAME_MIGRATION & "' tag"
     End If
 
     RequireWorksheet sourceBook, DISEASES_SHEET
@@ -491,17 +505,17 @@ Private Sub RefuseFilledTarget()
 
     diseaseName = FirstDiseaseSheetName()
     If LenB(diseaseName) > 0 Then
-        ThrowError ProjectError.InvalidArgument, "The file already carries the disease '" & diseaseName & "'"
+        Refuse "The file already carries the disease '" & diseaseName & "'"
     End If
 
     lineCount = VariablesLineCount()
     If lineCount > 0 Then
-        ThrowError ProjectError.InvalidArgument, "The Variables table already carries " & lineCount & " line(s)"
+        Refuse "The Variables table already carries " & lineCount & " line(s)"
     End If
 
     lineCount = ChoicesLineCount()
     If lineCount > 0 Then
-        ThrowError ProjectError.InvalidArgument, "The Choices sheet already carries " & lineCount & " line(s)"
+        Refuse "The Choices sheet already carries " & lineCount & " line(s)"
     End If
 End Sub
 
@@ -1061,4 +1075,18 @@ End Sub
 '@sub-title Centralised error raising aligned with ProjectError codes.
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
     Err.Raise errNumber, CLASS_NAME, errMessage
+End Sub
+
+'@sub-title Refuse the import, keeping the reason readable after the raise.
+'@details
+'Mac Excel throws the description away as an error leaves a class method: the
+'caller reads the number it was given and "Method 'Import' of object
+''MasterSetupMigration' failed" in place of the message. Windows keeps the
+'message. The reason is therefore held on the instance BEFORE the raise, and
+'LastRefusal answers it on both platforms.
+'@param errMessage String. What was found, as the caller should read it.
+'@throws ProjectError.InvalidArgument Always.
+Private Sub Refuse(ByVal errMessage As String)
+    this.lastRefusal = errMessage
+    ThrowError ProjectError.InvalidArgument, errMessage
 End Sub

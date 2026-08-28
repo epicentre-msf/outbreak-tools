@@ -218,7 +218,8 @@ Public Sub TestImportRefusesATargetThatCarriesData()
         errText = Err.Description
     On Error GoTo Fail
     Assert.AreEqual CLng(ProjectError.InvalidArgument), errNumber, "A target carrying a disease is refused"
-    Assert.IsTrue InStr(errText, DISEASE_ALPHA) > 0, "The refusal names the disease it found"
+    Assert.IsTrue InStr(Migration.LastRefusal, DISEASE_ALPHA) > 0, _
+                  "The refusal names the disease it found. Actual: " & Migration.LastRefusal
 
     'The diseases are gone; the Variables lines are still there.
     manager.RemoveWorksheet ThisWorkbook, DISEASE_ALPHA
@@ -231,7 +232,8 @@ Public Sub TestImportRefusesATargetThatCarriesData()
         errText = Err.Description
     On Error GoTo Fail
     Assert.AreEqual CLng(ProjectError.InvalidArgument), errNumber, "A target carrying Variables lines is refused"
-    Assert.IsTrue InStr(errText, "Variables") > 0, "The refusal names the Variables table"
+    Assert.IsTrue InStr(Migration.LastRefusal, "Variables") > 0, _
+                  "The refusal names the Variables table. Actual: " & Migration.LastRefusal
     Assert.IsFalse WorksheetExists(DISEASE_ALPHA), "A refused import writes no disease worksheet"
 
     'The Variables lines are gone; the Choices lines are still there.
@@ -244,7 +246,8 @@ Public Sub TestImportRefusesATargetThatCarriesData()
         errText = Err.Description
     On Error GoTo Fail
     Assert.AreEqual CLng(ProjectError.InvalidArgument), errNumber, "A target carrying Choices lines is refused"
-    Assert.IsTrue InStr(errText, "Choices") > 0, "The refusal names the Choices sheet"
+    Assert.IsTrue InStr(Migration.LastRefusal, "Choices") > 0, _
+                  "The refusal names the Choices sheet. Actual: " & Migration.LastRefusal
     Assert.IsFalse WorksheetExists(DISEASE_ALPHA), "A refused import still writes no disease worksheet"
     Assert.IsFalse VariablesManager.HasVariable("var_a"), "A refused import writes no Variables line"
 
