@@ -1276,9 +1276,10 @@ End Function
 Private Sub EnsureOneBodyRow(ByVal lo As ListObject)
     If lo Is Nothing Then Exit Sub
     If Not lo.DataBodyRange Is Nothing Then Exit Sub
+    If Not lo.InsertRowRange Is Nothing Then Exit Sub
+    If lo.Range.Rows.Count > 1 Then Exit Sub
 
     lo.ListRows.Add
-    If Not lo.DataBodyRange Is Nothing Then lo.DataBodyRange.ClearFormats
 End Sub
 
 '@label:drop-trailing-rows
