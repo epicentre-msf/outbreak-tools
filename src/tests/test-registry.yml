@@ -851,6 +851,12 @@ suites:
       # opens nothing further. It replaced the GenerationReport module on
       # 2026-08-13, and the row moved from `modules` to `classes` with it.
       - name: GenerationLog
+      # GenerationHost owns the Excel instance a build runs in: a hidden
+      # instance on Windows, the designer's own in place. It names
+      # DesignerPreparation (above), BetterArray and ProjectError (baked
+      # in), so the row opens nothing further. Its instance tests start and
+      # quit a second Excel on Windows and skip on Mac.
+      - name: GenerationHost
     modules:
       - InitTransfer
       # EventsDesignerCore holds the session's entry-and-translator pair;
@@ -876,6 +882,8 @@ suites:
         covers: [EventsDesignerMulti, EventsDesignerAdvanced]
       - module: TestGenerationLog
         covers: [GenerationLog]
+      - module: TestGenerationHost
+        covers: [GenerationHost]
 
   # --- headless (HeadlessBuild) ---------------------------------------------
   # The headless workflow: fill a setup from another setup, then build a
