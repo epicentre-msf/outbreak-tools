@@ -315,6 +315,36 @@ Handler:
     Err.Clear
 End Sub
 
+'@Description("Initialise the build-in-place checkbox from persisted hidden names.")
+'@EntryPoint
+Public Sub initBuildInPlace(ByRef ribbonControl As IRibbonControl, ByRef returnedVal)
+
+    'getPressed fires at ribbon load; a raise here drops the whole tab,
+    'so any failure falls back to the unchecked default. The box picks the
+    'build path on Windows; on Mac the build always runs in place.
+    On Error GoTo Fallback
+    returnedVal = ResolvePreparation().GetFlag("chkBuildInPlace", False)
+    Exit Sub
+
+Fallback:
+    returnedVal = False
+End Sub
+
+'@Description("Persist the build-in-place checkbox state.")
+'@EntryPoint
+Public Sub clickBuildInPlace(ByRef ribbonControl As IRibbonControl, ByVal pressed As Boolean)
+
+    On Error GoTo Handler
+    ResolvePreparation().SetFlag "chkBuildInPlace", pressed
+    Exit Sub
+
+Handler:
+    Debug.Print "clickBuildInPlace: "; Err.Number; Err.Description
+    MsgBox "Unable to save the build-in-place setting: " & Err.Description, _
+           vbExclamation + vbOKOnly, PROMPT_TITLE
+    Err.Clear
+End Sub
+
 
 '@section Internal helpers
 '===============================================================================

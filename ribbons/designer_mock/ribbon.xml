@@ -22,6 +22,7 @@
                     <button id="btnOpenLog" imageMso="ErrorChecking" size="large" getLabel="LangLabel" onAction="clickOpenLog"/>
                     <checkBox id="chkAlert" getLabel="LangLabel" getPressed="initMainAlert" onAction="clickMainAlert"/>
                     <checkBox id="chkInstruct" getLabel="LangLabel" getPressed="initMainInstruct" onAction="clickMainInstruct"/>
+                    <checkBox id="chkBuildInPlace" getLabel="LangLabel" getPressed="initBuildInPlace" onAction="clickBuildInPlace"/>
                 </group>
                 <group id="customGroupMulti" getLabel="LangLabel">
                     <button id="btnFolderMulti" getLabel="LangLabel" imageMso="Folder" size="large" onAction="clickFolderMulti"/>
