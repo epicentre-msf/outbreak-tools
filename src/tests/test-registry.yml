@@ -1,14 +1,15 @@
 # OutbreakTools -- Test Registry
 # =============================================================================
 # LAST FULL RUN (the whole registry, nothing commented out)
-#   when:        2026-08-26 22:03 (run assembled 20:54, about 69 minutes)
+#   when:        2026-08-28 13:27 (run assembled about 12:00, about 87 minutes)
 #   where:       Windows 11, Excel hidden (windows/run-tests.vbs), --build
-#   result:      total=5247 failures=0
-#   modulesRun:  109   testsFound: 1820   vbe: ok(230)
-#   before it:   total=4664 failures=0 modulesRun=105 testsFound=1747 (2026-08-25 14:04)
-#   what moved:  the setup/msetup translation-review changes (uncommitted at
-#                run time) plus whatever landed since 2026-08-25
-#   commit:      84003490 (+ uncommitted working-tree changes)
+#   result:      total=5656 failures=0
+#   modulesRun:  111   testsFound: 1894   vbe: ok(236)
+#   before it:   total=5247 failures=0 modulesRun=109 testsFound=1820 (2026-08-26 22:03)
+#   what moved:  Sessions A and G (the hidden build instance, GeoModule under
+#                test), the msetup translation-review changes, and the
+#                CustomTable insert-row fix landed since 2026-08-26
+#   commit:      393dc5df
 # Update this block after every full run: a probe count (a narrowed
 # registry) says nothing about the suites outside it and never belongs here.
 # =============================================================================
