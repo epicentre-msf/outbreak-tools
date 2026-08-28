@@ -843,13 +843,19 @@ End Sub
 'shown it in, and the procedure that refused. It used to carry the message
 'CODE as the action and nothing else, so a log read weeks later said
 '"MSG_SectionTitleCell" and named neither the reason nor the button.
+'The fallback follows the shape of Fail: it is what a workbook with no usable
+'translation sheet shows, and an empty one keeps that workbook quiet. The geo
+'picker hands one over, so its refusals read the same way as its failures.
 '@param msgCode String. Code of the message in the message translation table.
 '@param source String. Optional. The procedure raising the refusal.
+'@param fallback String. Optional. Shown when the workbook carries no usable
+'translation sheet. Leave it off to stay quiet in that state.
 '@export
 Public Sub Warn(ByVal msgCode As String, _
-                Optional ByVal source As String = vbNullString)
+                Optional ByVal source As String = vbNullString, _
+                Optional ByVal fallback As String = vbNullString)
     LogEventLine checkingWarning, REFUSED_ACTION, MessageText(msgCode), source
-    ShowMessage msgCode, vbOKOnly + vbExclamation, vbNullString, vbNullString
+    ShowMessage msgCode, vbOKOnly + vbExclamation, vbNullString, fallback
 End Sub
 
 

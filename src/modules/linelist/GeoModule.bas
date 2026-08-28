@@ -142,6 +142,44 @@ Private Sub ReportGeoError(ByVal source As String, ByVal detail As String)
     linelistEvents.Fail "MSG_ErrGeo", detail, spokenFallback, source
 End Sub
 
+' @description Tell the user the picker refused a press. The same shape as
+'              ReportGeoError: the warning line is written to the log either
+'              way, and the fallback is what a workbook with no usable
+'              translation sheet shows. GeoSuppressBox empties it, which is
+'              what keeps a headless run going through the refusals of
+'              AddAdminName.
+' @param msgCode The code of the message in the message translation table
+' @param fallback The plain English line a workbook with no translator shows
+' @param source The procedure that refused
+Private Sub ReportGeoWarning(ByVal msgCode As String, ByVal fallback As String, _
+                             ByVal source As String)
+    Dim linelistEvents As EventLinelist
+    Dim spokenFallback As String
+
+    spokenFallback = fallback
+    If suppressGeoBox Then spokenFallback = vbNullString
+
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    linelistEvents.Warn msgCode, source, spokenFallback
+End Sub
+
+' @description The text of one message code for the name prompt. A workbook
+'              with no usable translation sheet has no translator, and the
+'              prompt then shows the code itself, the way MessageText in
+'              EventLinelist reads a code with no row. The prompt used to
+'              raise in that state, which put the add out of reach of exactly
+'              the workbook whose geobase is most likely to need it.
+' @param tradmess The message translator, or Nothing
+' @param msgCode The code to read
+Private Function PromptText(ByVal tradmess As TranslationObject, _
+                            ByVal msgCode As String) As String
+    If tradmess Is Nothing Then
+        PromptText = msgCode
+    Else
+        PromptText = tradmess.TranslatedValue(msgCode)
+    End If
+End Function
+
 ' @description The one geobase manager of the workbook. EventLinelist builds it
 '              once and drops it in ResetCaches, so a geobase import is followed
 '              by a fresh build and the level labels below are read again. The
@@ -467,6 +505,9 @@ End Function
 '              The prompt is Application.InputBox in text mode. A cancelled
 '              box answers the Boolean False, so the answer is read into a
 '              Variant and its type tested before it is treated as text.
+'              A workbook with no usable translation sheet still gets the
+'              prompt, worded in message codes, and its two refusals in plain
+'              English through ReportGeoWarning.
 '              The cursor follows ShowAdminList: the arrow is put back on
 '              every exit.
 ' @param level The level of the list double-clicked, 2 to 4
@@ -510,12 +551,12 @@ Public Sub AddAdminName(ByVal level As Long)
         Err.Raise 5, "GeoModule", "The picker adds no admin " & level
     End Select
 
+    'The translator is Nothing on a workbook with no usable translation
+    'sheet. PromptText reads the codes themselves then, and the two
+    'refusals below carry a plain English fallback for the same state.
     Set linelistEvents = LinelistEventsManager.EventLinelistService()
     Set lltrads = linelistEvents.Translation()
-    If lltrads Is Nothing Then _
-        Err.Raise ProjectError.ObjectNotInitialized, "GeoModule", _
-                  "This linelist carries no usable translation sheet"
-    Set tradmess = lltrads.TransObject()
+    If Not lltrads Is Nothing Then Set tradmess = lltrads.TransObject()
 
     Set parentNames = New BetterArray
     parentNames.LowerBound = 1
@@ -537,7 +578,9 @@ Public Sub AddAdminName(ByVal level As Long)
             If LenB(parentValue) = 0 Then
                 .TXT_Msg.Value = parentPath
                 Application.Cursor = xlNorthwestArrow
-                linelistEvents.Warn "MSG_AddAdminNoParent", "AddAdminName"
+                ReportGeoWarning "MSG_AddAdminNoParent", _
+                                 "Select every level above before adding a name", _
+                                 "AddAdminName"
                 Exit Sub
             End If
             parentNames.Push parentValue
@@ -554,7 +597,7 @@ Public Sub AddAdminName(ByVal level As Long)
     'The prompt names the level in the words of the geobase in use, and the
     'path the name will sit under.
     levelLabel = geoObj.GeoNames("adm" & level & "_name")
-    prompt = tradmess.TranslatedValue("MSG_AddAdminName") & vbNewLine & _
+    prompt = PromptText(tradmess, "MSG_AddAdminName") & vbNewLine & _
              levelLabel & ": " & parentPath
 
     'GeoStubAdminName gives the answer straight, and the box stays closed.
@@ -562,7 +605,7 @@ Public Sub AddAdminName(ByVal level As Long)
         answer = stubbedAdminName
     Else
         answer = Application.InputBox(prompt, _
-                                      tradmess.TranslatedValue("MSG_AddAdminTitle"), _
+                                      PromptText(tradmess, "MSG_AddAdminTitle"), _
                                       Type:=2)
     End If
 
@@ -581,7 +624,9 @@ Public Sub AddAdminName(ByVal level As Long)
 
     If Not geoObj.AddAdminEntry(levelWanted, parentNames, newName) Then
         Application.Cursor = xlNorthwestArrow
-        linelistEvents.Warn "MSG_AddAdminExists", "AddAdminName"
+        ReportGeoWarning "MSG_AddAdminExists", _
+                         "The geobase already holds that name under these parents", _
+                         "AddAdminName"
         Exit Sub
     End If
 

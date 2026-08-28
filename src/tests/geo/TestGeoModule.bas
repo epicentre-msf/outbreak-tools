@@ -67,16 +67,14 @@ Option Explicit
 'before touching the module lifecycle: a translation worksheet left standing is
 'what turns every failure box back on.
 '
-'THE NAME PROMPT NEEDS THE TRANSLATION WORKSHEET BACK FOR THE LENGTH OF ONE ACT
+'THE NAME PROMPT RUNS WITH NO TRANSLATOR, AND ITS REFUSALS ARE READ OFF THE LOG
 '-------------------------------------------------------------------------------
-'AddAdminName reads the translation helper of the service before it walks the
-'parents and raises when it answers Nothing. So the three AddAdminName tests
-'put the worksheet back under its real name for the act alone, and TestCleanup
-'renames it away again. While it stands, EventLinelist.Warn and .Fail show a
-'real box, and that is what keeps two of the prompt's paths out of this suite:
-'the warning on a parent with nothing selected and the warning on a duplicate
-'name both end in a box with nobody to press OK. The three paths covered end
-'before any box: the cancel, the blank answer and the name that lands.
+'AddAdminName reads the translation helper of the service and carries on when
+'it answers Nothing: the prompt is worded in message codes then, and the two
+'refusals go through ReportGeoWarning, whose fallback GeoSuppressBox empties
+'the way it empties the failure one. So the five paths of the prompt run over
+'the driver workbook as it stands, and the two refusals are read back off the
+'__log worksheet like the failures.
 '
 'THE CURSOR INVARIANT IS MEASURED TWO WAYS
 '-------------------------------------------------------------------------------
@@ -249,8 +247,7 @@ End Sub
 'dropped, so the workbook comes out of this module holding what it held going
 'in. The shared GeoFormCache instance is emptied for the same reason: LoadGeo
 'loads it from ThisWorkbook, and the lists it holds are read off names that are
-'about to go. The translation worksheet is renamed away first, in case a test
-'stopped while it stood under its real name.
+'about to go.
 'The three worksheets of the spatial entry points go the same way, and the
 'eight workbook names the password fixture writes are dropped while the
 'worksheet they point at is still there. A name left over a deleted worksheet
@@ -272,7 +269,6 @@ Public Sub ModuleCleanup()
     GeoFormCache.Clear
     DropFormNames
     DropWorkbookName LANGUAGE_NAME
-    HideTranslationSheet
     DeleteWorksheet GEO_SHEET
     DeleteWorksheet DROPDOWN_SHEET
     DeleteWorksheet SETTLED_TRANSLATION_SHEET
@@ -304,16 +300,13 @@ End Sub
 '@details
 'Flushes the assertions of the test to the output sheet, and puts the standing
 'pointer back so a test that parked it on xlWait and then failed leaves the
-'next one a clean start. The name prompt goes back on the cancel answer, and
-'the translation worksheet is put out of reach again, so a test that stood it
-'up and then failed leaves the failure boxes shut for the next one.
+'next one a clean start. The name prompt goes back on the cancel answer.
 'The section worksheet is opened again, so a test that ended with it protected
 'leaves the next arrange free to rewrite it.
 '@TestCleanup
 Public Sub TestCleanup()
     Application.Cursor = xlNorthwestArrow
     GeoModule.GeoStubAdminName False
-    PutTranslationOutOfReach
     UnprotectSptSheet
 
     If Not Assert Is Nothing Then
@@ -419,33 +412,6 @@ Private Sub HideTranslationSheet()
     On Error GoTo 0
 End Sub
 
-'@sub-title Give the translation worksheet its real name back for one act.
-'@details
-'AddAdminName asks the service for its translation helper and raises when it
-'answers Nothing, so the three tests that drive the prompt call this before
-'the act. The held service is dropped, because the flag that remembers a
-'failed translation build lives on it and the next read builds afresh.
-'While the worksheet stands under this name, every failure box of the
-'linelist is a real box: the act it covers has to end before one.
-Private Sub StandTranslationUp()
-    On Error Resume Next
-    ThisWorkbook.Worksheets(SETTLED_TRANSLATION_SHEET).Name = TRANSLATION_SHEET
-    On Error GoTo 0
-
-    LinelistEventsManager.DisposeEventLinelist
-End Sub
-
-'@sub-title Rename the translation worksheet away and drop the service holding it.
-'@details
-'The reverse of StandTranslationUp. TestCleanup calls it after every test, so
-'a test that stood the worksheet up and stopped early leaves the boxes shut.
-'The dispose matters as much as the rename: a held service keeps the helper it
-'built while the worksheet stood, and its boxes with it.
-Private Sub PutTranslationOutOfReach()
-    HideTranslationSheet
-    LinelistEventsManager.DisposeEventLinelist
-End Sub
-
 
 '@section Arranging the geobase manager
 '===============================================================================
@@ -537,21 +503,6 @@ Private Function GeoManagerNow() As LLGeo
     If linelistEvents Is Nothing Then Exit Function
 
     Set GeoManagerNow = linelistEvents.GeoManager()
-End Function
-
-'@fun-title The translation helper the service holds right now.
-'@details
-'The read AddAdminName makes before it walks the parents. The three prompt
-'tests assert over it after StandTranslationUp, so a worksheet that stopped
-'building a helper says so in its own line.
-'@return LLTranslation. The helper, or Nothing.
-Private Function TranslationNow() As LLTranslation
-    Dim linelistEvents As EventLinelist
-
-    Set linelistEvents = LinelistEventsManager.EventLinelistService()
-    If linelistEvents Is Nothing Then Exit Function
-
-    Set TranslationNow = linelistEvents.Translation()
 End Function
 
 '@fun-title The number of data rows of one fixture geobase table.
@@ -1522,45 +1473,17 @@ End Sub
 '@section The name prompt
 '===============================================================================
 
-'@fun-title The error number dropping the selection of one list raises.
+'@sub-title Stand the picker at admin 2 under P1 with D1 selected.
 '@details
-'AddAdminName drops the selection of its level with ListIndex = -1. An MSForms
-'list may run its Click on that, and the Click of an admin list hands its
-'value to ShowAdminList, which is Null with nothing selected. The prompt tests
-'try the same drop here first, while the failure boxes are still shut, so a
-'raise ends in a line of their own.
-'@param listControl Object. The list to deselect.
-'@return Long. The error number the drop raised, zero when it raised nothing.
-Private Function DeselectError(ByVal listControl As Object) As Long
-    On Error Resume Next
-    listControl.ListIndex = -1
-    DeselectError = Err.Number
-    On Error GoTo 0
-End Function
-
-'@fun-title Stand the picker at admin 2 under P1 with D1 selected.
-'@details
-'The arrange the three prompt tests share. P1 is selected in the admin 1 list
-'and D1 in the admin 2 list, the admin 3 list holds a stand-in entry, and the
-'translation worksheet is put back under its real name, because AddAdminName
-'reads the helper before it walks the parents.
-'The drop of the admin 2 selection is tried once before the worksheet comes
-'back, see DeselectError. A drop that raises answers False and leaves the
-'worksheet out of reach, so the caller stops before the act.
-'The caller asserts the manager and the helper both answer before it acts.
-'@return Boolean. True when the picker stands ready for the prompt.
-Private Function PromptArrangedAtAdminTwo() As Boolean
+'The arrange the prompt tests share. P1 is selected in the admin 1 list and D1
+'in the admin 2 list, and the admin 3 list holds a stand-in entry. The caller
+'asserts the manager answers before it acts.
+Private Sub ArrangeThePromptAtAdminTwo()
     ArrangeGeoManager
     SelectInList F_Geo.LST_Adm1, "P1"
     SelectInList F_Geo.LST_Adm2, "D1"
-
-    If DeselectError(F_Geo.LST_Adm2) <> 0 Then Exit Function
-    SelectInList F_Geo.LST_Adm2, "D1"
-
     FillWithStandIn F_Geo.LST_Adm3
-    StandTranslationUp
-    PromptArrangedAtAdminTwo = True
-End Function
+End Sub
 
 '@sub-title A cancelled prompt changes nothing.
 '@details
@@ -1577,17 +1500,12 @@ Public Sub TestACancelledPromptChangesNothing()
     CustomTestSetTitles Assert, TESTMODULE, "TestACancelledPromptChangesNothing"
     On Error GoTo TestFail
 
-    Dim promptReady As Boolean
     Dim rowsBefore As Long
     Dim logRows As Long
 
     Assert.IsTrue formIsSettled, "The picker came up in ModuleInitialize"
-    promptReady = PromptArrangedAtAdminTwo()
-    Assert.IsTrue promptReady, _
-                  "Dropping the admin 2 selection raises nothing, so the prompt is reachable with the boxes live"
-    If Not promptReady Then Exit Sub
+    ArrangeThePromptAtAdminTwo
     Assert.IsNotNothing GeoManagerNow(), "The geobase fixture builds a manager"
-    Assert.IsNotNothing TranslationNow(), "The translation worksheet builds a helper"
 
     GeoModule.GeoStubAdminName False
     rowsBefore = GeoTableRows(ADMIN2_TABLE)
@@ -1623,17 +1541,12 @@ Public Sub TestABlankAnswerChangesNothing()
     CustomTestSetTitles Assert, TESTMODULE, "TestABlankAnswerChangesNothing"
     On Error GoTo TestFail
 
-    Dim promptReady As Boolean
     Dim rowsBefore As Long
     Dim logRows As Long
 
     Assert.IsTrue formIsSettled, "The picker came up in ModuleInitialize"
-    promptReady = PromptArrangedAtAdminTwo()
-    Assert.IsTrue promptReady, _
-                  "Dropping the admin 2 selection raises nothing, so the prompt is reachable with the boxes live"
-    If Not promptReady Then Exit Sub
+    ArrangeThePromptAtAdminTwo
     Assert.IsNotNothing GeoManagerNow(), "The geobase fixture builds a manager"
-    Assert.IsNotNothing TranslationNow(), "The translation worksheet builds a helper"
 
     GeoModule.GeoStubAdminName "   "
     rowsBefore = GeoTableRows(ADMIN2_TABLE)
@@ -1674,17 +1587,12 @@ Public Sub TestAGoodNameLandsAndComesBackSelected()
     CustomTestSetTitles Assert, TESTMODULE, "TestAGoodNameLandsAndComesBackSelected"
     On Error GoTo TestFail
 
-    Dim promptReady As Boolean
     Dim rowsBefore As Long
     Dim logRows As Long
 
     Assert.IsTrue formIsSettled, "The picker came up in ModuleInitialize"
-    promptReady = PromptArrangedAtAdminTwo()
-    Assert.IsTrue promptReady, _
-                  "Dropping the admin 2 selection raises nothing, so the prompt is reachable with the boxes live"
-    If Not promptReady Then Exit Sub
+    ArrangeThePromptAtAdminTwo
     Assert.IsNotNothing GeoManagerNow(), "The geobase fixture builds a manager"
-    Assert.IsNotNothing TranslationNow(), "The translation worksheet builds a helper"
 
     GeoModule.GeoStubAdminName " DX "
     rowsBefore = GeoTableRows(ADMIN2_TABLE)
@@ -1706,6 +1614,95 @@ Public Sub TestAGoodNameLandsAndComesBackSelected()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestAGoodNameLandsAndComesBackSelected", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A parent with nothing selected stops the walk with a warning.
+'@details
+'The walk over the parents stops on the first list with nothing selected, so
+'an admin 3 never lands with no admin 2 behind it. The warning is written to
+'the log and the box is held back; the caption shows the parents found so
+'far, which is nothing here.
+'Arranges the picker at admin 3 under P1 with the admin 2 list emptied and
+'the prompt answering a name. Acts by asking to add a name at level 3.
+'Asserts the warning line names AddAdminName and the message code, the admin
+'3 table kept its rows, the caption is P1, and the pointer is back on the
+'arrow.
+'@TestMethod("GeoModule")
+Public Sub TestAParentWithNothingSelectedStopsTheAddWithAWarning()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAParentWithNothingSelectedStopsTheAddWithAWarning"
+    On Error GoTo TestFail
+
+    Dim rowsBefore As Long
+    Dim logRows As Long
+
+    Assert.IsTrue formIsSettled, "The picker came up in ModuleInitialize"
+    ArrangeGeoManager
+    Assert.IsNotNothing GeoManagerNow(), "The geobase fixture builds a manager"
+
+    SelectInList F_Geo.LST_Adm1, "P1"
+    F_Geo.LST_Adm2.Clear
+    FillWithStandIn F_Geo.LST_Adm3
+
+    GeoModule.GeoStubAdminName "CX"
+    rowsBefore = GeoTableRows("T_ADM3")
+    Application.Cursor = xlWait
+    logRows = LogRowCount()
+
+    GeoModule.AddAdminName 3
+
+    AssertFailureLine LogTextAfter(logRows), "AddAdminName", "MSG_AddAdminNoParent"
+    Assert.AreEqual rowsBefore, GeoTableRows("T_ADM3"), _
+                    "A stopped walk writes no row"
+    Assert.AreEqual "P1", CStr(F_Geo.TXT_Msg.Value), _
+                    "The caption shows the parents found before the walk stopped"
+    AssertRestingPointer "AddAdminName puts the standing pointer back"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAParentWithNothingSelectedStopsTheAddWithAWarning", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A name the parent already holds is refused with a warning.
+'@details
+'LLGeo.AddAdminEntry compares the joined path with the concat column without
+'regard to case and writes nothing on a match. The picker then warns, writes
+'the line to the log, and leaves the list as the double click left it.
+'Arranges the picker at admin 2 under P1 with the prompt answering d1, which
+'P1 already holds as D1. Acts by asking to add a name at level 2. Asserts the
+'warning line names AddAdminName and the message code, the admin 2 table kept
+'its rows, the admin 2 list has nothing selected, and the pointer is back on
+'the arrow.
+'@TestMethod("GeoModule")
+Public Sub TestADuplicateNameIsRefusedWithAWarning()
+    CustomTestSetTitles Assert, TESTMODULE, "TestADuplicateNameIsRefusedWithAWarning"
+    On Error GoTo TestFail
+
+    Dim rowsBefore As Long
+    Dim logRows As Long
+
+    Assert.IsTrue formIsSettled, "The picker came up in ModuleInitialize"
+    ArrangeThePromptAtAdminTwo
+    Assert.IsNotNothing GeoManagerNow(), "The geobase fixture builds a manager"
+
+    GeoModule.GeoStubAdminName "d1"
+    rowsBefore = GeoTableRows(ADMIN2_TABLE)
+    Application.Cursor = xlWait
+    logRows = LogRowCount()
+
+    GeoModule.AddAdminName 2
+
+    AssertFailureLine LogTextAfter(logRows), "AddAdminName", "MSG_AddAdminExists"
+    Assert.AreEqual rowsBefore, GeoTableRows(ADMIN2_TABLE), _
+                    "A duplicate writes no row"
+    Assert.AreEqual CLng(-1), CLng(F_Geo.LST_Adm2.ListIndex), _
+                    "The list stays as the double click left it"
+    AssertRestingPointer "AddAdminName puts the standing pointer back"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestADuplicateNameIsRefusedWithAWarning", _
                          Err.Number, Err.Description
 End Sub
 
