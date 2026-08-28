@@ -93,7 +93,35 @@ Option Explicit
 'the cascade to admin 2 during the arrange. Every arrange below selects the
 'parents first and writes its stand-in entries after, so the cascade of the
 'arrange leaves nothing the act is measured against.
-'@depends GeoModule, LinelistEventsManager, EventLinelist, LLGeo, HiddenNames, GeoTestFixture, CustomTest, TestHelpersLite, BetterArray
+'
+'THE SPATIAL ENTRY POINTS RUN OVER THREE MORE WORKSHEETS
+'-------------------------------------------------------------------------------
+'UpdateSpTables and UpdateSpatioTemporalFormulas read __spatial_tables through
+'LLSpatial and __pass through Passwords, and both work on the worksheet in
+'front. ModuleInitialize seeds __pass through PasswordsTestFixture, and
+'ModuleCleanup drops that worksheet with the eight workbook names the fixture
+'writes. ArrangeSptSection stands a section worksheet up in front for every
+'test that needs one, and the worksheet that was in front when the module
+'started comes back in ModuleCleanup.
+'
+'A __pass WORKSHEET LOCKS THE STRUCTURE OF THE DRIVER WORKBOOK
+'-------------------------------------------------------------------------------
+'EventLinelist builds its password manager off that worksheet, and EnsureLog
+'protects the workbook structure right after it builds the user log. So the
+'first failure this suite reports leaves ThisWorkbook locked, and a locked
+'workbook refuses Worksheets.Add: every arrange of this suite and of every
+'suite after it stops there. TestInitialize gives the structure back before
+'each test and ModuleCleanup gives it back before it drops anything.
+'
+'A SPATIAL FAILURE LINE CARRIES AN EMPTY REASON
+'-------------------------------------------------------------------------------
+'Both spatial handlers read Err.Description after
+'LinelistEventsManager.LLExitBusyState, and that procedure runs
+'On Error Resume Next, which resets the Err object. So the line the log keeps
+'names the procedure and its reason is empty, and the two failure tests below
+'read the source alone. ErrLoadGeo has the same shape. ErrShowAdmin and
+'ErrAddAdmin read Err before any On Error, so they carry their reason through.
+'@depends GeoModule, LinelistEventsManager, EventLinelist, LLGeo, HiddenNames, GeoTestFixture, PasswordsTestFixture, CustomTest, TestHelpersLite, BetterArray
 
 Private Const TESTMODULE As String = "TestGeoModule"
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
@@ -141,11 +169,44 @@ Private Const ADMIN2_TABLE As String = "T_ADM2"
 'the act emptied from a list the act left alone.
 Private Const STAND_IN_ENTRY As String = "stand-in"
 
+'The spatial tables worksheet LLSpatial is built over, the password worksheet
+'the protection pair is read through, and the worksheet standing in for one
+'spatio-temporal analysis sheet of a linelist.
+Private Const SPATIAL_SHEET As String = "__spatial_tables"
+Private Const PASS_SHEET As String = "__pass"
+Private Const SPT_SHEET As String = "GeoSptSection"
+
+'The names of the section worksheet. SPT_SELECTOR is shaped the way
+'AnalysisOutput names a level selector, so AnalysisRanges reads SPT_tab1 back
+'out of it; SPT_PLAIN_NAME is a name of the same worksheet that no analysis
+'built, so the same read answers an empty identifier. SPT_HEADER_NAME covers
+'the header row of the formula columns, which is what MigrateSection walks.
+Private Const SPT_SELECTOR As String = "INPUTSPTGEO_2_SPT_tab1"
+Private Const SPT_PLAIN_NAME As String = "SPT_NO_ANALYSIS"
+Private Const SPT_HEADER_NAME As String = "SPT_FORMULA_COLUMN_SPT_tab1"
+
+'The cells of the section worksheet. Each selector records the level its
+'formulas read in the cell right of it, which is where PreviousSectionLevel
+'reads and where a finished migration writes.
+Private Const SPT_SELECTOR_CELL As String = "F1"
+Private Const SPT_LEVEL_CELL As String = "G1"
+Private Const SPT_PLAIN_CELL As String = "F3"
+Private Const SPT_PLAIN_LEVEL_CELL As String = "G3"
+
+'The debugging password PasswordsTestFixture seeds. A test that ends with the
+'section worksheet protected is opened again with it.
+Private Const DEBUG_PASSWORD As String = "1234"
+
 Private Assert As CustomTest
 
 'Whether the picker came up. The tests that read a control of the form say so
 'in their own line rather than raising into their handler.
 Private formIsSettled As Boolean
+
+'The worksheet that was in front when the module started. Both spatial entry
+'points work on the active worksheet, so the tests below put their own section
+'worksheet in front and ModuleCleanup gives the first one back.
+Private frontSheet As Object
 
 
 '@section Module lifecycle
@@ -157,6 +218,8 @@ Private formIsSettled As Boolean
 'because a raise with the picker or the failure box still armed is what stops a
 'headless run. The dropdown worksheet is left as it is when it is already
 'there, so a suite that wrote one keeps what it wrote.
+'The password worksheet is seeded once, because GeoModule builds its Passwords
+'object on the first spatial press and keeps it for the rest of the session.
 '@ModuleInitialize
 Public Sub ModuleInitialize()
     BusyApp
@@ -168,6 +231,8 @@ Public Sub ModuleInitialize()
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     EnsureWorksheet DROPDOWN_SHEET, ThisWorkbook, clearSheet:=False, _
                     visibility:=xlSheetHidden
+    BuildPasswordSheet
+    RememberFrontSheet
 
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName TESTMODULE
@@ -186,8 +251,14 @@ End Sub
 'loads it from ThisWorkbook, and the lists it holds are read off names that are
 'about to go. The translation worksheet is renamed away first, in case a test
 'stopped while it stood under its real name.
+'The three worksheets of the spatial entry points go the same way, and the
+'eight workbook names the password fixture writes are dropped while the
+'worksheet they point at is still there. A name left over a deleted worksheet
+'answers #REF for every suite after this one.
 '@ModuleCleanup
 Public Sub ModuleCleanup()
+    ReleaseWorkbookStructure
+
     If Not Assert Is Nothing Then
         Assert.PrintResults TEST_OUTPUT_SHEET
     End If
@@ -205,6 +276,14 @@ Public Sub ModuleCleanup()
     DeleteWorksheet GEO_SHEET
     DeleteWorksheet DROPDOWN_SHEET
     DeleteWorksheet SETTLED_TRANSLATION_SHEET
+
+    UnprotectSptSheet
+    DeleteWorksheet SPT_SHEET
+    DeleteWorksheet SPATIAL_SHEET
+    DropPasswordNames
+    DeleteWorksheet PASS_SHEET
+    RestoreFrontSheet
+
     LinelistEventsManager.DisposeEventLinelist
 
     RestoreApp
@@ -212,9 +291,13 @@ Public Sub ModuleCleanup()
 End Sub
 
 '@sub-title Reset state before each individual test.
+'@details
+'The workbook structure is given back here, because a failure reported by the
+'test before this one can have locked it. See the module description.
 '@TestInitialize
 Public Sub TestInitialize()
     BusyApp
+    ReleaseWorkbookStructure
 End Sub
 
 '@sub-title Clean up after each individual test.
@@ -224,11 +307,14 @@ End Sub
 'next one a clean start. The name prompt goes back on the cancel answer, and
 'the translation worksheet is put out of reach again, so a test that stood it
 'up and then failed leaves the failure boxes shut for the next one.
+'The section worksheet is opened again, so a test that ended with it protected
+'leaves the next arrange free to rewrite it.
 '@TestCleanup
 Public Sub TestCleanup()
     Application.Cursor = xlNorthwestArrow
     GeoModule.GeoStubAdminName False
     PutTranslationOutOfReach
+    UnprotectSptSheet
 
     If Not Assert Is Nothing Then
         Assert.Flush
@@ -1620,5 +1706,428 @@ Public Sub TestAGoodNameLandsAndComesBackSelected()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestAGoodNameLandsAndComesBackSelected", _
+                         Err.Number, Err.Description
+End Sub
+
+
+'@section The worksheets the spatial entry points read
+'===============================================================================
+
+'@sub-title Seed the password worksheet the protection pair is read through.
+'@details
+'Passwords.Create asks for two tables and five named ranges, and
+'PasswordsTestFixture writes all of them plus the two laboratory keys. The
+'debug-mode cell it seeds reads "No", which is what makes a Protect call apply
+'real protection: a workbook in debug mode logs the request and leaves the
+'worksheet open, and the tests below read the protection back.
+'The worksheet is hidden afterwards. It is one of the internal worksheets of a
+'linelist and a user never opens it.
+Private Sub BuildPasswordSheet()
+    PasswordsTestFixture.PreparePasswordsFixture PASS_SHEET, ThisWorkbook
+    ThisWorkbook.Worksheets(PASS_SHEET).Visible = xlSheetHidden
+End Sub
+
+'@sub-title Drop the eight workbook names the password fixture writes.
+'@details
+'The fixture adds them at workbook scope over cells of the password worksheet.
+'Deleting the worksheet under them would leave eight names answering #REF for
+'every suite that runs after this module, so they go first.
+Private Sub DropPasswordNames()
+    Dim passwordNames As Variant
+    Dim counter As Long
+
+    passwordNames = Array("RNG_PublicKey", "RNG_PrivateKey", _
+                          "RNG_DebuggingPassword", "RNG_DebugMode", _
+                          "RNG_Version", "RNG_LabPublicKey", _
+                          "RNG_LabPrivateKey", "Passwords_ProtectedSheets")
+
+    For counter = LBound(passwordNames) To UBound(passwordNames)
+        DropWorkbookName CStr(passwordNames(counter))
+    Next counter
+End Sub
+
+'@sub-title Stand the spatial tables worksheet up.
+'@details
+'LLSpatial.Create asks for a worksheet carrying this name and reads nothing
+'else at build time, so an empty one is enough for both entry points. Update
+'then walks the worksheets of the workbook looking for HList ones, finds none
+'in the driver workbook and recalculates this worksheet.
+Private Sub BuildSpatialWorksheet()
+    EnsureWorksheet SPATIAL_SHEET, ThisWorkbook, clearSheet:=True, _
+                    visibility:=xlSheetHidden
+End Sub
+
+'@fun-title Stand a spatio-temporal section worksheet up in front.
+'@details
+'The worksheet stands in for one analysis sheet of a linelist. F1 is the level
+'selector and G1 records the level its formulas read; F3 is a second cell
+'carrying a name no analysis built, with G3 recording a level for it. B1:C1 is
+'the header row of the formula columns and holds plain text, so MigrateSection
+'walks it and moves nothing.
+'The worksheet is opened before it is rewritten, because a test that ends with
+'the protection on leaves it protected. It is left visible and in front: both
+'entry points read the active worksheet, and the protection pair works on it.
+'@param recordedLevel Variant. What the cell right of the selector holds.
+'@return Worksheet. The section worksheet, in front.
+Private Function ArrangeSptSection(ByVal recordedLevel As Variant) As Worksheet
+    Dim sh As Worksheet
+
+    UnprotectSptSheet
+    Set sh = EnsureWorksheet(SPT_SHEET, ThisWorkbook, clearSheet:=True)
+
+    sh.Range("B1").Value = "first column"
+    sh.Range("C1").Value = "second column"
+    sh.Names.Add Name:=SPT_HEADER_NAME, RefersTo:=sh.Range("B1:C1")
+    sh.Names.Add Name:=SPT_SELECTOR, RefersTo:=sh.Range(SPT_SELECTOR_CELL)
+    sh.Names.Add Name:=SPT_PLAIN_NAME, RefersTo:=sh.Range(SPT_PLAIN_CELL)
+
+    sh.Range(SPT_SELECTOR_CELL).Value = "P1"
+    sh.Range(SPT_LEVEL_CELL).Value = recordedLevel
+    sh.Range(SPT_PLAIN_CELL).Value = "P1"
+    sh.Range(SPT_PLAIN_LEVEL_CELL).Value = 1
+
+    sh.Activate
+    Set ArrangeSptSection = sh
+End Function
+
+'@sub-title Give the structure of the driver workbook back.
+'@details
+'EventLinelist locks the structure of its workbook the first time it builds the
+'user log, and it can do that from the moment this module stands __pass up. A
+'locked structure refuses Worksheets.Add, which is what every arrange runs on.
+'The password the fixture seeds is the one the lock was taken with.
+'Scoped to the one call: a workbook that was left locked with another password
+'answers the raise and the arrange after it says so in its own line.
+Private Sub ReleaseWorkbookStructure()
+    On Error Resume Next
+    If ThisWorkbook.ProtectStructure Then ThisWorkbook.Unprotect DEBUG_PASSWORD
+    On Error GoTo 0
+End Sub
+
+'@sub-title Open the section worksheet again.
+'@details
+'Scoped to the one call, because the worksheet is missing before the first
+'test that builds one and Unprotect on a worksheet the password does not open
+'raises.
+Private Sub UnprotectSptSheet()
+    On Error Resume Next
+    ThisWorkbook.Worksheets(SPT_SHEET).Unprotect DEBUG_PASSWORD
+    On Error GoTo 0
+End Sub
+
+'@fun-title Whether the section worksheet is protected right now.
+'@details
+'The whole answer of the protection pair. A run that reached the UnProtect
+'leaves this True, and a run that stopped above it leaves it False.
+'@return Boolean. True when the worksheet is protected.
+Private Function SptSheetIsProtected() As Boolean
+    If Not WorksheetExists(SPT_SHEET) Then Exit Function
+    SptSheetIsProtected = ThisWorkbook.Worksheets(SPT_SHEET).ProtectContents
+End Function
+
+'@sub-title Remember the worksheet that is in front.
+'@details
+'Read under a scoped handler: a host with no window in front answers nothing
+'and the restore then leaves the front alone.
+Private Sub RememberFrontSheet()
+    On Error Resume Next
+    Set frontSheet = ActiveSheet
+    On Error GoTo 0
+End Sub
+
+'@sub-title Put the remembered worksheet back in front.
+'@details
+'Runs after the section worksheet is deleted, so the front it answers is one
+'the workbook still carries.
+Private Sub RestoreFrontSheet()
+    On Error Resume Next
+    If Not frontSheet Is Nothing Then frontSheet.Activate
+    On Error GoTo 0
+
+    Set frontSheet = Nothing
+End Sub
+
+'@sub-title Assert the log lines of one act name the source.
+'@details
+'The reason of a spatial failure is empty, see the module description, so the
+'source is the whole of what these two handlers put on the line.
+'@param logText String. The lines the act added to the log.
+'@param source String. The procedure the failure should name.
+Private Sub AssertFailureNames(ByVal logText As String, ByVal source As String)
+    Assert.IsTrue InStr(1, logText, source, vbTextCompare) > 0, _
+                  "The failure line should name " & source & _
+                  " - the lines read [" & logText & "]"
+End Sub
+
+
+'@section The spatial table refresh
+'===============================================================================
+
+'@sub-title UpdateSpTables over a workbook with no spatial worksheet reports.
+'@details
+'The refresh button reaches this sub bare, so the handler and the busy state
+'are its own and a workbook missing the worksheet has to come back reported.
+'Arranges a workbook with no __spatial_tables worksheet. Acts by pressing the
+'refresh. Asserts the failure line names UpdateSpTables and the standing
+'pointer was left alone.
+'@TestMethod("GeoModule")
+Public Sub TestUpdateSpTablesReportsASpatialSheetItCannotFind()
+    CustomTestSetTitles Assert, TESTMODULE, "TestUpdateSpTablesReportsASpatialSheetItCannotFind"
+    On Error GoTo TestFail
+
+    Dim logRows As Long
+
+    DeleteWorksheet SPATIAL_SHEET
+    Assert.IsFalse WorksheetExists(SPATIAL_SHEET), _
+                   "The workbook carries no spatial tables worksheet"
+
+    Application.Cursor = xlNorthwestArrow
+    logRows = LogRowCount()
+
+    GeoModule.UpdateSpTables
+
+    AssertFailureNames LogTextAfter(logRows), "UpdateSpTables"
+    AssertRestingPointer "UpdateSpTables leaves the standing pointer where it found it"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestUpdateSpTablesReportsASpatialSheetItCannotFind", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title UpdateSpTables walks a workbook holding no HList sheet and reports nothing.
+'@details
+'The walk is LLSpatial.Update and TestLLSpatial measures what it writes. What
+'this test measures is the press: the busy state opens and closes, the filter
+'sync runs with the recalculation off, and a workbook with nothing to fill
+'comes back quiet.
+'Arranges the spatial tables worksheet on a workbook carrying no HList sheet.
+'Acts by pressing the refresh. Asserts nothing reached the log and the standing
+'pointer was left alone.
+'@TestMethod("GeoModule")
+Public Sub TestUpdateSpTablesWalksAWorkbookHoldingNoHListSheet()
+    CustomTestSetTitles Assert, TESTMODULE, "TestUpdateSpTablesWalksAWorkbookHoldingNoHListSheet"
+    On Error GoTo TestFail
+
+    Dim logRows As Long
+
+    BuildSpatialWorksheet
+    Assert.IsTrue WorksheetExists(SPATIAL_SHEET), _
+                  "The workbook carries the spatial tables worksheet"
+
+    Application.Cursor = xlNorthwestArrow
+    logRows = LogRowCount()
+
+    GeoModule.UpdateSpTables
+
+    AssertNoFailureLine logRows, "A workbook with no HList sheet reports nothing"
+    AssertRestingPointer "UpdateSpTables leaves the standing pointer where it found it"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestUpdateSpTablesWalksAWorkbookHoldingNoHListSheet", _
+                         Err.Number, Err.Description
+End Sub
+
+
+'@section The early exits of the spatio-temporal update
+'===============================================================================
+
+'@sub-title An unnamed active cell stops the update before anything is read.
+'@details
+'The caller hands over the name of the active cell, and a cell nothing named
+'hands an empty string over. AnalysisRanges answers an empty identifier for it
+'and the update stops there.
+'What proves the exit ran: the read of the recorded level takes the name
+'straight to Range, so an empty name reaching it raises and the raise ends on
+'the log.
+'Arranges a section worksheet recording level 3. Acts with an empty name and
+'level 2. Asserts nothing reached the log, the recorded level was left alone,
+'the worksheet was left open and the standing pointer came back.
+'@TestMethod("GeoModule")
+Public Sub TestTheSpatioTemporalUpdateStopsOnAnUnnamedCell()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheSpatioTemporalUpdateStopsOnAnUnnamedCell"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim logRows As Long
+
+    BuildSpatialWorksheet
+    Set sh = ArrangeSptSection(3)
+
+    Application.Cursor = xlNorthwestArrow
+    logRows = LogRowCount()
+
+    GeoModule.UpdateSpatioTemporalFormulas vbNullString, 2
+
+    AssertNoFailureLine logRows, "An unnamed cell reports nothing"
+    Assert.AreEqual CLng(3), CLng(sh.Range(SPT_LEVEL_CELL).Value), _
+                    "The recorded level is left as it stands"
+    Assert.IsFalse SptSheetIsProtected(), _
+                   "An exit above the UnProtect leaves the worksheet open"
+    AssertRestingPointer "The update leaves the standing pointer where it found it"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheSpatioTemporalUpdateStopsOnAnUnnamedCell", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A name no analysis built stops the update before anything is read.
+'@details
+'The name given here is a real name of the section worksheet, so the read of
+'the recorded level would answer 1 and the migration below would run on an
+'empty identifier and raise. Nothing on the log is what says the guard held.
+'Arranges a section worksheet carrying the name. Acts with that name and level
+'2. Asserts nothing reached the log, the level recorded for that name was left
+'alone, the worksheet was left open and the standing pointer came back.
+'@TestMethod("GeoModule")
+Public Sub TestTheSpatioTemporalUpdateStopsOnANameNoAnalysisBuilt()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheSpatioTemporalUpdateStopsOnANameNoAnalysisBuilt"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim logRows As Long
+
+    BuildSpatialWorksheet
+    Set sh = ArrangeSptSection(3)
+
+    Application.Cursor = xlNorthwestArrow
+    logRows = LogRowCount()
+
+    GeoModule.UpdateSpatioTemporalFormulas SPT_PLAIN_NAME, 2
+
+    AssertNoFailureLine logRows, "A name no analysis built reports nothing"
+    Assert.AreEqual CLng(1), CLng(sh.Range(SPT_PLAIN_LEVEL_CELL).Value), _
+                    "The level recorded beside that name is left as it stands"
+    Assert.IsFalse SptSheetIsProtected(), _
+                   "An exit above the UnProtect leaves the worksheet open"
+    AssertRestingPointer "The update leaves the standing pointer where it found it"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheSpatioTemporalUpdateStopsOnANameNoAnalysisBuilt", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A level that did not change stops the update above the UnProtect.
+'@details
+'The caller fires on every validated place with no idea whether the level
+'changed, so the level the section stands on is read and compared before the
+'worksheet is opened.
+'Arranges a section worksheet recording level 3. Acts with the selector name
+'and level 3. Asserts nothing reached the log, the recorded level was left
+'alone, the worksheet was left open and the standing pointer came back.
+'@TestMethod("GeoModule")
+Public Sub TestTheSpatioTemporalUpdateStopsOnALevelThatDidNotChange()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheSpatioTemporalUpdateStopsOnALevelThatDidNotChange"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim logRows As Long
+
+    BuildSpatialWorksheet
+    Set sh = ArrangeSptSection(3)
+
+    Application.Cursor = xlNorthwestArrow
+    logRows = LogRowCount()
+
+    GeoModule.UpdateSpatioTemporalFormulas SPT_SELECTOR, 3
+
+    AssertNoFailureLine logRows, "A level that did not change reports nothing"
+    Assert.AreEqual CLng(3), CLng(sh.Range(SPT_LEVEL_CELL).Value), _
+                    "The recorded level is left as it stands"
+    Assert.IsFalse SptSheetIsProtected(), _
+                   "An exit above the UnProtect leaves the worksheet open"
+    AssertRestingPointer "The update leaves the standing pointer where it found it"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheSpatioTemporalUpdateStopsOnALevelThatDidNotChange", _
+                         Err.Number, Err.Description
+End Sub
+
+
+'@section The protection pair of the spatio-temporal update
+'===============================================================================
+
+'@sub-title A raise above the UnProtect leaves a worksheet that was open open.
+'@details
+'The level is read above the UnProtect on purpose, so a section whose
+'recording cell was cleared or overwritten raises while the worksheet is still
+'as the user left it. The flag the handler reads is what keeps it that way: a
+'handler that protected on every path would close a worksheet somebody opened
+'deliberately.
+'Arranges a section worksheet whose recording cell holds text. Acts with the
+'selector name and level 2. Asserts the failure line names
+'UpdateSpatioTemporalFormulas, the worksheet is still open, the recording cell
+'was left alone and the standing pointer came back.
+'@TestMethod("GeoModule")
+Public Sub TestARaiseAboveTheUnprotectLeavesTheSheetOpen()
+    CustomTestSetTitles Assert, TESTMODULE, "TestARaiseAboveTheUnprotectLeavesTheSheetOpen"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim logRows As Long
+
+    BuildSpatialWorksheet
+    Set sh = ArrangeSptSection("cleared")
+
+    Application.Cursor = xlNorthwestArrow
+    logRows = LogRowCount()
+
+    GeoModule.UpdateSpatioTemporalFormulas SPT_SELECTOR, 2
+
+    AssertFailureNames LogTextAfter(logRows), "UpdateSpatioTemporalFormulas"
+    Assert.IsFalse SptSheetIsProtected(), _
+                   "A raise above the UnProtect leaves the worksheet open"
+    Assert.AreEqual "cleared", CStr(sh.Range(SPT_LEVEL_CELL).Value), _
+                    "The recording cell is left as it stands"
+    AssertRestingPointer "The update leaves the standing pointer where it found it"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestARaiseAboveTheUnprotectLeavesTheSheetOpen", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A run that took the protection off puts it back.
+'@details
+'The other half of the flag. The section walk is LLSpatial.MigrateSection and
+'TestLLSpatial measures what it moves; the header row here holds plain text,
+'so the walk finds no formula column of the selector and records the new level
+'alone. What this test measures is what the module owns around it: the
+'worksheet is opened, the walk runs, and the protection is on again at the end.
+'Arranges a section worksheet recording level 1. Acts with the selector name
+'and level 2. Asserts nothing reached the log, the new level was recorded, the
+'worksheet is protected again and the standing pointer came back.
+'@TestMethod("GeoModule")
+Public Sub TestARunThatTookTheProtectionOffPutsItBack()
+    CustomTestSetTitles Assert, TESTMODULE, "TestARunThatTookTheProtectionOffPutsItBack"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim logRows As Long
+
+    BuildSpatialWorksheet
+    Set sh = ArrangeSptSection(1)
+    Assert.IsFalse SptSheetIsProtected(), _
+                   "The section worksheet stands open before the act"
+
+    Application.Cursor = xlNorthwestArrow
+    logRows = LogRowCount()
+
+    GeoModule.UpdateSpatioTemporalFormulas SPT_SELECTOR, 2
+
+    AssertNoFailureLine logRows, "A level change reports nothing"
+    Assert.AreEqual CLng(2), CLng(sh.Range(SPT_LEVEL_CELL).Value), _
+                    "The new level is recorded beside the selector"
+    Assert.IsTrue SptSheetIsProtected(), _
+                  "A run that took the protection off puts it back"
+    AssertRestingPointer "The update leaves the standing pointer where it found it"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestARunThatTookTheProtectionOffPutsItBack", _
                          Err.Number, Err.Description
 End Sub
