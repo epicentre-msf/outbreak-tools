@@ -89,9 +89,10 @@ to this class until ExportMigration saves it or the class is released.</p>
 <p>The file is checked first (its tag and its four sheets), then
 the target: a disease worksheet, a Variables line or a Choices line
 refuses the import with ProjectError.InvalidArgument naming what was
-found, and nothing is written. The steps then run in the order each one
-feeds the next; the staging sheet of the disease blocks goes away on
-every path.</p>
+found, and nothing is written. LastRefusal answers that name afterwards on
+either platform; Err.Description carries it on Windows only. The steps then
+run in the order each one feeds the next; the staging sheet of the disease
+blocks goes away on every path.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sourceBook</code>: Workbook. The migration file, open.</li>
@@ -99,6 +100,16 @@ every path.</p>
 </ul>
 <hr />
 <h2 id="int-results">Results</h2>
+<h3 id="int-lastrefusal">LastRefusal <a class="anchor-link" href="#int-lastrefusal">#</a></h3>
+<p><strong>Why the last import was refused, empty when it was not.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LastRefusal() As String
+</code></pre>
+<p>Err.Description carries this too on Windows, and does NOT on Mac Excel, which
+replaces it as the error leaves the class. Read this rather than the
+description whenever the reason has to be shown or tested.</p>
+<p><strong>Returns:</strong> String. What the refusal found, or empty.</p>
+<hr />
 <h3 id="int-importeddiseases">ImportedDiseases <a class="anchor-link" href="#int-importeddiseases">#</a></h3>
 <p><strong>Names of the disease worksheets the last import built.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -412,6 +423,25 @@ SetupTranslationsTable keys its own index.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
 </code></pre>
+<hr />
+<h3 id="int-refuse">Refuse <a class="anchor-link" href="#int-refuse">#</a></h3>
+<p><strong>Refuse the import, keeping the reason readable after the raise.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Refuse(ByVal errMessage As String)
+</code></pre>
+<p>Mac Excel throws the description away as an error leaves a class method: the
+caller reads the number it was given and &quot;Method 'Import' of object
+'MasterSetupMigration' failed&quot; in place of the message. Windows keeps the
+message. The reason is therefore held on the instance BEFORE the raise, and
+LastRefusal answers it on both platforms.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errMessage</code>: String. What was found, as the caller should read it.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument Always.</li>
+</ul>
 <hr />
 </details>
 <details>
