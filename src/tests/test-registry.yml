@@ -1488,7 +1488,7 @@ suites:
         covers: [DiseaseExporter]
       # TestMasterSetupExports drives the three seams of the exports module
       # that need no picker: the setup import over an open export, the
-      # logger summary, and the two worksheet functions of
+      # logger summary, and the three public answers of
       # CustomMasterSetupFunctions over the fixture sheets.
       - module: TestMasterSetupExports
         covers: [MasterSetupExports, CustomMasterSetupFunctions, MasterSetupImportService]

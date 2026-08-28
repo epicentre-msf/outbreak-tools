@@ -11,6 +11,12 @@ Option Explicit
 'the joined values of the picked choice. Both take the language of the sheet,
 'so switching that one cell retranslates every line.
 '
+'VariableSectionValue is the third answer of this module and the one no
+'formula calls. The section of a line is a written value: it travels with an
+'imported file and the comparison reads it, so a formula would drop what an
+'import carried. MasterSetupEventsManager calls it on a language pick and
+'writes what it answers.
+'
 'A worksheet function can never raise and can never write. Every resolver
 'failure is answered with an empty string, and the resolved managers are
 'cached at module level. MasterSetupEventsManager clears the caches when the
@@ -70,6 +76,45 @@ Public Function MainLabelValue(ByVal variableName As Variant, ByVal languageTag 
     If trads Is Nothing Then Exit Function
 
     MainLabelValue = TranslatedOrSame(trads, label)
+End Function
+
+'@sub-title Answer the section of a variable, translated to the given language.
+'@details The section is typed on the Variables sheet in the language the master
+'setup is written in, so it goes through the translator the same way the label
+'does. A section the translations table does not carry reads as it is typed.
+'No formula calls this one: a language pick asks it for the section of every
+'line and writes the answers. An empty answer is the caller's signal to leave
+'the line alone, never a value to write, because the section of a line the
+'master setup cannot resolve is one an import carried.
+'@param variableName Variant cell value naming the variable.
+'@param languageTag Variant cell value naming the language column.
+'@return String section, or an empty string when the variable is unknown.
+Public Function VariableSectionValue(ByVal variableName As Variant, ByVal languageTag As Variant) As String
+    Dim resolvedName As String
+    Dim sectionText As String
+    Dim trads As TranslationObject
+
+    resolvedName = CleanText(variableName)
+    If LenB(resolvedName) = 0 Then Exit Function
+
+    ' A worksheet function answers empty on any resolver failure.
+    On Error Resume Next
+    sectionText = VariablesManager().SectionFor(resolvedName)
+    On Error GoTo 0
+
+    If LenB(sectionText) = 0 Then Exit Function
+
+    ' The untranslated section is the answer from here on, the way the label
+    ' is: a fault in the translations table costs the translation, never the
+    ' section.
+    VariableSectionValue = sectionText
+
+    On Error Resume Next
+    Set trads = TranslationsFor(CleanText(languageTag))
+    On Error GoTo 0
+    If trads Is Nothing Then Exit Function
+
+    VariableSectionValue = TranslatedOrSame(trads, sectionText)
 End Function
 
 '@sub-title Answer the joined values of a choice, translated to the given language.

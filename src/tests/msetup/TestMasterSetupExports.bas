@@ -10,7 +10,7 @@ Option Private Module
 
 'Three seams of MasterSetupExports and CustomMasterSetupFunctions open
 'without a file picker: ImportSetupWorkbook over an open export,
-'LoggerSummary over a filled DiseaseLogger, and the two worksheet functions
+'LoggerSummary over a filled DiseaseLogger, and the three worksheet functions
 'over the fixture sheets. The fixture is the one TestMasterSetupImportService
 'builds: the Variables table, the Choices block, the translations table with
 'its helper column, and the dropdowns the builder reads.
@@ -177,6 +177,12 @@ Public Sub TestWorksheetFunctionsReadTheFixtureSheets()
     Assert.AreEqual vbNullString, MainLabelValue("var_unknown", "ENG"), "An unknown variable answers an empty label"
     Assert.AreEqual vbNullString, MainLabelValue("", "ENG"), "An empty name answers an empty label"
 
+    Assert.AreEqual "demographics", VariableSectionValue("var_a", "ENG"), "The section of a variable comes from the Variables sheet"
+    Assert.AreEqual "Demographie", VariableSectionValue("var_a", "FRA"), "The section follows the language column of the translations"
+    Assert.AreEqual "symptoms", VariableSectionValue("var_b", "FRA"), "A section the translations table does not carry reads as it is typed"
+    Assert.AreEqual vbNullString, VariableSectionValue("var_unknown", "ENG"), "An unknown variable answers an empty section"
+    Assert.AreEqual vbNullString, VariableSectionValue("", "ENG"), "An empty name answers an empty section"
+
     Assert.AreEqual "0 to 4 | 5 to 14", ChoiceValues("choice_age", "ENG"), "The values of a choice are joined with a pipe"
     Assert.AreEqual vbNullString, ChoiceValues("choice_unknown", "ENG"), "An unknown choice answers empty values"
     Assert.AreEqual vbNullString, ChoiceValues("", "ENG"), "An empty choice answers empty values"
@@ -230,9 +236,10 @@ Private Sub PrepareEnvironment()
     Set translationSheet = EnsureWorksheet(TRANSLATIONS_SHEET)
     ClearWorksheet translationSheet
     translationSheet.Range("A1").Value = "__TagInternal__"
-    data = RowsToMatrix(Array(Array("ENG", "FRA"), Array("Age", "Age FR"), Array("Fever", "Fievre")))
+    data = RowsToMatrix(Array(Array("ENG", "FRA"), Array("Age", "Age FR"), Array("Fever", "Fievre"), _
+                              Array("demographics", "Demographie")))
     WriteMatrix translationSheet.Range("B1"), data
-    translationSheet.ListObjects.Add SourceType:=xlSrcRange, Source:=translationSheet.Range("B1").Resize(3, 2), _
+    translationSheet.ListObjects.Add SourceType:=xlSrcRange, Source:=translationSheet.Range("B1").Resize(4, 2), _
                                       XlListObjectHasHeaders:=xlYes
     Set TranslationTable = translationSheet.ListObjects(1)
 

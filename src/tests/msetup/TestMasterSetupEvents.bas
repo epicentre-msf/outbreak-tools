@@ -541,6 +541,61 @@ Fail:
 End Sub
 
 '@TestMethod("MasterSetupEvents")
+'@sub-title A language pick rewrites the section of every line it can resolve.
+'@details The section carries no formula -- it travels with an imported file
+'-- so the pick writes it. A line whose variable the Variables sheet does not
+'carry keeps the section it stands with, because an empty answer would erase
+'what an import wrote rather than translate it.
+Public Sub TestPickingALanguageTranslatesTheSectionOfALine()
+    CustomTestSetTitles Assert, "MasterSetupEvents", "TestPickingALanguageTranslatesTheSectionOfALine"
+
+    Dim diseaseWksh As Worksheet
+    Dim table As ListObject
+    Dim nameCell As Range
+    Dim sectionCell As Range
+    Dim importedName As Range
+    Dim importedSection As Range
+    Dim languageCell As Range
+
+    On Error GoTo Fail
+
+    Set diseaseWksh = BuildDiseaseFixture()
+    Set table = diseaseWksh.ListObjects(1)
+    Set nameCell = table.DataBodyRange.Cells(1, 2)
+    Set sectionCell = table.DataBodyRange.Cells(1, 3)
+    Set importedName = table.DataBodyRange.Cells(2, 2)
+    Set importedSection = table.DataBodyRange.Cells(2, 3)
+    Set languageCell = diseaseWksh.Cells(2, 2)
+
+    nameCell.Value = "var_age"
+    MasterSetupEventsManager.MsSheetChanged diseaseWksh, nameCell
+    Assert.AreEqual "demographics", sectionCell.Value, "The pick should fill the section in the language it is typed in"
+
+    'The second line stands for an imported one: a variable the Variables
+    'sheet does not carry, with the section its file wrote.
+    MasterSetupHelpers.UnProtectMasterSetupSheet diseaseWksh
+    importedName.Value = "var_imported"
+    importedSection.Value = "an imported section"
+    MasterSetupHelpers.ProtectMasterSetupSheet diseaseWksh, "disease"
+
+    languageCell.Value = "FRA"
+    MasterSetupEventsManager.MsSheetChanged diseaseWksh, languageCell
+
+    Assert.AreEqual "Demographie", sectionCell.Value, "The section should follow the language of the sheet"
+    Assert.AreEqual "an imported section", importedSection.Value, _
+                    "A section the master setup cannot resolve should stand as it is"
+
+    languageCell.Value = "ENG"
+    MasterSetupEventsManager.MsSheetChanged diseaseWksh, languageCell
+    Assert.AreEqual "demographics", sectionCell.Value, "The section comes back as it is typed on the Variables sheet"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestPickingALanguageTranslatesTheSectionOfALine", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("MasterSetupEvents")
 Public Sub TestEnsureLanguagesAddsAColumnToTheMasterTable()
     CustomTestSetTitles Assert, "MasterSetupEvents", "TestEnsureLanguagesAddsAColumnToTheMasterTable"
 
@@ -621,9 +676,10 @@ Private Sub PrepareEnvironment()
     Set targetSheet = EnsureWorksheet(TRANSLATIONS_SHEET)
     ClearWorksheet targetSheet
     targetSheet.Range("A1").Value = "__TagInternal__"
-    data = RowsToMatrix(Array(Array("ENG", "FRA"), Array("Age", "Âge")))
+    data = RowsToMatrix(Array(Array("ENG", "FRA"), Array("Age", "Âge"), _
+                              Array("demographics", "Demographie")))
     WriteMatrix targetSheet.Range("B1"), data
-    targetSheet.ListObjects.Add SourceType:=xlSrcRange, Source:=targetSheet.Range("B1").Resize(2, 2), _
+    targetSheet.ListObjects.Add SourceType:=xlSrcRange, Source:=targetSheet.Range("B1").Resize(3, 2), _
                                 XlListObjectHasHeaders:=xlYes
 
     'The developer presses Initialize once before a file ships: the

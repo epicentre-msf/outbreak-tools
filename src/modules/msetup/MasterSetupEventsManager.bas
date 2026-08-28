@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Msetup")
 '@ModuleDescription("The one place master setup events are handled and shared services live.")
-'@depends EventMasterSetup, MasterSetupLog, MasterSetupHelpers, MasterSetupVariables, LLChoices, CustomTable, ApplicationState, HiddenNames, BetterArray
+'@depends EventMasterSetup, MasterSetupLog, MasterSetupHelpers, MasterSetupVariables, CustomMasterSetupFunctions, LLChoices, CustomTable, ApplicationState, HiddenNames, BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'The workbook code-behind (EventMasterSetupWorkbook) forwards every event
@@ -19,7 +19,9 @@ Option Explicit
 '  onto every disease line carrying that variable.
 '- Disease sheet: a pick in the Variable Name column fills the section, the
 '  default choice and the default status of the line. The label and the
-'  choice values follow through the two worksheet functions.
+'  choice values follow through the two worksheet functions. A pick in the
+'  language cell recalculates those two and rewrites the section column,
+'  which is a written value and follows no formula.
 '- Choices sheet: an edit recalculates the label column, refreshes the joined
 '  values on the Variables sheet, empties every reference to a choice that is
 '  gone, and recalculates the disease lines.
@@ -305,8 +307,10 @@ Private Sub HandleDiseaseSheetChange(ByVal sh As Worksheet, ByVal target As Rang
     ResolveDiseaseColumns table, layout
 
     'The two formula columns read the language cell. Under manual calculation
-    'the old text would stand until something else recalculated the sheet.
+    'the old text would stand until something else recalculated the sheet. The
+    'section carries no formula, so the pick rewrites it.
     If Not Intersect(target, languageCell) Is Nothing Then
+        RetranslateDiseaseSections sh, table, layout, CStr(languageCell.Value)
         RecalculateDiseaseColumns table, layout
     End If
 
@@ -738,6 +742,60 @@ Private Sub RecalculateVariablesChoicesValues()
     On Error Resume Next
         valuesColumn.DataBodyRange.Calculate
     On Error GoTo 0
+End Sub
+
+'@sub-title Rewrite the section of every line in the language of the sheet.
+'@details The section is a written value, not one of the two formula columns:
+'it travels with an imported file and the comparison reads it, so a formula
+'over that column would drop what an import carried. A language pick therefore
+'writes it, from the Variables sheet and through the translator, the way the
+'label formula answers. A line whose section the master setup cannot resolve
+'is left as it stands: an empty answer would erase the section of an imported
+'line rather than translate it. The sheet is unprotected the first time a line
+'needs a write and protected again at the Cleanup label, so a raise inside the
+'loop still leaves the sheet protected.
+Private Sub RetranslateDiseaseSections(ByVal sh As Worksheet, ByVal table As ListObject, _
+                                       ByRef layout As TDiseaseColumns, ByVal languageTag As String)
+    Dim nameValues As Variant
+    Dim sectionText As String
+    Dim rowIndex As Long
+    Dim unprotected As Boolean
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
+
+    If layout.nameIndex = 0 Or layout.sectionIndex = 0 Then Exit Sub
+
+    'One read of the name column; the resolver then runs in memory.
+    nameValues = ColumnBlock(table.DataBodyRange.Columns(layout.nameIndex))
+
+    On Error GoTo Handler
+
+    For rowIndex = 1 To UBound(nameValues, 1)
+        sectionText = CustomMasterSetupFunctions.VariableSectionValue(nameValues(rowIndex, 1), languageTag)
+        If LenB(sectionText) > 0 Then
+            EnsureUnprotected sh, "disease", unprotected
+            table.DataBodyRange.Cells(rowIndex, layout.sectionIndex).Value = sectionText
+        End If
+    Next rowIndex
+
+Cleanup:
+    'Shielded: Handler is still armed here, and a raise from Protect would
+    'come straight back to this label and raise again.
+    On Error Resume Next
+    If unprotected Then MasterSetupHelpers.ProtectMasterSetupSheet sh, "disease"
+    On Error GoTo 0
+
+    If errNumber <> 0 Then
+        Err.Raise errNumber, errSource, errDescription
+    End If
+    Exit Sub
+
+Handler:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    Resume Cleanup
 End Sub
 
 '@sub-title Recalculate the two formula columns of the table of a disease sheet.
