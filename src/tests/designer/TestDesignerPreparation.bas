@@ -520,13 +520,13 @@ Public Sub TestEpiweekStartContainsSevenDays()
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing, TranslationsSource
 
-    'Assert: epiweek start should contain 1 through 7
+    'Assert: epiweek start should contain 1 through 6 and then 0
     Dim values As BetterArray
     Set values = subject.Dropdowns.Values("__epiweek_start")
 
     Assert.AreEqual 7&, values.Length, "Epiweek start should have 7 entries."
     Assert.AreEqual "1", CStr(values.Item(values.LowerBound)), "First entry should be 1."
-    Assert.AreEqual "7", CStr(values.Item(values.UpperBound)), "Last entry should be 7."
+    Assert.AreEqual "0", CStr(values.Item(values.UpperBound)), "Last entry should be 0."
     Exit Sub
 
 Fail:
