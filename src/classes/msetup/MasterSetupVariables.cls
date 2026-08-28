@@ -543,25 +543,29 @@ End Sub
 '         at one across repeated preparations.
 Private Sub ApplyDuplicateFormatting()
     Dim nameRange As Range
-    Dim condition As FormatCondition
 
     Set nameRange = ColumnRange(HEADER_NAME)
     If nameRange Is Nothing Then Exit Sub
 
-    'A refused delete (a protected sheet) leaves the old rule standing.
+    'A refused delete (a protected sheet) leaves the old rule standing, and a
+    'refused add leaves the count where it was, which the guard below reads.
     On Error Resume Next
         nameRange.FormatConditions.Delete
+        nameRange.FormatConditions.AddUniqueValues
     On Error GoTo 0
 
-    On Error Resume Next
-        Set condition = nameRange.FormatConditions.AddUniqueValues
-    On Error GoTo 0
+    If nameRange.FormatConditions.Count = 0 Then Exit Sub
 
-    If condition Is Nothing Then Exit Sub
-
-    condition.DupeUnique = xlDuplicate
-    condition.Interior.Color = DUPLICATE_FILL_COLOR
-    condition.Font.Color = DUPLICATE_FONT_COLOR
+    'AddUniqueValues answers a UniqueValues, and DupeUnique belongs to that
+    'type rather than to FormatCondition. Holding the rule in a variable typed
+    'FormatCondition stops the project compiling on "Method or data member not
+    'found", so the rule is reached through the collection instead, the way
+    'VarWriter and SetupTranslationsTable both reach it.
+    With nameRange.FormatConditions(nameRange.FormatConditions.Count)
+        .DupeUnique = xlDuplicate
+        .Interior.Color = DUPLICATE_FILL_COLOR
+        .Font.Color = DUPLICATE_FONT_COLOR
+    End With
 End Sub
 
 Private Function ColumnRange(ByVal headerName As String, Optional ByVal includeHeaders As Boolean = False) As Range
