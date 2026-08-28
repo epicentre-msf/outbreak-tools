@@ -30,7 +30,7 @@ Option Explicit
 '-------------------------------------------------------------------------------
 '  .mock/designer_mock.xlsb            the designer-shaped worksheets
 '  src/bin/setup/setup_dev.xlsb        the setup to fill, copied per run
-'  src/bin/test-files/generic-test-setup.xlsb   what fills it
+'  src/tests/.input/package/generic-test-setup.xlsb  what fills it
 '  ribbons/_ribbontemplate_dev.xlsb    the ribbon template of the output
 '
 'plus the merged forms in .test-runner/forms/merged, which are NOT a checked-in
@@ -122,7 +122,7 @@ Private Sub ResolvePaths()
 
     DESIGNER_FILE = RepoFolder & "/.mock/designer_mock.xlsb"
     EMPTY_SETUP = RepoFolder & "/src/bin/setup/setup_dev.xlsb"
-    GENERIC_SETUP = RepoFolder & "/src/bin/test-files/generic-test-setup.xlsb"
+    GENERIC_SETUP = RepoFolder & "/src/tests/.input/package/generic-test-setup.xlsb"
     INJECTED_MODULE = RepoFolder & "/scripts/headless/vba/OBTSetupImportHeadless.bas"
     FILLED_SETUP = RepoFolder & "/.obt/draft/demo_setup_filled.xlsb"
     MERGED_FORMS = RepoFolder & "/.test-runner/forms/merged"

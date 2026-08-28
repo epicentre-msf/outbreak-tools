@@ -21,7 +21,7 @@ Option Explicit
 'THE TWO FILES IT NEEDS
 '-------------------------------------------------------------------------------
 '  src/bin/setup/setup_dev.xlsb          the setup to fill, copied per run
-'  src/bin/test-files/generic-test-setup.xlsb   the filled setup read from
+'  src/tests/.input/package/generic-test-setup.xlsb  the filled setup read from
 '
 'Both are gitignored binaries carried by the asset store, the same as every
 'other workbook this project builds against. A missing file is reported as a
@@ -79,7 +79,7 @@ Private Sub ResolvePaths()
     RepoFolder = RepoRoot(FALLBACK_ROOT)
 
     EMPTY_SETUP = RepoFolder & "/src/bin/setup/setup_dev.xlsb"
-    GENERIC_SETUP = RepoFolder & "/src/bin/test-files/generic-test-setup.xlsb"
+    GENERIC_SETUP = RepoFolder & "/src/tests/.input/package/generic-test-setup.xlsb"
     INJECTED_MODULE = RepoFolder & "/scripts/headless/vba/OBTSetupImportHeadless.bas"
     FILLED_SETUP = RepoFolder & "/.obt/draft/demo_setup_filled.xlsb"
 End Sub
