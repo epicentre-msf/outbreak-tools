@@ -89,6 +89,12 @@ Public Sub TestPrepareSeedsFlags()
     subject.SetFlag "chkAlert", False
     Assert.IsFalse subject.GetFlag("chkAlert"), "Alert flag should persist changes."
     Assert.AreEqual "No", subject.HiddenStore.ValueAsString("chkAlert"), "Hidden name should store No for disabled flags."
+
+    'The build path switch is off by default and takes a write on a
+    'workbook whose names predate it
+    Assert.IsFalse subject.GetFlag("chkBuildInPlace"), "Build-in-place flag should default to off."
+    subject.SetFlag "chkBuildInPlace", True
+    Assert.IsTrue subject.GetFlag("chkBuildInPlace"), "Build-in-place flag should persist changes."
     Exit Sub
 
 Fail:

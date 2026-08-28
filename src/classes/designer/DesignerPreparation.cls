@@ -52,6 +52,9 @@ Private this As TDesignerPreparation
 Private Const CLASS_NAME As String = "DesignerPreparation"
 Private Const FLAG_ALERT As String = "chkAlert"
 Private Const FLAG_INSTRUCT As String = "chkInstruct"
+'The build path switch. Off by default: the build runs in a hidden
+'instance on Windows, and Mac ignores the flag.
+Private Const FLAG_BUILD_IN_PLACE As String = "chkBuildInPlace"
 Private Const FLAG_ON As String = "Yes"
 Private Const FLAG_OFF As String = "No"
 
@@ -883,14 +886,17 @@ Private Sub EnsureHiddenStore()
 End Sub
 
 '@label:ensure-default-flags
-'@sub-title Ensure both default ribbon flags exist in the hidden store
+'@sub-title Ensure the default ribbon flags exist in the hidden store
 '@details
-'Calls EnsureName for chkAlert and chkInstruct with "Yes" as default,
-'creating the hidden names if they do not already exist. All checks
-'default to enabled per specification.
+'Calls EnsureName for chkAlert and chkInstruct with "Yes" as default and
+'for chkBuildInPlace with "No", creating the hidden names if they do not
+'already exist. SetFlag updates a name and raises on a missing one, so a
+'designer whose names predate a flag gets it here, on the first read or
+'write of any flag.
 Private Sub EnsureDefaultFlags()
     this.store.EnsureName FLAG_ALERT, FLAG_ON, HiddenNameTypeString
     this.store.EnsureName FLAG_INSTRUCT, FLAG_ON, HiddenNameTypeString
+    this.store.EnsureName FLAG_BUILD_IN_PLACE, FLAG_OFF, HiddenNameTypeString
 End Sub
 
 '@label:resolve-worksheet
