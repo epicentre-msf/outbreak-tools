@@ -216,7 +216,8 @@ Public Sub TestStatisticsAnswerTheCounts()
     Assert.AreEqual "Comparison statistics", bundle.CheckingTitle, "The statistics bundle carries its title"
     Assert.AreEqual 8, bundle.Length, "The statistics bundle carries eight lines"
     Assert.IsTrue InStr(1, bundle.ValueOf("stat-shared"), "3 shared", vbTextCompare) > 0, "The shared count is written"
-    Assert.IsTrue InStr(1, bundle.ValueOf("stat-share"), "66.7%", vbTextCompare) > 0, "The share is written as a percentage"
+    Assert.IsTrue InStr(1, bundle.ValueOf("stat-share"), Format$(2 / 3, "0.0%"), vbTextCompare) > 0, _
+                    "The share is written as a percentage"
 
     Exit Sub
 
