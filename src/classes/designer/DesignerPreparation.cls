@@ -747,7 +747,7 @@ Private Sub RegisterAllDropdowns()
               "FRA-Fran" & ChrW$(231) & "ais", _
               "POR-Portugu" & ChrW$(233) & "s", _
               "SPA-Espa" & ChrW$(241) & "ol")
-    RegisterDropdown DROP_EPIWEEK_START, Array("1", "2", "3", "4", "5", "6", "7")
+    RegisterDropdown DROP_EPIWEEK_START, Array("1", "2", "3", "4", "5", "6", "0")
     RegisterDropdown DROP_DESIGN_VALUES, Array("design 1", "design 2", "user defined")
 End Sub
 
