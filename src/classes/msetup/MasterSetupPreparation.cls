@@ -353,10 +353,13 @@ Private Function EnsureVariablesTable() As ListObject
 
     If table Is Nothing Then
         Set table = CreateVariablesTable(wsVars)
+        'The style goes on the table this class makes, and there alone. It
+        'used to go on every preparation, so a second Initialise put
+        'TableStyleMedium2 back over the style the owner had picked.
+        ApplyTableStyle table, VARIABLE_TABLE_STYLE
     End If
 
     EnsureTableHasRow table
-    ApplyTableStyle table, VARIABLE_TABLE_STYLE
 
     Set EnsureVariablesTable = table
 End Function
@@ -429,6 +432,8 @@ Private Sub EnsureTableHasRow(ByVal table As ListObject)
 End Sub
 
 '@Description("Apply a table style while ignoring styling errors on unsupported versions.")
+'@details Called on a freshly created table only: the style of a table the
+'workbook already carries is the owner's to set.
 Private Sub ApplyTableStyle(ByVal table As ListObject, ByVal tableStyle As String)
     If table Is Nothing Then Exit Sub
     If LenB(tableStyle) = 0 Then Exit Sub

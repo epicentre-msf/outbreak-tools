@@ -198,6 +198,35 @@ Fail:
 End Sub
 
 '@TestMethod("MasterSetupPreparation")
+'@sub-title A preparation styles the table it creates and leaves an existing one alone.
+'@details The style used to go on every run, so a second Initialise put
+'TableStyleMedium2 back over whatever the owner had picked on the sheet.
+Public Sub TestPrepareTwiceKeepsTheStyleOfTheVariablesTable()
+    Dim table As ListObject
+
+    CustomTestSetTitles Assert, "MasterSetupPreparation", "TestPrepareTwiceKeepsTheStyleOfTheVariablesTable"
+    On Error GoTo Fail
+
+    Subject.EnsureVariables
+
+    Set table = VariablesSheet.ListObjects(1)
+    Assert.AreEqual "TableStyleMedium2", TableStyleName(table), _
+                    "The table the preparation creates should carry the default style"
+
+    table.TableStyle = "TableStyleMedium3"
+
+    Subject.EnsureVariables
+
+    Set table = VariablesSheet.ListObjects(1)
+    Assert.AreEqual "TableStyleMedium3", TableStyleName(table), _
+                    "A second preparation should leave the style of the table alone"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareTwiceKeepsTheStyleOfTheVariablesTable"
+End Sub
+
+'@TestMethod("MasterSetupPreparation")
 Public Sub TestEnsureVariablesPublishesWorkbookRange()
     Dim manager As MasterSetupVariables
     Dim definedName As Name
@@ -426,6 +455,20 @@ Private Sub PrepareTaggedChoicesFixture(ByVal targetSheet As Worksheet)
     Set lo = targetSheet.ListObjects.Add(xlSrcRange, targetSheet.Range("A4:D5"), , xlYes)
     lo.Name = "Tab_Choices"
 End Sub
+
+'@description The name of the style a table carries, empty when it carries none.
+'@details ListObject.TableStyle answers a TableStyle object on a styled table
+'and an empty string on a table with no style at all, so the name is read
+'through a guard and the plain read is the fallback.
+Private Function TableStyleName(ByVal table As ListObject) As String
+    If table Is Nothing Then Exit Function
+
+    On Error Resume Next
+        TableStyleName = table.TableStyle.Name
+        If LenB(TableStyleName) = 0 Then TableStyleName = CStr(table.TableStyle)
+        Err.Clear
+    On Error GoTo 0
+End Function
 
 '@description Whether a range carries a list validation over all its cells.
 Private Function ColumnHasListValidation(ByVal target As Range) As Boolean
