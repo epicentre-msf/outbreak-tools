@@ -25,8 +25,8 @@ names, so the walk is the largest cost this class has. An instance pays it
 once and answers every later read out of memory, keyed by name.</p>
 <p>A caller that wants ONE value off a host it will not touch again calls
 QuickValue instead, which skips the walk entirely.</p>
-<p><strong>Depends on:</strong> <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, What a Names collection raises for an identifier it does not hold. Excel, answers 1004 and the collection itself answers 9, so both are read as &quot;the, container has no such name&quot;.</p>
-<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<p><strong>Depends on:</strong> <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, Prefix taking the rest of an Excel-reserved identifier, see SanitizeNameId., What a Names collection raises for an identifier it does not hold. Excel, answers 1004 and the collection itself answers 9, so both are read as &quot;the, container has no such name&quot;.</p>
+<p><strong>Version:</strong> 1.1 (2026-08-27)</p>
 </div>
 </details>
 <details open class="doc-section" id="factory">
@@ -415,6 +415,22 @@ internal methods receive pre-sanitized identifiers.</p>
 </ul>
 <p><strong>Returns:</strong> String. An Excel-safe name identifier.</p>
 <hr />
+<h3 id="int-stripexceltag">StripExcelTag <a class="anchor-link" href="#int-stripexceltag">#</a></h3>
+<p><em>strip-excel-tag</em></p>
+<p><strong>Drop the Excel tag from a reserved identifier</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function StripExcelTag(ByVal nameId As String) As String
+</code></pre>
+<p>&quot;_xlfn.SINGLE&quot; keeps &quot;SINGLE&quot;: everything up to and including the first
+period goes. An identifier with no period, &quot;_xlws&quot;, keeps what follows the
+&quot;_xl&quot; prefix. An empty rest answers &quot;name&quot; so the rewritten identifier is
+still a legal one.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nameId</code>: String. A sanitized identifier that starts &quot;_xl&quot;.</li>
+</ul>
+<p><strong>Returns:</strong> String. The part of the identifier that is the caller's.</p>
+<hr />
 <h3 id="int-metadatakey">MetadataKey <a class="anchor-link" href="#int-metadatakey">#</a></h3>
 <p><em>metadata-key</em></p>
 <p><strong>Normalise a name identifier for case-insensitive lookup</strong></p>
@@ -484,6 +500,24 @@ store. Nothing in the tree writes one.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CompareName(ByVal definition As Name, ByVal expected As String) As Boolean
 </code></pre>
+<hr />
+<h3 id="int-isexcelreservedname">IsExcelReservedName <a class="anchor-link" href="#int-isexcelreservedname">#</a></h3>
+<p><em>excel-reserved-name</em></p>
+<p><strong>Whether an identifier belongs to Excel's own reserved namespace</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsExcelReservedName(ByVal nameId As String) As Boolean
+</code></pre>
+<p>Everything Excel reserves for itself starts &quot;_xl&quot;: _xlfn and _xlfnodbc for
+future functions, _xleta and _xlpm for LAMBDA, _xludf, _xlws. The family grows
+with each release, so the prefix is matched rather than the members listed --
+a list would be one Excel version behind the first time it mattered.</p>
+<p>Nothing in this project names anything &quot;<em>xl...&quot;. Its own hidden names carry
+the &quot;__&quot; and &quot;RNG</em>&quot; shapes, so the prefix costs no real name.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nameId</code>: String. The simple (unqualified) identifier.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the name is Excel's own.</p>
 <hr />
 <h3 id="int-extractsimplename">ExtractSimpleName <a class="anchor-link" href="#int-extractsimplename">#</a></h3>
 <p><em>extract-simple-name</em></p>
@@ -685,7 +719,7 @@ metadata index lookups when the record is already resolved.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (84 file(s))</summary>
+<summary>Used in (86 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
@@ -742,11 +776,13 @@ metadata index lookups when the record is already resolved.</p>
 <li>TestDesignerMulti.bas</li>
 <li>TestDesignerPreparation.bas</li>
 <li>TestDesignerTranslation.bas</li>
+<li>TestGenerationHost.bas</li>
 <li>TestInitTransfer.bas</li>
 <li>TestCheckingOutput.bas</li>
 <li>TestDataSheet.bas</li>
 <li>TestDropdownLists.bas</li>
 <li>TestHiddenNames.bas</li>
+<li>TestGeoModule.bas</li>
 <li>TestLLGeo.bas</li>
 <li>TestLLSpatial.bas</li>
 <li>GeoTestFixture.bas</li>

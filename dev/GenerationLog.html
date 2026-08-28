@@ -42,6 +42,25 @@ the section writes the held bundles in one pass, so the section title
 lands once as a level one heading and every part of that build reads as
 a subsection under it. Without an open section a bundle is written on
 its own, which is what the single build does.</p>
+</div>
+</details>
+<details open class="doc-section" id="bundles-carried-as-text">
+<summary>BUNDLES CARRIED AS TEXT</summary>
+<div class="section-body">
+<p>The build runs as steps, and a step may run in another Excel instance
+where the log cannot reach. BundleText turns one bundle into a string
+that ends on a form feed, so the texts of several bundles are joined by
+plain concatenation; CollectText takes such a string back and collects
+every bundle in it, record-only flag included. Both sit on this class
+so the two sides of the carriage share one shape. A label carrying a
+tab or a vertical tab is cut at that character.</p>
+</div>
+</details>
+<details open class="doc-section" id="showing-the-report">
+<summary>SHOWING THE REPORT</summary>
+<div class="section-body">
+<p>Finish closes the run and leaves the worksheet where it is. The driver
+shows it once, at the end, through ShowReport, with the screen back on.</p>
 <p><strong>Depends on:</strong> <a href="CheckingOutput.html">CheckingOutput</a>, <a href="Checking.html">Checking</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a>, <a href="LinelistSpecs.html">LinelistSpecs</a></p>
 </div>
 </details>
@@ -71,15 +90,69 @@ later, through Start.</p>
 <details open class="doc-section" id="run-lifecycle">
 <summary>Run lifecycle</summary>
 <div class="section-body">
+<h3 id="specificationbundles">SpecificationBundles <a class="anchor-link" href="#specificationbundles">#</a></h3>
+<p><em>specification-bundles</em></p>
+<p><strong>The bundles the specification collaborators filed, in harvest order</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function SpecificationBundles(ByVal specs As LinelistSpecs) As BetterArray
+</code></pre>
+<p>The list Harvest walks, answered on its own so a build step running
+away from the log can carry the same bundles as text. The order is the
+dictionary, the choices, the exports, the analysis, the passwords, the
+format and the specifications themselves. A collaborator with nothing
+filed is skipped. Works on the predeclared instance: it reads no state.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>specs</code>: LinelistSpecs. The specifications after Prepare.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The Checking bundles, 1-based. Empty when nothing was filed.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When specs is Nothing.</li>
+</ul>
+<hr />
+<h3 id="bundletext">BundleText <a class="anchor-link" href="#bundletext">#</a></h3>
+<p><em>bundle-text</em></p>
+<p><strong>One bundle as text, ready to be joined with others</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function BundleText(ByVal checks As Checking, _
+                           Optional ByVal recordOnly As Boolean = False) As String
+</code></pre>
+<p>The title line, then one line per entry, then the bundle end. An empty
+bundle answers an empty string, so a caller may append the answer
+without looking at it. Works on the predeclared instance.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>checks</code>: Checking. The bundle to carry.</li>
+<li><code>recordOnly</code>: Optional Boolean. True marks the bundle for the record alone.</li>
+</ul>
+<p><strong>Returns:</strong> String. The bundle text, or empty when the bundle holds nothing.</p>
+<hr />
+<h3 id="collecttext">CollectText <a class="anchor-link" href="#collecttext">#</a></h3>
+<p><em>collect-text</em></p>
+<p><strong>Take every bundle carried in one text into the run</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub CollectText(ByVal bundlesText As String)
+</code></pre>
+<p>The text is what one or more BundleText answers make when joined. Each
+bundle is rebuilt as a Checking with its title, subtitle and scopes and
+handed to Collect with its record-only flag. A line short of its three
+fields is skipped, and a key the bundle already carries is skipped too.
+An empty text, and a run that is closed, take nothing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>bundlesText</code>: String. The joined bundle texts.</li>
+</ul>
+<hr />
 <h3 id="showreport">ShowReport <a class="anchor-link" href="#showreport">#</a></h3>
 <p><em>show-report</em></p>
 <p><strong>Bring the report worksheet to the front</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ShowReport() As Boolean
 </code></pre>
-<p>The one owner of showing the report. Finish calls it at the end of a run and
-the ribbon calls it whenever the user asks for the last report, so a report
-opened either way opens the same way.</p>
+<p>The one owner of showing the report. The drivers call it once, at the end
+of a run, and the ribbon calls it whenever the user asks for the last
+report, so a report opened either way opens the same way.</p>
 </div>
 </details>
 <details open class="doc-section" id="why-the-workbook-is-activated-first">
@@ -308,9 +381,34 @@ collaborators have filed their entries.</p>
 <li>ProjectError.InvalidArgument When specs is Nothing.</li>
 </ul>
 <hr />
+<h3 id="int-collectonetext">CollectOneText <a class="anchor-link" href="#int-collectonetext">#</a></h3>
+<p><em>collect-one-text</em></p>
+<p><strong>Rebuild one bundle from its text and collect it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CollectOneText(ByVal bundleText As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>bundleText</code>: String. One bundle without its end mark.</li>
+</ul>
+<hr />
+<h3 id="int-scopefromword">ScopeFromWord <a class="anchor-link" href="#int-scopefromword">#</a></h3>
+<p><em>scope-from-word</em></p>
+<p><strong>The scope a plain scope word stands for</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ScopeFromWord(ByVal scopeWord As String) As Byte
+</code></pre>
+<p>The reverse of ScopeText. A word this class does not know answers the
+note scope, the way Checking reads an unknown type label.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scopeWord</code>: String. Error, Warning, Info, Success or Note.</li>
+</ul>
+<p><strong>Returns:</strong> Byte. The CheckingScope value.</p>
+<hr />
 <h3 id="int-finish">Finish <a class="anchor-link" href="#int-finish">#</a></h3>
 <p><em>finish</em></p>
-<p><strong>Close the run and show the worksheet</strong></p>
+<p><strong>Close the run</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Finish(ByVal outcome As String, _
                   Optional ByVal sheetCount As Long = -1, _
@@ -318,12 +416,12 @@ collaborators have filed their entries.</p>
 </code></pre>
 <p>Writes the closing bundle (the outcome, the elapsed seconds, and the
 sheet and variable counts when the driver passes them), installs the
-worksheet filter handler, makes the worksheet visible and brings it to
-the front, then releases the writer. A workbook that refuses the code
-injection the filter needs gets a warning entry in the closing bundle
-and the run still closes whole. The record stays alive for the text
-export. A log that never started, or already finished, ignores the
-call.</p>
+worksheet filter handler, then releases the writer. A workbook that
+refuses the code injection the filter needs gets a warning entry in the
+closing bundle and the run still closes whole. The record stays alive
+for the text export. A log that never started, or already finished,
+ignores the call. The worksheet is left as it is: the driver shows it
+through ShowReport once its screen is back on.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>outcome</code>: String. The outcome text of the run.</li>
@@ -399,15 +497,17 @@ text lines.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (8 file(s))</summary>
+<summary>Used in (10 file(s))</summary>
 <ul>
 <li><a href="CodeTransfer.html">CodeTransfer.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
 <li><a href="LLLog.html">LLLog.cls</a></li>
+<li>BuildSteps.bas</li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>EventsDesignerMulti.bas</li>
 <li>InitTransfer.bas</li>
 <li>HeadlessBuild.bas</li>
+<li>TestDesignerMulti.bas</li>
 <li>TestGenerationLog.bas</li>
 </ul>
 </details>

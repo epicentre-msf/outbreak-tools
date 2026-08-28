@@ -154,7 +154,9 @@ very hidden later.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyTableStyle(ByVal table As ListObject, ByVal tableStyle As String)
 </code></pre>
-<p>(&quot;Apply a table style while ignoring styling errors on unsupported versions.&quot;)</p>
+<p>(&quot;Apply a table style while ignoring styling errors on unsupported versions.&quot;)
+Called on a freshly created table only: the style of a table the
+workbook already carries is the owner's to set.</p>
 <hr />
 <h3 id="int-defaultvariableheaders">DefaultVariableHeaders <a class="anchor-link" href="#int-defaultvariableheaders">#</a></h3>
 <p><strong>Signature:</strong></p>

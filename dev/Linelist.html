@@ -39,10 +39,19 @@ the user learns which sheet came out under a different name.</p>
 <summary>WHAT THIS CLASS REPORTS</summary>
 <div class="section-body">
 <p>Prepare files its own entries and folds in the ones CodeTransfer filed, so
-HasCheckings and CheckingValues answer over both. clickGenerate flushes them
-into the generation report right after Prepare returns.</p>
+HasCheckings and CheckingValues answer over both. The build driver flushes
+them into the generation report right after Prepare returns.</p>
+</div>
+</details>
+<details open class="doc-section" id="a-build-that-stops-keeps-its-file">
+<summary>A BUILD THAT STOPS KEEPS ITS FILE</summary>
+<div class="section-body">
+<p>DiscardBuild is the one exit of a build that stops before SaveLL. It saves
+the unfinished workbook as __temp.xlsb in the temporary repository, closes
+it and answers the path, so the report can name what the user may open.
+No question is asked: the build may run in an instance nobody sees.</p>
 <p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLSheets.html">LLSheets</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="LLFormat.html">LLFormat</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="CustomPivotTable.html">CustomPivotTable</a>, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="Buttons.html">Buttons</a>, <a href="CodeTransfer.html">CodeTransfer</a>, <a href="Passwords.html">Passwords</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="ShowHideStore.html">ShowHideStore</a>, <a href="AnalysisRanges.html">AnalysisRanges</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, <a href="LLTranslation.html">LLTranslation</a></p>
-<p><strong>Version:</strong> 1.4 (2026-08-01)</p>
+<p><strong>Version:</strong> 1.6 (2026-08-28)</p>
 </div>
 </details>
 <details open class="doc-section" id="factory">
@@ -328,41 +337,30 @@ appropriate visible sheet (admin or instruction), closes the workbook,
 and cleans up temporary files via TemporaryRepos.Reset.</p>
 <p>Both cached references to the workbook are dropped once it is closed. This
 instance held one and LinelistSpecs held the other, and a read of either after
-the close raised an automation error. The read that mattered was ErrorManage,
-reached from clickGenerate's cleanup, so the failure landed inside the error
+the close raised an automation error. The read that mattered was the discard
+reached from a driver's cleanup, so the failure landed inside the error
 handler and hid the error that got it there.</p>
-<hr />
-<h3 id="errormanage">ErrorManage <a class="anchor-link" href="#errormanage">#</a></h3>
-<p><em>error-manage</em></p>
-<p><strong>Display an error dialog for incomplete linelist operations</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub ErrorManage(Optional ByVal textMessage As String = vbNullString)
-</code></pre>
-<p>Shows a message box with the error details and asks the user whether
-they want to view the incomplete linelist workbook or close it without
-saving. If the user chooses Yes the workbook's Application is made
-visible; otherwise the workbook is closed without saving.</p>
-<p>A workbook SaveLL has already closed leaves nothing to show, and the message
-says so. This routine is reached from a caller's error handler, so it has to
-finish whatever state the build left behind.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>textMessage</code>: Optional String. Error description to display.
-Defaults to vbNullString.</li>
-</ul>
 <hr />
 <h3 id="discardbuild">DiscardBuild <a class="anchor-link" href="#discardbuild">#</a></h3>
 <p><em>discard-build</em></p>
-<p><strong>Close the incomplete output workbook and drop the references to it</strong></p>
+<p><strong>Keep the unfinished output workbook on disk and close it</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub DiscardBuild()
+<pre><code class="language-vb">Public Function DiscardBuild() As String
 </code></pre>
-<p>Closes the output workbook of a build that stopped before SaveLL, with its
-changes thrown away, and drops both cached references to it: the one this
-instance holds and the one LinelistSpecs holds. The multi generation driver
-calls it after a failed row, so the loop moves to the next row with no
-workbook left open behind it; ErrorManage routes its close branch here. When
-there is no output workbook the call exits quietly.</p>
+<p>A build that stopped before SaveLL leaves its output workbook open. This
+saves it as __temp.xlsb in the temporary repository, closes it and drops
+both cached references to it: the one this instance holds and the one
+LinelistSpecs holds. The file is marked to survive the drop of the
+repository, so the user can open what the build managed to write, and
+the path is answered so the caller can name it in the report.</p>
+<p>The repository is the one Prepare took from the specifications. Before
+Prepare it is built over the output folder entry; with no folder known
+the workbook is closed with its changes thrown away and the answer is
+empty. With no output workbook at all the call exits quietly.</p>
+<p>A save that fails raises nothing here: this runs from failure paths, and
+the fault that got the caller here is the one to report. The workbook is
+closed either way and the answer is then empty.</p>
+<p><strong>Returns:</strong> String. The full path of the kept file, or empty when nothing was kept.</p>
 <hr />
 </div>
 </details>
@@ -432,6 +430,18 @@ visible worksheet closes the list.</p>
 <li><code>outWkb</code>: Workbook. The workbook to walk.</li>
 </ul>
 <p><strong>Returns:</strong> Worksheet. The first visible worksheet, or Nothing when none is.</p>
+<hr />
+<h3 id="int-resolvetemporaryrepos">ResolveTemporaryRepos <a class="anchor-link" href="#int-resolvetemporaryrepos">#</a></h3>
+<p><em>resolve-temporary-repos</em></p>
+<p><strong>The temporary repository of the build, found or built over the output folder</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveTemporaryRepos() As TemporaryRepos
+</code></pre>
+<p>Prepare takes the repository from the specifications. A build that stops
+before Prepare has none yet, so one is built over the output folder entry
+when that entry is filled. An empty entry answers Nothing, and the read of
+it is shielded: this is called from failure paths.</p>
+<p><strong>Returns:</strong> TemporaryRepos. The repository, or Nothing when no folder is known.</p>
 <hr />
 <h2 id="int-private-workbook-management">Private - Workbook management</h2>
 <h3 id="int-outputwkb">OutputWkb <a class="anchor-link" href="#int-outputwkb">#</a></h3>
@@ -774,8 +784,8 @@ error attribution across all methods in this class.</p>
 <li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
 <li><a href="LLLog.html">LLLog.cls</a></li>
 <li><a href="LLTranslation.html">LLTranslation.cls</a></li>
+<li>BuildSteps.bas</li>
 <li>EventsDesignerAdvanced.bas</li>
-<li>EventsDesignerMulti.bas</li>
 <li>InitTransfer.bas</li>
 <li>HeadlessBuild.bas</li>
 <li>CustomLinelistFunctions.bas</li>

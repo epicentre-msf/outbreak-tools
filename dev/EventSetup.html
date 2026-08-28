@@ -42,7 +42,7 @@ Each file keeps the constants it needs. Change one and change the other.</p>
 setup sheet, and BeginSheetUpdate and EndSheetUpdate go through it. The ribbon
 calls it too, so a sheet unlocked on one path and locked again on the other
 comes back with the flags it started with.</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Passwords.html">Passwords</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="UpdatedValues.html">UpdatedValues</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLExport.html">LLExport</a>, <a href="Analysis.html">Analysis</a>, <a href="CustomTable.html">CustomTable</a>, <a href="ChoiceFormula.html">ChoiceFormula</a>, RibbonDev, ProjectError</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Passwords.html">Passwords</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="UpdatedValues.html">UpdatedValues</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLExport.html">LLExport</a>, <a href="Analysis.html">Analysis</a>, <a href="CustomTable.html">CustomTable</a>, <a href="ChoiceFormula.html">ChoiceFormula</a>, ProjectError</p>
 </div>
 </details>
 <details open class="doc-section" id="factory-helpers">
@@ -128,10 +128,10 @@ and a sheet protected without it is closed to this code as much as to the user.<
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub OnSheetActivate(ByVal sh As Worksheet)
 </code></pre>
-<p>Refreshes the three ribbon controls whose visibility depends on the active
-sheet, and only when the answer they were last given has changed. When the
-Analysis sheet becomes active, primes the analysis table wrappers and asks the
-update watcher whether the dropdowns need rebuilding.</p>
+<p>When the Analysis sheet becomes active, primes the analysis table wrappers and
+asks the update watcher whether the dropdowns need rebuilding. Every other
+sheet activates without work: the ribbon buttons no longer change with the
+sheet, each callback checks the sheet it was clicked on instead.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The worksheet that became active.</li>
@@ -392,24 +392,6 @@ stops that.</p>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2 id="int-event-handling-and-operations">Event handling and operations</h2>
-<h3 id="int-refreshsheetbuttons">RefreshSheetButtons <a class="anchor-link" href="#int-refreshsheetbuttons">#</a></h3>
-<p><em>refresh-sheet-buttons</em></p>
-<p><strong>Invalidate the three sheet-dependent ribbon controls when their answer changes.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RefreshSheetButtons(ByVal sh As Worksheet)
-</code></pre>
-<p>SetupButtonVisible answers one question for all three controls: whether the
-active sheet is Translations. Invalidating them on every activation asks the
-ribbon to re-read an answer it already has, so the answer is remembered here
-and the three calls are made only when the Translations boundary is crossed.
-The first activation of a session always refreshes, because no answer has been
-given yet.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sh</code>: Worksheet. The worksheet that became active.</li>
-</ul>
-<hr />
 <h2 id="int-internal-helpers">Internal helpers</h2>
 <h3 id="int-resetinternalcaches">ResetInternalCaches <a class="anchor-link" href="#int-resetinternalcaches">#</a></h3>
 <p><em>reset-internal-caches</em></p>
@@ -457,13 +439,6 @@ callers must always check this.updater before use.</p>
 <p>Creates an DropdownLists instance from the &quot;__variables&quot; worksheet using
 the standard dropdown prefix. Exits silently when the worksheet does not
 exist or creation fails.</p>
-<hr />
-<h3 id="int-ensureribbon">EnsureRibbon <a class="anchor-link" href="#int-ensureribbon">#</a></h3>
-<p><em>ensure-ribbon</em></p>
-<p><strong>Lazily cache the ribbon instance.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureRibbon()
-</code></pre>
 <hr />
 <h3 id="int-ensuredictionary">EnsureDictionary <a class="anchor-link" href="#int-ensuredictionary">#</a></h3>
 <p><em>ensure-dictionary</em></p>

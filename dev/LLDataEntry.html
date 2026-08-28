@@ -53,7 +53,7 @@ is the threshold CustomTable.RemoveRows compares against.
 filtered_sheet   EventLinelist, LLExporter, LLSpatial, ExportButton</p>
 <table>_go_to_section   the GoTo dropdown validation
 <p><strong>Depends on:</strong> <a href="Linelist.html">Linelist</a>, <a href="LLSheets.html">LLSheets</a>, <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLFormat.html">LLFormat</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="Passwords.html">Passwords</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="Buttons.html">Buttons</a>, <a href="CustomPivotTable.html">CustomPivotTable</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="SectionBuilder.html">SectionBuilder</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, The prefix Linelist.ScopedName puts on a CRF companion. Spelled the same way, there and in EventsLinelistButtons, and it is part of the sheet's stored table, name, so it is copied here exactly., What Excel accepts for a worksheet name. Linelist.ScopedName cuts to the same, figure, so a longer name still builds; this class reads it to tell the user, which dictionary names come out shortened., How far the printed companion is grown once its ListObject is made, and the, same headroom the filtered companion is given., Button shape codes</p>
-<p><strong>Version:</strong> 1.1 (2026-07-31)</p>
+<p><strong>Version:</strong> 1.2 (2026-08-27)</p>
 </div>
 </details>
 <details open class="doc-section" id="instantiation">
@@ -336,7 +336,9 @@ says both are allowed and LeaveDebugMode restores the sheet the same way.</p>
 <p>ActiveWindow belongs to whichever sheet is active, so the activation is tested
 before the three writes. A sheet that refuses to activate - a hidden one, or a
 workbook whose structure is protected - used to have the freeze applied to
-whatever worksheet was active at the time, with no message.</p>
+whatever worksheet was active at the time, with no message. The active sheet
+and the active window are read from the Application the sheet lives in, so the
+test holds in whatever Excel instance the build runs in.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The sheet whose panes are frozen.</li>
@@ -572,7 +574,7 @@ sections were never built answers zeros, which is what the counts are.</p>
 <li><a href="LLTranslation.html">LLTranslation.cls</a></li>
 <li><a href="DiseaseExporter.html">DiseaseExporter.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
-<li>EventsDesignerAdvanced.bas</li>
+<li>BuildSteps.bas</li>
 <li>HeadlessBuild.bas</li>
 <li>EventsLinelistButtons.bas</li>
 <li>TestLLSheets.bas</li>

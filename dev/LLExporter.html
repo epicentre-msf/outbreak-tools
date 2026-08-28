@@ -29,6 +29,14 @@ EpiWeekStart answers the first day of the epidemiological week, and
 LastExportPassword answers the password the last export was saved under.
 LastFailure answers what the last export failed on, for a caller writing the
 failure into the log.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-application-the-exports-run-in">
+<summary>THE APPLICATION THE EXPORTS RUN IN</summary>
+<div class="section-body">
+<p>Every output workbook is added in the Application of the source linelist, and
+CreateFromFile opens its file in the Application it is given, the running one
+by default. The class reaches Excel through those two objects alone.</p>
 <p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLExport.html">LLExport</a>, <a href="Passwords.html">Passwords</a>, <a href="CustomTable.html">CustomTable</a>, <a href="LLLog.html">LLLog</a>, <a href="DataSheet.html">DataSheet</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLChoices.html">LLChoices</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="ShowHide.html">ShowHide</a>, <a href="ShowHideLayout.html">ShowHideLayout</a>, <a href="ShowHideStore.html">ShowHideStore</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="ChoiceKeys.html">ChoiceKeys</a></p>
 </div>
 </details>
@@ -58,7 +66,8 @@ and returns a new LLExporter instance. Called on the predeclared instance.</p>
 <p><strong>Create an exporter on a linelist file, opened here</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function CreateFromFile(ByVal filePath As String, _
-                               Optional ByVal password As String = vbNullString) As LLExporter
+                               Optional ByVal password As String = vbNullString, _
+                               Optional ByVal excelApplication As Application = Nothing) As LLExporter
 </code></pre>
 <p>Opens the linelist file at the given path, read-only and with the given
 password, and builds an exporter on it. The workbook opened here belongs to
@@ -74,6 +83,8 @@ state, events suppressed, before calling here.</p>
 <ul>
 <li><code>filePath</code>: String. Full path of the linelist file.</li>
 <li><code>password</code>: Optional String. The password the file opens with. Defaults to none.</li>
+<li><code>excelApplication</code>: Optional Application. The Excel instance the file is
+looked up and opened in. Defaults to the running Application.</li>
 </ul>
 <p><strong>Returns:</strong> LLExporter. An instance bound to the opened workbook.</p>
 <p><strong>Throws:</strong></p>
@@ -285,13 +296,15 @@ call even when no workbook is open.</p>
 <h2 id="int-factory">Factory</h2>
 <h3 id="int-findopenworkbook">FindOpenWorkbook <a class="anchor-link" href="#int-findopenworkbook">#</a></h3>
 <p><em>find-open-workbook</em></p>
-<p><strong>The workbook of this session already open on a path, or Nothing</strong></p>
+<p><strong>The workbook of an Excel instance already open on a path, or Nothing</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function FindOpenWorkbook(ByVal filePath As String) As Workbook
+<pre><code class="language-vb">Private Function FindOpenWorkbook(ByVal filePath As String, _
+                                  ByVal excelApp As Application) As Workbook
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>filePath</code>: String. Full path to look for.</li>
+<li><code>excelApp</code>: Application. The instance whose open workbooks are searched.</li>
 </ul>
 <p><strong>Returns:</strong> Workbook. The open workbook, or Nothing when the path is open nowhere.</p>
 <hr />
@@ -528,6 +541,16 @@ answered an empty LastFailure and the form had nothing to log.</p>
 <p><strong>Returns:</strong> LLGeo. Geo instance from the Geo sheet.</p>
 <hr />
 <h2 id="int-private-output-workbook-management">Private - Output Workbook Management</h2>
+<h3 id="int-hostapplication">HostApplication <a class="anchor-link" href="#int-hostapplication">#</a></h3>
+<p><em>host-application</em></p>
+<p><strong>The Excel instance the source linelist lives in</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HostApplication() As Application
+</code></pre>
+<p>Every output workbook is added there, so an export runs in the instance that
+holds its source, whichever instance that is.</p>
+<p><strong>Returns:</strong> Application. The Application of the source workbook.</p>
+<hr />
 <h3 id="int-createoutputworkbook">CreateOutputWorkbook <a class="anchor-link" href="#int-createoutputworkbook">#</a></h3>
 <p><em>create-output-workbook</em></p>
 <p><strong>Create a new minimized output workbook</strong></p>

@@ -59,6 +59,10 @@ translation are returned as-is.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LanguagesList() As BetterArray
 </code></pre>
+<p>A table carrying its tag column alone answers an empty list. The
+language block is resized onto the columns the table has: read as a plain
+Offset it reached one cell past the table, and whatever the sheet held
+there was answered as a language.</p>
 <p><strong>Returns:</strong> BetterArray. Each language header, excluding the helper/tag column.</p>
 <hr />
 <h3 id="name">Name <a class="anchor-link" href="#name">#</a></h3>
@@ -248,12 +252,15 @@ Formulas.CleanString replaces.</p>
 <pre><code class="language-vb">Private Function RangeBlock(ByVal target As Range) As Variant
 </code></pre>
 <p>Range.Value hands back a plain value for a single cell, so that case is
-wrapped to keep one shape for every caller.</p>
+wrapped to keep one shape for every caller.
+A range that is Nothing answers a one cell block holding nothing, not Empty:
+every caller walks the answer with LBound and UBound, and those raise 13 on
+an Empty. The reader then finds no tag, which is what an absent range means.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>target</code>: Range. The range to read.</li>
 </ul>
-<p><strong>Returns:</strong> Variant. A two dimensional array, or Empty when target is Nothing.</p>
+<p><strong>Returns:</strong> Variant. A two dimensional array, always.</p>
 <hr />
 <h3 id="int-textof">TextOf <a class="anchor-link" href="#int-textof">#</a></h3>
 <p><em>text-of</em></p>
@@ -284,6 +291,9 @@ wrapped to keep one shape for every caller.</p>
 <p>The table name, the address of its body and the target language. A row added
 or removed, a column added or removed, a table replaced or a language switched
 all change it, and each one is a reason to read the table again.</p>
+<p>The empty table is spelled out with If, not with IIf: IIf evaluates both of
+its arms, so the address of a body range that is Nothing was read on a table
+with no data row and raised 91 through every public translation call.</p>
 <p><strong>Returns:</strong> String. The signature of the table as it stands now.</p>
 <hr />
 <h3 id="int-refreshlookup">RefreshLookup <a class="anchor-link" href="#int-refreshlookup">#</a></h3>

@@ -325,11 +325,12 @@ design values dropdown lists.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub HideWorksheets(ByRef devManager As Development)
 </code></pre>
-<p>Sets __pass, __formula and __dropdowns to xlSheetVeryHidden. __formatter
-and __check are deliberately left as they are: __formatter carries the
-formats a user picks and __check carries the generation report, so a
-prepared designer keeps both on screen. Sets LinelistTranslation and
-DesignerTranslation to
+<p>Sets __pass, __formula, __dropdowns and Geo to xlSheetVeryHidden. The Geo
+sheet of the designer is an empty template: the geobase is imported on the
+linelist, never here, so nobody edits it by hand. __formatter and __check
+are deliberately left as they are: __formatter carries the formats a user
+picks and __check carries the generation report, so a prepared designer
+keeps both on screen. Sets LinelistTranslation and DesignerTranslation to
 xlSheetHidden (visible in the VBA editor for developers). When a
 development manager is provided, all sheets are also registered via
 AddHiddenSheet for deployment. Silently skips any worksheet that does
@@ -507,13 +508,15 @@ HiddenNames.Create with the host workbook. Subsequent calls are no-ops.</p>
 <hr />
 <h3 id="int-ensuredefaultflags">EnsureDefaultFlags <a class="anchor-link" href="#int-ensuredefaultflags">#</a></h3>
 <p><em>ensure-default-flags</em></p>
-<p><strong>Ensure both default ribbon flags exist in the hidden store</strong></p>
+<p><strong>Ensure the default ribbon flags exist in the hidden store</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDefaultFlags()
 </code></pre>
-<p>Calls EnsureName for chkAlert and chkInstruct with &quot;Yes&quot; as default,
-creating the hidden names if they do not already exist. All checks
-default to enabled per specification.</p>
+<p>Calls EnsureName for chkAlert and chkInstruct with &quot;Yes&quot; as default and
+for chkBuildInPlace with &quot;No&quot;, creating the hidden names if they do not
+already exist. SetFlag updates a name and raises on a missing one, so a
+designer whose names predate a flag gets it here, on the first read or
+write of any flag.</p>
 <hr />
 <h3 id="int-resolveworksheet">ResolveWorksheet <a class="anchor-link" href="#int-resolveworksheet">#</a></h3>
 <p><em>resolve-worksheet</em></p>
@@ -639,15 +642,16 @@ overlap with existing ListObjects or other content.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (7 file(s))</summary>
+<summary>Used in (8 file(s))</summary>
 <ul>
+<li><a href="GenerationHost.html">GenerationHost.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>EventsDesignerCore.bas</li>
 <li>EventsDesignerMulti.bas</li>
-<li>InitTransfer.bas</li>
 <li>HeadlessBuild.bas</li>
 <li>TestDesignerPreparation.bas</li>
+<li>TestGenerationHost.bas</li>
 </ul>
 </details>
   </main>

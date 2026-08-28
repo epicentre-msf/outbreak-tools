@@ -18,7 +18,7 @@ code artefacts between disk and the host workbook VBProject, and executes
 deployment by protecting and hiding registered worksheets. Consumers
 interact with the Development class using the predeclared factory
 pattern (Development.Create).</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Passwords.html">Passwords</a></p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Passwords.html">Passwords</a>, TAG_FORMS above drives the deployment job: it copies a standard module's code, into a UserForm already in the workbook. TAG_FORM_FILES below drives the import, job: it reads a .frm file from disk into the workbook. Two jobs, two tags.</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
@@ -173,6 +173,26 @@ form&quot;. Entries in this table drive the AddFormsCodes and Deploy workflows,
 which copy code from a standard module into the code-behind of a UserForm
 component. A confirmation dialog is shown when prompts are enabled.
 (&quot;Create a forms mapping table used for code transfers to userforms.&quot;)</p>
+<p><strong>Returns:</strong> ListObject. The newly created table, or Nothing when the user
+declines the confirmation prompt.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When Initialise has not been called.</li>
+</ul>
+<hr />
+<h3 id="int-addformfilestable">AddFormFilesTable <a class="anchor-link" href="#int-addformfilestable">#</a></h3>
+<p><em>add-form-files-table</em></p>
+<p><strong>Create a form files table on the code worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function AddFormFilesTable() As ListObject
+</code></pre>
+<p>Creates a new ListObject with a single &quot;forms&quot; column. Each entry names a
+UserForm whose .frm file is read from the forms folder and imported into
+the workbook. The .frx file beside it is picked up by the VBE on its own.
+This table carries the tag &quot;general forms&quot;. AddFormsTable carries
+&quot;general form modules&quot; and does the deployment copy job.
+A confirmation dialog is shown when prompts are enabled.
+(&quot;Create a form files table used to import .frm files from disk.&quot;)</p>
 <p><strong>Returns:</strong> ListObject. The newly created table, or Nothing when the user
 declines the confirmation prompt.</p>
 <p><strong>Throws:</strong></p>
@@ -579,8 +599,8 @@ sheet protection.
 components listed in development tables.</p>
 <p>Reads folder settings from the Dev sheet, then walks every ListObject on
 each host worksheet. Each table is passed to ProcessListObject, which
-interprets the tag above the table to decide scope (modules or classes),
-target folder, and whether interfaces should be included.
+interprets the tag above the table to decide scope (modules, classes or
+form files), target folder, and whether interfaces should be included.
 (&quot;Iterate every development table and process it for import/export.&quot;)</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -629,12 +649,12 @@ is missing.</li>
                                    ByRef folders As TFolderSettings) As Boolean
 </code></pre>
 <p>Reads the tag cell above the table to determine the scope (modules,
-classes, tests, or forms) and the base folder. Reads the folder cell two
+classes, tests, or form files) and the base folder. Reads the folder cell two
 rows above the table to determine the subfolder. Combines both paths and
 verifies the directory exists on disk. Delegates to TransferListEntries
-for actual component-by-component processing. Forms-tagged tables are
-skipped here (handled by SynchroniseFormsTables instead). Returns True
-when at least one component was transferred.
+for actual component-by-component processing. A table tagged
+&quot;general form modules&quot; is skipped here; SynchroniseFormsTables owns it.
+Returns True when at least one component was transferred.
 (&quot;Process a single ListObject, importing or exporting its entries.&quot;)</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -818,7 +838,7 @@ the component does not exist in the project.
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>targetPath</code>: String. The folder path that was processed.</li>
-<li><code>scope</code>: DevelopmentTransferScope. Whether modules or classes were transferred.</li>
+<li><code>scope</code>: DevelopmentTransferScope. Which kind of component was transferred.</li>
 <li><code>mode</code>: DevelopmentTransferMode. Whether an import or export was performed.</li>
 </ul>
 <hr />

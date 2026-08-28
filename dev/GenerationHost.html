@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GenerationHost - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>GenerationHost</h1>
+<p>Carries the whole platform difference of a linelist build in one object.
+A build runs as the steps of BuildSteps, and this class owns the Excel
+instance those steps run in. On the instance path (Windows, the
+chkBuildInPlace box unchecked) Acquire starts a hidden Excel,
+OpenDesignerCopy writes a copy of the designer and opens it there, Run
+reaches a step through Application.Run across the two processes, and
+ReleaseInstance closes the copy and quits the instance this object started. On
+the in-place path (Mac always, Windows when the box is checked) the
+instance is the designer's own, the copy is the designer itself, Run is
+an in-process Application.Run and ReleaseInstance is a no-op.</p>
+<p>GenerationHost.cls without interface: single implementation, no test fake,
+no compile cycle.</p>
+<details open class="doc-section" id="the-hidden-instance-shows-nothing">
+<summary>THE HIDDEN INSTANCE SHOWS NOTHING</summary>
+<div class="section-body">
+<p>The instance is started with Visible False, DisplayAlerts False,
+EnableEvents False, AskToUpdateLinks False and AutomationSecurity Low. Low
+is the level the steps need: ForceDisable turns off every macro of the
+opened copy and Application.Run answers 1004. The events stay off through
+EnableEvents False, so the copy's Workbook_Open and ribbon load stay quiet.
+ScreenUpdating stays True there: the output workbook refused its freeze
+under ScreenUpdating False in an invisible instance, and nothing is painted
+in an invisible instance anyway. Calculation is set to manual once the copy
+is open, because the write raises 1004 on an instance holding no workbook.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-copy-opens-read-write">
+<summary>THE COPY OPENS READ-WRITE</summary>
+<div class="section-body">
+<p>The copy is a private temp file named __designer_copy.xlsb that is never
+saved, so it opens read-write. A read-only open of the same file costs 9 to
+20 seconds against 0.6; that difference is what makes the hidden build run
+at the in-place speed. A user file never carries the copy's name.</p>
+</div>
+</details>
+<details open class="doc-section" id="a-raise-inside-a-step-is-a-hang">
+<summary>A RAISE INSIDE A STEP IS A HANG</summary>
+<div class="section-body">
+<p>Application.Run opens a fresh call stack, so an untrapped raise inside a
+step reaches no handler here, on either path. In place it shows the
+runtime error box; across the processes the hidden instance shows the VBE
+box, un-hides itself, and the visible side blocks. Every step therefore
+keeps its own handler and answers a string, and Run passes that string
+through. A raise Run sees on the visible side is either
+the instance gone (462, RPC call failed, RPC server unavailable), answered
+as &quot;the build instance stopped answering after <step>&quot; with the instance
+marked stopped so ReleaseInstance quits nothing, or a plain fault such as a step
+name the copy does not carry, answered as &quot;ERROR <n> (<source>): <desc>&quot;.</p>
+</div>
+</details>
+<details open class="doc-section" id="release-runs-from-every-exit">
+<summary>RELEASE RUNS FROM EVERY EXIT</summary>
+<div class="section-body">
+<p>ReleaseInstance closes the copy without saving, quits the instance this object
+owns and deletes the copy file. It runs from Class_Terminate too, under On
+Error Resume Next, so a driver that raises on its way out still frees the
+instance. A Quit that fails leaves the instance and answers its window
+handle, taken at Acquire, for the driver to log. The instance is never
+found by process name.</p>
+<p><strong>Depends on:</strong> ProjectError, <a href="DesignerPreparation.html">DesignerPreparation</a>, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Version:</strong> 1.0 (2026-08-28)</p>
+</div>
+</details>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
+<p><strong>Build a host over a designer workbook and pick its path</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(Optional ByVal designerBook As Workbook = Nothing, _
+                       Optional ByVal pathChoice As Byte = HostPathFromFlag) As GenerationHost
+</code></pre>
+<p>The path is settled here and never changes for the life of the object:
+in place on Mac whatever the choice, and on Windows the chkBuildInPlace
+flag of the designer unless the choice forces a path. Nothing is started
+until Acquire.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>designerBook</code>: Optional Workbook. The designer the build reads. Nothing takes ThisWorkbook.</li>
+<li><code>pathChoice</code>: Optional Byte. A GenerationHostPath member. Defaults to HostPathFromFlag.</li>
+</ul>
+<p><strong>Returns:</strong> GenerationHost. Ready for Acquire.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="introspection">
+<summary>Introspection</summary>
+<div class="section-body">
+<h3 id="inplace">InPlace <a class="anchor-link" href="#inplace">#</a></h3>
+<p><em>in-place</em></p>
+<p><strong>Whether the build runs in the designer's own instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get InPlace() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True on Mac, and on Windows when the flag or the choice says so.</p>
+<hr />
+<h3 id="isacquired">IsAcquired <a class="anchor-link" href="#isacquired">#</a></h3>
+<p><em>is-acquired</em></p>
+<p><strong>Whether Acquire has run and ReleaseInstance has not</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get IsAcquired() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean.</p>
+<hr />
+<h3 id="instancestopped">InstanceStopped <a class="anchor-link" href="#instancestopped">#</a></h3>
+<p><em>instance-stopped</em></p>
+<p><strong>Whether a Run found the instance gone</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get InstanceStopped() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True once a Run answered &quot;stopped answering&quot;.</p>
+<hr />
+<h3 id="hwnd">Hwnd <a class="anchor-link" href="#hwnd">#</a></h3>
+<p><em>hwnd</em></p>
+<p><strong>The window handle of the owned instance, taken at Acquire</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Hwnd() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. 0 in place, and before Acquire.</p>
+<hr />
+<h3 id="hostapplication">HostApplication <a class="anchor-link" href="#hostapplication">#</a></h3>
+<p><em>host-application</em></p>
+<p><strong>The instance the build runs in</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HostApplication() As Application
+</code></pre>
+<p><strong>Returns:</strong> Application. The owned instance, or the designer's own in place. Nothing before Acquire.</p>
+<hr />
+<h3 id="designercopy">DesignerCopy <a class="anchor-link" href="#designercopy">#</a></h3>
+<p><em>designer-copy</em></p>
+<p><strong>The workbook the steps run inside</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DesignerCopy() As Workbook
+</code></pre>
+<p><strong>Returns:</strong> Workbook. The copy in the instance, or the designer in place. Nothing before OpenDesignerCopy.</p>
+<hr />
+<h3 id="copypath">CopyPath <a class="anchor-link" href="#copypath">#</a></h3>
+<p><em>copy-path</em></p>
+<p><strong>The path of the copy file</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CopyPath() As String
+</code></pre>
+<p><strong>Returns:</strong> String. Empty in place, and before OpenDesignerCopy.</p>
+<hr />
+<h3 id="laststep">LastStep <a class="anchor-link" href="#laststep">#</a></h3>
+<p><em>last-step</em></p>
+<p><strong>The step the last Run was asked for</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LastStep() As String
+</code></pre>
+<p><strong>Returns:</strong> String. Empty before the first Run.</p>
+<hr />
+<h3 id="releaseoutcome">ReleaseOutcome <a class="anchor-link" href="#releaseoutcome">#</a></h3>
+<p><em>release-outcome</em></p>
+<p><strong>What the last ReleaseInstance answered</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ReleaseOutcome() As String
+</code></pre>
+<p><strong>Returns:</strong> String. &quot;OK&quot;, or &quot;ERROR <n> (<source>): <desc>&quot; naming the window handle. Empty before ReleaseInstance.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="the-instance">
+<summary>The instance</summary>
+<div class="section-body">
+<h3 id="acquire">Acquire <a class="anchor-link" href="#acquire">#</a></h3>
+<p><em>acquire</em></p>
+<p><strong>Start the instance the build runs in</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Acquire()
+</code></pre>
+<p>In place, the instance is the designer's own Application and nothing
+changes on it. On the instance path a new Excel is started hidden, with
+alerts, events and link prompts off and automation security Low, and its
+window handle is recorded. Calculation waits for OpenDesignerCopy.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ErrorUnexpectedState When Acquire already ran, or the instance would not start.</li>
+</ul>
+<hr />
+<h3 id="opendesignercopy">OpenDesignerCopy <a class="anchor-link" href="#opendesignercopy">#</a></h3>
+<p><em>open-designer-copy</em></p>
+<p><strong>Put the designer into the instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function OpenDesignerCopy(Optional ByVal copyFolder As String = vbNullString) As Workbook
+</code></pre>
+<p>In place the designer itself is the workbook the steps run inside, and
+the folder is ignored. On the instance path the designer is written as
+__designer_copy.xlsb in the folder through SaveCopyAs, which takes the
+unsaved entries, formatter, passwords and translations with it and leaves
+the open designer alone, then the copy is opened read-write in the
+instance with links left alone, and Calculation goes manual there.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>copyFolder</code>: String. The folder the copy is written in, on the instance path. Must exist.</li>
+</ul>
+<p><strong>Returns:</strong> Workbook. The workbook the steps run inside.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ErrorUnexpectedState When Acquire has not run, or the copy would not open.</li>
+<li>ProjectError.InvalidArgument When the folder is empty or missing, on the instance path.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="the-file-names">
+<summary>The file names</summary>
+<div class="section-body">
+<h3 id="checkopennames">CheckOpenNames <a class="anchor-link" href="#checkopennames">#</a></h3>
+<p><em>check-open-names</em></p>
+<p><strong>Apply the file-name rules to the files a build opens</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function CheckOpenNames(ByVal paths As BetterArray, _
+                               Optional ByVal target As Application = Nothing) As String
+</code></pre>
+<p>Excel refuses to open a file whose name matches one already open in the
+same instance, and to save onto a file open anywhere. Two rules: two
+files of the list sharing a name is a refusal naming both paths, and a
+name already open in the target instance is a refusal naming the open
+file. Names compare without regard to case; empty entries are skipped.
+The target is the instance the build runs in once Acquire ran, or the
+designer's own before, so on Mac the designer itself is one more open
+name and on Windows the copy is. A driver checks the visible side by
+passing its own Application.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>paths</code>: BetterArray. Full paths, or bare file names. Nothing checks nothing.</li>
+<li><code>target</code>: Optional Application. The instance to check against. Nothing takes the host's.</li>
+</ul>
+<p><strong>Returns:</strong> String. Empty when nothing clashes; otherwise one refusal per line, vbLf between them.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="the-steps">
+<summary>The steps</summary>
+<div class="section-body">
+<h3 id="run">Run <a class="anchor-link" href="#run">#</a></h3>
+<p><em>run</em></p>
+<p><strong>Run one build step inside the workbook the steps run in</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Run(ByVal stepName As String, ParamArray arguments() As Variant) As String
+</code></pre>
+<p>Application.Run over the step name, qualified with the workbook the
+steps run inside: the copy in the instance, the designer in place. The
+name may carry its module, as in &quot;BuildSteps.BuildSheet&quot;. Up to three
+arguments are forwarded; across the processes they have to be strings
+or numbers, since a workbook object cannot cross. The step's answer
+comes back as text. A raise on the visible side comes back as an
+outcome string too: the instance gone is &quot;the build instance stopped
+answering after <step>&quot; and marks the instance stopped; any other fault
+is the plain error outcome. Once the instance is marked stopped every
+later Run answers the stopped outcome without a call.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>stepName</code>: String. The public function to run.</li>
+<li><code>arguments</code>: ParamArray. Up to three arguments for the step.</li>
+</ul>
+<p><strong>Returns:</strong> String. What the step answered, or an &quot;ERROR ...&quot; outcome.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ErrorUnexpectedState When OpenDesignerCopy has not run.</li>
+<li>ProjectError.InvalidArgument When more than three arguments are handed over.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="releaseinstance">
+<summary>ReleaseInstance</summary>
+<div class="section-body">
+<h3 id="releaseinstance">ReleaseInstance <a class="anchor-link" href="#releaseinstance">#</a></h3>
+<p><em>release</em></p>
+<p><strong>Close the copy, quit the owned instance, delete the copy file</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ReleaseInstance() As String
+</code></pre>
+<p>In place nothing is closed and nothing quits: the designer stays where
+it is. On the instance path the copy is closed without saving and the
+instance this object started is quit; an instance a Run found gone is
+left alone, since there is nothing left to quit. The whole body runs
+under On Error Resume Next, because it runs from the failure exits and
+from Class_Terminate. A Quit that fails answers the window handle for
+the driver to log; the answer is kept on ReleaseOutcome too. Calling
+ReleaseInstance twice is one release.</p>
+<p><strong>Returns:</strong> String. &quot;OK&quot;, or &quot;ERROR <n> (GenerationHost.ReleaseInstance): ...&quot; naming the window handle.</p>
+<hr />
+</div>
+</details>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-initialise">Initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
+<p><em>initialise</em></p>
+<p><strong>Bind the designer and settle the path</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Friend Sub Initialise(ByVal designerBook As Workbook, ByVal pathChoice As Byte)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>designerBook</code>: Workbook. The designer, or Nothing for ThisWorkbook.</li>
+<li><code>pathChoice</code>: Byte. A GenerationHostPath member.</li>
+</ul>
+<hr />
+<h3 id="int-resolveinplace">ResolveInPlace <a class="anchor-link" href="#int-resolveinplace">#</a></h3>
+<p><em>resolve-in-place</em></p>
+<p><strong>Decide the path from the platform, the choice and the flag</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveInPlace(ByVal pathChoice As Byte) As Boolean
+</code></pre>
+<p>Mac Excel is single-instance and has no COM, so the answer is True there
+whatever the choice. On Windows a forced choice wins; otherwise the
+chkBuildInPlace flag of the designer decides, False when it was never set.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>pathChoice</code>: Byte. A GenerationHostPath member.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True for the in-place path.</p>
+<hr />
+<h2 id="int-the-instance">The instance</h2>
+<h3 id="int-starthiddeninstance">StartHiddenInstance <a class="anchor-link" href="#int-starthiddeninstance">#</a></h3>
+<p><em>start-hidden-instance</em></p>
+<p><strong>Start a hidden Excel and set it up for a build nobody watches</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub StartHiddenInstance()
+</code></pre>
+<p>Windows only; the in-place path never reaches this. A start that fails
+leaves nothing behind.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ErrorUnexpectedState When the instance would not start or take a setting.</li>
+</ul>
+<hr />
+<h3 id="int-resolvecopypath">ResolveCopyPath <a class="anchor-link" href="#int-resolvecopypath">#</a></h3>
+<p><em>resolve-copy-path</em></p>
+<p><strong>The path of the copy inside the folder</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveCopyPath(ByVal copyFolder As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>copyFolder</code>: String. The folder, with or without its trailing separator.</li>
+</ul>
+<p><strong>Returns:</strong> String. The full path of the copy file.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the folder is empty or missing.</li>
+</ul>
+<hr />
+<h3 id="int-folderexists">FolderExists <a class="anchor-link" href="#int-folderexists">#</a></h3>
+<p><em>folder-exists</em></p>
+<p><strong>Whether a path names an existing folder</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FolderExists(ByVal folderPath As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>folderPath</code>: String. The path.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean.</p>
+<hr />
+<h3 id="int-deletecopyfile">DeleteCopyFile <a class="anchor-link" href="#int-deletecopyfile">#</a></h3>
+<p><em>delete-copy-file</em></p>
+<p><strong>Remove the copy file from disk, quietly</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub DeleteCopyFile()
+</code></pre>
+<p>A file the instance still holds open refuses the delete, and that is
+left as it is: the file is scratch and the next run overwrites it.</p>
+<hr />
+<h2 id="int-the-file-names">The file names</h2>
+<h3 id="int-filenameof">FileNameOf <a class="anchor-link" href="#int-filenameof">#</a></h3>
+<p><em>file-name-of</em></p>
+<p><strong>The file name at the end of a path</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FileNameOf(ByVal pathText As String) As String
+</code></pre>
+<p>Both separators are read, because a Mac path carries a slash and a
+Windows path may carry either.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>pathText</code>: String. A full path or a bare name.</li>
+</ul>
+<p><strong>Returns:</strong> String. The part after the last separator.</p>
+<hr />
+<h3 id="int-samename">SameName <a class="anchor-link" href="#int-samename">#</a></h3>
+<p><em>same-name</em></p>
+<p><strong>Whether two file names match without regard to case</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SameName(ByVal first As String, ByVal second As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>first</code>: String.</li>
+<li><code>second</code>: String.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean.</p>
+<hr />
+<h3 id="int-instancelabel">InstanceLabel <a class="anchor-link" href="#int-instancelabel">#</a></h3>
+<p><em>instance-label</em></p>
+<p><strong>Name an instance for a refusal message</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function InstanceLabel(ByVal checkedApp As Application) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>checkedApp</code>: Application. The instance.</li>
+</ul>
+<p><strong>Returns:</strong> String. &quot;the build instance&quot; for the owned one, &quot;this Excel&quot; otherwise.</p>
+<hr />
+<h3 id="int-appendline">AppendLine <a class="anchor-link" href="#int-appendline">#</a></h3>
+<p><em>append-line</em></p>
+<p><strong>Add a line to a text, vbLf between the lines</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AppendLine(ByRef text As String, ByVal lineText As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>text</code>: String. ByRef. The text so far.</li>
+<li><code>lineText</code>: String. The line.</li>
+</ul>
+<hr />
+<h2 id="int-the-steps">The steps</h2>
+<h3 id="int-failureoutcome">FailureOutcome <a class="anchor-link" href="#int-failureoutcome">#</a></h3>
+<p><em>failure-outcome</em></p>
+<p><strong>Shape the outcome of a Run that raised on the visible side</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FailureOutcome(ByVal errNumber As Long, _
+                                ByVal errSource As String, _
+                                ByVal errDesc As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. The error number.</li>
+<li><code>errSource</code>: String. The error source. Empty takes this class.</li>
+<li><code>errDesc</code>: String. The description.</li>
+</ul>
+<p><strong>Returns:</strong> String. The stopped outcome for the instance gone, the plain error outcome otherwise.</p>
+<hr />
+<h3 id="int-isinstancegoneerror">IsInstanceGoneError <a class="anchor-link" href="#int-isinstancegoneerror">#</a></h3>
+<p><em>is-instance-gone-error</em></p>
+<p><strong>Whether an error number says the instance is gone</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsInstanceGoneError(ByVal errNumber As Long) As Boolean
+</code></pre>
+<p>The three shapes the spike measured: 462 on every call after a quit or a
+kill, the RPC call failed on the call the kill interrupted, and the RPC
+server unavailable. Plus the one the suite met: the object disconnected
+from its clients, on the first call after a quit.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean.</p>
+<hr />
+<h3 id="int-stoppedoutcome">StoppedOutcome <a class="anchor-link" href="#int-stoppedoutcome">#</a></h3>
+<p><em>stopped-outcome</em></p>
+<p><strong>The outcome of a Run whose instance is gone</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function StoppedOutcome(ByVal errNumber As Long) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. The number that said so.</li>
+</ul>
+<p><strong>Returns:</strong> String. &quot;ERROR <n> (GenerationHost.Run): the build instance stopped answering after <step>&quot;.</p>
+<hr />
+<h2 id="int-releaseinstance">ReleaseInstance</h2>
+<h3 id="int-class-terminate">Class_Terminate <a class="anchor-link" href="#int-class-terminate">#</a></h3>
+<p><em>class-terminate</em></p>
+<p><strong>ReleaseInstance the instance when the object is dropped</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Class_Terminate()
+</code></pre>
+<p>A driver that raises on its way out drops this object without calling
+ReleaseInstance, and the hidden instance would live on with nobody to quit it.</p>
+<hr />
+<h2 id="int-guards">Guards</h2>
+<h3 id="int-requireacquired">RequireAcquired <a class="anchor-link" href="#int-requireacquired">#</a></h3>
+<p><em>require-acquired</em></p>
+<p><strong>Raise when Acquire has not run</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RequireAcquired(ByVal memberName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>memberName</code>: String. The member asking.</li>
+</ul>
+<hr />
+<h3 id="int-requirecopy">RequireCopy <a class="anchor-link" href="#int-requirecopy">#</a></h3>
+<p><em>require-copy</em></p>
+<p><strong>Raise when OpenDesignerCopy has not run</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RequireCopy(ByVal memberName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>memberName</code>: String. The member asking.</li>
+</ul>
+<hr />
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
+<p><strong>Raise a typed project error</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: ProjectError. The error code.</li>
+<li><code>message</code>: String. Descriptive error message.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (4 file(s))</summary>
+<ul>
+<li>EventsDesignerAdvanced.bas</li>
+<li>EventsDesignerMulti.bas</li>
+<li>TestDesignerMulti.bas</li>
+<li>TestGenerationHost.bas</li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

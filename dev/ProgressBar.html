@@ -14,18 +14,31 @@
 <p>Cell-based visual progress indicator on a worksheet. Tints cells
 to reflect completion ratio and optionally writes status text to
 a companion cell.</p>
-<details open class="doc-section" id="the-repaint-seam">
-<summary>THE REPAINT SEAM</summary>
+<details open class="doc-section" id="the-bar-paints-in-the-instance-it-lives-in">
+<summary>THE BAR PAINTS IN THE INSTANCE IT LIVES IN</summary>
 <div class="section-body">
-<p>Update and StepBy take an optional forceRepaint flag, default False.
-When True the render wraps itself in ScreenUpdating = True, DoEvents,
-ScreenUpdating = False, so a tick shows on screen while a driver holds
-the application busy. The flag serves long busy loops and belongs in
-drivers; ScreenUpdating is False when the call returns, and the
-driver's captured ApplicationState stays the single owner of the real
-restore.</p>
+<p>Every render writes the cells and calls DoEvents once, so the paint lands
+before the caller goes on. The bar leaves the screen switch alone. It is
+driven from an instance whose screen is on, where a cell write paints by
+itself, and a bar that switched the screen on and off would be the
+flicker the in-place build keeps out.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-bar-cells-carry-colour-only">
+<summary>THE BAR CELLS CARRY COLOUR ONLY</summary>
+<div class="section-body">
+<p>The bar shows progress by tint. Attach clears its cells and they stay
+empty for the whole run, so one band of colour moving along the range is
+the whole display.</p>
+<p>The bar used to write the value pair into its first cell. It gave the
+user a second thing to read at every tick, and Excel parsed the pair a
+milestone count produces -- &quot;3 / 12&quot; -- as a date, so the cell showed
+12-Mar under a dd-mmm format while the band moved.</p>
+<p>Words go to the status cell. It is set to the text format at the point of
+write, since the driver's text can be anything, a setup file named for a
+date included.</p>
 <p><strong>Depends on:</strong> ProjectError</p>
-<p><strong>Version:</strong> 1.1 (2026-08-13)</p>
+<p><strong>Version:</strong> 1.3 (2026-08-27)</p>
 </div>
 </details>
 <details open class="doc-section" id="lifecycle">
@@ -73,17 +86,6 @@ restore.</p>
 <li><code>pendingColor</code>: Long. Colour applied to remaining cells.</li>
 </ul>
 <hr />
-<h3 id="configurevalueformat">ConfigureValueFormat <a class="anchor-link" href="#configurevalueformat">#</a></h3>
-<p><em>configure-value-format</em></p>
-<p><strong>Configure the number format for progress text</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub ConfigureValueFormat(ByVal formatPattern As String)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>formatPattern</code>: String. VBA format pattern.</li>
-</ul>
-<hr />
 <h3 id="attachstatuscell">AttachStatusCell <a class="anchor-link" href="#attachstatuscell">#</a></h3>
 <p><em>attach-status-cell</em></p>
 <p><strong>Bind a cell for textual status messages</strong></p>
@@ -100,14 +102,12 @@ restore.</p>
 <p><strong>Update progress to a specific value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Update(ByVal currentValue As Long, _
-                  Optional ByVal statusMessage As String = vbNullString, _
-                  Optional ByVal forceRepaint As Boolean = False)
+                  Optional ByVal statusMessage As String = vbNullString)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>currentValue</code>: Long. Absolute progress value.</li>
 <li><code>statusMessage</code>: String. Message pushed to the status cell. Defaults to vbNullString.</li>
-<li><code>forceRepaint</code>: Boolean. When True, the render repaints the screen inside itself and leaves ScreenUpdating False. Defaults to False.</li>
 </ul>
 <hr />
 <h3 id="stepby">StepBy <a class="anchor-link" href="#stepby">#</a></h3>
@@ -115,14 +115,12 @@ restore.</p>
 <p><strong>Increment progress by the provided step</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub StepBy(Optional ByVal stepValue As Long = 1, _
-                  Optional ByVal statusMessage As String = vbNullString, _
-                  Optional ByVal forceRepaint As Boolean = False)
+                  Optional ByVal statusMessage As String = vbNullString)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>stepValue</code>: Long. Increment. Defaults to 1.</li>
 <li><code>statusMessage</code>: String. Message pushed to the status cell. Defaults to vbNullString.</li>
-<li><code>forceRepaint</code>: Boolean. When True, the render repaints the screen inside itself and leaves ScreenUpdating False. Defaults to False.</li>
 </ul>
 <hr />
 <h3 id="complete">Complete <a class="anchor-link" href="#complete">#</a></h3>
@@ -210,7 +208,7 @@ restore.</p>
 <h2 id="int-lifecycle">Lifecycle</h2>
 <h3 id="int-class-initialize">Class_Initialize <a class="anchor-link" href="#int-class-initialize">#</a></h3>
 <p><em>class-initialize</em></p>
-<p><strong>Set default values for colours, format, and maximum</strong></p>
+<p><strong>Set default values for colours and maximum</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Class_Initialize()
 </code></pre>
@@ -263,20 +261,19 @@ restore.</p>
 <hr />
 <h3 id="int-renderprogress">RenderProgress <a class="anchor-link" href="#int-renderprogress">#</a></h3>
 <p><em>render-progress</em></p>
-<p><strong>Re-render the bar and value text</strong></p>
+<p><strong>Re-render the bar</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RenderProgress()
 </code></pre>
 <hr />
-<h3 id="int-repaintnow">RepaintNow <a class="anchor-link" href="#int-repaintnow">#</a></h3>
-<p><em>repaint-now</em></p>
-<p><strong>Show the latest render on screen during a busy loop</strong></p>
+<h3 id="int-settle">Settle <a class="anchor-link" href="#int-settle">#</a></h3>
+<p><em>settle</em></p>
+<p><strong>Let the latest render paint before the caller goes on</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RepaintNow()
+<pre><code class="language-vb">Private Sub Settle()
 </code></pre>
-<p>One screen refresh, self-contained: ScreenUpdating on, one DoEvents
-so the paint lands, ScreenUpdating off. Events stay wherever the
-driver put them, so sheet handlers stay quiet under a busy state.</p>
+<p>One DoEvents. The screen of the instance the bar lives in is on, so the
+cell writes paint on their own once the message loop gets a turn.</p>
 <hr />
 <h3 id="int-renderstatus">RenderStatus <a class="anchor-link" href="#int-renderstatus">#</a></h3>
 <p><em>render-status</em></p>
@@ -299,13 +296,6 @@ driver put them, so sheet handlers stay quiet under a busy state.</p>
 <pre><code class="language-vb">Private Sub PaintBar(ByVal ratio As Double)
 </code></pre>
 <hr />
-<h3 id="int-writevalue">WriteValue <a class="anchor-link" href="#int-writevalue">#</a></h3>
-<p><em>write-value</em></p>
-<p><strong>Write the formatted progress text to the first cell</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub WriteValue()
-</code></pre>
-<hr />
 <h3 id="int-resolvemaximum">ResolveMaximum <a class="anchor-link" href="#int-resolvemaximum">#</a></h3>
 <p><em>resolve-maximum</em></p>
 <p><strong>Validate and return a positive maximum</strong></p>
@@ -323,10 +313,11 @@ driver put them, so sheet handlers stay quiet under a busy state.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (3 file(s))</summary>
+<summary>Used in (4 file(s))</summary>
 <ul>
 <li>EventsDesignerAdvanced.bas</li>
 <li>EventsDesignerMulti.bas</li>
+<li>TestDesignerMulti.bas</li>
 <li>TestProgressBar.bas</li>
 </ul>
 </details>

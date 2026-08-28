@@ -271,8 +271,10 @@ corresponding ListObject. Concat formulas are rewritten over the whole data
 column. When histoOnly is True only historic tables are refreshed and the
 main admin/HF data is left intact.</p>
 <p>A source workbook carrying a Metadata sheet also carries the hidden names
-ExportToFile wrote there, including the language code, and those are read
-back before the flags are set. The geobase is marked as carrying data only
+ExportToFile wrote there, and those are read back before the flags are set,
+except the two language names: the sheet keeps the language its workbook
+set on it, so the level labels resolve in that language whatever language
+the geobase file was exported in. The geobase is marked as carrying data only
 when the ADM1 table came across, so a workbook holding none of the expected
 sheets leaves the flag alone.</p>
 <p><strong>Parameters:</strong></p>
@@ -344,6 +346,31 @@ workbook.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ElementShouldNotExists When target sheets already exist.</li>
+</ul>
+<hr />
+<h3 id="ensuregeosheet">EnsureGeoSheet <a class="anchor-link" href="#ensuregeosheet">#</a></h3>
+<p><em>ensure-geo-sheet</em></p>
+<p><strong>Lay down an empty Geo worksheet on a workbook and answer it.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function EnsureGeoSheet(ByVal targetBook As Workbook) As Worksheet
+</code></pre>
+<p>Answers the worksheet named Geo of the target workbook, adding an empty one
+after the last sheet when the workbook has none. The sheet carries nothing:
+no table, no name, no hidden name. It exists so a linelist whose designer
+cannot supply a geobase still has the anchor Linelist.Prepare needs. Called
+on the predeclared instance, since a designer whose geo sheet refuses Create
+is the case it serves.</p>
+<p>A workbook that already carries a Geo worksheet is left as it is and that
+sheet is answered, so a call after a part-way ExportToWkb makes no second
+sheet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetBook</code>: Workbook. The workbook to lay the sheet on.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The Geo worksheet of the target workbook.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the workbook is Nothing.</li>
 </ul>
 <hr />
 </div>
@@ -1363,7 +1390,7 @@ ProjectError values exceed the Byte range (they start at 1001+).</p>
 <hr />
 </details>
 <details>
-<summary>Used in (23 file(s))</summary>
+<summary>Used in (24 file(s))</summary>
 <ul>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
@@ -1374,7 +1401,6 @@ ProjectError values exceed the Byte range (they start at 1001+).</p>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
 <li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
-<li>EventsDesignerAdvanced.bas</li>
 <li>InitTransfer.bas</li>
 <li>HeadlessBuild.bas</li>
 <li>GeoModule.bas</li>
@@ -1383,6 +1409,8 @@ ProjectError values exceed the Byte range (they start at 1001+).</p>
 <li>TestExportOtherLinelist.bas</li>
 <li>TestLLImporter.bas</li>
 <li>TestDesignerPreparation.bas</li>
+<li>TestInitTransfer.bas</li>
+<li>TestGeoModule.bas</li>
 <li>TestLLGeo.bas</li>
 <li>GeoTestFixture.bas</li>
 <li>TestEventLinelist.bas</li>

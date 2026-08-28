@@ -36,8 +36,8 @@ TemporarySheetName                   A constant table, backed by no sheet.</p>
 RequiredSheetNames() stopped asking for those four worksheets when the
 transfer began importing them straight from the setup file. They are guards
 now.</p>
-<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLExport.html">LLExport</a>, <a href="Analysis.html">Analysis</a>, <a href="Passwords.html">Passwords</a>, <a href="LLFormat.html">LLFormat</a>, <a href="FormulaData.html">FormulaData</a>, <a href="LLVariables.html">LLVariables</a>, <a href="Formulas.html">Formulas</a>, InitTransfer, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="ApplicationState.html">ApplicationState</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a></p>
-<p><strong>Version:</strong> 1.2 (2026-07-30)</p>
+<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLExport.html">LLExport</a>, <a href="Analysis.html">Analysis</a>, <a href="Passwords.html">Passwords</a>, <a href="LLFormat.html">LLFormat</a>, <a href="FormulaData.html">FormulaData</a>, <a href="LLVariables.html">LLVariables</a>, <a href="Formulas.html">Formulas</a>, InitTransfer, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="ApplicationState.html">ApplicationState</a>, THE APPLICATION THE BUILD RUNS IN, -------------------------------------------------------------------------------, Create takes an optional Application and keeps it as the host. Every workbook, the facade opens or adds, and the busy state Prepare enters, go through that, host, so the same build runs in whatever Excel instance it is handed. The, default is the Application the code runs in. HostApplication answers it., <a href="TranslationObject.html">TranslationObject</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Version:</strong> 1.3 (2026-08-27)</p>
 </div>
 </details>
 <details open class="doc-section" id="factory-helpers">
@@ -47,7 +47,8 @@ now.</p>
 <p><em>create</em></p>
 <p><strong>Create a new specification facade from a workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal specsWorkbook As Workbook) As LinelistSpecs
+<pre><code class="language-vb">Public Function Create(ByVal specsWorkbook As Workbook, _
+                       Optional ByVal excelApplication As Application = Nothing) As LinelistSpecs
 </code></pre>
 <p>Construction and identity accessors.</p>
 <p>Validates the workbook structure upfront (checking for all required
@@ -56,6 +57,8 @@ instance with caches initialised. Returns the LinelistSpecs interface.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>specsWorkbook</code>: Workbook. The specifications workbook to wrap.</li>
+<li><code>excelApplication</code>: Optional Application. The Excel instance the build
+opens and adds its workbooks in. Defaults to the running Application.</li>
 </ul>
 <p><strong>Returns:</strong> LinelistSpecs. A fully initialised facade ready for use.</p>
 <p><strong>Throws:</strong></p>
@@ -76,6 +79,20 @@ if the workbook has not been assigned via the factory method.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When the workbook is not set.</li>
+</ul>
+<hr />
+<h3 id="hostapplication">HostApplication <a class="anchor-link" href="#hostapplication">#</a></h3>
+<p><em>host-application</em></p>
+<p><strong>The Excel instance the build opens its workbooks in</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HostApplication() As Application
+</code></pre>
+<p>Set at creation. The template, the output workbook and the geobase are
+opened or added through it, and the busy state of Prepare is taken on it.</p>
+<p><strong>Returns:</strong> Application. The host Application.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When no Application was kept.</li>
 </ul>
 <hr />
 <h3 id="prepared">Prepared <a class="anchor-link" href="#prepared">#</a></h3>
@@ -466,6 +483,15 @@ the linelist creation process is being aborted.</p>
 </code></pre>
 <p>Used during construction to assign the workbook before caches are
 initialised. Not part of the public interface.</p>
+<hr />
+<h3 id="int-internalapplication">InternalApplication <a class="anchor-link" href="#int-internalapplication">#</a></h3>
+<p><em>internal-application</em></p>
+<p><strong>Setter for the host Application</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set InternalApplication(ByVal excelApplication As Application)
+</code></pre>
+<p>Used during construction to keep the Excel instance the build runs in.
+Not part of the public interface.</p>
 <hr />
 <h2 id="int-state-management">State management</h2>
 <h3 id="int-resetobjectcaches">ResetObjectCaches <a class="anchor-link" href="#int-resetobjectcaches">#</a></h3>
@@ -1124,7 +1150,7 @@ object regardless of scope, mirroring the former single-object test stubs.</p>
 <li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
 <li><a href="SectionBuilder.html">SectionBuilder.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
-<li>EventsDesignerAdvanced.bas</li>
+<li>BuildSteps.bas</li>
 <li>InitTransfer.bas</li>
 <li>HeadlessBuild.bas</li>
 <li>TestAnalysisOutput.bas</li>

@@ -44,7 +44,7 @@ through ExportColumnsNotFound, and HasColumnsNotImported answers over the last
 import. Both routines unhide every column before they write and hide the same
 columns again after.</p>
 <p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="DropdownLists.html">DropdownLists</a></p>
-<p><strong>Version:</strong> 1.2 (2026-08-24)</p>
+<p><strong>Version:</strong> 1.3 (2026-08-27)</p>
 </div>
 </details>
 <details open class="doc-section" id="statemanagement">
@@ -1039,6 +1039,26 @@ under the first is empty. Everything after it is the trailing block.</p>
 <li><code>rowCount</code>: Long. Filled-cell threshold.</li>
 </ul>
 <p><strong>Returns:</strong> Long. A row index between 1 and tabRowCount.</p>
+<hr />
+<h3 id="int-ensureonebodyrow">EnsureOneBodyRow <a class="anchor-link" href="#int-ensureonebodyrow">#</a></h3>
+<p><em>ensure-one-body-row</em></p>
+<p><strong>Put a row back under the header only when the table has none</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureOneBodyRow(ByVal lo As ListObject)
+</code></pre>
+<p>When the last data row goes, Excel keeps a blank INSERT ROW under the
+header: Range still spans the header and that row, DataBodyRange answers
+Nothing and ListRows.Count answers 0. Every reader of this class goes
+through DataBodyRange, so that state counts as an empty table.</p>
+<p>ListRows.Add on that state turns the insert row into the one data row.
+The range stays the same, so a second row never appears. The row takes the
+format of the row above it, and with only the header above it comes out
+wearing the header format. ClearFormats on the body puts it back on the
+table style. The header and the style are left as they are.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lo</code>: ListObject. The table to check.</li>
+</ul>
 <hr />
 <h3 id="int-droptrailingrows">DropTrailingRows <a class="anchor-link" href="#int-droptrailingrows">#</a></h3>
 <p><em>drop-trailing-rows</em></p>

@@ -18,8 +18,18 @@ inside it from a file name it cleans first. DeleteFile removes one file,
 DeleteAll empties the folder and creates it again, and Reset empties it and
 marks the object as needing another EnsureReady. Terminating an instance
 empties the folder.</p>
+<details open class="doc-section" id="the-kept-file">
+<summary>THE KEPT FILE</summary>
+<div class="section-body">
+<p>A build that fails saves its unfinished workbook in this folder and drops
+the instance right after. KeepFile marks one file name to survive that
+drop: Class_Terminate deletes every other file and leaves the marked ones.
+Reset and DeleteAll are explicit calls and wipe the folder whole, marks
+included, so the next run that saves its linelist starts clean.</p>
 <p><strong>Depends on:</strong> ProjectError</p>
-<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<p><strong>Version:</strong> 1.1 (2026-08-28)</p>
+</div>
+</details>
 <details open class="doc-section" id="factory-helpers">
 <summary>Factory helpers</summary>
 <div class="section-body">
@@ -53,6 +63,7 @@ empties the folder.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Reset()
 </code></pre>
+<p>The kept marks go with the files: a reset repository starts clean.</p>
 <hr />
 </div>
 </details>
@@ -101,6 +112,21 @@ empties the folder.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub DeleteAll()
 </code></pre>
+<p>The kept marks go with the files, the way Reset drops them.</p>
+<hr />
+<h3 id="keepfile">KeepFile <a class="anchor-link" href="#keepfile">#</a></h3>
+<p><em>keep-file</em></p>
+<p><strong>Mark one file of the repository to survive the drop of the instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub KeepFile(ByVal fileName As String)
+</code></pre>
+<p>The name is cleaned the way CreateFilePath cleans it, so the mark matches
+the file that call wrote. Marking the same name twice is one mark. The
+mark holds until Reset or DeleteAll wipes the folder.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fileName</code>: String. The file name inside the repository.</li>
+</ul>
 <hr />
 </div>
 </details>
@@ -117,6 +143,19 @@ empties the folder.</p>
 <ul>
 <li><code>baseDirectory</code>: String. Optional custom root location.</li>
 </ul>
+<hr />
+<h2 id="int-file-operations">File operations</h2>
+<h3 id="int-iskept">IsKept <a class="anchor-link" href="#int-iskept">#</a></h3>
+<p><em>is-kept</em></p>
+<p><strong>Whether a file name carries the keep mark</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsKept(ByVal fileName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fileName</code>: String. The bare file name.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when KeepFile marked it.</p>
 <hr />
 <h2 id="int-internal-helpers">Internal helpers</h2>
 <h3 id="int-resolverootpath">ResolveRootPath <a class="anchor-link" href="#int-resolverootpath">#</a></h3>
@@ -194,12 +233,18 @@ empties the folder.</p>
 <p><em>delete-all-internal</em></p>
 <p><strong>Wipe every file inside the repository, keeping the folder itself</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub DeleteAllInternal()
+<pre><code class="language-vb">Private Sub DeleteAllInternal(Optional ByVal skipKept As Boolean = False)
 </code></pre>
 <p>The whole listing is read before the first file is deleted. Dir$ walks one
 folder through state the host holds, and deleting an entry part way through
 that walk makes the rest of the listing unreliable, so files were left behind.
 The listing is small: this folder holds the working files of one generation.</p>
+<p>A file KeepFile marked is left alone when skipKept is True, which is what
+the instance drop asks for. The explicit wipes pass False.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>skipKept</code>: Optional Boolean. True leaves the marked files on disk.</li>
+</ul>
 <hr />
 <h3 id="int-class-terminate">Class_Terminate <a class="anchor-link" href="#int-class-terminate">#</a></h3>
 <p><em>class-terminate</em></p>
@@ -207,6 +252,8 @@ The listing is small: this folder holds the working files of one generation.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Class_Terminate()
 </code></pre>
+<p>The files KeepFile marked stay: the unfinished linelist of a failed build
+is saved here right before the instance is dropped.</p>
 <hr />
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><em>throw-error</em></p>
@@ -222,11 +269,14 @@ The listing is small: this folder holds the working files of one generation.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (8 file(s))</summary>
+<summary>Used in (11 file(s))</summary>
 <ul>
 <li><a href="CodeTransfer.html">CodeTransfer.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
+<li>BuildSteps.bas</li>
+<li>EventsDesignerAdvanced.bas</li>
+<li>EventsDesignerMulti.bas</li>
 <li>HeadlessBuild.bas</li>
 <li>TestTemporaryRepos.bas</li>
 <li>TestHeadlessLinelistBuild.bas</li>

@@ -359,7 +359,8 @@ label.</p>
 <p><strong>Tell the user why a button refused to act.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Warn(ByVal msgCode As String, _
-                Optional ByVal source As String = vbNullString)
+                Optional ByVal source As String = vbNullString, _
+                Optional ByVal fallback As String = vbNullString)
 </code></pre>
 <p>The refusal is also one warning line of the user log, written before the
 box shows. Every refusal box of the button, ribbon and geo modules comes
@@ -367,11 +368,16 @@ through here, so the log covers them all through this one edit.
 The line carries the sentence the user was shown, in the language they were
 shown it in, and the procedure that refused. It used to carry the message
 CODE as the action and nothing else, so a log read weeks later said
-&quot;MSG_SectionTitleCell&quot; and named neither the reason nor the button.</p>
+&quot;MSG_SectionTitleCell&quot; and named neither the reason nor the button.
+The fallback follows the shape of Fail: it is what a workbook with no usable
+translation sheet shows, and an empty one keeps that workbook quiet. The geo
+picker hands one over, so its refusals read the same way as its failures.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>msgCode</code>: String. Code of the message in the message translation table.</li>
 <li><code>source</code>: String. Optional. The procedure raising the refusal.</li>
+<li><code>fallback</code>: String. Optional. Shown when the workbook carries no usable
+translation sheet. Leave it off to stay quiet in that state.</li>
 </ul>
 <hr />
 <h3 id="fail">Fail <a class="anchor-link" href="#fail">#</a></h3>
@@ -1002,7 +1008,7 @@ permanent refusal to build the manager again.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (30 file(s))</summary>
+<summary>Used in (31 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
@@ -1029,6 +1035,7 @@ permanent refusal to build the manager again.</p>
 <li>FormLogicShowHideSave.bas</li>
 <li>FormLogicShowHideSections.bas</li>
 <li>FormLogicShowVarLabels.bas</li>
+<li>TestGeoModule.bas</li>
 <li>TestLLGeo.bas</li>
 <li>GeoTestFixture.bas</li>
 <li>TestEventLinelist.bas</li>
