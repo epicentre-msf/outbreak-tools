@@ -864,7 +864,8 @@ suites:
       # ValidateEntries, SetupLanguages) and holds the run log;
       # EventsDesignerMulti drives T_Multi and the multi build loop.
       # BuildSteps carries the build itself as steps answering outcome
-      # strings; GenerateOne and the headless multi loop run through it.
+      # strings; GenerateOne, the headless build and the headless multi
+      # loop run through it, in place or across the build instance.
       - EventsDesignerCore
       - EventsDesignerAdvanced
       - EventsDesignerMulti

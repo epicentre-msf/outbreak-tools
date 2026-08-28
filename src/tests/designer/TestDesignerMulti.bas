@@ -4,8 +4,28 @@ Attribute VB_Description = "Unit tests for Multi group table operations"
 Option Explicit
 
 '@Folder("CustomTests.Designer")
-'@ModuleDescription("Validates Multi group table operations: add rows, remove rows, duplicate, import, export, the write-once row IDs on T_Multi, the driver helpers that read a row into the Main entries, the ribbon file the run gives every row, the report section title of a row, and the shared setup language extraction.")
+'@ModuleDescription("Validates Multi group table operations: add rows, remove rows, duplicate, import, export, the write-once row IDs on T_Multi, the driver helpers that read a row into the Main entries, the ribbon file the run gives every row, the report section title of a row, the shared setup language extraction, and the generation drivers: GenerateOne raising a step outcome in place and through a host, the file-name pre-flight, and on Windows the single build and the multi loop through a hidden instance.")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+
+'@description
+'THE HOSTED BUILDS RUN OVER A COPY OF THIS DRIVER
+'-------------------------------------------------------------------------------
+'The instance tests copy this driver into a hidden Excel, the way a
+'designer press copies the designer, because the driver is the one
+'workbook of the run whose project carries BuildSteps and compiles. A Main
+'sheet with the entry ranges is stood up on the driver for the test and
+'taken off in the cleanup. The first step fails in the instance, since
+'the copy is no designer, and that failure is the answer under test: it
+'crossed the processes as an outcome string, the entries crossed the other
+'way with the step, and the instance is still there to release.
+'
+'THE PROCESS COUNT
+'-------------------------------------------------------------------------------
+'The instance tests count the Excel processes of the machine before and
+'after, through WMI, so a leaked instance fails the test. Another Excel
+'starting or stopping on the machine during one of these tests moves the
+'count and fails it too; run them again when that happens.
+'@depends EventsDesignerMulti, EventsDesignerAdvanced, BuildSteps, GenerationHost, DesignerEntry, ProgressBar, GenerationLog, CustomTest, TestHelpersLite
 
 Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
@@ -13,6 +33,28 @@ Private MultiSheet As Worksheet
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const TABLE_MULTI As String = "T_Multi"
+Private Const SHEET_MAIN As String = "Main"
+
+'The host of the running instance test, released by TestCleanup whatever the exit
+Private heldHost As GenerationHost
+
+'True while a test holds a Main sheet of its own on this driver, so the
+'cleanup takes off what the test made and nothing else
+Private driverMainMade As Boolean
+
+'The folders beside this driver: the designer copy, and the output folder
+'the builds point at
+Private Const COPY_FOLDER_NAME As String = "multi_copy"
+Private Const OUTPUT_FOLDER_NAME As String = "multi_out"
+
+'The eleven entry ranges DesignerEntry writes, in the order they take the
+'rows of a Main sheet stood up for a test
+Private Const ENTRY_RANGE_NAMES As String = "RNG_PathDico,RNG_PathGeo,RNG_LLDir,RNG_LLName," & _
+                                            "RNG_LLPwdOpen,RNG_LLPassword,RNG_LangSetup,RNG_LLForm," & _
+                                            "RNG_DefaultEpiWeek,RNG_DesignLL,RNG_LLTemp"
+
+'How long a process count is waited for, in seconds
+Private Const PROCESS_WAIT_SECONDS As Long = 30
 
 
 '@section Module lifecycle
@@ -27,6 +69,9 @@ End Sub
 '@ModuleCleanup
 Public Sub ModuleCleanup()
     On Error Resume Next
+        ReleaseHeldHost
+        RemoveDriverMain
+        ClearOutputFolder
         If Not Assert Is Nothing Then
             Assert.PrintResults TEST_OUTPUT_SHEET
         End If
@@ -54,11 +99,17 @@ Public Sub TestCleanup()
     End If
 
     On Error Resume Next
+        ReleaseHeldHost
+        RemoveDriverMain
+        ClearOutputFolder
         DeleteWorkbook FixtureWorkbook
     On Error GoTo 0
 
     Set MultiSheet = Nothing
     Set FixtureWorkbook = Nothing
+
+    'A hosted build can hand the screen to another workbook
+    ThisWorkbook.Activate
 
     RestoreApp
 End Sub
@@ -559,6 +610,527 @@ Public Sub TestSetupLanguagesFallbackDropsTagColumns()
     Exit Sub
 Fail:
     CustomTestLogFailure Assert, "TestSetupLanguagesFallbackDropsTagColumns", Err.Number, Err.Description
+End Sub
+
+
+'@section Generation driver Tests
+'===============================================================================
+'@TestMethod("DesignerMulti.Generation")
+Public Sub TestGenerateOneRaisesTheStepOutcome()
+    CustomTestSetTitles Assert, "DesignerMulti", "TestGenerateOneRaisesTheStepOutcome"
+    On Error GoTo Fail
+
+    'Arrange: a Main over the fixture, its setup entry naming a missing file,
+    'and a run log over the fixture so the checkings have somewhere to land
+    Dim entry As DesignerEntry
+    Set entry = MainEntry(FixtureWorkbook)
+    FillEntries entry, MissingSetupPath()
+    EventsDesignerAdvanced.StartRunLog entry.ValueOf("setuppath"), entry.ValueOf("llname"), FixtureWorkbook
+
+    'Act: the first step fails inside its own handler and GenerateOne raises
+    'what it answered
+    Dim errNumber As Long
+    Dim errDesc As String
+    On Error Resume Next
+    EventsDesignerAdvanced.GenerateOne entry
+    errNumber = Err.Number
+    errDesc = Err.Description
+    On Error GoTo Fail
+
+    EventsDesignerAdvanced.FinishRunLog "test run"
+
+    'Assert
+    Assert.IsTrue errNumber <> 0, "A step that failed should raise out of GenerateOne."
+    Assert.IsTrue LenB(errDesc) > 0, "The raise should carry the description of the step's fault."
+    Assert.IsFalse Left$(errDesc, 6) = "ERROR ", _
+                   "The description should be the fault alone, the lead stripped: " & errDesc
+    AssertKeptPathIsOnDisk
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestGenerateOneRaisesTheStepOutcome", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("DesignerMulti.Generation")
+Public Sub TestGenerateOneWithAnInPlaceHostRunsTheStepsHere()
+    CustomTestSetTitles Assert, "DesignerMulti", "TestGenerateOneWithAnInPlaceHostRunsTheStepsHere"
+    On Error GoTo Fail
+
+    'Arrange: a host on the in-place path, never acquired; the steps run in
+    'this project the way they do with no host at all
+    Dim entry As DesignerEntry
+    Set entry = MainEntry(FixtureWorkbook)
+    FillEntries entry, MissingSetupPath()
+    EventsDesignerAdvanced.StartRunLog entry.ValueOf("setuppath"), entry.ValueOf("llname"), FixtureWorkbook
+
+    Dim host As GenerationHost
+    Set host = GenerationHost.Create(FixtureWorkbook, HostPathInPlace)
+
+    Dim bar As ProgressBar
+    Set bar = ProgressBar.Create(MultiSheet.Range("N1:R1"), 3)
+
+    'Act
+    Dim errNumber As Long
+    Dim errDesc As String
+    On Error Resume Next
+    EventsDesignerAdvanced.GenerateOne entry, Nothing, host, bar
+    errNumber = Err.Number
+    errDesc = Err.Description
+    On Error GoTo Fail
+
+    EventsDesignerAdvanced.FinishRunLog "test run"
+
+    'Assert: the fault came back, the host was never touched, the bar sized and unmoved
+    Assert.IsTrue errNumber <> 0, "A step that failed should raise out of GenerateOne."
+    Assert.IsTrue LenB(errDesc) > 0, "The raise should carry the description of the step's fault."
+    Assert.IsFalse host.IsAcquired, "An in-place host needs no Acquire for the steps to run."
+    Assert.AreEqual CLng(5), bar.Maximum, "The bar should be sized to the fixed steps before the count is known."
+    Assert.AreEqual CLng(0), bar.Value, "No step finished, so the bar should still stand at zero."
+    AssertKeptPathIsOnDisk
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestGenerateOneWithAnInPlaceHostRunsTheStepsHere", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("DesignerMulti.Generation")
+Public Sub TestCheckBuildFileNamesRefusesASharedNameAndFilesIt()
+    CustomTestSetTitles Assert, "DesignerMulti", "TestCheckBuildFileNamesRefusesASharedNameAndFilesIt"
+    On Error GoTo Fail
+
+    'Arrange: a setup and a template sharing a file name in two folders, and
+    'a run log to take the refusal
+    Dim entry As DesignerEntry
+    Set entry = MainEntry(FixtureWorkbook)
+    FillEntries entry, JoinPath(OutputFolder(), "same_name.xlsb")
+    entry.AddInfo JoinPath(OutputFolder(), "elsewhere", "same_name.xlsb"), "temppath"
+
+    Dim runLog As GenerationLog
+    Set runLog = EventsDesignerAdvanced.StartRunLog(vbNullString, vbNullString, FixtureWorkbook)
+
+    Dim linesBefore As Long
+    linesBefore = runLog.RecordLength
+
+    Dim host As GenerationHost
+    Set host = GenerationHost.Create(FixtureWorkbook, HostPathInPlace)
+
+    'Act
+    Dim clashText As String
+    clashText = EventsDesignerAdvanced.CheckBuildFileNames(host, entry, _
+                                                           JoinPath(OutputFolder(), "OBTApp_", "__temp.xlsb"))
+    EventsDesignerAdvanced.FinishRunLog "test run"
+
+    'Assert: both paths are named, and the refusal is in the report
+    Assert.IsTrue InStr(1, clashText, "share the name") > 0, _
+                  "A setup and a template of one name should be refused: " & clashText
+    Assert.IsTrue InStr(1, clashText, entry.ValueOf("setuppath")) > 0, _
+                  "The refusal should name the setup path."
+    Assert.IsTrue InStr(1, clashText, entry.ValueOf("temppath")) > 0, _
+                  "The refusal should name the template path."
+    Assert.IsTrue runLog.RecordLength > linesBefore, _
+                  "The refusal should land in the run log."
+
+    'Act and assert: distinct names pass
+    entry.AddInfo vbNullString, "temppath"
+    Assert.AreEqual vbNullString, _
+                    EventsDesignerAdvanced.CheckBuildFileNames(host, entry, _
+                                                               JoinPath(OutputFolder(), "OBTApp_", "__temp.xlsb")), _
+                    "Distinct names should answer no refusal."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestCheckBuildFileNamesRefusesASharedNameAndFilesIt", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("DesignerMulti.Generation")
+Public Sub TestGenerateOneThroughTheInstanceCrossesTheEntries()
+    CustomTestSetTitles Assert, "DesignerMulti", "TestGenerateOneThroughTheInstanceCrossesTheEntries"
+    On Error GoTo Fail
+
+    If Not InstancePathAvailable() Then
+        Assert.IsTrue True, "The instance path exists on Windows alone; nothing to check here."
+        Exit Sub
+    End If
+
+    'Arrange: a Main on this driver with its entries EMPTY, copied into the
+    'instance; the entries are written after the copy, so the only way they
+    'reach the copy's Main is across Run with the first step
+    Dim before As Long
+    before = ExcelProcessCount()
+
+    Dim entry As DesignerEntry
+    Set entry = MainEntry(ThisWorkbook)
+
+    Set heldHost = GenerationHost.Create(ThisWorkbook, HostPathInstance)
+    heldHost.Acquire
+    heldHost.OpenDesignerCopy CopyFolder()
+
+    FillEntries entry, MissingSetupPath()
+    EventsDesignerAdvanced.StartRunLog entry.ValueOf("setuppath"), entry.ValueOf("llname"), FixtureWorkbook
+
+    Dim bar As ProgressBar
+    Set bar = ProgressBar.Create(MultiSheet.Range("N1:R1"), 3)
+
+    'Act
+    Dim errNumber As Long
+    Dim errDesc As String
+    On Error Resume Next
+    EventsDesignerAdvanced.GenerateOne entry, Nothing, heldHost, bar
+    errNumber = Err.Number
+    errDesc = Err.Description
+    On Error GoTo Fail
+
+    'Assert: the step failed in the instance and answered, the entries reached
+    'the copy, the instance is still alive, the bar stands at zero
+    Assert.IsTrue errNumber <> 0, "The step that failed in the instance should raise out of GenerateOne."
+    Assert.IsTrue LenB(errDesc) > 0, "The raise should carry the description the step answered."
+    Assert.IsFalse InStr(1, errDesc, "stopped answering") > 0, _
+                   "A step that answered should leave the instance alive: " & errDesc
+    Assert.IsFalse heldHost.InstanceStopped, "The instance should be marked alive after an answered step."
+    Assert.AreEqual MissingSetupPath(), CopyMainValue("RNG_PathDico"), _
+                    "The setup entry should have reached the copy's Main across Run."
+    Assert.AreEqual OutputFolder(), CopyMainValue("RNG_LLDir"), _
+                    "The output folder entry should have reached the copy's Main across Run."
+    Assert.AreEqual CLng(0), bar.Value, "No step finished, so the bar should still stand at zero."
+    AssertKeptPathIsOnDisk
+
+    'Act: the instance goes away behind the host's back, and the next build
+    'answers the stopped outcome without a call
+    heldHost.DesignerCopy.Close SaveChanges:=False
+    heldHost.HostApplication.Quit
+
+    On Error Resume Next
+    EventsDesignerAdvanced.GenerateOne entry, Nothing, heldHost, bar
+    errNumber = Err.Number
+    errDesc = Err.Description
+    On Error GoTo Fail
+
+    EventsDesignerAdvanced.FinishRunLog "test run"
+
+    'Assert: the stopped outcome names the first step, the abort keeps nothing
+    Assert.IsTrue errNumber <> 0, "A build over an instance gone should raise."
+    Assert.IsTrue InStr(1, errDesc, "stopped answering after BuildSteps.BuildBeginEntries") > 0, _
+                  "The raise should say the instance stopped answering after the first step: " & errDesc
+    Assert.IsTrue heldHost.InstanceStopped, "The instance should be marked stopped."
+    Assert.AreEqual vbNullString, EventsDesignerAdvanced.AbortBuild(heldHost), _
+                    "An abort over an instance gone should keep nothing."
+
+    'Act and assert: the release names the handle and the process leaves
+    Dim outcome As String
+    outcome = heldHost.ReleaseInstance()
+    Assert.IsTrue Left$(outcome, 6) = "ERROR ", _
+                  "ReleaseInstance after the instance is gone should answer an error outcome: " & outcome
+    Set heldHost = Nothing
+    Assert.AreEqual before, WaitForProcessCount(before), _
+                    "No Excel process should be left behind."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestGenerateOneThroughTheInstanceCrossesTheEntries", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("DesignerMulti.Generation")
+Public Sub TestGenerateMultipleRowsThroughTheInstanceKeepsGoing()
+    CustomTestSetTitles Assert, "DesignerMulti", "TestGenerateMultipleRowsThroughTheInstanceKeepsGoing"
+    On Error GoTo Fail
+
+    If Not InstancePathAvailable() Then
+        Assert.IsTrue True, "The instance path exists on Windows alone; nothing to check here."
+        Exit Sub
+    End If
+
+    'Arrange: three rows over one host and one copy. The first names a
+    'setup that is on disk and builds in the instance until the copy, which
+    'is no designer, refuses; the second names a setup carrying the
+    'template's file name; the third names a setup that is not on disk.
+    'The setups are scratch workbooks, so the test leans on no asset file.
+    Dim before As Long
+    before = ExcelProcessCount()
+
+    Dim rowOneSetup As String
+    Dim sharedNameSetup As String
+    Dim templatePath As String
+    rowOneSetup = JoinPath(OutputFolder(), "row_one_setup.xlsb")
+    sharedNameSetup = JoinPath(OutputFolder(), "shared", "shared_name.xlsb")
+    templatePath = JoinPath(OutputFolder(), "shared_name.xlsb")
+    MakeScratchWorkbook rowOneSetup
+    MakeScratchWorkbook sharedNameSetup
+    MakeScratchWorkbook templatePath
+
+    Dim entry As DesignerEntry
+    Set entry = MainEntry(ThisWorkbook)
+
+    Dim lo As ListObject
+    Set lo = MultiSheet.ListObjects(TABLE_MULTI)
+    lo.ListRows.Add
+    lo.ListRows.Add
+    FillMultiRow lo, 1, rowOneSetup
+    FillMultiRow lo, 2, sharedNameSetup
+    FillMultiRow lo, 3, MissingSetupPath()
+
+    EventsDesignerAdvanced.StartRunLog vbNullString, vbNullString, FixtureWorkbook
+
+    Set heldHost = GenerationHost.Create(ThisWorkbook, HostPathInstance)
+    heldHost.Acquire
+    heldHost.OpenDesignerCopy CopyFolder()
+
+    'Act
+    Dim builtCount As Long
+    Dim failedCount As Long
+    EventsDesignerMulti.GenerateMultipleRows lo, entry, Nothing, builtCount, failedCount, _
+                                             templatePath, heldHost
+
+    EventsDesignerAdvanced.FinishRunLog "test run"
+
+    'Assert: every row answered in its result cell and the loop kept going
+    Assert.AreEqual CLng(0), builtCount, "No row can build over a copy that is no designer."
+    Assert.AreEqual CLng(3), failedCount, "The three rows should each count as failed or refused."
+    Assert.IsTrue Left$(ResultOf(lo, 1), 7) = "Failed:", _
+                  "The first row should fail inside the instance: " & ResultOf(lo, 1)
+    Assert.IsFalse InStr(1, ResultOf(lo, 1), "stopped answering") > 0, _
+                   "The first row's fault should come from the step, with the instance alive: " & ResultOf(lo, 1)
+    Assert.IsTrue Left$(ResultOf(lo, 2), 8) = "Refused:", _
+                  "The second row should be refused before its build: " & ResultOf(lo, 2)
+    Assert.IsTrue InStr(1, ResultOf(lo, 2), sharedNameSetup) > 0, _
+                  "The refusal should name the setup path: " & ResultOf(lo, 2)
+    Assert.IsTrue InStr(1, ResultOf(lo, 2), templatePath) > 0, _
+                  "The refusal should name the template path: " & ResultOf(lo, 2)
+    Assert.IsTrue Left$(ResultOf(lo, 3), 8) = "Refused:", _
+                  "The third row should be refused by the entry checks: " & ResultOf(lo, 3)
+    Assert.IsFalse heldHost.InstanceStopped, "The instance should be alive after the three rows."
+    Assert.AreEqual rowOneSetup, CopyMainValue("RNG_PathDico"), _
+                    "The copy's Main should carry the entries of the last row that reached its build."
+
+    'Act and assert: the release quits the instance and leaves no process
+    Assert.AreEqual "OK", heldHost.ReleaseInstance(), "ReleaseInstance should answer OK."
+    Set heldHost = Nothing
+    Assert.AreEqual before, WaitForProcessCount(before), _
+                    "No Excel process should be left behind."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestGenerateMultipleRowsThroughTheInstanceKeepsGoing", Err.Number, Err.Description
+End Sub
+
+
+'@section Generation driver helpers
+'===============================================================================
+
+'@sub-title Whether this Excel can start a second instance
+'@return Boolean. True on Windows.
+Private Function InstancePathAvailable() As Boolean
+    #If Mac Then
+        InstancePathAvailable = False
+    #Else
+        InstancePathAvailable = True
+    #End If
+End Function
+
+'@sub-title The number of Excel processes on the machine
+'@return Long. The count, or -1 when it cannot be read.
+Private Function ExcelProcessCount() As Long
+    #If Mac Then
+        ExcelProcessCount = -1
+    #Else
+        Dim management As Object
+        Dim processes As Object
+
+        On Error GoTo Unreadable
+        Set management = GetObject("winmgmts:\\.\root\cimv2")
+        Set processes = management.ExecQuery("SELECT ProcessId FROM Win32_Process WHERE Name = 'EXCEL.EXE'")
+        ExcelProcessCount = processes.Count
+        On Error GoTo 0
+        Exit Function
+
+Unreadable:
+        ExcelProcessCount = -1
+    #End If
+End Function
+
+'@sub-title Wait for the Excel process count to reach a value
+'@details
+'A quit instance takes a moment to leave the process table, so the count
+'is read again until it answers the expected value or the wait runs out.
+'@param expected Long. The count waited for.
+'@return Long. The last count read.
+Private Function WaitForProcessCount(ByVal expected As Long) As Long
+    Dim startedAt As Single
+    Dim observed As Long
+
+    startedAt = Timer
+    Do
+        observed = ExcelProcessCount()
+        If observed = expected Then Exit Do
+        DoEvents
+    Loop While Timer - startedAt < PROCESS_WAIT_SECONDS And Timer >= startedAt
+
+    WaitForProcessCount = observed
+End Function
+
+'@sub-title The folder the designer copy is written in
+'@return String. An existing folder beside this driver.
+Private Function CopyFolder() As String
+    CopyFolder = BuildTempFolder(ThisWorkbook, COPY_FOLDER_NAME)
+End Function
+
+'@sub-title The output folder the builds of this suite point at
+'@return String. An existing folder beside this driver.
+Private Function OutputFolder() As String
+    OutputFolder = BuildTempFolder(ThisWorkbook, OUTPUT_FOLDER_NAME)
+End Function
+
+'@sub-title A setup path no file is at
+'@return String.
+Private Function MissingSetupPath() As String
+    MissingSetupPath = JoinPath(OutputFolder(), "missing_setup.xlsb")
+End Function
+
+'@sub-title Write an empty workbook at a path, as the setup or template of a row
+'@details
+'The entry checks want the file on disk and nothing more; the build in the
+'instance then refuses it, which is the answer under test.
+'@param filePath String. Where the workbook is saved. Its folder is made first.
+Private Sub MakeScratchWorkbook(ByVal filePath As String)
+    Dim scratch As Workbook
+
+    EnsureFolder ParentFolder(filePath)
+
+    Set scratch = Application.Workbooks.Add
+    scratch.SaveAs fileName:=filePath, fileFormat:=xlExcel12
+    scratch.Close SaveChanges:=False
+End Sub
+
+'@sub-title A Main worksheet carrying the entry ranges the build reads, and an entry over it
+'@details
+'The eleven named ranges DesignerEntry writes, one cell each, on a Main
+'sheet of the workbook. The names are workbook-scoped, the way the
+'designer carries them.
+'@param targetBook Workbook. The workbook to stand the Main up on.
+'@return DesignerEntry. The entry manager over that Main.
+Private Function MainEntry(ByVal targetBook As Workbook) As DesignerEntry
+    Dim mainSheet As Worksheet
+    Dim names() As String
+    Dim index As Long
+
+    If targetBook Is ThisWorkbook Then
+        driverMainMade = Not WorksheetExists(SHEET_MAIN, ThisWorkbook)
+    End If
+
+    Set mainSheet = EnsureWorksheet(SHEET_MAIN, targetBook)
+
+    names = Split(ENTRY_RANGE_NAMES, ",")
+    For index = LBound(names) To UBound(names)
+        targetBook.Names.Add Name:=names(index), RefersTo:=mainSheet.Cells(index + 1, 1)
+    Next index
+
+    Set MainEntry = DesignerEntry.Create(mainSheet)
+End Function
+
+'@sub-title Write the entries of one build: a setup, the output folder, a name, the languages, a design
+'@param entry DesignerEntry. The entry manager over a Main.
+'@param setupPath String. The setup entry.
+Private Sub FillEntries(ByVal entry As DesignerEntry, ByVal setupPath As String)
+    entry.AddInfo setupPath, "setuppath"
+    entry.AddInfo vbNullString, "geopath"
+    entry.AddInfo OutputFolder(), "lldir"
+    entry.AddInfo "hosted_probe", "llname"
+    entry.AddInfo vbNullString, "llpassword"
+    entry.AddInfo vbNullString, "debugpassword"
+    entry.AddInfo "ENG", "setuplang"
+    entry.AddInfo "ENG", "lllang"
+    entry.AddInfo "1", "epiweekstart"
+    entry.AddInfo "Standard", "design"
+    entry.AddInfo vbNullString, "temppath"
+End Sub
+
+'@sub-title Fill one T_Multi row with a setup and the values the entry checks want
+'@param lo ListObject. The T_Multi ListObject.
+'@param rowIdx Long. The ListRows position of the row.
+'@param setupPath String. The setups cell.
+Private Sub FillMultiRow(ByVal lo As ListObject, ByVal rowIdx As Long, ByVal setupPath As String)
+    With lo.ListRows(rowIdx).Range
+        .Cells(1, 2).Value = setupPath
+        .Cells(1, 4).Value = OutputFolder()
+        .Cells(1, 5).Value = "hosted_row_" & CStr(rowIdx)
+        .Cells(1, 8).Value = "ENG"
+        .Cells(1, 9).Value = "ENG"
+        .Cells(1, 10).Value = "1"
+        .Cells(1, 11).Value = "Standard"
+    End With
+End Sub
+
+'@sub-title The result cell of one T_Multi row
+'@param lo ListObject. The T_Multi ListObject.
+'@param rowIdx Long. The ListRows position of the row.
+'@return String.
+Private Function ResultOf(ByVal lo As ListObject, ByVal rowIdx As Long) As String
+    ResultOf = CStr(lo.ListRows(rowIdx).Range.Cells(1, 12).Value)
+End Function
+
+'@sub-title One entry read off the Main of the copy in the instance
+'@param rangeName String. The named range.
+'@return String. The cell text.
+Private Function CopyMainValue(ByVal rangeName As String) As String
+    Dim copyBook As Workbook
+
+    Set copyBook = heldHost.DesignerCopy
+    CopyMainValue = CStr(copyBook.Worksheets(SHEET_MAIN).Range(rangeName).Value)
+End Function
+
+'@sub-title The kept file of the last build, when there is one, is on disk
+Private Sub AssertKeptPathIsOnDisk()
+    Dim keptPath As String
+
+    keptPath = EventsDesignerAdvanced.LastKeptPath()
+    If LenB(keptPath) = 0 Then Exit Sub
+
+    Assert.IsTrue LenB(Dir$(keptPath)) > 0, _
+                  "A kept path answered by the build should point at a file: " & keptPath
+End Sub
+
+'@sub-title Take the Main sheet and its names off this driver
+Private Sub RemoveDriverMain()
+    Dim names() As String
+    Dim index As Long
+    Dim previousAlerts As Boolean
+
+    If Not driverMainMade Then Exit Sub
+
+    On Error Resume Next
+    names = Split(ENTRY_RANGE_NAMES, ",")
+    For index = LBound(names) To UBound(names)
+        ThisWorkbook.Names(names(index)).Delete
+    Next index
+
+    previousAlerts = Application.DisplayAlerts
+    Application.DisplayAlerts = False
+    ThisWorkbook.Worksheets(SHEET_MAIN).Delete
+    Application.DisplayAlerts = previousAlerts
+    On Error GoTo 0
+
+    driverMainMade = False
+End Sub
+
+'@sub-title ReleaseInstance the host of the running test
+Private Sub ReleaseHeldHost()
+    On Error Resume Next
+    If Not heldHost Is Nothing Then heldHost.ReleaseInstance
+    Set heldHost = Nothing
+    On Error GoTo 0
+End Sub
+
+'@sub-title Empty the output folder of this suite, the scratch folder under it included
+Private Sub ClearOutputFolder()
+    Dim scratchFolder As String
+
+    On Error Resume Next
+    scratchFolder = JoinPath(OutputFolder(), "OBTApp_")
+    Kill JoinPath(scratchFolder, "*")
+    RmDir scratchFolder
+    Kill JoinPath(OutputFolder(), "shared", "*")
+    RmDir JoinPath(OutputFolder(), "shared")
+    Kill JoinPath(OutputFolder(), "*")
+    On Error GoTo 0
 End Sub
 
 

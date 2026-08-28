@@ -37,13 +37,10 @@ Option Explicit
 'THE HEADLESS WORKFLOW, STEP TWO: BUILDING A LINELIST.
 '-------------------------------------------------------------------------------
 'BuildLinelistFromSetup runs the generation with no designer machinery: no
-'ribbon press, no DesignerEntry, no dialog and no progress bar. It is the body
-'of EventsDesignerAdvanced.GenerateOne, driven from here, and it differs from
-'that routine in ONE way that matters: GenerateOne builds its specifications
-'over ThisWorkbook, so it can only ever generate from the workbook it is
-'running inside. This one takes the designer-shaped workbook as a parameter,
-'which is what lets a test module -- or an R session -- drive a build from
-'outside.
+'ribbon press, no DesignerEntry, no dialog and no progress bar. It drives the
+'steps of BuildSteps in place, the same steps EventsDesignerAdvanced.GenerateOne
+'drives, over a designer-shaped workbook it takes as a parameter, which is
+'what lets a test module -- or an R session -- drive a build from outside.
 '
 'WHY A DESIGNER FILE IS STILL COPIED
 '-------------------------------------------------------------------------------
@@ -73,7 +70,7 @@ Option Explicit
 'a user presses instead of a second copy of it written for the harness.
 '@depends BetterArray, Checking, ApplicationState, LinelistSpecs, Linelist
 '@depends LLDataEntry, LLSheets, AnalysisOutput, DropdownLists, GenerationLog
-'@depends InitTransfer, EventsDesignerAdvanced, EventsDesignerMulti
+'@depends InitTransfer, EventsDesignerAdvanced, EventsDesignerMulti, BuildSteps
 '@depends DesignerEntry, DesignerPreparation, LLFormat
 
 'The module injected into the target setup, and the entry point it carries.
@@ -81,6 +78,11 @@ Private Const INJECTED_MODULE As String = "OBTSetupImportHeadless"
 Private Const INJECTED_ENTRY As String = "OBTHeadlessImportSetup"
 
 Private Const OUTCOME_OK As String = "OK"
+
+'The lead of a step outcome that failed, and the separator of the two
+'totals BuildSteps.BuildCounts answers. Both are the shape BuildSteps answers.
+Private Const OUTCOME_ERROR_LEAD As String = "ERROR "
+Private Const COUNTS_SEP As String = "|"
 
 'What Err.Raise reports as the source. The house shape: every module carries
 'its own ThrowError, because the helper is Private in each of them.
@@ -1184,12 +1186,18 @@ End Function
 '@section The generation itself
 '===============================================================================
 
-'@Description("Run the build phases over a prepared designer workbook.")
+'@Description("Run the build steps over a prepared designer workbook.")
 '@details
-'The order of EventsDesignerAdvanced.GenerateOne: specifications, linelist,
-'one pass per data entry sheet, the two dropdown stores, the analyses, the
-'save. The run log takes each phase's checkings as that phase completes, so a
-'build that dies still leaves a report of the phases that finished.
+'The steps of BuildSteps, in the order EventsDesignerAdvanced.GenerateOne
+'runs them: begin (specifications and transfer), linelist, one step per
+'data entry sheet, dropdowns, analyses, save. Every step answers an
+'outcome string and traps its own raise; a failed step has already kept
+'the unfinished workbook as __temp.xlsb and closed it, so nothing is left
+'open behind a failure. The run log takes each step's checkings as text
+'after that step, so a build that dies still leaves a report of the
+'phases that finished; on a failure the log is closed and written out
+'here, because the caller turns the raise into the run's outcome and
+'never reaches the export below.
 '
 'The log is opened over the designer's __check worksheet and is optional: a
 'designer without that sheet builds the same linelist and reports it in the
@@ -1198,76 +1206,53 @@ End Function
 '@param setupPath String. The setup to generate from.
 '@param outputFolder String. Where the log is written.
 '@param outputName String. The base name of the log file.
-'@throws Whatever any build phase raises.
+'@throws The fault of the step that failed, with its number and source.
 Private Sub RunGeneration(ByVal designerBook As Workbook, _
                           ByVal setupPath As String, _
                           ByVal outputFolder As String, _
                           ByVal outputName As String)
-    Dim specs As LinelistSpecs
-    Dim ll As Linelist
     Dim runLog As GenerationLog
-    Dim sheetList As BetterArray
-    Dim sheetInfo As LLSheets
-    Dim anaOut As AnalysisOutput
-    Dim store As DropdownLists
+    Dim sheetCount As Long
     Dim counter As Long
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDesc As String
 
     Set runLog = OpenRunLog(designerBook, setupPath, outputName)
 
-    Set specs = LinelistSpecs.Create(designerBook)
+    On Error GoTo StepFailed
+
     AddToReport "preparing the specifications from " & setupPath
-    specs.Prepare setupPath
-    AddToReport "specifications prepared, template build: " & CStr(specs.HasTemplate())
+    TakeStep BuildSteps.BuildBegin(designerBook), runLog
+    AddToReport "specifications prepared and transferred"
 
-    If Not runLog Is Nothing Then runLog.Harvest specs
-    If InitTransfer.HasCheckings() Then CollectInto runLog, InitTransfer.CheckingValues()
-    AddToReport "specification checkings harvested"
-
-    Set ll = Linelist.Create(specs)
     AddToReport "preparing the linelist workbook"
-    ll.Prepare
+    TakeStep BuildSteps.BuildLinelist(), runLog
     AddToReport "linelist prepared and code transferred"
 
-    If ll.HasCheckings Then CollectInto runLog, ll.CheckingValues
+    sheetCount = CLng(TakeStep(BuildSteps.BuildSheetCount(), runLog))
+    For counter = 1 To sheetCount
+        AddToReport "building data entry sheet " & CStr(counter) & " of " & CStr(sheetCount)
+        TakeStep BuildSteps.BuildSheet(counter), runLog
+    Next counter
 
-    Set sheetList = ll.SheetNames
-    Set sheetInfo = ll.SheetInfoManager
-
-    For counter = sheetList.LowerBound To sheetList.UpperBound
-        AddToReport "building data entry sheet " & CStr(sheetList.Item(counter))
-        BuildOneDataSheet ll, sheetInfo, CStr(sheetList.Item(counter)), runLog
-    Next
-
+    ReadBuildCounts
     AddToReport "built " & CStr(lastSheets) & " data entry sheet(s), " & _
                 CStr(lastVariables) & " variable(s)"
 
     AddToReport "writing the dropdown stores"
-    Set store = ll.Dropdown(1)
-    If store.HasCheckings Then CollectInto runLog, store.CheckingValues
-
-    Set store = ll.Dropdown(2)
-    If store.HasCheckings Then CollectInto runLog, store.CheckingValues
+    TakeStep BuildSteps.BuildDropdowns(), runLog
 
     AddToReport "writing the analyses"
-    Set anaOut = AnalysisOutput.Create(specs.AnalysisObject.Wksh(), ll)
-
-    'The handler keeps the analyses' own entries when the stage raises. Without
-    'it a stage that died took them with it, and the generation log said nothing
-    'about which scope or which table refused -- see the same note in
-    'EventsDesignerAdvanced.GenerateOne, where a Windows type mismatch showed
-    'exactly that.
-    On Error GoTo AnalysesFailed
-    anaOut.WriteAnalysis AnalysisBuildStageAll
-    On Error GoTo 0
-
-    If anaOut.HasCheckings Then CollectInto runLog, anaOut.CheckingValues
+    TakeStep BuildSteps.BuildAnalyses(), runLog
     AddToReport "analyses written"
 
-    'The path is read before SaveLL, because the save closes the workbook and
-    'drops both references to it.
-    lastLinelist = JoinPath(specs.Value("lldir"), specs.Value("llname") & ".xlsb")
+    'The path is read before the save, from the entries the save reads.
+    lastLinelist = JoinPath(ReadMainEntry(designerBook, RNG_LL_DIR), _
+                            ReadMainEntry(designerBook, RNG_LL_NAME) & ".xlsb")
     AddToReport "saving the linelist to " & lastLinelist
-    ll.SaveLL
+    TakeStep BuildSteps.BuildSave(), runLog
+    ReadBuildCounts
     AddToReport "saved: " & lastLinelist
 
     If Not runLog Is Nothing Then
@@ -1276,64 +1261,77 @@ Private Sub RunGeneration(ByVal designerBook As Workbook, _
     End If
     Exit Sub
 
-AnalysesFailed:
-    Dim anaErrNumber As Long
-    Dim anaErrDesc As String
+StepFailed:
+    'The fault is read before anything else runs: the log calls below have
+    'their own On Error, and an On Error statement clears Err.
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDesc = Err.Description
 
-    anaErrNumber = Err.Number
-    anaErrDesc = Err.Description
-
-    'Silently, and the log is written out here as well: the caller turns this
-    'raise into the run's outcome and never reaches the export below, so an
-    'unexported log is a log nobody can read.
     On Error Resume Next
-    If anaOut.HasCheckings Then CollectInto runLog, anaOut.CheckingValues
+    ReadBuildCounts
     If Not runLog Is Nothing Then
-        runLog.Finish "Failed writing the analyses: " & anaErrDesc, _
-                      lastSheets, lastVariables
+        runLog.Finish "Failed: " & errDesc, lastSheets, lastVariables
         lastLog = runLog.ExportText(outputFolder, outputName)
     End If
     On Error GoTo 0
 
-    AddToReport "failed writing the analyses: " & anaErrDesc
-    Err.Raise anaErrNumber, "HeadlessBuild.RunGeneration", anaErrDesc
+    AddToReport "failed: " & errDesc
+    Err.Raise errNumber, errSource, errDesc
 End Sub
 
-'@Description("Build one data entry sheet and take what it filed into the log.")
+'@Description("Take one step outcome: pull its checkings into the log, raise on a failure.")
 '@details
-'A dictionary sheet of neither layout is not this routine's to judge: LLSheets
-'answers its type and anything else is skipped, which is what GenerateOne's own
-'BuildOneSheet does.
-'@param ll Linelist. The linelist under construction.
-'@param sheetInfo LLSheets. The shared sheet information manager.
-'@param sheetName String. The sheet to build.
+'The checkings are pulled first, whatever the step answered, since a
+'failed step files the phase it reached before it answers. A failed
+'outcome is raised with the number the step reported, the source between
+'its brackets and the rest of the outcome as description, which carries
+'the kept path when the step kept a file.
+'@param outcome String. What the step answered.
 '@param runLog GenerationLog. The open log, or Nothing.
-Private Sub BuildOneDataSheet(ByVal ll As Linelist, _
-                              ByVal sheetInfo As LLSheets, _
-                              ByVal sheetName As String, _
-                              ByVal runLog As GenerationLog)
-    Dim sheetType As String
-    Dim layer As Byte
-    Dim listBld As LLDataEntry
+'@return String. The outcome, for the steps that answer a value.
+Private Function TakeStep(ByVal outcome As String, ByVal runLog As GenerationLog) As String
+    Dim number As Long
+    Dim sourceText As String
+    Dim descText As String
+    Dim openAt As Long
+    Dim closeAt As Long
 
-    sheetType = sheetInfo.SheetInfo(sheetName)
+    CollectTextInto runLog, BuildSteps.BuildCheckings()
 
-    If sheetType = "vlist1D" Then
-        layer = LLDataEntryLayerVList
-    ElseIf sheetType = "hlist2D" Then
-        layer = LLDataEntryLayerHList
-    Else
-        Exit Sub
+    If Left$(outcome, Len(OUTCOME_ERROR_LEAD)) <> OUTCOME_ERROR_LEAD Then
+        TakeStep = outcome
+        Exit Function
     End If
 
-    Set listBld = LLDataEntry.Create(layer, sheetName, ll, sheetInfo)
-    listBld.Build
+    number = CLng(Val(Mid$(outcome, Len(OUTCOME_ERROR_LEAD) + 1)))
+    If number = 0 Then number = ProjectError.ErrorUnexpectedState
 
-    If listBld.HasCheckings Then CollectInto runLog, listBld.CheckingValues
-    If listBld.HasMilestones Then CollectInto runLog, listBld.MilestoneValues, True
+    sourceText = MODULE_NAME & ".RunGeneration"
+    openAt = InStr(outcome, "(")
+    closeAt = InStr(outcome, "): ")
+    If openAt > 0 And closeAt > openAt Then
+        sourceText = Mid$(outcome, openAt + 1, closeAt - openAt - 1)
+    End If
 
-    lastSheets = lastSheets + 1
-    lastVariables = lastVariables + listBld.VariablesWritten
+    descText = outcome
+    If closeAt > 0 Then descText = Mid$(outcome, closeAt + 3)
+
+    Err.Raise number, sourceText, descText
+End Function
+
+'@Description("Read the totals of the build off BuildSteps.BuildCounts.")
+'@details
+'The counts run from BuildBegin and survive the failure exit and the
+'save, so they are read whole, once after the sheets and once at the end.
+Private Sub ReadBuildCounts()
+    Dim parts() As String
+
+    parts = Split(BuildSteps.BuildCounts(), COUNTS_SEP)
+    If UBound(parts) < 1 Then Exit Sub
+
+    lastSheets = CLng(Val(parts(0)))
+    lastVariables = CLng(Val(parts(1)))
 End Sub
 
 '@Description("Open the run log over the designer's __check worksheet.")
@@ -1361,16 +1359,19 @@ Private Function OpenRunLog(ByVal designerBook As Workbook, _
     Set OpenRunLog = builtLog
 End Function
 
-'@Description("Hand one bundle of checkings to the log when there is a log.")
+'@Description("Hand the bundle texts a step queued to the log when there is a log.")
+'@details
+'The text is what BuildSteps.BuildCheckings answers: the joined bundle
+'texts of GenerationLog.BundleText, record-only flags carried. An answer
+'carrying the error lead is dropped; the step outcome is what carries the
+'fault of the build.
 '@param runLog GenerationLog. The open log, or Nothing.
-'@param checks Checking. The bundle.
-'@param recordOnly Optional Boolean. True keeps the bundle out of the worksheet.
-Private Sub CollectInto(ByVal runLog As GenerationLog, _
-                        ByVal checks As Checking, _
-                        Optional ByVal recordOnly As Boolean = False)
+'@param bundlesText String. The queued bundle texts.
+Private Sub CollectTextInto(ByVal runLog As GenerationLog, ByVal bundlesText As String)
     If runLog Is Nothing Then Exit Sub
-    If checks Is Nothing Then Exit Sub
-    runLog.Collect checks, recordOnly
+    If LenB(bundlesText) = 0 Then Exit Sub
+    If Left$(bundlesText, Len(OUTCOME_ERROR_LEAD)) = OUTCOME_ERROR_LEAD Then Exit Sub
+    runLog.CollectText bundlesText
 End Sub
 
 

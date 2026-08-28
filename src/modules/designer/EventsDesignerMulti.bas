@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the Multi group on the designer workbook, and the driver that generates one linelist per row.")
-'@depends CustomTable, ApplicationState, OSFiles, DropdownLists, BetterArray, EventsDesignerAdvanced, EventsDesignerCore, DesignerEntry, DesignerPreparation, GenerationLog, Checking, ProgressBar
+'@depends CustomTable, ApplicationState, OSFiles, DropdownLists, BetterArray, EventsDesignerAdvanced, EventsDesignerCore, DesignerEntry, DesignerPreparation, GenerationLog, Checking, ProgressBar, GenerationHost, TemporaryRepos
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Ribbon callbacks for the Multi group manage the T_Multi ListObject on
@@ -104,6 +104,13 @@ Private Const MSG_PLACE_DATA As String = "Please place the cursor inside the tab
 'and no raise, so this code lands before the hand work and wakes up
 'with it.
 Private Const RNG_PROGRESS_BAR As String = "RNG_ProgressBar"
+
+'The scratch folder TemporaryRepos makes under an output folder, and the
+'name of the unfinished workbook a failed build keeps there. Both are
+'repeated from the classes that own them (their constants are Private),
+'so the pre-flight of a row can name the kept file before any build runs.
+Private Const SCRATCH_FOLDER As String = "OBTApp_"
+Private Const KEPT_FILE_NAME As String = "__temp.xlsb"
 Private Const RNG_PROGRESS_STATUS As String = "RNG_ProgressStatus"
 
 'The result column value of a row that built and saved
@@ -626,22 +633,22 @@ End Sub
 '@details
 'The multi driver. One generation report serves the whole run and one
 'progress bar moves over the rows when the sheet carries its range. The
-'report is shown once the screen is back, then the summary message closes
+'report is shown once the run is over, then the summary message closes
 'the run; each row's own outcome is in the result column.
 '
-'The ribbon file of the run is settled before the busy state, because it
-'may open a dialog. Every row is built with it.
+'The ribbon file of the run is settled before anything else, because it
+'may open a dialog. Every row is built with it. The path is read next,
+'through GenerationHost.InPlace: in place the rows build in this Excel
+'with the screen off for the whole run; on the instance path they build
+'in one hidden Excel over one copy of the designer, and the bar over the
+'rows moves here with the screen on.
 '@EntryPoint
 Public Sub clickGenerateMulti(ByRef ribbonControl As IRibbonControl)
     Dim lo As ListObject
-    Dim appScope As ApplicationState
-    Dim entry As DesignerEntry
-    Dim bar As ProgressBar
     Dim buildRows As Long
-    Dim builtCount As Long
-    Dim failedCount As Long
     Dim templatePath As String
     Dim designerBook As Workbook
+    Dim host As GenerationHost
 
     If Not OnMultiSheet() Then Exit Sub
 
@@ -667,6 +674,39 @@ Public Sub clickGenerateMulti(ByRef ribbonControl As IRibbonControl)
     If Not ResolveRibbonTemplate(designerBook, templatePath) Then Exit Sub
 
     On Error GoTo Cleanup
+    Set host = GenerationHost.Create(designerBook)
+
+    If host.InPlace Then
+        Set host = Nothing
+        GenerateMultiInPlace lo, buildRows, templatePath
+    Else
+        GenerateMultiInInstance lo, designerBook, buildRows, templatePath, host
+    End If
+    Exit Sub
+
+Cleanup:
+    Debug.Print "clickGenerateMulti: "; Err.Number; Err.Description
+    MsgBox "Unable to run the multi generation: " & Err.Description, _
+           vbExclamation + vbOKOnly, PROMPT_TITLE
+End Sub
+
+'@Description("The multi run in this Excel, with the screen off from the press to the restore.")
+'@details
+'The A3 driver: one busy scope over the whole run, the rows through
+'GenerateMultipleRows, the restore, the report once.
+'@param lo ListObject. The T_Multi ListObject.
+'@param buildRows Long. The number of rows the run builds, for the bar.
+'@param templatePath String. The ribbon file of the run. Empty builds the buttons.
+Private Sub GenerateMultiInPlace(ByVal lo As ListObject, _
+                                 ByVal buildRows As Long, _
+                                 ByVal templatePath As String)
+    Dim appScope As ApplicationState
+    Dim entry As DesignerEntry
+    Dim bar As ProgressBar
+    Dim builtCount As Long
+    Dim failedCount As Long
+
+    On Error GoTo Cleanup
     Set appScope = ApplicationState.Create(Application)
     appScope.ApplyBusyState suppressEvents:=True, busyCursor:=xlNorthWestArrow
 
@@ -681,17 +721,15 @@ Public Sub clickGenerateMulti(ByRef ribbonControl As IRibbonControl)
     GenerateMultipleRows lo, entry, bar, builtCount, failedCount, templatePath
 
     If Not bar Is Nothing Then bar.Complete CStr(builtCount) & " built"
-    EventsDesignerAdvanced.FinishRunLog CStr(builtCount) & " linelist(s) built, " & _
-                                        CStr(failedCount) & " failed"
+    EventsDesignerAdvanced.FinishRunLog RunSummary(builtCount, failedCount)
 
     appScope.Restore
     Set appScope = Nothing
 
     'The report, once, with the screen already back on.
     EventsDesignerAdvanced.ShowRunLog
-    MsgBox CStr(builtCount) & " linelist(s) built, " & CStr(failedCount) & _
-           " failed. The " & Chr(34) & COL_RESULT & Chr(34) & _
-           " column carries each row's outcome.", _
+    MsgBox RunSummary(builtCount, failedCount) & ". The " & Chr(34) & COL_RESULT & _
+           Chr(34) & " column carries each row's outcome.", _
            vbInformation + vbOKOnly, PROMPT_TITLE
     Exit Sub
 
@@ -713,6 +751,111 @@ Cleanup:
         MsgBox "Unable to run the multi generation: " & errDesc, _
                vbExclamation + vbOKOnly, PROMPT_TITLE
     End If
+End Sub
+
+'@Description("The multi run in the hidden instance, with the bar over the rows moving here.")
+'@details
+'One host and one copy of the designer serve the whole run; every row
+'writes its entries on Main here and hands them to the copy as text with
+'its first step. This Excel is never busy: events go off and the cursor
+'changes, the screen stays on, and the bar's cell writes paint on their
+'own. The copy is written in the scratch folder beside the designer,
+'through a throwaway repository whose drop empties that folder, so the
+'kept name is marked on it first. The instance is released on every
+'exit, and in the cleanup the host is dropped before anything else runs.
+'@param lo ListObject. The T_Multi ListObject.
+'@param designerBook Workbook. The designer holding the table.
+'@param buildRows Long. The number of rows the run builds, for the bar.
+'@param templatePath String. The ribbon file of the run. Empty builds the buttons.
+'@param host GenerationHost. The host, created and on the instance path.
+Private Sub GenerateMultiInInstance(ByVal lo As ListObject, _
+                                    ByVal designerBook As Workbook, _
+                                    ByVal buildRows As Long, _
+                                    ByVal templatePath As String, _
+                                    ByVal host As GenerationHost)
+    Dim entry As DesignerEntry
+    Dim bar As ProgressBar
+    Dim scratch As TemporaryRepos
+    Dim builtCount As Long
+    Dim failedCount As Long
+    Dim previousEvents As Boolean
+    Dim previousCursor As Long
+    Dim sideHeld As Boolean
+
+    On Error GoTo Cleanup
+    Set entry = EventsDesignerCore.EntryManager()
+
+    previousEvents = Application.EnableEvents
+    previousCursor = Application.Cursor
+    Application.EnableEvents = False
+    Application.Cursor = xlWait
+    sideHeld = True
+
+    EventsDesignerAdvanced.StartRunLog
+
+    Set bar = ResolveProgressBar(lo.Parent, buildRows)
+
+    Set scratch = TemporaryRepos.Create(designerBook.Path)
+    scratch.EnsureReady
+    scratch.KeepFile KEPT_FILE_NAME
+
+    host.Acquire
+    host.OpenDesignerCopy scratch.RootPath
+
+    GenerateMultipleRows lo, entry, bar, builtCount, failedCount, templatePath, host
+
+    If Not bar Is Nothing Then bar.Complete CStr(builtCount) & " built"
+    EventsDesignerAdvanced.FinishRunLog RunSummary(builtCount, failedCount)
+
+    EventsDesignerAdvanced.ReleaseBuildHost host
+    Set host = Nothing
+
+    RestoreVisibleSide previousEvents, previousCursor
+
+    EventsDesignerAdvanced.ShowRunLog
+    MsgBox RunSummary(builtCount, failedCount) & ". The " & Chr(34) & COL_RESULT & _
+           Chr(34) & " column carries each row's outcome.", _
+           vbInformation + vbOKOnly, PROMPT_TITLE
+    Exit Sub
+
+Cleanup:
+    Dim errNumber As Long
+    Dim errDesc As String
+    errNumber = Err.Number
+    errDesc = Err.Description
+
+    On Error Resume Next
+    EventsDesignerAdvanced.ReleaseBuildHost host
+    Set host = Nothing
+    If Not bar Is Nothing Then bar.Reset errDesc
+    EventsDesignerAdvanced.FinishRunLog "Failed: " & errDesc
+    If sideHeld Then RestoreVisibleSide previousEvents, previousCursor
+    EventsDesignerAdvanced.ShowRunLog
+    On Error GoTo 0
+
+    If errNumber <> 0 Then
+        Debug.Print "clickGenerateMulti: "; errNumber; errDesc
+        MsgBox "Unable to run the multi generation: " & errDesc, _
+               vbExclamation + vbOKOnly, PROMPT_TITLE
+    End If
+End Sub
+
+'@Description("The closing line of a run: how many rows built and how many failed.")
+'@param builtCount Long. The rows built and saved.
+'@param failedCount Long. The rows refused or failed.
+'@return String. "<n> linelist(s) built, <m> failed".
+Private Function RunSummary(ByVal builtCount As Long, ByVal failedCount As Long) As String
+    RunSummary = CStr(builtCount) & " linelist(s) built, " & CStr(failedCount) & " failed"
+End Function
+
+'@Description("Put the events and the cursor of this Excel back.")
+'@param previousEvents Boolean. The events setting before the run.
+'@param previousCursor Long. The cursor before the run.
+Private Sub RestoreVisibleSide(ByVal previousEvents As Boolean, ByVal previousCursor As Long)
+    On Error Resume Next
+    Application.EnableEvents = previousEvents
+    Application.Cursor = previousCursor
+    On Error GoTo 0
 End Sub
 
 
@@ -805,18 +948,29 @@ End Function
 'after, so the parts of that build read as subsections under the row's
 'own heading. The section is closed on every path out of the row, the
 'failed one included.
+'
+'ONE HOST FOR THE RUN
+'-------------------------------------------------------------------------------
+'With a host on the instance path every row builds in the same hidden
+'Excel over the same copy of the designer: the row's entries are written
+'on Main here and cross with the row's first step, the file names of the
+'row are checked before its build, and a row that fails has its build
+'stopped through the host. With no host, or a host in place, the rows
+'build in this Excel.
 '@param lo ListObject. The T_Multi ListObject.
 '@param entry DesignerEntry. The entry manager over the Main worksheet.
 '@param bar ProgressBar. The bar over the rows. Nothing means no bar.
 '@param builtCount Long. Answers the number of rows built and saved.
 '@param failedCount Long. Answers the number of rows refused or failed.
 '@param templatePath Optional String. The ribbon file every row is built with. Empty builds the buttons.
+'@param host Optional GenerationHost. The host the rows build through, acquired with its copy open. Nothing builds here.
 Public Sub GenerateMultipleRows(ByVal lo As ListObject, _
                                 ByVal entry As DesignerEntry, _
                                 ByVal bar As ProgressBar, _
                                 ByRef builtCount As Long, _
                                 ByRef failedCount As Long, _
-                                Optional ByVal templatePath As String = vbNullString)
+                                Optional ByVal templatePath As String = vbNullString, _
+                                Optional ByVal host As GenerationHost = Nothing)
     Dim rowIdx As Long
     Dim processed As Long
     Dim setupPath As String
@@ -845,7 +999,7 @@ Public Sub GenerateMultipleRows(ByVal lo As ListObject, _
 
             'The result cell shows the row's milestones while the row
             'builds and ends as the row's outcome below.
-            rowBuilt = BuildRow(entry, outcomeText, RowCellRange(lo, rowIdx, COL_RESULT))
+            rowBuilt = BuildRow(entry, outcomeText, RowCellRange(lo, rowIdx, COL_RESULT), host)
 
             If rowBuilt Then
                 builtCount = builtCount + 1
@@ -978,21 +1132,29 @@ End Function
 '@Description("Run the entry checks and one build; answer the outcome with no raise.")
 '@details
 'The one place a row's fault is caught, so the loop keeps running. A
-'refused row answers False with the names of the entries that failed; a
+'refused row answers False with the names of the entries that failed, or
+'with the file-name clash the pre-flight found on the instance path; a
 'failed row answers False with the error text, which names the kept
 '__temp.xlsb when the build got far enough to keep one. The build has
 'already closed that workbook, so the loop moves to the next row with
-'nothing left open behind it. The status target is the row's result
-'cell: the build writes its milestones into it, and the caller
-'overwrites it with the row's outcome.
+'nothing left open behind it. A failed row still asks for the abort
+'through the route its steps took: a step that failed has already kept
+'the file and the answer is a bare OK, and a build the instance stopped
+'in has nothing to keep. The status target is the row's result cell: the
+'build writes its milestones into it, and the caller overwrites it with
+'the row's outcome.
 '@param entry DesignerEntry. The entry manager, already loaded with the row.
 '@param outcomeText String. Answers the written path on success and the fault text otherwise.
 '@param statusTarget Range. One cell taking the build's milestone texts. Nothing means no writes.
+'@param host GenerationHost. The host the build runs through, or Nothing.
 '@return Boolean. True when the row built and saved.
 Private Function BuildRow(ByVal entry As DesignerEntry, _
                           ByRef outcomeText As String, _
-                          Optional ByVal statusTarget As Range = Nothing) As Boolean
+                          Optional ByVal statusTarget As Range = Nothing, _
+                          Optional ByVal host As GenerationHost = Nothing) As Boolean
     Dim faults As Checking
+    Dim clashText As String
+    Dim keptPath As String
 
     On Error GoTo Fail
 
@@ -1005,12 +1167,51 @@ Private Function BuildRow(ByVal entry As DesignerEntry, _
         Exit Function
     End If
 
-    outcomeText = EventsDesignerAdvanced.GenerateOne(entry, statusTarget)
+    If BuildsInInstance(host) Then
+        clashText = EventsDesignerAdvanced.CheckBuildFileNames(host, entry, RowKeptPath(entry))
+        If LenB(clashText) > 0 Then
+            outcomeText = "Refused: " & Replace(clashText, vbLf, " ")
+            Exit Function
+        End If
+    End If
+
+    outcomeText = EventsDesignerAdvanced.GenerateOne(entry, statusTarget, host)
     BuildRow = True
     Exit Function
 
 Fail:
     outcomeText = "Failed: " & Err.Description
+
+    On Error Resume Next
+    keptPath = EventsDesignerAdvanced.AbortBuild(host)
+    If LenB(keptPath) > 0 Then
+        If InStr(1, outcomeText, keptPath, vbTextCompare) = 0 Then
+            outcomeText = outcomeText & " | kept " & keptPath
+        End If
+    End If
+    On Error GoTo 0
+End Function
+
+'@Description("Whether the rows build in another instance through the host.")
+'@param host GenerationHost. The host, or Nothing.
+'@return Boolean. True when the host is on the instance path.
+Private Function BuildsInInstance(ByVal host As GenerationHost) As Boolean
+    If host Is Nothing Then Exit Function
+    BuildsInInstance = Not host.InPlace
+End Function
+
+'@Description("The path a failed build of the row would keep its file at.")
+'@param entry DesignerEntry. The entry manager, loaded with the row.
+'@return String. <output folder>\OBTApp_\__temp.xlsb.
+Private Function RowKeptPath(ByVal entry As DesignerEntry) As String
+    Dim outputFolder As String
+
+    outputFolder = entry.ValueOf("lldir")
+    If Right$(outputFolder, 1) <> Application.PathSeparator Then
+        outputFolder = outputFolder & Application.PathSeparator
+    End If
+
+    RowKeptPath = outputFolder & SCRATCH_FOLDER & Application.PathSeparator & KEPT_FILE_NAME
 End Function
 
 '@Description("Flush one log bundle naming the row before its build starts.")

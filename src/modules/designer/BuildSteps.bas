@@ -44,10 +44,17 @@ Option Explicit
 '-------------------------------------------------------------------------------
 'BuildBegin takes the designer workbook the entries sit on. A driver in the
 'same instance hands it over; a driver in another instance cannot pass an
-'object, so it passes nothing and the steps read ThisWorkbook, which is
-'the designer copy they run inside. The entries of a build can be handed
-'over as text in the same call, one "tag=value" per line, for a copy whose
-'Main sheet has yet to take them.
+'object, so it calls BuildBeginEntries with the entries as text, one
+'"tag=value" per line, and the steps read ThisWorkbook, which is the
+'designer copy they run inside. The copy's Main takes the entries first.
+'
+'EVERY PUBLIC FUNCTION TRAPS ITS OWN RAISE
+'-------------------------------------------------------------------------------
+'Application.Run opens a fresh call stack, so a raise that escapes a
+'function reached through it reaches no handler of the caller: in place it
+'shows the runtime error box, across the processes the hidden instance
+'shows the VBE box and un-hides itself. BuildCheckings, BuildCounts and
+'BuildAbort answer plain values and carry a handler too, for that reason.
 
 
 '@section Constants
@@ -145,6 +152,20 @@ Public Function BuildBegin(Optional ByVal targetDesigner As Workbook = Nothing, 
 
 Failed:
     BuildBegin = FailureOutcome(Err.Number, Err.Source, Err.Description, "BuildBegin")
+End Function
+
+'@Description("BuildBegin for a driver in another instance: the entries arrive as text, the designer is the copy.")
+'@details
+'A workbook cannot cross Application.Run between two Excel processes, and
+'the copy's Main holds the entries of the moment the copy was written. A
+'driver that builds several rows over one copy hands each row's entries
+'over here, and the step writes them on the copy's Main before it reads
+'them. The text is the shape WriteEntries reads: one "tag=value" per
+'vertical tab.
+'@param entriesText String. The entries to write on Main first. Empty writes nothing.
+'@return String. "OK" or "ERROR <number> (<source>): <description>".
+Public Function BuildBeginEntries(ByVal entriesText As String) As String
+    BuildBeginEntries = BuildBegin(Nothing, entriesText)
 End Function
 
 '@Description("Build the output workbook: sheets, temporary sheets, admin sheet, code transfer.")
@@ -324,10 +345,15 @@ End Function
 '@details
 'The joined texts of GenerationLog.BundleText, ready for
 'GenerationLog.CollectText. Empty when nothing was queued.
-'@return String. The queued bundle texts.
+'@return String. The queued bundle texts, or "ERROR <number> (<source>): <description>".
 Public Function BuildCheckings() As String
+    On Error GoTo Failed
     BuildCheckings = pendingText
     pendingText = vbNullString
+    Exit Function
+
+Failed:
+    BuildCheckings = ErrorText(Err.Number, Err.Source, Err.Description, "BuildCheckings")
 End Function
 
 '@Description("Answer the sheets built and the variables written by the current build.")
@@ -335,9 +361,14 @@ End Function
 'Two numbers on one line, "<sheets>|<variables>". They count from
 'BuildBegin and survive the failure exit and BuildSave, so a driver adds
 'them up once per build, whatever way the build ended.
-'@return String. "<sheets>|<variables>".
+'@return String. "<sheets>|<variables>", or "ERROR <number> (<source>): <description>".
 Public Function BuildCounts() As String
+    On Error GoTo Failed
     BuildCounts = CStr(builtSheets) & COUNTS_SEP & CStr(builtVariables)
+    Exit Function
+
+Failed:
+    BuildCounts = ErrorText(Err.Number, Err.Source, Err.Description, "BuildCounts")
 End Function
 
 '@Description("Stop the build: keep the unfinished workbook as __temp.xlsb, close it, drop the state.")
@@ -346,14 +377,19 @@ End Function
 'stops a build for a reason of its own. With no output workbook open, or
 'after a step already aborted, there is nothing to keep and the answer is
 'a bare OK.
-'@return String. "OK", or "OK | kept <path>" when a file was kept.
+'@return String. "OK", or "OK | kept <path>" when a file was kept, or "ERROR <number> (<source>): <description>".
 Public Function BuildAbort() As String
     Dim kept As String
 
+    On Error GoTo Failed
     kept = AbortBuild()
 
     BuildAbort = OUTCOME_OK
     If LenB(kept) > 0 Then BuildAbort = BuildAbort & KEPT_MARK & kept
+    Exit Function
+
+Failed:
+    BuildAbort = ErrorText(Err.Number, Err.Source, Err.Description, "BuildAbort")
 End Function
 
 
@@ -379,11 +415,30 @@ Private Function FailureOutcome(ByVal errNumber As Long, _
 
     kept = AbortBuild()
 
-    sourceText = errSource
-    If LenB(sourceText) = 0 Then sourceText = MODULE_NAME & "." & stepName
-
-    FailureOutcome = OUTCOME_ERROR_LEAD & CStr(errNumber) & " (" & sourceText & "): " & errDesc
+    FailureOutcome = ErrorText(errNumber, errSource, errDesc, stepName)
     If LenB(kept) > 0 Then FailureOutcome = FailureOutcome & KEPT_MARK & kept
+End Function
+
+'@Description("Shape the error outcome of a fault, with nothing aborted.")
+'@details
+'The shape every failed answer of this module takes. The functions that
+'answer a value and abort nothing (BuildCheckings, BuildCounts, BuildAbort)
+'use it on their own; the steps reach it through FailureOutcome.
+'@param errNumber Long. The error number of the fault.
+'@param errSource String. The source of the fault. Empty takes the function name.
+'@param errDesc String. The description of the fault.
+'@param functionName String. The function that failed.
+'@return String. "ERROR <number> (<source>): <description>".
+Private Function ErrorText(ByVal errNumber As Long, _
+                           ByVal errSource As String, _
+                           ByVal errDesc As String, _
+                           ByVal functionName As String) As String
+    Dim sourceText As String
+
+    sourceText = errSource
+    If LenB(sourceText) = 0 Then sourceText = MODULE_NAME & "." & functionName
+
+    ErrorText = OUTCOME_ERROR_LEAD & CStr(errNumber) & " (" & sourceText & "): " & errDesc
 End Function
 
 '@Description("Keep the unfinished output workbook, close it and drop the build objects.")
