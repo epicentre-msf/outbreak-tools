@@ -1,15 +1,24 @@
 # OutbreakTools -- Test Registry
 # =============================================================================
 # LAST FULL RUN (the whole registry, nothing commented out)
-#   when:        2026-08-28 13:27 (run assembled about 12:00, about 87 minutes)
-#   where:       Windows 11, Excel hidden (windows/run-tests.vbs), --build
-#   result:      total=5656 failures=0
+#   when:        2026-08-28 17:05 (run assembled 16:11, about 53 minutes)
+#   where:       macOS 27.0, Excel 16.111 headless (macos/run-tests.applescript), --build
+#   result:      total=5579 failures=0
 #   modulesRun:  111   testsFound: 1894   vbe: ok(236)
-#   before it:   total=5247 failures=0 modulesRun=109 testsFound=1820 (2026-08-26 22:03)
-#   what moved:  Sessions A and G (the hidden build instance, GeoModule under
-#                test), the msetup translation-review changes, and the
-#                CustomTable insert-row fix landed since 2026-08-26
-#   commit:      393dc5df
+#   before it:   total=5656 failures=0 modulesRun=111 testsFound=1894 (2026-08-28
+#                13:27, Windows 11)
+#   what moved:  the first green full run on macOS at this module count. Four
+#                faults Windows cannot see were fixed to get here: the
+#                DupeUnique compile fault in MasterSetupVariables (it took the
+#                whole msetup folder down), MasterSetupMigration.LastRefusal
+#                for the description Mac drops leaving a class, the hard-coded
+#                66.7% against an en_FR locale, and the two in-place Run tests
+#                in TestGenerationHost that re-entered Application.Run and
+#                killed the run with -50. The headless fixture also moved to
+#                src/tests/.input/package.
+#   note:        5579 against 5656 on Windows is the two guarded Run tests;
+#                the module and test counts match, so nothing dropped out.
+#   commit:      28fb3182 (+ the working-tree fixes above)
 # Update this block after every full run: a probe count (a narrowed
 # registry) says nothing about the suites outside it and never belongs here.
 # =============================================================================
