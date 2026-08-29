@@ -1,6 +1,23 @@
 # OutbreakTools -- Test Registry
 # =============================================================================
-# LAST FULL RUN (the whole registry, nothing commented out)
+# LAST FULL RUN (the whole registry, nothing commented out) -- ONE PER
+# PLATFORM, kept side by side: a fault can be visible on one host and not the
+# other, so a green count on one platform says nothing about the other.
+#
+# windows:
+#   when:        2026-08-29 03:31 (run assembled 02:13, about 78 minutes)
+#   where:       Windows 11, Excel 16.0.20326.20112 hidden (windows/run-tests.vbs), --build
+#   result:      total=5656 failures=0
+#   modulesRun:  111   testsFound: 1894   vbe: ok(236)
+#   before it:   total=5656 failures=0 modulesRun=111 testsFound=1894 (2026-08-28
+#                13:27, Windows 11)
+#   what moved:  confirms the four mac-only fixes below (see macos block) land
+#                clean on Windows too: the count is unchanged at 5656, the
+#                same as the 13:27 baseline they were built against, so
+#                nothing regressed on this platform.
+#   commit:      90fd5e0e
+#
+# macos:
 #   when:        2026-08-28 17:05 (run assembled 16:11, about 53 minutes)
 #   where:       macOS 27.0, Excel 16.111 headless (macos/run-tests.applescript), --build
 #   result:      total=5579 failures=0
@@ -19,8 +36,10 @@
 #   note:        5579 against 5656 on Windows is the two guarded Run tests;
 #                the module and test counts match, so nothing dropped out.
 #   commit:      28fb3182 (+ the working-tree fixes above)
-# Update this block after every full run: a probe count (a narrowed
-# registry) says nothing about the suites outside it and never belongs here.
+#
+# Update the matching platform block after every full run: a probe count (a
+# narrowed registry) says nothing about the suites outside it and never
+# belongs here.
 # =============================================================================
 # Single source of truth for the test suite AND the Codes-worksheet ListObjects.
 #
