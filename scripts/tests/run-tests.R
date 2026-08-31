@@ -9,25 +9,33 @@
 #             workbook to rebuild via OBTBuildCodeTables). Required on the first
 #             run and after any registry change; omit to reuse the tables the
 #             workbook already holds.
-#
-# File access (macOS): Excel is sandboxed, and VBA file reads on ungranted
-# paths prompt one dialog per file. The headless suites handle this themselves
-# through Application.GrantAccessToMultipleFiles -- IN Excel's process, which
-# is the only place a persistent grant can be made. The first run on a machine
-# shows one consolidated dialog; every later run is silent. (An AppleScript
-# `choose folder` sent from OUTSIDE Excel does not stick -- the panel does not
-# run in Excel's sandbox context -- which is why no such step lives here.)
 #   --keep    never delete the per-run working copy, even on success
 #             (for inspecting a green run).
 #   --home    root of the untracked working area holding the driver workbook
 #             (unit_tests_dev.xlsb) + the per-run staging tree. Defaults to the
-#             OBT_TEST_HOME env var, else <repo>/.test-runner. Gitignored, so its
-#             location is a local setting, not fixed in the repo.
+#             OBT_TEST_HOME env var, else -- on macOS -- Excel's own container at
+#             ~/Library/Containers/com.microsoft.Excel/Data/Documents/OBTTestHome,
+#             else <repo>/.test-runner. Gitignored, so its location is a local
+#             setting, not fixed in the repo.
+#
+# FILE ACCESS (macOS): THE ANSWER IS TO STAGE INSIDE EXCEL'S CONTAINER.
+# Excel for Mac is sandboxed, and a VBA file read on an ungranted path raises a
+# modal grant dialog -- one per file. A headless run has nobody to click it, so
+# it stops there with Excel at 0% CPU and a zero-byte results CSV. That reads
+# exactly like the flaky import wedge; `sample <excel pid>` separates them, and
+# `runModalForWindow` over `MbuObtainSecurityBookmarksForFileURLs` in the stack
+# is the grant dialog.
+#
+# Inside Excel's own container nothing is granted or picked, which is why the
+# default moved there on 2026-08-31. See the note at excel_container_test_home.
+# Application.GrantAccessToMultipleFiles does NOT help: it raises 438 on this
+# host and has never worked. Outside the container the one thing that does work
+# is a folder pick made inside Excel -- OBTGrantAccess, once, from the VBE --
+# and that is the fallback path only.
 #
 # The harness + probes now live in src/ (promoted). This script assembles a
 # per-run dir under <home>/tests/staging/run/ from src/ (the workbook is the only
-# thing kept in the working area, as an untracked binary). The repo-root folder
-# grant (OBTGrantAccess, one-time) lets Excel read it all with no per-file prompts.
+# thing kept in the working area, as an untracked binary).
 #
 # What it does (all portable logic lives here; the OS-specific trigger is thin):
 #   1. copy <home>/unit_tests_dev.xlsb -> the stable run dir (NEVER touch original)
@@ -77,17 +85,69 @@ if (length(repo_root) != 1L || is.na(repo_root) || !nzchar(repo_root)) {
 }
 
 # The untracked working area (driver workbook + per-run staging). It is gitignored,
-# so where it lives is a local choice, not a repo fact: --home=<dir> wins, else the
-# OBT_TEST_HOME env var, else <repo>/.test-runner. A relative home resolves against the
-# repo root, so the default and a relative --home behave the same from any cwd.
+# so where it lives is a local choice, not a repo fact: --home=<dir> wins, else
+# the OBT_TEST_HOME env var, else -- on macOS -- Excel's own container, else
+# <repo>/.test-runner. A relative home resolves against the repo root, so the
+# default and a relative --home behave the same from any cwd.
+# Needed this early: the container default below is macOS-only.
+on_windows <- identical(.Platform$OS.type, "windows")
+
+#
+# ON macOS THE DEFAULT IS INSIDE EXCEL'S OWN CONTAINER, and that is the whole
+# answer to the grant problem. Excel for Mac is sandboxed: a VBA file read
+# (Open, Dir, VBComponents.Import) outside the container needs a security-scoped
+# grant, and only a folder PICK in a dialog creates one. A headless run has
+# nobody to click it, so the run stops dead on a modal with Excel at 0% CPU and
+# a zero-byte results CSV -- which looks exactly like the flaky import wedge and
+# is not one. Inside the container Excel needs no permission for anything and
+# never puts a panel on the screen.
+#
+# build-linelist.R has staged inside the container since 2026-08-15 (see its
+# note at excel_container_home). This loop staged in the repo until 2026-08-31
+# and paid the grant for it: a session that only EDITED files never noticed,
+# because every path already had a bookmark, while a session that REGISTERED a
+# new class, module, test module or form put files there that had none and died
+# on the dialog.
+#
+# The catch is on THIS side of the fence: macOS keeps Excel's container away
+# from other programs, so R can only reach it once the operator has given their
+# terminal app Full Disk Access (System Settings -> Privacy & Security). Where
+# that is not done the probe below fails and the run falls back to
+# <repo>/.test-runner, the old path with the old rules -- somebody runs
+# OBTGrantAccess once from the VBE and picks the repo root.
+excel_container_test_home <- function() {
+  if (on_windows) return(NA_character_)
+  root <- path.expand("~/Library/Containers/com.microsoft.Excel/Data/Documents")
+  if (!dir.exists(root)) return(NA_character_)
+  # Written rather than merely tested: dir.exists() answers TRUE for a folder
+  # macOS will refuse to open, so only a real write settles it.
+  home  <- file.path(root, "OBTTestHome")
+  probe <- file.path(home, ".reachable")
+  ok <- tryCatch({
+    dir.create(home, recursive = TRUE, showWarnings = FALSE)
+    writeLines("ok", probe)
+    identical(readLines(probe, warn = FALSE), "ok")
+  }, error = function(e) FALSE, warning = function(w) FALSE)
+  unlink(probe, force = TRUE)
+  if (isTRUE(ok)) home else NA_character_
+}
+
+chose_container <- FALSE
 test_home <- if (length(home_opt) && nzchar(home_opt[1])) {
   home_opt[1]
 } else if (nzchar(Sys.getenv("OBT_TEST_HOME"))) {
   Sys.getenv("OBT_TEST_HOME")
 } else {
-  file.path(repo_root, ".test-runner")
+  container <- excel_container_test_home()
+  if (!is.na(container)) {
+    chose_container <- TRUE
+    container
+  } else {
+    file.path(repo_root, ".test-runner")
+  }
 }
 if (!grepl("^(/|~|[A-Za-z]:)", test_home)) test_home <- file.path(repo_root, test_home)
+test_home <- path.expand(test_home)
 
 workbook_src <- file.path(test_home, "unit_tests_dev.xlsb")
 # Where merge-form-code.R writes the importable forms. The merger defaults to
@@ -96,8 +156,8 @@ merged_forms <- file.path(test_home, "forms", "merged")
 scripts_dir  <- file.path(repo_root, "scripts", "tests")
 # The trigger is the only OS-specific piece; both drive the same OBT* entry
 # points in the same order, so a difference in results is a difference in the
-# VBA rather than in the harness.
-on_windows   <- identical(.Platform$OS.type, "windows")
+# VBA rather than in the harness. on_windows itself is set further up, because
+# the container default needs it before this point.
 trigger      <- if (on_windows) {
   file.path(scripts_dir, "windows", "run-tests.vbs")
 } else {
@@ -110,6 +170,26 @@ staging      <- file.path(test_home, "tests", "staging")                # untrac
 # -- a fresh run-<stamp> dir each time is what caused the repeated grant prompts.
 run_dir      <- file.path(staging, "run")
 
+# A home this script chose for itself is a home it has to furnish. The operator
+# picked nothing, so there is nobody to tell that <home>/tests/staging is
+# missing; and the driver workbook is an untracked binary that exists only in
+# whatever working area the machine used before, so it is copied across rather
+# than asked for. A home given by --home or OBT_TEST_HOME is left exactly as it
+# is: an explicit choice is never second-guessed, and the checks below report it.
+if (chose_container) {
+  dir.create(staging, recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(workbook_src)) {
+    legacy_workbook <- file.path(repo_root, ".test-runner", "unit_tests_dev.xlsb")
+    if (file.exists(legacy_workbook)) {
+      if (!file.copy(legacy_workbook, workbook_src, overwrite = FALSE)) {
+        stop("run-tests.R: could not seed the driver workbook into ", test_home)
+      }
+      message("run-tests.R: seeded the driver workbook into Excel's container ",
+              "from ", legacy_workbook)
+    }
+  }
+}
+
 if (!dir.exists(staging)) {
   stop("run-tests.R: staging tree not found: ", staging,
        " (set --home / OBT_TEST_HOME, or create <home>/tests/staging).")
@@ -120,7 +200,21 @@ if (on_windows) {
           "It is the trigger's own instance, so anything already open is ",
           "left alone.")
 }
-if (!file.exists(workbook_src)) stop("run-tests.R: workbook not found: ", workbook_src)
+if (!file.exists(workbook_src)) {
+  stop("run-tests.R: workbook not found: ", workbook_src,
+       "\n  The driver workbook is an untracked binary. Copy it there, or point",
+       "\n  --home / OBT_TEST_HOME at the working area that already holds it.")
+}
+
+message("run-tests.R: test home -> ", test_home,
+        if (chose_container) "  (inside Excel's container: no file-access grant is needed)" else "")
+if (!on_windows && !chose_container) {
+  message("run-tests.R: NOTE - this home is OUTSIDE Excel's container, so every ",
+          "file Excel\n  imports needs a sandbox grant. A newly registered ",
+          "component with no grant stops\n  the run on a dialog nobody can ",
+          "click. Run OBTGrantAccess once from the VBE and\n  pick the repo ",
+          "root, or let the default choose the container.")
+}
 if (!file.exists(trigger))      stop("run-tests.R: trigger not found: ", trigger)
 
 # --- optional: refresh registry intermediates --------------------------------
@@ -145,6 +239,39 @@ if (do_build) {
   merger <- file.path(repo_root, "scripts", "headless", "merge-form-code.R")
   rc <- system2("Rscript", c(shQuote(merger), "--out", shQuote(merged_forms)))
   if (rc != 0L) stop("run-tests.R: merge-form-code.R failed (exit ", rc, ").")
+
+  # The setup's own form joins the merged tree by a straight copy.
+  #
+  # merge-form-code.R reads .mock/forms/designer only, and it merges because a
+  # designer form's code lives apart from it, in src/modules/linelistform. The
+  # setup's [Imports] form is not built that way: its .frm carries no code at
+  # all -- sixteen lines of header, and its logic sits in
+  # src/modules/setup/ImportForm.bas -- so there is nothing to merge into it and
+  # the pair is copied as it is.
+  #
+  # It is here rather than in the merger because the merger also runs as a step
+  # of the headless build, which builds a linelist and has no use for a setup
+  # form. Only the test workbook needs this one, and it needs it because
+  # SetupHelpers declares `Dim formRef As Imports` and reads eleven of its
+  # controls: without the form in the project, SetupHelpers does not compile and
+  # the whole setup folder goes red with blank counts.
+  setup_forms <- file.path(repo_root, ".mock", "forms", "setup")
+  if (dir.exists(setup_forms)) {
+    dir.create(merged_forms, recursive = TRUE, showWarnings = FALSE)
+    staged <- list.files(setup_forms, pattern = "\\.(frm|frx)$", full.names = TRUE)
+    if (length(staged)) {
+      ok <- file.copy(staged, merged_forms, overwrite = TRUE)
+      if (!all(ok)) {
+        stop("run-tests.R: could not stage the setup forms from ", setup_forms)
+      }
+      message(
+        "run-tests.R: staged ", length(staged),
+        " setup form file(s) into the merged tree"
+      )
+    }
+  } else {
+    message("run-tests.R: WARNING - no setup forms tree at ", setup_forms)
+  }
 }
 
 # --- 1) per-run working copy -------------------------------------------------
