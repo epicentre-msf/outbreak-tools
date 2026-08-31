@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, DesignerEntry, EventsDesignerCore, RibbonDev, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, Checking, GenerationLog, SetupTranslationsTable, BuildSteps, GenerationHost, ProgressBar, TemporaryRepos
+'@depends DesignerPreparation, DesignerEntry, EventsDesignerCore, RibbonDev, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, Checking, GenerationLog, SetupTranslationsTable, BuildSteps, GenerationHost, ProgressBar, TemporaryRepos, Messenger
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -14,6 +14,17 @@ Option Explicit
 'The DesignerEntry every callback works through is the shared one,
 'EventsDesignerCore.EntryManager(). It carries the held translator with it,
 'so a press reads no translation table.
+'
+'THE EIGHT BOXES OF THE GENERATION PATH GO THROUGH THE MESSENGER
+'clickGenerate reads __OBT__SILENT_OPERATIONS__ off this designer and arms
+'Messenger when it answers Yes. Armed, those eight boxes show nothing and are
+'written down instead; disarmed -- which is every designer by default -- each
+'one opens the box it always opened. A person pressing the button sees no
+'difference at all. The other 51 boxes of the designer sit on buttons the R
+'package never presses.
+'
+'DesignerLastSummary, at the foot of this module, reads the last run back: the
+'linelist it wrote, the counts it built and the report the run log holds.
 
 Private Const SHEET_MAIN As String = "Main"
 Private Const SHEET_DROPDOWNS As String = "__dropdowns"
@@ -109,6 +120,31 @@ Private builtVariables As Long
 'report.
 Private keptFilePath As String
 
+'WHAT DesignerLastSummary ANSWERS FROM
+'A module-level declaration has to sit in this section, above every procedure.
+'VBA registers no declaration written between two procedures, and every use of
+'one then reads as an undefined variable under Option Explicit.
+
+'What a run that went through answers.
+Private Const OUTCOME_OK As String = "OK"
+
+'What the summary file is called, after the name of the linelist it sits beside.
+Private Const SUMMARY_SUFFIX As String = "-obt-summary.txt"
+
+'The marker the free text starts after, the shape HeadlessBuild already answers.
+Private Const REPORT_MARKER As String = "--report--"
+
+'What the last generation run said, wrote and swallowed. The reading of it is a
+'second Application.Run, so it outlives the run that filled it. StartRunLog
+'empties the lot, and the two counts are the linelists of the run: one built or
+'one failed on the single build, since the multi driver keeps its own tally.
+Private lastOutcome As String
+Private lastLinelist As String
+Private lastLogFile As String
+Private lastMessages As String
+Private lastBuilt As Long
+Private lastFailed As Long
+
 
 '@section Run log services
 '===============================================================================
@@ -134,6 +170,7 @@ Public Function StartRunLog(Optional ByVal setupPath As String = vbNullString, _
     heldLog.Start setupPath, linelistName
     builtSheets = 0
     builtVariables = 0
+    ResetRunRecord
     Set StartRunLog = heldLog
 End Function
 
@@ -515,11 +552,23 @@ End Sub
 'front. A build that fails keeps its unfinished workbook on disk on both
 'paths: the report names the kept file and the message box carries the
 'fault. Nothing asks a question.
+'
+'The press is also the R package's way in, so it reads the silence switch
+'off this designer here and arms Messenger on it. Nothing asks a question,
+'so every box of both drivers answers vbOK while the messenger is armed.
+'Both drivers close the run's record on every exit they have, refusals
+'included, and DesignerLastSummary reads it back.
 '@EntryPoint
 Public Sub clickGenerate()
     Dim host As GenerationHost
 
     On Error GoTo Cleanup
+
+    'The switch is read off this designer once, before anything runs. A
+    'designer carrying No -- every designer by default -- shows every box it
+    'has always shown.
+    If Messenger.ReadStoredSwitch(ThisWorkbook) Then Messenger.Arm ThisWorkbook
+
     Set host = GenerationHost.Create(ThisWorkbook)
 
     If host.InPlace Then
@@ -528,12 +577,25 @@ Public Sub clickGenerate()
     Else
         GenerateInInstance host
     End If
+
+    Messenger.Disarm
     Exit Sub
 
 Cleanup:
-    Debug.Print "clickGenerate: "; Err.Number; Err.Description
-    MsgBox "Generation failed: " & Err.Description, _
-           vbExclamation + vbOKOnly, PROMPT_TITLE
+    Dim errNumber As Long
+    Dim errDesc As String
+    errNumber = Err.Number
+    errDesc = Err.Description
+
+    Debug.Print "clickGenerate: "; errNumber; errDesc
+    Messenger.Show "Generation failed: " & errDesc, _
+                   vbOK, vbExclamation + vbOKOnly, PROMPT_TITLE
+
+    'Only a fault before the drivers lands here, so this is the one path that
+    'closes the run itself. The drivers close their own.
+    lastOutcome = RunError(errNumber, errDesc)
+    lastMessages = Messenger.Messages()
+    Messenger.Disarm
 End Sub
 
 '@Description("The single build in this Excel, with the screen off from the press to the restore.")
@@ -556,8 +618,9 @@ Private Sub GenerateInPlace()
         'The report names which entry is not ready, so it is the thing the
         'user has to read here.
         ShowRunLog
-        MsgBox entry.TranslateMessage("MSG_NotReady"), _
-               vbExclamation + vbOKOnly, PROMPT_TITLE
+        Messenger.Show entry.TranslateMessage("MSG_NotReady"), _
+                       vbOK, vbExclamation + vbOKOnly, PROMPT_TITLE
+        CloseRun RunError(0, entry.TranslateMessage("MSG_NotReady")), entry
         Exit Sub
     End If
 
@@ -565,7 +628,8 @@ Private Sub GenerateInPlace()
 
     'The whole build: specifications, linelist, sheets, dropdowns, analyses,
     'save. The phase checkings flush to the log after each step.
-    GenerateOne entry
+    lastLinelist = GenerateOne(entry)
+    lastBuilt = lastBuilt + 1
 
     CloseRunAsBuilt entry
 
@@ -573,7 +637,9 @@ Private Sub GenerateInPlace()
 
     'The report, once, with the screen already back on.
     ShowRunLog
-    MsgBox entry.TranslateMessage("MSG_LLCreated"), vbInformation + vbOKOnly, PROMPT_TITLE
+    Messenger.Show entry.TranslateMessage("MSG_LLCreated"), _
+                   vbOK, vbInformation + vbOKOnly, PROMPT_TITLE
+    CloseRun OUTCOME_OK, entry
     Exit Sub
 
 Cleanup:
@@ -596,8 +662,10 @@ Cleanup:
 
     If errNumber <> 0 Then
         Debug.Print "clickGenerate: "; errNumber; errDesc
-        MsgBox "Generation failed: " & errDesc, _
-               vbExclamation + vbOKOnly, PROMPT_TITLE
+        Messenger.Show "Generation failed: " & errDesc, _
+                       vbOK, vbExclamation + vbOKOnly, PROMPT_TITLE
+        lastFailed = lastFailed + 1
+        CloseRun RunError(errNumber, errDesc), entry
     End If
 End Sub
 
@@ -635,8 +703,9 @@ Private Sub GenerateInInstance(ByVal host As GenerationHost)
     If Not PrepareRun(entry) Then
         RestoreVisibleSide previousEvents, previousCursor
         ShowRunLog
-        MsgBox entry.TranslateMessage("MSG_NotReady"), _
-               vbExclamation + vbOKOnly, PROMPT_TITLE
+        Messenger.Show entry.TranslateMessage("MSG_NotReady"), _
+                       vbOK, vbExclamation + vbOKOnly, PROMPT_TITLE
+        CloseRun RunError(0, entry.TranslateMessage("MSG_NotReady")), entry
         Exit Sub
     End If
 
@@ -660,12 +729,15 @@ Private Sub GenerateInInstance(ByVal host As GenerationHost)
         If Not bar Is Nothing Then bar.Reset entry.TranslateMessage("MSG_NotReady")
         RestoreVisibleSide previousEvents, previousCursor
         ShowRunLog
-        MsgBox entry.TranslateMessage("MSG_NotReady") & vbNewLine & vbNewLine & clashText, _
-               vbExclamation + vbOKOnly, PROMPT_TITLE
+        Messenger.Show entry.TranslateMessage("MSG_NotReady") & vbNewLine & vbNewLine & clashText, _
+                       vbOK, vbExclamation + vbOKOnly, PROMPT_TITLE
+        'The outcome is one line, so the refusals are joined onto it.
+        CloseRun RunError(0, Replace$(clashText, vbLf, " ")), entry
         Exit Sub
     End If
 
-    GenerateOne entry, Nothing, host, bar
+    lastLinelist = GenerateOne(entry, Nothing, host, bar)
+    lastBuilt = lastBuilt + 1
 
     CloseRunAsBuilt entry
     If Not bar Is Nothing Then bar.Complete entry.TranslateMessage("MSG_LLCreated")
@@ -676,7 +748,9 @@ Private Sub GenerateInInstance(ByVal host As GenerationHost)
     RestoreVisibleSide previousEvents, previousCursor
 
     ShowRunLog
-    MsgBox entry.TranslateMessage("MSG_LLCreated"), vbInformation + vbOKOnly, PROMPT_TITLE
+    Messenger.Show entry.TranslateMessage("MSG_LLCreated"), _
+                   vbOK, vbInformation + vbOKOnly, PROMPT_TITLE
+    CloseRun OUTCOME_OK, entry
     Exit Sub
 
 Cleanup:
@@ -697,8 +771,10 @@ Cleanup:
 
     If errNumber <> 0 Then
         Debug.Print "clickGenerate: "; errNumber; errDesc
-        MsgBox "Generation failed: " & errDesc, _
-               vbExclamation + vbOKOnly, PROMPT_TITLE
+        Messenger.Show "Generation failed: " & errDesc, _
+                       vbOK, vbExclamation + vbOKOnly, PROMPT_TITLE
+        lastFailed = lastFailed + 1
+        CloseRun RunError(errNumber, errDesc), entry
     End If
 End Sub
 
@@ -725,7 +801,7 @@ End Function
 '@param entry DesignerEntry. The entry manager over the Main worksheet.
 Private Sub CloseRunAsBuilt(ByVal entry As DesignerEntry)
     FinishRunLog entry.TranslateMessage("MSG_LLCreated")
-    heldLog.ExportText entry.ValueOf("lldir"), entry.ValueOf("llname")
+    lastLogFile = heldLog.ExportText(entry.ValueOf("lldir"), entry.ValueOf("llname"))
     entry.AddInfo entry.TranslateMessage("MSG_LLCreated"), "edition"
 End Sub
 
@@ -1218,6 +1294,169 @@ Private Sub FileKeptPathWarning()
                 checkingWarning
     CollectIntoLog aborted
 End Sub
+
+
+'@section The summary a script reads the run back from
+'===============================================================================
+'ONE FUNCTION A SCRIPT CALLS AFTER clickGenerate
+'-------------------------------------------------------------------------------
+'clickGenerate needs no wrapper of its own: it takes no argument, opens no
+'picker, and reads every entry off Main. What a script cannot read is the
+'answer, and DesignerLastSummary is that answer.
+'
+'WHICH WORKBOOK IT IS READ FROM
+'-------------------------------------------------------------------------------
+'clickGenerate branches on the chkBuildInPlace flag. GenerateInPlace builds in
+'this Excel; GenerateInInstance opens a second Excel and the steps run in a copy
+'of the designer over there. Either way the two drivers, the run log and the
+'state below live HERE, on the designer whose button was pressed, so the summary
+'is read back from this workbook on both paths.
+'
+'IT IS WRITTEN TO A FILE TOO
+'-------------------------------------------------------------------------------
+'Reading it back is a second Application.Run, and that reading is the one lost
+'whenever the Apple Event transport gives up -- which happens on runs Excel
+'finished green. So the same text lands at <lldir>/<llname>-obt-summary.txt,
+'beside the linelist, where it survives a -1712 and a wedged Excel both.
+
+'@Description("What the last generation run said, wrote and built.")
+'@details
+'key=value lines, then REPORT_MARKER, then the free text: the boxes the run
+'swallowed, a blank line, and the record of the run log. The shape
+'HeadlessBuild.LastBuildSummary already answers.
+'
+'outcome= leads the block. The whole reason this text is written to a file as
+'well is that the answer of Application.Run is lost when the transport gives up,
+'and the outcome is the first thing that reading loses.
+'
+'log= names the text export of the run log, which only a build that saved
+'writes. A run that failed leaves it empty and carries its report in the free
+'text below the marker instead.
+'
+'built= and failed= count the linelists of this run: one or the other on a
+'single build. The multi driver keeps its own tally and answers it in the run
+'log, so a multi run leaves both at zero here.
+'@return String. The summary of the last run, empty keys and all.
+'@EntryPoint
+Public Function DesignerLastSummary() As String
+    DesignerLastSummary = "outcome=" & lastOutcome & vbLf & _
+                          "linelist=" & lastLinelist & vbLf & _
+                          "log=" & lastLogFile & vbLf & _
+                          "sheets=" & CStr(builtSheets) & vbLf & _
+                          "variables=" & CStr(builtVariables) & vbLf & _
+                          "built=" & CStr(lastBuilt) & vbLf & _
+                          "failed=" & CStr(lastFailed) & vbLf & _
+                          REPORT_MARKER & vbLf & RunNarrative()
+End Function
+
+'@Description("Forget the run before this one.")
+'@details
+'StartRunLog calls it, so every driver that opens a log clears what the summary
+'reads beside it. A run refused at its entry checks then answers its own
+'refusal, never the paths of the run before it.
+Private Sub ResetRunRecord()
+    lastOutcome = vbNullString
+    lastLinelist = vbNullString
+    lastLogFile = vbNullString
+    lastMessages = vbNullString
+    lastBuilt = 0
+    lastFailed = 0
+End Sub
+
+'@Description("Close the run's record: the outcome, the swallowed boxes and the summary file.")
+'@details
+'Every exit of both drivers goes through this, the refusals included, so the
+'summary of a run that never built still says why. The messenger stays armed
+'here. clickGenerate armed it, and clickGenerate disarms it on the one exit
+'both drivers come back to.
+'
+'The file write is deliberately quiet. A build that delivered its linelist is
+'not turned into a failure because the output folder would not take one more
+'text file.
+'@param outcome String. "OK", or an "ERROR <number>: <text>" line.
+'@param entry DesignerEntry. The entry manager naming the output folder.
+Private Sub CloseRun(ByVal outcome As String, ByVal entry As DesignerEntry)
+    lastOutcome = outcome
+    lastMessages = Messenger.Messages()
+
+    On Error Resume Next
+    WriteSummaryFile entry
+    On Error GoTo 0
+End Sub
+
+'@Description("Write the summary beside the linelist the run was building.")
+'@param entry DesignerEntry. The entry manager, or Nothing when the run died before one was made.
+Private Sub WriteSummaryFile(ByVal entry As DesignerEntry)
+    Dim folderPath As String
+    Dim baseName As String
+    Dim filePath As String
+    Dim fileNumber As Long
+
+    If entry Is Nothing Then Exit Sub
+
+    folderPath = entry.ValueOf("lldir")
+    baseName = entry.ValueOf("llname")
+    If LenB(folderPath) = 0 Then Exit Sub
+    If LenB(baseName) = 0 Then Exit Sub
+
+    filePath = folderPath
+    If Right$(filePath, 1) <> Application.PathSeparator Then
+        filePath = filePath & Application.PathSeparator
+    End If
+    filePath = filePath & baseName & SUMMARY_SUFFIX
+
+    fileNumber = FreeFile
+
+    On Error GoTo CloseFile
+    Open filePath For Output As #fileNumber
+    Print #fileNumber, DesignerLastSummary()
+    Close #fileNumber
+    Exit Sub
+
+CloseFile:
+    On Error Resume Next
+    Close #fileNumber
+    On Error GoTo 0
+End Sub
+
+'@Description("Build the ERROR line a run that did not build answers.")
+'@param errNumber Long. The error number, 0 for a refusal of the driver's own.
+'@param message String. What went wrong.
+'@return String. The outcome line.
+Private Function RunError(ByVal errNumber As Long, ByVal message As String) As String
+    RunError = OUTCOME_ERROR_LEAD & CStr(errNumber) & ": " & message
+End Function
+
+'@Description("The free text of the summary: the swallowed boxes, then the run log record.")
+'@details
+'A blank line stands between the two, so a reader sees where the boxes end and
+'the record starts. Before the first run of a session there is no log and the
+'boxes are the whole of it.
+'@return String. One line per entry, the shape the log's own text export writes.
+Private Function RunNarrative() As String
+    Dim index As Long
+    Dim narrative As String
+
+    narrative = lastMessages
+
+    If heldLog Is Nothing Then
+        RunNarrative = narrative
+        Exit Function
+    End If
+    If heldLog.RecordLength = 0 Then
+        RunNarrative = narrative
+        Exit Function
+    End If
+
+    If LenB(narrative) > 0 Then narrative = narrative & vbLf
+
+    For index = 1 To heldLog.RecordLength
+        If LenB(narrative) > 0 Then narrative = narrative & vbLf
+        narrative = narrative & heldLog.RecordLine(index)
+    Next index
+
+    RunNarrative = narrative
+End Function
 
 
 '@section Internal helpers

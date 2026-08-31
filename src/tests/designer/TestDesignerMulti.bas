@@ -4,7 +4,7 @@ Attribute VB_Description = "Unit tests for Multi group table operations"
 Option Explicit
 
 '@Folder("CustomTests.Designer")
-'@ModuleDescription("Validates Multi group table operations: add rows, remove rows, duplicate, import, export, the write-once row IDs on T_Multi, the driver helpers that read a row into the Main entries, the ribbon file the run gives every row, the report section title of a row, the shared setup language extraction, and the generation drivers: GenerateOne raising a step outcome in place and through a host, the file-name pre-flight, and on Windows the single build and the multi loop through a hidden instance.")
+'@ModuleDescription("Validates Multi group table operations: add rows, remove rows, duplicate, import, export, the write-once row IDs on T_Multi, the driver helpers that read a row into the Main entries, the ribbon file the run gives every row, the report section title of a row, the shared setup language extraction, the generation drivers: GenerateOne raising a step outcome in place and through a host, the file-name pre-flight, and on Windows the single build and the multi loop through a hidden instance, and the summary a script reads a generation run back from.")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 '@description
@@ -55,6 +55,9 @@ Private Const ENTRY_RANGE_NAMES As String = "RNG_PathDico,RNG_PathGeo,RNG_LLDir,
 
 'How long a process count is waited for, in seconds
 Private Const PROCESS_WAIT_SECONDS As Long = 30
+
+'What closes the keys of DesignerLastSummary and opens its free text
+Private Const REPORT_MARKER As String = "--report--"
 
 
 '@section Module lifecycle
@@ -913,8 +916,132 @@ Fail:
 End Sub
 
 
+'@section Run summary Tests
+'===============================================================================
+'DesignerLastSummary is what a script reads a generation run back from, since
+'the answer of Application.Run carries nothing about what was built. The keys
+'are read by position on the R side, so their order is under test here.
+
+'@TestMethod("DesignerMulti.Generation")
+Public Sub TestLastSummaryAnswersItsKeysInOrder()
+    CustomTestSetTitles Assert, "DesignerMulti", "TestLastSummaryAnswersItsKeysInOrder"
+    On Error GoTo Fail
+
+    'Arrange: the run log a run opens before anything is built
+    Dim entry As DesignerEntry
+    Set entry = MainEntry(FixtureWorkbook)
+    FillEntries entry, MissingSetupPath()
+    EventsDesignerAdvanced.StartRunLog entry.ValueOf("setuppath"), entry.ValueOf("llname"), FixtureWorkbook
+
+    'Act
+    Dim summaryLines() As String
+    summaryLines = Split(EventsDesignerAdvanced.DesignerLastSummary(), vbLf)
+
+    'Assert: seven keys in the settled order, then the marker
+    Assert.IsTrue UBound(summaryLines) >= 7, _
+                  "The summary should carry seven keys and the marker."
+    Assert.AreEqual "outcome=", summaryLines(0), _
+                    "outcome= leads the block, empty until a run answers."
+    Assert.AreEqual "linelist=", summaryLines(1), "linelist= comes second."
+    Assert.AreEqual "log=", summaryLines(2), "log= comes third."
+    Assert.AreEqual "sheets=0", summaryLines(3), "sheets= counts the data entry sheets built."
+    Assert.AreEqual "variables=0", summaryLines(4), "variables= counts the variables written."
+    Assert.AreEqual "built=0", summaryLines(5), "built= counts the linelists of the run."
+    Assert.AreEqual "failed=0", summaryLines(6), "failed= counts the builds that did not finish."
+    Assert.AreEqual REPORT_MARKER, summaryLines(7), "The marker closes the keys."
+
+    EventsDesignerAdvanced.FinishRunLog "test run"
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestLastSummaryAnswersItsKeysInOrder", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("DesignerMulti.Generation")
+Public Sub TestLastSummaryCarriesTheRunLogUnderTheMarker()
+    CustomTestSetTitles Assert, "DesignerMulti", "TestLastSummaryCarriesTheRunLogUnderTheMarker"
+    On Error GoTo Fail
+
+    'Arrange: a run that opened its log, failed at its first step and closed
+    Dim entry As DesignerEntry
+    Set entry = MainEntry(FixtureWorkbook)
+    FillEntries entry, MissingSetupPath()
+    EventsDesignerAdvanced.StartRunLog entry.ValueOf("setuppath"), entry.ValueOf("llname"), FixtureWorkbook
+
+    On Error Resume Next
+    EventsDesignerAdvanced.GenerateOne entry
+    On Error GoTo Fail
+
+    EventsDesignerAdvanced.FinishRunLog "the run under test"
+
+    'Act
+    Dim freeText As String
+    freeText = FreeTextOf(EventsDesignerAdvanced.DesignerLastSummary())
+
+    'Assert: the record of the run is the free text, one line per entry
+    Assert.IsTrue LenB(freeText) > 0, "The free text should carry the record of the run."
+    Assert.IsTrue InStr(1, freeText, "the run under test") > 0, _
+                  "The closing outcome should be in the free text: " & freeText
+    Assert.IsTrue InStr(1, freeText, vbLf) > 0, _
+                  "The record should read one line per entry."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestLastSummaryCarriesTheRunLogUnderTheMarker", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("DesignerMulti.Generation")
+Public Sub TestStartRunLogEmptiesTheSummaryOfTheRunBefore()
+    CustomTestSetTitles Assert, "DesignerMulti", "TestStartRunLogEmptiesTheSummaryOfTheRunBefore"
+    On Error GoTo Fail
+
+    'Arrange: one run, closed with an outcome of its own
+    Dim entry As DesignerEntry
+    Set entry = MainEntry(FixtureWorkbook)
+    FillEntries entry, MissingSetupPath()
+    EventsDesignerAdvanced.StartRunLog entry.ValueOf("setuppath"), entry.ValueOf("llname"), FixtureWorkbook
+    EventsDesignerAdvanced.FinishRunLog "the run before"
+
+    Assert.IsTrue InStr(1, FreeTextOf(EventsDesignerAdvanced.DesignerLastSummary()), _
+                        "the run before") > 0, _
+                  "The first run should be in its own summary."
+
+    'Act: the next run opens its log
+    EventsDesignerAdvanced.StartRunLog entry.ValueOf("setuppath"), entry.ValueOf("llname"), FixtureWorkbook
+
+    'Assert: nothing of the run before is left to read
+    Dim summaryText As String
+    summaryText = EventsDesignerAdvanced.DesignerLastSummary()
+
+    Assert.IsFalse InStr(1, FreeTextOf(summaryText), "the run before") > 0, _
+                   "A new run should not answer the record of the run before it."
+    Assert.IsTrue InStr(1, summaryText, "outcome=" & vbLf) > 0, _
+                  "A new run should answer an empty outcome."
+    Assert.IsTrue InStr(1, summaryText, "built=0") > 0, _
+                  "A new run should count no linelist built."
+
+    EventsDesignerAdvanced.FinishRunLog "test run"
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestStartRunLogEmptiesTheSummaryOfTheRunBefore", Err.Number, Err.Description
+End Sub
+
+
 '@section Generation driver helpers
 '===============================================================================
+
+'@sub-title The free text of a summary: everything past the report marker
+'@param summaryText String. What DesignerLastSummary answered.
+'@return String. The text after the marker, empty when there is none.
+Private Function FreeTextOf(ByVal summaryText As String) As String
+    Dim markerAt As Long
+
+    markerAt = InStr(1, summaryText, REPORT_MARKER)
+    If markerAt = 0 Then Exit Function
+
+    FreeTextOf = Mid$(summaryText, markerAt + Len(REPORT_MARKER) + 1)
+End Function
 
 '@sub-title Whether this Excel can start a second instance
 '@return Boolean. True on Windows.
