@@ -491,6 +491,54 @@ suites:
       # the workbook: LinelistEventsManager under `linelist` covers the same six
       # jobs and carries an LL prefix on every one of them.
       - EventsManager
+      # SetupRibbon joined the registry in Session 112, which put three entry
+      # points a script can call at the foot of it -- RunSetupExport,
+      # RunSetupImportFile and RunSetupTags -- plus SetupLastSummary. Until then
+      # this module was in no folder, so the seven messenger sites Session 111
+      # changed inside it were never compiled by the test workbook.
+      #
+      # It names EventsManager and EventSetup (above), SetupHelpers (below),
+      # SetupPreparation, SetupImport, SetupTranslationsTable and UpdatedValues
+      # (above), RibbonDev (under `dev`), Messenger (under `general`), and
+      # TranslationObject, Passwords and BetterArray, which are baked into the
+      # driver workbook. IRibbonControl comes from the Office library, already in
+      # the project through EventsDesignerCore and RibbonDev.
+      #
+      # SIX OF ITS PUBLIC NAMES ALSO SIT ON EventsMasterSetupRibbon, registered
+      # under `msetup`: clickAddLang, clickAddRows, clickAddTrans,
+      # clickDevInitialize, clickFilters and clickResize. VBA allows the same
+      # public name in two standard modules; what it refuses is an UNQUALIFIED
+      # call to one of them. Every occurrence of all six across src/ is inside a
+      # string literal, so no such call exists. A test calling into either module
+      # qualifies the call, and whoever adds one keeps doing that.
+      - SetupRibbon
+      # SetupHelpers is here because SetupRibbon calls it qualified thirteen
+      # times. It brings the [Imports] form with it: it declares
+      # `Dim formRef As Imports` and reads eleven of that form's controls, so
+      # without the form row below it does not compile. It names EventsManager,
+      # EventSetup, SetupPreparation, SetupImport, SetupErrors and UpdatedValues
+      # (above), OSFiles (under `general`), and Passwords and BetterArray, baked
+      # in. Its public names clash with nothing already in the workbook.
+      - SetupHelpers
+    forms:
+      # The setup's own form, and the second row in this file whose source sits
+      # outside src/. It arrives from .mock/forms/setup, copied into the merged
+      # .frm tree by run-tests.R on every --build run.
+      #
+      # It is COPIED, not merged. A designer form is merged because its code
+      # lives apart from it in src/modules/linelistform; this .frm carries no
+      # code at all -- sixteen lines of header -- and its logic sits in
+      # src/modules/setup/ImportForm.bas, which nothing here compiles. So there
+      # is nothing to rewrite and the .frm and .frx are staged as they are.
+      #
+      # Nothing drives this form in a test. It is here because SetupHelpers
+      # names its controls and a project that cannot resolve them does not
+      # compile, which takes the whole setup folder down with blank counts.
+      #
+      # THE .frm HAS TO ARRIVE WITH CRLF ENDINGS, the same trap the F_Geo row
+      # further down describes: given LF the VBE reads it as a standard module
+      # and reports no error at all.
+      - name: Imports
     tests:
       - module: TestSetupTranslationsTable
         covers: [SetupTranslationsTable]
@@ -527,6 +575,15 @@ suites:
         covers: [EventSetup]
       - module: TestEventsManager
         covers: [EventsManager]
+      # TestSetupRibbon drives the three entry points of Session 112. It never
+      # reaches a successful export or import: this workbook is the test driver,
+      # not a setup, so the bodies raise and the wrapper turns the raise into its
+      # ERROR line. What the suite pins is the contract every wrapper meets --
+      # a string answer on every path, the guard on a path that is not there, the
+      # messenger disarmed when the call returns, and the summary read back.
+      # Its helper calls are unqualified, so they resolve to TestHelpersLite.
+      - module: TestSetupRibbon
+        covers: [SetupRibbon]
 
   # --- analyses (Analysis) ---------------------------------------------------
   # Opened by SetupImport, which names Analysis and cannot reach it from
