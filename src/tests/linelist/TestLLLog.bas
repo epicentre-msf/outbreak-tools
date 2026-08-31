@@ -33,6 +33,22 @@ Option Explicit
 'landing at the foot of the sheet, a blank row stands between two blocks,
 'and the mapping answers the two boundary cases.
 '
+'THE STOPWATCH
+'-------------------------------------------------------------------------------
+'StartWalk, MarkStep, StepReport and LogSteps time a walk that runs in
+'steps. Eight tests hold them: MarkStep answering the name it was given
+'with and without a walk open, which is what lets a caller keep one line
+'per step; the order of the steps and the total closing the line; the
+'seconds carrying no decimal comma, because this box is en_FR and Format
+'would write one; the step still running being reported without being
+'closed, which is what a failure label reads; a fresh walk dropping what
+'an earlier one left; the whole walk landing on one line in the section
+'of its action; a walk with no stopwatch open writing nothing, which is
+'the cancel path of an import; and the write closing the stopwatch behind
+'it.
+'The steps of a suite take no measurable time, so the seconds all read as
+'zero and the tests hold the shape rather than the numbers.
+'
 'THE ROTATION IS REACHED BY SEEDING
 '-------------------------------------------------------------------------------
 'The cap is ten thousand rows. The test writes one cell past the cap in
@@ -157,6 +173,29 @@ Private Function CountOfText(ByVal sh As Worksheet, ByVal columnIndex As Long, _
     Next rowIndex
 
     CountOfText = total
+End Function
+
+'@sub-title Count how many times a text appears inside a string.
+'@details
+'Used by the step timing tests, which read one line rather than a column
+'of cells and have to say a step is named once and not twice.
+'@param text String. The string to read.
+'@param searched String. The text to look for.
+'@return Long. How many times it appears.
+Private Function CountOfSubstring(ByVal text As String, _
+                                  ByVal searched As String) As Long
+    Dim atChar As Long
+    Dim total As Long
+
+    If LenB(searched) = 0 Then Exit Function
+
+    atChar = InStr(1, text, searched, vbTextCompare)
+    Do While atChar > 0
+        total = total + 1
+        atChar = InStr(atChar + Len(searched), text, searched, vbTextCompare)
+    Loop
+
+    CountOfSubstring = total
 End Function
 
 '@sub-title Answer the first report line that contains a text.
@@ -1096,4 +1135,304 @@ Public Sub TestTheLogExportIsADataMove()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestTheLogExportIsADataMove", Err.Number, Err.Description
+End Sub
+'@section Step Timing Tests
+'===============================================================================
+
+'@sub-title MarkStep answers the name it was given, walk or no walk.
+'@details
+'This is what lets a caller keep one line per step. LLExporter writes
+'atStep = MarkStep("..."), so the name still reaches the failure message
+'and the stopwatch rides along. A caller whose workbook takes no log runs
+'the same line, which is why the answer has to come back with no walk
+'open too.
+'@TestMethod("LLLog")
+Public Sub TestMarkStepAnswersTheNameItWasGiven()
+    CustomTestSetTitles Assert, TESTMODULE, "TestMarkStepAnswersTheNameItWasGiven"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+
+    Set sut = LLLog.Create(FixtureWkb)
+
+    Assert.AreEqual "reading the dictionary", _
+                    sut.MarkStep("reading the dictionary"), _
+                    "The name comes back with no walk open"
+
+    sut.StartWalk
+    Assert.AreEqual "writing the data", sut.MarkStep("writing the data"), _
+                    "The name comes back inside a walk"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestMarkStepAnswersTheNameItWasGiven", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title The report names every step, in the order they were taken.
+'@details
+'The steps of this suite take no measurable time, so the seconds all read
+'as zero and the test holds the shape rather than the numbers: the three
+'names, each with its seconds, then the total.
+'@TestMethod("LLLog")
+Public Sub TestTheReportNamesEveryStepInOrder()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheReportNamesEveryStepInOrder"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim report As String
+
+    Set sut = LLLog.Create(FixtureWkb)
+
+    sut.StartWalk
+    sut.MarkStep "reading the dictionary"
+    sut.MarkStep "writing the data"
+    sut.MarkStep "saving the file"
+    report = sut.StepReport()
+
+    Assert.IsTrue (InStr(1, report, "reading the dictionary") > 0), _
+                  "The first step is named, read: " & report
+    Assert.IsTrue (InStr(1, report, "writing the data") > _
+                   InStr(1, report, "reading the dictionary")), _
+                  "The second step follows the first, read: " & report
+    Assert.IsTrue (InStr(1, report, "saving the file") > _
+                   InStr(1, report, "writing the data")), _
+                  "The third step follows the second, read: " & report
+    Assert.IsTrue (InStr(1, report, "total") > InStr(1, report, "saving the file")), _
+                  "The total closes the line, read: " & report
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheReportNamesEveryStepInOrder", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title The seconds are written with a period on every machine.
+'@details
+'This box is en_FR, where Format writes 2,15 for what a Windows box in
+'English writes 2.15. A timing line is read beside the timing line of
+'another machine, so the class writes its seconds through Str and the
+'line carries no comma at all.
+'@TestMethod("LLLog")
+Public Sub TestTheSecondsCarryNoComma()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheSecondsCarryNoComma"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim report As String
+
+    Set sut = LLLog.Create(FixtureWkb)
+
+    sut.StartWalk
+    sut.MarkStep "reading the dictionary"
+    report = sut.StepReport()
+
+    Assert.AreEqual 0&, CLng(InStr(1, report, ",")), _
+                    "No decimal comma reaches the line, read: " & report
+    Assert.IsTrue (InStr(1, report, "s") > 0), _
+                  "The seconds carry their unit, read: " & report
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheSecondsCarryNoComma", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title The step still running is reported, and stays running.
+'@details
+'A failure label reaches the report with the step that refused still
+'open, and that is the step a reader wants most. Reading the report
+'twice answers the same walk both times, which is what says the read
+'leaves the stopwatch alone.
+'@TestMethod("LLLog")
+Public Sub TestTheOpenStepIsReportedAndStaysOpen()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheOpenStepIsReportedAndStaysOpen"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim firstRead As String
+    Dim secondRead As String
+
+    Set sut = LLLog.Create(FixtureWkb)
+
+    sut.StartWalk
+    sut.MarkStep "writing the geobase tables"
+    firstRead = sut.StepReport()
+    secondRead = sut.StepReport()
+
+    Assert.IsTrue (InStr(1, firstRead, "writing the geobase tables") > 0), _
+                  "The open step is on the line, read: " & firstRead
+    Assert.AreEqual 1&, CLng(CountOfSubstring(secondRead, "writing the geobase tables")), _
+                    "The second read names it once, read: " & secondRead
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheOpenStepIsReportedAndStaysOpen", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A fresh walk drops what an earlier one left behind.
+'@details
+'A walk that refused before it wrote its line must not leak its steps
+'into the next walk of the same log. The export walks share one log
+'instance across every export of a session, so this is the case that
+'would show up first.
+'@TestMethod("LLLog")
+Public Sub TestAFreshWalkDropsTheEarlierSteps()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAFreshWalkDropsTheEarlierSteps"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim report As String
+
+    Set sut = LLLog.Create(FixtureWkb)
+
+    sut.StartWalk
+    sut.MarkStep "the walk that refused"
+
+    sut.StartWalk
+    sut.MarkStep "the walk that ran"
+    report = sut.StepReport()
+
+    Assert.AreEqual 0&, CLng(InStr(1, report, "the walk that refused")), _
+                    "The earlier walk is gone, read: " & report
+    Assert.IsTrue (InStr(1, report, "the walk that ran") > 0), _
+                  "The fresh walk is on the line, read: " & report
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAFreshWalkDropsTheEarlierSteps", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title The step times land on one line, in the section of their action.
+'@details
+'One line per walk rather than one per step: a migration export names a
+'dozen steps, and a line each would push the row cap of the sheet twelve
+'times faster for the same reading. The action code is the walk''s own, so
+'the timing line sits in the same block as the success line beside it.
+'@TestMethod("LLLog")
+Public Sub TestTheStepTimesLandOnOneLine()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheStepTimesLandOnOneLine"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim sh As Worksheet
+    Dim titleRow As Long
+    Dim entryRow As Long
+    Dim detail As String
+
+    Set sut = LLLog.Create(FixtureWkb)
+
+    sut.StartWalk
+    sut.MarkStep "reading the dictionary"
+    sut.MarkStep "writing the data"
+    sut.LogSteps "export-migration", "LLExporter.ExportMigration"
+
+    Set sh = sut.Wksh()
+    titleRow = RowOfText(sh, OUTPUT_COLUMN, SECTION_DATAIO)
+    Assert.IsTrue (titleRow > 0), "The timing line joins the data moves"
+
+    entryRow = RowOfText(sh, DETAIL_COLUMN, "step times")
+    Assert.IsTrue (entryRow > titleRow), _
+                  "The timing line sits under the section"
+
+    detail = CStr(sh.Cells(entryRow, DETAIL_COLUMN).Value)
+    Assert.IsTrue (InStr(1, detail, "reading the dictionary") > 0), _
+                  "The first step is on the line, read: " & detail
+    Assert.IsTrue (InStr(1, detail, "writing the data") > 0), _
+                  "The second step is on the same line, read: " & detail
+    Assert.AreEqual 1&, CountOfText(sh, DETAIL_COLUMN, "step times"), _
+                    "The whole walk is one line"
+    Assert.IsTrue (InStr(1, detail, "LLExporter.ExportMigration") > 0), _
+                  "The line names the walk that wrote it, read: " & detail
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheStepTimesLandOnOneLine", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A walk with no stopwatch open writes nothing.
+'@details
+'LogSteps is called on every exit of a walk, and the cancel path of an
+'import is reached before the stopwatch ever opens. That path has to
+'leave the sheet alone.
+'@TestMethod("LLLog")
+Public Sub TestAWalkWithNoStopwatchWritesNothing()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAWalkWithNoStopwatchWritesNothing"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim sh As Worksheet
+
+    Set sut = LLLog.Create(FixtureWkb)
+    Set sh = sut.Wksh()
+
+    sut.LogSteps "import-data"
+
+    Assert.AreEqual vbNullString, sut.StepReport(), _
+                    "A closed stopwatch reports nothing"
+    Assert.AreEqual 0&, CountOfText(sh, DETAIL_COLUMN, "step times"), _
+                    "No timing line reaches the sheet"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAWalkWithNoStopwatchWritesNothing", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Writing the walk out closes its stopwatch.
+'@details
+'The second call of a pair writes nothing, so a walk cannot leave two
+'lines behind, and its steps are dropped rather than carried into the
+'next walk.
+'@TestMethod("LLLog")
+Public Sub TestWritingTheWalkClosesTheStopwatch()
+    CustomTestSetTitles Assert, TESTMODULE, "TestWritingTheWalkClosesTheStopwatch"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+    Dim sh As Worksheet
+
+    Set sut = LLLog.Create(FixtureWkb)
+
+    sut.StartWalk
+    sut.MarkStep "reading the dictionary"
+    sut.LogSteps "export-migration"
+    sut.LogSteps "export-migration"
+
+    Set sh = sut.Wksh()
+    Assert.AreEqual 1&, CountOfText(sh, DETAIL_COLUMN, "step times"), _
+                    "One walk leaves one line"
+    Assert.AreEqual vbNullString, sut.StepReport(), _
+                    "The stopwatch is closed once the line is written"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestWritingTheWalkClosesTheStopwatch", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A geobase export is filed with the other data moves.
+'@details
+'The code LLExporter.ExportGeo writes under. It was named by no case
+'until the stopwatch landed, so both its warning line and its timing
+'line fell in the lifecycle section, away from the exports they belong
+'with.
+'@TestMethod("LLLog")
+Public Sub TestAGeobaseExportIsADataMove()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAGeobaseExportIsADataMove"
+    On Error GoTo TestFail
+
+    Dim sut As LLLog
+
+    Set sut = LLLog.Create(FixtureWkb)
+    Assert.AreEqual SECTION_DATAIO, sut.SectionOf("export-geo"), _
+                    "A geobase export moves data out of the workbook"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAGeobaseExportIsADataMove", _
+                         Err.Number, Err.Description
 End Sub

@@ -86,6 +86,19 @@ Option Explicit
 'CheckingOutput keeps, so the next render re-initialises the sheet, and
 'the fresh log opens with one info line ("restarted").
 '
+'THE STOPWATCH OF A LONG WALK
+'-------------------------------------------------------------------------------
+'StartWalk, MarkStep, StepReport and LogSteps time a walk that runs in
+'steps -- an export, an import -- and leave the whole walk on one info
+'line, each step with its seconds and a total at the end. MarkStep
+'answers the name it was given, so a walk that already carries the step
+'it is on keeps one line per step and the name still reaches its failure
+'message.
+'The stopwatch is state on the instance, so one instance times one walk.
+'One line rather than one per step: a migration export names a dozen
+'steps, and a line each would push the row cap twelve times faster for
+'the same reading.
+'
 'FILTER DROPDOWNS
 '-------------------------------------------------------------------------------
 'The interactive row hiding of the output sheet wants a Worksheet_Change
@@ -93,7 +106,7 @@ Option Explicit
 'which field machines lack. LLLog leaves the worksheet code module alone;
 'the dropdowns stay plain validation cells and the filtering is reachable
 'through CheckingOutput.FilterWorksheet.
-'@version 1.1 (2026-08-15)
+'@version 1.2 (2026-08-31)
 
 
 '@section State
@@ -154,12 +167,30 @@ Private Const ACTION_SEPARATOR As String = ": "
 'name of a procedure apart from the action it took.
 Private Const SOURCE_SEPARATOR As String = " > "
 
+'What a step timing line opens with, and what stands between two steps on
+'it. The opening words are what a reader searches the log for, and neither
+'mark is one of the two separators above, so a timing line lands in the
+'detail column whole.
+Private Const STEPS_LEAD As String = "step times | "
+Private Const STEPS_SEPARATOR As String = "; "
+Private Const STEPS_TOTAL_LEAD As String = "total "
+
+'Timer answers the seconds since midnight, so a walk running across
+'midnight reads as a negative difference. A day is added back on.
+Private Const SECONDS_IN_A_DAY As Double = 86400
+
 Private Type TLLLog
     targetSheet As Worksheet
     writer As CheckingOutput
     store As HiddenNames
     sealed As Boolean
     platformTag As String
+    stepNames As BetterArray
+    stepSeconds As BetterArray
+    openStepName As String
+    openStepAt As Double
+    walkStartedAt As Double
+    walking As Boolean
 End Type
 
 Private this As TLLLog
@@ -242,7 +273,7 @@ Public Function SectionOf(ByVal action As String) As String
 
     Case "import-data", "import-geobase", "clear-data", _
          "export", "export-migration", "export-other", "export-analysis", _
-         "export-log"
+         "export-geo", "export-log"
         SectionOf = SECTION_DATAIO
 
     Case Else
@@ -312,6 +343,127 @@ Public Sub LogInfo(ByVal action As String, _
                    Optional ByVal detail As String = vbNullString, _
                    Optional ByVal source As String = vbNullString)
     WriteEntry action, detail, checkingInfo, source
+End Sub
+
+'@section StepTiming
+'===============================================================================
+'@description The stopwatch of a long walk, and the one line it leaves behind.
+
+'@label:start-walk
+'@sub-title Open a fresh stopwatch on this log
+'@details
+'Called at the top of a long walk -- an export, an import -- before the
+'first step is named. Anything an earlier walk left behind is dropped, so
+'a walk that failed before it wrote its line never leaks its steps into
+'the next one.
+'The stopwatch is state on the instance, so one instance times one walk.
+'LLExporter holds its own log and LinelistRun reads the one the event
+'service holds, which is why the export walk and the import walk never
+'meet in here.
+'@export
+Public Sub StartWalk()
+    Set this.stepNames = New BetterArray
+    Set this.stepSeconds = New BetterArray
+    this.stepNames.LowerBound = 1
+    this.stepSeconds.LowerBound = 1
+
+    this.openStepName = vbNullString
+    this.walkStartedAt = TimerNow()
+    this.openStepAt = this.walkStartedAt
+    this.walking = True
+End Sub
+
+'@label:mark-step
+'@sub-title Close the step that was running and open the one named here
+'@details
+'Answers the name it was given, so a walk already carrying the step it is
+'on in a variable keeps one line per step:
+'
+'  atStep = logStore.MarkStep("reading the dictionary")
+'
+'The name still reaches the failure message, and the stopwatch rides
+'along. A walk with no stopwatch open is left alone and the name comes
+'straight back, so a caller whose workbook takes no log writes the same
+'code.
+'@param stepName String. What the walk is about to do.
+'@return String. The name it was given.
+'@export
+Public Function MarkStep(ByVal stepName As String) As String
+    MarkStep = stepName
+    If Not this.walking Then Exit Function
+
+    CloseOpenStep
+    this.openStepName = stepName
+    this.openStepAt = TimerNow()
+End Function
+
+'@label:step-report
+'@sub-title The whole walk on one line, each step with its seconds
+'@details
+'Reads the pairs and adds the total, and reads them without touching
+'them: a step still running is reported with the seconds it has spent so
+'far and stays open. So this answers the same walk whether it is called
+'at the end or at a failure label.
+'The seconds are written through Str, not Format, because Format follows
+'the decimal separator of the machine and this box writes a comma. A
+'timing line is read beside the timing line of another machine, so the
+'two have to be written the same way.
+'@return String. The line, empty when no walk is open.
+'@export
+Public Function StepReport() As String
+    Dim index As Long
+    Dim report As String
+    Dim atNow As Double
+
+    If Not this.walking Then Exit Function
+    atNow = TimerNow()
+
+    If Not this.stepNames Is Nothing Then
+        If this.stepNames.Length > 0 Then
+            For index = this.stepNames.LowerBound To this.stepNames.UpperBound
+                report = report & CStr(this.stepNames.Item(index)) & " " & _
+                         SecondsText(CDbl(this.stepSeconds.Item(index))) & _
+                         STEPS_SEPARATOR
+            Next index
+        End If
+    End If
+
+    'The step still running. A failure label reaches this with the step
+    'that refused still open, which is the one a reader wants most.
+    If LenB(this.openStepName) > 0 Then
+        report = report & this.openStepName & " " & _
+                 SecondsText(ElapsedBetween(this.openStepAt, atNow)) & _
+                 STEPS_SEPARATOR
+    End If
+
+    StepReport = report & STEPS_TOTAL_LEAD & _
+                 SecondsText(ElapsedBetween(this.walkStartedAt, atNow))
+End Function
+
+'@label:log-steps
+'@sub-title Write the walk''s step times as one info line, and close the walk
+'@details
+'One line per walk rather than one per step: a migration export names a
+'dozen steps, and a line each would push the row cap of the sheet twelve
+'times faster for the same reading.
+'The action code is the walk''s own, so the timing line lands in the same
+'section block as the success or failure line it belongs with.
+'A walk with no stopwatch open writes nothing, so a caller can call this
+'on every path.
+'@param action String. The action code of the walk.
+'@param source Optional String. The procedure that ran the walk.
+'@export
+Public Sub LogSteps(ByVal action As String, _
+                    Optional ByVal source As String = vbNullString)
+    Dim detail As String
+
+    If Not this.walking Then Exit Sub
+
+    detail = StepReport()
+    EndWalk
+
+    If LenB(detail) = 0 Then Exit Sub
+    LogInfo action, STEPS_LEAD & detail, source
 End Sub
 
 '@section Export
@@ -763,6 +915,81 @@ Private Function HiddenStore() As HiddenNames
         Set this.store = HiddenNames.Create(Wksh())
     End If
     Set HiddenStore = this.store
+End Function
+
+'@label:close-open-step
+'@sub-title Keep the step that was running, with the seconds it took
+Private Sub CloseOpenStep()
+    Dim atNow As Double
+
+    If LenB(this.openStepName) = 0 Then Exit Sub
+
+    atNow = TimerNow()
+    this.stepNames.Push this.openStepName
+    this.stepSeconds.Push ElapsedBetween(this.openStepAt, atNow)
+
+    this.openStepName = vbNullString
+    this.openStepAt = atNow
+End Sub
+
+'@label:end-walk
+'@sub-title Close the stopwatch and drop what it held
+Private Sub EndWalk()
+    this.walking = False
+    this.openStepName = vbNullString
+    Set this.stepNames = Nothing
+    Set this.stepSeconds = Nothing
+End Sub
+
+'@label:timer-now
+'@sub-title The stopwatch reading, as a Double
+'@details
+'Timer answers a Single, which carries about seven digits: past midday
+'the seconds since midnight already use six of them, so a Single reads
+'hundredths at best. The widening happens here, once, so every
+'subtraction below is done in Double.
+'@return Double. Seconds since midnight.
+Private Function TimerNow() As Double
+    TimerNow = CDbl(Timer)
+End Function
+
+'@label:elapsed-between
+'@sub-title The seconds between two stopwatch readings
+'@details
+'A walk that runs across midnight reads as a negative difference, because
+'Timer restarts at zero. A day is added back on.
+'@param fromAt Double. The earlier reading.
+'@param toAt Double. The later reading.
+'@return Double. The seconds between them.
+Private Function ElapsedBetween(ByVal fromAt As Double, _
+                                ByVal toAt As Double) As Double
+    ElapsedBetween = toAt - fromAt
+    If ElapsedBetween < 0 Then _
+        ElapsedBetween = ElapsedBetween + SECONDS_IN_A_DAY
+End Function
+
+'@label:seconds-text
+'@sub-title A number of seconds as text, the same way on every machine
+'@details
+'Str is used rather than Format because Format follows the decimal
+'separator of the machine: this box is en_FR and writes 2,15 where a
+'Windows box in English writes 2.15. Two timing lines that are read side
+'by side have to be written the same way.
+'Str drops the leading zero of a value under one, so it is put back.
+'@param seconds Double. The seconds to write.
+'@return String. Something of the shape "2.15s".
+Private Function SecondsText(ByVal seconds As Double) As String
+    Dim text As String
+
+    text = Trim$(Str$(Round(seconds, 2)))
+
+    If Left$(text, 1) = "." Then
+        text = "0" & text
+    ElseIf Left$(text, 2) = "-." Then
+        text = "-0" & Mid$(text, 2)
+    End If
+
+    SecondsText = text & "s"
 End Function
 
 '@section ErrorHandling
