@@ -241,6 +241,10 @@ suites:
       # EventsDesignerMulti under `designer` names it, so that module row
       # compiles through this one.
       - name: ProgressBar
+      # Messenger is the one place a message box is shown from. It names
+      # ProjectError, BetterArray and HiddenNames, all three baked into the
+      # driver workbook, so this row closes its own compile closure.
+      - name: Messenger
       # Do NOT add TranslationObject as a class. It is already baked into the
       # workbook, and importing it again makes Excel keep both copies under a
       # second name (TranslationObject1). Only its TEST module is registered.
@@ -321,6 +325,13 @@ suites:
       # unqualified, so they resolve to TestHelpersLite.
       - module: TestButtons
         covers: [Buttons]
+      # TestMessenger drives the silence helper: the Arm and Disarm pair, the
+      # force state CarryOn reads, the record a swallowed box leaves behind,
+      # and the stored switch __OBT__SILENT_OPERATIONS__ read off a workbook.
+      # No test in it calls Show while the messenger is disarmed: that path
+      # opens a real box, and a box nobody clicks holds the whole run.
+      - module: TestMessenger
+        covers: [Messenger]
 
       # FOUR MODULES IN src/tests/general/ ARE OUT OF THIS LIST ON PURPOSE, and
       # a green count here says nothing about any of them.
