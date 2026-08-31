@@ -714,7 +714,7 @@ End Sub
 'happens here on runs Excel finished green. So the same text is written to
 '<folder>/<name>-obt-summary.txt beside the file each wrapper touched, and the
 'file survives a -1712 and a wedged Excel both.
-
+
 '@sub-title Export the whole setup to a workbook, with no picker and no box.
 '@details
 'The body of clickExport, with the folder handed in instead of picked.
