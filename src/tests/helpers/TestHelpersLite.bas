@@ -517,7 +517,8 @@ End Function
 '@details Prefers the provided workbook path, falling back to ThisWorkbook or the current directory.
 '@param referenceWorkbook Optional Workbook used to resolve the path context.
 '@param folderName Optional String subfolder to create under that path.
-'@return String path guaranteed non-empty.
+'@return String. The folder, which EXISTS when the answer is non-empty. Empty
+'when the folder could not be made -- test that rather than assuming a path.
 Public Function BuildTempFolder(Optional ByVal referenceWorkbook As workbook, _
                                 Optional ByVal folderName As String = vbNullString) As String
 
@@ -534,13 +535,47 @@ Public Function BuildTempFolder(Optional ByVal referenceWorkbook As workbook, _
     If LenB(folderPath) = 0 Then folderPath = CurDir$
     If LenB(folderName) <> 0 Then folderPath = folderPath & Application.PathSeparator & folderName
 
-    ' The folder may already be there, and Dir on a missing path answers empty
-    ' on some hosts, so the create is allowed to fail quietly.
-    On Error Resume Next
-        If Dir$(folderPath, vbDirectory) = vbNullString Then MkDir folderPath
-    On Error GoTo 0
+    ' The create is allowed to fail quietly because the folder may already be
+    ' there, and MkDir raises 75 for one that is.
+    If Not FolderIsThere(folderPath) Then
+        On Error Resume Next
+            MkDir folderPath
+            Err.Clear
+        On Error GoTo 0
+    End If
 
-    BuildTempFolder = folderPath
+    ' ANSWER EMPTY RATHER THAN A PATH TO NOTHING. This used to test the folder
+    ' with Dir$(path, vbDirectory), which does not answer reliably for a folder
+    ' on Mac Excel: the check said the folder was there, MkDir never ran, and the
+    ' caller was handed a path it could not write into. That is a silent failure
+    ' the caller cannot see, and it cost a red probe in Session 112. The check is
+    ' GetAttr now, and a folder that could not be made comes back as an empty
+    ' string the caller can test.
+    If FolderIsThere(folderPath) Then BuildTempFolder = folderPath
+End Function
+
+'@label FolderIsThere
+'@fun-title True when a path names a folder that is there.
+'@details
+'GetAttr, never Dir$(path, vbDirectory). Dir$ with vbDirectory does not answer
+'reliably for a folder on Mac Excel, in both directions: it has been seen empty
+'for a folder that exists and non-empty for one that does not. GetAttr is what
+'HeadlessBuild.IsFolder, TemporaryRepos and GenerationHost.FolderExists all use,
+'so this is the idiom of the repo rather than a local choice.
+'@param folderPath String. The path to judge.
+'@return Boolean. True for an existing folder.
+Private Function FolderIsThere(ByVal folderPath As String) As Boolean
+    Dim folderAttributes As Long
+
+    If LenB(folderPath) = 0 Then Exit Function
+
+    On Error Resume Next
+        folderAttributes = GetAttr(folderPath)
+        If Err.Number = 0 Then
+            FolderIsThere = ((folderAttributes And vbDirectory) = vbDirectory)
+        End If
+        Err.Clear
+    On Error GoTo 0
 End Function
 
 '@label BuildWorkbookPath
@@ -670,16 +705,17 @@ End Function
 '@label EnsureFolder
 '@sub-title Create a folder and every missing parent above it.
 '@details
-'MkDir raises 75 for a folder that is already there, and Dir$ on a directory
-'answers empty on Mac Excel often enough that the check above it cannot be
-'trusted. BuildTempFolder already allows its own MkDir to fail quietly for
-'that reason. Without the same tolerance here, the second call for a sibling
-'folder walks up to a parent Dir$ failed to see, tries to create it again and
-'takes the whole run down with error 75.
+'The existence check is FolderIsThere, which asks GetAttr. It used to ask
+'Dir$(path, vbDirectory), which does not answer reliably for a folder on Mac
+'Excel, and the tolerance below was what carried the run past that: MkDir raises
+'75 for a folder that is already there, so a parent Dir$ failed to see was
+'created twice and the second attempt took the whole run down. The tolerance
+'stays -- it costs nothing and covers a folder made between the check and the
+'create -- but it is no longer load bearing.
 '@param targetPath String. The folder to create.
 Public Sub EnsureFolder(ByVal targetPath As String)
     If LenB(targetPath) = 0 Then Exit Sub
-    If Dir$(targetPath, vbDirectory) <> vbNullString Then Exit Sub
+    If FolderIsThere(targetPath) Then Exit Sub
 
     Dim parentPath As String
     parentPath = ParentFolder(targetPath)
