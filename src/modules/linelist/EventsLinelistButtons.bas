@@ -5,7 +5,7 @@ Option Private Module
 
 '@Folder("Linelist Events")
 '@ModuleDescription("Events associated to eventual buttons in the Linelist")
-'@depends LinelistEventsManager, EventLinelist, LLdictionary, LLExport, LLLog, LLTranslation, TranslationObject, ShowHide, ShowHideLayout, ShowHideStore, SectionShowHide, SectionMap, ImportChecking, CustomTable, Passwords, HiddenNames, BetterArray
+'@depends LinelistEventsManager, LinelistRun, EventLinelist, LLdictionary, LLExport, LLLog, LLTranslation, TranslationObject, ShowHide, ShowHideLayout, ShowHideStore, SectionShowHide, SectionMap, ImportChecking, CustomTable, Passwords, HiddenNames, BetterArray
 
 
 Private Const DICTSHEET As String = "Dictionary"
@@ -2240,7 +2240,7 @@ Public Sub ClickImportData()
     'cascade, no checking, no autofill. The user reads it as the dropdowns
     'having stopped working.
     '
-    'It also poisoned the scope underneath it. F_Advanced.HandleImportData opens
+    'It also poisoned the scope underneath it. LinelistRun.HandleImportData opens
     'an ApplicationState of its own, and that snapshot was taken AFTER the raw
     'line below had already turned events off, so the form's own restore put
     '"off" back and the only line that undid it was the last one of this sub.
@@ -2263,9 +2263,10 @@ Public Sub ClickImportData()
     Next
 
     'Import data using LLImporter API (handles file picker, the question about
-    'the rows already entered, busy state and report). Qualified through the
-    'form: the walk lives in the F_Advanced code-behind.
-    F_Advanced.HandleImportData wb, tradsmess
+    'the rows already entered, busy state and report). The walk lives in
+    'LinelistRun, a standard module, so this is an ordinary compiled call. It
+    'used to sit in the F_Advanced code-behind and be reached through the form.
+    LinelistRun.HandleImportData wb, tradsmess
 
     'Update all the listAuto in the workbook
     LinelistEventsManager.UpdateAllListAuto
@@ -2295,7 +2296,7 @@ Public Sub ClickImportGeobase()
     Attribute clickImportGeobase.VB_Description = "Import a new geobase in the linelist"
 
     InitializeTrads
-    F_Advanced.HandleImportGeobase wb, tradsmess
+    LinelistRun.HandleImportGeobase wb, tradsmess
 End Sub
 
 '@Description("Reset hidden columns in the linelist")

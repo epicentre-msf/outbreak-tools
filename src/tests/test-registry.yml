@@ -1136,6 +1136,48 @@ suites:
       # headless run has nobody to close such a window and stops there with no
       # result file, so the seams are what make this module testable at all.
       - GeoModule
+      # ImportChecking writes what an import found onto one very hidden
+      # worksheet of the linelist, and shows that sheet when a refused file
+      # needs explaining. It joined on 2026-08-31 because LinelistRun below
+      # calls both of its subs and a module row needs its whole closure here.
+      #
+      # THIS ROW OPENS NOTHING NEW. It names LinelistEventsManager and
+      # EventLinelist above; CheckingOutput, Checking, Passwords and BetterArray
+      # are baked into the driver workbook. Its three public names clash with
+      # nothing already in the workbook.
+      - ImportChecking
+      # LinelistRun carries the two import walks of a running linelist --
+      # HandleImportData and HandleImportGeobase -- and the three entry points a
+      # script calls them through: RunImportGeobase, RunImportData and
+      # LinelistLastSummary. It joined on 2026-08-31.
+      #
+      # THE TWO WALKS USED TO LIVE IN A FORM. They sat in FormLogicAdvanced,
+      # the code-behind of F_Advanced, so they were reachable only as
+      # F_Advanced.HandleImportData and no suite could ever touch them: a form
+      # module is compiled into the delivered linelist and into nothing the
+      # harness drives. That is why the thirteen message boxes Session 114
+      # rewrote inside them had no test at all. They are a standard module now.
+      #
+      # THE ENTRY POINTS COULD NOT GO WHERE THEY BELONG. They belong beside
+      # ClickImportData in EventsLinelistButtons, which is where the setup keeps
+      # its own three. That module carries Option Private Module, which blocks
+      # callers outside the project -- and Application.Run through the Apple
+      # Event transport is exactly such a caller. It also names seven UserForms,
+      # so it could never carry a row here either: the driver workbook merges
+      # F_Geo alone.
+      #
+      # THIS MODULE NAMES NO FORM, which is what lets this row exist. The one
+      # form its walks show is F_ImportRep, when a person answers yes to "open
+      # the report now?", and it is reached through UserForms.Add at run time.
+      # That is the route ClickOpenShowHideSections takes to F_ShowHideSections.
+      #
+      # THIS ROW OPENS NOTHING NEW. LinelistRun names LinelistEventsManager and
+      # ImportChecking above, EventLinelist, LLTranslation and LLLog above,
+      # LLImporter and ImportMetadata (`dataio`), ApplicationState, OSFiles,
+      # CustomTable and Messenger (`general`); TranslationObject, Passwords,
+      # HiddenNames and BetterArray are baked into the driver workbook. Its five
+      # public names clash with nothing already in the workbook.
+      - LinelistRun
     forms:
       # F_Geo is the geo picker GeoModule drives. It arrives from the merged
       # .frm tree that merge-form-code.R writes under .test-runner/forms/merged
@@ -1266,6 +1308,33 @@ suites:
       # to TestHelpersLite.
       - module: TestLLLog
         covers: [LLLog]
+      # TestLinelistRun drives the three entry points a script can call on a
+      # running linelist. The driver workbook is NOT a linelist: it holds no
+      # dictionary, no translation sheet and no data entry table. So the suite
+      # drives the paths that are the same on any workbook -- the guards on the
+      # path, the pasting rule and the force word, the refusal when the
+      # translator is missing, the disarm on every path, and the shape of the
+      # summary. The two import walks themselves are proved by the R package
+      # calling them against a real linelist, which is what this block of
+      # sessions is for.
+      #
+      # EVERY CALL IN HERE ANSWERS A STRING. That is the contract, and it is
+      # what every test below checks: no path opens a box, no path raises, and
+      # no path leaves the messenger armed for whoever calls next -- who is a
+      # person clicking a button.
+      #
+      # AND EVERY CALL IN HERE IS REFUSED, ON PURPOSE. A run that imports saves
+      # the workbook it ran in and closes it, and closing a workbook ends the
+      # code running inside it -- which here is this suite. A test added to this
+      # module that ever gets an OK out of a wrapper takes the whole run down.
+      #
+      # It arms Messenger (under `general`) through the wrappers themselves, so
+      # TestInitialize and TestCleanup both call Messenger.Reset: the messenger
+      # is a default instance the whole run shares, and a test that left it
+      # armed would silence every later suite. Its helper calls are unqualified,
+      # so they resolve to TestHelpersLite.
+      - module: TestLinelistRun
+        covers: [LinelistRun]
 
   # --- dev (Development) ----------------------------------------------------
   # THIS BLOCK CARRIES A TEST MODULE AND NO CLASS, AND IT MUST STAY THAT WAY.

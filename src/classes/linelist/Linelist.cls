@@ -1253,11 +1253,12 @@ Private Sub TransferAllCode(ByVal transfer As CodeTransfer, _
         transfer.TransferClass codeName
     Next
 
-    'Transfer modules (5 modules, plus the ribbon just below)
+    'Transfer modules (6 modules, plus the ribbon just below)
     codesList.Clear
     codesList.Push "CustomLinelistFunctions", _
                    "GeoModule", "LinelistEventsManager", _
-                   "EventsLinelistButtons", "ImportChecking"
+                   "EventsLinelistButtons", "ImportChecking", _
+                   "LinelistRun"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
