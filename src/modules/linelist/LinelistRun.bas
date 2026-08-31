@@ -51,6 +51,16 @@ Option Explicit
 'it repeats is ExportButton.RunExport, and ExportButton is a class holding a
 'WithEvents binding to a form control, so it cannot be called from here either.
 '
+'THE IMPORT WALK IS TIMED
+'-------------------------------------------------------------------------------
+'HandleImportData names each call of its sequence to the stopwatch LLLog
+'holds, and leaves the whole walk on one info line of the workbook log:
+'each step with its seconds and a total at the end. The stopwatch opens
+'after the picker and the pasting question, so the line times the work and
+'not the two questions a person answered, and it is written on every exit,
+'the refusal and the error label included.
+'The four export walks are timed the same way, inside LLExporter.
+'
 'EVERY PATH OF A WRAPPER DISARMS
 '-------------------------------------------------------------------------------
 'CloseRun is the one exit of both wrappers: it reads the swallowed boxes off the
@@ -222,17 +232,22 @@ Public Function HandleImportData(ByVal sourceWkb As Workbook, _
     If pastingRule = PASTING_RULE_STOP Then GoTo EndImport
     pasteAtBottom = (pastingRule = PASTING_RULE_BOTTOM)
 
-    ' Busy state
+    ' Busy state. The stopwatch opens here rather than at the top of the
+    ' walk: the picker and the pasting question wait for a person, and a
+    ' walk timed across them would say more about the reader than the work.
     Set appState = ApplicationState.Create()
     appState.ApplyBusyState suppressEvents:=True, calculateOnSave:=True, _
                             busyCursor:=xlWait, blockSecurity:=False
     Set actsh = ActiveSheet
+    StartStepWatch
 
     ' Open import workbook
+    MarkWalkStep "opening the import file"
     Set impwb = Workbooks.Open(filePath)
     ActiveWindow.WindowState = xlMinimized
 
     ' Read what the file says about itself, once, and read the file over
+    MarkWalkStep "reading what the file says about itself"
     Set meta = ImportMetadata.Create(impwb)
     refused = Not impObj.CheckImportFile(impwb, meta)
 
@@ -248,23 +263,37 @@ Public Function HandleImportData(ByVal sourceWkb As Workbook, _
             If Not KeepGoingOnLanguage(meta, impObj, trads) Then GoTo EndImport
         End If
 
-        ' Import all data
+        ' Import all data. Each call is one step of the stopwatch, so the
+        ' log line says which of the seven the walk spent its time in.
+        MarkWalkStep "importing the data"
         impObj.ImportData impwb, pasteAtBottom, meta
+
+        MarkWalkStep "importing the custom dropdowns"
         impObj.ImportCustomDropdown impwb, pasteAtBottom
+
+        MarkWalkStep "comparing with the import file"
         impObj.CompareWithImportFile impwb
+
+        MarkWalkStep "finishing the report"
         impObj.FinalizeReport
 
         ' Import migration metadata. These three read the file's own dictionary
         ' and labels, so they run only when the two files are in the same
         ' language.
         If sameLanguage Then
+            MarkWalkStep "importing the show/hide choices"
             impObj.ImportShowHide impwb, meta
+
+            MarkWalkStep "importing the editable labels"
             impObj.ImportEditableLabels impwb, meta
+
+            MarkWalkStep "importing the single values"
             impObj.ImportSingleValues meta
         End If
     End If
 
     ' Close import workbook
+    MarkWalkStep "closing the import file"
     impwb.Close savechanges:=False
     Set impwb = Nothing
 
@@ -276,6 +305,7 @@ Public Function HandleImportData(ByVal sourceWkb As Workbook, _
     ' box and before the report form. The Open Log button of that form shows
     ' this worksheet, so a sheet written after the form was dismissed is a
     ' button that does nothing.
+    MarkWalkStep "writing what the import found"
     ImportChecking.WriteImportCheckings sourceWkb, impObj.CheckingValues
 
     ' A REFUSAL IS SHOWN, unlike a finished import. Nothing else tells the user
@@ -284,6 +314,7 @@ Public Function HandleImportData(ByVal sourceWkb As Workbook, _
     ' reason and what to do about it. This is the only place the sheet is put on
     ' screen by an import.
     If refused Then
+        LogWalkSteps "import-data"
         LogWarningLine "import-data", "file refused: " & FileNameOf(filePath)
         Messenger.Show trads.TranslatedValue("MSG_AbortImport"), vbOK, _
                        vbExclamation + vbOKOnly, _
@@ -294,6 +325,7 @@ Public Function HandleImportData(ByVal sourceWkb As Workbook, _
 
     ' The import rewrote the sheets the held managers were built over
     ResetEventCaches
+    LogWalkSteps "import-data"
     LogSuccessLine "import-data", FileNameOf(filePath)
 
     ' The one line that answers True, and it sits after the data is written.
@@ -318,6 +350,7 @@ Public Function HandleImportData(ByVal sourceWkb As Workbook, _
 
 EndImport:
     On Error Resume Next
+    LogWalkSteps "import-data"
     LogWarningLine "import-data", "cancelled"
     Messenger.Show trads.TranslatedValue("MSG_AbortImport"), vbOK, _
                    vbOKOnly, trads.TranslatedValue("MSG_Imports")
@@ -331,6 +364,7 @@ ErrHand:
     ' Err is read before the Resume Next below clears it.
     failDetail = Err.Description
     On Error Resume Next
+    LogWalkSteps "import-data"
     LogFailureLine "import-data", failDetail
     Messenger.Show trads.TranslatedValue("MSG_ErrorImport"), vbOK, _
                    vbCritical + vbOKOnly, trads.TranslatedValue("MSG_Imports")
@@ -1563,6 +1597,54 @@ Private Sub RecalculateGeoCells()
     If linelistEvents Is Nothing Then Exit Sub
 
     linelistEvents.RecalculateGeoColumns
+End Sub
+
+'@sub-title Open the stopwatch of a walk on the workbook log.
+'@details
+'The log holds the stopwatch, so nothing is kept in this module, and a
+'workbook that will not take a log simply goes untimed. One log instance
+'times one walk: this module reads the one the event service holds, while
+'LLExporter times its four export walks on a log of its own.
+Private Sub StartStepWatch()
+    Dim logStore As LLLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.StartWalk
+    On Error GoTo 0
+End Sub
+
+'@sub-title Name the step a walk is about to take, and time the one before it.
+'@param stepName String. What the walk is about to do.
+Private Sub MarkWalkStep(ByVal stepName As String)
+    Dim logStore As LLLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.MarkStep stepName
+    On Error GoTo 0
+End Sub
+
+'@sub-title Write the step times of a walk, and close its stopwatch.
+'@details
+'Called on every exit of a timed walk, the refusals and the error label
+'included: the line is as much wanted when a walk stops early as when it
+'finishes, and it then carries the step it stopped in with the seconds it
+'had spent. A walk with no stopwatch open writes nothing.
+'@param action String. The action code the walk logs under.
+Private Sub LogWalkSteps(ByVal action As String)
+    Dim logStore As LLLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.LogSteps action, "LinelistRun.HandleImportData"
+    On Error GoTo 0
 End Sub
 
 '@sub-title Write the success line of a finished walk.

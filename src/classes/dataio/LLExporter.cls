@@ -37,6 +37,15 @@ Option Explicit
 'LastFailure answers what the last export failed on, for a caller writing the
 'failure into the log.
 '
+'EVERY WALK IS TIMED
+'-------------------------------------------------------------------------------
+'The four walks already carried the step they were on in atStep, for the
+'failure message. That variable is now filled through MarkStep, so the same
+'one line per step also drives the stopwatch LLLog holds, and each walk
+'leaves its whole run on one info line of the workbook log: every step with
+'its seconds and a total at the end. The line is written on both exits, so a
+'walk that refused says where its time went and which step it stopped in.
+'
 'THE APPLICATION THE EXPORTS RUN IN
 '-------------------------------------------------------------------------------
 'Every output workbook is added in the Application of the source linelist, and
@@ -521,30 +530,37 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
     this.lastFailure = vbNullString
 
     On Error GoTo RecordFailure
+    StartStepWatch
 
-    atStep = "reading the Exports sheet"
+    atStep = MarkStep("reading the Exports sheet")
     Set expObj = ExportObject()
     nbExp = expObj.NumberOfExports()
 
-    atStep = "reading the dictionary"
+    atStep = MarkStep("reading the dictionary")
     Set dict = SourceDictionary(nbExp)
 
-    atStep = "reading the passwords"
+    atStep = MarkStep("reading the passwords")
     Set pass = PasswordsObject()
     expName = "export " & CStr(exportNumber)
 
     ' The p-codes and the personal identifiers this export leaves out. The
     ' source dictionary is read and never written.
+    atStep = MarkStep("reading the excluded variables")
     Set excluded = ExcludedVariables(dict, expObj, exportNumber)
 
     ' Filter dictionary for this export and write to temp sheet
+    atStep = MarkStep("writing the dictionary to the temp sheet")
     PrepareTempDictionary dict, expName, False, excluded
+
+    atStep = MarkStep("reading the dictionary back off the temp sheet")
     Set expDict = ExportDictionaryFromTemp(nbExp)
 
     ' Sort export dictionary by table name and export column
+    atStep = MarkStep("sorting the export dictionary")
     SortExportDictionary expDict, expName
 
     ' Create output workbook
+    atStep = MarkStep("adding the output workbook")
     Set outwb = CreateOutputWorkbook()
     firstSheetName = outwb.Worksheets(1).Name
 
@@ -557,12 +573,21 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
     ' had no copy of.
     withMetadata = (expObj.ColumnValue(exportNumber, "export metadata sheets") = "yes")
     If withMetadata Then
+        atStep = MarkStep("adding the metadata sheets")
         AddMetadataSheets outwb, dict, nbExp
+
+        atStep = MarkStep("adding the custom dropdowns")
         AddCustomDropdowns outwb
+
+        atStep = MarkStep("adding the dictionary")
         AddDictionary outwb, dict, nbExp, expName, excluded
+
+        atStep = MarkStep("adding the metadata tags")
         AddMetadataTags outwb, ExportScopeCustom, exportNumber, _
                         includeShowHide:=True, keepLabels:=True, _
                         useFilters:=useFilters
+
+        atStep = MarkStep("adding the show/hide choices")
         AddShowHide outwb
         prevSheetName = METADATASHEET
     Else
@@ -570,6 +595,7 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
     End If
 
     ' Add data worksheets
+    atStep = MarkStep("adding one worksheet per data sheet")
     Set sheetNames = expDict.UniqueValues("sheet name")
     For counter = sheetNames.LowerBound To sheetNames.UpperBound
         outwb.Worksheets.Add(After:=outwb.Worksheets(prevSheetName)).Name = _
@@ -577,9 +603,13 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
         prevSheetName = sheetNames.Item(counter)
     Next counter
 
-    ' Add analysis if configured
+    ' Add analysis if configured. The step is named inside the If, so an
+    ' export that carries no analyses leaves no step of that name behind.
     withAnalysis = (expObj.ColumnValue(exportNumber, "export analyses sheets") = "yes")
-    If withAnalysis Then AddAnalysisSheets outwb, prevSheetName
+    If withAnalysis Then
+        atStep = MarkStep("adding the analysis sheets")
+        AddAnalysisSheets outwb, prevSheetName
+    End If
 
     ' Delete the placeholder first sheet. The handler is re-armed rather than
     ' cleared, so the rest of the walk still records what it refused on.
@@ -588,7 +618,7 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
     On Error GoTo RecordFailure
 
     ' Export data to each sheet
-    atStep = "writing the data"
+    atStep = MarkStep("writing the data")
     headerFormat = expObj.ColumnValue(exportNumber, "header format")
     useLabels = (headerFormat = HEADER_LABELS) Or _
                 (headerFormat = HEADER_NAMES_LABELS)
@@ -597,6 +627,7 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
     AddDataSheets outwb, expDict, useLabels, startLine, useFilters
 
     ' Build file path and save
+    atStep = MarkStep("building the file name")
     fileName = expObj.ExportFileName(exportNumber, dict, pass)
     fileExt = expObj.ColumnValue(exportNumber, "file format")
     If LenB(fileExt) = 0 Then fileExt = "xlsx"
@@ -609,8 +640,9 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
                   Not (pass Is Nothing)
     If addPassword Then this.lastPassword = pass.Value("privatekey")
 
-    atStep = "saving " & filePath
+    atStep = MarkStep("saving " & filePath)
     SaveWorkbook outwb, filePath, fileFormat, this.lastPassword
+    LogStepTimes "export", CLASS_NAME & ".ExportCustom"
     ExportCustom = filePath
     Exit Function
 
@@ -620,6 +652,7 @@ RecordFailure:
     errMessage = Err.Description
     RecordExportFailure "custom export " & CStr(exportNumber), atStep, _
                         errNumber, errSource, errMessage
+    LogStepTimes "export", CLASS_NAME & ".ExportCustom"
     Err.Raise errNumber, errSource, errMessage
 End Function
 
@@ -662,55 +695,56 @@ Public Function ExportMigration(ByVal folderPath As String, _
     this.lastFailure = vbNullString
 
     On Error GoTo RecordFailure
+    StartStepWatch
 
-    atStep = "reading the Exports sheet"
+    atStep = MarkStep("reading the Exports sheet")
     Set expObj = ExportObject()
     nbExp = expObj.NumberOfExports()
 
-    atStep = "reading the dictionary"
+    atStep = MarkStep("reading the dictionary")
     Set dict = SourceDictionary(nbExp)
 
-    atStep = "reading the passwords"
+    atStep = MarkStep("reading the passwords")
     Set pass = PasswordsObject()
 
     ' A migration carries the whole dictionary, so it excludes nothing.
     Set excluded = New BetterArray
 
     ' Write full dictionary to temp sheet (no filtering)
-    atStep = "writing the dictionary to the temp sheet"
+    atStep = MarkStep("writing the dictionary to the temp sheet")
     PrepareTempDictionary dict, vbNullString, True, excluded
 
-    atStep = "reading the dictionary back off the temp sheet"
+    atStep = MarkStep("reading the dictionary back off the temp sheet")
     Set expDict = ExportDictionaryFromTemp(nbExp)
 
     ' Create output workbook
-    atStep = "adding the output workbook"
+    atStep = MarkStep("adding the output workbook")
     Set outwb = CreateOutputWorkbook()
     firstSheetName = outwb.Worksheets(1).Name
 
     ' Add metadata sheets
-    atStep = "adding the metadata sheets"
+    atStep = MarkStep("adding the metadata sheets")
     AddMetadataSheets outwb, dict, nbExp
 
-    atStep = "adding the custom dropdowns"
+    atStep = MarkStep("adding the custom dropdowns")
     AddCustomDropdowns outwb
 
-    atStep = "adding the dictionary"
+    atStep = MarkStep("adding the dictionary")
     AddDictionary outwb, dict, nbExp, "__all__", excluded
 
-    atStep = "adding the metadata tags"
+    atStep = MarkStep("adding the metadata tags")
     AddMetadataTags outwb, ExportScopeMigration, 0, includeShowHide, keepLabels, False
 
     ' Add show/hide with column widths if requested
     If includeShowHide Then
-        atStep = "adding the show/hide choices"
+        atStep = MarkStep("adding the show/hide choices")
         AddShowHide outwb
     End If
 
     prevSheetName = METADATASHEET
 
     ' Add data worksheets
-    atStep = "adding one worksheet per data sheet"
+    atStep = MarkStep("adding one worksheet per data sheet")
     Set sheetNames = expDict.UniqueValues("sheet name")
     For counter = sheetNames.LowerBound To sheetNames.UpperBound
         outwb.Worksheets.Add(After:=outwb.Worksheets(prevSheetName)).Name = _
@@ -726,17 +760,18 @@ Public Function ExportMigration(ByVal folderPath As String, _
     On Error GoTo RecordFailure
 
     ' Export all data (no filtering, no labels)
-    atStep = "writing the data"
+    atStep = MarkStep("writing the data")
     AddDataSheets outwb, expDict, False, 1, False
 
     ' Save as xlsx (no password for migration)
-    atStep = "building the file name"
+    atStep = MarkStep("building the file name")
     fileName = expObj.ExportFileName(0, dict, pass, exportAll:=True)
     filePath = BuildFilePath(folderPath, fileName, "xlsx")
 
-    atStep = "saving " & filePath
+    atStep = MarkStep("saving " & filePath)
     SaveWorkbook outwb, filePath, xlOpenXMLWorkbook, vbNullString
 
+    LogStepTimes "export-migration", CLASS_NAME & ".ExportMigration"
     ExportMigration = filePath
     Exit Function
 
@@ -745,6 +780,7 @@ RecordFailure:
     errSource = Err.Source
     errMessage = Err.Description
     RecordExportFailure "migration export", atStep, errNumber, errSource, errMessage
+    LogStepTimes "export-migration", CLASS_NAME & ".ExportMigration"
     Err.Raise errNumber, errSource, errMessage
 End Function
 
@@ -778,24 +814,25 @@ Public Function ExportAnalysis(ByVal folderPath As String) As String
     this.lastFailure = vbNullString
 
     On Error GoTo RecordFailure
+    StartStepWatch
 
-    atStep = "reading the Exports sheet"
+    atStep = MarkStep("reading the Exports sheet")
     Set expObj = ExportObject()
     nbExp = expObj.NumberOfExports()
 
-    atStep = "reading the dictionary"
+    atStep = MarkStep("reading the dictionary")
     Set dict = SourceDictionary(nbExp)
 
-    atStep = "reading the passwords"
+    atStep = MarkStep("reading the passwords")
     Set pass = PasswordsObject()
 
     ' Create output workbook
-    atStep = "adding the output workbook"
+    atStep = MarkStep("adding the output workbook")
     Set outwb = CreateOutputWorkbook()
     firstSheetName = outwb.Worksheets(1).Name
 
     ' Add analysis sheets
-    atStep = "adding the analysis sheets"
+    atStep = MarkStep("adding the analysis sheets")
     AddAnalysisSheets outwb, firstSheetName
 
     ' Delete the placeholder first sheet. The handler is re-armed rather than
@@ -805,13 +842,14 @@ Public Function ExportAnalysis(ByVal folderPath As String) As String
     On Error GoTo RecordFailure
 
     ' Save
-    atStep = "building the file name"
+    atStep = MarkStep("building the file name")
     fileName = expObj.ExportFileName(0, dict, pass, exportAll:=True)
     filePath = BuildFilePath(folderPath, fileName & "_analysis", "xlsx")
 
-    atStep = "saving " & filePath
+    atStep = MarkStep("saving " & filePath)
     SaveWorkbook outwb, filePath, xlOpenXMLWorkbook, vbNullString
 
+    LogStepTimes "export-analysis", CLASS_NAME & ".ExportAnalysis"
     ExportAnalysis = filePath
     Exit Function
 
@@ -820,6 +858,7 @@ RecordFailure:
     errSource = Err.Source
     errMessage = Err.Description
     RecordExportFailure "analysis export", atStep, errNumber, errSource, errMessage
+    LogStepTimes "export-analysis", CLASS_NAME & ".ExportAnalysis"
     Err.Raise errNumber, errSource, errMessage
 End Function
 
@@ -850,14 +889,15 @@ Public Function ExportGeo(ByVal folderPath As String, _
     this.lastFailure = vbNullString
 
     On Error GoTo RecordFailure
+    StartStepWatch
 
-    atStep = "reading the Geo sheet"
+    atStep = MarkStep("reading the Geo sheet")
     Set geo = GeoObject()
 
-    atStep = "adding the output workbook"
+    atStep = MarkStep("adding the output workbook")
     Set outwb = CreateOutputWorkbook()
 
-    atStep = "reading the geobase name"
+    atStep = MarkStep("reading the geobase name")
     geobaseName = geo.GeoBaseName()
     If LenB(geobaseName) = 0 Then
         geobaseName = "OUTBREAK-TOOLS-GEOBASE-UNKNOWN"
@@ -869,7 +909,7 @@ Public Function ExportGeo(ByVal folderPath As String, _
     filePath = BuildFilePath(folderPath, geobaseName, "xlsx")
 
     ' Use LLGeo.ExportToFile to write the geobase data
-    atStep = "writing the geobase tables"
+    atStep = MarkStep("writing the geobase tables")
     geo.ExportToFile outwb, onlyHistoric
 
     'A geobase export that WORKED can still have left the headers alone, and
@@ -878,8 +918,9 @@ Public Function ExportGeo(ByVal folderPath As String, _
     'where one is already held.
     ReportGeoWarning geo
 
-    atStep = "saving " & filePath
+    atStep = MarkStep("saving " & filePath)
     SaveWorkbook outwb, filePath, xlOpenXMLWorkbook, vbNullString
+    LogStepTimes "export-geo", CLASS_NAME & ".ExportGeo"
     ExportGeo = filePath
     Exit Function
 
@@ -896,6 +937,7 @@ RecordFailure:
             this.lastFailure = this.lastFailure & " | " & geo.LastFailure
     End If
 
+    LogStepTimes "export-geo", CLASS_NAME & ".ExportGeo"
     Err.Raise errNumber, errSource, errMessage
 End Function
 
@@ -1100,6 +1142,74 @@ Private Function UserLog() As LLLog
 
     Set UserLog = this.userLog
 End Function
+
+'@label:start-step-watch
+'@sub-title Open the stopwatch of an export walk
+'@details
+'Called once at the top of each of the four walks, right after the handler
+'is armed. The log holds the stopwatch, so nothing is kept here, and a
+'workbook that will not take a log simply goes untimed.
+Private Sub StartStepWatch()
+
+    Dim logStore As LLLog
+
+    Set logStore = UserLog()
+    If logStore Is Nothing Then Exit Sub
+
+    'A log that will not take the stopwatch is not worth losing the export over.
+    On Error Resume Next
+    logStore.StartWalk
+    On Error GoTo 0
+End Sub
+
+'@label:mark-step
+'@sub-title Name the step the walk is about to take, and time the one before it
+'@details
+'Answers the name it was given, so each walk keeps the one line per step it
+'already had:
+'
+'  atStep = MarkStep("reading the dictionary")
+'
+'The name goes on reaching RecordExportFailure exactly as it did, and the
+'timing rides along. An untimed walk answers the name and does nothing else.
+'@param stepName String. What the walk is about to do.
+'@return String. The name it was given.
+Private Function MarkStep(ByVal stepName As String) As String
+
+    Dim logStore As LLLog
+
+    MarkStep = stepName
+
+    Set logStore = UserLog()
+    If logStore Is Nothing Then Exit Function
+
+    On Error Resume Next
+    logStore.MarkStep stepName
+    On Error GoTo 0
+End Function
+
+'@label:log-step-times
+'@sub-title Write the step times of a walk into the log
+'@details
+'Called on both exits of every walk: the line is as much wanted when an
+'export refuses as when it finishes, and on a refusal it carries the step
+'that refused with the seconds it had spent.
+'The failure path reaches this AFTER RecordExportFailure has kept its words
+'and the caller has read the error into its own variables, so clearing Err
+'in here costs nothing.
+'@param action String. The action code the walk logs under.
+'@param source String. The method that ran the walk.
+Private Sub LogStepTimes(ByVal action As String, ByVal source As String)
+
+    Dim logStore As LLLog
+
+    Set logStore = UserLog()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.LogSteps action, source
+    On Error GoTo 0
+End Sub
 
 '@label:geo-object
 '@sub-title Get the geo object from the source workbook
