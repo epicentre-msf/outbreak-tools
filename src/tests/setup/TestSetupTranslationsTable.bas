@@ -6,7 +6,7 @@ Option Explicit
 '@Folder("CustomTests.Setup")
 '@ModuleDescription("Exercises the SetupTranslationsTable class covering caching, registry updates and language management")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ProcedureNotUsed
-'@depends SetupTranslationsTable, CustomTest, HiddenNames, BetterArray, ProjectError
+'@depends SetupTranslationsTable, CustomTest, HiddenNames, BetterArray, ProjectError, Messenger
 
 Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
@@ -79,6 +79,10 @@ Public Sub TestCleanup()
     If Not Assert Is Nothing Then
         Assert.Flush
     End If
+
+    'A test that arms the messenger and then dies would leave every later box
+    'swallowed. Reset empties the record and turns the boxes back on.
+    Messenger.Reset
 
     On Error Resume Next
         If Not TranslationsSheet Is Nothing Then TranslationsSheet.Unprotect
@@ -499,6 +503,69 @@ Public Sub TestNumberOfMissingReportsPerLanguage()
 
 Fail:
     CustomTestLogFailure Assert, "TestNumberOfMissingReportsPerLanguage", Err.Number, Err.Description
+End Sub
+
+'@description
+'The closing summary of the tag update goes through Messenger.Show. Arrange:
+'updates the table from the registry, turns the prompts back on and arms the
+'messenger. Act: calls NumberOfMissing. Assert: the summary comes back the same
+'and the messenger holds the text of the box.
+'
+'The messenger is armed BEFORE the prompts go on. A disarmed messenger opens a
+'real box, and a box nobody clicks holds the whole run.
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestNumberOfMissingSummarySpeaksThroughTheMessenger()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestNumberOfMissingSummarySpeaksThroughTheMessenger"
+    On Error GoTo Fail
+
+    Subject.UpdateFromRegistry RegistrySheet, "French"
+    Messenger.Arm FixtureWorkbook
+    Subject.SetDisplayPrompts True
+
+    Dim summary As String
+    summary = Subject.NumberOfMissing
+
+    Subject.SetDisplayPrompts False
+    Messenger.Disarm
+
+    Assert.AreEqual "Translation Updated!" & vbLf & "6 labels are missing for column French.", summary, "The summary the function answers should not change when the messenger is armed"
+    Assert.IsTrue Messenger.HasMessages, "The armed messenger should hold the summary box"
+    Assert.IsTrue InStr(1, Messenger.Messages, "Translation Updated!", vbTextCompare) > 0, "The recorded line should carry the text of the summary"
+    Assert.IsTrue InStr(1, Messenger.Messages, "Done!", vbTextCompare) > 0, "The recorded line should carry the title of the summary box"
+    Exit Sub
+
+Fail:
+    Subject.SetDisplayPrompts False
+    Messenger.Disarm
+    CustomTestLogFailure Assert, "TestNumberOfMissingSummarySpeaksThroughTheMessenger", Err.Number, Err.Description
+End Sub
+
+'@description
+'A summary with the prompts off records nothing. Arrange: updates the table from
+'the registry and arms the messenger, leaving the prompts off the way
+'TestInitialize sets them. Act: calls NumberOfMissing. Assert: the messenger
+'record is empty.
+'
+'The displayPrompts guard sits in front of the Show call and it still decides
+'whether there is a box at all.
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestNumberOfMissingWithPromptsOffRecordsNothing()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestNumberOfMissingWithPromptsOffRecordsNothing"
+    On Error GoTo Fail
+
+    Subject.UpdateFromRegistry RegistrySheet, "French"
+    Messenger.Arm FixtureWorkbook
+
+    Subject.NumberOfMissing
+
+    Messenger.Disarm
+
+    Assert.IsFalse Messenger.HasMessages, "A summary raised with the prompts off should record nothing"
+    Exit Sub
+
+Fail:
+    Messenger.Disarm
+    CustomTestLogFailure Assert, "TestNumberOfMissingWithPromptsOffRecordsNothing", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("SetupTranslationsTable")

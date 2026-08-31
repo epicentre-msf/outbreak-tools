@@ -13,7 +13,7 @@ Attribute VB_Description = "Translations table manager with helper tag column"
 '@Folder("Setup")
 '@ModuleDescription("Translations table manager with helper tag column")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
-'@depends ProjectError, ApplicationState, HiddenNames, CustomTable, BetterArray
+'@depends ProjectError, ApplicationState, HiddenNames, CustomTable, BetterArray, Messenger
 
 Option Explicit
 
@@ -1744,6 +1744,10 @@ Private Function ConfirmUnseenRemoval() As Boolean
 
     message = message & vbLf & vbLf & "Remove them from the translations table?"
 
+    'This box stays on MsgBox. It fires only when a caller asked for the review
+    'through RequestUnseenReview, and the setup wrapper the R package calls asks
+    'for the update with the review off. A caller running with prompts off is
+    'already answered by removeUnseen above.
     ConfirmUnseenRemoval = (MsgBox(message, vbQuestion + vbYesNo + vbDefaultButton2, "Unseen labels") = vbYes)
 End Function
 
@@ -1974,8 +1978,11 @@ BuildSummary:
     UpdateMissingSummary messageLines
     NumberOfMissing = summary
 
+    'The closing summary of the tag update. It goes through the messenger, so a
+    'script driving the update reads the same text back from Messenger.Messages
+    'with no box waiting for a click.
     If this.displayPrompts Then
-        MsgBox summary, vbInformation + vbOKOnly, "Done!"
+        Messenger.Show summary, vbOK, vbInformation + vbOKOnly, "Done!"
     End If
 End Function
 

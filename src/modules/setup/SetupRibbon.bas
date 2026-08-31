@@ -4,7 +4,7 @@ Option Explicit
 
 '@Folder("Events")
 '@IgnoreModule UnrecognizedAnnotation, SheetAccessedUsingString, ParameterCanBeByVal, ParameterNotUsed : some parameters of controls are not used
-'@depends EventsManager, EventSetup, SetupHelpers, SetupPreparation, SetupImport, SetupTranslationsTable, UpdatedValues, RibbonDev, TranslationObject, Passwords, BetterArray
+'@depends EventsManager, EventSetup, SetupHelpers, SetupPreparation, SetupImport, SetupTranslationsTable, UpdatedValues, RibbonDev, TranslationObject, Passwords, BetterArray, Messenger
 
 'Every callback here reaches the setup service through
 'EventsManager.EventSetupService. Row work, sorting, sheet protection and
@@ -13,6 +13,15 @@ Option Explicit
 '
 'A callback that asks the user a question asks it BEFORE entering busy state. A
 'prompt raised over a frozen screen with a busy cursor reads as a hang.
+'
+'THE EIGHT BOXES A SCRIPT CAN WALK INTO GO THROUGH THE MESSENGER
+'Three boxes in RunTranslationsUpdate, two in clickExport and two in
+'clickImportFile call Messenger.Show. The closing summary of the tag update
+'does the same, over in SetupTranslationsTable. All eight are vbOKOnly, so
+'every silent answer is vbOK. While the messenger is disarmed each one opens
+'the box it always opened; while it is armed the text is written down and
+'Messenger.Messages reads it back. The other 21 boxes in this module sit on
+'buttons the R package never presses.
 
 'Private constants for Ribbon Events
 Private Const TRADSHEETNAME As String = "Translations"
@@ -334,13 +343,13 @@ Private Function RunTranslationsUpdate(ByVal reviewUnseen As Boolean) As Boolean
 
     Set translationsTable = SetupHelpers.ResolveTranslationsTable
     If translationsTable Is Nothing Then
-        MsgBox "Translations table was not found.", vbExclamation
+        Messenger.Show "Translations table was not found.", vbOK, vbExclamation
         Exit Function
     End If
 
     Set registrySheet = SetupHelpers.ResolveRegistrySheet
     If registrySheet Is Nothing Then
-        MsgBox "Registry sheet was not found.", vbExclamation
+        Messenger.Show "Registry sheet was not found.", vbOK, vbExclamation
         Exit Function
     End If
 
@@ -377,7 +386,7 @@ Cleanup:
 
 Handler:
     Debug.Print "clickAddTrans: "; Err.Number; Err.Description
-    MsgBox "An error occurred while updating translations.", vbCritical
+    Messenger.Show "An error occurred while updating translations.", vbOK, vbCritical
     Resume Cleanup
 End Function
 
@@ -527,7 +536,7 @@ Public Sub clickExport(ByRef ribbonControl As IRibbonControl)
     EventsManager.ExitBusyState
 
     If LenB(exportPath) > 0 Then
-        MsgBox "Setup exported to: " & vbCrLf & exportPath, vbInformation
+        Messenger.Show "Setup exported to: " & vbCrLf & exportPath, vbOK, vbInformation
     End If
 
     Exit Sub
@@ -539,7 +548,7 @@ Handler:
     On Error GoTo 0
     EventsManager.ExitBusyState
     Debug.Print "clickExport: "; Err.Number; Err.Description
-    MsgBox "Failed to export the setup: " & Err.Description, vbCritical
+    Messenger.Show "Failed to export the setup: " & Err.Description, vbOK, vbCritical
 End Sub
 
 '@Description("Callback for btnImp onAction: import setup content from another setup workbook")
@@ -598,13 +607,13 @@ Cleanup:
     EventsManager.ExitBusyState
     If Not originalSheet Is Nothing Then originalSheet.Activate
     Application.ScreenUpdating = True
-    If success Then MsgBox "Import Done!"
+    If success Then Messenger.Show "Import Done!", vbOK
     Exit Sub
 
 Handler:
     Debug.Print "clickImportFile: "; Err.Number; Err.Description
     success = False
-    MsgBox "Failed to import workbook data: " & Err.Description, vbCritical
+    Messenger.Show "Failed to import workbook data: " & Err.Description, vbOK, vbCritical
     Resume Cleanup
 End Sub
 
