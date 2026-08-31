@@ -841,6 +841,30 @@ trigger_args <- shQuote(c(
 # Excel refuses, a compile error, anything the build itself reports -- is NOT
 # retried: it would fail again and the second run would only cost four minutes
 # and blur the evidence. A wedge that repeats also stops after the second go.
+# THE TRIGGER WRITES THE REPORT IN THE HOST'S ANSI CODEPAGE, NOT IN UTF-8.
+# -----------------------------------------------------------------------------
+# The Windows trigger opens build-report.txt through FileSystemObject, which
+# writes ANSI. A setuplang carrying an accent -- "Francais" with a cedilla, the
+# column name every French setup uses -- lands there as one cp1252 byte, and
+# readLines hands it back as a string R cannot parse as UTF-8. The first perl
+# regex over it stops the run: trimws, in the narrative print at the very end,
+# with "input string 1 is invalid UTF-8".
+#
+# That fires AFTER Excel has built and saved the linelist, so the build is
+# whole and the run still exits 1, leaving the finished file in the staging
+# root and copying nothing out. Measured 2026-08-31 on two French ebola builds.
+#
+# Only the lines that are not already UTF-8 are converted, so the macOS trigger
+# -- which writes UTF-8 -- passes through untouched.
+ReadReport <- function(path) {
+  lines <- readLines(path, warn = FALSE)
+  if (!length(lines)) return(lines)
+  bad <- !validUTF8(lines)
+  if (any(bad)) lines[bad] <- iconv(lines[bad], from = "CP1252", to = "UTF-8", sub = "?")
+  Encoding(lines) <- "UTF-8"
+  lines
+}
+
 MAX_ATTEMPTS <- 2L
 report_lines <- character(0)
 fields       <- character(0)
@@ -873,7 +897,7 @@ for (attempt in seq_len(MAX_ATTEMPTS)) {
 
   have_report <- file.exists(report_path) && file.size(report_path) > 0L
   if (have_report) {
-    report_lines <- readLines(report_path, warn = FALSE)
+    report_lines <- ReadReport(report_path)
     marker    <- match("--report--", report_lines)
     fields    <- if (is.na(marker)) report_lines else report_lines[seq_len(marker - 1L)]
     narrative <- if (is.na(marker)) character(0) else report_lines[-seq_len(marker)]
