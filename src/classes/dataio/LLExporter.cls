@@ -99,6 +99,10 @@ Private Const SHOWHIDESHEET_OLD As String = "show_hide__"
 Private Const SHEET_TYPE_KEY As String = "sheet_type"
 Private Const OLD_SHEET_TYPE_COLUMN As Long = 3
 
+' Where a data entry sheet names its filtered companion. LLDataEntry writes it
+' as a worksheet-level hidden name when it builds the HList sheet.
+Private Const FILTERED_SHEET_KEY As String = "filtered_sheet"
+
 ' Prefixes of the two companion sheets a data entry sheet can have
 Private Const PRINTPREFIX As String = "print_"
 Private Const CRFPREFIX As String = "crf_"
@@ -145,6 +149,8 @@ Private Type TLLExporter
     triedPass As Boolean
     userLog As LLLog
     triedLog As Boolean
+    priorCalc As Long
+    calcHeld As Boolean
 End Type
 
 Private this As TLLExporter
@@ -948,8 +954,12 @@ End Function
 'orphaned minimized windows, and closes the source workbook when this instance
 'opened it through CreateFromFile. Nothing is saved on either close. Safe to
 'call even when no workbook is open.
+'The calculation mode CreateOutputWorkbook held goes back here, so a walk that
+'stopped on a failure does not leave the application in manual.
 '@export
 Public Sub CloseAll()
+    RestoreCalculation
+
     On Error Resume Next
     If Not this.activeWkb Is Nothing Then
         this.activeWkb.Close savechanges:=False
@@ -965,8 +975,14 @@ End Sub
 
 '@sub-title Get the sheet type tag from worksheet-level HiddenNames.
 '@details
+'The read goes through HiddenNames.QuickValue: three COM crossings for the one
+'name asked for, with no instance behind it. HiddenNames.Create walks every
+'tracked name of the sheet first and reads three properties off each, and a data
+'entry sheet holds hundreds of names. This routine runs once per data sheet in
+'AddShowHide and once more in AddDataSheets, so the walk was paid twice per
+'sheet for two strings.
 'A linelist generated before the sheet metadata moved into hidden names carries
-'no name to read, and ValueAsString answers an empty string rather than raising.
+'no name to read, and QuickValue answers the default rather than raising.
 'The old layout wrote the same two words into a formatted cell instead, so the
 'cell is read when the name is absent.
 'The fallback is asked for, not automatic. AddDataSheets wants it: the sheet
@@ -981,9 +997,7 @@ End Sub
 Private Function SheetTagOf(ByVal sh As Worksheet, _
                             Optional ByVal nameKey As String = SHEET_TYPE_KEY, _
                             Optional ByVal allowOldLayout As Boolean = False) As String
-    Dim shHn As HiddenNames
-    Set shHn = HiddenNames.Create(sh)
-    SheetTagOf = shHn.ValueAsString(nameKey)
+    SheetTagOf = HiddenNames.QuickValue(sh, nameKey)
 
     If LenB(SheetTagOf) = 0 And allowOldLayout And nameKey = SHEET_TYPE_KEY Then _
         SheetTagOf = OldSheetTypeCell(sh)
@@ -1265,12 +1279,54 @@ End Function
 
 '@label:create-output-workbook
 '@sub-title Create a new minimized output workbook
+'@details
+'ONE EMPTY SHEET, NOT THE USER'S TEMPLATE
+'-------------------------------------------------------------------------------
+'Workbooks.Add with no argument builds from whatever default template the user
+'has. A template carrying several sheets and a long style list costs on every
+'export and again on every save, and the extra sheets travelled into the output:
+'the walks name Worksheets(1) as the placeholder and delete that one, so sheets
+'two and three of a template would have gone out with the file. xlWBATWorksheet
+'gives a one-sheet workbook with nothing in it.
+'
+'CALCULATION IS HELD HERE, BY THIS ROUTINE
+'-------------------------------------------------------------------------------
+'Adding a workbook can put Application.Calculation back to what that workbook
+'carries, so a mode set before the walk does not survive the Add. LLGeo.ExportToFile
+'holds the mode itself for the same reason and says so. ApplicationState.ApplyBusyState
+'asks for manual, but it asks inside an On Error Resume Next and reports success
+'either way, so a caller cannot know the mode it got. The prior mode is kept on
+'the instance and SaveWorkbook and CloseAll put it back.
 '@return Workbook. The newly created workbook.
 Private Function CreateOutputWorkbook() As Workbook
-    Set this.activeWkb = HostApplication.Workbooks.Add
+    this.priorCalc = HostApplication.Calculation
+
+    Set this.activeWkb = HostApplication.Workbooks.Add(xlWBATWorksheet)
+
+    On Error Resume Next
+    HostApplication.Calculation = xlCalculationManual
+    On Error GoTo 0
+    this.calcHeld = (HostApplication.Calculation = xlCalculationManual)
+
     HostApplication.ActiveWindow.WindowState = xlMinimized
     Set CreateOutputWorkbook = this.activeWkb
 End Function
+
+'@label:restore-calculation
+'@sub-title Put the calculation mode back to what the walk found
+'@details
+'Called at both ends of an export: SaveWorkbook when the file is written, and
+'CloseAll when the caller tidies up after a failure. A walk that never reached
+'CreateOutputWorkbook held nothing, and calcHeld is False, so nothing is set.
+'A caller that had already asked for manual gets manual back, which is a no-op.
+Private Sub RestoreCalculation()
+    If Not this.calcHeld Then Exit Sub
+
+    On Error Resume Next
+    HostApplication.Calculation = this.priorCalc
+    On Error GoTo 0
+    this.calcHeld = False
+End Sub
 
 '@label:save-workbook
 '@sub-title Save and close the output workbook
@@ -1299,6 +1355,7 @@ Private Sub SaveWorkbook(ByVal outwb As Workbook, ByVal filePath As String, _
 
     outwb.Close savechanges:=False
     Set this.activeWkb = Nothing
+    RestoreCalculation
 End Sub
 
 '@label:build-file-path
@@ -2196,8 +2253,11 @@ NextSheet:
     Set srcStore = ShowHideStore.CreateForRead(srcSh)
     outStore.MergeLayoutsFrom srcStore
 
+    'The written columns, not the whole grid. Cells.EntireColumn.AutoFit made
+    'Excel measure all 16,384 columns of the sheet to size the handful the store
+    'writes into.
     On Error Resume Next
-    outsh.Cells.EntireColumn.AutoFit
+    outsh.UsedRange.EntireColumn.AutoFit
     On Error GoTo 0
 End Sub
 
@@ -2419,7 +2479,6 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As LLdictionary
     Dim labelsList As BetterArray
     Dim sheetName As String
     Dim inpsh As Worksheet
-    Dim inpshNames As HiddenNames
     Dim outsh As Worksheet
     Dim lo As ListObject
     Dim csTab As CustomTable
@@ -2432,24 +2491,21 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As LLdictionary
     For counter = sheetNames.LowerBound To sheetNames.UpperBound
         sheetName = sheetNames.Item(counter)
         Set inpsh = this.sourceWkb.Worksheets(sheetName)
-        ' The store the filtered companion is read off. The sheet type goes
-        ' through SheetTagOf instead, which falls back to the old cell layout.
-        Set inpshNames = HiddenNames.Create(inpsh)
         Set headersList = expDict.Data.FilterData("sheet name", sheetName, _
                                                   "variable name", matchCase:=False)
         Set outsh = outwb.Worksheets(sheetName)
 
-        'Read through SheetTagOf rather than off inpshNames, because a linelist
-        'older than the hidden names has no name to answer with and the tag it
-        'does carry sits in a cell. Read off the store, such a file matched
-        'neither arm below, and every sheet came out formatted and empty with
-        'nothing raised and nothing logged.
+        'Read through SheetTagOf rather than off a HiddenNames instance, because
+        'a linelist older than the hidden names has no name to answer with and
+        'the tag it does carry sits in a cell. Read off the store, such a file
+        'matched neither arm below, and every sheet came out formatted and empty
+        'with nothing raised and nothing logged.
         Select Case SheetTagOf(inpsh, allowOldLayout:=True)
 
         Case "HList"
             ' Choose between filtered or raw data
             If useFilters Then
-                Set lo = FilteredTableOf(inpsh, inpshNames)
+                Set lo = FilteredTableOf(inpsh)
             Else
                 Set lo = inpsh.ListObjects(1)
             End If
@@ -2490,17 +2546,18 @@ End Sub
 'used to be read in one chained line, so a workbook missing any of them raised a
 'bare Excel number and the box the user got named neither the sheet nor the
 'piece that was missing.
+'The companion name is read through HiddenNames.QuickValue. It is the one name
+'this routine wants off the sheet, and building an instance walked every tracked
+'name of a sheet that holds hundreds of them.
 '@param inpsh Worksheet. The data entry sheet being exported.
-'@param inpshNames HiddenNames. The hidden name store of that sheet.
 '@return ListObject. The companion table.
 '@throws ProjectError.ElementNotFound When any of the three is absent.
-Private Function FilteredTableOf(ByVal inpsh As Worksheet, _
-                                 ByVal inpshNames As HiddenNames) As ListObject
+Private Function FilteredTableOf(ByVal inpsh As Worksheet) As ListObject
 
     Dim filtsh As Worksheet
     Dim filteredName As String
 
-    filteredName = inpshNames.ValueAsString("filtered_sheet")
+    filteredName = HiddenNames.QuickValue(inpsh, FILTERED_SHEET_KEY)
     If LenB(filteredName) = 0 Then
         ThrowError ProjectError.ElementNotFound, _
                    "The sheet " & inpsh.Name & " carries no filtered_sheet name, " & _
@@ -2641,21 +2698,57 @@ End Sub
 'Sets row heights, column widths, font, header styling, and auto-fits
 'columns. Wrapped in error handling to prevent failures on protected
 'or special sheets.
+'
+'THE BLOCK THAT WAS WRITTEN, NOT THE WHOLE GRID
+'-------------------------------------------------------------------------------
+'The row height, the column width and the font used to go onto .Cells: 1,048,576
+'rows, 16,384 columns, the whole grid of every data sheet. That costs twice. It
+'costs here, and it costs again at SaveAs, because a sheet whose whole grid
+'carries a row height, a width and a font is written out with a format record
+'for every row and every column. A ten-sheet migration paid it ten times.
+'DataSheet.Export went through this already and formats its used range only.
+'
+'The block is read off UsedRange, which is one crossing and answers whatever
+'AddDataSheets has just written. It is anchored back at A1, so a sheet whose
+'first written row sits below the header band still comes out formatted from the
+'top, the way the whole-grid pass left it.
+'
+'The .Rows(1) lines stay as they are. A header band across one row is cheap, and
+'it is what makes the first row read as a header on a sheet with no data under
+'it.
 '@param outsh Worksheet. The worksheet to format.
 Private Sub FormatOutputSheet(ByVal outsh As Worksheet)
+    Dim usedRng As Range
+    Dim block As Range
+    Dim lastRow As Long
+    Dim lastColumn As Long
+
     On Error Resume Next
+    Set usedRng = outsh.UsedRange
+    If Not usedRng Is Nothing Then
+        lastRow = usedRng.Row + usedRng.Rows.Count - 1
+        lastColumn = usedRng.Column + usedRng.Columns.Count - 1
+        Set block = outsh.Range(outsh.Cells(1, 1), outsh.Cells(lastRow, lastColumn))
+    End If
+
+    If Not block Is Nothing Then
+        With block
+            .EntireRow.RowHeight = 14
+            .EntireColumn.ColumnWidth = 35
+            .Font.Name = "Consolas"
+            .Font.Size = 9
+        End With
+    End If
+
     With outsh
-        .Cells.EntireRow.RowHeight = 14
-        .Cells.EntireColumn.ColumnWidth = 35
-        .Cells.Font.Name = "Consolas"
-        .Cells.Font.Size = 9
         .Rows(1).Font.Size = 10
         .Rows(1).RowHeight = 25
         .Rows(1).Interior.Color = RGB(188, 212, 230)
         .Rows(1).VerticalAlignment = xlVAlignCenter
         .Rows(1).Font.Bold = True
-        .Cells.EntireColumn.AutoFit
     End With
+
+    If Not block Is Nothing Then block.EntireColumn.AutoFit
     On Error GoTo 0
 End Sub
 

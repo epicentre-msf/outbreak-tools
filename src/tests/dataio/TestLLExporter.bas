@@ -81,6 +81,11 @@ Private Const CHOICES_SHEET As String = "Choices"
 Private Const METADATA_SHEET As String = "Metadata"
 Private Const OLD_LAYOUT_MARKER As String = "old-layout-row"
 
+'A cell far outside anything the fixture export writes. The HList sheets carry
+'three columns and three rows, so this one is never part of the written block.
+Private Const FAR_ROW As Long = 500
+Private Const FAR_COLUMN As Long = 40
+
 'The two fixture rows the exclusion has to find
 Private Const PCODE_VARIABLE As String = "hid_beg_v1"
 Private Const PCODE_TAG As String = "geo_pcode_adm1"
@@ -1207,8 +1212,135 @@ TestFail:
     CustomTestLogFailure Assert, "TestASheetThatNamesNoTypeExportsNoRow", failedNumber, failedText
 End Sub
 
+
+'@section What an export leaves behind it
+'===============================================================================
+
+'@sub-title A data sheet is formatted over what it wrote, not over the grid.
+'@details
+'FormatOutputSheet put the row height, the column width and the font onto
+'.Cells: 1,048,576 rows and 16,384 columns of every data sheet. That costs when
+'it runs and again at SaveAs, because a sheet whose whole grid carries a format
+'is written out with a record for every row and every column. Acts by exporting
+'a migration and reading the font off the saved file: the written block carries
+'Consolas, and a cell far outside it carries whatever the file's default is.
+'A whole-grid pass would have put Consolas on the far cell too.
+'@TestMethod("LLExporter")
+Public Sub TestADataSheetIsFormattedOverWhatItWrote()
+    CustomTestSetTitles Assert, TESTMODULE, "TestADataSheetIsFormattedOverWhatItWrote"
+    On Error GoTo TestFail
+
+    Dim sourceBook As Workbook
+    Dim exporter As LLExporter
+    Dim savedPath As String
+    Dim failedNumber As Long
+    Dim failedText As String
+
+    Set sourceBook = OldLayoutSourceWorkbook(tagTheSheets:=True)
+    Set exporter = LLExporter.Create(sourceBook)
+
+    savedPath = exporter.ExportMigration(BuildTempFolder(ThisWorkbook, FILES_FOLDER))
+
+    Assert.AreEqual "Consolas", FontNameInExport(savedPath, HLIST_SHEET, 1, 1), _
+                    "The block the export wrote carries the export font"
+
+    Assert.AreNotEqual "Consolas", FontNameInExport(savedPath, HLIST_SHEET, _
+                                                    FAR_ROW, FAR_COLUMN), _
+                       "A cell far outside the written block is left alone"
+
+    DropExportArtefacts sourceBook, exporter, savedPath
+    Exit Sub
+TestFail:
+    failedNumber = Err.Number
+    failedText = Err.Description
+    If Not exporter Is Nothing Then _
+        failedText = failedText & " | " & exporter.LastFailure
+    On Error Resume Next
+    DropExportArtefacts sourceBook, exporter, savedPath
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestADataSheetIsFormattedOverWhatItWrote", failedNumber, failedText
+End Sub
+
+'@sub-title An export puts the calculation mode back when it has saved.
+'@details
+'CreateOutputWorkbook asks for manual calculation itself, because adding a
+'workbook can put the mode back to what that workbook carries and a mode set
+'before the walk therefore does not survive the Add. What it holds it has to
+'return, or a person who ran one export finds a linelist that no longer
+'recalculates. Acts by asking for automatic, exporting, and reading the mode
+'back.
+'@TestMethod("LLExporter")
+Public Sub TestAnExportPutsTheCalculationModeBack()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAnExportPutsTheCalculationModeBack"
+    On Error GoTo TestFail
+
+    Dim sourceBook As Workbook
+    Dim exporter As LLExporter
+    Dim savedPath As String
+    Dim modeAfter As Long
+    Dim failedNumber As Long
+    Dim failedText As String
+
+    Set sourceBook = OldLayoutSourceWorkbook(tagTheSheets:=True)
+    Set exporter = LLExporter.Create(sourceBook)
+
+    Application.Calculation = xlCalculationAutomatic
+    savedPath = exporter.ExportMigration(BuildTempFolder(ThisWorkbook, FILES_FOLDER))
+    modeAfter = Application.Calculation
+    Application.Calculation = xlCalculationManual
+
+    Assert.AreEqual CLng(xlCalculationAutomatic), modeAfter, _
+                    "An export that saved leaves the calculation mode it found"
+
+    DropExportArtefacts sourceBook, exporter, savedPath
+    Exit Sub
+TestFail:
+    failedNumber = Err.Number
+    failedText = Err.Description
+    If Not exporter Is Nothing Then _
+        failedText = failedText & " | " & exporter.LastFailure
+    On Error Resume Next
+    Application.Calculation = xlCalculationManual
+    DropExportArtefacts sourceBook, exporter, savedPath
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestAnExportPutsTheCalculationModeBack", failedNumber, failedText
+End Sub
+
 '@section Fixture helpers
 '===============================================================================
+
+'@fun-title The font name one cell of a saved export carries.
+'@details
+'Opens the file read-only, reads the name off the cell and closes it again. A
+'missing file or a missing sheet answers an empty string, which matches neither
+'assertion the format test makes.
+'@param filePath String. The saved export.
+'@param sheetName String. The sheet to read.
+'@param rowIndex Long. The row of the cell.
+'@param columnIndex Long. The column of the cell.
+'@return String. The font name, or an empty string.
+Private Function FontNameInExport(ByVal filePath As String, _
+                                  ByVal sheetName As String, _
+                                  ByVal rowIndex As Long, _
+                                  ByVal columnIndex As Long) As String
+    Dim outwb As Workbook
+    Dim sh As Worksheet
+
+    If LenB(filePath) = 0 Then Exit Function
+    If Dir$(filePath) = vbNullString Then Exit Function
+
+    On Error Resume Next
+    Set outwb = Application.Workbooks.Open(fileName:=filePath, ReadOnly:=True)
+    On Error GoTo 0
+    If outwb Is Nothing Then Exit Function
+
+    On Error Resume Next
+    Set sh = outwb.Worksheets(sheetName)
+    If Not sh Is Nothing Then _
+        FontNameInExport = CStr(sh.Cells(rowIndex, columnIndex).Font.Name)
+    outwb.Close savechanges:=False
+    On Error GoTo 0
+End Function
 
 '@sub-title Write one header format into the Exports worksheet of the fixture.
 '@param exportNumber Long. Which export row to change (1-based).
