@@ -7,16 +7,16 @@ Option Explicit
 '@ModuleDescription("Tests for the entry points a script can call on a running linelist")
 
 '@description
-'Drives RunImportGeobase, RunImportData and LinelistLastSummary, the entry
-'points Session 115 put in LinelistRun so a script outside Excel can reach an
-'import with no picker and no box.
+'Drives RunImportGeobase, RunImportData, RunExport and LinelistLastSummary, the
+'entry points Sessions 115 and 116 put in LinelistRun so a script outside Excel
+'can reach an import or an export with no picker, no prompt and no box.
 '
 'THIS WORKBOOK IS THE TEST DRIVER, NOT A LINELIST
 '-------------------------------------------------------------------------------
-'It holds no dictionary, no translation sheet and no data entry table. So the
-'suite drives the paths that are the same on any workbook -- the guards, the
-'refusal when the linelist is not one, the disarm, the answer shape and the
-'summary. The two import walks themselves are proved by the R package calling
+'It holds no dictionary, no translation sheet, no data entry table and no
+'Exports sheet. So the suite drives the paths that are the same on any workbook
+'-- the guards, the refusal when the linelist is not one, the disarm, the answer
+'shape and the summary. The walks themselves are proved by the R package calling
 'them against a real linelist.
 '
 'EVERY CALL IN HERE ANSWERS A STRING
@@ -27,12 +27,13 @@ Option Explicit
 '
 'AND EVERY CALL IN HERE FAILS, WHICH IS WHAT KEEPS THIS SUITE ALIVE
 '-------------------------------------------------------------------------------
-'A run that imports saves the workbook it ran in and closes it, and closing a
-'workbook ends the code running inside it. That workbook here is the test driver
-'holding this suite. Every call below is refused before it reaches the import --
-'a path that is not there, a word the wrapper does not know, or a workbook with
-'no translation sheet -- so none of them reaches the save. A test written here
-'that ever gets an OK out of a wrapper would take the whole run down with it.
+'A run that worked closes the workbook it ran in, and closing a workbook ends
+'the code running inside it. That workbook here is the test driver holding this
+'suite. Every call below is refused before it reaches the work -- a path or a
+'folder that is not there, a word the wrapper does not know, a number that names
+'no active export, or a workbook with no translation sheet -- so none of them
+'reaches the close. A test written here that ever gets an OK out of a wrapper
+'would take the whole run down with it.
 '
 'THE SERVICE IS PUT BACK AFTER THE MODULE
 '-------------------------------------------------------------------------------
@@ -44,7 +45,7 @@ Option Explicit
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
-'A file no machine running this has, so both guards refuse it.
+'A file no machine running this has, so the two path guards refuse it.
 Private Const MISSING_FILE As String = "obt-no-such-file-115.xlsx"
 
 'Where the one real file this suite needs is made, and emptied after.
@@ -788,4 +789,345 @@ TestFail:
     ClearWorkFolder
     RemoveWorkbookSummary
     CustomTestLogFailure Assert, "TestEveryWrapperAnswersAnOutcomeString", Err.Number, Err.Description
+End Sub
+
+'@section The guards of the export wrapper
+'===============================================================================
+'RunExport takes a word rather than five checkboxes, and a folder rather than a
+'picker. Every guard below refuses before the export starts, which is what keeps
+'the driver workbook open and this suite running.
+
+'@sub-title The export refuses a folder that is not there.
+'@details
+'The button picked the folder, so it was there. A folder from a script has
+'proved nothing, and an export writing into a folder Excel cannot reach fails
+'deep inside LLExporter instead of here.
+'@TestMethod("LinelistRun")
+Public Sub TestExportRefusesAFolderThatIsNotThere()
+    Dim missingFolder As String
+    Dim outcome As String
+
+    CustomTestSetTitles Assert, "LinelistRun", "TestExportRefusesAFolderThatIsNotThere"
+    On Error GoTo TestFail
+
+    missingFolder = PathUnderRunDir("obt-no-such-folder-116")
+    outcome = LinelistRun.RunExport(vbNullString, missingFolder)
+
+    Assert.AreEqual "ERROR 0: no folder at " & missingFolder, outcome, _
+                    "The export names the folder it was given and the number 0"
+    Assert.AreEqual vbNullString, SummaryValue("export"), _
+                    "A refused export wrote no file"
+
+    RemoveWorkbookSummary
+    Exit Sub
+TestFail:
+    RemoveWorkbookSummary
+    CustomTestLogFailure Assert, "TestExportRefusesAFolderThatIsNotThere", Err.Number, Err.Description
+End Sub
+
+'@sub-title The export refuses an empty folder.
+'@TestMethod("LinelistRun")
+Public Sub TestExportRefusesAnEmptyFolder()
+    CustomTestSetTitles Assert, "LinelistRun", "TestExportRefusesAnEmptyFolder"
+    On Error GoTo TestFail
+
+    Assert.AreEqual "ERROR 0: no folder at ", LinelistRun.RunExport("migration", vbNullString), _
+                    "An empty folder is refused as a folder that is not there"
+    Assert.IsFalse Messenger.Armed, "The refused export left the boxes on"
+
+    RemoveWorkbookSummary
+    Exit Sub
+TestFail:
+    RemoveWorkbookSummary
+    CustomTestLogFailure Assert, "TestExportRefusesAnEmptyFolder", Err.Number, Err.Description
+End Sub
+
+'@sub-title A word that names no export is refused and read back to the caller.
+'@details
+'The five checkboxes of F_ExportMig are a word here, so a typo has to be named
+'rather than run as the migration export the empty word means.
+'@TestMethod("LinelistRun")
+Public Sub TestExportRefusesAWordItDoesNotKnow()
+    Dim folderPath As String
+    Dim outcome As String
+
+    CustomTestSetTitles Assert, "LinelistRun", "TestExportRefusesAWordItDoesNotKnow"
+    On Error GoTo TestFail
+
+    folderPath = WorkFolder()
+    Assert.IsTrue (LenB(folderPath) > 0), "The folder the guard reads past was made"
+
+    outcome = LinelistRun.RunExport("geobase", folderPath)
+
+    Assert.AreEqual "ERROR 0: export ""geobase"" is no export this linelist runs", outcome, _
+                    "The refusal reads the word back to the caller"
+    Assert.IsFalse Messenger.Armed, "The refused export left the boxes on"
+
+    ClearWorkFolder
+    Exit Sub
+TestFail:
+    ClearWorkFolder
+    CustomTestLogFailure Assert, "TestExportRefusesAWordItDoesNotKnow", Err.Number, Err.Description
+End Sub
+
+'@sub-title The four words and a number are all read, and no other word is.
+'@details
+'The empty word means the migration export, so it is read like the four. Each
+'of these gets past the word guard and stops at the guard after it, which is
+'what the refusal text says.
+'@TestMethod("LinelistRun")
+Public Sub TestTheFourWordsAndANumberAreRead()
+    Dim folderPath As String
+    Dim words As Variant
+    Dim index As Long
+    Dim answer As String
+
+    CustomTestSetTitles Assert, "LinelistRun", "TestTheFourWordsAndANumberAreRead"
+    On Error GoTo TestFail
+
+    folderPath = WorkFolder()
+    Assert.IsTrue (LenB(folderPath) > 0), "The folder the guard reads past was made"
+
+    words = Array(vbNullString, "migration", "geo", "historic", "analysis", "7")
+
+    For index = LBound(words) To UBound(words)
+        answer = LinelistRun.RunExport(CStr(words(index)), folderPath)
+        Assert.IsFalse (InStr(1, answer, "is no export this linelist runs", vbBinaryCompare) > 0), _
+                       "Word " & CStr(index + 1) & " got past the word guard"
+    Next index
+
+    ClearWorkFolder
+    Exit Sub
+TestFail:
+    ClearWorkFolder
+    CustomTestLogFailure Assert, "TestTheFourWordsAndANumberAreRead", Err.Number, Err.Description
+End Sub
+
+'@sub-title A number that names no active export is refused by its number.
+'@details
+'This workbook carries no Exports sheet, so every number is refused here. The
+'refusal has to name the number: running export one in place of an export seven
+'the caller asked for would write the wrong file and answer OK.
+'@TestMethod("LinelistRun")
+Public Sub TestExportRefusesANumberThatIsNotActive()
+    Dim folderPath As String
+    Dim outcome As String
+
+    CustomTestSetTitles Assert, "LinelistRun", "TestExportRefusesANumberThatIsNotActive"
+    On Error GoTo TestFail
+
+    folderPath = WorkFolder()
+    Assert.IsTrue (LenB(folderPath) > 0), "The folder the guard reads past was made"
+
+    outcome = LinelistRun.RunExport("7", folderPath)
+
+    Assert.AreEqual "ERROR 0: export number 7 is not an active export on the Exports sheet", _
+                    outcome, "The refusal names the number the caller asked for"
+
+    ClearWorkFolder
+    Exit Sub
+TestFail:
+    ClearWorkFolder
+    CustomTestLogFailure Assert, "TestExportRefusesANumberThatIsNotActive", Err.Number, Err.Description
+End Sub
+
+'@sub-title A word with a comma in it is no export number.
+'@details
+'This box reads as en_FR, where the decimal separator is a COMMA. IsNumeric
+'answers True for "3,5" here and Val reads 3 out of it, so a caller with a typo
+'would have got export number three. Every character is checked against the
+'digits instead.
+'@TestMethod("LinelistRun")
+Public Sub TestOnlyDigitsReadAsAnExportNumber()
+    Dim folderPath As String
+
+    CustomTestSetTitles Assert, "LinelistRun", "TestOnlyDigitsReadAsAnExportNumber"
+    On Error GoTo TestFail
+
+    folderPath = WorkFolder()
+    Assert.IsTrue (LenB(folderPath) > 0), "The folder the guard reads past was made"
+
+    Assert.AreEqual "ERROR 0: export ""3,5"" is no export this linelist runs", _
+                    LinelistRun.RunExport("3,5", folderPath), _
+                    "A comma makes the word no export number at all"
+    Assert.AreEqual "ERROR 0: export ""0"" is no export this linelist runs", _
+                    LinelistRun.RunExport("0", folderPath), _
+                    "Export numbers start at one, so zero names none"
+
+    ClearWorkFolder
+    Exit Sub
+TestFail:
+    ClearWorkFolder
+    CustomTestLogFailure Assert, "TestOnlyDigitsReadAsAnExportNumber", Err.Number, Err.Description
+End Sub
+
+'@sub-title Only the three migration files take another linelist.
+'@details
+'The analysis export and the custom exports read the running linelist and
+'nothing else. A caller pairing one of them with a file is told so, rather than
+'having the file quietly ignored and the wrong workbook exported.
+'@TestMethod("LinelistRun")
+Public Sub TestOnlyTheMigrationWordsTakeAnotherLinelist()
+    Dim folderPath As String
+    Dim otherFile As String
+
+    CustomTestSetTitles Assert, "LinelistRun", "TestOnlyTheMigrationWordsTakeAnotherLinelist"
+    On Error GoTo TestFail
+
+    folderPath = WorkFolder()
+    otherFile = PresentFile()
+    Assert.IsTrue (LenB(otherFile) > 0), "The file the test hands in was made"
+
+    Assert.AreEqual "ERROR 0: the analysis export reads this linelist only, " & _
+                    "so it takes no other linelist", _
+                    LinelistRun.RunExport("analysis", folderPath, vbNullString, otherFile), _
+                    "The analysis export refuses another linelist"
+    Assert.AreEqual "ERROR 0: the custom export reads this linelist only, " & _
+                    "so it takes no other linelist", _
+                    LinelistRun.RunExport("2", folderPath, vbNullString, otherFile), _
+                    "A custom export refuses another linelist"
+
+    ClearWorkFolder
+    Exit Sub
+TestFail:
+    ClearWorkFolder
+    CustomTestLogFailure Assert, "TestOnlyTheMigrationWordsTakeAnotherLinelist", Err.Number, Err.Description
+End Sub
+
+'@sub-title A workbook that is not a linelist cannot be exported either.
+'@details
+'The three import wrappers stop at the translator and so does this one. The
+'workbook holding this suite has no translation sheet, which is what makes the
+'test possible: a run that reached the export would close the workbook.
+'@TestMethod("LinelistRun")
+Public Sub TestTheExportRefusesAWorkbookThatIsNotALinelist()
+    Dim folderPath As String
+    Dim outcome As String
+
+    CustomTestSetTitles Assert, "LinelistRun", "TestTheExportRefusesAWorkbookThatIsNotALinelist"
+    On Error GoTo TestFail
+
+    folderPath = WorkFolder()
+    Assert.IsTrue (LenB(folderPath) > 0), "The folder the guard reads past was made"
+
+    outcome = LinelistRun.RunExport("migration", folderPath)
+
+    Assert.AreEqual "ERROR 0: this linelist carries no usable translation sheet", outcome, _
+                    "A workbook with no translation sheet is refused by name"
+    Assert.IsTrue (LenB(ThisWorkbook.Name) > 0), "The workbook is still open"
+
+    ClearWorkFolder
+    Exit Sub
+TestFail:
+    ClearWorkFolder
+    CustomTestLogFailure Assert, "TestTheExportRefusesAWorkbookThatIsNotALinelist", Err.Number, Err.Description
+End Sub
+
+'@sub-title A refused export leaves the boxes on for whoever calls next.
+'@details
+'The caller after a wrapper is a person clicking a button, and a linelist whose
+'boxes stayed swallowed answers none of their questions.
+'@TestMethod("LinelistRun")
+Public Sub TestARefusedExportLeavesTheBoxesOn()
+    Dim folderPath As String
+    Dim ignored As String
+
+    CustomTestSetTitles Assert, "LinelistRun", "TestARefusedExportLeavesTheBoxesOn"
+    On Error GoTo TestFail
+
+    folderPath = WorkFolder()
+
+    ignored = LinelistRun.RunExport("migration", folderPath)
+    Assert.IsFalse Messenger.Armed, "The export that reached the translator disarmed"
+
+    ignored = LinelistRun.RunExport("nonsense", folderPath)
+    Assert.IsFalse Messenger.Armed, "The export refused at its word guard disarmed"
+
+    ignored = LinelistRun.RunExport(vbNullString, vbNullString)
+    Assert.IsFalse Messenger.Armed, "The export refused at its folder guard disarmed"
+
+    ClearWorkFolder
+    RemoveWorkbookSummary
+    Exit Sub
+TestFail:
+    ClearWorkFolder
+    RemoveWorkbookSummary
+    CustomTestLogFailure Assert, "TestARefusedExportLeavesTheBoxesOn", Err.Number, Err.Description
+End Sub
+
+'@sub-title A refused export writes its summary into the folder it was given.
+'@details
+'The answer of Application.Run is lost whenever the Apple Event transport gives
+'up, so the file is the reading that survives. It is named after this linelist
+'rather than after a file the run touched, because one export word can write
+'three files and no one of them is the file.
+'@TestMethod("LinelistRun")
+Public Sub TestARefusedExportWritesItsSummaryFile()
+    Dim folderPath As String
+    Dim summaryPath As String
+    Dim outcome As String
+
+    CustomTestSetTitles Assert, "LinelistRun", "TestARefusedExportWritesItsSummaryFile"
+    On Error GoTo TestFail
+
+    folderPath = WorkFolder()
+    Assert.IsTrue (LenB(folderPath) > 0), "The folder the summary goes into was made"
+
+    outcome = LinelistRun.RunExport("migration", folderPath)
+
+    summaryPath = folderPath & Application.PathSeparator & _
+                  BareName(ThisWorkbook.Name) & SUMMARY_SUFFIX
+
+    Assert.IsTrue FileIsThere(summaryPath), "The summary file is beside the export folder"
+    Assert.AreEqual "outcome=" & outcome, FirstLineOf(summaryPath), _
+                    "The first line of the file carries the outcome"
+
+    ClearWorkFolder
+    Exit Sub
+TestFail:
+    ClearWorkFolder
+    CustomTestLogFailure Assert, "TestARefusedExportWritesItsSummaryFile", Err.Number, Err.Description
+End Sub
+
+'@sub-title The export wrapper answers an outcome string on every path.
+'@TestMethod("LinelistRun")
+Public Sub TestTheExportWrapperAnswersAnOutcomeString()
+    Dim folderPath As String
+    Dim otherFile As String
+    Dim outcomes As Variant
+    Dim index As Long
+    Dim answer As String
+
+    CustomTestSetTitles Assert, "LinelistRun", "TestTheExportWrapperAnswersAnOutcomeString"
+    On Error GoTo TestFail
+
+    folderPath = WorkFolder()
+    otherFile = PresentFile()
+    Assert.IsTrue (LenB(otherFile) > 0), "The file the test hands in was made"
+
+    outcomes = Array(LinelistRun.RunExport(vbNullString, vbNullString), _
+                     LinelistRun.RunExport(vbNullString, PathUnderRunDir("obt-no-such-folder-116")), _
+                     LinelistRun.RunExport("nonsense", folderPath), _
+                     LinelistRun.RunExport("9", folderPath), _
+                     LinelistRun.RunExport("analysis", folderPath, vbNullString, otherFile), _
+                     LinelistRun.RunExport("geo", folderPath), _
+                     LinelistRun.RunExport("historic", folderPath, "a password", otherFile))
+
+    For index = LBound(outcomes) To UBound(outcomes)
+        answer = CStr(outcomes(index))
+        Assert.IsTrue (answer = OUTCOME_OK Or IsRefusal(answer)), _
+                      "Answer " & CStr(index + 1) & " reads OK or ERROR"
+    Next index
+
+    Assert.IsFalse Messenger.Armed, "Seven exports in a row left the boxes on"
+    Assert.AreEqual vbNullString, SummaryValue("export"), _
+                    "No refused export wrote a path into the summary"
+
+    ClearWorkFolder
+    RemoveWorkbookSummary
+    Exit Sub
+TestFail:
+    ClearWorkFolder
+    RemoveWorkbookSummary
+    CustomTestLogFailure Assert, "TestTheExportWrapperAnswersAnOutcomeString", Err.Number, Err.Description
 End Sub

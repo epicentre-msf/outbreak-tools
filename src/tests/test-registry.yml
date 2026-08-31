@@ -1146,17 +1146,26 @@ suites:
       # are baked into the driver workbook. Its three public names clash with
       # nothing already in the workbook.
       - ImportChecking
-      # LinelistRun carries the two import walks of a running linelist --
-      # HandleImportData and HandleImportGeobase -- and the three entry points a
-      # script calls them through: RunImportGeobase, RunImportData and
-      # LinelistLastSummary. It joined on 2026-08-31.
+      # LinelistRun carries the import and export walks of a running linelist --
+      # HandleImportData, HandleImportGeobase, HandleExportMigration,
+      # HandleExportOther, HandleExportAnalysis and HandleExportCustom -- and
+      # the four entry points a script calls them through: RunImportGeobase,
+      # RunImportData, RunExport and LinelistLastSummary. It joined on
+      # 2026-08-31, and the four export walks joined it the same day.
       #
-      # THE TWO WALKS USED TO LIVE IN A FORM. They sat in FormLogicAdvanced,
-      # the code-behind of F_Advanced, so they were reachable only as
-      # F_Advanced.HandleImportData and no suite could ever touch them: a form
-      # module is compiled into the delivered linelist and into nothing the
+      # THE WALKS USED TO LIVE IN A FORM. The two import walks sat in
+      # FormLogicAdvanced and the export walks in FormLogicExportMig, the
+      # code-behind of F_Advanced and F_ExportMig, so they were reachable only
+      # as F_Advanced.HandleImportData and no suite could ever touch them: a
+      # form module is compiled into the delivered linelist and into nothing the
       # harness drives. That is why the thirteen message boxes Session 114
       # rewrote inside them had no test at all. They are a standard module now.
+      #
+      # HandleExportCustom REPEATS A BODY RATHER THAN CALLING IT. The body is
+      # ExportButton.RunExport, and ExportButton holds a WithEvents binding to
+      # an MSForms control, so it is built by a form and reached from nowhere
+      # else. This is the second copy of that kind in the module, beside
+      # TrimDataTables.
       #
       # THE ENTRY POINTS COULD NOT GO WHERE THEY BELONG. They belong beside
       # ClickImportData in EventsLinelistButtons, which is where the setup keeps
@@ -1173,10 +1182,11 @@ suites:
       #
       # THIS ROW OPENS NOTHING NEW. LinelistRun names LinelistEventsManager and
       # ImportChecking above, EventLinelist, LLTranslation and LLLog above,
-      # LLImporter and ImportMetadata (`dataio`), ApplicationState, OSFiles,
-      # CustomTable and Messenger (`general`); TranslationObject, Passwords,
-      # HiddenNames and BetterArray are baked into the driver workbook. Its five
-      # public names clash with nothing already in the workbook.
+      # LLImporter, LLExporter, FilteredData and ImportMetadata (`dataio`),
+      # LLExport (`dictionary`), ApplicationState, OSFiles, CustomTable and
+      # Messenger (`general`); TranslationObject, Passwords, HiddenNames and
+      # BetterArray are baked into the driver workbook. Its ten public names
+      # clash with nothing already in the workbook.
       - LinelistRun
     forms:
       # F_Geo is the geo picker GeoModule drives. It arrives from the merged
@@ -1308,15 +1318,15 @@ suites:
       # to TestHelpersLite.
       - module: TestLLLog
         covers: [LLLog]
-      # TestLinelistRun drives the three entry points a script can call on a
+      # TestLinelistRun drives the four entry points a script can call on a
       # running linelist. The driver workbook is NOT a linelist: it holds no
-      # dictionary, no translation sheet and no data entry table. So the suite
-      # drives the paths that are the same on any workbook -- the guards on the
-      # path, the pasting rule and the force word, the refusal when the
-      # translator is missing, the disarm on every path, and the shape of the
-      # summary. The two import walks themselves are proved by the R package
-      # calling them against a real linelist, which is what this block of
-      # sessions is for.
+      # dictionary, no translation sheet, no data entry table and no Exports
+      # sheet. So the suite drives the paths that are the same on any workbook
+      # -- the guards on the path and the folder, the pasting rule, the force
+      # word and the export word, the refusal when the translator is missing,
+      # the disarm on every path, and the shape of the summary. The walks
+      # themselves are proved by the R package calling them against a real
+      # linelist, which is what this block of sessions is for.
       #
       # EVERY CALL IN HERE ANSWERS A STRING. That is the contract, and it is
       # what every test below checks: no path opens a box, no path raises, and

@@ -3,18 +3,26 @@ Attribute VB_Name = "FormLogicExportMig"
 '@Folder("Linelist Forms")
 '@ModuleDescription("Complete code-behind of F_ExportMig -- migration, geo and other-linelist exports")
 '@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
-'@depends LLExporter, ApplicationState, OSFiles, TranslationObject, LLTranslation, LLLog, LinelistEventsManager, EventLinelist, Messenger
+'@depends LinelistRun, OSFiles, TranslationObject, LLTranslation, LLLog, LinelistEventsManager, EventLinelist, Messenger
 
 ' This module is the complete code-behind of the F_ExportMig form and is
-' copied into the form at deployment, so every control callback, the
-' translation build and the export walks live here. EventsLinelistButtons
-' reaches HandleAnalysisExport through F_ExportMig.HandleAnalysisExport, the
-' qualified route, so the standard-module copy of this code is never compiled
-' and its form references cost nothing there.
+' copied into the form at deployment, so every control callback and the
+' translation build live here. EventsLinelistButtons reaches
+' HandleAnalysisExport through F_ExportMig.HandleAnalysisExport, the qualified
+' route, so the standard-module copy of this code is never compiled and its
+' form references cost nothing there.
+'
+' THE FOUR EXPORT WALKS LEFT THIS MODULE. They live in LinelistRun, a standard
+' module that is compiled everywhere and can be tested, and that RunExport
+' drives with no form in the way. What stayed here is everything that reads a
+' control or moves the form: the five checkboxes, the folder picker, the two
+' other-linelist labels, the password InputBox and the question that puts the
+' form away.
 '
 ' The success boxes show the saved file paths under MSG_FileSaved: the path
 ' the export answered is what the user needs, and MSG_FileSaved is in the
-' linelist message table in five languages.
+' linelist message table in five languages. They are shown by the walks in
+' LinelistRun, through the messenger, so a scripted run swallows them.
 
 Option Explicit
 
@@ -81,21 +89,6 @@ Private Function UserLogOf() As LLLog
 End Function
 
 
-' @description Write the success line of a finished export walk. The write
-' is guarded so a log fault never takes down the walk it records.
-Private Sub LogSuccessLine(ByVal action As String, _
-                           Optional ByVal detail As String = vbNullString)
-    Dim logStore As LLLog
-
-    Set logStore = UserLogOf()
-    If logStore Is Nothing Then Exit Sub
-
-    On Error Resume Next
-    logStore.LogSuccess action, detail
-    On Error GoTo 0
-End Sub
-
-
 ' @description Write the failure line of a walk that ended at its error label.
 Private Sub LogFailureLine(ByVal action As String, _
                            Optional ByVal detail As String = vbNullString)
@@ -108,26 +101,6 @@ Private Sub LogFailureLine(ByVal action As String, _
     logStore.LogFailure action, detail
     On Error GoTo 0
 End Sub
-
-
-' @description The saved paths on one line, for the log detail.
-Private Function PathsOnOneLine(ByVal savedPaths As String) As String
-    PathsOnOneLine = Replace(savedPaths, vbNewLine, ", ")
-End Function
-
-
-' @description The detail line of a failed walk. An error raised inside the
-' exporter reaches here as the name of the method and nothing else, so the
-' exporter's own account of the failure is preferred whenever it has one.
-' @param exporter LLExporter. The exporter of the walk, Nothing when it never got made.
-' @param errDetail String. The description the walk's handler read.
-' @return String. What to write into the log.
-Private Function ExporterDetail(ByVal exporter As LLExporter, _
-                                ByVal errDetail As String) As String
-    ExporterDetail = errDetail
-    If exporter Is Nothing Then Exit Function
-    If LenB(exporter.LastFailure) > 0 Then ExporterDetail = exporter.LastFailure
-End Function
 
 
 '@section The other-linelist choice
@@ -200,19 +173,6 @@ Private Sub PromptOtherLinelistPassword()
     Me.LBL_OtherPass.Caption = otherLinelistPassword
 End Sub
 
-' @description True when no readable file sits behind the other-linelist
-' choice. The empty path is answered before Dir is asked anything, because
-' Dir on an empty string raises rather than answering.
-' @return Boolean. True when the export has no file to open.
-Private Function OtherLinelistFileMissing() As Boolean
-    OtherLinelistFileMissing = True
-
-    If LenB(otherLinelistPath) = 0 Then Exit Function
-    If LenB(Dir(otherLinelistPath)) = 0 Then Exit Function
-
-    OtherLinelistFileMissing = False
-End Function
-
 
 '@section The export click
 '===============================================================================
@@ -265,66 +225,45 @@ End Sub
 
 ' @description Export the current linelist: the migration file, the geobase
 ' and the historic geobase, whichever of the three the boxes ask for, into
-' one folder the user picks once.
+' one folder the user picks once. The walk itself is
+' LinelistRun.HandleExportMigration, which shows the saved paths; this asks for
+' the folder first and puts the form away after.
+' @param wantData Boolean. True exports the migration file.
+' @param wantGeo Boolean. True exports the geobase.
+' @param wantHistoric Boolean. True exports the historic geobase.
+' @param includeShowHide Boolean. True carries the show/hide state into the migration file.
+' @param keepLabels Boolean. True carries the editable labels into the migration file.
 Private Sub CurrentLinelistWalk(ByVal wantData As Boolean, _
                                 ByVal wantGeo As Boolean, _
                                 ByVal wantHistoric As Boolean, _
                                 ByVal includeShowHide As Boolean, _
                                 ByVal keepLabels As Boolean)
 
-    Dim exporter As LLExporter
-    Dim appState As ApplicationState
     Dim folderPath As String
     Dim savedPaths As String
-    Dim failDetail As String
-
-    On Error GoTo ErrHand
 
     folderPath = PickExportFolder()
     If LenB(folderPath) = 0 Then Exit Sub
 
-    Set appState = ApplicationState.Create()
-    appState.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, _
-                            busyCursor:=xlWait, blockSecurity:=False
+    savedPaths = LinelistRun.HandleExportMigration(ThisWorkbook, tradmess, folderPath, _
+                                                   wantData, wantGeo, wantHistoric, _
+                                                   includeShowHide, keepLabels)
 
-    Set exporter = LLExporter.Create(ThisWorkbook)
-
-    If wantData Then _
-        savedPaths = exporter.ExportMigration(folderPath, includeShowHide, keepLabels)
-    If wantGeo Then _
-        savedPaths = JoinPath(savedPaths, exporter.ExportGeo(folderPath, onlyHistoric:=False))
-    If wantHistoric Then _
-        savedPaths = JoinPath(savedPaths, exporter.ExportGeo(folderPath, onlyHistoric:=True))
-
-    appState.Restore
-    LogSuccessLine "export-migration", PathsOnOneLine(savedPaths)
-
-    MsgBox savedPaths, vbOKOnly + vbInformation, _
-           tradmess.TranslatedValue("MSG_FileSaved")
+    'A walk that wrote nothing was refused or failed, and it has already said
+    'so. The question below is about the form, so it is asked only when there
+    'was an export to finish.
+    If LenB(savedPaths) = 0 Then Exit Sub
 
     If MsgBox(tradmess.TranslatedValue("MSG_FinishedExports"), _
               vbQuestion + vbYesNo, _
               tradmess.TranslatedValue("MSG_Migration")) = vbYes Then Me.Hide
-    Exit Sub
-
-ErrHand:
-    ' Err is read before the Resume Next below clears it.
-    failDetail = Err.Description
-    On Error Resume Next
-    failDetail = ExporterDetail(exporter, failDetail)
-    LogFailureLine "export-migration", failDetail
-    MsgBox tradmess.TranslatedValue("MSG_ErrHandExport"), _
-           vbOKOnly + vbCritical, tradmess.TranslatedValue("MSG_Error")
-    If Not exporter Is Nothing Then exporter.CloseAll
-    If Not appState Is Nothing Then appState.Restore
 End Sub
 
 ' @description Export another linelist, the one chosen on the two labels,
 ' with the same three files and the same two migration switches the boxes ask
-' of the current linelist. The user confirms the file first, then picks one
-' folder for the whole walk. The other linelist is opened read-only under the
-' busy state, so its open events stay quiet, and it is closed without saving
-' once the files are written.
+' of the current linelist. The walk is LinelistRun.HandleExportOther, which
+' confirms the file, opens it read-only, writes the files and closes it again
+' without saving. This asks for the folder first and puts the form away after.
 ' @param wantData Boolean. True exports the migration file.
 ' @param wantGeo Boolean. True exports the geobase.
 ' @param wantHistoric Boolean. True exports the historic geobase.
@@ -336,85 +275,22 @@ Private Sub OtherLinelistWalk(ByVal wantData As Boolean, _
                               ByVal includeShowHide As Boolean, _
                               ByVal keepLabels As Boolean)
 
-    Dim exporter As LLExporter
-    Dim appState As ApplicationState
     Dim folderPath As String
     Dim savedPaths As String
-    Dim failDetail As String
-
-    On Error GoTo ErrHand
-
-    If OtherLinelistFileMissing() Then
-        MsgBox tradmess.TranslatedValue("MSG_ProvideLLPath"), _
-               vbExclamation + vbOKOnly, _
-               tradmess.TranslatedValue("MSG_Migration")
-        Exit Sub
-    End If
-
-    If LCase$(otherLinelistPath) = LCase$(ThisWorkbook.FullName) Then
-        MsgBox tradmess.TranslatedValue("MSG_ExportMigConflict"), _
-               vbExclamation + vbOKOnly, _
-               tradmess.TranslatedValue("MSG_Migration")
-        Exit Sub
-    End If
-
-    If MsgBox(tradmess.TranslatedValue("MSG_ConfirmExportOther") & _
-              vbNewLine & otherLinelistPath, _
-              vbQuestion + vbYesNo, _
-              tradmess.TranslatedValue("MSG_Confirm")) = vbNo Then Exit Sub
 
     folderPath = PickExportFolder()
     If LenB(folderPath) = 0 Then Exit Sub
 
-    Set appState = ApplicationState.Create()
-    appState.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, _
-                            busyCursor:=xlWait, blockSecurity:=False
+    savedPaths = LinelistRun.HandleExportOther(tradmess, folderPath, _
+                                               otherLinelistPath, otherLinelistPassword, _
+                                               wantData, wantGeo, wantHistoric, _
+                                               includeShowHide, keepLabels)
 
-    'A path or password the file refuses lands here, and the message names
-    'that failure rather than the export one.
-    On Error GoTo ErrOpen
-    Set exporter = LLExporter.CreateFromFile(otherLinelistPath, otherLinelistPassword)
-    On Error GoTo ErrHand
-
-    If wantData Then _
-        savedPaths = exporter.ExportMigration(folderPath, includeShowHide, keepLabels)
-    If wantGeo Then _
-        savedPaths = JoinPath(savedPaths, exporter.ExportGeo(folderPath, onlyHistoric:=False))
-    If wantHistoric Then _
-        savedPaths = JoinPath(savedPaths, exporter.ExportGeo(folderPath, onlyHistoric:=True))
-
-    'Closes the other linelist, which this exporter opened
-    exporter.CloseAll
-
-    appState.Restore
-    LogSuccessLine "export-other", PathsOnOneLine(savedPaths)
-
-    MsgBox savedPaths, vbOKOnly + vbInformation, _
-           tradmess.TranslatedValue("MSG_FileSaved")
+    If LenB(savedPaths) = 0 Then Exit Sub
 
     If MsgBox(tradmess.TranslatedValue("MSG_FinishedExports"), _
               vbQuestion + vbYesNo, _
               tradmess.TranslatedValue("MSG_Migration")) = vbYes Then Me.Hide
-    Exit Sub
-
-ErrOpen:
-    On Error Resume Next
-    LogFailureLine "export-other", "open refused: " & otherLinelistPath
-    If Not appState Is Nothing Then appState.Restore
-    MsgBox tradmess.TranslatedValue("MSG_ErrOpenOther"), _
-           vbOKOnly + vbCritical, tradmess.TranslatedValue("MSG_Error")
-    Exit Sub
-
-ErrHand:
-    ' Err is read before the Resume Next below clears it.
-    failDetail = Err.Description
-    On Error Resume Next
-    failDetail = ExporterDetail(exporter, failDetail)
-    LogFailureLine "export-other", failDetail
-    If Not exporter Is Nothing Then exporter.CloseAll
-    If Not appState Is Nothing Then appState.Restore
-    MsgBox tradmess.TranslatedValue("MSG_ErrHandExport"), _
-           vbOKOnly + vbCritical, tradmess.TranslatedValue("MSG_Error")
 End Sub
 
 
@@ -439,49 +315,22 @@ End Sub
 '@section Analysis export
 '===============================================================================
 
-' @description Export analysis worksheets only. Shows a folder picker,
-' creates the analysis export, and handles errors. No control of the form
-' takes part: EventsLinelistButtons.ClickExportAnalysis calls this through
-' F_ExportMig.HandleAnalysisExport with its own workbook and translations.
+' @description Export analysis worksheets only. The picker is here and the
+' walk is LinelistRun.HandleExportAnalysis, which writes the file and shows the
+' path. No control of the form takes part: EventsLinelistButtons
+' .ClickExportAnalysis calls this through F_ExportMig.HandleAnalysisExport with
+' its own workbook and translations.
 ' @param sourceWkb Workbook. The linelist workbook.
 ' @param trads TranslationObject. Translations for messages.
 Public Sub HandleAnalysisExport(ByVal sourceWkb As Workbook, _
                                 ByVal trads As TranslationObject)
 
-    Dim exporter As LLExporter
-    Dim appState As ApplicationState
     Dim folderPath As String
-    Dim filePath As String
-    Dim failDetail As String
-
-    On Error GoTo ErrHand
 
     folderPath = PickExportFolder()
     If LenB(folderPath) = 0 Then Exit Sub
 
-    Set appState = ApplicationState.Create()
-    appState.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, _
-                            busyCursor:=xlWait, blockSecurity:=False
-
-    Set exporter = LLExporter.Create(sourceWkb)
-    filePath = exporter.ExportAnalysis(folderPath)
-
-    appState.Restore
-    LogSuccessLine "export-analysis", PathsOnOneLine(filePath)
-
-    MsgBox filePath, vbOKOnly + vbInformation, _
-           trads.TranslatedValue("MSG_FileSaved")
-    Exit Sub
-
-ErrHand:
-    ' Err is read before the Resume Next below clears it.
-    failDetail = Err.Description
-    On Error Resume Next
-    LogFailureLine "export-analysis", failDetail
-    MsgBox trads.TranslatedValue("MSG_ErrHandExport"), _
-           vbOKOnly + vbCritical, trads.TranslatedValue("MSG_Error")
-    If Not exporter Is Nothing Then exporter.CloseAll
-    If Not appState Is Nothing Then appState.Restore
+    LinelistRun.HandleExportAnalysis sourceWkb, trads, folderPath
 End Sub
 
 
@@ -496,17 +345,4 @@ Private Function PickExportFolder() As String
     Set io = OSFiles.Create()
     io.LoadFolder
     If io.HasValidFolder Then PickExportFolder = io.Folder()
-End Function
-
-' @description Stack a new file path under the ones already collected.
-' @param collected String. The paths so far, possibly empty.
-' @param newPath String. The path to add.
-' @return String. The paths on one line each.
-Private Function JoinPath(ByVal collected As String, _
-                          ByVal newPath As String) As String
-    If LenB(collected) = 0 Then
-        JoinPath = newPath
-    Else
-        JoinPath = collected & vbNewLine & newPath
-    End If
 End Function
