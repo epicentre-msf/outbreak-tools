@@ -26,7 +26,7 @@ Option Explicit
 '(list auto update), selection change (geo dropdown refresh),
 'double-click (spatio-temporal geo form), filter table updates, list-auto
 'dropdown maintenance, and geo/spatial UDF delegation.
-'@depends BetterArray, HiddenNames, DropdownLists, LLGeo, LLSpatial, LLdictionary, LLVariables, LLTranslation, TranslationObject, Passwords, LLLog, FilteredData, ProjectError
+'@depends BetterArray, HiddenNames, DropdownLists, LLGeo, LLSpatial, LLdictionary, LLVariables, LLTranslation, TranslationObject, Passwords, LLLog, FilteredData, ProjectError, Messenger
 
 
 '@section State
@@ -935,6 +935,10 @@ End Function
 'A workbook with no usable translation sheet has no text to show, and the
 'callers that still have something to say pass a fallback. Every other caller
 'stays quiet, which is what the two boxes this replaced did.
+'The box is shown through Messenger, so a script driving this workbook gets the
+'text written into the record and the call comes straight back. Warn and Fail
+'both ask for one OK button, so vbOK is the answer while the messenger is
+'armed. A person pressing a button sees the box they have always seen.
 Private Sub ShowMessage(ByVal msgCode As String, _
                         ByVal boxStyle As Long, _
                         ByVal detail As String, _
@@ -955,7 +959,7 @@ Private Sub ShowMessage(ByVal msgCode As String, _
 
     If LenB(detail) > 0 Then message = message & ": " & detail
 
-    MsgBox message, boxStyle, title
+    Messenger.Show message, vbOK, boxStyle, title
 End Sub
 
 

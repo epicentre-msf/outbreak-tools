@@ -3,7 +3,7 @@ Attribute VB_Name = "FormLogicAdvanced"
 '@Folder("Linelist Forms")
 '@ModuleDescription("Complete code-behind of F_Advanced -- imports, clears, reset and saved layouts")
 '@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
-'@depends LLImporter, ImportMetadata, ApplicationState, OSFiles, LLdictionary, ShowHide, ShowHideLayout, ShowHideStore, HiddenNames, Passwords, LLGeo, LLTranslation, TranslationObject, LLLog, LinelistEventsManager, EventLinelist, ImportChecking
+'@depends LLImporter, ImportMetadata, ApplicationState, OSFiles, LLdictionary, ShowHide, ShowHideLayout, ShowHideStore, HiddenNames, Passwords, LLGeo, LLTranslation, TranslationObject, LLLog, LinelistEventsManager, EventLinelist, ImportChecking, Messenger
 
 ' This module is the complete code-behind of the F_Advanced form and is
 ' copied into the form at deployment, so the control callbacks, the
@@ -422,9 +422,11 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
     If Not io.HasValidFile Then Exit Sub
     filePath = io.File()
 
-    ' Confirm import
-    If MsgBox(trads.TranslatedValue("MSG_ImportConfirm"), _
-              vbOKCancel, trads.TranslatedValue("MSG_Confirm")) = vbCancel Then
+    ' Confirm import. A script asked for this import, so confirming it is the
+    ' silent answer: the box is vbOKCancel and the answer is vbOK.
+    If Messenger.Show(trads.TranslatedValue("MSG_ImportConfirm"), vbOK, _
+                      vbOKCancel, _
+                      trads.TranslatedValue("MSG_Confirm")) = vbCancel Then
         GoTo EndImport
     End If
 
@@ -498,8 +500,9 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
     ' screen by an import.
     If refused Then
         LogWarningLine "import-data", "file refused: " & FileNameOf(filePath)
-        MsgBox trads.TranslatedValue("MSG_AbortImport"), _
-               vbExclamation + vbOKOnly, trads.TranslatedValue("MSG_Imports")
+        Messenger.Show trads.TranslatedValue("MSG_AbortImport"), vbOK, _
+                       vbExclamation + vbOKOnly, _
+                       trads.TranslatedValue("MSG_Imports")
         ImportChecking.ShowReportSheet sourceWkb
         Exit Sub
     End If
@@ -511,23 +514,25 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
     ' Show result. MSG_FinishImportRep asks whether the user wants to see a
     ' report, and it used to be asked with an OK button, so there was no way to
     ' answer and nothing behind it either.
+    ' The report is a worksheet on screen and nobody is there to read it while
+    ' a script drives, so the silent answer to the question is vbNo.
     If impObj.NeedReport Then
-        If MsgBox(trads.TranslatedValue("MSG_FinishImportRep"), _
-                  vbQuestion + vbYesNo, _
-                  trads.TranslatedValue("MSG_Imports")) = vbYes Then
+        If Messenger.Show(trads.TranslatedValue("MSG_FinishImportRep"), vbNo, _
+                          vbQuestion + vbYesNo, _
+                          trads.TranslatedValue("MSG_Imports")) = vbYes Then
             F_ImportRep.Show
         End If
     Else
-        MsgBox trads.TranslatedValue("MSG_FinishImport"), _
-               vbOKOnly, trads.TranslatedValue("MSG_Imports")
+        Messenger.Show trads.TranslatedValue("MSG_FinishImport"), vbOK, _
+                       vbOKOnly, trads.TranslatedValue("MSG_Imports")
     End If
     Exit Sub
 
 EndImport:
     On Error Resume Next
     LogWarningLine "import-data", "cancelled"
-    MsgBox trads.TranslatedValue("MSG_AbortImport"), _
-           vbOKOnly, trads.TranslatedValue("MSG_Imports")
+    Messenger.Show trads.TranslatedValue("MSG_AbortImport"), vbOK, _
+                   vbOKOnly, trads.TranslatedValue("MSG_Imports")
     If Not impwb Is Nothing Then impwb.Close savechanges:=False
     If Not actsh Is Nothing Then actsh.Activate
     If Not appState Is Nothing Then appState.Restore
@@ -539,8 +544,8 @@ ErrHand:
     failDetail = Err.Description
     On Error Resume Next
     LogFailureLine "import-data", failDetail
-    MsgBox trads.TranslatedValue("MSG_ErrorImport"), _
-           vbCritical + vbOKOnly, trads.TranslatedValue("MSG_Imports")
+    Messenger.Show trads.TranslatedValue("MSG_ErrorImport"), vbOK, _
+                   vbCritical + vbOKOnly, trads.TranslatedValue("MSG_Imports")
     If Not impwb Is Nothing Then impwb.Close savechanges:=False
     If Not actsh Is Nothing Then actsh.Activate
     If Not appState Is Nothing Then appState.Restore
@@ -565,21 +570,27 @@ Private Function KeepGoingOnLanguage(ByVal meta As ImportMetadata, _
 
     Dim message As String
 
-    ' The file carries no Metadata sheet at all
+    ' The file carries no Metadata sheet at all. MSG_NoMetadata asks whether to
+    ' QUIT, and the two boxes below ask whether to CONTINUE. Same warning, read
+    ' from opposite ends, so this one is answered by QuitUnlessForced.
     If Not meta.Exists Then
         KeepGoingOnLanguage = ( _
-            MsgBox(trads.TranslatedValue("MSG_NoMetadata"), _
-                   vbExclamation + vbYesNo, _
-                   trads.TranslatedValue("MSG_Imports")) = vbNo)
+            Messenger.Show(trads.TranslatedValue("MSG_NoMetadata"), _
+                           QuitUnlessForced(), _
+                           vbExclamation + vbYesNo, _
+                           trads.TranslatedValue("MSG_Imports")) = vbNo)
         Exit Function
     End If
 
-    ' The Metadata sheet is there and names no language
+    ' The Metadata sheet is there and names no language. The box asks whether
+    ' to import anyway, so Messenger.CarryOn answers it: a forced run imports,
+    ' every other run stops and the wrapper says why.
     If LenB(meta.Language) = 0 Then
         KeepGoingOnLanguage = ( _
-            MsgBox(trads.TranslatedValue("MSG_NoLanguage"), _
-                   vbExclamation + vbYesNo, _
-                   trads.TranslatedValue("MSG_Imports")) = vbYes)
+            Messenger.Show(trads.TranslatedValue("MSG_NoLanguage"), _
+                           Messenger.CarryOn(), _
+                           vbExclamation + vbYesNo, _
+                           trads.TranslatedValue("MSG_Imports")) = vbYes)
         Exit Function
     End If
 
@@ -591,9 +602,24 @@ Private Function KeepGoingOnLanguage(ByVal meta As ImportMetadata, _
               meta.Language & vbNewLine & vbNewLine & _
               trads.TranslatedValue("MSG_QuitImports")
 
+    ' The box asks whether to continue, so Messenger.CarryOn answers it.
     KeepGoingOnLanguage = ( _
-        MsgBox(message, vbExclamation + vbYesNo, _
-               trads.TranslatedValue("MSG_Imports")) = vbYes)
+        Messenger.Show(message, Messenger.CarryOn(), _
+                       vbExclamation + vbYesNo, _
+                       trads.TranslatedValue("MSG_Imports")) = vbYes)
+End Function
+
+
+' @description The silent answer to a warning box that asks whether to QUIT.
+' Messenger.CarryOn answers a box that asks whether to CONTINUE: vbNo on a
+' normal run, vbYes on a forced one. MSG_NoMetadata asks the same question the
+' other way round, so its answer is the other way round too. A scripted import
+' quits on the missing metadata unless the caller asked for force, which is the
+' same rule the other two language warnings follow.
+' @return VbMsgBoxResult. vbYes on a normal run, vbNo on a forced one.
+Private Function QuitUnlessForced() As VbMsgBoxResult
+    QuitUnlessForced = vbYes
+    If Messenger.CarryOn() = vbYes Then QuitUnlessForced = vbNo
 End Function
 
 
@@ -688,8 +714,8 @@ Public Sub HandleImportGeobase(ByVal sourceWkb As Workbook, _
     LogSuccessLine "import-geobase", _
                    FileNameOf(filePath) & IIf(histoOnly, " (historic only)", vbNullString)
 
-    MsgBox trads.TranslatedValue("MSG_FinishImportGeo"), _
-           vbOKOnly, trads.TranslatedValue("MSG_Imports")
+    Messenger.Show trads.TranslatedValue("MSG_FinishImportGeo"), vbOK, _
+                   vbOKOnly, trads.TranslatedValue("MSG_Imports")
     Exit Sub
 
 ErrHand:
@@ -697,8 +723,8 @@ ErrHand:
     failDetail = Err.Description
     On Error Resume Next
     LogFailureLine "import-geobase", failDetail
-    MsgBox trads.TranslatedValue("MSG_ErrImportGeo"), _
-           vbCritical + vbOKOnly, trads.TranslatedValue("MSG_Imports")
+    Messenger.Show trads.TranslatedValue("MSG_ErrImportGeo"), vbOK, _
+                   vbCritical + vbOKOnly, trads.TranslatedValue("MSG_Imports")
     If Not impwb Is Nothing Then impwb.Close savechanges:=False
     If Not appState Is Nothing Then appState.Restore
     ResetEventCaches

@@ -52,7 +52,7 @@ Option Explicit
 'one owner, so the ResetCaches every import already runs refreshes every reader.
 'TestTheHeldGeoManagerKeepsItsLevelLabels states the hazard and
 'TestResetCachesRereadsTheLevelLabels is the regression test.
-'@depends EventLinelist, CustomTest, HiddenNames, LLTranslation, TranslationObject, LLLog, LLGeo, GeoTestFixture
+'@depends EventLinelist, CustomTest, HiddenNames, LLTranslation, TranslationObject, LLLog, LLGeo, GeoTestFixture, Messenger
 
 Private Assert As CustomTest
 Private FixtureWkb As Workbook
@@ -140,8 +140,14 @@ Private Sub TestInitialize()
 End Sub
 
 '@sub-title Flush assert state and drop the fixture workbook.
+'@details
+'The messenger is disarmed here as well. It is a default instance the whole run
+'shares, so a test that arms it and then fails before its own Disarm would leave
+'every box of every later suite silent.
 '@TestCleanup
 Private Sub TestCleanup()
+    Messenger.Disarm
+
     If Not Assert Is Nothing Then
         Assert.Flush
     End If
@@ -1561,6 +1567,71 @@ Public Sub TestWarnStaysQuietWithoutATranslationSheet()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestWarnStaysQuietWithoutATranslationSheet", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title An armed messenger takes the warning box and writes it down.
+'@details
+'ShowMessage is the one box of the whole linelist event surface, and every
+'refusal of the button, ribbon and geo modules comes through it. A script
+'driving the workbook arms the messenger, and this is what says the box goes
+'into the record and the call comes straight back. The fixture is seeded, so a
+'disarmed run here would put a real box on screen and stop the whole run.
+'The recorded line carries the title in front of the message.
+'@TestMethod("EventLinelist")
+Public Sub TestWarnGoesThroughTheMessengerWhileArmed()
+    CustomTestSetTitles Assert, TESTMODULE, "TestWarnGoesThroughTheMessengerWhileArmed"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+
+    SeedTranslationSheet FixtureWkb
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    Messenger.Arm FixtureWkb
+    sut.Warn "MSG_NotModify"
+    Messenger.Disarm
+
+    Assert.IsTrue Messenger.HasMessages(), "The warning box went into the record"
+    Assert.AreEqual "Error: Do not modify", Messenger.Messages(), _
+                    "The recorded line carries the title and the translated text"
+
+    Exit Sub
+TestFail:
+    Messenger.Disarm
+    CustomTestLogFailure Assert, "TestWarnGoesThroughTheMessengerWhileArmed", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title The failure box goes into the record with its detail behind it.
+'@details
+'Fail puts the detail behind the message with a colon, and the record keeps the
+'sentence the user would have read. Two calls give two lines, which is what lets
+'a wrapper answer everything one run swallowed.
+'@TestMethod("EventLinelist")
+Public Sub TestFailGoesThroughTheMessengerWithItsDetail()
+    CustomTestSetTitles Assert, TESTMODULE, "TestFailGoesThroughTheMessengerWithItsDetail"
+    On Error GoTo TestFail
+
+    Dim sut As EventLinelist
+
+    SeedTranslationSheet FixtureWkb
+    Set sut = EventLinelist.Create(FixtureWkb)
+
+    Messenger.Arm FixtureWkb
+    sut.Fail "MSG_ErrUpdate", "some detail"
+    sut.Warn "MSG_NotModify"
+    Messenger.Disarm
+
+    Assert.AreEqual "Error: Update failed: some detail" & vbNewLine & _
+                    "Error: Do not modify", _
+                    Messenger.Messages(), _
+                    "Both boxes are in the record, one line each, in order"
+
+    Exit Sub
+TestFail:
+    Messenger.Disarm
+    CustomTestLogFailure Assert, "TestFailGoesThroughTheMessengerWithItsDetail", _
                          Err.Number, Err.Description
 End Sub
 

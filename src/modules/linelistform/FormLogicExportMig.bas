@@ -3,7 +3,7 @@ Attribute VB_Name = "FormLogicExportMig"
 '@Folder("Linelist Forms")
 '@ModuleDescription("Complete code-behind of F_ExportMig -- migration, geo and other-linelist exports")
 '@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
-'@depends LLExporter, ApplicationState, OSFiles, TranslationObject, LLTranslation, LLLog, LinelistEventsManager, EventLinelist
+'@depends LLExporter, ApplicationState, OSFiles, TranslationObject, LLTranslation, LLLog, LinelistEventsManager, EventLinelist, Messenger
 
 ' This module is the complete code-behind of the F_ExportMig form and is
 ' copied into the form at deployment, so every control callback, the
@@ -178,9 +178,9 @@ Private Sub PromptOtherLinelistPath()
     If Not io.HasValidFile Then Exit Sub
 
     If LCase$(io.File()) = LCase$(ThisWorkbook.FullName) Then
-        MsgBox tradmess.TranslatedValue("MSG_ExportMigConflict"), _
-               vbExclamation + vbOKOnly, _
-               tradmess.TranslatedValue("MSG_Migration")
+        Messenger.Show tradmess.TranslatedValue("MSG_ExportMigConflict"), vbOK, _
+                       vbExclamation + vbOKOnly, _
+                       tradmess.TranslatedValue("MSG_Migration")
         Exit Sub
     End If
 
@@ -259,8 +259,8 @@ ErrHand:
     failDetail = Err.Description
     On Error Resume Next
     LogFailureLine "export-migration", failDetail
-    MsgBox tradmess.TranslatedValue("MSG_ErrHandExport"), _
-           vbOKOnly + vbCritical, tradmess.TranslatedValue("MSG_Error")
+    Messenger.Show tradmess.TranslatedValue("MSG_ErrHandExport"), vbOK, _
+                   vbOKOnly + vbCritical, tradmess.TranslatedValue("MSG_Error")
 End Sub
 
 ' @description Export the current linelist: the migration file, the geobase

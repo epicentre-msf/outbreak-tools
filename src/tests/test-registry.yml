@@ -1228,6 +1228,13 @@ suites:
       # the whole run. It reaches PrepareGeoFixture and GeoFixtureWriteCell in
       # GeoTestFixture under `helpers`; its other helper calls are unqualified,
       # so they resolve to TestHelpersLite.
+      # Two tests arm Messenger (under `general`) over a seeded fixture and
+      # read the box out of its record: ShowMessage is the one box of the whole
+      # linelist event surface and it now goes through the messenger. Those two
+      # are the only tests here that seed the translation sheet AND raise a box,
+      # so a disarmed run would put a real dialog on screen. TestCleanup calls
+      # Messenger.Disarm for every test, because the messenger is a default
+      # instance the whole run shares.
       - module: TestEventLinelist
         covers: [EventLinelist]
       # TestEventLinelistSheets drives the four heavy members of EventLinelist
