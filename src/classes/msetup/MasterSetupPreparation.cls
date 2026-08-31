@@ -12,7 +12,7 @@ Attribute VB_Description = "Implementation for Master Setup preparation and conf
 '@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Implementation for Master Setup preparation and configuration")
-'@depends MasterSetupVariables, DropdownLists, LLChoices, UpdatedValues, ApplicationState, ProjectError, HiddenNames, BetterArray
+'@depends MasterSetupVariables, DropdownLists, LLChoices, UpdatedValues, ApplicationState, ProjectError, HiddenNames, BetterArray, Messenger
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -126,6 +126,7 @@ Public Sub Prepare(Optional ByVal excelApplication As Application)
     EnsureVariables
     EnsureUpdatedRegistry
     EnsureReportSheet
+    EnsureWorkbookFlags
 
     On Error GoTo 0
 
@@ -673,6 +674,29 @@ Private Sub EnsureSheetTag(ByVal targetSheet As Worksheet, ByVal tagValue As Str
     Set store = HiddenNames.Create(targetSheet)
     store.EnsureName SHEET_TAG_NAME, tagValue, HiddenNameTypeString
     store.SetValue SHEET_TAG_NAME, tagValue
+End Sub
+
+'@Description("Seed the workbook-level flags of the master setup.")
+'@details
+'Seeds the silence switch, __OBT__SILENT_OPERATIONS__, with "No". "No" means
+'the master setup shows every message box it has always shown, so a person
+'pressing buttons sees no change at all. The name and both values are read off
+'Messenger, which is the one place that string is written on the VBA side.
+'
+'EnsureName leaves a name that is already there alone, so a second Prepare on a
+'master setup someone switched to "Yes" keeps that value.
+'
+'THE R PACKAGE DOES NOT DRIVE THIS WORKBOOK TODAY. The entry-point plan names
+'three workbooks and seven operations, and none of them is on the master setup.
+'The flag is seeded here anyway so the fourth workbook is not the one that was
+'forgotten when an operation is added to it: the 48 message boxes of
+'EventsMasterSetupRibbon and MasterSetupExports then have a switch to read, and
+'no caller has to go and create it first.
+Private Sub EnsureWorkbookFlags()
+    Dim workbookStore As HiddenNames
+
+    Set workbookStore = HiddenNames.Create(EnsureWorkbook)
+    workbookStore.EnsureName Messenger.SwitchName, Messenger.SwitchOffValue, HiddenNameTypeString
 End Sub
 
 '@Description("Publish the Variable Name column range as a hidden workbook name for downstream formulas.")

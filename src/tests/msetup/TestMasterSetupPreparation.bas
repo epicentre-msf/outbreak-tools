@@ -415,6 +415,58 @@ Fail:
     ReportTestFailure "TestEnsureDropdownsLoadsLanguages"
 End Sub
 
+'@TestMethod("MasterSetupPreparation.Silence")
+Public Sub TestPrepareSeedsTheSilenceSwitch()
+    CustomTestSetTitles Assert, "MasterSetupPreparation", "TestPrepareSeedsTheSilenceSwitch"
+    On Error GoTo Fail
+
+    'A master setup that predates the switch carries no such name, and it has
+    'to behave exactly as it always has until Prepare runs.
+    Assert.IsFalse Messenger.ReadStoredSwitch(FixtureWorkbook), _
+        "A workbook with no switch name should read as not silent"
+
+    Subject.Prepare Application
+
+    Dim store As HiddenNames
+    Set store = HiddenNames.Create(FixtureWorkbook)
+
+    Assert.AreEqual Messenger.SwitchOffValue, _
+        store.ValueAsString(Messenger.SwitchName), _
+        "The silence switch should be seeded No"
+    Assert.IsFalse Messenger.ReadStoredSwitch(FixtureWorkbook), _
+        "A master setup seeded No should read as not silent"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareSeedsTheSilenceSwitch"
+End Sub
+
+'@TestMethod("MasterSetupPreparation.Silence")
+Public Sub TestSecondPrepareKeepsTheSilenceValue()
+    CustomTestSetTitles Assert, "MasterSetupPreparation", "TestSecondPrepareKeepsTheSilenceValue"
+    On Error GoTo Fail
+
+    'EnsureName leaves a name that is already there alone, so a master setup
+    'someone switched to silent survives another Prepare.
+    Subject.Prepare Application
+
+    Dim store As HiddenNames
+    Set store = HiddenNames.Create(FixtureWorkbook)
+    store.SetValue Messenger.SwitchName, Messenger.SwitchOnValue
+
+    Subject.Prepare Application
+
+    Assert.AreEqual Messenger.SwitchOnValue, _
+        store.ValueAsString(Messenger.SwitchName), _
+        "A second Prepare should keep the value the switch holds"
+    Assert.IsTrue Messenger.ReadStoredSwitch(FixtureWorkbook), _
+        "A master setup holding Yes should read as silent"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestSecondPrepareKeepsTheSilenceValue"
+End Sub
+
 
 '@section Helpers
 '===============================================================================
