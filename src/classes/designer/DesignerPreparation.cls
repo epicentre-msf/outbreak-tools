@@ -12,7 +12,7 @@ Attribute VB_Description = "Prepares designer workbooks and ribbon settings"
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Prepares designer workbooks and persists ribbon settings through hidden names.")
-'@depends ProjectError, HiddenNames, Development, OSFiles, CustomTable, BetterArray, DropdownLists
+'@depends ProjectError, HiddenNames, Development, OSFiles, CustomTable, BetterArray, DropdownLists, Messenger
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -30,7 +30,7 @@ Option Explicit
 'T_Multi table on the GenerateMultiple worksheet, and registers hidden
 'sheets with the development manager. Also provides methods to read and
 'write ribbon checkbox flags persisted through workbook-level hidden names.
-'@depends HiddenNames, Development, OSFiles, CustomTable, BetterArray, DropdownLists
+'@depends HiddenNames, Development, OSFiles, CustomTable, BetterArray, DropdownLists, Messenger
 
 
 '@section State
@@ -55,6 +55,10 @@ Private Const FLAG_INSTRUCT As String = "chkInstruct"
 'The build path switch. Off by default: the build runs in a hidden
 'instance on Windows, and Mac ignores the flag.
 Private Const FLAG_BUILD_IN_PLACE As String = "chkBuildInPlace"
+'The silence switch has no constant here. Its name and its two values live on
+'Messenger, which is the one place that string is written on the VBA side, and
+'the setup and the generated linelist seed the same flag from the same three
+'properties. See EnsureDefaultFlags.
 Private Const FLAG_ON As String = "Yes"
 Private Const FLAG_OFF As String = "No"
 
@@ -886,17 +890,25 @@ Private Sub EnsureHiddenStore()
 End Sub
 
 '@label:ensure-default-flags
-'@sub-title Ensure the default ribbon flags exist in the hidden store
+'@sub-title Ensure the default workbook flags exist in the hidden store
 '@details
 'Calls EnsureName for chkAlert and chkInstruct with "Yes" as default and
 'for chkBuildInPlace with "No", creating the hidden names if they do not
 'already exist. SetFlag updates a name and raises on a missing one, so a
 'designer whose names predate a flag gets it here, on the first read or
 'write of any flag.
+'
+'The fourth flag is the silence switch, __OBT__SILENT_OPERATIONS__, seeded
+'"No". "No" means the designer shows every message box it has always shown, so
+'a person pressing buttons sees no change at all. The name and both values are
+'read off Messenger rather than written again here. A designer that predates
+'the switch holds no such name, and Messenger.ReadStoredSwitch answers False
+'for a name that is not there, so it behaves as it did until this runs.
 Private Sub EnsureDefaultFlags()
     this.store.EnsureName FLAG_ALERT, FLAG_ON, HiddenNameTypeString
     this.store.EnsureName FLAG_INSTRUCT, FLAG_ON, HiddenNameTypeString
     this.store.EnsureName FLAG_BUILD_IN_PLACE, FLAG_OFF, HiddenNameTypeString
+    this.store.EnsureName Messenger.SwitchName, Messenger.SwitchOffValue, HiddenNameTypeString
 End Sub
 
 '@label:resolve-worksheet

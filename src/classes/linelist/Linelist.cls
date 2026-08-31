@@ -58,7 +58,8 @@ Option Explicit
 '@depends LinelistSpecs, LLdictionary, LLSheets, TranslationObject,
 '  LLFormat, DropdownLists, CustomPivotTable, TemporaryRepos,
 '  Buttons, CodeTransfer, Passwords, HiddenNames, AnaTabIds,
-'  ShowHideStore, AnalysisRanges, Checking, BetterArray, LLTranslation
+'  ShowHideStore, AnalysisRanges, Checking, BetterArray, LLTranslation,
+'  Messenger
 '@version 1.6 (2026-08-28)
 
 
@@ -954,7 +955,7 @@ End Function
 'Performs three setup tasks on the output workbook:
 '1. Creates workbook-level hidden names for the global flags: update list auto,
 '   import done, geo update manual, show all optionals, export init, number of
-'   exports and epi week start.
+'   exports, epi week start and the silence switch.
 '2. Creates four ListObjects on the import report sheet for tracking sheets
 '   and variables not imported/found.
 '3. Asks AnaTabIds to build its registry table on the analysis sheet. That
@@ -985,6 +986,16 @@ Private Sub PrepareTemporarySheets()
     wkbNames.SetValue "RNG_NumberExports", this.specs.Value("numberofexports")
     wkbNames.EnsureName "RNG_EpiWeekStart", this.specs.Value("epiweekstart"), HiddenNameTypeString
     wkbNames.SetValue "RNG_EpiWeekStart", this.specs.Value("epiweekstart")
+
+    'The silence switch, seeded "No". "No" means the linelist shows every
+    'message box it has always shown, so a person opening the file sees no
+    'change at all. Every linelist built from here carries the name from its
+    'first opening; one built before this change holds no such name, and
+    'Messenger.ReadStoredSwitch answers False for a name that is not there, so
+    'nothing about it changes. The name and both values are read off Messenger,
+    'the one place that string is written on the VBA side.
+    wkbNames.EnsureName Messenger.SwitchName, Messenger.SwitchOffValue, HiddenNameTypeString
+    wkbNames.SetValue Messenger.SwitchName, Messenger.SwitchOffValue
 
     'Import report sheet - create ListObjects
     sheetName = this.specs.TemporarySheetName(TempSheetImport)
@@ -1215,7 +1226,7 @@ Private Sub TransferAllCode(ByVal transfer As CodeTransfer, _
 
     Set codesList = New BetterArray
 
-    'Transfer classes (36 classes).
+    'Transfer classes (37 classes).
     '
     'TWO Push CALLS, AND IT HAS TO STAY THAT WAY
     'A VBA logical line takes at most 25 line-continuation characters, and one
@@ -1235,7 +1246,7 @@ Private Sub TransferAllCode(ByVal transfer As CodeTransfer, _
                    "ChoiceKeys", "ImportMetadata", "ImportReport", _
                    "Graphs", "AnaTabIds", "AnalysisRanges", _
                    "ExportButton", "FilteredData", _
-                   "GeoFormCache", "EventLinelist"
+                   "GeoFormCache", "EventLinelist", "Messenger"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)

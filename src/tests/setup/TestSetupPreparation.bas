@@ -14,7 +14,8 @@ Option Explicit
 '   calls Subject.Prepare, then asserts the expected side effects.
 '
 ' @depends SetupPreparation, Development, BetterArray, CustomTest,
-'   TestHelpersLite, DropdownLists, UpdatedValues, CustomTable, Checking
+'   TestHelpersLite, DropdownLists, UpdatedValues, CustomTable, Checking,
+'   HiddenNames, Messenger
 '
 ' The fixture workbook is rebuilt before every test via TestInitialize so each
 ' test runs in isolation. Dropdown content is verified by checking the
@@ -670,6 +671,66 @@ Public Sub TestRebuildingTheRegistryTwiceLeavesOneSet()
 
 Fail:
     ReportTestFailure "TestRebuildingTheRegistryTwiceLeavesOneSet"
+End Sub
+
+'@TestMethod("SetupPreparation.Silence")
+Public Sub TestPrepareSeedsTheSilenceSwitch()
+    CustomTestSetTitles Assert, "SetupPreparation", "TestPrepareSeedsTheSilenceSwitch"
+    On Error GoTo Fail
+
+    Subject.Prepare Manager
+
+    Assert.IsFalse Subject.WorkbookStore Is Nothing, _
+        "Prepare should create the workbook-level store"
+    Assert.AreEqual Messenger.SwitchOffValue, _
+        Subject.WorkbookStore.ValueAsString(Messenger.SwitchName), _
+        "The silence switch should be seeded No"
+    Assert.IsFalse Messenger.ReadStoredSwitch(FixtureWorkbook), _
+        "A setup seeded No should read as not silent"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareSeedsTheSilenceSwitch"
+End Sub
+
+'@TestMethod("SetupPreparation.Silence")
+Public Sub TestSecondPrepareKeepsTheSilenceValue()
+    CustomTestSetTitles Assert, "SetupPreparation", "TestSecondPrepareKeepsTheSilenceValue"
+    On Error GoTo Fail
+
+    'A run that switched the setup to silent must survive another Prepare.
+    'EnsureName leaves a name that is already there alone, and this is what
+    'says so.
+    Subject.Prepare Manager
+    Subject.WorkbookStore.SetValue Messenger.SwitchName, Messenger.SwitchOnValue
+
+    Subject.Prepare Manager
+
+    Assert.AreEqual Messenger.SwitchOnValue, _
+        Subject.WorkbookStore.ValueAsString(Messenger.SwitchName), _
+        "A second Prepare should keep the value the switch holds"
+    Assert.IsTrue Messenger.ReadStoredSwitch(FixtureWorkbook), _
+        "A setup holding Yes should read as silent"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestSecondPrepareKeepsTheSilenceValue"
+End Sub
+
+'@TestMethod("SetupPreparation.Silence")
+Public Sub TestUnpreparedSetupReadsAsNotSilent()
+    CustomTestSetTitles Assert, "SetupPreparation", "TestUnpreparedSetupReadsAsNotSilent"
+    On Error GoTo Fail
+
+    'A setup file that predates the switch carries no such name. It has to
+    'behave exactly as it always has, and this is the workbook that proves it:
+    'Prepare has not run on it.
+    Assert.IsFalse Messenger.ReadStoredSwitch(FixtureWorkbook), _
+        "A workbook with no switch name should read as not silent"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestUnpreparedSetupReadsAsNotSilent"
 End Sub
 
 '@section Helpers

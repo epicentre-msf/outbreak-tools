@@ -15,7 +15,7 @@ Option Explicit
 '@Folder("Setup")
 '@ModuleDescription("Orchestrates dropdown registration and updated values initialisation for setup workbooks")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
-'@depends BetterArray, DropdownLists, UpdatedValues, CustomTable, Checking, Development
+'@depends BetterArray, DropdownLists, UpdatedValues, CustomTable, Checking, Development, HiddenNames, Messenger
 
 '@class SetupPreparation
 '@description
@@ -25,6 +25,14 @@ Option Explicit
 'tables, and hands Development the sheets to hide and to protect.
 'EnsureDropdowns and ResetUpdatedRegistry run those two steps on their own,
 'Dropdowns answers the dropdown manager and HostWorkbook the workbook.
+'
+'THE WORKBOOK-LEVEL STORE IS MADE HERE
+'-------------------------------------------------------------------------------
+'The setup kept its hidden names on a worksheet until now: EventSetup builds a
+'store over the registry worksheet for its translation counter, which is
+'worksheet scope. The silence switch is a fact about the whole file, so Prepare
+'makes a workbook-level store and seeds the switch on it. WorkbookStore answers
+'that store, and EventSetup reads the switch through Messenger.
 '
 'RUNNING PREPARE MORE THAN ONCE
 '-------------------------------------------------------------------------------
@@ -41,6 +49,8 @@ Option Explicit
 '  ResolveOrCreateWorksheet.
 '- the hidden and protected sheet lists are handed to Development, which skips
 '  a name it already holds.
+'- the workbook flags are ensured rather than written, so a setup that already
+'  carries the silence switch keeps the value it holds; see EnsureWorkbookFlags.
 
 
 '@section State
@@ -51,6 +61,7 @@ Private Type TSetupPreparation
     registrySheet As Worksheet       'Worksheet hosting updated values registry
     dropdowns   As DropdownLists    'Dropdown manager bound to drop sheet
     updater     As UpdatedValues    'Updated values watcher bound to registry sheet
+    wkbStore    As HiddenNames      'Workbook-level hidden names manager
 End Type
 
 Private this As TSetupPreparation
@@ -125,8 +136,8 @@ End Sub
 '@details
 'Runs the complete preparation sequence: registers all dropdown list objects,
 'rebuilds the updated values registry, applies data validations to the
-'Dictionary, Exports, and Analysis tables, then registers hidden and
-'protected sheets via the supplied development manager.
+'Dictionary, Exports, and Analysis tables, seeds the workbook-level flags, then
+'registers hidden and protected sheets via the supplied development manager.
 '
 'The manager is tested first so a missing one stops the run before any
 'worksheet is written. RibbonDev.EnsureDevelopment answers Nothing on any
@@ -143,6 +154,7 @@ Public Sub Prepare(ByRef manager As Development)
     EnsureDropdowns
     ResetUpdatedRegistry
     ApplyValidationsAndUpdates
+    EnsureWorkbookFlags
     EnsureHiddenSheets manager
     EnsureProtectedSheets manager
 End Sub
@@ -177,6 +189,20 @@ Public Sub ResetUpdatedRegistry()
     ResetRegistryStatuses
 End Sub
 
+
+'@label:workbook-store
+'@prop-title Workbook-level hidden names of the setup
+'@details
+'Returns the HiddenNames manager bound to the setup workbook itself, creating
+'it on first access. This is the store the silence switch sits in. EventSetup's
+'own store is bound to the registry worksheet and holds worksheet-scoped names,
+'so the two do not overlap.
+'@return HiddenNames. The workbook-level store.
+'@export
+Public Property Get WorkbookStore() As HiddenNames
+    EnsureWorkbookStore
+    Set WorkbookStore = this.wkbStore
+End Property
 
 '@label:dropdowns
 '@prop-title Dropdown manager for external callers
@@ -214,6 +240,34 @@ Private Sub ResetCaches()
     Set this.updater = Nothing
     Set this.dropSheet = Nothing
     Set this.registrySheet = Nothing
+    Set this.wkbStore = Nothing
+End Sub
+
+'@label:ensure-workbook-store
+'@sub-title Ensure the workbook-level hidden names store exists
+'@details
+'Creates the HiddenNames instance over the host workbook on first access.
+'HiddenNames.Create walks the whole Names collection, which its own header
+'calls the largest cost that class has, so the store is built once and kept.
+Private Sub EnsureWorkbookStore()
+    If this.wkbStore Is Nothing Then
+        Set this.wkbStore = HiddenNames.Create(EnsureWorkbook)
+    End If
+End Sub
+
+'@label:ensure-workbook-flags
+'@sub-title Seed the workbook-level flags of the setup
+'@details
+'Seeds the silence switch, __OBT__SILENT_OPERATIONS__, with "No". "No" means
+'the setup shows every message box it has always shown, so a person pressing
+'buttons sees no change at all. The name and both values are read off
+'Messenger, which is the one place that string is written on the VBA side.
+'
+'EnsureName leaves a name that is already there alone, so a second Prepare on a
+'setup someone switched to "Yes" keeps that value.
+Private Sub EnsureWorkbookFlags()
+    EnsureWorkbookStore
+    this.wkbStore.EnsureName Messenger.SwitchName, Messenger.SwitchOffValue, HiddenNameTypeString
 End Sub
 
 '@label:ensure-dropdown-manager

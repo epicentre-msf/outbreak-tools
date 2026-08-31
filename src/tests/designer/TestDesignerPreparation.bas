@@ -101,6 +101,57 @@ Fail:
     ReportTestFailure "TestPrepareSeedsFlags"
 End Sub
 
+'@TestMethod("DesignerPreparation.Silence")
+Public Sub TestPrepareSeedsTheSilenceSwitch()
+    CustomTestSetTitles Assert, "DesignerPreparation", "TestPrepareSeedsTheSilenceSwitch"
+    On Error GoTo Fail
+
+    Dim subject As DesignerPreparation
+    Set subject = DesignerPreparation.Create(FixtureWorkbook)
+    subject.Prepare Nothing, TranslationsSource
+
+    Assert.AreEqual Messenger.SwitchOffValue, _
+        subject.HiddenStore.ValueAsString(Messenger.SwitchName), _
+        "The silence switch should be seeded No."
+    Assert.IsFalse Messenger.ReadStoredSwitch(FixtureWorkbook), _
+        "A designer seeded No should read as not silent."
+
+    'Someone switching the designer to silent has to survive another Prepare,
+    'because EnsureName leaves a name that is already there alone.
+    subject.HiddenStore.SetValue Messenger.SwitchName, Messenger.SwitchOnValue
+    subject.Prepare Nothing, TranslationsSource
+    Assert.IsTrue Messenger.ReadStoredSwitch(FixtureWorkbook), _
+        "A second Prepare should keep the value the switch holds."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareSeedsTheSilenceSwitch"
+End Sub
+
+'@TestMethod("DesignerPreparation.Silence")
+Public Sub TestSwitchArrivesOnADesignerThatPredatesIt()
+    CustomTestSetTitles Assert, "DesignerPreparation", "TestSwitchArrivesOnADesignerThatPredatesIt"
+    On Error GoTo Fail
+
+    'A designer built before the switch existed holds no such name, and it has
+    'to behave exactly as it always has until something ensures the flags.
+    Assert.IsFalse Messenger.ReadStoredSwitch(FixtureWorkbook), _
+        "A workbook with no switch name should read as not silent."
+
+    'EnsureDefaultFlags runs on the first read of any flag, so touching the
+    'alert flag is what brings the switch in.
+    Dim subject As DesignerPreparation
+    Set subject = DesignerPreparation.Create(FixtureWorkbook)
+    Assert.IsTrue subject.GetFlag("chkAlert", True), "Reading a flag should seed the defaults."
+    Assert.AreEqual Messenger.SwitchOffValue, _
+        subject.HiddenStore.ValueAsString(Messenger.SwitchName), _
+        "Reading a flag should bring the silence switch in, seeded No."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestSwitchArrivesOnADesignerThatPredatesIt"
+End Sub
+
 '@TestMethod("DesignerPreparation")
 Public Sub TestPrepareHidesInternalSheets()
     CustomTestSetTitles Assert, "DesignerPreparation", "TestPrepareHidesInternalSheets"
