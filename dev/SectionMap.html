@@ -50,8 +50,20 @@ RefersTo formula and that string is length capped, so a sheet with thirty
 sections would run a single name holding them all past the cap. The section
 title is written last and truncated, which keeps the two numbers safe even
 when a designer writes a long one.</p>
+</div>
+</details>
+<details open class="doc-section" id="who-builds-the-store">
+<summary>WHO BUILDS THE STORE</summary>
+<div class="section-body">
+<p>Reading the names goes through a HiddenNames, and building one walks every
+name of the sheet, three reads per name. A data entry sheet carries one name
+per variable, so that walk is what Create costs on a sheet whose map is a
+dozen names. A caller that already holds a store for the sheet hands it in
+and the map reads through it; the linelist button module does, from the store
+EventLinelist keeps per sheet. A caller with none, SectionBuilder and the
+tests, lets the map build its own.</p>
 <p><strong>Depends on:</strong> <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, The hidden names the map is kept under, What separates the two numbers and the name inside one stored block, How many fields a stored block holds. The title is the last field, so the, split is capped here and a title carrying the separator arrives whole., How much of a section name is kept. A defined name holds its value in its, RefersTo formula and that string is length capped, so the name is cut before, it can push the two numbers out.</p>
-<p><strong>Version:</strong> 1.0 (2026-08-06)</p>
+<p><strong>Version:</strong> 1.1 (2026-09-01)</p>
 </div>
 </details>
 <details open class="doc-section" id="instantiation">
@@ -61,7 +73,8 @@ when a designer writes a long one.</p>
 <p><em>create</em></p>
 <p><strong>Read the section map of one worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal wksh As Worksheet) As SectionMap
+<pre><code class="language-vb">Public Function Create(ByVal wksh As Worksheet, _
+                       Optional ByVal names As HiddenNames = Nothing) As SectionMap
 </code></pre>
 <p>The factory and the load it runs.</p>
 <p>A sheet with no map on it answers a Count of 0. Every reader tests the count
@@ -70,23 +83,28 @@ class existed both come back through the same path.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>wksh</code>: Worksheet. The sheet the map belongs to.</li>
+<li><code>names</code>: HiddenNames. Optional. A store already built over that sheet.
+Left out, the map builds its own, which walks every name of the sheet.</li>
 </ul>
 <p><strong>Returns:</strong> SectionMap. The map, ready to read and to add to.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When the worksheet is Nothing.</li>
+<li>ProjectError.InvalidArgument When the store belongs to another sheet
+or to a workbook.</li>
 </ul>
 <hr />
 <h3 id="initialise">Initialise <a class="anchor-link" href="#initialise">#</a></h3>
 <p><em>initialise</em></p>
 <p><strong>Bind to a sheet and load the blocks it carries</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Initialise(ByVal wksh As Worksheet)
+<pre><code class="language-vb">Public Sub Initialise(ByVal wksh As Worksheet, ByVal names As HiddenNames)
 </code></pre>
 <p>Public because the factory calls it on a fresh instance.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>wksh</code>: Worksheet. The sheet the map belongs to.</li>
+<li><code>names</code>: HiddenNames. The store to read through, or Nothing to build one.</li>
 </ul>
 <hr />
 </div>
@@ -397,7 +415,7 @@ the belt to that pair of braces.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (10 file(s))</summary>
+<summary>Used in (11 file(s))</summary>
 <ul>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="SectionBuilder.html">SectionBuilder.cls</a></li>
@@ -409,6 +427,7 @@ the belt to that pair of braces.</p>
 <li>TestSectionMap.bas</li>
 <li>TestSectionShowHide.bas</li>
 <li>TestShowHide.bas</li>
+<li>TestShowHideTiming.bas</li>
 </ul>
 </details>
   </main>

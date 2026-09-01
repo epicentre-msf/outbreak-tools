@@ -50,7 +50,7 @@ them into the generation report right after Prepare returns.</p>
 the unfinished workbook as __temp.xlsb in the temporary repository, closes
 it and answers the path, so the report can name what the user may open.
 No question is asked: the build may run in an instance nobody sees.</p>
-<p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLSheets.html">LLSheets</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="LLFormat.html">LLFormat</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="CustomPivotTable.html">CustomPivotTable</a>, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="Buttons.html">Buttons</a>, <a href="CodeTransfer.html">CodeTransfer</a>, <a href="Passwords.html">Passwords</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="ShowHideStore.html">ShowHideStore</a>, <a href="AnalysisRanges.html">AnalysisRanges</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, <a href="LLTranslation.html">LLTranslation</a></p>
+<p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLSheets.html">LLSheets</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="LLFormat.html">LLFormat</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="CustomPivotTable.html">CustomPivotTable</a>, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="Buttons.html">Buttons</a>, <a href="CodeTransfer.html">CodeTransfer</a>, <a href="Passwords.html">Passwords</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="ShowHideStore.html">ShowHideStore</a>, <a href="AnalysisRanges.html">AnalysisRanges</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="Messenger.html">Messenger</a></p>
 <p><strong>Version:</strong> 1.6 (2026-08-28)</p>
 </div>
 </details>
@@ -332,9 +332,9 @@ prepared.</li>
 <pre><code class="language-vb">Public Sub SaveLL()
 </code></pre>
 <p>Saves the output workbook in .xlsb format with the configured password,
-protects the workbook structure via Passwords.Protect, activates an
-appropriate visible sheet (admin or instruction), closes the workbook,
-and cleans up temporary files via TemporaryRepos.Reset.</p>
+protects the workbook structure via Passwords.Protect, activates the sheet the
+user should open the file on, closes the workbook and cleans up temporary files
+via TemporaryRepos.Reset.</p>
 <p>Both cached references to the workbook are dropped once it is closed. This
 instance held one and LinelistSpecs held the other, and a read of either after
 the close raised an automation error. The read that mattered was the discard
@@ -392,13 +392,21 @@ resetting specifications after construction.</p>
 </code></pre>
 <p>The generation stops wherever its last step left it, which is the Geo sheet,
 and a workbook is saved on the sheet that was active. So the sheet chosen here
-is the sheet the user sees the first time they open the linelist.</p>
-<p>The instruction sheet is the wanted one and the admin sheet is the answer on a
-build that carries no instructions. Neither is always there: the instruction
-sheet belongs to template builds and goes very hidden when the specification
-turns instructions off, and the admin sheet belongs to the builds that have no
-template. A build that answers neither used to be left on Geo, so the first
-visible worksheet closes the list.</p>
+is the sheet the user sees the first time they open the linelist. Choosing it
+belongs to the build alone: EventLinelist used to choose again on every open,
+and two places deciding one thing is how the rule drifted apart.</p>
+<h2 id="int-the-instruction-sheet-then-the-first-sheet-of-the-setup">THE INSTRUCTION SHEET, THEN THE FIRST SHEET OF THE SETUP</h2>
+<p>The instruction sheet is the wanted one and it is not always there. It belongs
+to template builds, and a specification that turns instructions off carries it
+very hidden, so a visible one is what counts.</p>
+<p>A build without it lands on the first worksheet the SETUP declares -- the first
+name in the dictionary's sheet list, which is the first data entry sheet the
+user works in. That is not the same as the first visible worksheet of the
+workbook: the transfer puts sheets of its own in front of the ones this build
+adds, and a walk in tab order can answer one of those.</p>
+<p>The first visible worksheet closes the list, for a workbook that answers
+neither. It is a guard rather than a choice -- without it the file would be
+saved on Geo, which is where the generation stops.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>outWkb</code>: Workbook. The generated workbook.</li>
@@ -418,6 +426,23 @@ visible worksheet closes the list.</p>
 <li><code>sheetName</code>: String. The name to look for.</li>
 </ul>
 <p><strong>Returns:</strong> Worksheet. The worksheet, or Nothing when it is missing or hidden.</p>
+<hr />
+<h3 id="int-firstsetupsheet">FirstSetupSheet <a class="anchor-link" href="#int-firstsetupsheet">#</a></h3>
+<p><em>first-setup-sheet</em></p>
+<p><strong>The worksheet of the first sheet name the setup declares</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FirstSetupSheet() As Worksheet
+</code></pre>
+<p>DictionarySheetNames answers the dictionary's sheet names in the order the
+setup lists them, and Prepare adds one data entry worksheet per name in that
+same order. So the first name is the first worksheet of the setup.</p>
+<p>The lookup goes through Wksh rather than the workbook, because a dictionary
+name longer than the 31 characters Excel takes was created under a shortened
+one and only Wksh maps the two. Wksh raises when nothing answers, which on a
+build that added no data entry sheet at all is the ordinary case and not a
+fault, so the raise is swallowed and the caller moves on to its guard.</p>
+<p><strong>Returns:</strong> Worksheet. The first setup worksheet, or Nothing when there is none
+to see.</p>
 <hr />
 <h3 id="int-firstvisiblesheet">FirstVisibleSheet <a class="anchor-link" href="#int-firstvisiblesheet">#</a></h3>
 <p><em>first-visible-sheet</em></p>
@@ -593,7 +618,7 @@ the admin sheet, and code transfer.</p>
 <ol>
 <li>Creates workbook-level hidden names for the global flags: update list auto,
 import done, geo update manual, show all optionals, export init, number of
-exports and epi week start.</li>
+exports, epi week start and the silence switch.</li>
 <li>Creates four ListObjects on the import report sheet for tracking sheets
 and variables not imported/found.</li>
 <li>Asks AnaTabIds to build its registry table on the analysis sheet. That
@@ -761,7 +786,7 @@ error attribution across all methods in this class.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (59 file(s))</summary>
+<summary>Used in (61 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="AnalysisRanges.html">AnalysisRanges.cls</a></li>
@@ -795,6 +820,7 @@ error attribution across all methods in this class.</p>
 <li>EventsLinelistRibbon.bas</li>
 <li>ImportChecking.bas</li>
 <li>LinelistEventsManager.bas</li>
+<li>LinelistRun.bas</li>
 <li>FormLogicAdvanced.bas</li>
 <li>FormLogicEpiWeek.bas</li>
 <li>FormLogicExport.bas</li>
@@ -817,6 +843,7 @@ error attribution across all methods in this class.</p>
 <li>TestHelpersLite.bas</li>
 <li>TestCodeTransfer.bas</li>
 <li>TestCustomLinelistFunctions.bas</li>
+<li>TestEventLinelist.bas</li>
 <li>TestEventLinelistSheets.bas</li>
 <li>TestLinelist.bas</li>
 <li>TestLinelistSpecs.bas</li>

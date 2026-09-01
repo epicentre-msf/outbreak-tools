@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Messenger - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>Messenger</h1>
+<p>Every message box the R package can walk into is shown from here. While the
+messenger is armed it shows nothing: it writes the text down and answers the
+caller with the answer that caller named. While it is disarmed it calls MsgBox
+with exactly what it was given and answers the click. A person opening the
+workbook and pressing buttons sees the boxes they have always seen.</p>
+<details open class="doc-section" id="the-record-lives-on-the-default-instance">
+<summary>THE RECORD LIVES ON THE DEFAULT INSTANCE</summary>
+<div class="section-body">
+<p>Callers write Messenger.Show and this class has no Create. One Create per call
+site would give each caller its own instance and its own record, and Messages
+would come back empty at the end of the run. One instance, one record.</p>
+</div>
+</details>
+<details open class="doc-section" id="arm-and-disarm-come-in-pairs">
+<summary>ARM AND DISARM COME IN PAIRS</summary>
+<div class="section-body">
+<p>A wrapper arms the messenger as its first act and disarms it in its exit path,
+in the same Excel session. Nothing is written to the file, so a run that dies
+part way cannot leave a delivered workbook mute.</p>
+<p>Arm starts a run: it empties the record. Disarm ends the silence and keeps the
+record, because the summary a wrapper answers is read after the run is over.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-force-state-and-carryon">
+<summary>THE FORCE STATE AND CarryOn</summary>
+<div class="section-body">
+<p>Some questions ask whether to push past a warning. A call site writes
+Messenger.CarryOn() as its silent answer to one of those: vbYes when the run
+was armed with force, vbNo otherwise. Force is the only thing CarryOn reads,
+and Disarm drops it.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-stored-switch-covers-the-open-path">
+<summary>THE STORED SWITCH COVERS THE OPEN PATH</summary>
+<div class="section-body">
+<p>A box that fires from Workbook_Open fires before any Application.Run can reach
+a wrapper, so nothing in process can arm the messenger in time.
+<strong>OBT__SILENT_OPERATIONS</strong> is read off the workbook itself, and the open path
+arms on what it answers:</p>
+<p>If Messenger.ReadStoredSwitch(ThisWorkbook) Then Messenger.Arm ThisWorkbook</p>
+<p>The read goes through HiddenNames.QuickValue, three COM crossings with no
+instance behind them. HiddenNames.Create walks the whole Names collection of
+the host, which is the largest cost that class has, and the open path reads
+one value once.</p>
+<p>A missing name reads as No, so a workbook built before the switch existed
+behaves exactly as it did.</p>
+</div>
+</details>
+<details open class="doc-section" id="why-a-class">
+<summary>WHY A CLASS</summary>
+<div class="section-body">
+<p>Six classes show a box today, and a class calling a standard module is out of
+scope (conventions.md section 9). A class serves the modules and the classes
+both.</p>
+<p><strong>Depends on:</strong> ProjectError, <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, The switch is stored at workbook level as a string holding Yes or No. The, name is settled on both sides of the wire and this is where the VBA side, keeps it: the three workbooks seed the flag through Messenger.SwitchName., What separates a title from its message on a recorded line.</p>
+<p><strong>Version:</strong> 1.0 (2026-08-31)</p>
+</div>
+</details>
+<details open class="doc-section" id="lifecycle">
+<summary>Lifecycle</summary>
+<div class="section-body">
+<h3 id="reset">Reset <a class="anchor-link" href="#reset">#</a></h3>
+<p><em>reset</em></p>
+<p><strong>Put the messenger back to its opening state</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Reset()
+</code></pre>
+<p>Empties the record, ends the silence, drops the force state and forgets the
+host. Arm calls this, so a new run never reads the messages of the run before.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="arming">
+<summary>Arming</summary>
+<div class="section-body">
+<h3 id="arm">Arm <a class="anchor-link" href="#arm">#</a></h3>
+<p><em>arm</em></p>
+<p><strong>Turn the boxes off for the length of this call</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Arm(ByVal hostBook As Workbook, Optional ByVal force As Boolean = False)
+</code></pre>
+<p>Reads nothing from the file. The wrapper decides, and the wrapper disarms in
+its exit path. The record of any run before is emptied here.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The workbook this run is about.</li>
+<li><code>force</code>: Boolean. Optional, default False. True makes CarryOn answer vbYes,
+which is what pushes a run past a warning that would otherwise stop it.</li>
+</ul>
+<hr />
+<h3 id="disarm">Disarm <a class="anchor-link" href="#disarm">#</a></h3>
+<p><em>disarm</em></p>
+<p><strong>Turn the boxes back on</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Disarm()
+</code></pre>
+<p>The record is kept. A wrapper disarms and then reads Messages for the summary
+it answers.</p>
+<hr />
+<h3 id="armed">Armed <a class="anchor-link" href="#armed">#</a></h3>
+<p><em>armed</em></p>
+<p><strong>Whether the boxes are off right now</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Armed() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True while the messenger is armed.</p>
+<hr />
+<h3 id="hostbook">HostBook <a class="anchor-link" href="#hostbook">#</a></h3>
+<p><em>host-book</em></p>
+<p><strong>The workbook the current run is about</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HostBook() As Workbook
+</code></pre>
+<p><strong>Returns:</strong> Workbook. What Arm was given, or Nothing.</p>
+<hr />
+<h3 id="carryon">CarryOn <a class="anchor-link" href="#carryon">#</a></h3>
+<p><em>carry-on</em></p>
+<p><strong>The silent answer to a question that asks whether to push on</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function CarryOn() As VbMsgBoxResult
+</code></pre>
+<p>Written at a call site as the silent answer of a warning the run may pass
+through: Messenger.Show(text, Messenger.CarryOn(), vbYesNo). A run armed with
+force carries on. Every other run stops, which is the safe reading of a
+warning nobody is there to read.</p>
+<p><strong>Returns:</strong> VbMsgBoxResult. vbYes when the run was forced, vbNo otherwise.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="the-stored-switch">
+<summary>The stored switch</summary>
+<div class="section-body">
+<h3 id="switchname">SwitchName <a class="anchor-link" href="#switchname">#</a></h3>
+<p><em>switch-name</em></p>
+<p><strong>The name the switch is stored under</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SwitchName() As String
+</code></pre>
+<p>The three workbooks seed their flag through this, so the string lives in one
+place on the VBA side.</p>
+<p><strong>Returns:</strong> String. <strong>OBT__SILENT_OPERATIONS</strong></p>
+<hr />
+<h3 id="switchonvalue">SwitchOnValue <a class="anchor-link" href="#switchonvalue">#</a></h3>
+<p><em>switch-on-value</em></p>
+<p><strong>The stored value that means silent</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SwitchOnValue() As String
+</code></pre>
+<p><strong>Returns:</strong> String. Yes</p>
+<hr />
+<h3 id="switchoffvalue">SwitchOffValue <a class="anchor-link" href="#switchoffvalue">#</a></h3>
+<p><em>switch-off-value</em></p>
+<p><strong>The stored value that means the workbook behaves as it always has</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SwitchOffValue() As String
+</code></pre>
+<p><strong>Returns:</strong> String. No</p>
+<hr />
+<h3 id="readstoredswitch">ReadStoredSwitch <a class="anchor-link" href="#readstoredswitch">#</a></h3>
+<p><em>read-stored-switch</em></p>
+<p><strong>Read the silence switch off a workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ReadStoredSwitch(ByVal hostBook As Workbook) As Boolean
+</code></pre>
+<p>The read costs three COM crossings through HiddenNames.QuickValue. A workbook
+that holds no such name answers False, so every workbook built before the
+switch existed behaves as it did.</p>
+<p>This answers the value and changes nothing. The open path arms on it:</p>
+<p>If Messenger.ReadStoredSwitch(ThisWorkbook) Then Messenger.Arm ThisWorkbook</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The workbook holding the name.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the stored value reads Yes.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="showing">
+<summary>Showing</summary>
+<div class="section-body">
+<h3 id="show">Show <a class="anchor-link" href="#show">#</a></h3>
+<p><em>show</em></p>
+<p><strong>Show one box, or write it down and answer for it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Show(ByVal message As String, _
+                     ByVal silentAnswer As Long, _
+                     Optional ByVal boxStyle As Long = vbOKOnly, _
+                     Optional ByVal title As String = vbNullString) As VbMsgBoxResult
+</code></pre>
+<p>Armed: nothing is shown, the text goes into the record and silentAnswer comes
+back. Disarmed: MsgBox is called with what this was given and the click comes
+back unchanged.</p>
+<p>silentAnswer is the second parameter and it carries no default. A box that
+guards a destructive step and one that merely asks &quot;carry on&quot; want different
+answers, and only the call site knows which. VBA needs every optional
+parameter last, so boxStyle and title follow it, and a call site that forgets
+the answer fails to compile.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>message</code>: String. The text of the box.</li>
+<li><code>silentAnswer</code>: Long. What this answers while armed. vbOK for a box with
+one button, and for a question the answer that call site wants with nobody
+there. Messenger.CarryOn() for a warning a forced run may pass through.</li>
+<li><code>boxStyle</code>: Long. Optional, default vbOKOnly. The MsgBox style.</li>
+<li><code>title</code>: String. Optional. The box title.</li>
+</ul>
+<p><strong>Returns:</strong> VbMsgBoxResult. The click while disarmed, silentAnswer while armed.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="the-record">
+<summary>The record</summary>
+<div class="section-body">
+<h3 id="messages">Messages <a class="anchor-link" href="#messages">#</a></h3>
+<p><em>messages</em></p>
+<p><strong>Everything the run swallowed, one line each</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Messages() As String
+</code></pre>
+<p><strong>Returns:</strong> String. The recorded lines joined by a line break. Empty when nothing
+was swallowed.</p>
+<hr />
+<h3 id="hasmessages">HasMessages <a class="anchor-link" href="#hasmessages">#</a></h3>
+<p><em>has-messages</em></p>
+<p><strong>Whether the run swallowed anything</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function HasMessages() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when the record holds at least one line.</p>
+<hr />
+</div>
+</details>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-lifecycle">Lifecycle</h2>
+<h3 id="int-class-initialize">Class_Initialize <a class="anchor-link" href="#int-class-initialize">#</a></h3>
+<p><em>class-initialize</em></p>
+<p><strong>Start with an empty record and the boxes on</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Class_Initialize()
+</code></pre>
+<hr />
+<h2 id="int-private-helpers">Private helpers</h2>
+<h3 id="int-recordmessage">RecordMessage <a class="anchor-link" href="#int-recordmessage">#</a></h3>
+<p><em>record-message</em></p>
+<p><strong>Write one swallowed box into the record</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RecordMessage(ByVal message As String, ByVal title As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>message</code>: String. The text of the box.</li>
+<li><code>title</code>: String. The box title. May be empty.</li>
+</ul>
+<hr />
+<h3 id="int-singleline">SingleLine <a class="anchor-link" href="#int-singleline">#</a></h3>
+<p><em>single-line</em></p>
+<p><strong>Flatten a box text onto one line</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SingleLine(ByVal boxText As String) As String
+</code></pre>
+<p>A box text often carries line breaks. The record answers one line per message,
+so a reader can count what a run swallowed, and every break becomes a space.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>boxText</code>: String. The text to flatten.</li>
+</ul>
+<p><strong>Returns:</strong> String. The same text with no line break in it.</p>
+<hr />
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. A ProjectError value.</li>
+<li><code>message</code>: String. What went wrong.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (19 file(s))</summary>
+<ul>
+<li><a href="DesignerPreparation.html">DesignerPreparation.cls</a></li>
+<li><a href="EventLinelist.html">EventLinelist.cls</a></li>
+<li><a href="Linelist.html">Linelist.cls</a></li>
+<li><a href="MasterSetupPreparation.html">MasterSetupPreparation.cls</a></li>
+<li><a href="SetupPreparation.html">SetupPreparation.cls</a></li>
+<li><a href="SetupTranslationsTable.html">SetupTranslationsTable.cls</a></li>
+<li>EventsDesignerAdvanced.bas</li>
+<li>LinelistRun.bas</li>
+<li>FormLogicExportMig.bas</li>
+<li>SetupRibbon.bas</li>
+<li>TestLLImportTiming.bas</li>
+<li>TestDesignerPreparation.bas</li>
+<li>TestMessenger.bas</li>
+<li>TestEventLinelist.bas</li>
+<li>TestLinelistRun.bas</li>
+<li>TestMasterSetupPreparation.bas</li>
+<li>TestSetupPreparation.bas</li>
+<li>TestSetupRibbon.bas</li>
+<li>TestSetupTranslationsTable.bas</li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

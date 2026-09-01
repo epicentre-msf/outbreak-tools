@@ -1151,6 +1151,18 @@ facility, and the title and section labels are inserted above it.</p>
 </ul>
 <hr />
 <h2 id="int-nameranges">NameRanges</h2>
+<h3 id="int-nameglobalsummaryvalues">NameGlobalSummaryValues <a class="anchor-link" href="#int-nameglobalsummaryvalues">#</a></h3>
+<p><em>name-global-summary-values</em></p>
+<p><strong>Name the two value cells of a global summary row</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub NameGlobalSummaryValues()
+</code></pre>
+<p>CrossTableFormula writes the all-data and the filtered formulas into the two
+cells right of STARTROW_, and STARTROW_ names the label cell alone. Until this
+name existed those two cells were the only written cells of a global summary
+outside every name, and the analysis export, which carries values by name,
+would have left them blank. TestCrossTableFormula pins the coverage.</p>
+<hr />
 <h3 id="int-nameendtable">NameEndTable <a class="anchor-link" href="#int-nameendtable">#</a></h3>
 <p><em>name-end-table</em></p>
 <p><strong>Mark the row under the table, which is what the next one measures from.</strong></p>

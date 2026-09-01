@@ -60,11 +60,29 @@ where it is.</p>
 <details open class="doc-section" id="the-state-is-a-boolean">
 <summary>THE STATE IS A BOOLEAN</summary>
 <div class="section-body">
-<p>Hidden is True or False. The display words the form shows (&quot;Shown&quot;, &quot;Hidden&quot;,
+<h2>Hidden is True or False. The display words the form shows (&quot;Shown&quot;, &quot;Hidden&quot;,
 &quot;Mandatory&quot;) are translated at the form and stored nowhere. A user who changes
-the interface language between two sessions keeps every choice.</p>
-<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="ShowHideLayout.html">ShowHideLayout</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, Dictionary column names, The one <code>register book</code> value that asks for a turned header</p>
-<p><strong>Version:</strong> 1.2 (2026-08-11)</p>
+the interface language between two sessions keeps every choice.
+THE DICTIONARY IS READ IN BLOCKS</h2>
+<p>The build reads each column it needs as one whole-column block through
+dict.DataRange and answers every per-variable question from those arrays.
+Every block spans the same rows (the data body of the dictionary), so one row
+index reads across all of them. It used to ask LLVariables.Value one cell at a
+time, two crossings per call, 2V + 14N per build; twelve block reads cost the
+same whatever V is.</p>
+</div>
+</details>
+<details open class="doc-section" id="only-what-differs-is-written">
+<summary>ONLY WHAT DIFFERS IS WRITTEN</summary>
+<div class="section-body">
+<p>Beside hidden() the list keeps written(), the sheet state as Apply last wrote
+it or Adopt last read it, and stored(), the flags as the store last loaded or
+saved them. Apply writes the positions where the wanted state differs from
+written() and reads a position it has never seen before writing it, so a
+section press writes that section's columns alone. HasChanges compares
+hidden() with stored(), so a close where nothing moved can skip its save.</p>
+<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="ShowHideLayout.html">ShowHideLayout</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, Dictionary column names, The one <code>register book</code> value that asks for a turned header, The dictionary columns the build reads, one block each, row-aligned. A column, the dictionary does not carry is a block of empty strings and its flag is, False, so the build reads the same shape whatever the dictionary holds., What the list knows about one position on the sheet: nothing yet, or the last, state it wrote there or read from it.</p>
+<p><strong>Version:</strong> 1.4 (2026-09-01)</p>
 </div>
 </details>
 <details open class="doc-section" id="instantiation">
@@ -397,17 +415,26 @@ Mixed by what the free entries say.</p>
 <p><em>apply</em></p>
 <p><strong>Put the worksheet in the state the list describes</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Apply(ByVal layout As ShowHideLayout) As Long
+<pre><code class="language-vb">Public Function Apply(ByVal layout As ShowHideLayout, _
+                      Optional ByVal force As Boolean = False) As Long
 </code></pre>
 <p>The two calls that put the list and a sheet in step.</p>
 <p>The one place the entry list reaches a sheet, and it goes through the layout,
 so the row versus column question and the protection bracket are answered in
 one place. Entries with no position are skipped.</p>
+<p>Only the positions that differ are written. The list remembers what it last
+wrote to each position and what Adopt last read there; a position it knows
+nothing about yet is read off the sheet first, which costs a read where a
+write used to go. So a section press writes the columns of that section
+alone, and an Apply on a sheet already in step writes nothing. The force
+flag writes every position whatever the list remembers, for a caller landing
+on a sheet whose state it cannot trust, such as the migration import.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>layout</code>: ShowHideLayout. The sheet to reconcile.</li>
+<li><code>force</code>: Optional Boolean. True writes every position. Default False.</li>
 </ul>
-<p><strong>Returns:</strong> Long. The number of positions that were set.</p>
+<p><strong>Returns:</strong> Long. The number of positions that were written.</p>
 <hr />
 <h3 id="adopt">Adopt <a class="anchor-link" href="#adopt">#</a></h3>
 <p><em>adopt</em></p>
@@ -416,12 +443,14 @@ one place. Entries with no position are skipped.</p>
 <pre><code class="language-vb">Public Function Adopt(ByVal layout As ShowHideLayout) As Long
 </code></pre>
 <p>For the case where the user hid a column by hand rather than through the form.
-Mandatory and locked entries keep what the dictionary said.</p>
+Mandatory and locked entries keep what the dictionary said. Every position is
+read all the same, so the list knows the whole sheet and the next Apply
+writes only what differs from it.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>layout</code>: ShowHideLayout. The sheet to read.</li>
 </ul>
-<p><strong>Returns:</strong> Long. The number of entries that were read.</p>
+<p><strong>Returns:</strong> Long. The number of free entries that were read.</p>
 <hr />
 <h3 id="resettoauthored">ResetToAuthored <a class="anchor-link" href="#resettoauthored">#</a></h3>
 <p><em>reset-to-authored</em></p>
@@ -443,6 +472,33 @@ choices alone.</li>
 <hr />
 </div>
 </details>
+<details open class="doc-section" id="store">
+<summary>Store</summary>
+<div class="section-body">
+<h3 id="haschanges">HasChanges <a class="anchor-link" href="#haschanges">#</a></h3>
+<p><em>has-changes</em></p>
+<p><strong>Whether any choice differs from what the store last loaded or saved</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasChanges() As Boolean
+</code></pre>
+<p>What the store last saw, so a close with nothing changed saves nothing.</p>
+<p>Read before a save. The baseline is set by the build (the authored state,
+which is what an empty store means), and moved by ShowHideStore.Load and
+ShowHideStore.Save through MarkStored. Adopt leaves it alone on purpose: a
+column the user hid by hand is a change the store has not seen yet, and the
+next save is where it gets recorded.</p>
+<hr />
+<h3 id="markstored">MarkStored <a class="anchor-link" href="#markstored">#</a></h3>
+<p><em>mark-stored</em></p>
+<p><strong>Take the choices as they stand for what the store holds</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub MarkStored()
+</code></pre>
+<p>ShowHideStore calls it at the end of a Load and of a Save of the current
+state, so HasChanges answers False until the next choice moves.</p>
+<hr />
+</div>
+</details>
 <details open class="doc-section" id="build">
 <summary>Build</summary>
 <div class="section-body">
@@ -455,8 +511,9 @@ choices alone.</li>
                       ByVal sheetName As String)
 </code></pre>
 <p>The dictionary walk the factory runs.</p>
-<p>Public because the factory calls it on a fresh instance. Every variable of the
-sheet is read once and the arrays are trimmed to what matched.</p>
+<p>Public because the factory calls it on a fresh instance. The columns the
+build needs are read as whole blocks first, then every row is read from the
+arrays, and the entry arrays are trimmed to what matched.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>dict</code>: LLdictionary. The dictionary to read.</li>
@@ -482,6 +539,30 @@ sheet is read once and the arrays are trimmed to what matched.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the entry is hidden.</p>
 <hr />
+<h3 id="int-rememberwritten">RememberWritten <a class="anchor-link" href="#int-rememberwritten">#</a></h3>
+<p><em>remember-written</em></p>
+<p><strong>Record what the sheet holds at one entry's position</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RememberWritten(ByVal index As Long, ByVal hidden As Boolean)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based entry index.</li>
+<li><code>hidden</code>: Boolean. The state written to or read from the sheet.</li>
+</ul>
+<hr />
+<h3 id="int-writtenhidden">WrittenHidden <a class="anchor-link" href="#int-writtenhidden">#</a></h3>
+<p><em>written-hidden</em></p>
+<p><strong>What the list last saw at one entry's position</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function WrittenHidden(ByVal index As Long) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based entry index.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the last write or read found it hidden.</p>
+<hr />
 <h3 id="int-positioninrange">PositionInRange <a class="anchor-link" href="#int-positioninrange">#</a></h3>
 <p><em>position-in-range</em></p>
 <p><strong>Whether one entry sits inside a span of positions</strong></p>
@@ -505,12 +586,11 @@ a variable the dictionary gives no <code>column index</code> looks like, is in n
 <p><em>matches-sheet</em></p>
 <p><strong>Whether a variable belongs to the sheet being built</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function MatchesSheet(ByVal vars As LLVariables, ByVal varName As String) As Boolean
+<pre><code class="language-vb">Private Function MatchesSheet(ByVal varSheetName As String) As Boolean
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>vars</code>: LLVariables. The variable reader.</li>
-<li><code>varName</code>: String. The variable to test.</li>
+<li><code>varSheetName</code>: String. The variable's <code>sheet name</code> value.</li>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the sheet names agree.</p>
 <hr />
@@ -534,21 +614,15 @@ has never held, so every CRF list came back empty.</p>
 <p><em>status-for-layer</em></p>
 <p><strong>Read the status column that belongs to the layer</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function StatusForLayer(ByVal vars As LLVariables, _
-                             ByVal varName As String, _
-                             ByVal registerBook As String, _
-                             ByVal hasVisibility As Boolean, _
-                             ByVal hasStatus As Boolean, _
-                             ByVal hasCrfStatus As Boolean) As String
+<pre><code class="language-vb">Private Function StatusForLayer(ByRef blocks As TDictionaryBlocks, _
+                                ByVal row As Long, _
+                                ByVal registerBook As String) As String
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>vars</code>: LLVariables. The variable reader.</li>
-<li><code>varName</code>: String. The variable to read.</li>
+<li><code>blocks</code>: TDictionaryBlocks. The column blocks of the dictionary.</li>
+<li><code>row</code>: Long. The dictionary row of the variable, one based.</li>
 <li><code>registerBook</code>: String. The <code>register book</code> value, already read.</li>
-<li><code>hasVisibility</code>: Boolean. Whether the dictionary carries <code>visibility</code>.</li>
-<li><code>hasStatus</code>: Boolean. Whether the dictionary carries <code>status</code>.</li>
-<li><code>hasCrfStatus</code>: Boolean. Whether the dictionary carries <code>crf status</code>.</li>
 </ul>
 <p><strong>Returns:</strong> String. The status text for this layer.</p>
 <hr />
@@ -606,21 +680,72 @@ prints, which is why the default answer is visible.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the entry starts hidden.</p>
 <hr />
-<h3 id="int-safevalue">SafeValue <a class="anchor-link" href="#int-safevalue">#</a></h3>
-<p><em>safe-value</em></p>
-<p><strong>Read a dictionary cell and answer empty when it is absent</strong></p>
+<h3 id="int-readblocks">ReadBlocks <a class="anchor-link" href="#int-readblocks">#</a></h3>
+<p><em>read-blocks</em></p>
+<p><strong>Read every column the build needs as one block each</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SafeValue(ByVal vars As LLVariables, _
-                           ByVal colName As String, _
-                           ByVal varName As String) As String
+<pre><code class="language-vb">Private Sub ReadBlocks(ByVal dict As LLdictionary, ByRef blocks As TDictionaryBlocks)
+</code></pre>
+<p>The row count comes from the <code>variable name</code> column, and every other block is
+read over the same rows, because dict.DataRange spans the data body of the
+dictionary whichever column is asked for. A column the dictionary lacks is
+read as a block of empty strings with its flag False. <code>variable name</code> is a
+required column, so a dictionary that has no such column has no rows to give.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: LLdictionary. The dictionary to read.</li>
+<li><code>blocks</code>: TDictionaryBlocks. Filled here.</li>
+</ul>
+<hr />
+<h3 id="int-columnblock">ColumnBlock <a class="anchor-link" href="#int-columnblock">#</a></h3>
+<p><em>column-block</em></p>
+<p><strong>One dictionary column as a one based array of strings</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnBlock(ByVal dict As LLdictionary, _
+                             ByVal colName As String, _
+                             ByVal expectedRows As Long, _
+                             Optional ByRef rowsRead As Long, _
+                             Optional ByVal present As Boolean = True) As Variant
+</code></pre>
+<p>One crossing per column: the range's Value comes back as a 2D array, or as a
+single value when the dictionary holds one row, and both are flattened to the
+same shape. A column that is absent, or that the read refuses, answers a
+block of <code>expectedRows</code> empty strings, so a caller reads it like any other.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: LLdictionary. The dictionary to read.</li>
+<li><code>colName</code>: String. The column to read.</li>
+<li><code>expectedRows</code>: Long. The rows every block has to hold; 0 lets the column
+decide, which is how the first block sets the count.</li>
+<li><code>rowsRead</code>: Long. Set to the number of rows the block holds.</li>
+<li><code>present</code>: Optional Boolean. False skips the read and answers the empty block.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. A one based array of strings.</p>
+<hr />
+<h3 id="int-blocktext">BlockText <a class="anchor-link" href="#int-blocktext">#</a></h3>
+<p><em>block-text</em></p>
+<p><strong>One row of a block, empty when the block holds nothing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BlockText(ByRef block As Variant, ByVal row As Long) As String
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>vars</code>: LLVariables. The variable reader.</li>
-<li><code>colName</code>: String. The column to read.</li>
-<li><code>varName</code>: String. The variable to read.</li>
+<li><code>block</code>: Variant. A block ColumnBlock built.</li>
+<li><code>row</code>: Long. The row wanted, one based.</li>
 </ul>
-<p><strong>Returns:</strong> String. The cell value, or an empty string.</p>
+<p><strong>Returns:</strong> String. The text at that row.</p>
+<hr />
+<h3 id="int-celltext">CellText <a class="anchor-link" href="#int-celltext">#</a></h3>
+<p><em>cell-text</em></p>
+<p><strong>A cell value as text, with an error value or an empty read as nothing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CellText(ByVal value As Variant) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: Variant. What the cell answered.</li>
+</ul>
+<p><strong>Returns:</strong> String. The text.</p>
 <hr />
 <h3 id="int-normalise">Normalise <a class="anchor-link" href="#int-normalise">#</a></h3>
 <p><em>normalise</em></p>
@@ -693,7 +818,7 @@ state was dropped on every load.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (14 file(s))</summary>
+<summary>Used in (16 file(s))</summary>
 <ul>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
@@ -709,6 +834,8 @@ state was dropped on every load.</p>
 <li>FormLogicAdvanced.bas</li>
 <li>TestSectionShowHide.bas</li>
 <li>TestShowHide.bas</li>
+<li>TestShowHideTiming.bas</li>
+<li>TestShowHideTotal.bas</li>
 </ul>
 </details>
   </main>

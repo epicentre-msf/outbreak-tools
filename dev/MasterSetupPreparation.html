@@ -246,6 +246,24 @@ workbook already carries is the owner's to set.</p>
 </code></pre>
 <p>(&quot;Ensure a dropdown either exists or is updated with the supplied values.&quot;)</p>
 <hr />
+<h3 id="int-ensureworkbookflags">EnsureWorkbookFlags <a class="anchor-link" href="#int-ensureworkbookflags">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureWorkbookFlags()
+</code></pre>
+<p>(&quot;Seed the workbook-level flags of the master setup.&quot;)</p>
+<p>Seeds the silence switch, <strong>OBT__SILENT_OPERATIONS</strong>, with &quot;No&quot;. &quot;No&quot; means
+the master setup shows every message box it has always shown, so a person
+pressing buttons sees no change at all. The name and both values are read off
+Messenger, which is the one place that string is written on the VBA side.</p>
+<p>EnsureName leaves a name that is already there alone, so a second Prepare on a
+master setup someone switched to &quot;Yes&quot; keeps that value.</p>
+<p>THE R PACKAGE DOES NOT DRIVE THIS WORKBOOK TODAY. The entry-point plan names
+three workbooks and seven operations, and none of them is on the master setup.
+The flag is seeded here anyway so the fourth workbook is not the one that was
+forgotten when an operation is added to it: the 48 message boxes of
+EventsMasterSetupRibbon and MasterSetupExports then have a switch to read, and
+no caller has to go and create it first.</p>
+<hr />
 <h3 id="int-ensurevariablenamecolumnname">EnsureVariableNameColumnName <a class="anchor-link" href="#int-ensurevariablenamecolumnname">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureVariableNameColumnName(ByVal manager As MasterSetupVariables)

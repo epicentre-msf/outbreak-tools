@@ -22,7 +22,7 @@ Dev worksheet into a workbook-level name, applies data validation to the
 T_Multi table on the GenerateMultiple worksheet, and registers hidden
 sheets with the development manager. Also provides methods to read and
 write ribbon checkbox flags persisted through workbook-level hidden names.</p>
-<p><strong>Depends on:</strong> <a href="HiddenNames.html">HiddenNames</a>, <a href="Development.html">Development</a>, <a href="OSFiles.html">OSFiles</a>, <a href="CustomTable.html">CustomTable</a>, <a href="BetterArray.html">BetterArray</a>, <a href="DropdownLists.html">DropdownLists</a></p>
+<p><strong>Depends on:</strong> <a href="HiddenNames.html">HiddenNames</a>, <a href="Development.html">Development</a>, <a href="OSFiles.html">OSFiles</a>, <a href="CustomTable.html">CustomTable</a>, <a href="BetterArray.html">BetterArray</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="Messenger.html">Messenger</a></p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -508,7 +508,7 @@ HiddenNames.Create with the host workbook. Subsequent calls are no-ops.</p>
 <hr />
 <h3 id="int-ensuredefaultflags">EnsureDefaultFlags <a class="anchor-link" href="#int-ensuredefaultflags">#</a></h3>
 <p><em>ensure-default-flags</em></p>
-<p><strong>Ensure the default ribbon flags exist in the hidden store</strong></p>
+<p><strong>Ensure the default workbook flags exist in the hidden store</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDefaultFlags()
 </code></pre>
@@ -517,6 +517,12 @@ for chkBuildInPlace with &quot;No&quot;, creating the hidden names if they do no
 already exist. SetFlag updates a name and raises on a missing one, so a
 designer whose names predate a flag gets it here, on the first read or
 write of any flag.</p>
+<p>The fourth flag is the silence switch, <strong>OBT__SILENT_OPERATIONS</strong>, seeded
+&quot;No&quot;. &quot;No&quot; means the designer shows every message box it has always shown, so
+a person pressing buttons sees no change at all. The name and both values are
+read off Messenger rather than written again here. A designer that predates
+the switch holds no such name, and Messenger.ReadStoredSwitch answers False
+for a name that is not there, so it behaves as it did until this runs.</p>
 <hr />
 <h3 id="int-resolveworksheet">ResolveWorksheet <a class="anchor-link" href="#int-resolveworksheet">#</a></h3>
 <p><em>resolve-worksheet</em></p>

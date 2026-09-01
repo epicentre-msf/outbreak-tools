@@ -15,7 +15,8 @@
 the sheets it creates, and copies the named ranges those charts read.
 PrepareSheet builds the tracking worksheet, AddGraphInfo records one chart
 series and AddGraphFormat the look of one chart, TransferNames copies the
-named ranges onto an output worksheet, and WriteGraphs draws the charts there.</p>
+named ranges and their values onto an output worksheet, and WriteGraphs draws
+the charts there.</p>
 <details open class="doc-section" id="one-registry-table">
 <summary>ONE REGISTRY TABLE</summary>
 <div class="section-body">
@@ -177,7 +178,7 @@ all its series.</p>
 <div class="section-body">
 <h3 id="transfernames">TransferNames <a class="anchor-link" href="#transfernames">#</a></h3>
 <p><em>transfer-names</em></p>
-<p><strong>Recreate every named range of an analysis sheet on the output sheet</strong></p>
+<p><strong>Recreate every named range of an analysis sheet on the output sheet, values and all</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TransferNames(ByVal inpsh As Worksheet, ByVal outsh As Worksheet)
 </code></pre>
@@ -188,6 +189,18 @@ workbook collection: every one of them was created on the analysis sheet by
 the table builder, which is why nothing has to be stored to find them again.
 A name holding a value has no range behind it, so it is skipped, and so is a
 name that no longer resolves.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-values-travel-with-the-names">
+<summary>THE VALUES TRAVEL WITH THE NAMES</summary>
+<div class="section-body">
+<p>The export used to carry the values of an analysis sheet through a whole-grid
+clipboard copy, every cell of the sheet, before this routine ran. That pass is
+gone: each name here is one contiguous block, and its values ride onto the same
+address of the output sheet through BetterArray. Every cell a table writes sits
+inside a name (TestCrossTable and TestCrossTableFormula pin that, scope by
+scope), so nothing is left behind. Two names that overlap write the same cells
+twice with the same values, which is harmless.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>inpsh</code>: Worksheet. The analysis sheet the names live on.</li>
@@ -350,6 +363,24 @@ storage scopes.</li>
 <p><strong>Returns:</strong> Variant. A one-based array of REGISTRY_COLUMN_COUNT empty strings.</p>
 <hr />
 <h2 id="int-name-transfer">Name Transfer</h2>
+<h3 id="int-movevalues">MoveValues <a class="anchor-link" href="#int-movevalues">#</a></h3>
+<p><em>move-values</em></p>
+<p><strong>Copy the values of one named block onto the same address of the output sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub MoveValues(ByVal source As Range, ByVal target As Range)
+</code></pre>
+<p>BetterArray.FromExcelRange flattens a single row and a single column to one
+dimension, and ToExcelRange writes one dimension as a COLUMN. So a one-row
+block goes back transposed, or its values would run down the sheet instead of
+across it. A single cell never enters the array: its Value is a scalar, and
+one read and one write is the whole move. A name over several areas is moved
+an area at a time, each one a contiguous block.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>source</code>: Range. The block on the analysis sheet.</li>
+<li><code>target</code>: Range. The same address on the output sheet.</li>
+</ul>
+<hr />
 <h3 id="int-sheetnames">SheetNames <a class="anchor-link" href="#int-sheetnames">#</a></h3>
 <p><em>sheet-names</em></p>
 <p><strong>The tracked names of one worksheet, name and address</strong></p>
@@ -540,7 +571,7 @@ copies from, so no analysis sheet name is looked up here.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (6 file(s))</summary>
+<summary>Used in (7 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
@@ -548,6 +579,7 @@ copies from, so no analysis sheet name is looked up here.</p>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li>TestAnaTabIds.bas</li>
 <li>TestGraphs.bas</li>
+<li>AnalysisTestFixture.bas</li>
 </ul>
 </details>
   </main>

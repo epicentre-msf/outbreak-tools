@@ -19,7 +19,7 @@ multiple choices; analysis go-to-section and spatial dispatch), sheet deactivate
 (list auto update), selection change (geo dropdown refresh),
 double-click (spatio-temporal geo form), filter table updates, list-auto
 dropdown maintenance, and geo/spatial UDF delegation.</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLSpatial.html">LLSpatial</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="Passwords.html">Passwords</a>, <a href="LLLog.html">LLLog</a>, <a href="FilteredData.html">FilteredData</a>, ProjectError</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLSpatial.html">LLSpatial</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="Passwords.html">Passwords</a>, <a href="LLLog.html">LLLog</a>, <a href="FilteredData.html">FilteredData</a>, ProjectError, <a href="Messenger.html">Messenger</a></p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -64,9 +64,12 @@ dropdown maintenance, and geo/spatial UDF delegation.</p>
 </code></pre>
 <p>The open is the first line of the session in the user log, so a reader of
 the log sees where each working session started.</p>
-<p>The workbook opens on the sheet it was saved on, and a linelist saved by the
-generation lands on Geo. LandOnInstructions puts the user on the instruction
-sheet instead, every open.</p>
+<p>The workbook opens on the sheet it was saved on and nothing here moves it.
+Which sheet that is belongs to the build: Linelist.SaveLL activates the
+instruction sheet, or the first worksheet the setup declares when the build
+carries none, just before it closes the file. The open used to choose again
+by reading the instruction sheet's translated name and jumping to it, so two
+places decided one thing and the user saw whichever ran second.</p>
 <p>The pointer is parked on the north-west arrow at open. That arrow is the
 cursor every busy state of the session shows, and ApplicationState restores
 the cursor it snapshots, so with the standing cursor equal to the busy one an
@@ -500,31 +503,6 @@ lookup missed, and FindTopAdmin answered nothing for the rest of the session.</p
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-public-operations">Public operations</h2>
-<h3 id="int-landoninstructions">LandOnInstructions <a class="anchor-link" href="#int-landoninstructions">#</a></h3>
-<p><strong>Put the user on the instruction sheet.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub LandOnInstructions()
-</code></pre>
-<p>The sheet is named by the translation, and the generation moves it to the front
-of the workbook, so the first visible worksheet is the same sheet whenever the
-name cannot be read. A workbook built with the instructions turned off carries
-the sheet very hidden, and the fallback then lands on the first sheet the user
-is meant to see rather than on Geo.</p>
-<p>Nothing here is worth an error box on open. Every step is guarded and a
-workbook that answers none of them opens where it was saved.</p>
-<hr />
-<h3 id="int-firstvisiblesheet">FirstVisibleSheet <a class="anchor-link" href="#int-firstvisiblesheet">#</a></h3>
-<p><strong>The first worksheet of the host workbook the user can see.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function FirstVisibleSheet() As Worksheet
-</code></pre>
-<p>The generation moves the instruction sheet to the front, so on a workbook
-that carries a visible one this answers that sheet. On one that does not it
-answers whatever the user is meant to land on instead, which is what makes a
-linelist open somewhere other than the sheet the generation happened to stop
-on.</p>
-<p><strong>Returns:</strong> Worksheet. The first visible worksheet, or Nothing when none is.</p>
-<hr />
 <h3 id="int-recalculategeocolumnsofsheet">RecalculateGeoColumnsOfSheet <a class="anchor-link" href="#int-recalculategeocolumnsofsheet">#</a></h3>
 <p><strong>Recalculate the geobase columns of one data entry sheet.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -577,7 +555,11 @@ worth more than a log naming nothing.</p>
 </code></pre>
 <p>A workbook with no usable translation sheet has no text to show, and the
 callers that still have something to say pass a fallback. Every other caller
-stays quiet, which is what the two boxes this replaced did.</p>
+stays quiet, which is what the two boxes this replaced did.
+The box is shown through Messenger, so a script driving this workbook gets the
+text written into the record and the call comes straight back. Warn and Fail
+both ask for one OK button, so vbOK is the answer while the messenger is
+armed. A person pressing a button sees the box they have always seen.</p>
 <hr />
 <h3 id="int-logeventline">LogEventLine <a class="anchor-link" href="#int-logeventline">#</a></h3>
 <p><strong>Write one line of the user log.</strong></p>
@@ -1008,13 +990,14 @@ permanent refusal to build the manager again.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (31 file(s))</summary>
+<summary>Used in (35 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
 <li><a href="LLSpatial.html">LLSpatial.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
+<li><a href="SectionMap.html">SectionMap.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li><a href="ShowHideStore.html">ShowHideStore.cls</a></li>
 <li>CustomLinelistFunctions.bas</li>
@@ -1024,6 +1007,7 @@ permanent refusal to build the manager again.</p>
 <li>GeoModule.bas</li>
 <li>ImportChecking.bas</li>
 <li>LinelistEventsManager.bas</li>
+<li>LinelistRun.bas</li>
 <li>FormLogicAdvanced.bas</li>
 <li>FormLogicEpiWeek.bas</li>
 <li>FormLogicExport.bas</li>
@@ -1040,7 +1024,9 @@ permanent refusal to build the manager again.</p>
 <li>GeoTestFixture.bas</li>
 <li>TestEventLinelist.bas</li>
 <li>TestEventLinelistSheets.bas</li>
+<li>TestLinelistRun.bas</li>
 <li>OBTHeadless.bas</li>
+<li>TestShowHideTiming.bas</li>
 </ul>
 </details>
   </main>

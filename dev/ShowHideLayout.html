@@ -41,8 +41,18 @@ bracket open over the whole run.</p>
 <p>Excel reports a hidden column as width 0 and hides a column that is set to
 width 0. SetSize refuses anything at or below zero. Hiding is SetHidden's
 work, and a blank size cell leaves the sheet alone.</p>
+</div>
+</details>
+<details open class="doc-section" id="a-hidden-position-remembers-its-size">
+<summary>A HIDDEN POSITION REMEMBERS ITS SIZE</summary>
+<div class="section-body">
+<p>SetHidden reads the size before it hides and keeps it on the instance, keyed
+on the position. SizeWhenShown answers from that and shows a column only when
+it holds nothing for it. WriteCount says how many writes went out since the
+bind or the last ResetWriteCount, so a save can tell a session that moved
+nothing from one that did.</p>
 <p><strong>Depends on:</strong> <a href="Passwords.html">Passwords</a>, <a href="Checking.html">Checking</a>, The named cell a printed sheet puts at the head of its table, How far above the anchor the printed header row sits. PRINTSTART is on the, first line of the table, so the header the user reads is the line above it., The row height a turned header needs to stay readable</p>
-<p><strong>Version:</strong> 1.0 (2026-08-01)</p>
+<p><strong>Version:</strong> 1.1 (2026-09-01)</p>
 </div>
 </details>
 <details open class="doc-section" id="instantiation">
@@ -139,6 +149,33 @@ their labels straight, so turning a header means nothing there.</p>
 write undone. The count says how many, so a caller can tell a silent run from a
 run that did nothing.</p>
 <hr />
+<h3 id="writecount">WriteCount <a class="anchor-link" href="#writecount">#</a></h3>
+<p><em>write-count</em></p>
+<p><strong>How many writes were issued since the bind or the last reset</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get WriteCount() As Long
+</code></pre>
+<p>Every SetHidden, SetSize and SetOrientation counts one, refused or not. A
+caller about to save reads it beside ShowHide.HasChanges: nothing written and
+no choice moved means the store already holds what the sheet shows.</p>
+<hr />
+<h3 id="resetwritecount">ResetWriteCount <a class="anchor-link" href="#resetwritecount">#</a></h3>
+<p><em>reset-write-count</em></p>
+<p><strong>Start the write count again, once a save has recorded the sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ResetWriteCount()
+</code></pre>
+<hr />
+<h3 id="forgetsizes">ForgetSizes <a class="anchor-link" href="#forgetsizes">#</a></h3>
+<p><em>forget-sizes</em></p>
+<p><strong>Drop every kept size</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ForgetSizes()
+</code></pre>
+<p>For a caller whose sheet another layout instance may have resized in the
+meantime, such as the show/hide session after the layouts form has restored
+a saved layout. The next SizeWhenShown on a hidden position reads the sheet.</p>
+<hr />
 </div>
 </details>
 <details open class="doc-section" id="visibility">
@@ -163,6 +200,9 @@ run that did nothing.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetHidden(ByVal position As Long, ByVal hidden As Boolean)
 </code></pre>
+<p>On the way to hiding, the size the position has is read first and kept on
+the instance, so SizeWhenShown can answer it later without showing the
+column again. Showing drops the kept size, because the sheet answers it.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>position</code>: Long. The column or row number.</li>
@@ -211,8 +251,10 @@ restore.</p>
 </code></pre>
 <p>A hidden position reports a size of 0, so a migration file built from a live
 sheet used to record 0 for every hidden column and bring it back at width 0 -
-a column the user can neither see nor grab. This reveals the position long
-enough to read its real size and hides it again.</p>
+a column the user can neither see nor grab. A position this instance hid
+answers the size it read on the way to hiding it, with no write. One it found
+hidden already is revealed long enough to read its real size and hidden again;
+those two writes are not counted, since the sheet ends where it began.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>position</code>: Long. The column or row number.</li>
@@ -284,13 +326,63 @@ once instead of once per position. Every BeginBatch needs its EndBatch.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-helpers">Helpers</h2>
+<h3 id="int-writehidden">WriteHidden <a class="anchor-link" href="#int-writehidden">#</a></h3>
+<p><em>write-hidden</em></p>
+<p><strong>The one write of the hidden state, inside its bracket</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteHidden(ByVal position As Long, ByVal hidden As Boolean)
+</code></pre>
+<p>Private workers.</p>
+<p>SetHidden and SizeWhenShown both come through here. The size bookkeeping and
+the write count stay in SetHidden, so the show-and-hide pair SizeWhenShown
+issues to measure a column counts nothing and keeps nothing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>position</code>: Long. The column or row number.</li>
+<li><code>hidden</code>: Boolean. True to hide it.</li>
+</ul>
+<hr />
+<h3 id="int-keepshownsize">KeepShownSize <a class="anchor-link" href="#int-keepshownsize">#</a></h3>
+<p><em>keep-shown-size</em></p>
+<p><strong>Record the size one position had before it was hidden</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub KeepShownSize(ByVal position As Long, ByVal shownSize As Double)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>position</code>: Long. The column or row number.</li>
+<li><code>shownSize</code>: Double. The size read while it was visible.</li>
+</ul>
+<hr />
+<h3 id="int-forgetshownsize">ForgetShownSize <a class="anchor-link" href="#int-forgetshownsize">#</a></h3>
+<p><em>forget-shown-size</em></p>
+<p><strong>Drop the kept size of one position, if any</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ForgetShownSize(ByVal position As Long)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>position</code>: Long. The column or row number.</li>
+</ul>
+<hr />
+<h3 id="int-heldshownsize">HeldShownSize <a class="anchor-link" href="#int-heldshownsize">#</a></h3>
+<p><em>held-shown-size</em></p>
+<p><strong>The kept size of one position, or 0 when none was kept</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HeldShownSize(ByVal position As Long) As Double
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>position</code>: Long. The column or row number.</li>
+</ul>
+<p><strong>Returns:</strong> Double. The size read before the hide, or 0.</p>
+<hr />
 <h3 id="int-axisof">AxisOf <a class="anchor-link" href="#int-axisof">#</a></h3>
 <p><em>axis-of</em></p>
 <p><strong>The direction one layer occupies</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function AxisOf(ByVal layer As Byte) As Byte
 </code></pre>
-<p>Private workers.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>layer</code>: Byte. A ShowHideWorksheetLayer value. The layer to answer for.</li>
@@ -351,7 +443,7 @@ already turned the screen off keeps it off when the bracket closes.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (11 file(s))</summary>
+<summary>Used in (13 file(s))</summary>
 <ul>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
@@ -364,6 +456,8 @@ already turned the screen off keeps it off when the bracket closes.</p>
 <li>FormLogicAdvanced.bas</li>
 <li>TestSectionShowHide.bas</li>
 <li>TestShowHide.bas</li>
+<li>TestShowHideTiming.bas</li>
+<li>TestShowHideTotal.bas</li>
 </ul>
 </details>
   </main>

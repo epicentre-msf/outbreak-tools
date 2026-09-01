@@ -31,6 +31,17 @@ LastFailure answers what the last export failed on, for a caller writing the
 failure into the log.</p>
 </div>
 </details>
+<details open class="doc-section" id="every-walk-is-timed">
+<summary>EVERY WALK IS TIMED</summary>
+<div class="section-body">
+<p>The four walks already carried the step they were on in atStep, for the
+failure message. That variable is now filled through MarkStep, so the same
+one line per step also drives the stopwatch LLLog holds, and each walk
+leaves its whole run on one info line of the workbook log: every step with
+its seconds and a total at the end. The line is written on both exits, so a
+walk that refused says where its time went and which step it stopped in.</p>
+</div>
+</details>
 <details open class="doc-section" id="the-application-the-exports-run-in">
 <summary>THE APPLICATION THE EXPORTS RUN IN</summary>
 <div class="section-body">
@@ -287,7 +298,9 @@ suffix.</p>
 <p>Closes any output workbook left open after an export error, preventing
 orphaned minimized windows, and closes the source workbook when this instance
 opened it through CreateFromFile. Nothing is saved on either close. Safe to
-call even when no workbook is open.</p>
+call even when no workbook is open.
+The calculation mode CreateOutputWorkbook held goes back here, so a walk that
+stopped on a failure does not leave the application in manual.</p>
 <hr />
 </div>
 </details>
@@ -396,8 +409,14 @@ when it is absent.</p>
                             Optional ByVal nameKey As String = SHEET_TYPE_KEY, _
                             Optional ByVal allowOldLayout As Boolean = False) As String
 </code></pre>
-<p>A linelist generated before the sheet metadata moved into hidden names carries
-no name to read, and ValueAsString answers an empty string rather than raising.
+<p>The read goes through HiddenNames.QuickValue: three COM crossings for the one
+name asked for, with no instance behind it. HiddenNames.Create walks every
+tracked name of the sheet first and reads three properties off each, and a data
+entry sheet holds hundreds of names. This routine runs once per data sheet in
+AddShowHide and once more in AddDataSheets, so the walk was paid twice per
+sheet for two strings.
+A linelist generated before the sheet metadata moved into hidden names carries
+no name to read, and QuickValue answers the default rather than raising.
 The old layout wrote the same two words into a formatted cell instead, so the
 cell is read when the name is absent.
 The fallback is asked for, not automatic. AddDataSheets wants it: the sheet
@@ -515,6 +534,51 @@ workbook that will not take a log answers Nothing, and the Nothing is the
 state rather than a raise.</p>
 <p><strong>Returns:</strong> LLLog. The held log, or Nothing.</p>
 <hr />
+<h3 id="int-startstepwatch">StartStepWatch <a class="anchor-link" href="#int-startstepwatch">#</a></h3>
+<p><em>start-step-watch</em></p>
+<p><strong>Open the stopwatch of an export walk</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub StartStepWatch()
+</code></pre>
+<p>Called once at the top of each of the four walks, right after the handler
+is armed. The log holds the stopwatch, so nothing is kept here, and a
+workbook that will not take a log simply goes untimed.</p>
+<hr />
+<h3 id="int-markstep">MarkStep <a class="anchor-link" href="#int-markstep">#</a></h3>
+<p><em>mark-step</em></p>
+<p><strong>Name the step the walk is about to take, and time the one before it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MarkStep(ByVal stepName As String) As String
+</code></pre>
+<p>Answers the name it was given, so each walk keeps the one line per step it
+already had:</p>
+<p>atStep = MarkStep(&quot;reading the dictionary&quot;)</p>
+<p>The name goes on reaching RecordExportFailure exactly as it did, and the
+timing rides along. An untimed walk answers the name and does nothing else.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>stepName</code>: String. What the walk is about to do.</li>
+</ul>
+<p><strong>Returns:</strong> String. The name it was given.</p>
+<hr />
+<h3 id="int-logsteptimes">LogStepTimes <a class="anchor-link" href="#int-logsteptimes">#</a></h3>
+<p><em>log-step-times</em></p>
+<p><strong>Write the step times of a walk into the log</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogStepTimes(ByVal action As String, ByVal source As String)
+</code></pre>
+<p>Called on both exits of every walk: the line is as much wanted when an
+export refuses as when it finishes, and on a refusal it carries the step
+that refused with the seconds it had spent.
+The failure path reaches this AFTER RecordExportFailure has kept its words
+and the caller has read the error into its own variables, so clearing Err
+in here costs nothing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>action</code>: String. The action code the walk logs under.</li>
+<li><code>source</code>: String. The method that ran the walk.</li>
+</ul>
+<hr />
 <h3 id="int-recordexportfailure">RecordExportFailure <a class="anchor-link" href="#int-recordexportfailure">#</a></h3>
 <p><em>record-export-failure</em></p>
 <p><strong>Keep in words what an export refused on, before the raise leaves</strong></p>
@@ -557,7 +621,32 @@ holds its source, whichever instance that is.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CreateOutputWorkbook() As Workbook
 </code></pre>
+<h2 id="int-one-empty-sheet-not-the-user-s-template">ONE EMPTY SHEET, NOT THE USER'S TEMPLATE</h2>
+<p>Workbooks.Add with no argument builds from whatever default template the user
+has. A template carrying several sheets and a long style list costs on every
+export and again on every save, and the extra sheets travelled into the output:
+the walks name Worksheets(1) as the placeholder and delete that one, so sheets
+two and three of a template would have gone out with the file. xlWBATWorksheet
+gives a one-sheet workbook with nothing in it.</p>
+<h2 id="int-calculation-is-held-here-by-this-routine">CALCULATION IS HELD HERE, BY THIS ROUTINE</h2>
+<p>Adding a workbook can put Application.Calculation back to what that workbook
+carries, so a mode set before the walk does not survive the Add. LLGeo.ExportToFile
+holds the mode itself for the same reason and says so. ApplicationState.ApplyBusyState
+asks for manual, but it asks inside an On Error Resume Next and reports success
+either way, so a caller cannot know the mode it got. The prior mode is kept on
+the instance and SaveWorkbook and CloseAll put it back.</p>
 <p><strong>Returns:</strong> Workbook. The newly created workbook.</p>
+<hr />
+<h3 id="int-restorecalculation">RestoreCalculation <a class="anchor-link" href="#int-restorecalculation">#</a></h3>
+<p><em>restore-calculation</em></p>
+<p><strong>Put the calculation mode back to what the walk found</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RestoreCalculation()
+</code></pre>
+<p>Called at both ends of an export: SaveWorkbook when the file is written, and
+CloseAll when the caller tidies up after a failure. A walk that never reached
+CreateOutputWorkbook held nothing, and calcHeld is False, so nothing is set.
+A caller that had already asked for manual gets manual back, which is a no-op.</p>
 <hr />
 <h3 id="int-saveworkbook">SaveWorkbook <a class="anchor-link" href="#int-saveworkbook">#</a></h3>
 <p><em>save-workbook</em></p>
@@ -879,8 +968,22 @@ linelist keeps its own dictionary whole.</p>
 <pre><code class="language-vb">Private Sub DropExcludedFromCopy(ByVal outDict As LLdictionary, _
                                  ByVal excluded As BetterArray)
 </code></pre>
-<p>The rows are gathered into one range and deleted in a single call, so a
-dictionary with many identifiers costs one crossing rather than one per row.</p>
+<p>The row numbers of the excluded variables are gathered off one block read, and
+the rows are deleted a run of neighbours at a time, from the bottom of the
+sheet up.</p>
+<h2 id="int-why-the-row-numbers-and-not-one-union">WHY THE ROW NUMBERS AND NOT ONE UNION</h2>
+<p>The rows used to be gathered by calling Union once per excluded variable. Union
+rebuilds the whole area list every time it is called, so a dictionary that
+leaves out E variables paid a cost that grows with E squared: 200 identifiers
+meant about 20,000 area copies before a single row was deleted.</p>
+<p>The names are already in hand as a block, so the walk keeps the row numbers
+instead. They come out in order, so neighbouring numbers make a run and each
+run is one Delete of a resized block. A dictionary whose excluded variables sit
+together -- the usual shape, since the p-codes and the identifiers are grouped
+-- comes down to a handful of calls.</p>
+<p>The runs are deleted from the last one backwards. Deleting a row moves every
+row under it up, so working from the bottom leaves the row numbers still to be
+used untouched.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>outDict</code>: LLdictionary. The dictionary of the output workbook.</li>
@@ -1057,10 +1160,10 @@ state the dictionary authored.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddAnalysisSheets(ByVal outwb As Workbook, ByVal afterSheetName As String)
 </code></pre>
-<p>Copies values and formats from the four analysis sheets (univariate,
-time series, spatial, spatio-temporal) in the source workbook to new
-sheets in the output workbook. Removes gridlines, then asks AnaTabIds to
-recreate the named ranges and the charts of each sheet.</p>
+<p>Copies the formats of the four analysis sheets (univariate, time series,
+spatial, spatio-temporal) in the source workbook to new sheets in the output
+workbook, removes gridlines, then asks AnaTabIds to recreate the named ranges
+-- values included -- and the charts of each sheet.</p>
 <h2 id="int-what-the-error-trap-covers">WHAT THE ERROR TRAP COVERS</h2>
 <p>The trap covers the clipboard steps alone. It used to cover the chart writing
 too, and the chart writing raised on its first statement for every scope, so
@@ -1091,6 +1194,19 @@ charts.</li>
 from the corresponding source sheet, and writes it to the output sheet.
 For HList sheets, delegates to CustomTable.Export. For VList sheets,
 delegates to ExportVListData. Applies formatting to each output sheet.</p>
+<h2 id="int-the-dictionary-is-read-once-and-grouped-in-memory">THE DICTIONARY IS READ ONCE AND GROUPED IN MEMORY</h2>
+<p>The variable names of a sheet used to come off a real AutoFilter, and the
+labels of that same sheet off a second one, so every data sheet cost two
+filter applications, two SpecialCells reads and two filter removals on the
+export dictionary.
+The three columns those two filters read -- sheet name, variable name and
+main label -- are read here as three whole-column blocks, once for the whole
+export, and SheetRowsOf answers both lists per sheet out of memory. A file
+with eight data sheets goes from sixteen filter runs to three reads.
+The main label column is read only when the header format asks for labels.
+A dictionary that carries no such column used to reach the label filter in
+that case alone, so reading it unconditionally would raise ElementNotFound on
+a file that exports today.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>outwb</code>: Workbook. The output workbook.</li>
@@ -1104,19 +1220,20 @@ delegates to ExportVListData. Applies formatting to each output sheet.</p>
 <p><em>filtered-table-of</em></p>
 <p><strong>The filtered companion table of one data entry sheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function FilteredTableOf(ByVal inpsh As Worksheet, _
-                                 ByVal inpshNames As HiddenNames) As ListObject
+<pre><code class="language-vb">Private Function FilteredTableOf(ByVal inpsh As Worksheet) As ListObject
 </code></pre>
 <p>The companion holds the rows the filters leave visible, and the export reads it
 when the user ticks the filtered box. Three things have to be there: the name
 in the sheet store, the sheet it names, and the table on that sheet. All three
 used to be read in one chained line, so a workbook missing any of them raised a
 bare Excel number and the box the user got named neither the sheet nor the
-piece that was missing.</p>
+piece that was missing.
+The companion name is read through HiddenNames.QuickValue. It is the one name
+this routine wants off the sheet, and building an instance walked every tracked
+name of a sheet that holds hundreds of them.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>inpsh</code>: Worksheet. The data entry sheet being exported.</li>
-<li><code>inpshNames</code>: HiddenNames. The hidden name store of that sheet.</li>
 </ul>
 <p><strong>Returns:</strong> ListObject. The companion table.</p>
 <p><strong>Throws:</strong></p>
@@ -1124,22 +1241,53 @@ piece that was missing.</p>
 <li>ProjectError.ElementNotFound When any of the three is absent.</li>
 </ul>
 <hr />
+<h3 id="int-sheetrowsof">SheetRowsOf <a class="anchor-link" href="#int-sheetrowsof">#</a></h3>
+<p><em>sheet-rows-of</em></p>
+<p><strong>The variable names and labels one data sheet owns</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SheetRowsOf(ByRef sheetValues As Variant, _
+                        ByRef nameValues As Variant, _
+                        ByRef labelValues As Variant, _
+                        ByVal sheetName As String, _
+                        ByVal namesOut As BetterArray, _
+                        ByVal labelsOut As BetterArray)
+</code></pre>
+<p>Walks the dictionary columns AddDataSheets holds in memory and fills the two
+lists of one sheet in a single pass. This is what the two AutoFilter runs per
+sheet used to answer.
+The sheet names are compared without regard to case, because that is what
+AutoFilter did with its criteria, and the names being matched come off the
+same column through LLdictionary.UniqueValues.
+A cell holding an error value is stepped over rather than read, so one broken
+cell in the sheet name column cannot raise a type mismatch and cost the whole
+export.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetValues</code>: Variant. The sheet name column, 1-based.</li>
+<li><code>nameValues</code>: Variant. The variable name column, 1-based, same rows.</li>
+<li><code>labelValues</code>: Variant. The main label column, 1-based, same rows. Empty
+when the header format asks for no labels.</li>
+<li><code>sheetName</code>: String. The sheet whose rows are wanted.</li>
+<li><code>namesOut</code>: BetterArray. Filled with the variable names, in row order.</li>
+<li><code>labelsOut</code>: BetterArray. Filled with the main labels, in the same order.</li>
+</ul>
+<hr />
 <h3 id="int-labelsforwrittencolumns">LabelsForWrittenColumns <a class="anchor-link" href="#int-labelsforwrittencolumns">#</a></h3>
 <p><em>labels-for-written-columns</em></p>
 <p><strong>The label row that lines up with the columns an export wrote</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function LabelsForWrittenColumns(ByVal expDict As LLdictionary, _
-                                         ByVal sheetName As String, _
+<pre><code class="language-vb">Private Function LabelsForWrittenColumns(ByVal allLabels As BetterArray, _
                                          ByVal headersList As BetterArray, _
                                          ByVal skipped As BetterArray) As BetterArray
 </code></pre>
 <p>The dictionary answers one label per variable, in the same order as the
 variable names, so the two lists match until the export skips one. Dropping the
-label of every skipped variable is what keeps the row over its data.</p>
+label of every skipped variable is what keeps the row over its data.
+Both lists are handed in. They come off the one grouping pass AddDataSheets
+makes over the dictionary columns it holds, so this routine reads no worksheet.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>expDict</code>: LLdictionary. The export dictionary.</li>
-<li><code>sheetName</code>: String. The sheet the labels belong to.</li>
+<li><code>allLabels</code>: BetterArray. The main labels of the sheet, in row order.</li>
 <li><code>headersList</code>: BetterArray. The variable names the export was asked for.</li>
 <li><code>skipped</code>: BetterArray. The variable names the export could not write.</li>
 </ul>
@@ -1165,6 +1313,17 @@ variable name was overwritten by the label, so the file carried no variable
 names at all. <code>LLImporter.ImportVListSheet</code> resolves each row through
 <code>currsh.Range(varName)</code>, so every row of such a file landed in &quot;not imported&quot;.
 Column A now always holds the variable name, whatever the format.</p>
+<h2 id="int-the-block-is-built-in-memory-and-written-once">THE BLOCK IS BUILT IN MEMORY AND WRITTEN ONCE</h2>
+<p>The routine used to write the sheet a cell at a time. Per variable it resolved
+inpsh.Range(varName) twice, read two values off it and wrote up to three cells
+-- about seven crossings each, for as many variables as the info sheet carries.</p>
+<p>Now the named range is resolved once and held, the pair of reads comes off that
+one range, and the whole sheet goes out in a single ToExcelRange. A VList of
+300 variables goes from about 2,100 crossings to about 900, and the write end
+of it to one.</p>
+<p>The clear covers the block this routine owns rather than the whole grid. The
+output sheet is added empty by CreateOutputWorkbook, so there is nothing else
+on it to clear, and Cells.Clear reaches all 17 billion cells to say so.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>inpsh</code>: Worksheet. The source VList worksheet.</li>
@@ -1183,6 +1342,20 @@ Column A now always holds the variable name, whatever the format.</p>
 <p>Sets row heights, column widths, font, header styling, and auto-fits
 columns. Wrapped in error handling to prevent failures on protected
 or special sheets.</p>
+<h2 id="int-the-block-that-was-written-not-the-whole-grid">THE BLOCK THAT WAS WRITTEN, NOT THE WHOLE GRID</h2>
+<p>The row height, the column width and the font used to go onto .Cells: 1,048,576
+rows, 16,384 columns, the whole grid of every data sheet. That costs twice. It
+costs here, and it costs again at SaveAs, because a sheet whose whole grid
+carries a row height, a width and a font is written out with a format record
+for every row and every column. A ten-sheet migration paid it ten times.
+DataSheet.Export went through this already and formats its used range only.</p>
+<p>The block is read off UsedRange, which is one crossing and answers whatever
+AddDataSheets has just written. It is anchored back at A1, so a sheet whose
+first written row sits below the header band still comes out formatted from the
+top, the way the whole-grid pass left it.</p>
+<p>The .Rows(1) lines stay as they are. A header band across one row is cheap, and
+it is what makes the first row read as a header on a sheet with no data under
+it.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>outsh</code>: Worksheet. The worksheet to format.</li>
@@ -1219,24 +1392,31 @@ or special sheets.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (18 file(s))</summary>
+<summary>Used in (25 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="AnaTabIds.html">AnaTabIds.cls</a></li>
 <li><a href="ChoiceKeys.html">ChoiceKeys.cls</a></li>
 <li><a href="ExportButton.html">ExportButton.cls</a></li>
+<li><a href="LLImporter.html">LLImporter.cls</a></li>
 <li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
+<li><a href="LLLog.html">LLLog.cls</a></li>
 <li><a href="LLTranslation.html">LLTranslation.cls</a></li>
 <li><a href="DiseaseExporter.html">DiseaseExporter.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
-<li>FormLogicExportMig.bas</li>
+<li>LinelistRun.bas</li>
 <li>TestExportOtherLinelist.bas</li>
 <li>TestLLExporter.bas</li>
+<li>TestLLExporterTiming.bas</li>
+<li>TestLLImporter.bas</li>
+<li>TestLLImportTiming.bas</li>
 <li>TestLLdictionary.bas</li>
 <li>TestLLGeo.bas</li>
+<li>TestLinelistRun.bas</li>
+<li>TestLLLog.bas</li>
 <li>TestSetupErrors.bas</li>
 <li>TestShowHide.bas</li>
 </ul>

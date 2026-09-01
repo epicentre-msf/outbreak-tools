@@ -65,7 +65,7 @@ other sheets' rows on every save. Variable names are unique across the
 workbook, which is what makes the key safe. A row whose variable left the
 dictionary lingers; Load skips it.</p>
 <p><strong>Depends on:</strong> <a href="ShowHide.html">ShowHide</a>, <a href="ShowHideLayout.html">ShowHideLayout</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, The worksheet a linelist keeps its show/hide table on, and the name a, linelist generated before the internal-sheet rename gave it, The table this class writes, and the name an older build wrote, The per-sheet tables the first show/hide design tiled across the same, worksheet. Both designs answer to ListObjects(1), so they cannot share a sheet., How many saved layouts one store holds at most</p>
-<p><strong>Version:</strong> 1.1 (2026-08-11)</p>
+<p><strong>Version:</strong> 1.2 (2026-09-01)</p>
 </div>
 </details>
 <details open class="doc-section" id="instantiation">
@@ -240,7 +240,8 @@ drops that layout's rows of the layer. DeleteLayout drops a whole layout.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Load(ByVal entries As ShowHide, _
                      Optional ByVal layout As ShowHideLayout, _
-                     Optional ByVal layoutName As String = vbNullString) As Long
+                     Optional ByVal layoutName As String = vbNullString, _
+                     Optional ByVal writeSizes As Boolean = True) As Long
 </code></pre>
 <p>Reading the table back into an entry list.</p>
 <p>Only the rows of the entry list's own layer and of the named state are read.
@@ -250,12 +251,19 @@ layouts existed, every row reads as current state.</p>
 <p>With a layout, the saved size and header direction are applied to the sheet as
 well. Visibility is left to ShowHide.Apply, so a caller that wants the sheet to
 match the list calls Load and then Apply.</p>
+<p>The sizes are written only when writeSizes says so. The open of the form and a
+section press pass False: the live sheet already carries the sizes the store
+recorded at the last close, and N size writes would put back what is there. A
+layout restore and a migration import pass True, because their sizes come from
+elsewhere.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>entries</code>: ShowHide. The entry list to fill.</li>
 <li><code>layout</code>: Optional ShowHideLayout. The sheet to size.</li>
 <li><code>layoutName</code>: Optional String. Empty reads the current state; a name reads
 that saved layout.</li>
+<li><code>writeSizes</code>: Optional Boolean. True writes each stored size to the sheet.
+Default True.</li>
 </ul>
 <p><strong>Returns:</strong> Long. The number of rows that matched an entry.</p>
 <hr />
@@ -458,6 +466,18 @@ what Clear asks for.</p>
 <li><code>keptCount</code>: Long. Set to the number of rows kept.</li>
 </ul>
 <p><strong>Returns:</strong> Variant. A two dimensional block of the kept rows, or Empty.</p>
+<hr />
+<h3 id="int-droppedsize">DroppedSize <a class="anchor-link" href="#int-droppedsize">#</a></h3>
+<p><em>dropped-size</em></p>
+<p><strong>The size a replaced row held for one field, or 0</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DroppedSize(ByVal fieldKey As String) As Double
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fieldKey</code>: String. The field to look up.</li>
+</ul>
+<p><strong>Returns:</strong> Double. The stored size, or 0 when the row held none.</p>
 <hr />
 <h3 id="int-appendsourcelayoutrows">AppendSourceLayoutRows <a class="anchor-link" href="#int-appendsourcelayoutrows">#</a></h3>
 <p><em>append-source-layout-rows</em></p>
@@ -684,7 +704,7 @@ by header and a source written by another build still maps.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (9 file(s))</summary>
+<summary>Used in (12 file(s))</summary>
 <ul>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
@@ -694,7 +714,10 @@ by header and a source written by another build still maps.</p>
 <li>EventsLinelistButtons.bas</li>
 <li>FormLogicAdvanced.bas</li>
 <li>FormLogicShowHideSave.bas</li>
+<li>TestLLExporterTiming.bas</li>
 <li>TestShowHide.bas</li>
+<li>TestShowHideTiming.bas</li>
+<li>TestShowHideTotal.bas</li>
 </ul>
 </details>
   </main>

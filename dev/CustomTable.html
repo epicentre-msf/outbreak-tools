@@ -43,7 +43,7 @@ ImportColumnsNotFound, headers an export was handed and could not write leave
 through ExportColumnsNotFound, and HasColumnsNotImported answers over the last
 import. Both routines unhide every column before they write and hide the same
 columns again after.</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="DropdownLists.html">DropdownLists</a></p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="DropdownLists.html">DropdownLists</a>, Data rows past which Export and Import move a table a column at a time, instead of as one block. Read through BlockRowCap.</p>
 <p><strong>Version:</strong> 1.3 (2026-08-27)</p>
 </div>
 </details>
@@ -430,6 +430,26 @@ the way LLChoices does.</p>
 <details open class="doc-section" id="dataexchange">
 <summary>DataExchange</summary>
 <div class="section-body">
+<h3 id="blockrowcap">BlockRowCap <a class="anchor-link" href="#blockrowcap">#</a></h3>
+<p><em>block-row-cap</em></p>
+<p><strong>Data rows a block move is allowed to carry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get BlockRowCap() As Long
+</code></pre>
+<p>Import, export, and snapshot operations.</p>
+<p>Export and Import move a table as one block: one read into memory, one
+write out. A block holds one Variant per cell, and BetterArray keeps one
+array per row behind it, so past this many data rows the same move goes a
+column at a time -- the shape that carried a 315,298-row geobase. The
+default is BLOCK_ROW_CAP_DEFAULT; a caller with a table that is wide as
+well as long can lower it. A value of 0 or less means the default.</p>
+<p><strong>Returns:</strong> Long. The row cap in force.</p>
+<hr />
+<h3 id="blockrowcap">BlockRowCap <a class="anchor-link" href="#blockrowcap">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let BlockRowCap(ByVal rowCap As Long)
+</code></pre>
+<hr />
 <h3 id="import">Import <a class="anchor-link" href="#import">#</a></h3>
 <p><em>import</em></p>
 <p><strong>Import data from a DataSheet or CustomTable</strong></p>
@@ -439,9 +459,9 @@ the way LLChoices does.</p>
                   Optional ByVal strictColumnSearch As Boolean = False, _
                   Optional ByVal insertShift As Boolean = True, _
                   Optional ByVal formatHeaders As Object = Nothing, _
-                  Optional ByVal keepSourceHeaders As Boolean = False)
+                  Optional ByVal keepSourceHeaders As Boolean = False, _
+                  Optional ByVal calculateAfter As Boolean = True)
 </code></pre>
-<p>Import, export, and snapshot operations.</p>
 <p>Copies column-matched data from the source object into this table.
 When keepSourceHeaders is True, replaces all headers and data entirely.
 Creates a snapshot before import and rolls back on error. Unhides
@@ -458,6 +478,12 @@ merely blanked by Clean. Only the insertShift False branch trims.</p>
 <li><code>insertShift</code>: Optional Boolean. When True, inserts worksheet rows during resize. Defaults to True.</li>
 <li><code>formatHeaders</code>: Optional Object. BetterArray of headers whose formatting to preserve. Defaults to Nothing.</li>
 <li><code>keepSourceHeaders</code>: Optional Boolean. When True, replaces destination headers. Defaults to False.</li>
+<li><code>calculateAfter</code>: Optional Boolean. When True, the table body is calculated
+once the columns are written and the rows the import grows the table by are
+calculated as they arrive. A caller that recalculates the whole sheet after
+its last write passes False and pays for the calculation once. Read on the
+column-matched import only: keepSourceHeaders replaces the table and
+calculates nothing. Defaults to True.</li>
 </ul>
 <hr />
 <h3 id="importcolumnsnotfound">ImportColumnsNotFound <a class="anchor-link" href="#importcolumnsnotfound">#</a></h3>
@@ -650,6 +676,36 @@ one shape and do not repeat the test.</p>
 </ul>
 <p><strong>Returns:</strong> Variant. A 1-based one-dimensional array of cell values.</p>
 <hr />
+<h3 id="int-blockvalues">BlockValues <a class="anchor-link" href="#int-blockvalues">#</a></h3>
+<p><em>block-values</em></p>
+<p><strong>Read a range as a two-dimensional array, whatever its size</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BlockValues(ByVal blockRng As Range) As Variant
+</code></pre>
+<p>Range.Value answers a scalar for a single cell and a 1-based (rows, columns)
+array otherwise. Every block reader here wants the array shape, so the
+single cell is wrapped.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>blockRng</code>: Range. The range to read.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. A (1 To rows, 1 To columns) array.</p>
+<hr />
+<h3 id="int-sourcebody">SourceBody <a class="anchor-link" href="#int-sourcebody">#</a></h3>
+<p><em>source-body</em></p>
+<p><strong>The data body of an import source, or Nothing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SourceBody(ByVal impTab As Object) As Range
+</code></pre>
+<p>The source is reached late-bound (a DataSheet or a CustomTable), and a
+sheet with no data can refuse the call outright, so errors 438 and 91 are
+guarded.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>impTab</code>: Object. A DataSheet or CustomTable.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The body without its header row, or Nothing.</p>
+<hr />
 <h3 id="int-columnvalues">ColumnValues <a class="anchor-link" href="#int-columnvalues">#</a></h3>
 <p><em>column-values</em></p>
 <p><strong>Read a one-column Range as a 1-based list of values</strong></p>
@@ -775,6 +831,27 @@ without going through this object, so it is read again on the next call.</p>
 </ul>
 <p><strong>Returns:</strong> Long. The 1-based position within the header row, or 0 when there is none.</p>
 <hr />
+<h3 id="int-findheader">FindHeader <a class="anchor-link" href="#int-findheader">#</a></h3>
+<p><em>find-header</em></p>
+<p><strong>Search a header row already read into memory for a column name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindHeader(ByVal headerValues As Variant, _
+                            ByVal colName As String, _
+                            ByVal strictSearch As Boolean, _
+                            ByVal matchCase As Boolean) As Long
+</code></pre>
+<p>The in-memory half of FindColumn. Export and ImportObject read the header
+row once and call this for every name they resolve, where a call per name
+through FindColumn read the row off the sheet each time.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>headerValues</code>: Variant. The header row as RowValues answers it, 1-based.</li>
+<li><code>colName</code>: String. Column name to search.</li>
+<li><code>strictSearch</code>: Boolean. When True, whole-string match; otherwise InStr.</li>
+<li><code>matchCase</code>: Boolean. When True, the comparison is case-sensitive.</li>
+</ul>
+<p><strong>Returns:</strong> Long. 1-based position in the row, 0 when not found.</p>
+<hr />
 <h3 id="int-columnindex">ColumnIndex <a class="anchor-link" href="#int-columnindex">#</a></h3>
 <p><em>column-index</em></p>
 <p><strong>Resolve the 1-based column index for a header name</strong></p>
@@ -829,6 +906,20 @@ same guards. Returns Nothing when not found unless required is True.</p>
 <li>ProjectError.ElementNotFound When the column is not found and required is True.</li>
 </ul>
 <hr />
+<h3 id="int-listcolumnat">ListColumnAt <a class="anchor-link" href="#int-listcolumnat">#</a></h3>
+<p><em>list-column-at</em></p>
+<p><strong>The ListColumn at a 1-based position, or Nothing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ListColumnAt(ByVal position As Long) As ListColumn
+</code></pre>
+<p>Guards error 9: the header row and ListColumns can disagree for a moment
+while the table is being resized. Answers Nothing rather than raise.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>position</code>: Long. 1-based column position in the table.</li>
+</ul>
+<p><strong>Returns:</strong> ListColumn. The column, or Nothing.</p>
+<hr />
 <h2 id="int-modify">Modify</h2>
 <h3 id="int-addshifttracker">AddShiftTracker <a class="anchor-link" href="#int-addshifttracker">#</a></h3>
 <p><em>add-shift-tracker</em></p>
@@ -881,7 +972,8 @@ shouldAdd flag, then optionally renumbers the ID column.</p>
 <p><em>add-table-rows</em></p>
 <p><strong>Physically add rows to the ListObject</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddTableRows(ByVal lo As ListObject, ByVal nbRows As Long, ByVal insertShift As Boolean)
+<pre><code class="language-vb">Private Sub AddTableRows(ByVal lo As ListObject, ByVal nbRows As Long, ByVal insertShift As Boolean, _
+                         Optional ByVal calculateRows As Boolean = True)
 </code></pre>
 <p>Inserts worksheet rows below the table when insertShift is True
 (protecting stacked tables), otherwise extends the ListObject range
@@ -891,6 +983,8 @@ directly. Resets state after the operation.</p>
 <li><code>lo</code>: ListObject. The table to extend.</li>
 <li><code>nbRows</code>: Long. Number of rows to add.</li>
 <li><code>insertShift</code>: Boolean. When True, inserts worksheet rows.</li>
+<li><code>calculateRows</code>: Optional Boolean. When True, the rows just added are
+calculated before the routine returns. Defaults to True.</li>
 </ul>
 <hr />
 <h3 id="int-calculateaddedrows">CalculateAddedRows <a class="anchor-link" href="#int-calculateaddedrows">#</a></h3>
@@ -1178,12 +1272,15 @@ a delete, which is the signal a caller reads as stacked tables.</p>
 <p><em>ensure-row-capacity</em></p>
 <p><strong>Guarantee the table has at least the requested data rows</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureRowCapacity(ByVal requiredRows As Long, ByVal insertShift As Boolean)
+<pre><code class="language-vb">Private Sub EnsureRowCapacity(ByVal requiredRows As Long, ByVal insertShift As Boolean, _
+                              Optional ByVal calculateRows As Boolean = True)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>requiredRows</code>: Long. Minimum number of data rows needed.</li>
 <li><code>insertShift</code>: Boolean. When True, inserts worksheet rows.</li>
+<li><code>calculateRows</code>: Optional Boolean. When True, the rows added are calculated
+as they arrive. Defaults to True.</li>
 </ul>
 <hr />
 <h3 id="int-ensurecolumncapacity">EnsureColumnCapacity <a class="anchor-link" href="#int-ensurecolumncapacity">#</a></h3>
@@ -1306,14 +1403,18 @@ is protected.</p>
                          Optional ByVal pasteAtBottom As Boolean = False, _
                          Optional ByVal strictColumnSearch As Boolean = False, _
                          Optional ByVal insertShift As Boolean = True, _
-                         Optional ByVal formatHeaders As Object = Nothing)
+                         Optional ByVal formatHeaders As Object = Nothing, _
+                         Optional ByVal calculateAfter As Boolean = True)
 </code></pre>
-<p>Iterates the source headers, finds matching columns in this table,
-and copies data column by column. Columns not found are recorded and
-read back through ImportColumnsNotFound. Optionally preserves
-formatting for specified headers. Trims the table when insertShift is
-False, and only then: on the default True branch the table grows to fit
-the source but never shrinks.</p>
+<p>Reads both header rows once, maps every source column onto the destination
+column of the same name, and writes the body in runs: one block per stretch
+of destination columns that take a value, with formula columns and columns
+the file lacks left standing between them. Past BlockRowCap the columns
+move one at a time instead. Columns not found are recorded and read back
+through ImportColumnsNotFound. Optionally preserves formatting for
+specified headers. Trims the table when insertShift is False, and only
+then: on the default True branch the table grows to fit the source but
+never shrinks.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>impTab</code>: Object. A DataSheet or CustomTable to import from.</li>
@@ -1321,6 +1422,78 @@ the source but never shrinks.</p>
 <li><code>strictColumnSearch</code>: Optional Boolean. When True, uses exact column matching. Defaults to False.</li>
 <li><code>insertShift</code>: Optional Boolean. When True, inserts worksheet rows during resize. Defaults to True.</li>
 <li><code>formatHeaders</code>: Optional Object. BetterArray of headers whose formatting to preserve. Defaults to Nothing.</li>
+<li><code>calculateAfter</code>: Optional Boolean. When False, neither the rows added nor
+the body are calculated here; the caller does it. Defaults to True.</li>
+</ul>
+<hr />
+<h3 id="int-writeimportruns">WriteImportRuns <a class="anchor-link" href="#int-writeimportruns">#</a></h3>
+<p><em>write-import-runs</em></p>
+<p><strong>Write the source body onto the pasted rows in runs of columns</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteImportRuns(ByVal sourceRng As Range, _
+                            ByVal pasteRows As Range, _
+                            ByRef sourceOf() As Long)
+</code></pre>
+<p>One read of the source body. The destination columns are walked in order
+and every stretch of them that takes a value -- matched to a source column
+and holding no formula -- goes out as one block through
+BetterArray.ToExcelRange. A formula column or a column the file lacks ends
+the run and is left standing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceRng</code>: Range. The source data body, header row excluded.</li>
+<li><code>pasteRows</code>: Range. The destination rows being written, every column.</li>
+<li><code>sourceOf</code>: Long(). Per destination column, the source column it takes, 0 for none.</li>
+</ul>
+<hr />
+<h3 id="int-holdsformula">HoldsFormula <a class="anchor-link" href="#int-holdsformula">#</a></h3>
+<p><em>holds-formula</em></p>
+<p><strong>Whether a destination column holds a formula on the first pasted row</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HoldsFormula(ByVal pasteRows As Range, _
+                              ByVal destColumn As Long, _
+                              ByVal formulaFlags As Variant) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>pasteRows</code>: Range. The destination rows being written.</li>
+<li><code>destColumn</code>: Long. 1-based column within pasteRows.</li>
+<li><code>formulaFlags</code>: Variant. HasFormula of the whole first row: True, False or Null.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the column's first pasted cell holds a formula.</p>
+<hr />
+<h3 id="int-writeimportcolumns">WriteImportColumns <a class="anchor-link" href="#int-writeimportcolumns">#</a></h3>
+<p><em>write-import-columns</em></p>
+<p><strong>Write the source body onto the pasted rows one column at a time</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteImportColumns(ByVal sourceRng As Range, _
+                               ByVal pasteRows As Range, _
+                               ByRef sourceOf() As Long)
+</code></pre>
+<p>The path past BlockRowCap. Each matched column rides its own BetterArray;
+a column holding a formula keeps it.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceRng</code>: Range. The source data body, header row excluded.</li>
+<li><code>pasteRows</code>: Range. The destination rows being written, every column.</li>
+<li><code>sourceOf</code>: Long(). Per destination column, the source column it takes, 0 for none.</li>
+</ul>
+<hr />
+<h3 id="int-copyimportformats">CopyImportFormats <a class="anchor-link" href="#int-copyimportformats">#</a></h3>
+<p><em>copy-import-formats</em></p>
+<p><strong>Copy the formatting of the columns named in formatHeaders</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CopyImportFormats(ByVal sourceRng As Range, _
+                              ByVal pasteRows As Range, _
+                              ByRef sourceOf() As Long, _
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceRng</code>: Range. The source data body, header row excluded.</li>
+<li><code>pasteRows</code>: Range. The destination rows that were written.</li>
+<li><code>sourceOf</code>: Long(). Per destination column, the source column it takes, 0 for none.</li>
+<li><code>sourceHeaders</code>: Variant. The source header row, 1-based.</li>
+<li><code>formatHeaders</code>: Object. BetterArray of header names, or Nothing.</li>
 </ul>
 <hr />
 <h3 id="int-importformat">ImportFormat <a class="anchor-link" href="#int-importformat">#</a></h3>
@@ -1391,6 +1564,43 @@ suppression as a safeguard against stale column indexes.</p>
 </code></pre>
 <p>The pair was written out three times, on both exits of Import and at the
 end of Export.</p>
+<hr />
+<h3 id="int-writeexportblock">WriteExportBlock <a class="anchor-link" href="#int-writeexportblock">#</a></h3>
+<p><em>write-export-block</em></p>
+<p><strong>Write the asked-for columns of the whole table as one block</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteExportBlock(ByVal tableRng As Range, _
+                             ByVal sourceIndexes As BetterArray, _
+                             ByVal destination As Range)
+</code></pre>
+<p>One read of the table range, header row included, one array built in the
+asked-for order, one write through BetterArray.ToExcelRange.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tableRng</code>: Range. The table range, header row included.</li>
+<li><code>sourceIndexes</code>: BetterArray. 1-based table column positions, in output order.</li>
+<li><code>destination</code>: Range. The top-left cell of the output block.</li>
+</ul>
+<hr />
+<h3 id="int-writeexportcolumns">WriteExportColumns <a class="anchor-link" href="#int-writeexportcolumns">#</a></h3>
+<p><em>write-export-columns</em></p>
+<p><strong>Write the asked-for columns one at a time</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteExportColumns(ByVal sourceIndexes As BetterArray, _
+                               ByVal sh As Worksheet, _
+                               ByVal startLine As Long, _
+                               ByVal startColumn As Long)
+</code></pre>
+<p>The path past BlockRowCap. Each column rides its own BetterArray, header
+cell included, so no bound or type of the column before it is still in
+place when the next one is read.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceIndexes</code>: BetterArray. 1-based table column positions, in output order.</li>
+<li><code>sh</code>: Worksheet. The output sheet.</li>
+<li><code>startLine</code>: Long. Row of the header cells on the output sheet.</li>
+<li><code>startColumn</code>: Long. Column of the first output column.</li>
+</ul>
 <hr />
 <h2 id="int-checkings">Checkings</h2>
 <h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
@@ -1469,7 +1679,7 @@ for consistent stack traces.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (33 file(s))</summary>
+<summary>Used in (34 file(s))</summary>
 <ul>
 <li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
@@ -1494,6 +1704,7 @@ for consistent stack traces.</p>
 <li>EventsDesignerMulti.bas</li>
 <li>RibbonDev.bas</li>
 <li>EventsLinelistButtons.bas</li>
+<li>LinelistRun.bas</li>
 <li>MasterSetupEventsManager.bas</li>
 <li>MasterSetupHelpers.bas</li>
 <li>TestAnalysis.bas</li>

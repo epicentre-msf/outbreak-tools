@@ -79,6 +79,21 @@ CheckingOutput keeps, so the next render re-initialises the sheet, and
 the fresh log opens with one info line (&quot;restarted&quot;).</p>
 </div>
 </details>
+<details open class="doc-section" id="the-stopwatch-of-a-long-walk">
+<summary>THE STOPWATCH OF A LONG WALK</summary>
+<div class="section-body">
+<p>StartWalk, MarkStep, StepReport and LogSteps time a walk that runs in
+steps -- an export, an import -- and leave the whole walk on one info
+line, each step with its seconds and a total at the end. MarkStep
+answers the name it was given, so a walk that already carries the step
+it is on keeps one line per step and the name still reaches its failure
+message.
+The stopwatch is state on the instance, so one instance times one walk.
+One line rather than one per step: a migration export names a dozen
+steps, and a line each would push the row cap twelve times faster for
+the same reading.</p>
+</div>
+</details>
 <details open class="doc-section" id="filter-dropdowns">
 <summary>FILTER DROPDOWNS</summary>
 <div class="section-body">
@@ -87,7 +102,7 @@ handler injected through the VBE, and injecting code wants VBE trust,
 which field machines lack. LLLog leaves the worksheet code module alone;
 the dropdowns stay plain validation cells and the filtering is reachable
 through CheckingOutput.FilterWorksheet.</p>
-<p><strong>Version:</strong> 1.1 (2026-08-15)</p>
+<p><strong>Version:</strong> 1.2 (2026-08-31)</p>
 </div>
 </details>
 <details open class="doc-section" id="factory">
@@ -220,6 +235,82 @@ without writing ten thousand lines.</p>
 <li><code>action</code>: String. The action code, used as the bundle title.</li>
 <li><code>detail</code>: Optional String. Short free text beside the timestamp.</li>
 <li><code>source</code>: Optional String. The procedure that raised the event.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="steptiming">
+<summary>StepTiming</summary>
+<div class="section-body">
+<h3 id="startwalk">StartWalk <a class="anchor-link" href="#startwalk">#</a></h3>
+<p><em>start-walk</em></p>
+<p><strong>Open a fresh stopwatch on this log</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub StartWalk()
+</code></pre>
+<p>The stopwatch of a long walk, and the one line it leaves behind.</p>
+<p>Called at the top of a long walk -- an export, an import -- before the
+first step is named. Anything an earlier walk left behind is dropped, so
+a walk that failed before it wrote its line never leaks its steps into
+the next one.
+The stopwatch is state on the instance, so one instance times one walk.
+LLExporter holds its own log and LinelistRun reads the one the event
+service holds, which is why the export walk and the import walk never
+meet in here.</p>
+<hr />
+<h3 id="markstep">MarkStep <a class="anchor-link" href="#markstep">#</a></h3>
+<p><em>mark-step</em></p>
+<p><strong>Close the step that was running and open the one named here</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function MarkStep(ByVal stepName As String) As String
+</code></pre>
+<p>Answers the name it was given, so a walk already carrying the step it is
+on in a variable keeps one line per step:</p>
+<p>atStep = logStore.MarkStep(&quot;reading the dictionary&quot;)</p>
+<p>The name still reaches the failure message, and the stopwatch rides
+along. A walk with no stopwatch open is left alone and the name comes
+straight back, so a caller whose workbook takes no log writes the same
+code.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>stepName</code>: String. What the walk is about to do.</li>
+</ul>
+<p><strong>Returns:</strong> String. The name it was given.</p>
+<hr />
+<h3 id="stepreport">StepReport <a class="anchor-link" href="#stepreport">#</a></h3>
+<p><em>step-report</em></p>
+<p><strong>The whole walk on one line, each step with its seconds</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function StepReport() As String
+</code></pre>
+<p>Reads the pairs and adds the total, and reads them without touching
+them: a step still running is reported with the seconds it has spent so
+far and stays open. So this answers the same walk whether it is called
+at the end or at a failure label.
+The seconds are written through Str, not Format, because Format follows
+the decimal separator of the machine and this box writes a comma. A
+timing line is read beside the timing line of another machine, so the
+two have to be written the same way.</p>
+<p><strong>Returns:</strong> String. The line, empty when no walk is open.</p>
+<hr />
+<h3 id="logsteps">LogSteps <a class="anchor-link" href="#logsteps">#</a></h3>
+<p><em>log-steps</em></p>
+<p><strong>Write the walk''s step times as one info line, and close the walk</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub LogSteps(ByVal action As String, _
+                    Optional ByVal source As String = vbNullString)
+</code></pre>
+<p>One line per walk rather than one per step: a migration export names a
+dozen steps, and a line each would push the row cap of the sheet twelve
+times faster for the same reading.
+The action code is the walk''s own, so the timing line lands in the same
+section block as the success or failure line it belongs with.
+A walk with no stopwatch open writes nothing, so a caller can call this
+on every path.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>action</code>: String. The action code of the walk.</li>
+<li><code>source</code>: Optional String. The procedure that ran the walk.</li>
 </ul>
 <hr />
 </div>
@@ -527,6 +618,65 @@ again, and no blank rows stand between the entries.</p>
 </code></pre>
 <p><strong>Returns:</strong> HiddenNames. Hidden name store bound to the log worksheet.</p>
 <hr />
+<h3 id="int-closeopenstep">CloseOpenStep <a class="anchor-link" href="#int-closeopenstep">#</a></h3>
+<p><em>close-open-step</em></p>
+<p><strong>Keep the step that was running, with the seconds it took</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CloseOpenStep()
+</code></pre>
+<hr />
+<h3 id="int-endwalk">EndWalk <a class="anchor-link" href="#int-endwalk">#</a></h3>
+<p><em>end-walk</em></p>
+<p><strong>Close the stopwatch and drop what it held</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EndWalk()
+</code></pre>
+<hr />
+<h3 id="int-timernow">TimerNow <a class="anchor-link" href="#int-timernow">#</a></h3>
+<p><em>timer-now</em></p>
+<p><strong>The stopwatch reading, as a Double</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TimerNow() As Double
+</code></pre>
+<p>Timer answers a Single, which carries about seven digits: past midday
+the seconds since midnight already use six of them, so a Single reads
+hundredths at best. The widening happens here, once, so every
+subtraction below is done in Double.</p>
+<p><strong>Returns:</strong> Double. Seconds since midnight.</p>
+<hr />
+<h3 id="int-elapsedbetween">ElapsedBetween <a class="anchor-link" href="#int-elapsedbetween">#</a></h3>
+<p><em>elapsed-between</em></p>
+<p><strong>The seconds between two stopwatch readings</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ElapsedBetween(ByVal fromAt As Double, _
+                                ByVal toAt As Double) As Double
+</code></pre>
+<p>A walk that runs across midnight reads as a negative difference, because
+Timer restarts at zero. A day is added back on.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fromAt</code>: Double. The earlier reading.</li>
+<li><code>toAt</code>: Double. The later reading.</li>
+</ul>
+<p><strong>Returns:</strong> Double. The seconds between them.</p>
+<hr />
+<h3 id="int-secondstext">SecondsText <a class="anchor-link" href="#int-secondstext">#</a></h3>
+<p><em>seconds-text</em></p>
+<p><strong>A number of seconds as text, the same way on every machine</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SecondsText(ByVal seconds As Double) As String
+</code></pre>
+<p>Str is used rather than Format because Format follows the decimal
+separator of the machine: this box is en_FR and writes 2,15 where a
+Windows box in English writes 2.15. Two timing lines that are read side
+by side have to be written the same way.
+Str drops the leading zero of a value under one, so it is put back.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>seconds</code>: Double. The seconds to write.</li>
+</ul>
+<p><strong>Returns:</strong> String. Something of the shape &quot;2.15s&quot;.</p>
+<hr />
 <h2 id="int-errorhandling">ErrorHandling</h2>
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><em>throw-error</em></p>
@@ -565,7 +715,7 @@ again, and no blank rows stand between the entries.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (12 file(s))</summary>
+<summary>Used in (16 file(s))</summary>
 <ul>
 <li><a href="FilteredData.html">FilteredData.cls</a></li>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
@@ -573,12 +723,16 @@ again, and no blank rows stand between the entries.</p>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="MasterSetupLog.html">MasterSetupLog.cls</a></li>
 <li>EventsLinelistButtons.bas</li>
+<li>LinelistRun.bas</li>
 <li>FormLogicAdvanced.bas</li>
 <li>FormLogicExportMig.bas</li>
 <li>TestFilteredData.bas</li>
+<li>TestLLExporterTiming.bas</li>
+<li>TestLLImportTiming.bas</li>
 <li>TestGeoModule.bas</li>
 <li>TestEventLinelist.bas</li>
 <li>TestLLLog.bas</li>
+<li>TestShowHideTiming.bas</li>
 </ul>
 </details>
   </main>

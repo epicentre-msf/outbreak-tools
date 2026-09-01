@@ -17,6 +17,16 @@ registry, applies the data validations of the Dictionary, Exports and Analysis
 tables, and hands Development the sheets to hide and to protect.
 EnsureDropdowns and ResetUpdatedRegistry run those two steps on their own,
 Dropdowns answers the dropdown manager and HostWorkbook the workbook.</p>
+<details open class="doc-section" id="the-workbook-level-store-is-made-here">
+<summary>THE WORKBOOK-LEVEL STORE IS MADE HERE</summary>
+<div class="section-body">
+<p>The setup kept its hidden names on a worksheet until now: EventSetup builds a
+store over the registry worksheet for its translation counter, which is
+worksheet scope. The silence switch is a fact about the whole file, so Prepare
+makes a workbook-level store and seeds the switch on it. WorkbookStore answers
+that store, and EventSetup reads the switch through Messenger.</p>
+</div>
+</details>
 <details open class="doc-section" id="running-prepare-more-than-once">
 <summary>RUNNING PREPARE MORE THAN ONCE</summary>
 <div class="section-body">
@@ -33,6 +43,8 @@ ResetUpdatedRegistry.</li>
 ResolveOrCreateWorksheet.</li>
 <li>the hidden and protected sheet lists are handed to Development, which skips
 a name it already holds.</li>
+<li>the workbook flags are ensured rather than written, so a setup that already
+carries the silence switch keeps the value it holds; see EnsureWorkbookFlags.</li>
 </ul>
 </div>
 </details>
@@ -87,8 +99,8 @@ objects to Nothing, forcing lazy re-initialisation on next access.</p>
 </code></pre>
 <p>Runs the complete preparation sequence: registers all dropdown list objects,
 rebuilds the updated values registry, applies data validations to the
-Dictionary, Exports, and Analysis tables, then registers hidden and
-protected sheets via the supplied development manager.</p>
+Dictionary, Exports, and Analysis tables, seeds the workbook-level flags, then
+registers hidden and protected sheets via the supplied development manager.</p>
 <p>The manager is tested first so a missing one stops the run before any
 worksheet is written. RibbonDev.EnsureDevelopment answers Nothing on any
 failure and its caller passes that straight through, so this is a case a
@@ -125,6 +137,18 @@ Analysis, Exports) are registered again and every status tag is written
 back as &quot;yes&quot;. A registry that was already there is lost, so this is the
 wrong call for topping one up. Two of the three callers press a ribbon
 button that means &quot;start again&quot;; the third is Prepare.</p>
+<hr />
+<h3 id="workbookstore">WorkbookStore <a class="anchor-link" href="#workbookstore">#</a></h3>
+<p><em>workbook-store</em></p>
+<p><strong>Workbook-level hidden names of the setup</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get WorkbookStore() As HiddenNames
+</code></pre>
+<p>Returns the HiddenNames manager bound to the setup workbook itself, creating
+it on first access. This is the store the silence switch sits in. EventSetup's
+own store is bound to the registry worksheet and holds worksheet-scoped names,
+so the two do not overlap.</p>
+<p><strong>Returns:</strong> HiddenNames. The workbook-level store.</p>
 <hr />
 <h3 id="dropdowns">Dropdowns <a class="anchor-link" href="#dropdowns">#</a></h3>
 <p><em>dropdowns</em></p>
@@ -163,6 +187,29 @@ has not been configured.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetCaches()
 </code></pre>
+<hr />
+<h3 id="int-ensureworkbookstore">EnsureWorkbookStore <a class="anchor-link" href="#int-ensureworkbookstore">#</a></h3>
+<p><em>ensure-workbook-store</em></p>
+<p><strong>Ensure the workbook-level hidden names store exists</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureWorkbookStore()
+</code></pre>
+<p>Creates the HiddenNames instance over the host workbook on first access.
+HiddenNames.Create walks the whole Names collection, which its own header
+calls the largest cost that class has, so the store is built once and kept.</p>
+<hr />
+<h3 id="int-ensureworkbookflags">EnsureWorkbookFlags <a class="anchor-link" href="#int-ensureworkbookflags">#</a></h3>
+<p><em>ensure-workbook-flags</em></p>
+<p><strong>Seed the workbook-level flags of the setup</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureWorkbookFlags()
+</code></pre>
+<p>Seeds the silence switch, <strong>OBT__SILENT_OPERATIONS</strong>, with &quot;No&quot;. &quot;No&quot; means
+the setup shows every message box it has always shown, so a person pressing
+buttons sees no change at all. The name and both values are read off
+Messenger, which is the one place that string is written on the VBA side.</p>
+<p>EnsureName leaves a name that is already there alone, so a second Prepare on a
+setup someone switched to &quot;Yes&quot; keeps that value.</p>
 <hr />
 <h3 id="int-ensuredropdownmanager">EnsureDropdownManager <a class="anchor-link" href="#int-ensuredropdownmanager">#</a></h3>
 <p><em>ensure-dropdown-manager</em></p>
@@ -495,7 +542,7 @@ all methods in this class.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (10 file(s))</summary>
+<summary>Used in (11 file(s))</summary>
 <ul>
 <li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="DropdownLists.html">DropdownLists.cls</a></li>
@@ -507,6 +554,7 @@ all methods in this class.</p>
 <li>SetupRibbon.bas</li>
 <li>TestTableSpecs.bas</li>
 <li>TestSetupPreparation.bas</li>
+<li>TestSetupRibbon.bas</li>
 </ul>
 </details>
   </main>
