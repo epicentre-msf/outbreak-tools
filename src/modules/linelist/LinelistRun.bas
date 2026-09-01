@@ -241,9 +241,13 @@ Public Function HandleImportData(ByVal sourceWkb As Workbook, _
     Set actsh = ActiveSheet
     StartStepWatch
 
-    ' Open import workbook
+    ' Open import workbook. The file is read and closed with savechanges:=False,
+    ' so it is opened the way the export side opens one (LLExporter.cls:219):
+    ' read-only, and with no link refresh. A workbook whose formulas point at
+    ' other files spends the whole refresh before the walk starts, and it can
+    ' put a dialog on the screen of a run nobody is watching.
     MarkWalkStep "opening the import file"
-    Set impwb = Workbooks.Open(filePath)
+    Set impwb = Workbooks.Open(fileName:=filePath, ReadOnly:=True, UpdateLinks:=0)
     ActiveWindow.WindowState = xlMinimized
 
     ' Read what the file says about itself, once, and read the file over
@@ -570,8 +574,9 @@ Public Function HandleImportGeobase(ByVal sourceWkb As Workbook, _
     appState.ApplyBusyState suppressEvents:=True, calculateOnSave:=True, _
                             busyCursor:=xlWait, blockSecurity:=False
 
-    ' Open geobase workbook
-    Set impwb = Workbooks.Open(filePath)
+    ' Open geobase workbook, read-only and with no link refresh, the same shape
+    ' HandleImportData above uses. A geobase is read and closed unchanged.
+    Set impwb = Workbooks.Open(fileName:=filePath, ReadOnly:=True, UpdateLinks:=0)
     ActiveWindow.WindowState = xlMinimized
 
     ' Import geobase
