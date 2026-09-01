@@ -1576,6 +1576,16 @@ suites:
       # block measures its changes against -- Sessions 117 to 125.
 #      - module: TestLLExporterTiming
 #        covers: [LLExporter]
+      # TestLLImportTiming is the import half of the same measuring pair, and it
+      # stays commented out for the same reason. It is a SEPARATE module from
+      # TestLLExporterTiming on purpose: it runs against the real linelist at
+      # src/tests/.input/old_linelist.xlsb, which is gitignored (.gitignore:32)
+      # and does not travel to the Windows peer. Keeping them apart means the
+      # synthetic export probe still runs where that .xlsb is absent, and only
+      # this one reports the file missing. It exports a migration and imports it
+      # back, so one run leaves BOTH walks' step lists on the same __log sheet.
+#      - module: TestLLImportTiming
+#        covers: [LLImporter]
       # TestLLImporter reaches DictionaryTestFixture, PasswordsTestFixture and,
       # since the geobase pair joined on 2026-08-12, GeoTestFixture -- all three
       # under helpers. That pair drives ImportGeobase over a geobase workbook of
