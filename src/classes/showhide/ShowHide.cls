@@ -94,8 +94,16 @@ End Enum
 'Hidden is True or False. The display words the form shows ("Shown", "Hidden",
 '"Mandatory") are translated at the form and stored nowhere. A user who changes
 'the interface language between two sessions keeps every choice.
-'@depends LLdictionary, LLVariables, ShowHideLayout, BetterArray, Checking
-'@version 1.2 (2026-08-11)
+'THE DICTIONARY IS READ IN BLOCKS
+'-------------------------------------------------------------------------------
+'The build reads each column it needs as one whole-column block through
+'dict.DataRange and answers every per-variable question from those arrays.
+'Every block spans the same rows (the data body of the dictionary), so one row
+'index reads across all of them. It used to ask LLVariables.Value one cell at a
+'time, two crossings per call, 2V + 14N per build; twelve block reads cost the
+'same whatever V is.
+'@depends LLdictionary, ShowHideLayout, BetterArray, Checking
+'@version 1.3 (2026-09-01)
 
 
 Private Const CLASS_NAME As String = "ShowHide"
@@ -115,6 +123,33 @@ Private Const COL_COLUMN_INDEX As String = "column index"
 
 'The one `register book` value that asks for a turned header
 Private Const PRINT_VERTICAL As String = "print, vertical header"
+
+'The dictionary columns the build reads, one block each, row-aligned. A column
+'the dictionary does not carry is a block of empty strings and its flag is
+'False, so the build reads the same shape whatever the dictionary holds.
+Private Type TDictionaryBlocks
+    rowCount As Long
+    names As Variant
+    sheetNames As Variant
+    sheetTypes As Variant
+    visibilities As Variant
+    statuses As Variant
+    controls As Variant
+    labels As Variant
+    subSections As Variant
+    columnIndexes As Variant
+    crfIndexes As Variant
+    crfStatuses As Variant
+    registerBooks As Variant
+    hasVisibility As Boolean
+    hasStatus As Boolean
+    hasRegisterBook As Boolean
+    hasCrfStatus As Boolean
+    hasSubSection As Boolean
+    hasSheetType As Boolean
+    hasCrfIndex As Boolean
+    hasColumnIndex As Boolean
+End Type
 
 Private Type TShowHide
     fieldKeys() As String
@@ -570,8 +605,9 @@ End Function
 '@label:initialise
 '@sub-title Fill the entry list from the dictionary
 '@details
-'Public because the factory calls it on a fresh instance. Every variable of the
-'sheet is read once and the arrays are trimmed to what matched.
+'Public because the factory calls it on a fresh instance. The columns the
+'build needs are read as whole blocks first, then every row is read from the
+'arrays, and the entry arrays are trimmed to what matched.
 '@param dict LLdictionary. The dictionary to read.
 '@param layer Byte. A ShowHideWorksheetLayer value. The layer being built.
 '@param sheetName String. The base sheet name.
@@ -580,20 +616,11 @@ Public Sub Initialise(ByVal dict As LLdictionary, _
                       ByVal layer As Byte, _
                       ByVal sheetName As String)
 
-    Dim vars As LLVariables
-    Dim varNames As BetterArray
+    Dim blocks As TDictionaryBlocks
     Dim idx As Long
     Dim varName As String
     Dim count As Long
     Dim maxEntries As Long
-    Dim hasVisibility As Boolean
-    Dim hasStatus As Boolean
-    Dim hasRegisterBook As Boolean
-    Dim hasCrfStatus As Boolean
-    Dim hasSubSection As Boolean
-    Dim hasSheetType As Boolean
-    Dim hasCrfIndex As Boolean
-    Dim hasColumnIndex As Boolean
     Dim headerVal As String
     Dim controlVal As String
     Dim subSectionVal As String
@@ -608,22 +635,10 @@ Public Sub Initialise(ByVal dict As LLdictionary, _
 
     If Not dict.Prepared Then dict.Prepare
 
-    Set vars = LLVariables.Create(dict)
-    Set varNames = vars.VariableNames
+    ReadBlocks dict, blocks
+    If blocks.rowCount = 0 Then Exit Sub
 
-    If varNames Is Nothing Then Exit Sub
-    If varNames.Length = 0 Then Exit Sub
-
-    hasVisibility = dict.ColumnExists(COL_VISIBILITY)
-    hasStatus = dict.ColumnExists(COL_STATUS)
-    hasRegisterBook = dict.ColumnExists(COL_REGISTER_BOOK)
-    hasCrfStatus = dict.ColumnExists(COL_CRF_STATUS)
-    hasSubSection = dict.ColumnExists(COL_SUB_SECTION)
-    hasSheetType = dict.ColumnExists(COL_SHEET_TYPE)
-    hasCrfIndex = dict.ColumnExists(COL_CRF_INDEX)
-    hasColumnIndex = dict.ColumnExists(COL_COLUMN_INDEX)
-
-    maxEntries = varNames.Length
+    maxEntries = blocks.rowCount
     ReDim this.fieldKeys(1 To maxEntries)
     ReDim this.headers(1 To maxEntries)
     ReDim this.hidden(1 To maxEntries)
@@ -636,19 +651,19 @@ Public Sub Initialise(ByVal dict As LLdictionary, _
 
     count = 0
 
-    For idx = varNames.LowerBound To varNames.UpperBound
-        varName = CStr(varNames.Item(idx))
+    For idx = 1 To blocks.rowCount
+        varName = BlockText(blocks.names, idx)
         If LenB(Trim$(varName)) = 0 Then GoTo NextVar
 
-        If Not MatchesSheet(vars, varName) Then GoTo NextVar
+        If Not MatchesSheet(BlockText(blocks.sheetNames, idx)) Then GoTo NextVar
 
-        If hasSheetType Then
-            If Not MatchesLayer(Normalise(SafeValue(vars, COL_SHEET_TYPE, varName))) Then GoTo NextVar
+        If blocks.hasSheetType Then
+            If Not MatchesLayer(Normalise(BlockText(blocks.sheetTypes, idx))) Then GoTo NextVar
         End If
 
         'A variable the designer hid never reaches the user's list
-        If hasVisibility Then
-            If Normalise(SafeValue(vars, COL_VISIBILITY, varName)) = "always hidden" Then GoTo NextVar
+        If blocks.hasVisibility Then
+            If Normalise(BlockText(blocks.visibilities, idx)) = "always hidden" Then GoTo NextVar
         End If
 
         If HasField(varName) Then GoTo NextVar
@@ -657,15 +672,15 @@ Public Sub Initialise(ByVal dict As LLdictionary, _
 
         this.fieldKeys(count) = varName
 
-        controlVal = Normalise(SafeValue(vars, COL_CONTROL, varName))
+        controlVal = Normalise(BlockText(blocks.controls, idx))
         this.controls(count) = controlVal
 
-        headerVal = SafeValue(vars, COL_MAIN_LABEL, varName)
+        headerVal = BlockText(blocks.labels, idx)
         If LenB(headerVal) = 0 Then headerVal = varName
 
-        If hasSubSection Then
+        If blocks.hasSubSection Then
             If InStr(1, controlVal, "geo") > 0 Or InStr(1, controlVal, "hf") > 0 Then
-                subSectionVal = SafeValue(vars, COL_SUB_SECTION, varName)
+                subSectionVal = BlockText(blocks.subSections, idx)
                 If LenB(subSectionVal) > 0 Then
                     headerVal = subSectionVal & ": " & headerVal
                 End If
@@ -674,10 +689,10 @@ Public Sub Initialise(ByVal dict As LLdictionary, _
         this.headers(count) = headerVal
 
         posValue = vbNullString
-        If layer = ShowHideLayerCRF And hasCrfIndex Then
-            posValue = SafeValue(vars, COL_CRF_INDEX, varName)
-        ElseIf hasColumnIndex Then
-            posValue = SafeValue(vars, COL_COLUMN_INDEX, varName)
+        If layer = ShowHideLayerCRF And blocks.hasCrfIndex Then
+            posValue = BlockText(blocks.crfIndexes, idx)
+        ElseIf blocks.hasColumnIndex Then
+            posValue = BlockText(blocks.columnIndexes, idx)
         End If
         If LenB(posValue) > 0 And IsNumeric(posValue) Then
             this.positions(count) = CLng(posValue)
@@ -686,11 +701,10 @@ Public Sub Initialise(ByVal dict As LLdictionary, _
         End If
 
         registerBook = vbNullString
-        If hasRegisterBook Then registerBook = Normalise(SafeValue(vars, COL_REGISTER_BOOK, varName))
+        If blocks.hasRegisterBook Then registerBook = Normalise(BlockText(blocks.registerBooks, idx))
         this.verticalHeader(count) = (registerBook = PRINT_VERTICAL)
 
-        layerStatus = Normalise(StatusForLayer(vars, varName, registerBook, _
-                                            hasVisibility, hasStatus, hasCrfStatus))
+        layerStatus = Normalise(StatusForLayer(blocks, idx, registerBook))
 
         this.mandatory(count) = IsMandatoryStatus(layerStatus, controlVal, layer)
         this.locked(count) = IsLockedStatus(layerStatus, controlVal, layer, _
@@ -760,14 +774,10 @@ End Function
 
 '@label:matches-sheet
 '@sub-title Whether a variable belongs to the sheet being built
-'@param vars LLVariables. The variable reader.
-'@param varName String. The variable to test.
+'@param varSheetName String. The variable's `sheet name` value.
 '@return Boolean. True when the sheet names agree.
-Private Function MatchesSheet(ByVal vars As LLVariables, ByVal varName As String) As Boolean
-    Dim varSheetName As String
-
-    varSheetName = Normalise(SafeValue(vars, COL_SHEET_NAME, varName))
-    MatchesSheet = (StrComp(varSheetName, Normalise(this.sheetName), vbTextCompare) = 0)
+Private Function MatchesSheet(ByVal varSheetName As String) As Boolean
+    MatchesSheet = (StrComp(Normalise(varSheetName), Normalise(this.sheetName), vbTextCompare) = 0)
 End Function
 
 '@label:matches-layer
@@ -792,29 +802,23 @@ End Function
 
 '@label:status-for-layer
 '@sub-title Read the status column that belongs to the layer
-'@param vars LLVariables. The variable reader.
-'@param varName String. The variable to read.
+'@param blocks TDictionaryBlocks. The column blocks of the dictionary.
+'@param row Long. The dictionary row of the variable, one based.
 '@param registerBook String. The `register book` value, already read.
-'@param hasVisibility Boolean. Whether the dictionary carries `visibility`.
-'@param hasStatus Boolean. Whether the dictionary carries `status`.
-'@param hasCrfStatus Boolean. Whether the dictionary carries `crf status`.
 '@return String. The status text for this layer.
-Private Function StatusForLayer(ByVal vars As LLVariables, _
-                             ByVal varName As String, _
-                             ByVal registerBook As String, _
-                             ByVal hasVisibility As Boolean, _
-                             ByVal hasStatus As Boolean, _
-                             ByVal hasCrfStatus As Boolean) As String
+Private Function StatusForLayer(ByRef blocks As TDictionaryBlocks, _
+                                ByVal row As Long, _
+                                ByVal registerBook As String) As String
     Select Case this.targetLayer
         Case ShowHideLayerPrinted
             StatusForLayer = registerBook
         Case ShowHideLayerCRF
-            If hasCrfStatus Then StatusForLayer = SafeValue(vars, COL_CRF_STATUS, varName)
+            If blocks.hasCrfStatus Then StatusForLayer = BlockText(blocks.crfStatuses, row)
         Case Else
-            If hasVisibility Then
-                StatusForLayer = SafeValue(vars, COL_VISIBILITY, varName)
-            ElseIf hasStatus Then
-                StatusForLayer = SafeValue(vars, COL_STATUS, varName)
+            If blocks.hasVisibility Then
+                StatusForLayer = BlockText(blocks.visibilities, row)
+            ElseIf blocks.hasStatus Then
+                StatusForLayer = BlockText(blocks.statuses, row)
             End If
     End Select
 End Function
@@ -901,22 +905,126 @@ Private Function InitialHidden(ByVal layerStatus As String) As Boolean
     End Select
 End Function
 
-'@label:safe-value
-'@sub-title Read a dictionary cell and answer empty when it is absent
-'@param vars LLVariables. The variable reader.
+'@label:read-blocks
+'@sub-title Read every column the build needs as one block each
+'@details
+'The row count comes from the `variable name` column, and every other block is
+'read over the same rows, because dict.DataRange spans the data body of the
+'dictionary whichever column is asked for. A column the dictionary lacks is
+'read as a block of empty strings with its flag False. `variable name` is a
+'required column, so a dictionary that has no such column has no rows to give.
+'@param dict LLdictionary. The dictionary to read.
+'@param blocks TDictionaryBlocks. Filled here.
+Private Sub ReadBlocks(ByVal dict As LLdictionary, ByRef blocks As TDictionaryBlocks)
+    blocks.rowCount = 0
+    blocks.names = ColumnBlock(dict, "variable name", 0, blocks.rowCount)
+    If blocks.rowCount = 0 Then Exit Sub
+
+    blocks.hasVisibility = dict.ColumnExists(COL_VISIBILITY)
+    blocks.hasStatus = dict.ColumnExists(COL_STATUS)
+    blocks.hasRegisterBook = dict.ColumnExists(COL_REGISTER_BOOK)
+    blocks.hasCrfStatus = dict.ColumnExists(COL_CRF_STATUS)
+    blocks.hasSubSection = dict.ColumnExists(COL_SUB_SECTION)
+    blocks.hasSheetType = dict.ColumnExists(COL_SHEET_TYPE)
+    blocks.hasCrfIndex = dict.ColumnExists(COL_CRF_INDEX)
+    blocks.hasColumnIndex = dict.ColumnExists(COL_COLUMN_INDEX)
+
+    blocks.sheetNames = ColumnBlock(dict, COL_SHEET_NAME, blocks.rowCount)
+    blocks.controls = ColumnBlock(dict, COL_CONTROL, blocks.rowCount)
+    blocks.labels = ColumnBlock(dict, COL_MAIN_LABEL, blocks.rowCount)
+    blocks.sheetTypes = ColumnBlock(dict, COL_SHEET_TYPE, blocks.rowCount, , blocks.hasSheetType)
+    blocks.visibilities = ColumnBlock(dict, COL_VISIBILITY, blocks.rowCount, , blocks.hasVisibility)
+    blocks.statuses = ColumnBlock(dict, COL_STATUS, blocks.rowCount, , blocks.hasStatus)
+    blocks.subSections = ColumnBlock(dict, COL_SUB_SECTION, blocks.rowCount, , blocks.hasSubSection)
+    blocks.columnIndexes = ColumnBlock(dict, COL_COLUMN_INDEX, blocks.rowCount, , blocks.hasColumnIndex)
+    blocks.crfIndexes = ColumnBlock(dict, COL_CRF_INDEX, blocks.rowCount, , blocks.hasCrfIndex)
+    blocks.crfStatuses = ColumnBlock(dict, COL_CRF_STATUS, blocks.rowCount, , blocks.hasCrfStatus)
+    blocks.registerBooks = ColumnBlock(dict, COL_REGISTER_BOOK, blocks.rowCount, , blocks.hasRegisterBook)
+End Sub
+
+'@label:column-block
+'@sub-title One dictionary column as a one based array of strings
+'@details
+'One crossing per column: the range's Value comes back as a 2D array, or as a
+'single value when the dictionary holds one row, and both are flattened to the
+'same shape. A column that is absent, or that the read refuses, answers a
+'block of `expectedRows` empty strings, so a caller reads it like any other.
+'@param dict LLdictionary. The dictionary to read.
 '@param colName String. The column to read.
-'@param varName String. The variable to read.
-'@return String. The cell value, or an empty string.
-Private Function SafeValue(ByVal vars As LLVariables, _
-                           ByVal colName As String, _
-                           ByVal varName As String) As String
-    Dim result As String
+'@param expectedRows Long. The rows every block has to hold; 0 lets the column
+'  decide, which is how the first block sets the count.
+'@param rowsRead Long. Set to the number of rows the block holds.
+'@param present Optional Boolean. False skips the read and answers the empty block.
+'@return Variant. A one based array of strings.
+Private Function ColumnBlock(ByVal dict As LLdictionary, _
+                             ByVal colName As String, _
+                             ByVal expectedRows As Long, _
+                             Optional ByRef rowsRead As Long, _
+                             Optional ByVal present As Boolean = True) As Variant
+    Dim source As Range
+    Dim raw As Variant
+    Dim block() As String
+    Dim nbRows As Long
+    Dim counter As Long
 
+    If present Then
+        On Error Resume Next
+            Set source = dict.DataRange(colName)
+        On Error GoTo 0
+    End If
+
+    If source Is Nothing Then
+        nbRows = expectedRows
+    Else
+        nbRows = source.Rows.Count
+        If expectedRows > 0 Then nbRows = expectedRows
+    End If
+
+    rowsRead = nbRows
+    If nbRows < 1 Then
+        ColumnBlock = Array()
+        Exit Function
+    End If
+
+    ReDim block(1 To nbRows)
+    If source Is Nothing Then
+        ColumnBlock = block
+        Exit Function
+    End If
+
+    If source.Rows.Count = 1 Then
+        block(1) = CellText(source.Cells(1, 1).Value)
+    Else
+        raw = source.Columns(1).Value
+        For counter = 1 To nbRows
+            If counter <= UBound(raw, 1) Then block(counter) = CellText(raw(counter, 1))
+        Next counter
+    End If
+
+    ColumnBlock = block
+End Function
+
+'@label:block-text
+'@sub-title One row of a block, empty when the block holds nothing
+'@param block Variant. A block ColumnBlock built.
+'@param row Long. The row wanted, one based.
+'@return String. The text at that row.
+Private Function BlockText(ByRef block As Variant, ByVal row As Long) As String
+    If Not IsArray(block) Then Exit Function
     On Error Resume Next
-        result = vars.Value(colName, varName)
+        BlockText = block(row)
     On Error GoTo 0
+End Function
 
-    SafeValue = result
+'@label:cell-text
+'@sub-title A cell value as text, with an error value or an empty read as nothing
+'@param value Variant. What the cell answered.
+'@return String. The text.
+Private Function CellText(ByVal value As Variant) As String
+    If IsError(value) Then Exit Function
+    If IsEmpty(value) Then Exit Function
+    If IsNull(value) Then Exit Function
+    CellText = CStr(value)
 End Function
 
 '@label:normalise
