@@ -686,11 +686,65 @@ Private Function StatusWord(ByVal tagName As String) As String
     On Error GoTo 0
 End Function
 
+'The six status words, translated once for one fill of a list.
+'
+'A fill asked StatusWord per row, and every TranslatedValue call reads the
+'address of the translation table's body before it answers from memory: two
+'crossings per row, for a column that only ever shows one of six words. The
+'six are read here once and the fill picks from them in memory. A word the
+'table has no row for is kept as its tag, which is what StatusWord answers.
+Private Function StatusWords() As Collection
+    Dim words As Collection
+
+    Set words = New Collection
+    words.Add StatusWord(STATUS_SHOWN_TAG), STATUS_SHOWN_TAG
+    words.Add StatusWord(STATUS_HIDDEN_TAG), STATUS_HIDDEN_TAG
+    words.Add StatusWord(STATUS_HORIZ_TAG), STATUS_HORIZ_TAG
+    words.Add StatusWord(STATUS_VERTI_TAG), STATUS_VERTI_TAG
+    words.Add StatusWord(STATUS_MANDATORY_TAG), STATUS_MANDATORY_TAG
+    words.Add StatusWord(STATUS_LOCKED_TAG), STATUS_LOCKED_TAG
+
+    Set StatusWords = words
+End Function
+
+'One status word out of the six StatusWords read. An empty tag answers empty,
+'the way StatusWord does for a section nobody can change.
+Private Function StatusWordIn(ByVal words As Collection, ByVal tagName As String) As String
+    StatusWordIn = tagName
+    If LenB(tagName) = 0 Then Exit Function
+
+    On Error Resume Next
+    StatusWordIn = words.Item(tagName)
+    On Error GoTo 0
+End Function
+
 'The word the status column shows for one entry of a show/hide list.
 Private Function ShowHideStatusText(ByVal entryIdx As Long, _
                                     ByVal onPrintForm As Boolean) As String
     ShowHideStatusText = StatusWord(ShowHideStatusTag(entryIdx, onPrintForm))
 End Function
+
+'Hand a list control every row in one write.
+'
+'AddItem plus one List(row, col) write per column paid one crossing per cell.
+'The block is built in memory and assigned once. A control the deployed form
+'still carries as one column may refuse a wider block, and the first column is
+'what the user needs most, so the rows go in one at a time then, first column
+'only. The block is zero based on both sides, the way the control counts.
+Private Sub AssignListBlock(ByVal listCtrl As Object, ByRef block() As Variant)
+    Dim rowIdx As Long
+
+    On Error Resume Next
+    listCtrl.List = block
+    If Err.Number = 0 Then Exit Sub
+
+    Err.Clear
+    listCtrl.Clear
+    For rowIdx = LBound(block, 1) To UBound(block, 1)
+        listCtrl.AddItem block(rowIdx, 0)
+    Next rowIdx
+    On Error GoTo 0
+End Sub
 
 'The word the status column shows for one section.
 '
@@ -706,15 +760,20 @@ End Function
 'The list carries three columns: the label the user reads, the variable name the
 'dictionary spells, and the state the entry is in right now. Only the first
 'column was ever written, so the two beside it stayed blank on every open.
-'ColumnCount is set before the rows go in, because writing List(row, 1) on a one
-'column control is refused.
+'ColumnCount is set before the rows go in, because a block wider than the
+'control shows its first column alone.
 '
-'The status word is worked out per row. It used to be two words read once and
-'picked between, which was cheaper and could only ever say shown or hidden.
+'The status tag is worked out per row and its word picked from the six read
+'once. The rows are built in memory and handed to the control in one write:
+'the fill used to pay three crossings per row for the cells and two more for
+'the translation, on a form that lists every variable of the sheet.
 Private Sub PopulateShowHideList(ByVal frm As Object)
     Dim listCtrl As Object
+    Dim words As Collection
+    Dim block() As Variant
     Dim counter As Long
     Dim rowIdx As Long
+    Dim entryCount As Long
     Dim onPrintForm As Boolean
 
     If showHideEntries Is Nothing Then Exit Sub
@@ -729,17 +788,19 @@ Private Sub PopulateShowHideList(ByVal frm As Object)
     On Error GoTo 0
 
     listCtrl.Clear
-    For counter = 1 To showHideEntries.EntryCount
-        rowIdx = counter - 1
-        listCtrl.AddItem showHideEntries.HeaderText(counter)
+    entryCount = showHideEntries.EntryCount
+    If entryCount = 0 Then Exit Sub
 
-        'A control the deployed form still carries as one column refuses these
-        'two writes, and the label column is what the user needs most.
-        On Error Resume Next
-        listCtrl.List(rowIdx, 1) = showHideEntries.FieldKey(counter)
-        listCtrl.List(rowIdx, 2) = ShowHideStatusText(counter, onPrintForm)
-        On Error GoTo 0
-    Next
+    Set words = StatusWords()
+    ReDim block(0 To entryCount - 1, 0 To 2)
+    For counter = 1 To entryCount
+        rowIdx = counter - 1
+        block(rowIdx, 0) = showHideEntries.HeaderText(counter)
+        block(rowIdx, 1) = showHideEntries.FieldKey(counter)
+        block(rowIdx, 2) = StatusWordIn(words, ShowHideStatusTag(counter, onPrintForm))
+    Next counter
+
+    AssignListBlock listCtrl, block
 End Sub
 
 'Rewrite the status cell of one row, after the user changed that entry. The
@@ -947,8 +1008,13 @@ Private Function SectionContextFor(ByVal sh As Worksheet, _
 
     'The steps are named here because this is where the work is. A caller with
     'no walk open (the sections form) pays nothing for the marks.
+    '
+    'The map reads through the store the event service already holds for this
+    'sheet. Left to build its own it walks every name of the sheet, three reads
+    'per name, to read back a dozen blocks. A sheet whose store could not be
+    'built hands Nothing, and the map builds its own as it used to.
     MarkShowHideStep "map"
-    Set secMap = SectionMap.Create(sh)
+    Set secMap = SectionMap.Create(sh, SheetStoreOf(sh))
     If secMap.Count = 0 Then Exit Function
 
     If SessionHoldsSheet(sh) Then
@@ -1136,26 +1202,43 @@ End Function
 'The tag itself is the fallback, which is what TranslatedValue answers for a
 'code the translation table has no row for. A linelist generated before the row
 'reached the workbook reads "LBL_EmptySection" and still works.
-Private Function SectionDisplayName(ByVal sectionName As String) As String
-    SectionDisplayName = sectionName
-    If LenB(Trim$(sectionName)) > 0 Then Exit Function
-
-    SectionDisplayName = EMPTY_SECTION_TAG
+'
+'Read once per fill: the stand-in is the same word on every blank block, and a
+'translation call costs two crossings before it answers from memory. The log
+'line of one press names one section, so it reads the word through
+'SectionDisplayName below.
+Private Function EmptySectionTitle() As String
+    EmptySectionTitle = EMPTY_SECTION_TAG
     If tradsform Is Nothing Then Exit Function
 
     On Error Resume Next
-    SectionDisplayName = tradsform.TranslatedValue(EMPTY_SECTION_TAG)
+    EmptySectionTitle = tradsform.TranslatedValue(EMPTY_SECTION_TAG)
     On Error GoTo 0
+End Function
+
+'The title one section shows, for a caller naming one section at a time.
+Private Function SectionDisplayName(ByVal sectionName As String) As String
+    SectionDisplayName = sectionName
+    If LenB(Trim$(sectionName)) = 0 Then SectionDisplayName = EmptySectionTitle()
 End Function
 
 'Fill the sections list. Two columns: the title, and whether the section is
 'shown or hidden right now. A section holding nothing the user owns is listed
 'and its status is left empty, so a reader can see it is there and that the
 'form will not move it.
+'
+'The rows are built in memory, with the two status words and the empty title
+'read once, and handed to the control in one write, the way the show/hide list
+'is.
 Private Sub PopulateSectionsList(ByVal frm As Object)
     Dim listCtrl As Object
+    Dim words As Collection
+    Dim block() As Variant
+    Dim emptyTitle As String
+    Dim sectionName As String
     Dim counter As Long
     Dim rowIdx As Long
+    Dim sectionCount As Long
 
     If frm Is Nothing Then Exit Sub
     If activeSections Is Nothing Then Exit Sub
@@ -1171,17 +1254,27 @@ Private Sub PopulateSectionsList(ByVal frm As Object)
     On Error GoTo 0
 
     listCtrl.Clear
-    For counter = 1 To activeSections.Count
-        rowIdx = counter - 1
-        listCtrl.AddItem SectionDisplayName(activeSections.SectionNameAt(counter))
+    sectionCount = activeSections.Count
+    If sectionCount = 0 Then Exit Sub
 
-        On Error Resume Next
+    Set words = StatusWords()
+    emptyTitle = EmptySectionTitle()
+    ReDim block(0 To sectionCount - 1, 0 To 1)
+    For counter = 1 To sectionCount
+        rowIdx = counter - 1
+
+        sectionName = activeSections.SectionNameAt(counter)
+        If LenB(Trim$(sectionName)) = 0 Then sectionName = emptyTitle
+        block(rowIdx, 0) = sectionName
+
+        block(rowIdx, 1) = vbNullString
         If activeSections.CanChange(counter) Then
-            listCtrl.List(rowIdx, 1) = _
-                SectionStatusText(activeSections.IsHidden(counter))
+            block(rowIdx, 1) = StatusWordIn(words, _
+                IIf(activeSections.IsHidden(counter), STATUS_HIDDEN_TAG, STATUS_SHOWN_TAG))
         End If
-        On Error GoTo 0
-    Next
+    Next counter
+
+    AssignListBlock listCtrl, block
 End Sub
 
 '@Description("Open the sections form from the show/hide form")
@@ -1332,8 +1425,14 @@ Public Sub ClickOptionsShowHideSections(ByVal Index As Long)
 
     shouldHide = activeSectionsForm.OPT_Hide.Value
 
+    'No busy state around the write. The session this click sits in already
+    'holds what the busy state would bring: ClickOpenShowHideSections keeps
+    'worksheet events quiet for the whole form, the form is modal so nothing
+    'else can reach the sheet, and opened from the show/hide form -- the only
+    'way in today -- the layout is that session's, with its bracket open, so
+    'the hidden writes below toggle neither protection nor the screen. The
+    'busy state's exit was the one repaint of a click.
     On Error GoTo ErrHand
-    LinelistEventsManager.LLEnterBusyState
 
     activeSections.SetHidden sectionIdx, shouldHide
 
@@ -1357,7 +1456,6 @@ Public Sub ClickOptionsShowHideSections(ByVal Index As Long)
 
 ErrHand:
     If Err.Number <> 0 Then LogFailureLine "ClickOptionsShowHideSections", "showhide-sections", Err.Description
-    LinelistEventsManager.LLExitBusyState
 End Sub
 
 '@Description("Callback for click on the list of showhide")

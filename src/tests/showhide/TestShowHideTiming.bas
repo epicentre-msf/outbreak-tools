@@ -301,6 +301,46 @@ TestFail:
     CustomTestLogFailure Assert, "TestTimeSectionMapCreate", Err.Number, Err.Description
 End Sub
 
+'@sub-title Times SectionMap.Create handed a store already built over the sheet.
+'@details
+'What the section button pays since Session 131: the event service holds one
+'HiddenNames per sheet, and the map reads its B blocks through it. The store
+'is built outside the clock, the way EventLinelist builds it once per sheet,
+'so the number beside TestTimeSectionMapCreate's is the walk of M names that
+'the press no longer pays.
+'@TestMethod("ShowHideTiming")
+Public Sub TestTimeSectionMapCreateWithStore()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTimeSectionMapCreateWithStore"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim store As HiddenNames
+    Dim secMap As SectionMap
+    Dim startedAt As Double
+    Dim elapsed As Double
+
+    If Not FixtureReady("TestTimeSectionMapCreateWithStore") Then Exit Sub
+
+    Set sh = FixtureWorkbook.Worksheets(SECTIONS_SHEET)
+    AddFillerNames sh, HIDDEN_NAMES
+    WriteSectionBlocks sh, SECTION_BLOCKS
+    Set store = HiddenNames.Create(sh)
+
+    startedAt = Timer
+    Set secMap = SectionMap.Create(sh, store)
+    elapsed = ElapsedSince(startedAt)
+
+    Assert.IsTrue (secMap.Count = SECTION_BLOCKS), _
+                  "The map read the B blocks back through the store: " & _
+                  CStr(secMap.Count) & " of " & CStr(SECTION_BLOCKS)
+
+    LogTiming "SectionMap.Create, store handed in", elapsed
+    LogFixtureShape
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTimeSectionMapCreateWithStore", Err.Number, Err.Description
+End Sub
+
 
 '@section Reporting
 '===============================================================================

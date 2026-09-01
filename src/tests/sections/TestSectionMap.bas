@@ -290,6 +290,75 @@ TestFail:
 End Sub
 
 '@TestMethod("SectionMap")
+Public Sub TestAHandedInStoreReadsTheSameBlocks()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAHandedInStoreReadsTheSameBlocks"
+    If Not FixtureReady("TestAHandedInStoreReadsTheSameBlocks") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim writer As SectionMap
+    Dim store As HiddenNames
+    Dim reader As SectionMap
+
+    Set sh = ScratchSheet()
+
+    Set writer = SectionMap.Create(sh)
+    writer.Add "Demographics", 2, 7
+    writer.Add "Laboratory", 8, 11
+
+    'The linelist button module holds one store per sheet and hands it in, so
+    'the map does not walk every name of the sheet to read a dozen back. The
+    'blocks it answers have to be the ones a map building its own store reads.
+    Set store = HiddenNames.Create(sh)
+    Set reader = SectionMap.Create(sh, store)
+
+    Assert.AreEqual CLng(2), reader.Count, _
+                    "A map reading through a handed-in store finds both blocks"
+    Assert.AreEqual "Demographics", reader.SectionNameAt(1), _
+                    "The first block carries its title"
+    Assert.AreEqual CLng(2), reader.StartAt(1), _
+                    "And its first position"
+    Assert.AreEqual CLng(8), reader.StartAt(2), _
+                    "The second its first position"
+    Assert.AreEqual CLng(11), reader.EndAt(2), _
+                    "And its last"
+    Assert.AreEqual CLng(2), reader.IndexAtPosition(9), _
+                    "And a lookup lands in the block it should"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAHandedInStoreReadsTheSameBlocks", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SectionMap")
+Public Sub TestAStoreOfAnotherSheetIsRefused()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAStoreOfAnotherSheetIsRefused"
+    If Not FixtureReady("TestAStoreOfAnotherSheetIsRefused") Then Exit Sub
+    On Error GoTo ExpectError
+
+    Dim mapped As Worksheet
+    Dim other As Worksheet
+    Dim sut As SectionMap
+
+    Set mapped = ScratchSheet()
+    Set other = ScratchSheet()
+
+    'A store reads the names of the sheet it was built over. Handed one built
+    'over another sheet, the map would answer that sheet's blocks under this
+    'sheet's name, so it refuses the store instead.
+    Set sut = SectionMap.Create(mapped, HiddenNames.Create(other))
+
+    Assert.LogFailure "Create should raise when the store belongs to another sheet."
+    Exit Sub
+
+ExpectError:
+    Assert.AreEqual CLng(ProjectError.InvalidArgument), CLng(Err.Number), _
+                    "A store of another sheet should raise InvalidArgument - description was [" & _
+                    Err.Description & "]"
+    Err.Clear
+End Sub
+
+'@TestMethod("SectionMap")
 Public Sub TestClearDropsEveryBlock()
     CustomTestSetTitles Assert, TESTMODULE, "TestClearDropsEveryBlock"
     If Not FixtureReady("TestClearDropsEveryBlock") Then Exit Sub

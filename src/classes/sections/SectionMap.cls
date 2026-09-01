@@ -57,8 +57,18 @@ Option Explicit
 'sections would run a single name holding them all past the cap. The section
 'title is written last and truncated, which keeps the two numbers safe even
 'when a designer writes a long one.
+'
+'WHO BUILDS THE STORE
+'-------------------------------------------------------------------------------
+'Reading the names goes through a HiddenNames, and building one walks every
+'name of the sheet, three reads per name. A data entry sheet carries one name
+'per variable, so that walk is what Create costs on a sheet whose map is a
+'dozen names. A caller that already holds a store for the sheet hands it in
+'and the map reads through it; the linelist button module does, from the store
+'EventLinelist keeps per sheet. A caller with none, SectionBuilder and the
+'tests, lets the map build its own.
 '@depends HiddenNames, BetterArray, Checking
-'@version 1.0 (2026-08-06)
+'@version 1.1 (2026-09-01)
 
 
 Private Const CLASS_NAME As String = "SectionMap"
@@ -102,10 +112,15 @@ Private this As TSectionMap
 'before it reads a block, so an unbuilt sheet and a sheet built before this
 'class existed both come back through the same path.
 '@param wksh Worksheet. The sheet the map belongs to.
+'@param names HiddenNames. Optional. A store already built over that sheet.
+'  Left out, the map builds its own, which walks every name of the sheet.
 '@return SectionMap. The map, ready to read and to add to.
 '@throws ProjectError.ObjectNotInitialized When the worksheet is Nothing.
+'@throws ProjectError.InvalidArgument When the store belongs to another sheet
+'  or to a workbook.
 '@export
-Public Function Create(ByVal wksh As Worksheet) As SectionMap
+Public Function Create(ByVal wksh As Worksheet, _
+                       Optional ByVal names As HiddenNames = Nothing) As SectionMap
     Dim instance As SectionMap
 
     If wksh Is Nothing Then
@@ -113,8 +128,19 @@ Public Function Create(ByVal wksh As Worksheet) As SectionMap
                    "A worksheet is needed to read its section map"
     End If
 
+    'A store reads the names of the object it was built over, so one built
+    'over another sheet would answer that sheet's map under this sheet's name.
+    'A workbook store answers no sheet at all.
+    If Not names Is Nothing Then
+        If Not names.Sheet Is wksh Then
+            ThrowError ProjectError.InvalidArgument, _
+                       "The hidden names store handed to the section map of " & _
+                       wksh.Name & " was built over another object"
+        End If
+    End If
+
     Set instance = New SectionMap
-    instance.Initialise wksh
+    instance.Initialise wksh, names
     Set Create = instance
 End Function
 
@@ -123,10 +149,15 @@ End Function
 '@details
 'Public because the factory calls it on a fresh instance.
 '@param wksh Worksheet. The sheet the map belongs to.
+'@param names HiddenNames. The store to read through, or Nothing to build one.
 '@export
-Public Sub Initialise(ByVal wksh As Worksheet)
+Public Sub Initialise(ByVal wksh As Worksheet, ByVal names As HiddenNames)
     Set this.sh = wksh
-    Set this.hn = HiddenNames.Create(wksh)
+    If names Is Nothing Then
+        Set this.hn = HiddenNames.Create(wksh)
+    Else
+        Set this.hn = names
+    End If
     LoadBlocks
 End Sub
 
