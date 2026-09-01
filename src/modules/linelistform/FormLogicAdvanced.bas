@@ -660,7 +660,8 @@ Public Function HandleRestoreShowHideLayout(ByVal sourceWkb As Workbook, _
     For Each sh In sourceWkb.Worksheets
         MarkLayoutStep sh.Name
         If LayerContextOf(sh, dict, pass, entries, layout) Then
-            matched = store.Load(entries, layout, layoutName)
+            'The sizes come from the saved layout, so they are written
+            matched = store.Load(entries, layout, layoutName, writeSizes:=True)
 
             If matched > 0 Then
                 entries.Apply layout

@@ -1786,6 +1786,253 @@ TestFail:
 End Sub
 
 
+'@section Write only what changed
+'===============================================================================
+'Apply used to write every position on every call, Save used to show each
+'hidden column to measure it, and the close saved whether or not anything had
+'moved. The six tests below pin the three classes to writing what differs and
+'nothing else: Apply against what the list last wrote or read, SizeWhenShown
+'from the size the layout kept at the hide, HasChanges and WriteCount for the
+'save, and a Load that leaves the sizes alone when asked to.
+
+'@TestMethod("ShowHide")
+Public Sub TestApplyAfterAdoptWritesNothingOnASheetInStep()
+    CustomTestSetTitles Assert, TESTMODULE, "TestApplyAfterAdoptWritesNothingOnASheetInStep"
+    If Not FixtureReady("TestApplyAfterAdoptWritesNothingOnASheetInStep") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim entries As ShowHide
+    Dim layout As ShowHideLayout
+
+    Set sh = ScratchSheet()
+    Set entries = ShowHide.Create(Dict, ShowHideLayerHList, HLIST_SHEET)
+    Set layout = ShowHideLayout.Create(sh, ShowHideLayerHList)
+
+    'A fresh list knows nothing of the sheet: it reads each position first and
+    'writes only the ones that differ. A fresh sheet hides nothing, so only the
+    'entries the dictionary hides are written.
+    entries.Apply layout
+    Assert.IsTrue layout.WriteCount < entries.EntryCount, _
+                  "The first Apply on a fresh sheet writes fewer positions than it has entries"
+
+    entries.Adopt layout
+    layout.ResetWriteCount
+
+    Assert.AreEqual CLng(0), entries.Apply(layout), _
+                     "Apply after Adopt on a sheet in step writes no position"
+    Assert.AreEqual CLng(0), layout.WriteCount, _
+                     "And the layout saw no write"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestApplyAfterAdoptWritesNothingOnASheetInStep", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestApplyAfterOneSetHiddenWritesOnePosition()
+    CustomTestSetTitles Assert, TESTMODULE, "TestApplyAfterOneSetHiddenWritesOnePosition"
+    If Not FixtureReady("TestApplyAfterOneSetHiddenWritesOnePosition") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim entries As ShowHide
+    Dim layout As ShowHideLayout
+    Dim idx As Long
+
+    Set sh = ScratchSheet()
+    Set entries = ShowHide.Create(Dict, ShowHideLayerHList, HLIST_SHEET)
+    Set layout = ShowHideLayout.Create(sh, ShowHideLayerHList)
+
+    entries.Apply layout
+    layout.ResetWriteCount
+
+    idx = entries.IndexOf("opt_vis_h2")
+    entries.SetHidden idx, True
+
+    Assert.AreEqual CLng(1), entries.Apply(layout), _
+                     "One changed entry is one written position"
+    Assert.AreEqual CLng(1), layout.WriteCount, _
+                     "And the layout saw that one write"
+    Assert.IsTrue sh.Columns(entries.PositionIndex(idx)).Hidden, _
+                  "The column the list hides is hidden on the sheet"
+
+    'Force writes every position whatever the list remembers
+    layout.ResetWriteCount
+    Assert.IsTrue entries.Apply(layout, force:=True) > 1, _
+                  "Apply with force writes every positioned entry"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestApplyAfterOneSetHiddenWritesOnePosition", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestSizeWhenShownAnswersTheWidthItSawAtTheHide()
+    CustomTestSetTitles Assert, TESTMODULE, "TestSizeWhenShownAnswersTheWidthItSawAtTheHide"
+    If Not FixtureReady("TestSizeWhenShownAnswersTheWidthItSawAtTheHide") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim layout As ShowHideLayout
+    Dim writesBefore As Long
+
+    Set sh = ScratchSheet()
+    Set layout = ShowHideLayout.Create(sh, ShowHideLayerHList)
+
+    layout.SetSize 6, 17
+    layout.SetHidden 6, True
+    writesBefore = layout.WriteCount
+
+    Assert.AreEqual CDbl(17), layout.SizeWhenShown(6), _
+                     "SizeWhenShown answers the width read on the way to hiding"
+    Assert.AreEqual writesBefore, layout.WriteCount, _
+                     "And wrote nothing to find it"
+    Assert.IsTrue sh.Columns(6).Hidden, "The column stayed hidden throughout"
+
+    'Showing the column hands the answer back to the sheet
+    layout.SetHidden 6, False
+    layout.SetSize 6, 23
+    Assert.AreEqual CDbl(23), layout.SizeWhenShown(6), _
+                     "A shown column answers the width it has now"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSizeWhenShownAnswersTheWidthItSawAtTheHide", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestHasChangesSaysWhenASaveCanBeSkipped()
+    CustomTestSetTitles Assert, TESTMODULE, "TestHasChangesSaysWhenASaveCanBeSkipped"
+    If Not FixtureReady("TestHasChangesSaysWhenASaveCanBeSkipped") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim store As ShowHideStore
+    Dim sh As Worksheet
+    Dim entries As ShowHide
+    Dim fresh As ShowHide
+    Dim layout As ShowHideLayout
+    Dim idx As Long
+
+    Set store = ShowHideStore.CreateOnSheet(ScratchSheet())
+    Set sh = ScratchSheet()
+    Set entries = ShowHide.Create(Dict, ShowHideLayerHList, HLIST_SHEET)
+    Set layout = ShowHideLayout.Create(sh, ShowHideLayerHList)
+    idx = entries.IndexOf("opt_vis_h2")
+
+    Assert.IsFalse entries.HasChanges, "A list fresh from the dictionary has nothing to save"
+
+    entries.SetHidden idx, True
+    Assert.IsTrue entries.HasChanges, "A moved choice is a change"
+
+    store.Save entries, layout
+    Assert.IsFalse entries.HasChanges, "Saving the current state clears it"
+
+    Set fresh = ShowHide.Create(Dict, ShowHideLayerHList, HLIST_SHEET)
+    store.Load fresh, layout, writeSizes:=False
+    Assert.IsTrue fresh.IsHidden(fresh.IndexOf("opt_vis_h2")), "The load brought the choice back"
+    Assert.IsFalse fresh.HasChanges, "And a list just loaded has nothing to save"
+
+    fresh.SetHidden fresh.IndexOf("opt_vis_h2"), False
+    store.Save fresh, layout, "kept aside"
+    Assert.IsTrue fresh.HasChanges, _
+                  "Saving under a name leaves the current state unsaved"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestHasChangesSaysWhenASaveCanBeSkipped", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestLoadWithoutSizesLeavesAWidthAlone()
+    CustomTestSetTitles Assert, TESTMODULE, "TestLoadWithoutSizesLeavesAWidthAlone"
+    If Not FixtureReady("TestLoadWithoutSizesLeavesAWidthAlone") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim store As ShowHideStore
+    Dim sh As Worksheet
+    Dim entries As ShowHide
+    Dim layout As ShowHideLayout
+    Dim position As Long
+
+    Set store = ShowHideStore.CreateOnSheet(ScratchSheet())
+    Set sh = ScratchSheet()
+    Set entries = ShowHide.Create(Dict, ShowHideLayerHList, HLIST_SHEET)
+    Set layout = ShowHideLayout.Create(sh, ShowHideLayerHList)
+
+    position = entries.PositionIndex(entries.IndexOf("opt_vis_h2"))
+    layout.SetSize position, 24
+    store.Save entries, layout
+
+    'The sheet moved on since the save
+    layout.SetSize position, 30
+    layout.ResetWriteCount
+
+    store.Load entries, layout, writeSizes:=False
+    Assert.AreEqual CDbl(30), layout.Size(position), _
+                     "Load without sizes leaves the width the sheet has"
+    Assert.AreEqual CLng(0), layout.WriteCount, "And writes nothing"
+
+    store.Load entries, layout, writeSizes:=True
+    Assert.AreEqual CDbl(24), layout.Size(position), _
+                     "Load with sizes puts the stored width back"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestLoadWithoutSizesLeavesAWidthAlone", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("ShowHide")
+Public Sub TestSaveKeepsTheStoredSizeWhenTheLayoutAnswersNothing()
+    CustomTestSetTitles Assert, TESTMODULE, "TestSaveKeepsTheStoredSizeWhenTheLayoutAnswersNothing"
+    If Not FixtureReady("TestSaveKeepsTheStoredSizeWhenTheLayoutAnswersNothing") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim store As ShowHideStore
+    Dim sh As Worksheet
+    Dim entries As ShowHide
+    Dim layout As ShowHideLayout
+    Dim blindLayout As ShowHideLayout
+    Dim target As Worksheet
+    Dim targetLayout As ShowHideLayout
+    Dim rebuilt As ShowHide
+    Dim position As Long
+
+    Set store = ShowHideStore.CreateOnSheet(ScratchSheet())
+    Set sh = ScratchSheet()
+    Set entries = ShowHide.Create(Dict, ShowHideLayerHList, HLIST_SHEET)
+    Set layout = ShowHideLayout.Create(sh, ShowHideLayerHList)
+
+    position = entries.PositionIndex(entries.IndexOf("opt_vis_h2"))
+    layout.SetSize position, 21
+    layout.SetHidden position, True
+    entries.Adopt layout
+    store.Save entries, layout
+
+    'A layout with no keys on a protected sheet cannot reveal the column to
+    'measure it, so it answers 0. The size the table already holds must stand.
+    Set blindLayout = ShowHideLayout.Create(sh, ShowHideLayerHList)
+    sh.Protect
+    store.Save entries, blindLayout
+    sh.Unprotect
+
+    Set target = ScratchSheet()
+    Set targetLayout = ShowHideLayout.Create(target, ShowHideLayerHList)
+    Set rebuilt = ShowHide.Create(Dict, ShowHideLayerHList, HLIST_SHEET)
+    store.Load rebuilt, targetLayout, writeSizes:=True
+
+    Assert.AreEqual CDbl(21), targetLayout.Size(position), _
+                     "The stored size survived a save the layout could not measure"
+
+    Exit Sub
+TestFail:
+    On Error Resume Next
+    sh.Unprotect
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestSaveKeepsTheStoredSizeWhenTheLayoutAnswersNothing", Err.Number, Err.Description
+End Sub
+
+
 '@section Fixture helpers
 '===============================================================================
 

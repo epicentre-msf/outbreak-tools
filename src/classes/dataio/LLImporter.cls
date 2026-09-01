@@ -880,8 +880,10 @@ Private Sub ApplyOneShowHideLayer(ByVal impStore As ShowHideStore, _
     tableName = BaseTableNameOf(targetSh)
     Set layout = ShowHideLayout.Create(targetSh, layer, PasswordsObject(), tableName)
 
-    impStore.Load entries, layout
-    entries.Apply layout
+    'The sizes come from the import file, and the sheet's state is unknown to
+    'the fresh list: write every size and every position.
+    impStore.Load entries, layout, writeSizes:=True
+    entries.Apply layout, force:=True
 
     Set ownStore = OwnShowHideStore()
     If Not ownStore Is Nothing Then ownStore.Save entries

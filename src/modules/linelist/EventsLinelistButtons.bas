@@ -534,6 +534,8 @@ Private Function ShowHideStoreOf() As ShowHideStore
 End Function
 
 'Read the saved choices of one entries back in. Answers how many rows matched.
+'The sizes are not written: the live sheet already carries the sizes the store
+'recorded at the last close, so the open and a section press pay no size write.
 Private Function LoadShowHideState(ByVal entries As ShowHide, _
                                   ByVal layout As ShowHideLayout) As Long
     Dim store As ShowHideStore
@@ -543,21 +545,36 @@ Private Function LoadShowHideState(ByVal entries As ShowHide, _
     Set store = ShowHideStoreOf()
     If store Is Nothing Then Exit Function
 
-    LoadShowHideState = store.Load(entries, layout)
+    LoadShowHideState = store.Load(entries, layout, writeSizes:=False)
 End Function
 
 'Write the choices of one entries out. The layout is a parameter rather than the
 'module one, because a caller that saves two layers in a row would otherwise
 'record the printed sizes against the HList rows.
+'
+'A save with nothing to record is skipped: no choice moved since the store last
+'loaded or saved the list, and the layout wrote nothing to the sheet. A user
+'who opens the form to read it and presses Back pays no table read and no
+'table write. The skip is logged, so the trail says why the close was short.
 Private Sub SaveShowHideState(ByVal entries As ShowHide, ByVal layout As ShowHideLayout)
     Dim store As ShowHideStore
+    Dim writes As Long
 
     If entries Is Nothing Then Exit Sub
+
+    If Not layout Is Nothing Then writes = layout.WriteCount
+
+    If writes = 0 And Not entries.HasChanges Then
+        LogSuccessLine "SaveShowHideState", "showhide-save", _
+                       "skipped, nothing moved on " & entries.SheetName
+        Exit Sub
+    End If
 
     Set store = ShowHideStoreOf()
     If store Is Nothing Then Exit Sub
 
     store.Save entries, layout
+    If Not layout Is Nothing Then layout.ResetWriteCount
 End Sub
 
 'The list control of one show/hide form
@@ -2587,6 +2604,10 @@ Public Sub ClickShowHideLayouts()
     'the store here, so that save records what the sheets now show rather than
     'the choices from before a restore.
     If showHideEntries Is Nothing Then GoTo CleanUp
+
+    'A restore resized the sheet through layouts of its own, so the sizes this
+    'layout kept at its hides may be stale; the save reads them off the sheet.
+    If Not activeLayout Is Nothing Then activeLayout.ForgetSizes
 
     If LoadShowHideState(showHideEntries, activeLayout) > 0 Then
         showHideEntries.Apply activeLayout

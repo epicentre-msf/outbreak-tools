@@ -102,8 +102,17 @@ End Enum
 'index reads across all of them. It used to ask LLVariables.Value one cell at a
 'time, two crossings per call, 2V + 14N per build; twelve block reads cost the
 'same whatever V is.
+'
+'ONLY WHAT DIFFERS IS WRITTEN
+'-------------------------------------------------------------------------------
+'Beside hidden() the list keeps written(), the sheet state as Apply last wrote
+'it or Adopt last read it, and stored(), the flags as the store last loaded or
+'saved them. Apply writes the positions where the wanted state differs from
+'written() and reads a position it has never seen before writing it, so a
+'section press writes that section's columns alone. HasChanges compares
+'hidden() with stored(), so a close where nothing moved can skip its save.
 '@depends LLdictionary, ShowHideLayout, BetterArray, Checking
-'@version 1.3 (2026-09-01)
+'@version 1.4 (2026-09-01)
 
 
 Private Const CLASS_NAME As String = "ShowHide"
@@ -151,11 +160,19 @@ Private Type TDictionaryBlocks
     hasColumnIndex As Boolean
 End Type
 
+'What the list knows about one position on the sheet: nothing yet, or the last
+'state it wrote there or read from it.
+Private Const WRITTEN_UNKNOWN As Byte = 0
+Private Const WRITTEN_SHOWN As Byte = 1
+Private Const WRITTEN_HIDDEN As Byte = 2
+
 Private Type TShowHide
     fieldKeys() As String
     headers() As String
     hidden() As Boolean
     authoredHidden() As Boolean
+    written() As Byte       'the sheet state as last written by Apply or read by Adopt
+    stored() As Boolean     'the hidden flag as the store last loaded or saved it
     mandatory() As Boolean
     locked() As Boolean
     verticalHeader() As Boolean
@@ -513,12 +530,23 @@ End Function
 'The one place the entry list reaches a sheet, and it goes through the layout,
 'so the row versus column question and the protection bracket are answered in
 'one place. Entries with no position are skipped.
+'
+'Only the positions that differ are written. The list remembers what it last
+'wrote to each position and what Adopt last read there; a position it knows
+'nothing about yet is read off the sheet first, which costs a read where a
+'write used to go. So a section press writes the columns of that section
+'alone, and an Apply on a sheet already in step writes nothing. The force
+'flag writes every position whatever the list remembers, for a caller landing
+'on a sheet whose state it cannot trust, such as the migration import.
 '@param layout ShowHideLayout. The sheet to reconcile.
-'@return Long. The number of positions that were set.
+'@param force Optional Boolean. True writes every position. Default False.
+'@return Long. The number of positions that were written.
 '@export
-Public Function Apply(ByVal layout As ShowHideLayout) As Long
+Public Function Apply(ByVal layout As ShowHideLayout, _
+                      Optional ByVal force As Boolean = False) As Long
     Dim idx As Long
     Dim position As Long
+    Dim wanted As Boolean
     Dim applied As Long
 
     If layout Is Nothing Then Exit Function
@@ -527,8 +555,17 @@ Public Function Apply(ByVal layout As ShowHideLayout) As Long
     For idx = 1 To this.entryCount
         position = this.positions(idx)
         If position > 0 Then
-            layout.SetHidden position, EffectiveHidden(idx)
-            applied = applied + 1
+            wanted = EffectiveHidden(idx)
+
+            If Not force And this.written(idx) = WRITTEN_UNKNOWN Then
+                RememberWritten idx, layout.IsHidden(position)
+            End If
+
+            If force Or WrittenHidden(idx) <> wanted Then
+                layout.SetHidden position, wanted
+                RememberWritten idx, wanted
+                applied = applied + 1
+            End If
         End If
     Next idx
     layout.EndBatch
@@ -540,22 +577,29 @@ End Function
 '@sub-title Read the worksheet back into the list
 '@details
 'For the case where the user hid a column by hand rather than through the form.
-'Mandatory and locked entries keep what the dictionary said.
+'Mandatory and locked entries keep what the dictionary said. Every position is
+'read all the same, so the list knows the whole sheet and the next Apply
+'writes only what differs from it.
 '@param layout ShowHideLayout. The sheet to read.
-'@return Long. The number of entries that were read.
+'@return Long. The number of free entries that were read.
 '@export
 Public Function Adopt(ByVal layout As ShowHideLayout) As Long
     Dim idx As Long
     Dim position As Long
+    Dim onSheet As Boolean
     Dim adopted As Long
 
     If layout Is Nothing Then Exit Function
 
     For idx = 1 To this.entryCount
         position = this.positions(idx)
-        If position > 0 And Not (this.mandatory(idx) Or this.locked(idx)) Then
-            this.hidden(idx) = layout.IsHidden(position)
-            adopted = adopted + 1
+        If position > 0 Then
+            onSheet = layout.IsHidden(position)
+            RememberWritten idx, onSheet
+            If Not (this.mandatory(idx) Or this.locked(idx)) Then
+                this.hidden(idx) = onSheet
+                adopted = adopted + 1
+            End If
         End If
     Next idx
 
@@ -596,6 +640,45 @@ Public Function ResetToAuthored(ByVal layout As ShowHideLayout) As Long
     Next idx
     layout.EndBatch
 End Function
+
+
+'@section Store
+'===============================================================================
+'@description What the store last saw, so a close with nothing changed saves nothing.
+
+'@label:has-changes
+'@prop-title Whether any choice differs from what the store last loaded or saved
+'@details
+'Read before a save. The baseline is set by the build (the authored state,
+'which is what an empty store means), and moved by ShowHideStore.Load and
+'ShowHideStore.Save through MarkStored. Adopt leaves it alone on purpose: a
+'column the user hid by hand is a change the store has not seen yet, and the
+'next save is where it gets recorded.
+'@export
+Public Property Get HasChanges() As Boolean
+    Dim idx As Long
+
+    For idx = 1 To this.entryCount
+        If this.hidden(idx) <> this.stored(idx) Then
+            HasChanges = True
+            Exit Property
+        End If
+    Next idx
+End Property
+
+'@label:mark-stored
+'@sub-title Take the choices as they stand for what the store holds
+'@details
+'ShowHideStore calls it at the end of a Load and of a Save of the current
+'state, so HasChanges answers False until the next choice moves.
+'@export
+Public Sub MarkStored()
+    Dim idx As Long
+
+    For idx = 1 To this.entryCount
+        this.stored(idx) = this.hidden(idx)
+    Next idx
+End Sub
 
 
 '@section Build
@@ -648,6 +731,8 @@ Public Sub Initialise(ByVal dict As LLdictionary, _
     ReDim this.verticalHeader(1 To maxEntries)
     ReDim this.positions(1 To maxEntries)
     ReDim this.controls(1 To maxEntries)
+    ReDim this.written(1 To maxEntries)
+    ReDim this.stored(1 To maxEntries)
 
     count = 0
 
@@ -711,6 +796,8 @@ Public Sub Initialise(ByVal dict As LLdictionary, _
                                             this.mandatory(count))
         this.hidden(count) = InitialHidden(layerStatus)
         this.authoredHidden(count) = this.hidden(count)
+        this.written(count) = WRITTEN_UNKNOWN
+        this.stored(count) = this.hidden(count)
 
         this.keyIndex.Add count, NormaliseKey(varName)
 
@@ -728,6 +815,8 @@ NextVar:
         ReDim Preserve this.verticalHeader(1 To count)
         ReDim Preserve this.positions(1 To count)
         ReDim Preserve this.controls(1 To count)
+        ReDim Preserve this.written(1 To count)
+        ReDim Preserve this.stored(1 To count)
     End If
 End Sub
 
@@ -748,6 +837,26 @@ Private Function EffectiveHidden(ByVal index As Long) As Boolean
     Else
         EffectiveHidden = this.hidden(index)
     End If
+End Function
+
+'@label:remember-written
+'@sub-title Record what the sheet holds at one entry's position
+'@param index Long. A one based entry index.
+'@param hidden Boolean. The state written to or read from the sheet.
+Private Sub RememberWritten(ByVal index As Long, ByVal hidden As Boolean)
+    If hidden Then
+        this.written(index) = WRITTEN_HIDDEN
+    Else
+        this.written(index) = WRITTEN_SHOWN
+    End If
+End Sub
+
+'@label:written-hidden
+'@sub-title What the list last saw at one entry's position
+'@param index Long. A one based entry index.
+'@return Boolean. True when the last write or read found it hidden.
+Private Function WrittenHidden(ByVal index As Long) As Boolean
+    WrittenHidden = (this.written(index) = WRITTEN_HIDDEN)
 End Function
 
 '@label:position-in-range

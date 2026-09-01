@@ -69,7 +69,7 @@ Option Explicit
 'workbook, which is what makes the key safe. A row whose variable left the
 'dictionary lingers; Load skips it.
 '@depends ShowHide, ShowHideLayout, Checking, BetterArray
-'@version 1.1 (2026-08-11)
+'@version 1.2 (2026-09-01)
 
 
 Private Const CLASS_NAME As String = "ShowHideStore"
@@ -104,6 +104,7 @@ Private Const MAX_SAVED_LAYOUTS As Long = 10
 Private Type TShowHideStore
     lo As ListObject
     sh As Worksheet
+    droppedSizes As Collection   'the sizes of the rows a running Save replaces, keyed on the field
 End Type
 
 Private this As TShowHideStore
@@ -337,9 +338,12 @@ Public Sub Save(ByVal entries As ShowHide, _
     End If
 
     token = LayerToken(entries.TargetLayer)
+    'KeptRows files the size of every row it drops while this is set
+    Set this.droppedSizes = New Collection
     kept = KeptRows(token, layerCol, layoutName, layoutCol, entries, fieldCol, keptCount)
 
     If keptCount + entries.EntryCount = 0 Then
+        Set this.droppedSizes = Nothing
         WriteAll kept, 0
         Exit Sub
     End If
@@ -367,6 +371,9 @@ Public Sub Save(ByVal entries As ShowHide, _
             If position > 0 Then
                 If sizeCol > 0 Then
                     entrySize = layout.SizeWhenShown(position)
+                    'A layout that answers 0 for a hidden entry knows nothing of
+                    'its size; the size the table already held for it stands.
+                    If entrySize <= 0 Then entrySize = DroppedSize(entries.FieldKey(idx))
                     If entrySize > 0 Then block(target, sizeCol) = entrySize
                 End If
                 If orientCol > 0 And layout.SupportsOrientation Then
@@ -379,6 +386,10 @@ Public Sub Save(ByVal entries As ShowHide, _
     If Not layout Is Nothing Then layout.EndBatch
 
     WriteAll block, keptCount + entries.EntryCount
+    Set this.droppedSizes = Nothing
+
+    'The current state now matches the list; a named layout is a copy beside it
+    If LenB(layoutName) = 0 Then entries.MarkStored
 End Sub
 
 '@label:clear
@@ -424,15 +435,24 @@ End Sub
 'With a layout, the saved size and header direction are applied to the sheet as
 'well. Visibility is left to ShowHide.Apply, so a caller that wants the sheet to
 'match the list calls Load and then Apply.
+'
+'The sizes are written only when writeSizes says so. The open of the form and a
+'section press pass False: the live sheet already carries the sizes the store
+'recorded at the last close, and N size writes would put back what is there. A
+'layout restore and a migration import pass True, because their sizes come from
+'elsewhere.
 '@param entries ShowHide. The entry list to fill.
 '@param layout Optional ShowHideLayout. The sheet to size.
 '@param layoutName Optional String. Empty reads the current state; a name reads
 '  that saved layout.
+'@param writeSizes Optional Boolean. True writes each stored size to the sheet.
+'  Default True.
 '@return Long. The number of rows that matched an entry.
 '@export
 Public Function Load(ByVal entries As ShowHide, _
                      Optional ByVal layout As ShowHideLayout, _
-                     Optional ByVal layoutName As String = vbNullString) As Long
+                     Optional ByVal layoutName As String = vbNullString, _
+                     Optional ByVal writeSizes As Boolean = True) As Long
     Dim tableRows As Variant
     Dim token As String
     Dim layerCol As Long
@@ -479,7 +499,7 @@ Public Function Load(ByVal entries As ShowHide, _
                 If Not layout Is Nothing Then
                     position = entries.PositionIndex(entryIndex)
 
-                    If position > 0 And sizeCol > 0 Then
+                    If position > 0 And sizeCol > 0 And writeSizes Then
                         entrySize = ToSize(tableRows(counter, sizeCol))
                         If entrySize > 0 Then layout.SetSize position, entrySize
                     End If
@@ -496,6 +516,9 @@ Public Function Load(ByVal entries As ShowHide, _
     Next counter
 
     If Not layout Is Nothing Then layout.EndBatch
+
+    'The list now says what the current state holds; a named layout is not it
+    If applied > 0 And LenB(layoutName) = 0 Then entries.MarkStored
 
     Load = applied
 End Function
@@ -926,11 +949,18 @@ Private Function KeptRows(ByVal token As String, _
     Dim colCount As Long
     Dim target As Long
     Dim replaced As Boolean
+    Dim sizeCol As Long
+    Dim oldSize As Double
 
     keptCount = 0
 
     If this.lo.DataBodyRange Is Nothing Then Exit Function
     If layerCol = 0 Then Exit Function
+
+    'While a save holds the collection, the size of every replaced row is filed
+    'in it, keyed on the lower case field key, so the save can keep a size the
+    'layout cannot measure.
+    If Not this.droppedSizes Is Nothing Then sizeCol = SizeColumnIndex()
 
     colCount = this.lo.ListColumns.Count
     tableRows = this.lo.DataBodyRange.Value
@@ -952,10 +982,29 @@ Private Function KeptRows(ByVal token As String, _
             For target = 1 To colCount
                 kept(keptCount, target) = tableRows(counter, target)
             Next target
+        ElseIf sizeCol > 0 And fieldCol > 0 Then
+            oldSize = ToSize(tableRows(counter, sizeCol))
+            If oldSize > 0 Then
+                On Error Resume Next
+                this.droppedSizes.Add oldSize, LCase$(Trim$(CStr(tableRows(counter, fieldCol))))
+                On Error GoTo 0
+            End If
         End If
     Next counter
 
     KeptRows = kept
+End Function
+
+'@label:dropped-size
+'@sub-title The size a replaced row held for one field, or 0
+'@param fieldKey String. The field to look up.
+'@return Double. The stored size, or 0 when the row held none.
+Private Function DroppedSize(ByVal fieldKey As String) As Double
+    If this.droppedSizes Is Nothing Then Exit Function
+
+    On Error Resume Next
+    DroppedSize = this.droppedSizes.Item(LCase$(Trim$(fieldKey)))
+    On Error GoTo 0
 End Function
 
 '@label:append-source-layout-rows

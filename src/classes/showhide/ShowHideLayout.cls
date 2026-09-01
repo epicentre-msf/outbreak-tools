@@ -55,8 +55,16 @@ End Enum
 'Excel reports a hidden column as width 0 and hides a column that is set to
 'width 0. SetSize refuses anything at or below zero. Hiding is SetHidden's
 'work, and a blank size cell leaves the sheet alone.
+'
+'A HIDDEN POSITION REMEMBERS ITS SIZE
+'-------------------------------------------------------------------------------
+'SetHidden reads the size before it hides and keeps it on the instance, keyed
+'on the position. SizeWhenShown answers from that and shows a column only when
+'it holds nothing for it. WriteCount says how many writes went out since the
+'bind or the last ResetWriteCount, so a save can tell a session that moved
+'nothing from one that did.
 '@depends Passwords, Checking
-'@version 1.0 (2026-08-01)
+'@version 1.1 (2026-09-01)
 
 
 Private Const CLASS_NAME As String = "ShowHideLayout"
@@ -79,6 +87,8 @@ Private Type TShowHideLayout
     baseTableName As String
     lockDepth As Long
     failures As Long
+    writes As Long                  'writes issued since Bind or ResetWriteCount
+    shownSizes As Collection        'the size each hidden position had, keyed on the position
     heldScreenUpdating As Boolean   'ScreenUpdating as it was when the bracket opened
 End Type
 
@@ -144,6 +154,8 @@ Public Sub Bind(ByVal sh As Worksheet, _
     this.baseTableName = Trim$(baseTableName)
     this.lockDepth = 0
     this.failures = 0
+    this.writes = 0
+    Set this.shownSizes = New Collection
 End Sub
 
 
@@ -193,6 +205,35 @@ Public Property Get FailureCount() As Long
     FailureCount = this.failures
 End Property
 
+'@label:write-count
+'@prop-title How many writes were issued since the bind or the last reset
+'@details
+'Every SetHidden, SetSize and SetOrientation counts one, refused or not. A
+'caller about to save reads it beside ShowHide.HasChanges: nothing written and
+'no choice moved means the store already holds what the sheet shows.
+'@export
+Public Property Get WriteCount() As Long
+    WriteCount = this.writes
+End Property
+
+'@label:reset-write-count
+'@sub-title Start the write count again, once a save has recorded the sheet
+'@export
+Public Sub ResetWriteCount()
+    this.writes = 0
+End Sub
+
+'@label:forget-sizes
+'@sub-title Drop every kept size
+'@details
+'For a caller whose sheet another layout instance may have resized in the
+'meantime, such as the show/hide session after the layouts form has restored
+'a saved layout. The next SizeWhenShown on a hidden position reads the sheet.
+'@export
+Public Sub ForgetSizes()
+    Set this.shownSizes = New Collection
+End Sub
+
 
 '@section Visibility
 '===============================================================================
@@ -221,22 +262,27 @@ End Function
 
 '@label:set-hidden
 '@sub-title Hide or show one position
+'@details
+'On the way to hiding, the size the position has is read first and kept on
+'the instance, so SizeWhenShown can answer it later without showing the
+'column again. Showing drops the kept size, because the sheet answers it.
 '@param position Long. The column or row number.
 '@param hidden Boolean. True to hide it.
 '@export
 Public Sub SetHidden(ByVal position As Long, ByVal hidden As Boolean)
+    Dim sizeNow As Double
+
     If position < 1 Then Exit Sub
 
-    UnprotectSheet
-    On Error Resume Next
-    If this.axisValue = ShowHideAxisRow Then
-        this.sh.Rows(position).Hidden = hidden
+    If hidden Then
+        sizeNow = Size(position)
+        If sizeNow > 0 Then KeepShownSize position, sizeNow
     Else
-        this.sh.Columns(position).Hidden = hidden
+        ForgetShownSize position
     End If
-    If Err.Number <> 0 Then this.failures = this.failures + 1
-    On Error GoTo 0
-    ReprotectSheet
+
+    WriteHidden position, hidden
+    this.writes = this.writes + 1
 End Sub
 
 
@@ -286,9 +332,15 @@ Public Sub SetSize(ByVal position As Long, ByVal newSize As Double)
     Else
         this.sh.Columns(position).ColumnWidth = newSize
     End If
-    If Err.Number <> 0 Then this.failures = this.failures + 1
+    If Err.Number <> 0 Then
+        this.failures = this.failures + 1
+    Else
+        'A hidden position answers this size from now on
+        KeepShownSize position, newSize
+    End If
     On Error GoTo 0
     ReprotectSheet
+    this.writes = this.writes + 1
 End Sub
 
 '@label:size-when-shown
@@ -296,8 +348,10 @@ End Sub
 '@details
 'A hidden position reports a size of 0, so a migration file built from a live
 'sheet used to record 0 for every hidden column and bring it back at width 0 -
-'a column the user can neither see nor grab. This reveals the position long
-'enough to read its real size and hides it again.
+'a column the user can neither see nor grab. A position this instance hid
+'answers the size it read on the way to hiding it, with no write. One it found
+'hidden already is revealed long enough to read its real size and hidden again;
+'those two writes are not counted, since the sheet ends where it began.
 '@param position Long. The column or row number.
 '@return Double. The size the position holds when visible.
 '@export
@@ -313,12 +367,19 @@ Public Function SizeWhenShown(ByVal position As Long) As Double
         Exit Function
     End If
 
+    answer = HeldShownSize(position)
+    If answer > 0 Then
+        SizeWhenShown = answer
+        Exit Function
+    End If
+
     BeginBatch
-    SetHidden position, False
+    WriteHidden position, False
     answer = Size(position)
-    SetHidden position, True
+    WriteHidden position, True
     EndBatch
 
+    If answer > 0 Then KeepShownSize position, answer
     SizeWhenShown = answer
 End Function
 
@@ -383,6 +444,7 @@ Public Sub SetOrientation(ByVal position As Long, ByVal vertical As Boolean)
     If Err.Number <> 0 Then this.failures = this.failures + 1
     On Error GoTo 0
     ReprotectSheet
+    this.writes = this.writes + 1
 End Sub
 
 
@@ -411,6 +473,55 @@ End Sub
 '@section Helpers
 '===============================================================================
 '@description Private workers.
+
+'@label:write-hidden
+'@sub-title The one write of the hidden state, inside its bracket
+'@details
+'SetHidden and SizeWhenShown both come through here. The size bookkeeping and
+'the write count stay in SetHidden, so the show-and-hide pair SizeWhenShown
+'issues to measure a column counts nothing and keeps nothing.
+'@param position Long. The column or row number.
+'@param hidden Boolean. True to hide it.
+Private Sub WriteHidden(ByVal position As Long, ByVal hidden As Boolean)
+    UnprotectSheet
+    On Error Resume Next
+    If this.axisValue = ShowHideAxisRow Then
+        this.sh.Rows(position).Hidden = hidden
+    Else
+        this.sh.Columns(position).Hidden = hidden
+    End If
+    If Err.Number <> 0 Then this.failures = this.failures + 1
+    On Error GoTo 0
+    ReprotectSheet
+End Sub
+
+'@label:keep-shown-size
+'@sub-title Record the size one position had before it was hidden
+'@param position Long. The column or row number.
+'@param shownSize Double. The size read while it was visible.
+Private Sub KeepShownSize(ByVal position As Long, ByVal shownSize As Double)
+    ForgetShownSize position
+    this.shownSizes.Add shownSize, CStr(position)
+End Sub
+
+'@label:forget-shown-size
+'@sub-title Drop the kept size of one position, if any
+'@param position Long. The column or row number.
+Private Sub ForgetShownSize(ByVal position As Long)
+    On Error Resume Next
+    this.shownSizes.Remove CStr(position)
+    On Error GoTo 0
+End Sub
+
+'@label:held-shown-size
+'@sub-title The kept size of one position, or 0 when none was kept
+'@param position Long. The column or row number.
+'@return Double. The size read before the hide, or 0.
+Private Function HeldShownSize(ByVal position As Long) As Double
+    On Error Resume Next
+    HeldShownSize = this.shownSizes.Item(CStr(position))
+    On Error GoTo 0
+End Function
 
 '@label:axis-of
 '@sub-title The direction one layer occupies
