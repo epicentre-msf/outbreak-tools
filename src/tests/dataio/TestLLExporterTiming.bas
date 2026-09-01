@@ -308,6 +308,152 @@ TestFail:
 End Sub
 
 
+'@section Where the dictionary step goes
+'===============================================================================
+'The migration walk spends about 60% of itself in one step, `adding the
+'dictionary`. That step is LLExporter.AddDictionary, four statements, of which
+'the first is LLdictionary.Export. Export calls EnsureFormatColumns, which
+'registers SEVEN format columns on the DataSheet under it, and DataSheet.Export
+'then runs ApplyFormat once per registered column over the whole data column.
+'ApplyFormat is already on record as the measured 65% cost centre of the
+'analyses build, so it is the suspect. These three tests decide it rather than
+'assuming it.
+
+'@sub-title Times the whole call AddDictionary makes.
+'@details The upper bound of the step, and the number the other two are read
+'   against. Same arguments LLExporter.AddDictionary passes.
+'@TestMethod("LLExporterTiming")
+Public Sub TestTimeDictionaryExportWholeCall()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTimeDictionaryExportWholeCall"
+    On Error GoTo TestFail
+
+    Dim sourceBook As Workbook
+    Dim targetBook As Workbook
+    Dim dict As LLdictionary
+    Dim startedAt As Double
+    Dim elapsed As Double
+    Dim failedNumber As Long
+    Dim failedText As String
+
+    Set sourceBook = TimingDictionaryWorkbook()
+    Set targetBook = NewWorkbook()
+    Set dict = LLdictionary.Create(sourceBook.Worksheets(DICTIONARY_SHEET), 1, 1, 5)
+
+    startedAt = Timer
+    dict.Export toWkb:=targetBook, exportType:="__all__", _
+                addListObject:=False, Hide:=xlSheetVisible
+    elapsed = ElapsedSince(startedAt)
+
+    Assert.IsTrue (elapsed >= 0), "The dictionary export ran"
+
+    LogTiming "LLdictionary.Export, the whole call AddDictionary makes", elapsed
+    LogDictionaryShape sourceBook
+
+    DropBooks sourceBook, targetBook
+    Exit Sub
+TestFail:
+    failedNumber = Err.Number
+    failedText = Err.Description
+    On Error Resume Next
+    DropBooks sourceBook, targetBook
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestTimeDictionaryExportWholeCall", failedNumber, failedText
+End Sub
+
+'@sub-title Times the same export with NO format columns registered.
+'@details
+'DataSheet.Export skips its whole format loop when the list is empty, so this is
+'the data move and the cosmetic pass and nothing else. It goes through
+'DataSheet.Export directly rather than LLdictionary.Export, because
+'EnsureFormatColumns would put the seven columns straight back.
+'@TestMethod("LLExporterTiming")
+Public Sub TestTimeDictionaryExportWithoutFormatColumns()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTimeDictionaryExportWithoutFormatColumns"
+    On Error GoTo TestFail
+
+    Dim sourceBook As Workbook
+    Dim targetBook As Workbook
+    Dim dict As LLdictionary
+    Dim startedAt As Double
+    Dim elapsed As Double
+    Dim failedNumber As Long
+    Dim failedText As String
+
+    Set sourceBook = TimingDictionaryWorkbook()
+    Set targetBook = NewWorkbook()
+    Set dict = LLdictionary.Create(sourceBook.Worksheets(DICTIONARY_SHEET), 1, 1, 5)
+
+    'Clear the list. resetColumns True with no column names leaves it empty.
+    dict.Data.AddFormatsColumns True, True
+
+    startedAt = Timer
+    dict.Data.Export toWkb:=targetBook, Hide:=xlSheetVisible
+    elapsed = ElapsedSince(startedAt)
+
+    Assert.IsTrue (elapsed >= 0), "The export with no format columns ran"
+
+    LogTiming "DataSheet.Export, NO format columns", elapsed
+
+    DropBooks sourceBook, targetBook
+    Exit Sub
+TestFail:
+    failedNumber = Err.Number
+    failedText = Err.Description
+    On Error Resume Next
+    DropBooks sourceBook, targetBook
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestTimeDictionaryExportWithoutFormatColumns", failedNumber, failedText
+End Sub
+
+'@sub-title Times the same export with the seven format columns registered.
+'@details
+'The same DataSheet.Export as the test above, same fixture, same target, with
+'the seven columns EnsureFormatColumns registers. The difference between the two
+'is the ApplyFormat loop and nothing else.
+'@TestMethod("LLExporterTiming")
+Public Sub TestTimeDictionaryExportWithFormatColumns()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTimeDictionaryExportWithFormatColumns"
+    On Error GoTo TestFail
+
+    Dim sourceBook As Workbook
+    Dim targetBook As Workbook
+    Dim dict As LLdictionary
+    Dim startedAt As Double
+    Dim elapsed As Double
+    Dim failedNumber As Long
+    Dim failedText As String
+
+    Set sourceBook = TimingDictionaryWorkbook()
+    Set targetBook = NewWorkbook()
+    Set dict = LLdictionary.Create(sourceBook.Worksheets(DICTIONARY_SHEET), 1, 1, 5)
+
+    'The seven names EnsureFormatColumns registers, written out here so the
+    'test says what it is measuring rather than reaching a private routine.
+    dict.Data.AddFormatsColumns False, True, _
+                                "formatting condition", "formatting values", _
+                                "variable name", "control", "main label", _
+                                "lock cells", "dev comments"
+
+    startedAt = Timer
+    dict.Data.Export toWkb:=targetBook, Hide:=xlSheetVisible
+    elapsed = ElapsedSince(startedAt)
+
+    Assert.IsTrue (elapsed >= 0), "The export with seven format columns ran"
+
+    LogTiming "DataSheet.Export, SEVEN format columns", elapsed
+
+    DropBooks sourceBook, targetBook
+    Exit Sub
+TestFail:
+    failedNumber = Err.Number
+    failedText = Err.Description
+    On Error Resume Next
+    DropBooks sourceBook, targetBook
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestTimeDictionaryExportWithFormatColumns", failedNumber, failedText
+End Sub
+
+
 '@section Reporting
 '===============================================================================
 
@@ -649,6 +795,49 @@ Private Sub AddSheetNames(ByVal sh As Worksheet, ByVal tableName As String)
         store.EnsureName "filler_" & counter, "value " & counter, HiddenNameTypeString
         store.SetValue "filler_" & counter, "value " & counter
     Next counter
+End Sub
+
+'@fun-title A workbook holding only the Dictionary sheet.
+'@details
+'The dictionary tests need a dictionary and a target workbook, nothing else.
+'Building the six data sheets for them would cost more than the call being
+'measured and would put the fixture build inside the number.
+'@return Workbook. The new workbook, open and unsaved.
+Private Function TimingDictionaryWorkbook() As Workbook
+    Dim sourceBook As Workbook
+
+    Set sourceBook = NewWorkbook()
+    BuildDictionarySheet sourceBook
+
+    Set TimingDictionaryWorkbook = sourceBook
+End Function
+
+'@sub-title Writes the dictionary size beside the dictionary numbers.
+'@param sourceBook Workbook. The workbook holding the Dictionary sheet.
+Private Sub LogDictionaryShape(ByVal sourceBook As Workbook)
+    Dim sh As Worksheet
+    Dim usedRng As Range
+
+    On Error Resume Next
+    Set sh = sourceBook.Worksheets(DICTIONARY_SHEET)
+    On Error GoTo 0
+    If sh Is Nothing Then Exit Sub
+
+    Set usedRng = sh.UsedRange
+    If usedRng Is Nothing Then Exit Sub
+
+    Assert.LogSuccesses "TIMING dictionary: " & (usedRng.Rows.Count - 1) & _
+                        " rows over " & usedRng.Columns.Count & " columns"
+End Sub
+
+'@sub-title Closes two workbooks a dictionary timing test opened.
+'@param sourceBook Workbook. The fixture, or Nothing.
+'@param targetBook Workbook. The export target, or Nothing.
+Private Sub DropBooks(ByVal sourceBook As Workbook, ByVal targetBook As Workbook)
+    On Error Resume Next
+    If Not targetBook Is Nothing Then DeleteWorkbook targetBook
+    If Not sourceBook Is Nothing Then DeleteWorkbook sourceBook
+    On Error GoTo 0
 End Sub
 
 '@sub-title Closes the source, the exporter and the file one timing test made.
