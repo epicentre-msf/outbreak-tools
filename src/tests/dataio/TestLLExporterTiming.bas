@@ -6,6 +6,50 @@ Option Explicit
 '@Folder("CustomTests")
 '@ModuleDescription("Times the LLExporter export walks against a sized fixture")
 '
+'MEASURED -- 2026-09-01, macOS 27.0, Excel 16.111 headless, run-tests.R
+'--build over a registry narrowed to helpers plus this module. Recorded
+'here so the next reader has a yardstick without paying for a run. The
+'numbers move with whatever else the machine is doing, so read each one
+'beside its fixture line, which says what size it was taken at. This box
+'is en_FR, so a number printed by Format$ carries a DECIMAL COMMA.
+'
+'   TIMING migration export, whole walk: 2.273 s
+'   TIMING fixture: 6 data sheets, 30 variables each, 300 rows each, 250
+'       hidden names per sheet, platform macOS
+'   TIMING saved file: 251027 bytes
+'   TIMING steps: LLExporter.ExportMigration > export-migration: step times
+'       | reading the Exports sheet 0.02s; reading the dictionary 0.02s; reading
+'       the passwords 0.16s; adding the output workbook 0.25s; adding the
+'       metadata sheets 0.12s; adding the custom dropdowns 0.02s; adding the
+'       dictionary 0.29s; adding the metadata tags 0.02s; adding the show/hide
+'       choices 0.38s; adding one worksheet per data sheet 0.03s; writing the
+'       data 0.81s; building the file name 0.01s; saving /Users/komlaviamevoin/L
+'       ibrary/Containers/com.microsoft.Excel/Data/Documents/OBTTestHome/tests/s
+'       taging/run/ExporterTimingFiles/book2_export_all__20260901-2025.xlsx
+'       0.09s; total 2.21s
+'   TIMING migration export, second run: 1.922 s
+'   TIMING steps: LLExporter.ExportMigration > export-migration: step times
+'       | reading the Exports sheet 0s; reading the dictionary 0s; reading the
+'       passwords 0.05s; adding the output workbook 0.24s; adding the metadata
+'       sheets 0.09s; adding the custom dropdowns 0.01s; adding the dictionary
+'       0.27s; adding the metadata tags 0.02s; adding the show/hide choices
+'       0.3s; adding one worksheet per data sheet 0.03s; writing the data 0.77s;
+'       building the file name 0s; saving /Users/komlaviamevoin/Library/Containe
+'       rs/com.microsoft.Excel/Data/Documents/OBTTestHome/tests/staging/run/Expo
+'       rterTimingFiles/book3_export_all__20260901-2025.xlsx 0.09s; total 1.87s
+'   TIMING HiddenNames.Create x20 over 250 names: 0.242 s
+'   TIMING HiddenNames.QuickValue x20 over 250 names: 0 s
+'   TIMING LLdictionary.Export, the whole call AddDictionary makes: 0.266 s
+'   TIMING dictionary: 180 rows over 30 columns
+'   TIMING DataSheet.Export, NO format columns: 0.164 s
+'   TIMING DataSheet.Export, SEVEN format columns: 0.258 s
+'   TIMING ApplyFormat READ SIDE only, seven columns, 1260 cells, no writes:
+'       0.023 s
+'   TIMING read-side last interior colour: 16777215, last font colour: 0,
+'       bold False, italic False
+'   TIMING DataSheet.Export, SEVEN format columns, EVERY cell formatted
+'       (1260 cells): 2.703 s
+'
 '@description
 '   A MEASURING PROBE, not a behaviour suite. It stays commented out of the
 '   registry the way TestCustomTableTiming does: every test here reports a

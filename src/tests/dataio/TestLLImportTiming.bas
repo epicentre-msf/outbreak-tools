@@ -6,6 +6,24 @@ Option Explicit
 '@Folder("CustomTests")
 '@ModuleDescription("Times the import walk against a real linelist")
 '
+'MEASURED -- 2026-09-01, macOS 27.0, Excel 16.111 headless, run-tests.R
+'--build over a registry narrowed to helpers plus this module. Recorded
+'here so the next reader has a yardstick without paying for a run. The
+'numbers move with whatever else the machine is doing, so read each one
+'beside its fixture line, which says what size it was taken at. This box
+'is en_FR, so a number printed by Format$ carries a DECIMAL COMMA.
+'
+'   TIMING linelist shape (table rows per sheet): dropdown_lists__=3
+'       ana_tabnames__=144 import_rep__=0 spatial_tables__=1 Translations=110
+'       LinelistTranslation=10 __pass=9000 print_Linelist patients=11 Linelist
+'       patients=357 fLinelist patients=201 Geo=1 Dictionary=40 | dictionary
+'       rows=41| platform macOS
+'   TIMING export migration, whole walk, REAL linelist: 1.148 s
+'   TIMING steps: the linelist carries no __log sheet
+'   TIMING 1 reading what the file says about itself: 0.008 s
+'   TIMING same language: False (False means the last three steps did not
+'       run)
+'
 '@description
 '   A MEASURING PROBE, not a behaviour suite, and it stays commented out of the
 '   registry the way TestCustomTableTiming and TestLLExporterTiming do.

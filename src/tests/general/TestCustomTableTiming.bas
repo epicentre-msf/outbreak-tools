@@ -6,6 +6,57 @@ Option Explicit
 '@Folder("CustomTests")
 '@ModuleDescription("Times the two row removal branches of CustomTable")
 '
+'MEASURED -- 2026-09-01, macOS 27.0, Excel 16.111 headless, run-tests.R
+'--build over a registry narrowed to helpers plus this module. Recorded
+'here so the next reader has a yardstick without paying for a run. The
+'numbers move with whatever else the machine is doing, so read each one
+'beside its fixture line, which says what size it was taken at. This box
+'is en_FR, so a number printed by Format$ carries a DECIMAL COMMA.
+'
+'   TIMING narrow ListRows branch: 0,031 s for 597 blank rows over 60
+'       columns
+'   TIMING narrow whole row branch: 0,016 s for 597 blank rows over 60
+'       columns
+'   TIMING narrow scan only: 0,008 s for 0 blank rows over 60 columns
+'   TIMING narrow resize and clear: 0,000 s for 597 blank rows over 60
+'       columns
+'   TIMING wide plain ListRows branch: 0,008 s for 500 blank rows over 150
+'       columns
+'   TIMING wide plain whole row branch: 0,016 s for 500 blank rows over 150
+'       columns
+'   TIMING dressed scan only: 0,016 s for 0 blank rows over 150 columns
+'   TIMING dressed ListRows branch: 0,016 s for 500 blank rows over 150
+'       columns
+'   TIMING dressed whole row branch: 0,023 s for 500 blank rows over 150
+'       columns
+'   TIMING dressed resize and clear: 0,008 s for 500 blank rows over 150
+'       columns
+'   TIMING watched ListRows branch: 0,016 s for 300 blank rows over 150
+'       columns
+'   TIMING watched whole row branch: 0,008 s for 300 blank rows over 150
+'       columns
+'   TIMING watched resize and clear: 0,000 s for 300 blank rows over 150
+'       columns
+'   TIMING recalculation of 1000 formulas: 0,008 s for 300 blank rows over
+'       150 columns
+'   TIMING add rows plain: 0,000 s for 199 blank rows over 150 columns
+'   TIMING add rows dressed: 0,008 s for 199 blank rows over 150 columns
+'   TIMING add rows dressed, no ids: 0,008 s for 199 blank rows over 150
+'       columns
+'   TIMING add rows watched: 0,008 s for 199 blank rows over 150 columns
+'   TIMING handed-back recalculation of 1000 formulas: 0,008 s for 199 blank
+'       rows over 150 columns
+'   TIMING add rows with 5 VBA columns: 0,023 s for 199 blank rows over 150
+'       columns
+'   TIMING handed-back recalculation over 5 VBA columns: 0,023 s for 199
+'       blank rows over 150 columns
+'   TIMING add rows on a 2000 row table: 0,031 s for 199 blank rows over 150
+'       columns
+'   TIMING handed-back recalculation on a 2000 row table: 0,016 s for 199
+'       blank rows over 150 columns
+'   TIMING add rows on a 2000 row table, no ids: 0,023 s for 199 blank rows
+'       over 150 columns
+'
 '@description
 '   A measuring probe. It answers where the wait goes when a user presses
 '   Resize on an HList sheet of a generated linelist. Every test asserts the

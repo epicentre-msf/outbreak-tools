@@ -6,6 +6,30 @@ Option Explicit
 '@Folder("CustomTests")
 '@ModuleDescription("Times a whole show/hide session on a big sheet")
 '
+'MEASURED -- 2026-09-01, macOS 27.0, Excel 16.111 headless, run-tests.R
+'--build over a registry narrowed to helpers plus this module. Recorded
+'here so the next reader has a yardstick without paying for a run. The
+'numbers move with whatever else the machine is doing, so read each one
+'beside its fixture line, which says what size it was taken at. This box
+'is en_FR, so a number printed by Format$ carries a DECIMAL COMMA.
+'
+'   TOTAL open the form: 1.344 s
+'   TOTAL one section press: 0.391 s
+'   TOTAL close the form: 0.352 s
+'   TOTAL FULL SHOW/HIDE SESSION: 2.086 s
+'   TOTAL writes the layout refused during the session: 0
+'   TOTAL N size writes, which the form open no longer pays: 2.438 s
+'   TOTAL writes the layout refused while every column was shown: 0
+'   TOTAL the first position whose width write was refused: 0
+'   TOTAL fixture: V=2000 N=800 H=200 section=100, sheet columns 16384,
+'       platform macOS
+'   TOTAL open, build the entry list: 0.055 s
+'   TOTAL open, read the store with stored sizes: 1.328 s
+'   TOTAL open, read the store with no stored sizes: 0.211 s
+'   TOTAL writes the layout refused over the breakdown: 0
+'   TOTAL fixture: V=2000 N=800 H=200 section=100, sheet columns 16384,
+'       platform macOS
+'
 '@description
 '   A MEASURING PROBE, not a behaviour suite, and it stays commented out of the
 '   registry the way TestShowHideTiming and TestLLExporterTiming do. Every test

@@ -6,6 +6,37 @@ Option Explicit
 '@Folder("CustomTests")
 '@ModuleDescription("Times the show/hide classes against a sized fixture")
 '
+'MEASURED -- 2026-09-01, macOS 27.0, Excel 16.111 headless, run-tests.R
+'--build over a registry narrowed to helpers plus this module. Recorded
+'here so the next reader has a yardstick without paying for a run. The
+'numbers move with whatever else the machine is doing, so read each one
+'beside its fixture line, which says what size it was taken at. This box
+'is en_FR, so a number printed by Format$ carries a DECIMAL COMMA.
+'
+'   TIMING ShowHide.Create: 0.016 s
+'   TIMING fixture: V=400 N=150 H=30 M=300 B=12, platform macOS
+'   TIMING ShowHide.Apply, H hidden, sheet not in step: 0.047 s
+'   TIMING ShowHideStore.Save, H hidden: 0.008 s
+'   TIMING ShowHideStore.Load, with sizes: 0.203 s
+'   TIMING ShowHide.Apply, sheet already in step: 0.039 s
+'   TIMING fixture: V=400 N=150 H=30 M=300 B=12, platform macOS
+'   TIMING restore load, with sizes: 0.227 s
+'   TIMING restore apply, D = H positions differ: 0.031 s
+'   TIMING restore save, current state: 0.047 s
+'   TIMING restore walk, one sheet: 0.305 s
+'   TIMING restore load, table read alone: 0.031 s
+'   TIMING restore load, table read alone, 1650 rows in the store: 1.094 s
+'   TIMING restore save, current state, 1650 rows in the store: 1.141 s
+'   TIMING RowCount, 1650 rows: 0 s
+'   TIMING LayoutNames, 1650 rows: 0.008 s
+'   TIMING HasLayout, 1650 rows: 0 s
+'   TIMING Clear one layout, 1650 rows: 1.141 s
+'   TIMING fixture: V=400 N=150 H=30 M=300 B=12, platform macOS
+'   TIMING SectionMap.Create, M hidden names: 0.016 s
+'   TIMING fixture: V=400 N=150 H=30 M=300 B=12, platform macOS
+'   TIMING SectionMap.Create, store handed in: 0 s
+'   TIMING fixture: V=400 N=150 H=30 M=300 B=12, platform macOS
+'
 '@description
 '   A MEASURING PROBE, not a behaviour suite. It stays commented out of the
 '   registry the way TestLLExporterTiming does: every test here reports a
