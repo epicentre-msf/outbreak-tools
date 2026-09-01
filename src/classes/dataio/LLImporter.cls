@@ -1867,7 +1867,9 @@ Private Sub ImportHListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet
     Set currTab = CustomTable.Create(currsh.ListObjects(1))
     Set impTab = DataSheet.Create(impsh, headerRow, 1, True)
 
-    currTab.Import impTab, pasteAtBottom, True, False
+    'No calculation inside the import: RecalculateSheets runs once over every
+    'data sheet after the walk's last write, and this table sits on one of them.
+    currTab.Import impTab, pasteAtBottom, True, False, calculateAfter:=False
 
     ' Track variables not imported (columns not found in current table)
     If currTab.HasColumnsNotImported Then

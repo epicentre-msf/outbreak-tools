@@ -706,6 +706,79 @@ Fail:
     CustomTestLogFailure Assert, "TestImportFromDataSheetPreservesFormulas", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that Import with calculateAfter False leaves the calculation to the caller
+'@details The import walk recalculates every data sheet once, after its last write, so the
+'   calculate at the end of Import and the one behind each row it adds would compute the
+'   same cells twice. Under manual calculation the table below imports four rows over three
+'   with calculateAfter False: the formula column keeps the answers it held and the row the
+'   import added carries the formula and waits too. One Calculate from the caller then fills
+'   all four. The default path is asserted beside it, so a caller that never heard of the
+'   flag is unchanged.
+'@TestMethod("CustomTable")
+Public Sub TestImportWithoutCalculateLeavesTheAnswersToTheCaller()
+    CustomTestSetTitles Assert, "CustomTable", "TestImportWithoutCalculateLeavesTheAnswersToTheCaller"
+    On Error GoTo Fail
+
+    Dim tableObject As CustomTable
+    Dim Lo As ListObject
+    Dim answerColumn As Range
+    Dim dataSheetObj As DataSheet
+    Dim heldCalculation As Long
+
+    heldCalculation = Application.Calculation
+    Application.Calculation = xlCalculationManual
+
+    PrepareCustomTableWithFormula TABLESHEETNAME, TABLENAME
+    Set Lo = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+    Set tableObject = CustomTable.Create(Lo, "ID", "row")
+    'The three rows hold their answers (10, 20, 30) before anything is imported.
+    Lo.Range.Calculate
+
+    Set dataSheetObj = CreateDataSheet(DATASHEETNAME, Array("ID", "Value"), _
+                                       Array(Array("row 1", 100), Array("row 2", 200), _
+                                             Array("row 3", 300), Array("row 4", 400)))
+
+    tableObject.Import dataSheetObj, keepSourceHeaders:=False, calculateAfter:=False
+
+    Set answerColumn = Lo.ListColumns("Calc").DataBodyRange
+
+    Assert.IsTrue (CDbl(Lo.ListColumns("Value").DataBodyRange.Cells(1, 1).Value) = 100), _
+                  "The imported value lands whether or not the import calculates"
+    Assert.IsTrue (CDbl(answerColumn.Cells(1, 1).Value) = 10), _
+                  "A row that was there keeps the answer it held, read " & _
+                  CStr(answerColumn.Cells(1, 1).Value)
+    Assert.IsTrue (answerColumn.Rows.Count = 4), _
+                  "The import grew the table to the four rows of the file, has " & _
+                  CStr(answerColumn.Rows.Count)
+    Assert.IsTrue answerColumn.Cells(4, 1).HasFormula, _
+                  "The row the import added carries the formula"
+
+    Lo.Range.Calculate
+
+    Assert.IsTrue (CDbl(answerColumn.Cells(1, 1).Value) = 200), _
+                  "One calculation from the caller fills the rows that were there, read " & _
+                  CStr(answerColumn.Cells(1, 1).Value)
+    Assert.IsTrue (CDbl(answerColumn.Cells(4, 1).Value) = 800), _
+                  "And the row the import added, read " & CStr(answerColumn.Cells(4, 1).Value)
+
+    'The default is unchanged: an import that says nothing calculates.
+    Set dataSheetObj = CreateDataSheet(DATASHEETNAME, Array("ID", "Value"), _
+                                       Array(Array("row 1", 7), Array("row 2", 8), _
+                                             Array("row 3", 9), Array("row 4", 11)))
+    tableObject.Import dataSheetObj, keepSourceHeaders:=False
+
+    Assert.IsTrue (CDbl(answerColumn.Cells(4, 1).Value) = 22), _
+                  "An import with the default calculates its rows, read " & _
+                  CStr(answerColumn.Cells(4, 1).Value)
+
+    Application.Calculation = heldCalculation
+    Exit Sub
+
+Fail:
+    Application.Calculation = heldCalculation
+    CustomTestLogFailure Assert, "TestImportWithoutCalculateLeavesTheAnswersToTheCaller", Err.Number, Err.Description
+End Sub
+
 '@sub-title Verifies that AddRows with insertShift pushes a stacked table down
 '@details Builds two vertically stacked tables, records the bottom table header row
 '   position, then calls AddRows(nbRows:=2, insertShift:=True) on the top table. Asserts

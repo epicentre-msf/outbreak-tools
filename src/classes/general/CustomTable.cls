@@ -848,7 +848,10 @@ End Sub
 '@param lo ListObject. The table to extend.
 '@param nbRows Long. Number of rows to add.
 '@param insertShift Boolean. When True, inserts worksheet rows.
-Private Sub AddTableRows(ByVal lo As ListObject, ByVal nbRows As Long, ByVal insertShift As Boolean)
+'@param calculateRows Optional Boolean. When True, the rows just added are
+'  calculated before the routine returns. Defaults to True.
+Private Sub AddTableRows(ByVal lo As ListObject, ByVal nbRows As Long, ByVal insertShift As Boolean, _
+                         Optional ByVal calculateRows As Boolean = True)
     'ListRows.Add preserves formulas and formats; inserting worksheet rows prevents overlaps when tables stack.
     Dim tableRng As Range
     Dim headerRow As Long
@@ -890,7 +893,12 @@ Private Sub AddTableRows(ByVal lo As ListObject, ByVal nbRows As Long, ByVal ins
     'that was added is calculated: a data entry sheet answers a GEOCONCAT call
     'per row out of VBA, so recalculating a whole long one is the slowest thing
     'an Add rows click could do.
-    CalculateAddedRows newRange, nbRows
+    '
+    'The import walk asks for calculateRows False: it recalculates every data
+    'sheet once, after its last write (LLImporter.RecalculateSheets), and the
+    'rows it grew a table by are covered there. Every other caller keeps the
+    'calculation here.
+    If calculateRows Then CalculateAddedRows newRange, nbRows
 
     ResetCaches
 End Sub
@@ -1564,7 +1572,10 @@ End Function
 '@sub-title Guarantee the table has at least the requested data rows
 '@param requiredRows Long. Minimum number of data rows needed.
 '@param insertShift Boolean. When True, inserts worksheet rows.
-Private Sub EnsureRowCapacity(ByVal requiredRows As Long, ByVal insertShift As Boolean)
+'@param calculateRows Optional Boolean. When True, the rows added are calculated
+'  as they arrive. Defaults to True.
+Private Sub EnsureRowCapacity(ByVal requiredRows As Long, ByVal insertShift As Boolean, _
+                              Optional ByVal calculateRows As Boolean = True)
     'Guarantee the table contains at least the requested number of data rows.
     Dim currentRows As Long
     Dim trimedRows As Long
@@ -1576,7 +1587,7 @@ Private Sub EnsureRowCapacity(ByVal requiredRows As Long, ByVal insertShift As B
 
     If currentRows >= trimedRows Then Exit Sub
 
-    AddTableRows Table(), trimedRows - currentRows, insertShift
+    AddTableRows Table(), trimedRows - currentRows, insertShift, calculateRows
 End Sub
 
 '@label:ensure-column-capacity
@@ -2135,13 +2146,20 @@ End Sub
 '@param insertShift Optional Boolean. When True, inserts worksheet rows during resize. Defaults to True.
 '@param formatHeaders Optional Object. BetterArray of headers whose formatting to preserve. Defaults to Nothing.
 '@param keepSourceHeaders Optional Boolean. When True, replaces destination headers. Defaults to False.
+'@param calculateAfter Optional Boolean. When True, the table body is calculated
+'  once the columns are written and the rows the import grows the table by are
+'  calculated as they arrive. A caller that recalculates the whole sheet after
+'  its last write passes False and pays for the calculation once. Read on the
+'  column-matched import only: keepSourceHeaders replaces the table and
+'  calculates nothing. Defaults to True.
 '@export
 Public Sub Import(ByVal impTab As Object, _
                   Optional ByVal pasteAtBottom As Boolean = False, _
                   Optional ByVal strictColumnSearch As Boolean = False, _
                   Optional ByVal insertShift As Boolean = True, _
                   Optional ByVal formatHeaders As Object = Nothing, _
-                  Optional ByVal keepSourceHeaders As Boolean = False)
+                  Optional ByVal keepSourceHeaders As Boolean = False, _
+                  Optional ByVal calculateAfter As Boolean = True)
 
     Dim failedNumber As Long
     Dim failedSource As String
@@ -2168,7 +2186,8 @@ Public Sub Import(ByVal impTab As Object, _
         ImportObject impTab:=impTab, pasteAtBottom:=pasteAtBottom, _
                      strictColumnSearch:=strictColumnSearch, _
                      insertShift:=insertShift, _
-                     formatHeaders:=formatHeaders
+                     formatHeaders:=formatHeaders, _
+                     calculateAfter:=calculateAfter
     End If
 
     this.hasImport = True
@@ -2204,11 +2223,14 @@ End Sub
 '@param strictColumnSearch Optional Boolean. When True, uses exact column matching. Defaults to False.
 '@param insertShift Optional Boolean. When True, inserts worksheet rows during resize. Defaults to True.
 '@param formatHeaders Optional Object. BetterArray of headers whose formatting to preserve. Defaults to Nothing.
+'@param calculateAfter Optional Boolean. When False, neither the rows added nor
+'  the body are calculated here; the caller does it. Defaults to True.
 Private Sub ImportObject(ByVal impTab As Object, _
                          Optional ByVal pasteAtBottom As Boolean = False, _
                          Optional ByVal strictColumnSearch As Boolean = False, _
                          Optional ByVal insertShift As Boolean = True, _
-                         Optional ByVal formatHeaders As Object = Nothing)
+                         Optional ByVal formatHeaders As Object = Nothing, _
+                         Optional ByVal calculateAfter As Boolean = True)
 
     Dim imphRng As Range
     Dim sourceHeaders As Variant
@@ -2243,7 +2265,7 @@ Private Sub ImportObject(ByVal impTab As Object, _
 
     'EnsureRowCapacity carries its own "already big enough" test, so the row
     'count that used to be read again here bought nothing.
-    EnsureRowCapacity targetRowCount, insertShift
+    EnsureRowCapacity targetRowCount, insertShift, calculateAfter
 
     For counter = 1 To UBound(sourceHeaders)
         headerValue = CellText(sourceHeaders(counter))
@@ -2287,8 +2309,14 @@ ContinueImport:
     'An empty table has no data body. Asking it to recalculate raised 91,
     'which landed in the rollback and turned a harmless empty import into an
     'aborted one.
-    Set bodyRng = DataRange(includeHeaders:=False)
-    If Not bodyRng Is Nothing Then bodyRng.Calculate
+    '
+    'The import walk passes calculateAfter False: it recalculates every data
+    'sheet once at its end, and this pass would compute the same cells again
+    'on every table of the file.
+    If calculateAfter Then
+        Set bodyRng = DataRange(includeHeaders:=False)
+        If Not bodyRng Is Nothing Then bodyRng.Calculate
+    End If
 
     If (Not insertShift) Then TrimTableRows targetRowCount 'Trim the table to the targetRowCount
 End Sub
