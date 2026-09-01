@@ -1461,6 +1461,18 @@ suites:
         covers: [ShowHide, ShowHideLayout, ShowHideStore]
       - module: TestSectionShowHide
         covers: [SectionShowHide]
+      # TestShowHideTotal is the third measuring module, and it stays commented
+      # out like the other two. It times ONE WHOLE show/hide session -- the
+      # open, one section press and the close, added up -- on a sheet of 800
+      # variables, where TestShowHideTiming times the five class calls one at a
+      # time on a small one. It uses only the calls ShowHide, ShowHideLayout
+      # and ShowHideStore carried BEFORE Session 127 and still carry, so the
+      # same file runs in a worktree at the pre-block commit and here, and the
+      # two answers are read side by side. Adding a call that arrived with
+      # Sessions 130 or 131 stops it compiling against the old code and breaks
+      # the comparison it exists for.
+#      - module: TestShowHideTotal
+#        covers: [ShowHide, ShowHideLayout, ShowHideStore]
       # TestShowHideTiming is a MEASURING TOOL, not a behaviour suite, and it
       # stays out of the loop on purpose, the way TestLLExporterTiming does.
       # It times ShowHide.Create, Load, Apply, Save and SectionMap.Create on a
