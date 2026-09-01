@@ -1613,6 +1613,174 @@ Fail:
     CustomTestLogFailure Assert, "TestExportAddsListObjectWhenRequested", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that Export writes the whole block in the asked-for order and a date stays a date
+'@details The export reads the table once and writes one block. A table of ID, When, Amount
+'   is exported as Amount, When: the header row and the rows follow the asked-for order,
+'   the unasked column is absent, and the date cell arrives as a Date, since the block
+'   travels through Value on both sides. The block path is the one taken here: three
+'   rows sit well under BlockRowCap.
+'@TestMethod("CustomTable")
+Public Sub TestExportWritesTheBlockInTheAskedOrderAndKeepsDates()
+    CustomTestSetTitles Assert, "CustomTable", "TestExportWritesTheBlockInTheAskedOrderAndKeepsDates"
+    On Error GoTo Fail
+
+    Dim tableObject As CustomTable
+    Dim exportSheet As Worksheet
+    Dim selectedHeaders As BetterArray
+
+    Set tableObject = CreateCustomTableWithData(TABLESHEETNAME, TABLENAME, _
+                                                Array("ID", "When", "Amount"), _
+                                                Array(Array("row 1", DateSerial(2026, 3, 4), 10), _
+                                                      Array("row 2", DateSerial(2026, 3, 5), 20), _
+                                                      Array("row 3", DateSerial(2026, 3, 6), 30)))
+    Set exportSheet = EnsureWorksheet(EXPORTSHEETNAME)
+    ClearWorksheet exportSheet
+
+    Set selectedHeaders = NewBetterArray("Amount", "When")
+    tableObject.Export exportSheet, headersTable:=selectedHeaders
+
+    Assert.AreEqual "Amount", CStr(exportSheet.Cells(1, 1).Value), _
+                    "The first asked-for header leads the block"
+    Assert.AreEqual "When", CStr(exportSheet.Cells(1, 2).Value), "The second follows it"
+    Assert.IsTrue IsEmpty(exportSheet.Cells(1, 3).Value), "The column that was not asked for is absent"
+    Assert.IsTrue (CDbl(exportSheet.Cells(4, 1).Value) = 30), _
+                  "The last amount lands under its header, read " & CStr(exportSheet.Cells(4, 1).Value)
+    Assert.AreEqual "Date", TypeName(exportSheet.Cells(2, 2).Value), _
+                    "A date cell arrives as a Date, arrived as " & TypeName(exportSheet.Cells(2, 2).Value)
+    Assert.IsTrue (exportSheet.Cells(3, 2).Value = DateSerial(2026, 3, 5)), _
+                  "And holds the day it held in the table"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportWritesTheBlockInTheAskedOrderAndKeepsDates", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verifies that Export past BlockRowCap writes the same output a column at a time
+'@details BlockRowCap is set to 1 on the three-row fixture, so the export takes the
+'   column-at-a-time path. The asked-for headers and their rows land where the block path
+'   puts them, the block closes up over a header the table lacks, and that header is
+'   still reported.
+'@TestMethod("CustomTable")
+Public Sub TestExportPastTheRowCapMovesAColumnAtATime()
+    CustomTestSetTitles Assert, "CustomTable", "TestExportPastTheRowCapMovesAColumnAtATime"
+    On Error GoTo Fail
+
+    Dim tableObject As CustomTable
+    Dim exportSheet As Worksheet
+    Dim selectedHeaders As BetterArray
+
+    Set tableObject = BuildCustomTable
+    tableObject.BlockRowCap = 1
+    Set exportSheet = EnsureWorksheet(EXPORTSHEETNAME)
+    ClearWorksheet exportSheet
+
+    Set selectedHeaders = NewBetterArray("Amount", "Missing", "Name")
+    tableObject.Export exportSheet, headersTable:=selectedHeaders, startLine:=2, startColumn:=2
+
+    Assert.AreEqual "Amount", CStr(exportSheet.Cells(2, 2).Value), _
+                    "The first asked-for header lands at the requested cell"
+    Assert.AreEqual "Name", CStr(exportSheet.Cells(2, 3).Value), _
+                    "The block closes up over the header the table lacks"
+    Assert.IsTrue (CDbl(exportSheet.Cells(5, 2).Value) = 30), _
+                  "The last amount sits under its header, read " & CStr(exportSheet.Cells(5, 2).Value)
+    Assert.AreEqual "Gamma", CStr(exportSheet.Cells(5, 3).Value), "And the last name beside it"
+    Assert.IsTrue tableObject.ExportColumnsNotFound().Includes("Missing"), _
+                  "The header the table lacks is reported"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportPastTheRowCapMovesAColumnAtATime", Err.Number, Err.Description
+End Sub
+
+'@sub-title Builds the destination table and the import file the two run tests share
+'@details The destination is ID, Value, Calc, Note with a formula down Calc. The file's
+'   columns come in another order, Note, Value, Extra: no ID, and one column the table
+'   lacks. Value and Note are two runs with the formula column standing between them.
+Private Sub PrepareRunsFixture(ByRef tableObject As CustomTable, _
+                               ByRef Lo As ListObject, _
+                               ByRef dataSheetObj As DataSheet)
+
+    Set tableObject = CreateCustomTableWithData(TABLESHEETNAME, TABLENAME, _
+                                                Array("ID", "Value", "Calc", "Note"), _
+                                                Array(Array("row 1", 1, 0, "a"), _
+                                                      Array("row 2", 2, 0, "b"), _
+                                                      Array("row 3", 3, 0, "c")))
+    Set Lo = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+    Lo.ListColumns("Calc").DataBodyRange.FormulaR1C1 = "=RC[-1]*2"
+
+    Set dataSheetObj = CreateDataSheet(DATASHEETNAME, Array("Note", "Value", "Extra"), _
+                                       Array(Array("north", 100, "x"), _
+                                             Array("south", 200, "y"), _
+                                             Array("east", 300, "z")))
+End Sub
+
+'@sub-title Asserts what an import over the runs fixture has to leave behind
+Private Sub AssertRunsLanded(ByVal tableObject As CustomTable, ByVal Lo As ListObject)
+    Assert.IsTrue (CDbl(Lo.ListColumns("Value").DataBodyRange.Cells(3, 1).Value) = 300), _
+                  "The file's second column lands under its own header, read " & _
+                  CStr(Lo.ListColumns("Value").DataBodyRange.Cells(3, 1).Value)
+    Assert.AreEqual "east", CStr(Lo.ListColumns("Note").DataBodyRange.Cells(3, 1).Value), _
+                    "The file's first column lands under its own header"
+    Assert.IsTrue Lo.ListColumns("Calc").DataBodyRange.Cells(2, 1).HasFormula, _
+                  "The formula column between the two runs is left standing"
+    Assert.IsTrue (CDbl(Lo.ListColumns("Calc").DataBodyRange.Cells(2, 1).Value) = 400), _
+                  "And it computes against the imported value, read " & _
+                  CStr(Lo.ListColumns("Calc").DataBodyRange.Cells(2, 1).Value)
+    Assert.AreEqual "row 3", CStr(Lo.ListColumns("ID").DataBodyRange.Cells(3, 1).Value), _
+                    "The IDs are renumbered after the import as before"
+    Assert.IsTrue tableObject.ImportColumnsNotFound().Includes("Extra"), _
+                  "The column the table lacks is reported"
+End Sub
+
+'@sub-title Verifies that Import writes runs of matched columns around a formula column
+'@details Over the runs fixture: the values land under their own headers although the file
+'   orders its columns differently, the formula column between the two runs keeps its
+'   formula and computes against the imported value, the IDs are renumbered afterwards,
+'   and the column the table lacks is reported. Three rows: the block path.
+'@TestMethod("CustomTable")
+Public Sub TestImportWritesRunsAroundAFormulaColumn()
+    CustomTestSetTitles Assert, "CustomTable", "TestImportWritesRunsAroundAFormulaColumn"
+    On Error GoTo Fail
+
+    Dim tableObject As CustomTable
+    Dim Lo As ListObject
+    Dim dataSheetObj As DataSheet
+
+    PrepareRunsFixture tableObject, Lo, dataSheetObj
+
+    tableObject.Import dataSheetObj, strictColumnSearch:=True
+
+    AssertRunsLanded tableObject, Lo
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestImportWritesRunsAroundAFormulaColumn", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verifies that Import past BlockRowCap leaves the same table a column at a time
+'@details The runs fixture again, with BlockRowCap set to 1 so the three incoming rows
+'   take the column-at-a-time path. Every assertion of the block path holds.
+'@TestMethod("CustomTable")
+Public Sub TestImportPastTheRowCapMovesAColumnAtATime()
+    CustomTestSetTitles Assert, "CustomTable", "TestImportPastTheRowCapMovesAColumnAtATime"
+    On Error GoTo Fail
+
+    Dim tableObject As CustomTable
+    Dim Lo As ListObject
+    Dim dataSheetObj As DataSheet
+
+    PrepareRunsFixture tableObject, Lo, dataSheetObj
+    tableObject.BlockRowCap = 1
+
+    tableObject.Import dataSheetObj, strictColumnSearch:=True
+
+    AssertRunsLanded tableObject, Lo
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestImportPastTheRowCapMovesAColumnAtATime", Err.Number, Err.Description
+End Sub
+
 '@sub-title Verifies that Create raises ObjectNotInitialized when given Nothing
 '@details Calls CustomTable.Create(Nothing) and expects the error handler to catch
 '   ProjectError.ObjectNotInitialized. Asserts the error number matches and logs a

@@ -68,10 +68,14 @@ Private Type TCustomTable
     checkCounter As Long
     internalChecks As Checking
     sealed As Boolean
+    blockRowCap As Long
 End Type
 
 Private this As TCustomTable
 Private Const TAG_INSERT_SHIFT_USED As String = "InsertShiftUsed"
+'Data rows past which Export and Import move a table a column at a time
+'instead of as one block. Read through BlockRowCap.
+Private Const BLOCK_ROW_CAP_DEFAULT As Long = 20000
 
 
 '@section StateManagement
@@ -314,6 +318,39 @@ Private Function RowValues(ByVal blockRng As Range) As Variant
     RowValues = flat
 End Function
 
+'@label:block-values
+'@sub-title Read a range as a two-dimensional array, whatever its size
+'@details
+'Range.Value answers a scalar for a single cell and a 1-based (rows, columns)
+'array otherwise. Every block reader here wants the array shape, so the
+'single cell is wrapped.
+'@param blockRng Range. The range to read.
+'@return Variant. A (1 To rows, 1 To columns) array.
+Private Function BlockValues(ByVal blockRng As Range) As Variant
+    Dim oneCell(1 To 1, 1 To 1) As Variant
+
+    If blockRng.Cells.CountLarge = 1 Then
+        oneCell(1, 1) = blockRng.Value
+        BlockValues = oneCell
+    Else
+        BlockValues = blockRng.Value
+    End If
+End Function
+
+'@label:source-body
+'@sub-title The data body of an import source, or Nothing
+'@details
+'The source is reached late-bound (a DataSheet or a CustomTable), and a
+'sheet with no data can refuse the call outright, so errors 438 and 91 are
+'guarded.
+'@param impTab Object. A DataSheet or CustomTable.
+'@return Range. The body without its header row, or Nothing.
+Private Function SourceBody(ByVal impTab As Object) As Range
+    On Error Resume Next
+        Set SourceBody = impTab.DataRange(colName:="__all__", includeHeaders:=False)
+    On Error GoTo 0
+End Function
+
 '@label:column-values
 '@sub-title Read a one-column Range as a 1-based list of values
 '@details
@@ -460,20 +497,39 @@ Private Function FindColumn(ByVal headerRng As Range, _
                             ByVal strictSearch As Boolean, _
                             ByVal matchCase As Boolean) As Long
 
-    Dim headers As Variant
+    'An empty name never matches, so answer it without touching the sheet.
+    If LenB(colName) = 0 Then Exit Function
+
+    FindColumn = FindHeader(RowValues(headerRng), colName, strictSearch, matchCase)
+End Function
+
+'@label:find-header
+'@sub-title Search a header row already read into memory for a column name
+'@details
+'The in-memory half of FindColumn. Export and ImportObject read the header
+'row once and call this for every name they resolve, where a call per name
+'through FindColumn read the row off the sheet each time.
+'@param headerValues Variant. The header row as RowValues answers it, 1-based.
+'@param colName String. Column name to search.
+'@param strictSearch Boolean. When True, whole-string match; otherwise InStr.
+'@param matchCase Boolean. When True, the comparison is case-sensitive.
+'@return Long. 1-based position in the row, 0 when not found.
+Private Function FindHeader(ByVal headerValues As Variant, _
+                            ByVal colName As String, _
+                            ByVal strictSearch As Boolean, _
+                            ByVal matchCase As Boolean) As Long
+
     Dim currentHeader As String
     Dim compareMethod As Long
     Dim isMatch As Boolean
     Dim counter As Long
 
-    'An empty name never matches, so answer it without touching the sheet.
     If LenB(colName) = 0 Then Exit Function
 
     compareMethod = IIf(matchCase, vbBinaryCompare, vbTextCompare)
-    headers = RowValues(headerRng)
 
-    For counter = 1 To UBound(headers)
-        currentHeader = CellText(headers(counter))
+    For counter = 1 To UBound(headerValues)
+        currentHeader = CellText(headerValues(counter))
 
         If strictSearch Then
             isMatch = (StrComp(currentHeader, colName, compareMethod) = 0)
@@ -482,7 +538,7 @@ Private Function FindColumn(ByVal headerRng As Range, _
         End If
 
         If isMatch Then
-            FindColumn = counter
+            FindHeader = counter
             Exit Function
         End If
     Next
@@ -574,16 +630,26 @@ Private Function ResolveListColumn(ByVal colName As String, _
     columnIndexValue = ColumnIndex(colName, strictSearch, matchCase, required)
     If columnIndexValue <= 0 Then Exit Function
 
-    'Guards error 9: the header row and ListColumns can disagree for a moment
-    'while the table is being resized. Answer Nothing rather than raise.
-    On Error Resume Next
-        Set ResolveListColumn = Table().ListColumns(columnIndexValue)
-    On Error GoTo 0
+    Set ResolveListColumn = ListColumnAt(columnIndexValue)
 
     If ResolveListColumn Is Nothing And required Then
         ThrowError ProjectError.ElementNotFound, _
                    "Unable to retrieve ListColumn '" & colName & "' on table '" & Name() & "'"
     End If
+End Function
+
+'@label:list-column-at
+'@sub-title The ListColumn at a 1-based position, or Nothing
+'@details
+'Guards error 9: the header row and ListColumns can disagree for a moment
+'while the table is being resized. Answers Nothing rather than raise.
+'@param position Long. 1-based column position in the table.
+'@return ListColumn. The column, or Nothing.
+Private Function ListColumnAt(ByVal position As Long) As ListColumn
+    If position <= 0 Then Exit Function
+    On Error Resume Next
+        Set ListColumnAt = Table().ListColumns(position)
+    On Error GoTo 0
 End Function
 
 
@@ -1663,12 +1729,7 @@ Private Function SourceRowCount(ByVal impTab As Object) As Long
     'Derive the number of data rows provided by the import source (CustomTable or DataSheet).
     Dim srcRange As Range
 
-    'Guards error 438 and 91: the source is reached late-bound, and a sheet
-    'with no data can refuse the call outright.
-    On Error Resume Next
-        Set srcRange = impTab.DataRange(colName:="__all__", includeHeaders:=False)
-    On Error GoTo 0
-
+    Set srcRange = SourceBody(impTab)
     If srcRange Is Nothing Then Exit Function
 
     SourceRowCount = srcRange.Rows.Count
@@ -2129,6 +2190,30 @@ End Sub
 '===============================================================================
 '@description Import, export, and snapshot operations.
 
+'@label:block-row-cap
+'@prop-title Data rows a block move is allowed to carry
+'@details
+'Export and Import move a table as one block: one read into memory, one
+'write out. A block holds one Variant per cell, and BetterArray keeps one
+'array per row behind it, so past this many data rows the same move goes a
+'column at a time -- the shape that carried a 315,298-row geobase. The
+'default is BLOCK_ROW_CAP_DEFAULT; a caller with a table that is wide as
+'well as long can lower it. A value of 0 or less means the default.
+'@return Long. The row cap in force.
+'@export
+Public Property Get BlockRowCap() As Long
+    If this.blockRowCap <= 0 Then
+        BlockRowCap = BLOCK_ROW_CAP_DEFAULT
+    Else
+        BlockRowCap = this.blockRowCap
+    End If
+End Property
+
+'@export
+Public Property Let BlockRowCap(ByVal rowCap As Long)
+    this.blockRowCap = rowCap
+End Property
+
 '@label:import
 '@sub-title Import data from a DataSheet or CustomTable
 '@details
@@ -2212,12 +2297,15 @@ End Sub
 '@label:import-object
 '@sub-title Import column-matched data from a source object
 '@details
-'Iterates the source headers, finds matching columns in this table,
-'and copies data column by column. Columns not found are recorded and
-'read back through ImportColumnsNotFound. Optionally preserves
-'formatting for specified headers. Trims the table when insertShift is
-'False, and only then: on the default True branch the table grows to fit
-'the source but never shrinks.
+'Reads both header rows once, maps every source column onto the destination
+'column of the same name, and writes the body in runs: one block per stretch
+'of destination columns that take a value, with formula columns and columns
+'the file lacks left standing between them. Past BlockRowCap the columns
+'move one at a time instead. Columns not found are recorded and read back
+'through ImportColumnsNotFound. Optionally preserves formatting for
+'specified headers. Trims the table when insertShift is False, and only
+'then: on the default True branch the table grows to fit the source but
+'never shrinks.
 '@param impTab Object. A DataSheet or CustomTable to import from.
 '@param pasteAtBottom Optional Boolean. When True, appends below existing data. Defaults to False.
 '@param strictColumnSearch Optional Boolean. When True, uses exact column matching. Defaults to False.
@@ -2232,23 +2320,29 @@ Private Sub ImportObject(ByVal impTab As Object, _
                          Optional ByVal formatHeaders As Object = Nothing, _
                          Optional ByVal calculateAfter As Boolean = True)
 
-    Dim imphRng As Range
     Dim sourceHeaders As Variant
+    Dim destHeaders As Variant
+    Dim sourceOf() As Long
     Dim headerValue As String
     Dim counter As Long
-    Dim impDataRng As Range
-    Dim currDataRng As Range
-    Dim bodyRng As Range
-    Dim rng As Range
+    Dim destIndex As Long
+    Dim sourceCount As Long
+    Dim destCount As Long
     Dim startPastingRow As Long
-    Dim currColumn As ListColumn
     Dim existingRows As Long
     Dim incomingRows As Long
     Dim targetRowCount As Long
+    Dim sourceRng As Range
+    Dim bodyRng As Range
+    Dim pasteRows As Range
 
-    Set imphRng = impTab.HeaderRange()
-    'One block read of the source header row instead of one read per column.
-    sourceHeaders = RowValues(imphRng)
+    'Both header rows are read once. Each source column used to pay a header
+    'search on this table and, through impTab.DataRange, another on the
+    'source.
+    sourceHeaders = RowValues(impTab.HeaderRange())
+    destHeaders = RowValues(HeaderRange())
+    sourceCount = UBound(sourceHeaders)
+    destCount = UBound(destHeaders)
 
     existingRows = DataRowCount()
     incomingRows = SourceRowCount(impTab)
@@ -2267,44 +2361,37 @@ Private Sub ImportObject(ByVal impTab As Object, _
     'count that used to be read again here bought nothing.
     EnsureRowCapacity targetRowCount, insertShift, calculateAfter
 
-    For counter = 1 To UBound(sourceHeaders)
+    'sourceOf(d) is the source column that lands in destination column d, 0
+    'when none does. Two source columns matching the same destination: the
+    'later one wins, as it did when the columns were written one at a time.
+    ReDim sourceOf(1 To destCount)
+    For counter = 1 To sourceCount
         headerValue = CellText(sourceHeaders(counter))
-
-        'One lookup per source column. ColumnExists then ResolveListColumn
-        'searched the header row twice for the same name.
-        Set currColumn = ResolveListColumn(headerValue, _
-                                           strictSearch:=strictColumnSearch, _
-                                           matchCase:=strictColumnSearch)
-
-        If currColumn Is Nothing Then
+        destIndex = FindHeader(destHeaders, headerValue, strictColumnSearch, strictColumnSearch)
+        If destIndex = 0 Then
             this.notImportedColumns.Push headerValue
-            GoTo ContinueImport
-        End If
-
-        If (TypeName(impTab) = "CustomTable") Then
-            Set impDataRng = impTab.DataRange(colName:=headerValue, strictSearch:=strictColumnSearch, matchCase:=strictColumnSearch)
         Else
-            Set impDataRng = impTab.DataRange(headerValue)
+            sourceOf(destIndex) = counter
         End If
-
-        If impDataRng Is Nothing Then GoTo ContinueImport
-        If impDataRng.Rows.Count = 0 Then GoTo ContinueImport
-
-        Set currDataRng = currColumn.DataBodyRange
-        If currDataRng Is Nothing Then GoTo ContinueImport
-
-        Set rng = currDataRng.Cells(startPastingRow, 1).Resize(impDataRng.Rows.Count, 1)
-
-        'A generated column keeps its formulas across an import.
-        If Not rng.Cells(1, 1).HasFormula Then rng.Value = impDataRng.Value
-
-        If (TypeName(formatHeaders) = "BetterArray") Then
-            If (formatHeaders.Length > 0) Then
-                If formatHeaders.Includes(headerValue) Then ImportFormat impRng:=impDataRng, currRng:=rng
-            End If
-        End If
-ContinueImport:
     Next
+
+    Set sourceRng = SourceBody(impTab)
+    Set bodyRng = Table().DataBodyRange
+
+    If incomingRows > 0 And Not sourceRng Is Nothing And Not bodyRng Is Nothing Then
+        Set pasteRows = bodyRng.Rows(startPastingRow).Resize(incomingRows)
+
+        'One read of the source body and one write per run of destination
+        'columns that take a value. Past the row cap the columns move one at
+        'a time, each on its own BetterArray.
+        If incomingRows <= BlockRowCap Then
+            WriteImportRuns sourceRng, pasteRows, sourceOf
+        Else
+            WriteImportColumns sourceRng, pasteRows, sourceOf
+        End If
+
+        CopyImportFormats sourceRng, pasteRows, sourceOf, sourceHeaders, formatHeaders
+    End If
 
     'An empty table has no data body. Asking it to recalculate raised 91,
     'which landed in the rollback and turned a harmless empty import into an
@@ -2319,6 +2406,153 @@ ContinueImport:
     End If
 
     If (Not insertShift) Then TrimTableRows targetRowCount 'Trim the table to the targetRowCount
+End Sub
+
+'@label:write-import-runs
+'@sub-title Write the source body onto the pasted rows in runs of columns
+'@details
+'One read of the source body. The destination columns are walked in order
+'and every stretch of them that takes a value -- matched to a source column
+'and holding no formula -- goes out as one block through
+'BetterArray.ToExcelRange. A formula column or a column the file lacks ends
+'the run and is left standing.
+'@param sourceRng Range. The source data body, header row excluded.
+'@param pasteRows Range. The destination rows being written, every column.
+'@param sourceOf Long(). Per destination column, the source column it takes, 0 for none.
+Private Sub WriteImportRuns(ByVal sourceRng As Range, _
+                            ByVal pasteRows As Range, _
+                            ByRef sourceOf() As Long)
+
+    Dim sourceValues As Variant
+    Dim formulaFlags As Variant
+    Dim takesValue() As Boolean
+    Dim runBlock() As Variant
+    Dim block As BetterArray
+    Dim destCount As Long
+    Dim rowCount As Long
+    Dim destColumn As Long
+    Dim runStart As Long
+    Dim runLength As Long
+    Dim runColumn As Long
+    Dim rowIndex As Long
+
+    sourceValues = BlockValues(sourceRng)
+    rowCount = UBound(sourceValues, 1)
+    destCount = UBound(sourceOf)
+
+    'One HasFormula read over the first pasted row answers for every column
+    'when it is False (none) or True (all). Null means mixed, and only then
+    'is each column asked on its own.
+    formulaFlags = pasteRows.Rows(1).HasFormula
+
+    ReDim takesValue(1 To destCount)
+    For destColumn = 1 To destCount
+        If sourceOf(destColumn) > 0 Then
+            'A generated column keeps its formulas across an import.
+            takesValue(destColumn) = Not HoldsFormula(pasteRows, destColumn, formulaFlags)
+        End If
+    Next
+
+    destColumn = 1
+    Do While destColumn <= destCount
+        If Not takesValue(destColumn) Then
+            destColumn = destColumn + 1
+        Else
+            runStart = destColumn
+            Do While destColumn <= destCount
+                If Not takesValue(destColumn) Then Exit Do
+                destColumn = destColumn + 1
+            Loop
+            runLength = destColumn - runStart
+
+            ReDim runBlock(1 To rowCount, 1 To runLength)
+            For runColumn = 1 To runLength
+                For rowIndex = 1 To rowCount
+                    runBlock(rowIndex, runColumn) = sourceValues(rowIndex, sourceOf(runStart + runColumn - 1))
+                Next
+            Next
+
+            Set block = New BetterArray
+            block.Items = runBlock
+            block.ToExcelRange pasteRows.Cells(1, runStart)
+        End If
+    Loop
+End Sub
+
+'@label:holds-formula
+'@sub-title Whether a destination column holds a formula on the first pasted row
+'@param pasteRows Range. The destination rows being written.
+'@param destColumn Long. 1-based column within pasteRows.
+'@param formulaFlags Variant. HasFormula of the whole first row: True, False or Null.
+'@return Boolean. True when the column's first pasted cell holds a formula.
+Private Function HoldsFormula(ByVal pasteRows As Range, _
+                              ByVal destColumn As Long, _
+                              ByVal formulaFlags As Variant) As Boolean
+    If IsNull(formulaFlags) Then
+        HoldsFormula = pasteRows.Cells(1, destColumn).HasFormula
+    Else
+        HoldsFormula = CBool(formulaFlags)
+    End If
+End Function
+
+'@label:write-import-columns
+'@sub-title Write the source body onto the pasted rows one column at a time
+'@details
+'The path past BlockRowCap. Each matched column rides its own BetterArray;
+'a column holding a formula keeps it.
+'@param sourceRng Range. The source data body, header row excluded.
+'@param pasteRows Range. The destination rows being written, every column.
+'@param sourceOf Long(). Per destination column, the source column it takes, 0 for none.
+Private Sub WriteImportColumns(ByVal sourceRng As Range, _
+                               ByVal pasteRows As Range, _
+                               ByRef sourceOf() As Long)
+
+    Dim destColumn As Long
+    Dim targetRng As Range
+    Dim mover As BetterArray
+
+    For destColumn = 1 To UBound(sourceOf)
+        If sourceOf(destColumn) > 0 Then
+            Set targetRng = pasteRows.Columns(destColumn)
+            'A generated column keeps its formulas across an import.
+            If Not targetRng.Cells(1, 1).HasFormula Then
+                Set mover = New BetterArray
+                mover.FromExcelRange sourceRng.Columns(sourceOf(destColumn)), _
+                                     DetectLastRow:=False, DetectLastColumn:=False
+                mover.ToExcelRange targetRng.Cells(1, 1)
+            End If
+        End If
+    Next
+End Sub
+
+'@label:copy-import-formats
+'@sub-title Copy the formatting of the columns named in formatHeaders
+'@param sourceRng Range. The source data body, header row excluded.
+'@param pasteRows Range. The destination rows that were written.
+'@param sourceOf Long(). Per destination column, the source column it takes, 0 for none.
+'@param sourceHeaders Variant. The source header row, 1-based.
+'@param formatHeaders Object. BetterArray of header names, or Nothing.
+Private Sub CopyImportFormats(ByVal sourceRng As Range, _
+                              ByVal pasteRows As Range, _
+                              ByRef sourceOf() As Long, _
+                              ByVal sourceHeaders As Variant, _
+                              ByVal formatHeaders As Object)
+
+    Dim destColumn As Long
+    Dim sourceColumn As Long
+
+    If TypeName(formatHeaders) <> "BetterArray" Then Exit Sub
+    If formatHeaders.Length = 0 Then Exit Sub
+
+    For destColumn = 1 To UBound(sourceOf)
+        sourceColumn = sourceOf(destColumn)
+        If sourceColumn > 0 Then
+            If formatHeaders.Includes(CellText(sourceHeaders(sourceColumn))) Then
+                ImportFormat impRng:=sourceRng.Columns(sourceColumn), _
+                             currRng:=pasteRows.Columns(destColumn)
+            End If
+        End If
+    Next
 End Sub
 
 '@label:import-format
@@ -2627,13 +2861,17 @@ Public Sub Export(ByVal sh As Worksheet, _
                   Optional ByVal clearSheet As Boolean = True)
 
     Dim counter As Long
-    Dim inpRng As Range
     Dim outRng As Range
     Dim outLo As ListObject
-    Dim targetColumn As ListColumn
+    Dim tableRng As Range
+    Dim tableHeaders As Variant
     Dim headerName As String
     Dim headerCounter As Long
     Dim headersList As BetterArray
+    Dim sourceIndexes As BetterArray
+    Dim sourceIndex As Long
+    Dim rowCount As Long
+    Dim writtenColumns As Long
     Dim lastLine As Long
     Dim failedNumber As Long
     Dim failedSource As String
@@ -2670,40 +2908,52 @@ Public Sub Export(ByVal sh As Worksheet, _
     'once per exported column.
     Table().Range.Calculate
 
-    'column where to start writing values
-    headerCounter = startColumn
+    'The header row is read once and searched in memory for every name asked
+    'for. Each ResolveListColumn call read it off the sheet again, so a table
+    'of C columns paid C header reads before it wrote anything.
+    tableHeaders = RowValues(HeaderRange())
+    Set sourceIndexes = New BetterArray
 
     For counter = headersList.LowerBound To headersList.UpperBound
-
         headerName = headersList.Item(counter)
 
-        'One lookup per column. A header with no match writes nothing and does
-        'not advance the output column, so it is recorded for the caller to read
-        'back through ExportColumnsNotFound. A caller writing a second row from
-        'the same header list -- a label row, say -- has to drop those entries
-        'or every one after the gap sits one column left of its data.
-        Set targetColumn = ResolveListColumn(headerName, strictSearch:=True)
-        If targetColumn Is Nothing Then this.notExportedColumns.Push headerName
-
-        If Not targetColumn Is Nothing Then
-            Set inpRng = targetColumn.Range
-
-            With sh
-                Set outRng = .Range(.Cells(startLine, headerCounter), _
-                                    .Cells(inpRng.Rows.Count + startLine - 1, headerCounter))
-            End With
-            outRng.Value = inpRng.Value
-
-            headerCounter = headerCounter + 1
+        'A header with no match writes nothing and does not advance the output
+        'column, so it is recorded for the caller to read back through
+        'ExportColumnsNotFound. A caller writing a second row from the same
+        'header list -- a label row, say -- has to drop those entries or every
+        'one after the gap sits one column left of its data.
+        sourceIndex = FindHeader(tableHeaders, headerName, strictSearch:=True, matchCase:=False)
+        If sourceIndex = 0 Then
+            this.notExportedColumns.Push headerName
+        Else
+            sourceIndexes.Push sourceIndex
         End If
-
     Next
+
+    Set tableRng = Table().Range
+    rowCount = tableRng.Rows.Count
+    writtenColumns = sourceIndexes.Length
+
+    'One read of the whole table and one write of the block, in the asked-for
+    'column order. Past the row cap the columns go out one at a time, each on
+    'its own BetterArray, which is the shape that carried the geobase.
+    If writtenColumns > 0 Then
+        If rowCount - 1 <= BlockRowCap Then
+            WriteExportBlock tableRng, sourceIndexes, sh.Cells(startLine, startColumn)
+        Else
+            WriteExportColumns sourceIndexes, sh, startLine, startColumn
+        End If
+    End If
+
+    'The column after the last one written, where the per-column loop used to
+    'leave its counter.
+    headerCounter = startColumn + writtenColumns
 
     'Add Listobject if required on the export. The headerCounter test matters:
     'when no header matched it still sits on startColumn, and .Cells(lastLine,
     'startColumn - 1) is column 0 for the default start, which raises 1004.
     If addListObject And headerCounter > startColumn Then
-        lastLine = startLine + Table().ListColumns(1).Range.Rows.Count - 1
+        lastLine = startLine + rowCount - 1
         With sh
             Set outRng = .Range(.Cells(startLine, startColumn), .Cells(lastLine, headerCounter - 1))
             Set outLo = .ListObjects.Add(SourceType:=xlSrcRange, Source:=outRng, XlListObjectHasHeaders:=xlYes)
@@ -2725,6 +2975,75 @@ RestoreAndRaise:
     failedDescription = Err.Description
     RestoreHiddenAndReset
     Err.Raise failedNumber, failedSource, failedDescription
+End Sub
+
+'@label:write-export-block
+'@sub-title Write the asked-for columns of the whole table as one block
+'@details
+'One read of the table range, header row included, one array built in the
+'asked-for order, one write through BetterArray.ToExcelRange.
+'@param tableRng Range. The table range, header row included.
+'@param sourceIndexes BetterArray. 1-based table column positions, in output order.
+'@param destination Range. The top-left cell of the output block.
+Private Sub WriteExportBlock(ByVal tableRng As Range, _
+                             ByVal sourceIndexes As BetterArray, _
+                             ByVal destination As Range)
+
+    Dim tableValues As Variant
+    Dim outBlock() As Variant
+    Dim block As BetterArray
+    Dim rowCount As Long
+    Dim outColumn As Long
+    Dim sourceColumn As Long
+    Dim rowIndex As Long
+
+    tableValues = BlockValues(tableRng)
+    rowCount = UBound(tableValues, 1)
+
+    ReDim outBlock(1 To rowCount, 1 To sourceIndexes.Length)
+
+    For outColumn = 1 To sourceIndexes.Length
+        sourceColumn = sourceIndexes.Item(sourceIndexes.LowerBound + outColumn - 1)
+        For rowIndex = 1 To rowCount
+            outBlock(rowIndex, outColumn) = tableValues(rowIndex, sourceColumn)
+        Next
+    Next
+
+    Set block = New BetterArray
+    block.Items = outBlock
+    block.ToExcelRange destination
+End Sub
+
+'@label:write-export-columns
+'@sub-title Write the asked-for columns one at a time
+'@details
+'The path past BlockRowCap. Each column rides its own BetterArray, header
+'cell included, so no bound or type of the column before it is still in
+'place when the next one is read.
+'@param sourceIndexes BetterArray. 1-based table column positions, in output order.
+'@param sh Worksheet. The output sheet.
+'@param startLine Long. Row of the header cells on the output sheet.
+'@param startColumn Long. Column of the first output column.
+Private Sub WriteExportColumns(ByVal sourceIndexes As BetterArray, _
+                               ByVal sh As Worksheet, _
+                               ByVal startLine As Long, _
+                               ByVal startColumn As Long)
+
+    Dim counter As Long
+    Dim outColumn As Long
+    Dim targetColumn As ListColumn
+    Dim mover As BetterArray
+
+    outColumn = startColumn
+    For counter = sourceIndexes.LowerBound To sourceIndexes.UpperBound
+        Set targetColumn = ListColumnAt(CLng(sourceIndexes.Item(counter)))
+        If Not targetColumn Is Nothing Then
+            Set mover = New BetterArray
+            mover.FromExcelRange targetColumn.Range, DetectLastRow:=False, DetectLastColumn:=False
+            mover.ToExcelRange sh.Cells(startLine, outColumn)
+        End If
+        outColumn = outColumn + 1
+    Next
 End Sub
 
 '@section Checkings
