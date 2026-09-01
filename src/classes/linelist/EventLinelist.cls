@@ -111,10 +111,6 @@ Private Const PIVOTSHEETNAME    As String = "RNG_CustomPivot"
 ' The message code every box title is read from.
 Private Const MSGTITLE          As String = "MSG_Error"
 
-' The message code naming the instruction worksheet. The generation writes the
-' sheet under the translated name and moves it to the front of the workbook.
-Private Const INSTSHEETCODE     As String = "INSTSHEETNAME"
-
 ' The message code a failed filter refresh is reported under. FilteredData
 ' logs its failure line under the same code, so the log reads as one action
 ' wherever the refresh started.
@@ -180,9 +176,12 @@ End Sub
 'The open is the first line of the session in the user log, so a reader of
 'the log sees where each working session started.
 '
-'The workbook opens on the sheet it was saved on, and a linelist saved by the
-'generation lands on Geo. LandOnInstructions puts the user on the instruction
-'sheet instead, every open.
+'The workbook opens on the sheet it was saved on and nothing here moves it.
+'Which sheet that is belongs to the build: Linelist.SaveLL activates the
+'instruction sheet, or the first worksheet the setup declares when the build
+'carries none, just before it closes the file. The open used to choose again
+'by reading the instruction sheet's translated name and jumping to it, so two
+'places decided one thing and the user saw whichever ran second.
 '
 'The pointer is parked on the north-west arrow at open. That arrow is the
 'cursor every busy state of the session shows, and ApplicationState restores
@@ -222,8 +221,6 @@ Public Sub OnWorkbookOpen()
     Application.OnKey "^+g", "ClickGeoApp"
     On Error GoTo 0
 
-    LandOnInstructions
-
     LogEventLine checkingInfo, "open", this.hostBook.Name
 End Sub
 
@@ -252,69 +249,6 @@ Public Sub ApplyRestingState()
     Application.Cursor = xlNorthwestArrow
     On Error GoTo 0
 End Sub
-
-
-'@sub-title Put the user on the instruction sheet.
-'@details
-'The sheet is named by the translation, and the generation moves it to the front
-'of the workbook, so the first visible worksheet is the same sheet whenever the
-'name cannot be read. A workbook built with the instructions turned off carries
-'the sheet very hidden, and the fallback then lands on the first sheet the user
-'is meant to see rather than on Geo.
-'
-'Nothing here is worth an error box on open. Every step is guarded and a
-'workbook that answers none of them opens where it was saved.
-Private Sub LandOnInstructions()
-    Dim instrSheet As Worksheet
-    Dim instrName As String
-
-    On Error Resume Next
-    instrName = Translation().TransObject().TranslatedValue(INSTSHEETCODE)
-    On Error GoTo 0
-
-    If LenB(instrName) > 0 Then
-        On Error Resume Next
-        Set instrSheet = this.hostBook.Worksheets(instrName)
-        On Error GoTo 0
-    End If
-
-    'A workbook built with the instructions turned off carries the sheet very
-    'hidden, and one built from a template that never had it carries no such
-    'sheet at all. Both used to leave the user wherever the generation stopped,
-    'which is the Geo sheet, because the fallback only answered the second case
-    'and the first was turned away by the visibility test below it.
-    If instrSheet Is Nothing Then
-        Set instrSheet = FirstVisibleSheet()
-    ElseIf instrSheet.Visible <> xlSheetVisible Then
-        Set instrSheet = FirstVisibleSheet()
-    End If
-
-    If instrSheet Is Nothing Then Exit Sub
-
-    On Error Resume Next
-    instrSheet.Activate
-    On Error GoTo 0
-End Sub
-
-
-'@sub-title The first worksheet of the host workbook the user can see.
-'@details
-'The generation moves the instruction sheet to the front, so on a workbook
-'that carries a visible one this answers that sheet. On one that does not it
-'answers whatever the user is meant to land on instead, which is what makes a
-'linelist open somewhere other than the sheet the generation happened to stop
-'on.
-'@return Worksheet. The first visible worksheet, or Nothing when none is.
-Private Function FirstVisibleSheet() As Worksheet
-    Dim sh As Worksheet
-
-    For Each sh In this.hostBook.Worksheets
-        If sh.Visible = xlSheetVisible Then
-            Set FirstVisibleSheet = sh
-            Exit Function
-        End If
-    Next
-End Function
 
 
 '@sub-title Handle worksheet change events.

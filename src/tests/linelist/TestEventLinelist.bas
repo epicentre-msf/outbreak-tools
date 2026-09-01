@@ -2520,47 +2520,45 @@ End Sub
 
 '@section Where the open lands
 '===============================================================================
-'A linelist is saved on the sheet the generation stopped on, which is Geo, so
-'the open has to move the user off it. The instruction sheet is where they
-'belong, and it is not always there to move them to: a build with the
-'instructions turned off carries it very hidden.
+'The open does not choose a sheet. A linelist is saved on the sheet that was
+'active when the generation closed it, and Linelist.SaveLL chooses that sheet
+'just before the close -- the instruction sheet, or the first worksheet the
+'setup declares on a build that carries none -- so the file already opens
+'where it should.
 '
-'That case used to be turned away. The fallback to the first visible worksheet
-'ran only when no instruction sheet was found at all, and a hidden one is found,
-'so the visibility test below it exited and the user was left on Geo. This is
-'that case.
+'The open used to choose one as well: it read the instruction sheet's translated
+'name and jumped there, falling back to the first visible worksheet. Two places
+'deciding one thing is what put a rule in the events that belongs to the build,
+'and this test holds the events out of it.
 
-'@sub-title A hidden instruction sheet lands the user on the first visible sheet.
+'@sub-title The open leaves the workbook on the sheet it was saved on.
 '@TestMethod("EventLinelist")
-Public Sub TestTheOpenLandsOnTheFirstVisibleSheet()
-    CustomTestSetTitles Assert, TESTMODULE, "TestTheOpenLandsOnTheFirstVisibleSheet"
+Public Sub TestTheOpenLeavesTheActiveSheetAlone()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheOpenLeavesTheActiveSheetAlone"
     On Error GoTo TestFail
 
     Dim sut As EventLinelist
-    Dim hiddenSheet As Worksheet
-    Dim landingSheet As Worksheet
+    Dim savedOnSheet As Worksheet
     Dim heldCalculation As Long
 
     heldCalculation = Application.Calculation
 
-    'The workbook the fixture hands over holds one sheet, so the sheet to land
-    'on is added before the first one is taken out of sight. A workbook cannot
-    'hide its last visible sheet.
-    Set hiddenSheet = FixtureWkb.Worksheets(1)
-    Set landingSheet = FixtureWkb.Worksheets.Add(After:=hiddenSheet)
-    landingSheet.Name = "landing"
-    hiddenSheet.Visible = xlSheetVeryHidden
+    'Worksheets.Add leaves the new sheet active in its own workbook, so this is
+    'the sheet the file was saved on. It is not the first one, which is what the
+    'open used to jump to.
+    Set savedOnSheet = FixtureWkb.Worksheets.Add(After:=FixtureWkb.Worksheets(1))
+    savedOnSheet.Name = "saved_on"
 
     Set sut = EventLinelist.Create(FixtureWkb)
     sut.OnWorkbookOpen
 
-    Assert.AreEqual "landing", FixtureWkb.ActiveSheet.Name, _
-                    "The open lands on the first sheet the user can see"
+    Assert.AreEqual "saved_on", FixtureWkb.ActiveSheet.Name, _
+                    "The open leaves the workbook on the sheet it was saved on"
 
     RestoreAfterOpen heldCalculation
     Exit Sub
 TestFail:
     RestoreAfterOpen heldCalculation
-    CustomTestLogFailure Assert, "TestTheOpenLandsOnTheFirstVisibleSheet", _
+    CustomTestLogFailure Assert, "TestTheOpenLeavesTheActiveSheetAlone", _
                          Err.Number, Err.Description
 End Sub

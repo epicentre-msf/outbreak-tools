@@ -535,9 +535,9 @@ End Sub
 '@sub-title Save the output workbook as .xlsb with password protection
 '@details
 'Saves the output workbook in .xlsb format with the configured password,
-'protects the workbook structure via Passwords.Protect, activates an
-'appropriate visible sheet (admin or instruction), closes the workbook,
-'and cleans up temporary files via TemporaryRepos.Reset.
+'protects the workbook structure via Passwords.Protect, activates the sheet the
+'user should open the file on, closes the workbook and cleans up temporary files
+'via TemporaryRepos.Reset.
 '
 'Both cached references to the workbook are dropped once it is closed. This
 'instance held one and LinelistSpecs held the other, and a read of either after
@@ -560,7 +560,7 @@ Public Sub SaveLL()
     outPath = this.specs.Value("lldir") & outWkb.Application.PathSeparator & _
               this.specs.Value("llname") & ".xlsb"
 
-    'Land the workbook on the sheet the user should open it on.
+    'Leave the workbook on the sheet the user should open it on.
     ActivateLandingSheet outWkb, msgTrads
 
     'Protect the workbook structure, add debugging mechanism
@@ -582,14 +582,25 @@ End Sub
 '@details
 'The generation stops wherever its last step left it, which is the Geo sheet,
 'and a workbook is saved on the sheet that was active. So the sheet chosen here
-'is the sheet the user sees the first time they open the linelist.
+'is the sheet the user sees the first time they open the linelist. Choosing it
+'belongs to the build alone: EventLinelist used to choose again on every open,
+'and two places deciding one thing is how the rule drifted apart.
 '
-'The instruction sheet is the wanted one and the admin sheet is the answer on a
-'build that carries no instructions. Neither is always there: the instruction
-'sheet belongs to template builds and goes very hidden when the specification
-'turns instructions off, and the admin sheet belongs to the builds that have no
-'template. A build that answers neither used to be left on Geo, so the first
-'visible worksheet closes the list.
+'THE INSTRUCTION SHEET, THEN THE FIRST SHEET OF THE SETUP
+'-------------------------------------------------------------------------------
+'The instruction sheet is the wanted one and it is not always there. It belongs
+'to template builds, and a specification that turns instructions off carries it
+'very hidden, so a visible one is what counts.
+'
+'A build without it lands on the first worksheet the SETUP declares -- the first
+'name in the dictionary's sheet list, which is the first data entry sheet the
+'user works in. That is not the same as the first visible worksheet of the
+'workbook: the transfer puts sheets of its own in front of the ones this build
+'adds, and a walk in tab order can answer one of those.
+'
+'The first visible worksheet closes the list, for a workbook that answers
+'neither. It is a guard rather than a choice -- without it the file would be
+'saved on Geo, which is where the generation stops.
 '@param outWkb Workbook. The generated workbook.
 '@param msgTrads TranslationObject. The message translations naming the sheets.
 Private Sub ActivateLandingSheet(ByVal outWkb As Workbook, _
@@ -599,7 +610,7 @@ Private Sub ActivateLandingSheet(ByVal outWkb As Workbook, _
     Set landingSheet = VisibleSheetOrNothing(outWkb, msgTrads.TranslatedValue("INSTSHEETNAME"))
 
     If landingSheet Is Nothing Then
-        Set landingSheet = VisibleSheetOrNothing(outWkb, msgTrads.TranslatedValue("LLSHEET_Admin"))
+        Set landingSheet = FirstSetupSheet()
     End If
 
     If landingSheet Is Nothing Then
@@ -627,8 +638,8 @@ Private Function VisibleSheetOrNothing(ByVal outWkb As Workbook, _
     If LenB(sheetName) = 0 Then Exit Function
 
     'A name no sheet carries raises subscript out of range, and that is the
-    'ordinary answer here rather than a fault: the two sheets asked for belong
-    'to different kinds of build.
+    'ordinary answer here rather than a fault: the sheet asked for belongs to
+    'one kind of build and not the other.
     On Error Resume Next
     Set sh = outWkb.Worksheets(sheetName)
     On Error GoTo 0
@@ -637,6 +648,44 @@ Private Function VisibleSheetOrNothing(ByVal outWkb As Workbook, _
     If sh.Visible <> xlSheetVisible Then Exit Function
 
     Set VisibleSheetOrNothing = sh
+End Function
+
+'@label:first-setup-sheet
+'@sub-title The worksheet of the first sheet name the setup declares
+'@details
+'DictionarySheetNames answers the dictionary's sheet names in the order the
+'setup lists them, and Prepare adds one data entry worksheet per name in that
+'same order. So the first name is the first worksheet of the setup.
+'
+'The lookup goes through Wksh rather than the workbook, because a dictionary
+'name longer than the 31 characters Excel takes was created under a shortened
+'one and only Wksh maps the two. Wksh raises when nothing answers, which on a
+'build that added no data entry sheet at all is the ordinary case and not a
+'fault, so the raise is swallowed and the caller moves on to its guard.
+'@return Worksheet. The first setup worksheet, or Nothing when there is none
+' to see.
+Private Function FirstSetupSheet() As Worksheet
+    Dim declaredNames As BetterArray
+    Dim sh As Worksheet
+
+    'The list is already held by the time SaveLL runs, because Prepare walked
+    'it. A read that has to go to the dictionary is guarded all the same: a
+    'landing sheet is never worth failing the save the caller is in.
+    On Error Resume Next
+    Set declaredNames = DictionarySheetNames()
+    On Error GoTo 0
+
+    If declaredNames Is Nothing Then Exit Function
+    If declaredNames.Length = 0 Then Exit Function
+
+    On Error Resume Next
+    Set sh = Wksh(CStr(declaredNames.Item(declaredNames.LowerBound)))
+    On Error GoTo 0
+
+    If sh Is Nothing Then Exit Function
+    If sh.Visible <> xlSheetVisible Then Exit Function
+
+    Set FirstSetupSheet = sh
 End Function
 
 '@label:first-visible-sheet
