@@ -221,6 +221,154 @@ End Function
 '@section Fixture helpers
 '===============================================================================
 
+'@TestMethod("CrossTable")
+'@sub-title Every cell a UNIVARIATE table writes sits inside a named range.
+'@details
+'The coverage gate for Session 125, which carries the analysis values through
+'the named ranges instead of a whole-grid clipboard copy. A univariate table
+'runs the full `NameRanges`, so this is the arm that is expected to be covered
+'and it says so.
+Public Sub TestEveryWrittenCellOfAUnivariateTableIsNamed()
+    CustomTestSetTitles Assert, "CrossTable", "TestEveryWrittenCellOfAUnivariateTableIsNamed"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim uncovered As String
+
+    BuildFixture TABLE_UNIVARIATE, UnivariateHeader(), _
+                 UnivariateRows(ROW_CHOICE_VARIABLE, "no", "no")
+    Set sh = OutputSheet()
+    BuildTable sh, 1
+
+    uncovered = CellsOutsideEveryName(sh)
+
+    Assert.AreEqual vbNullString, uncovered, _
+                    "A univariate table leaves no written cell outside its names"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestEveryWrittenCellOfAUnivariateTableIsNamed", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("CrossTable")
+'@sub-title A GLOBAL SUMMARY table writes cells that no name covers.
+'@details
+'PINS THE GAP SESSION 125 HAS TO CLOSE, and it is deliberately written as the
+'state of the code today rather than as the state we want.
+'
+'`NameRanges` exits at its first line for `ScopeGlobalSummary`
+'(`CrossTable.cls`, "If TableScope() = ScopeGlobalSummary Then Exit Sub"), so
+'such a table is never given `ROW_CATEGORIES_`, the per-column `VALUES_COL_`,
+'`INTERIOR_VALUES_` or any of the rest. What it does write -- the row label, the
+'All data and Filtered data headers, and every value under them -- sits outside
+'every name but the single `COLGS_SET` cell.
+'
+'So the export cannot yet carry a global summary table by name alone. This test
+'asserts that is STILL TRUE, which means it turns red the moment somebody closes
+'the gap -- and closing it is what Session 125 needs. Whoever does that work
+'flips this test to expect an empty answer and moves it beside the univariate
+'one above.
+Public Sub TestAGlobalSummaryTableWritesCellsOutsideEveryName()
+    CustomTestSetTitles Assert, "CrossTable", "TestAGlobalSummaryTableWritesCellsOutsideEveryName"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim uncovered As String
+
+    BuildFixture TABLE_GLOBAL_SUMMARY, GlobalSummaryHeader(), GlobalSummaryTwoRows()
+    Set sh = OutputSheet()
+    BuildTable sh, 1
+
+    uncovered = CellsOutsideEveryName(sh)
+
+    Assert.IsTrue (LenB(uncovered) > 0), _
+                  "A global summary table still writes cells no name covers"
+    Assert.LogSuccesses "COVERAGE global summary, cells outside every name: " & uncovered
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAGlobalSummaryTableWritesCellsOutsideEveryName", Err.Number, Err.Description
+End Sub
+
+'@sub-title The written cells of a sheet that no named range covers.
+'@details
+'SESSION 125 DEPENDS ON THIS BEING EMPTY. That session drops the whole-grid
+'clipboard copy of VALUES out of the analysis export and carries the values
+'through the named ranges instead, so any cell a table writes that sits outside
+'every name would arrive blank in the exported workbook.
+'
+'The names are collected the way `AnaTabIds.BuildNameBuckets` collects them --
+'walk the workbook name collection and keep the ones whose `RefersToRange` sits
+'on this sheet -- so this measures exactly what `TransferNames` would carry and
+'not some other reading of "named".
+'@param sh Worksheet. The sheet to measure.
+'@return String. The uncovered cell addresses, comma separated, empty when the
+'   names cover every written cell.
+Private Function CellsOutsideEveryName(ByVal sh As Worksheet) As String
+    Dim nm As Name
+    Dim target As Range
+    Dim covered As Range
+    Dim cellRng As Range
+    Dim answer As String
+    Dim shown As Long
+
+    Const MAX_SHOWN As Long = 12
+
+    'The union of every named range that lives on this sheet.
+    For Each nm In sh.Parent.Names
+        Set target = Nothing
+        'A name holding a value has no range behind it and raises, which is how
+        'BuildNameBuckets tells the two apart.
+        On Error Resume Next
+        Set target = nm.RefersToRange
+        On Error GoTo 0
+
+        If Not target Is Nothing Then
+            If target.Worksheet.Name = sh.Name Then
+                If covered Is Nothing Then
+                    Set covered = target
+                Else
+                    Set covered = Application.Union(covered, target)
+                End If
+            End If
+        End If
+    Next nm
+
+    If sh.UsedRange Is Nothing Then Exit Function
+
+    For Each cellRng In sh.UsedRange
+        If LenB(CStr(cellRng.Value)) > 0 Then
+            If IsCellOutside(covered, cellRng) Then
+                shown = shown + 1
+                If shown <= MAX_SHOWN Then
+                    If LenB(answer) > 0 Then answer = answer & ", "
+                    answer = answer & cellRng.Address(False, False) & _
+                             " [" & Left$(CStr(cellRng.Value), 20) & "]"
+                End If
+            End If
+        End If
+    Next cellRng
+
+    If shown > MAX_SHOWN Then _
+        answer = answer & " and " & CStr(shown - MAX_SHOWN) & " more"
+
+    CellsOutsideEveryName = answer
+End Function
+
+'@sub-title Whether one cell falls outside a union of ranges.
+'@param covered Range. The union, or Nothing when the sheet carries no name.
+'@param cellRng Range. The single cell to test.
+'@return Boolean. True when nothing covers the cell.
+Private Function IsCellOutside(ByVal covered As Range, _
+                               ByVal cellRng As Range) As Boolean
+    If covered Is Nothing Then
+        IsCellOutside = True
+        Exit Function
+    End If
+
+    IsCellOutside = (Application.Intersect(covered, cellRng) Is Nothing)
+End Function
+
 '@sub-title Drop every ListObject on the fixture sheet.
 '@details
 'A ListObject name is unique across the workbook, so the table the previous
