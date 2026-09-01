@@ -117,8 +117,45 @@ Private CurrentStep As String
 'Called first by ModuleInitialize. The paths are variables rather than
 'constants because a constant cannot be built from a function call, and the
 'root is now answered by one.
+'@sub-title The root every path of this module hangs from.
+'@details
+'THE LOOP STAGES A MIRROR, AND THAT IS THE ROOT WHEN IT IS THERE.
+'run-tests.R copies the few repository files these headless suites read into
+'<run dir>/headless, in the same relative layout the repository uses, and makes
+'the .obt/draft folder the build writes into. So every path expression below is
+'unchanged; only what it hangs from moves.
+'
+'WHY THE MIRROR EXISTS
+'Excel for Mac is sandboxed. A file read or write on a path with no bookmark
+'raises one modal per file, and a headless run has nobody to click it. The
+'call that is meant to settle this in one dialog,
+'Application.GrantAccessToMultipleFiles, raises 438 on this host -- see the
+'note on HeadlessBuild.EnsureFileAccess -- so no grant is ever made and the
+'build carries on into CodeTransfer, which creates two files per component
+'under OBTApp_. Each of those is a fresh file with no bookmark. Inside the
+'container none of it is asked for at all.
+'
+'A checkout with no mirror falls back to the repository, which is what this
+'module always did: a Windows run has no sandbox, and a loop older than the
+'mirror still stages nothing. The probe is the setup binary because both
+'headless suites read it.
+'@return String. The folder every path of this module is built on.
+Private Function HeadlessRoot() As String
+    Dim staged As String
+
+    staged = JoinPath(ThisWorkbook.Path, "headless")
+
+    If LenB(Dir$(JoinPath(staged, "src", "bin", "setup", "setup_dev.xlsb"))) > 0 Then
+        HeadlessRoot = staged
+        Exit Function
+    End If
+
+    HeadlessRoot = RepoRoot(FALLBACK_ROOT)
+End Function
+
+
 Private Sub ResolvePaths()
-    RepoFolder = RepoRoot(FALLBACK_ROOT)
+    RepoFolder = HeadlessRoot()
 
     DESIGNER_FILE = RepoFolder & "/.mock/designer_mock.xlsb"
     EMPTY_SETUP = RepoFolder & "/src/bin/setup/setup_dev.xlsb"

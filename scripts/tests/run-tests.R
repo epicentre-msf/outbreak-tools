@@ -467,6 +467,86 @@ for (f in c("OBTImport.bas", "OBTHeadless.bas")) {
   src_f <- file.path(repo_root, "src", "tests", "rubberduck", f)
   if (file.exists(src_f)) file.copy(src_f, file.path(run_dir, "bootstrap", f), overwrite = TRUE)
 }
+# --- the headless suites: a repository mirror INSIDE the run dir (macOS) -----
+# THIS IS A SANDBOX FIX, SO IT IS macOS ONLY. Windows has no sandbox: Excel
+# reads and writes the repository directly, nothing is ever prompted for, and
+# staging 4 MB of binaries per run would buy nothing. There the two headless
+# suites keep doing what they always did -- walk up to the repository root and
+# read it in place.
+#
+# On macOS that walk is what broke. TestHeadlessLinelistBuild and
+# TestHeadlessSetupFill drive a real designer build, and every path they use
+# hangs off a repository root found by walking up from the running workbook to
+# the folder holding src/tests/test-registry.yml. That worked while staging sat
+# in the repo. Since staging moved into Excel's container the walk finds
+# nothing in eight levels and the modules fall back to a hard-coded path, so
+# the build reads and writes OUTSIDE the sandbox.
+#
+# Nothing can grant that for them. Application.GrantAccessToMultipleFiles
+# raises 438 on this host -- that is the call behind
+# HeadlessBuild.EnsureFileAccess -- so no grant is made and the build carries
+# on into CodeTransfer, which creates two files per component under OBTApp_.
+# Every one of those is a fresh file with no bookmark, so it is one modal per
+# file with nobody to click it and the run stops dead.
+#
+# So the handful of paths those suites touch are mirrored under the run dir in
+# the SAME relative layout the repository uses. Every path expression in the
+# modules keeps working; only what it hangs from moves. Inside the container
+# none of it is asked for. The mirror is dropped again once the run is read --
+# see the cleanup below.
+headless_root <- file.path(run_dir, "headless")
+
+if (!on_windows) {
+  headless_inputs <- list(
+    c(".mock", "designer_mock.xlsb"),
+    c("ribbons", "_ribbontemplate_dev.xlsb"),
+    c("src", "bin", "setup", "setup_dev.xlsb"),
+    c("src", "tests", ".input", "package", "generic-test-setup.xlsb"),
+    c("scripts", "headless", "vba", "OBTSetupImportHeadless.bas")
+  )
+  for (parts in headless_inputs) {
+    src_f <- do.call(file.path, as.list(c(repo_root, parts)))
+    dst_f <- do.call(file.path, as.list(c(headless_root, parts)))
+    dir.create(dirname(dst_f), recursive = TRUE, showWarnings = FALSE)
+    if (file.exists(src_f)) {
+      file.copy(src_f, dst_f, overwrite = TRUE)
+    } else {
+      message("run-tests.R: WARNING - headless input missing, the build will ",
+              "name it: ", src_f)
+    }
+  }
+
+  # The class and module folders the transfer re-imports into the designer copy.
+  # These lists match HeadlessBuild's TRANSFER_CLASS_FOLDERS and
+  # TRANSFER_MODULE_FOLDERS. A folder added there belongs here too, or the build
+  # imports fewer components than it used to and says so in its own report.
+  for (folder in c("analyses", "dataio", "dictionary", "general", "geo",
+                   "graphs", "linelist", "sections", "showhide")) {
+    copy_tree_in_place(file.path(repo_root, "src", "classes", folder),
+                       file.path(headless_root, "src", "classes", folder))
+  }
+  copy_tree_in_place(file.path(repo_root, "src", "modules", "linelist"),
+                     file.path(headless_root, "src", "modules", "linelist"))
+
+  # The forms the build imports. The suites read them from
+  # .test-runner/forms/merged, which is where the merge wrote until staging
+  # moved. The merge writes into the container now, so the mirror carries the
+  # CURRENT merged tree under that same relative name. Reading the live tree is
+  # the point: the copy still sitting in the repo is stale, and four of its
+  # twelve forms no longer match the FormLogic source they were merged from.
+  if (dir.exists(merged_forms)) {
+    copy_tree_in_place(merged_forms,
+                       file.path(headless_root, ".test-runner", "forms", "merged"))
+  }
+
+  # Where the build WRITES: the filled setup, the linelist, the trace, and the
+  # OBTApp_ scratch folder CodeTransfer exports every component into.
+  dir.create(file.path(headless_root, ".obt", "draft"), recursive = TRUE,
+             showWarnings = FALSE)
+
+  message("run-tests.R: headless mirror staged -> ", headless_root)
+}
+
 message("run-tests.R: run dir assembled from src/ (classes/, tests/, forms/, .generated/, bootstrap/)")
 
 # --- 2a) ensure Excel is fully closed before we launch a fresh instance ------
@@ -526,9 +606,40 @@ show_import_log <- function() {
   }
 }
 
+# Helper: drop the headless mirror, keeping the one thing worth keeping.
+#
+# The mirror is staged fresh every run (macOS only, see above), so nothing in
+# it needs to survive -- except the build's own trace. That trace is the only
+# record of WHERE a headless build stopped: the suite reports the fault through
+# an error boundary that strips the location, so a red run reads as an opaque
+# message while the trace has the step list. It is rescued to the run dir root,
+# beside the results, and the rest of the mirror goes.
+#
+# Called on both exits. A green run has no use for 4 MB of copied binaries and
+# a built linelist; a red one is read from the trace and the results, not from
+# the mirror.
+clear_headless_mirror <- function() {
+  if (!dir.exists(headless_root)) return(invisible(NULL))
+
+  traces <- list.files(file.path(headless_root, ".obt", "draft"),
+                       pattern = "trace\\.txt$", full.names = TRUE)
+  for (tr in traces) {
+    file.copy(tr, file.path(run_dir, paste0("headless-", basename(tr))),
+              overwrite = TRUE)
+  }
+  if (length(traces)) {
+    message("run-tests.R: headless trace kept -> ",
+            file.path(run_dir, paste0("headless-", basename(traces[1]))))
+  }
+
+  unlink(headless_root, recursive = TRUE, force = TRUE)
+  message("run-tests.R: headless mirror cleared")
+}
+
 # Helper: keep the stale copy, explain, and exit non-zero.
 fail <- function(msg) {
   message("\n[FAIL] ", msg)
+  clear_headless_mirror()
   show_import_log()
   message("\n       Stale working copy kept for inspection:")
   message("       ", work_copy)
@@ -605,5 +716,6 @@ message("run-tests.R: latest results -> ", final_csv)
 
 # Leave the stable run dir in place (it is cleared at the start of the next run).
 # Keeping the same path is what avoids re-triggering the macOS file-access grant.
+clear_headless_mirror()
 message("run-tests.R: all tests passed. Run dir left at ", run_dir)
 quit(status = 0L, save = "no")
