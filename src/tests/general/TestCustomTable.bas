@@ -1714,6 +1714,95 @@ Private Sub PrepareRunsFixture(ByRef tableObject As CustomTable, _
                                              Array("east", 300, "z")))
 End Sub
 
+'@sub-title Builds a table and a file that carry a date column beside a text one
+'@details The dictionary's min and max columns can hold real dates, and the
+'   validation VarWriter builds from them reads the cell through CDate. A date
+'   that arrived as text would be a different bound, so the import has to carry
+'   the Date type across. The date sits in the MIDDLE of the run on purpose: a
+'   run block holds one Variant array for several columns at once, so a date
+'   beside a string is the case that would coerce if anything did.
+Private Sub PrepareDateFixture(ByRef tableObject As CustomTable, _
+                               ByRef Lo As ListObject, _
+                               ByRef dataSheetObj As DataSheet)
+
+    Set tableObject = CreateCustomTableWithData(TABLESHEETNAME, TABLENAME, _
+                                                Array("ID", "Label", "Min", "Max"), _
+                                                Array(Array("row 1", "", 0, 0), _
+                                                      Array("row 2", "", 0, 0)))
+    Set Lo = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+
+    Set dataSheetObj = CreateDataSheet(DATASHEETNAME, Array("Label", "Min", "Max"), _
+                                       Array(Array("onset", DateSerial(2026, 1, 1), DateSerial(2026, 12, 31)), _
+                                             Array("exit", DateSerial(2026, 2, 1), DateSerial(2026, 11, 30))))
+End Sub
+
+'@sub-title Asserts a date bound crossed the import as a Date and not as text
+Private Sub AssertDatesLanded(ByVal Lo As ListObject)
+    Dim minCell As Range
+    Dim maxCell As Range
+
+    Set minCell = Lo.ListColumns("Min").DataBodyRange.Cells(1, 1)
+    Set maxCell = Lo.ListColumns("Max").DataBodyRange.Cells(2, 1)
+
+    Assert.AreEqual "Date", TypeName(minCell.Value), _
+                    "A date bound crosses the import as a Date, arrived as " & TypeName(minCell.Value)
+    Assert.IsTrue (minCell.Value = DateSerial(2026, 1, 1)), _
+                  "And holds the day the file gave it"
+    Assert.IsTrue (CDate(minCell.Value) = DateSerial(2026, 1, 1)), _
+                  "CDate reads it back as that day, which is what the validation bound does"
+    Assert.AreEqual "Date", TypeName(maxCell.Value), _
+                    "The second date column crosses as a Date too, arrived as " & TypeName(maxCell.Value)
+    Assert.AreEqual "onset", CStr(Lo.ListColumns("Label").DataBodyRange.Cells(1, 1).Value), _
+                    "The text column beside the dates is unchanged"
+End Sub
+
+'@sub-title Verifies that a date column keeps its type across a block import
+'@details Two rows: the block path. The date columns sit in one run with a text
+'   column, so they share a Variant array on the way over.
+'@TestMethod("CustomTable")
+Public Sub TestImportKeepsDateColumnsAsDates()
+    CustomTestSetTitles Assert, "CustomTable", "TestImportKeepsDateColumnsAsDates"
+    On Error GoTo Fail
+
+    Dim tableObject As CustomTable
+    Dim Lo As ListObject
+    Dim dataSheetObj As DataSheet
+
+    PrepareDateFixture tableObject, Lo, dataSheetObj
+
+    tableObject.Import dataSheetObj, strictColumnSearch:=True
+
+    AssertDatesLanded Lo
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestImportKeepsDateColumnsAsDates", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verifies that a date column keeps its type past the row cap too
+'@details The same fixture with BlockRowCap set to 1, so the columns move one at
+'   a time through FromExcelRange and ToExcelRange instead of as a run.
+'@TestMethod("CustomTable")
+Public Sub TestImportPastTheRowCapKeepsDateColumnsAsDates()
+    CustomTestSetTitles Assert, "CustomTable", "TestImportPastTheRowCapKeepsDateColumnsAsDates"
+    On Error GoTo Fail
+
+    Dim tableObject As CustomTable
+    Dim Lo As ListObject
+    Dim dataSheetObj As DataSheet
+
+    PrepareDateFixture tableObject, Lo, dataSheetObj
+    tableObject.BlockRowCap = 1
+
+    tableObject.Import dataSheetObj, strictColumnSearch:=True
+
+    AssertDatesLanded Lo
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestImportPastTheRowCapKeepsDateColumnsAsDates", Err.Number, Err.Description
+End Sub
+
 '@sub-title Asserts what an import over the runs fixture has to leave behind
 Private Sub AssertRunsLanded(ByVal tableObject As CustomTable, ByVal Lo As ListObject)
     Assert.IsTrue (CDbl(Lo.ListColumns("Value").DataBodyRange.Cells(3, 1).Value) = 300), _
