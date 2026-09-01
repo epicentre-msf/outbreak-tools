@@ -15,19 +15,19 @@
 Create takes the base directory, or falls back to the default one. RootPath
 answers the folder, EnsureReady creates it, and CreateFilePath builds a path
 inside it from a file name it cleans first. DeleteFile removes one file,
-DeleteAll empties the folder and creates it again, and Reset empties it and
-marks the object as needing another EnsureReady. Terminating an instance
-empties the folder.</p>
+DeleteAll empties the folder and creates it again, Reset empties it and
+marks the object as needing another EnsureReady, and Remove empties it and
+deletes the folder itself. Terminating an instance empties the folder.</p>
 <details open class="doc-section" id="the-kept-file">
 <summary>THE KEPT FILE</summary>
 <div class="section-body">
 <p>A build that fails saves its unfinished workbook in this folder and drops
 the instance right after. KeepFile marks one file name to survive that
 drop: Class_Terminate deletes every other file and leaves the marked ones.
-Reset and DeleteAll are explicit calls and wipe the folder whole, marks
-included, so the next run that saves its linelist starts clean.</p>
+Reset, DeleteAll and Remove are explicit calls and wipe the folder whole,
+marks included, so the next run that saves its linelist starts clean.</p>
 <p><strong>Depends on:</strong> ProjectError</p>
-<p><strong>Version:</strong> 1.1 (2026-08-28)</p>
+<p><strong>Version:</strong> 1.2 (2026-09-01)</p>
 </div>
 </details>
 <details open class="doc-section" id="factory-helpers">
@@ -64,6 +64,20 @@ included, so the next run that saves its linelist starts clean.</p>
 <pre><code class="language-vb">Public Sub Reset()
 </code></pre>
 <p>The kept marks go with the files: a reset repository starts clean.</p>
+<hr />
+<h3 id="remove">Remove <a class="anchor-link" href="#remove">#</a></h3>
+<p><em>remove</em></p>
+<p><strong>Remove every file and the folder itself</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Remove()
+</code></pre>
+<p>What Reset does, and then the folder goes too. A build that reached its
+save calls this, so the working folder is not left behind next to the
+linelist it wrote.</p>
+<p>The folder is removed only when it is empty. A removal the file system
+refuses -- a file this class cannot see, a folder another program holds
+open -- is left alone: the files this class wrote are gone either way,
+and the next EnsureReady creates the folder again.</p>
 <hr />
 </div>
 </details>

@@ -333,8 +333,10 @@ prepared.</li>
 </code></pre>
 <p>Saves the output workbook in .xlsb format with the configured password,
 protects the workbook structure via Passwords.Protect, activates the sheet the
-user should open the file on, closes the workbook and cleans up temporary files
-via TemporaryRepos.Reset.</p>
+user should open the file on, closes the workbook and clears the working folder
+via TemporaryRepos.Remove, which deletes the files and the folder itself. A
+build that got this far keeps nothing, so nothing of OBTApp_ is left next to
+the linelist.</p>
 <p>Both cached references to the workbook are dropped once it is closed. This
 instance held one and LinelistSpecs held the other, and a read of either after
 the close raised an automation error. The read that mattered was the discard
@@ -786,7 +788,7 @@ error attribution across all methods in this class.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (61 file(s))</summary>
+<summary>Used in (62 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="AnalysisRanges.html">AnalysisRanges.cls</a></li>
@@ -836,6 +838,7 @@ error attribution across all methods in this class.</p>
 <li>TestAnalysisRanges.bas</li>
 <li>TestCrossTable.bas</li>
 <li>TestCrossTableFormula.bas</li>
+<li>TestLLImportTiming.bas</li>
 <li>TestFormulas.bas</li>
 <li>TestHeadlessLinelistBuild.bas</li>
 <li><a href="LinelistDataStub.html">LinelistDataStub.cls</a></li>
