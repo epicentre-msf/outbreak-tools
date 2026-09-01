@@ -100,6 +100,28 @@ Private Type TLLImporter
     sealed As Boolean
 End Type
 
+'What the two comparison walks read out of one dictionary, one column per
+'field, every array one based and all of them the same height.
+'
+'THE BLOCKS LIVE HERE, NOT IN LLVariables
+'-------------------------------------------------------------------------------
+'Owner direction of 2026-08-19, measured: a column cache inside LLVariables made
+'the build 25% SLOWER, because the write path creates a fresh LLVariables per
+'variable and every one of them paid the block read again. The two walks below
+'each hold one reader for their whole run, which is the long-lived shape that
+'pays for a block read.
+Private Type TDictBlocks
+    rowCount As Long
+    names As Variant
+    mainLabels As Variant
+    sheetNames As Variant
+    sheetTypes As Variant
+    editableLabels As Variant
+    columnIndexes As Variant
+    controls As Variant
+    controlDetails As Variant
+End Type
+
 Private this As TLLImporter
 
 
@@ -611,6 +633,149 @@ Private Function ColumnBlockOf(ByVal rng As Range) As Variant
     ColumnBlockOf = values
 End Function
 
+'@label:read-dict-blocks
+'@sub-title Read the columns the two comparison walks need, one crossing each
+'@details
+'Every LLVariables.Value call pays TWO crossings: ResolveColumnIndex checks the
+'header cell still reads as the column it cached, then the value cell is read.
+'ImportEditableLabels made four of those per variable plus a cell read of the
+'name column, and CompareWithImportFile made several per variable on BOTH
+'files, so a dictionary of 500 variables paid thousands of crossings for eight
+'columns.
+'Eight crossings per dictionary now, and the walks answer from memory.
+'A column the dictionary does not carry answers a block of empty strings, so a
+'caller reads it like any other and an older file costs no special case.
+'@param dict LLdictionary. The dictionary to read.
+'@param blocks TDictBlocks. Filled with one array per column.
+Private Sub ReadDictBlocks(ByVal dict As LLdictionary, ByRef blocks As TDictBlocks)
+
+    blocks.rowCount = 0
+    blocks.names = DictColumnBlock(dict, "variable name", 0, blocks.rowCount)
+    If blocks.rowCount = 0 Then Exit Sub
+
+    blocks.mainLabels = DictColumnBlock(dict, "main label", blocks.rowCount)
+    blocks.sheetNames = DictColumnBlock(dict, "sheet name", blocks.rowCount)
+    blocks.sheetTypes = DictColumnBlock(dict, "sheet type", blocks.rowCount)
+    blocks.editableLabels = DictColumnBlock(dict, "editable label", blocks.rowCount)
+    blocks.columnIndexes = DictColumnBlock(dict, "column index", blocks.rowCount)
+    blocks.controls = DictColumnBlock(dict, "control", blocks.rowCount)
+    blocks.controlDetails = DictColumnBlock(dict, "control details", blocks.rowCount)
+End Sub
+
+'@label:dict-column-block
+'@sub-title One dictionary column as a one based array of strings
+'@details
+'The range answers a two dimensional array, or a single value when the
+'dictionary holds one row, and both are flattened to the same shape.
+'DataRange raises on a column the dictionary does not carry; that is caught here
+'and answered with the empty block, because these walks skip a missing column
+'rather than refuse the whole import.
+'@param dict LLdictionary. The dictionary to read.
+'@param colName String. The column to read.
+'@param expectedRows Long. The height every block has to hold. 0 lets the column
+'   decide, which is how the first block sets the count.
+'@param rowsRead Long. Set to the height the block holds.
+'@return Variant. A one based array of strings.
+Private Function DictColumnBlock(ByVal dict As LLdictionary, _
+                                 ByVal colName As String, _
+                                 ByVal expectedRows As Long, _
+                                 Optional ByRef rowsRead As Long) As Variant
+
+    Dim source As Range
+    Dim raw As Variant
+    Dim block() As String
+    Dim nbRows As Long
+    Dim counter As Long
+
+    On Error Resume Next
+    Set source = dict.DataRange(colName)
+    On Error GoTo 0
+
+    If source Is Nothing Then
+        nbRows = expectedRows
+    Else
+        nbRows = source.Rows.count
+        If expectedRows > 0 Then nbRows = expectedRows
+    End If
+
+    rowsRead = nbRows
+    If nbRows < 1 Then
+        DictColumnBlock = Array()
+        Exit Function
+    End If
+
+    ReDim block(1 To nbRows)
+    If source Is Nothing Then
+        DictColumnBlock = block
+        Exit Function
+    End If
+
+    If source.Rows.count = 1 Then
+        block(1) = CellTextOf(source.Cells(1, 1).Value)
+    Else
+        raw = source.Columns(1).Value
+        For counter = 1 To nbRows
+            If counter <= UBound(raw, 1) Then block(counter) = CellTextOf(raw(counter, 1))
+        Next counter
+    End If
+
+    DictColumnBlock = block
+End Function
+
+'@label:block-row-of
+'@sub-title The row one variable sits on, answered from the name block
+'@details
+'A straight walk with a binary compare, which is the rule LLVariables.RowIndex
+'applies and the rule its callers depend on: LLdictionary.UniqueVarNames leaves
+'the case the user typed, and Contains is case sensitive by default. A keyed
+'Collection would be faster and would answer case blind, which is a different
+'question from the one the walks used to ask.
+'A duplicated name answers with the FIRST row that holds it, again as RowIndex
+'does.
+'@param blocks TDictBlocks. The blocks to search.
+'@param varName String. The variable to look for.
+'@return Long. The row, one based, or 0 when the name is absent.
+Private Function BlockRowOf(ByRef blocks As TDictBlocks, _
+                            ByVal varName As String) As Long
+
+    Dim counter As Long
+
+    If LenB(varName) = 0 Then Exit Function
+    If Not IsArray(blocks.names) Then Exit Function
+
+    For counter = 1 To blocks.rowCount
+        If StrComp(blocks.names(counter), varName, vbBinaryCompare) = 0 Then
+            BlockRowOf = counter
+            Exit Function
+        End If
+    Next counter
+End Function
+
+'@label:block-text
+'@sub-title One row of a block, empty when the block holds nothing there
+'@param block Variant. A block DictColumnBlock built.
+'@param row Long. The row wanted, one based.
+'@return String. The text at that row.
+Private Function BlockText(ByRef block As Variant, ByVal row As Long) As String
+    If Not IsArray(block) Then Exit Function
+    On Error Resume Next
+    BlockText = block(row)
+    On Error GoTo 0
+End Function
+
+'@label:cell-text-of
+'@sub-title A cell value as text, with an error, a Null or an empty read as nothing
+'@details
+'A dictionary cell can hold an error value or a Null, and CStr raises on both.
+'@param cellValue Variant. The raw cell value.
+'@return String. The text, or an empty string.
+Private Function CellTextOf(ByVal cellValue As Variant) As String
+    If IsError(cellValue) Then Exit Function
+    If IsNull(cellValue) Then Exit Function
+    If IsEmpty(cellValue) Then Exit Function
+    CellTextOf = CStr(cellValue)
+End Function
+
 '@fun-title Whether one entry of a formula block reads as a formula
 '@param formulaText Variant. A block answered by FormulaBlockOf.
 '@param index Long. Which entry to test.
@@ -947,18 +1112,31 @@ End Function
 'label.
 'QuickValue is not the answer here the way it is in SheetTagOf: this walk asks
 'the same sheet again and again, which is the case the instance is for.
+'
+'THE DICTIONARY COLUMNS ARE READ AS BLOCKS
+'-------------------------------------------------------------------------------
+'The walk used to make four LLVariables.Value calls per variable, plus one cell
+'read of the name column, and each of those calls costs two crossings. Both
+'dictionaries are read as blocks now, once, and every question below is answered
+'from memory. LLVariables stays for the WRITE alone.
+'The current dictionary answers at the row the walk is standing on rather than
+'through a name lookup. For a name that appears twice, LLVariables.Value would
+'answer with the first row of the pair both times round; reading the row in hand
+'is what the loop meant. LLdictionary.UniqueVarNames makes the names unique
+'during preparation, so neither shape has anything to do in practice.
 '@param impwb Workbook. The opened migration workbook.
 '@param meta ImportMetadata. The metadata of that workbook.
 '@export
 Public Sub ImportEditableLabels(ByVal impwb As Workbook, ByVal meta As ImportMetadata)
 
-    Dim varRng As Range
     Dim cellRng As Range
     Dim dict As LLdictionary
     Dim inpDict As LLdictionary
     Dim currVars As LLVariables
-    Dim inpVars As LLVariables
+    Dim currBlocks As TDictBlocks
+    Dim inpBlocks As TDictBlocks
     Dim counter As Long
+    Dim inpRow As Long
     Dim varName As String
     Dim newLabel As String
     Dim sheetName As String
@@ -977,34 +1155,39 @@ Public Sub ImportEditableLabels(ByVal impwb As Workbook, ByVal meta As ImportMet
     Set inpDict = LLdictionary.Create(impwb.Worksheets(DICTIONARYSHEET), 1, 1)
     If Not inpDict.Prepared Then Exit Sub
 
-    ' Build variables objects
+    ' The reader for the write, and the blocks for every read
     Set dict = SourceDictionary()
     Set currVars = LLVariables.Create(dict)
-    Set inpVars = LLVariables.Create(inpDict)
-    Set varRng = dict.DataRange("variable name")
+
+    ReadDictBlocks dict, currBlocks
+    If currBlocks.rowCount = 0 Then Exit Sub
+    ReadDictBlocks inpDict, inpBlocks
+
     Set heldNames = New Collection
 
-    For counter = 1 To varRng.Rows.Count
-        varName = CStr(varRng.Cells(counter, 1).Value)
+    For counter = 1 To currBlocks.rowCount
+        varName = BlockText(currBlocks.names, counter)
+        If LenB(varName) = 0 Then GoTo NextLabel
 
         ' Skip variables not in import dictionary
-        If Not inpVars.Contains(varName) Then GoTo NextLabel
+        inpRow = BlockRowOf(inpBlocks, varName)
+        If inpRow = 0 Then GoTo NextLabel
         ' Skip non-editable labels
-        If currVars.Value(varName:=varName, colName:="editable label") <> "yes" Then GoTo NextLabel
+        If BlockText(currBlocks.editableLabels, counter) <> "yes" Then GoTo NextLabel
 
         ' Get the new label from import
-        newLabel = inpVars.Value(varName:=varName, colName:="main label")
+        newLabel = BlockText(inpBlocks.mainLabels, inpRow)
 
         ' Get column/row index
         colIndex = 0
         On Error Resume Next
-        colIndex = CLng(currVars.Value(varName:=varName, colName:="column index"))
+        colIndex = CLng(BlockText(currBlocks.columnIndexes, counter))
         On Error GoTo 0
         If colIndex = 0 Then GoTo NextLabel
 
         ' Get sheet and type
-        sheetName = currVars.SheetName(varName)
-        sheetInfo = currVars.Value(varName:=varName, colName:="sheet type")
+        sheetName = BlockText(currBlocks.sheetNames, counter)
+        sheetInfo = BlockText(currBlocks.sheetTypes, counter)
 
         Set sh = Nothing
         On Error Resume Next
@@ -1173,14 +1356,14 @@ End Sub
 Public Sub CompareWithImportFile(ByVal impwb As Workbook)
 
     Dim inpDict As LLdictionary
-    Dim currVars As LLVariables
-    Dim inpVars As LLVariables
+    Dim currBlocks As TDictBlocks
+    Dim inpBlocks As TDictBlocks
     Dim currChoi As LLChoices
     Dim impChoi As LLChoices
     Dim drop As DropdownLists
-    Dim varNames As BetterArray
     Dim varName As String
     Dim counter As Long
+    Dim inpRow As Long
 
     If Not SheetExists(impwb, DICTIONARYSHEET) Then Exit Sub
 
@@ -1194,21 +1377,37 @@ Public Sub CompareWithImportFile(ByVal impwb As Workbook)
         Exit Sub
     End If
 
-    Set currVars = LLVariables.Create(SourceDictionary())
-    Set inpVars = LLVariables.Create(inpDict)
-    Set varNames = currVars.VariableNames()
+    'Both dictionaries as blocks, eight crossings each. The walk used to ask
+    'LLVariables for the sheet name, the label, the control and the control
+    'details of every variable on both files, and every one of those answers
+    'cost a header check and a cell read.
+    ReadDictBlocks SourceDictionary(), currBlocks
+    If currBlocks.rowCount = 0 Then Exit Sub
+    ReadDictBlocks inpDict, inpBlocks
 
     Set currChoi = ChoicesOf(this.sourceWkb)
     Set impChoi = ChoicesOf(impwb)
     Set drop = CustomDropdowns()
 
-    For counter = varNames.LowerBound To varNames.UpperBound
-        varName = CStr(varNames.Item(counter))
+    For counter = 1 To currBlocks.rowCount
+        'A blank name is not a variable. LLVariables.VariableNames left those
+        'rows out of the list this loop used to walk.
+        varName = BlockText(currBlocks.names, counter)
 
-        If inpVars.Contains(varName) Then
-            If SheetWasImported(currVars.SheetName(varName)) Then
-                CompareOneLabel currVars, inpVars, varName
-                CompareOneChoiceList currVars, inpVars, currChoi, impChoi, drop, varName
+        If LenB(varName) > 0 Then
+            inpRow = BlockRowOf(inpBlocks, varName)
+
+            If inpRow > 0 Then
+                If SheetWasImported(BlockText(currBlocks.sheetNames, counter)) Then
+                    CompareOneLabel varName, _
+                                    BlockText(currBlocks.mainLabels, counter), _
+                                    BlockText(inpBlocks.mainLabels, inpRow)
+                    CompareOneChoiceList varName, _
+                                         BlockText(currBlocks.controls, counter), _
+                                         BlockText(currBlocks.controlDetails, counter), _
+                                         BlockText(inpBlocks.controlDetails, inpRow), _
+                                         currChoi, impChoi, drop
+                End If
             End If
         End If
     Next counter
@@ -1236,18 +1435,15 @@ End Function
 
 '@label:compare-one-label
 '@sub-title File a warning when the two files give a variable different labels
-'@param currVars LLVariables. The variables of this linelist.
-'@param inpVars LLVariables. The variables of the file.
+'@details
+'Both labels are read out of the blocks by the caller, so this routine reaches
+'no worksheet.
 '@param varName String. The variable to compare.
-Private Sub CompareOneLabel(ByVal currVars As LLVariables, _
-                            ByVal inpVars As LLVariables, _
-                            ByVal varName As String)
-
-    Dim currLabel As String
-    Dim impLabel As String
-
-    currLabel = currVars.Value(colName:="main label", varName:=varName)
-    impLabel = inpVars.Value(colName:="main label", varName:=varName)
+'@param currLabel String. The label this linelist carries.
+'@param impLabel String. The label the file carries.
+Private Sub CompareOneLabel(ByVal varName As String, _
+                            ByVal currLabel As String, _
+                            ByVal impLabel As String)
 
     If LenB(impLabel) = 0 Then Exit Sub
     If StrComp(Trim$(currLabel), Trim$(impLabel), vbBinaryCompare) = 0 Then Exit Sub
@@ -1265,22 +1461,24 @@ End Sub
 '`choice_formula` is left alone: its list name is computed from a formula and
 'the routine that reads that formula lives in the setup, which a linelist does
 'not carry.
-'@param currVars LLVariables. The variables of this linelist.
-'@param inpVars LLVariables. The variables of the file.
+'The control value and the two list names are read out of the blocks by the
+'caller, so the only worksheets this routine reaches are the choice lists.
+'@param varName String. The variable to compare.
+'@param controlText String. The `control` cell of this linelist, as written.
+'@param currList String. The `control details` of this linelist.
+'@param impList String. The `control details` the file carries.
 '@param currChoi LLChoices. The Choices worksheet of this linelist.
 '@param impChoi LLChoices. The Choices worksheet of the file.
 '@param drop DropdownLists. The custom dropdowns of this linelist.
-'@param varName String. The variable to compare.
-Private Sub CompareOneChoiceList(ByVal currVars As LLVariables, _
-                                 ByVal inpVars As LLVariables, _
+Private Sub CompareOneChoiceList(ByVal varName As String, _
+                                 ByVal controlText As String, _
+                                 ByVal currList As String, _
+                                 ByVal impList As String, _
                                  ByVal currChoi As LLChoices, _
                                  ByVal impChoi As LLChoices, _
-                                 ByVal drop As DropdownLists, _
-                                 ByVal varName As String)
+                                 ByVal drop As DropdownLists)
 
     Dim controlValue As String
-    Dim currList As String
-    Dim impList As String
     Dim currCats As BetterArray
     Dim impCats As BetterArray
     Dim keys As ChoiceKeys
@@ -1289,15 +1487,13 @@ Private Sub CompareOneChoiceList(ByVal currVars As LLVariables, _
 
     If impChoi Is Nothing Then Exit Sub
 
-    controlValue = LCase$(Trim$(currVars.ControlType(varName)))
+    controlValue = LCase$(Trim$(controlText))
     If controlValue <> "choice_manual" Then
         If controlValue <> "choice_multiple" Then
             If controlValue <> "choice_custom" Then Exit Sub
         End If
     End If
 
-    currList = currVars.Value(colName:="control details", varName:=varName)
-    impList = inpVars.Value(colName:="control details", varName:=varName)
     If LenB(currList) = 0 Then Exit Sub
     If LenB(impList) = 0 Then Exit Sub
 
