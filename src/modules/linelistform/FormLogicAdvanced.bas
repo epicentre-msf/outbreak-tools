@@ -363,6 +363,47 @@ Private Sub LogWarningLine(ByVal action As String, _
 End Sub
 
 
+' @description Open the user log's stopwatch on a layout walk. Guarded, and
+' quiet on a workbook with no log, like every log line here.
+Private Sub StartLayoutWalk()
+    Dim logStore As LLLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.StartWalk
+    On Error GoTo 0
+End Sub
+
+
+' @description Name the step the layout walk is on.
+Private Sub MarkLayoutStep(ByVal stepName As String)
+    Dim logStore As LLLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.MarkStep stepName
+    On Error GoTo 0
+End Sub
+
+
+' @description Write the step line of the layout walk and close it. A walk that
+' was never opened writes nothing.
+Private Sub LogLayoutSteps(ByVal action As String)
+    Dim logStore As LLLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.LogSteps action
+    On Error GoTo 0
+End Sub
+
+
 ' @description Write the warning line of one sheet whose layout ended its
 ' walk with refused writes, so a protected sheet or a position that is gone
 ' shows up in the log with its count.
@@ -611,7 +652,13 @@ Public Function HandleRestoreShowHideLayout(ByVal sourceWkb As Workbook, _
 
     Set dict = LLdictionary.Create(sourceWkb.Worksheets(DICTIONARY_SHEET), 1, 1)
 
+    'One step per worksheet, named before LayerContextOf, because that call
+    'reads the hidden names of EVERY sheet to find its layer and the log is
+    'where that cost shows. A sheet with no layer is a short step.
+    StartLayoutWalk
+
     For Each sh In sourceWkb.Worksheets
+        MarkLayoutStep sh.Name
         If LayerContextOf(sh, dict, pass, entries, layout) Then
             matched = store.Load(entries, layout, layoutName)
 
@@ -625,6 +672,7 @@ Public Function HandleRestoreShowHideLayout(ByVal sourceWkb As Workbook, _
     Next
 
     LogSuccessLine "layout-restore", layoutName & ": " & total & " rows"
+    LogLayoutSteps "layout-restore"
     HandleRestoreShowHideLayout = total
 End Function
 

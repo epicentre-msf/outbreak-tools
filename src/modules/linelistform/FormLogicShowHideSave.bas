@@ -214,8 +214,11 @@ Private Sub UserForm_Activate()
     RefreshLayoutList
 End Sub
 
-'Go back to show/hide
+'Go back to show/hide. The form hides itself and asks for the parent back;
+'ClickShowHide shows its form again once this form's opener has returned and
+'saved. Calling ClickShowHide from here showed the show/hide form a second time
+'inside its own pending Show, and every close then saved twice.
 Private Sub LBL_Previous_Click()
     Me.Hide
-    ClickShowHide
+    ClickShowHidePrevious
 End Sub

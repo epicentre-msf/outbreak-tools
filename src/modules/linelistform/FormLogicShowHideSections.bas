@@ -67,8 +67,11 @@ Private Sub UserForm_Initialize()
     tradform.TranslateForm Me
 End Sub
 
-'Go back to show/hide
+'Go back to show/hide. The form hides itself and asks for the parent back;
+'ClickShowHide shows its form again once this form's opener has returned and
+'saved. Calling ClickShowHide from here ran it inside that opener, before its
+'save, and the sheet was put back to the state from before this form opened.
 Private Sub LBL_Previous_Click()
     Me.Hide
-    ClickShowHide
+    ClickShowHidePrevious
 End Sub

@@ -70,6 +70,18 @@ Private activeSectionsForm As Object
 Private lastHiddenSectionSheet As String
 Private lastHiddenSectionIndex As Long
 
+'Set by the Previous label of a child form (the sections form, the layouts
+'form). The show/hide form is shown in a loop that reads it: True means "show
+'me again once the child's opener has saved", False ends the session.
+'
+'The label used to call ClickShowHide itself. A modal Show returns when the
+'handler that hid the form returns, so that call ran INSIDE the child's opener,
+'before the opener's save: the nested open read the store from before the
+'child opened, wrote that old state back onto the sheet, and the section the
+'user had just hidden came back. Three saves followed. The flag moves the second
+'show to after the opener has returned.
+Private showHideReturnWanted As Boolean
+
 'The event service of the running linelist
 '
 'It holds the translation helper, the workbook hidden names, the password
@@ -234,6 +246,52 @@ Private Sub LogShowHideLine(ByVal source As String, ByVal action As String, _
     Else
         LogSuccessLine source, action, detail
     End If
+End Sub
+
+'THE STOPWATCH OF ONE SHOW/HIDE ACTION
+'-------------------------------------------------------------------------------
+'The three below ride on the user log's own stopwatch (LLLog.StartWalk, MarkStep,
+'LogSteps). One walk is one user action: the open of the form up to Show, the
+'close from the first save to the protect, one option click, one section press.
+'The open and the close are two walks rather than one, because the form session
+'between them is the user's time and the clicks inside it are walks of their own
+'on the same log instance.
+'
+'Every call is guarded and answers nothing when the workbook has no log, so the
+'action runs the same on a linelist built before the log sheet existed.
+Private Sub StartShowHideWalk()
+    Dim logStore As LLLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.StartWalk
+    On Error GoTo 0
+End Sub
+
+Private Sub MarkShowHideStep(ByVal stepName As String)
+    Dim logStore As LLLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.MarkStep stepName
+    On Error GoTo 0
+End Sub
+
+'Write the step line of the walk that is open, and close it. A walk that was
+'never opened writes nothing, so this sits on every exit path.
+Private Sub LogShowHideSteps(ByVal source As String, ByVal action As String)
+    Dim logStore As LLLog
+
+    Set logStore = UserLogOf()
+    If logStore Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    logStore.LogSteps action, source
+    On Error GoTo 0
 End Sub
 
 'What one section press did, in the words the log wants: the section by name,
@@ -721,14 +779,22 @@ Public Sub ClickShowHide()
 
     InitializeTrads
 
+    'The open walk: build, load, apply (or adopt), list. Its line is written
+    'before the form is shown, so the clicks inside the session time themselves.
+    StartShowHideWalk
+    MarkShowHideStep "build"
+
     If Not OpenShowHideFor(sh) Then GoTo CleanUp
 
     'Read the choices of the last session and put the sheet in step with them.
     'With nothing saved yet, the sheet is the record: read it into the entries, so
     'a column the user hid by hand shows as hidden in the form.
+    MarkShowHideStep "load"
     If LoadShowHideState(showHideEntries, activeLayout) > 0 Then
+        MarkShowHideStep "apply"
         showHideEntries.Apply activeLayout
     Else
+        MarkShowHideStep "adopt"
         showHideEntries.Adopt activeLayout
     End If
 
@@ -742,12 +808,26 @@ Public Sub ClickShowHide()
     End If
 
     Set activeShowHideForm = frm
+    MarkShowHideStep "list"
     PopulateShowHideList frm
-    frm.Show
+    LogShowHideSteps "ClickShowHide", "showhide"
+
+    'The form is shown in a loop. A child form's Previous label hides the child
+    'and sets the flag; the child's opener then finishes its own save and refill
+    'and returns, the click handler that hid this form returns, Show returns,
+    'and the loop shows this form again on the SAME entry list and layout. Back
+    'on a child leaves the flag False, so Show returns once and the session
+    'saves once.
+    Do
+        showHideReturnWanted = False
+        frm.Show
+    Loop While showHideReturnWanted
 
     'After form closes, save the choices. The log line covers the whole form
     'session: every option click landed on this layout, so its refused-write
     'count is the count of the session.
+    StartShowHideWalk
+    MarkShowHideStep "save"
     SaveShowHideState showHideEntries, activeLayout
     LogShowHideLine "ClickShowHide", "showhide", activeLayout, _
                     EntryCountText(showHideEntries, sh.Name)
@@ -755,9 +835,25 @@ Public Sub ClickShowHide()
 CleanUp:
     If Err.Number <> 0 Then LogFailureLine "ClickShowHide", "showhide", Err.Description
     Set activeShowHideForm = Nothing
+    MarkShowHideStep "protect"
     ProtectAfterShowHide sh
+    'The close walk on the normal path; on a raise, whichever walk was open,
+    'with the step that refused still named.
+    LogShowHideSteps "ClickShowHide", "showhide"
     LinelistEventsManager.LLRestPointer
     LinelistEventsManager.LLExitQuietState
+End Sub
+
+'@Description("Ask the show/hide form back once the child form that pressed Previous has closed")
+'@EntryPoint
+'
+'Called by the Previous label of the sections form and of the layouts form,
+'after Me.Hide. Nothing is shown from here: the show loop in ClickShowHide
+'reads the flag once the child's opener has returned and saved.
+Public Sub ClickShowHidePrevious()
+    Attribute ClickShowHidePrevious.VB_Description = "Ask the show/hide form back once the child form that pressed Previous has closed"
+
+    showHideReturnWanted = True
 End Sub
 
 'Put the sheet back under protection once a show/hide session ends.
@@ -791,18 +887,25 @@ Private Function SectionContextFor(ByVal sh As Worksheet, _
     layer = ResolveShowHideLayer(shType)
     If layer = 0 Then Exit Function
 
+    'The steps are named here because this is where the work is. A caller with
+    'no walk open (the sections form) pays nothing for the marks.
+    MarkShowHideStep "map"
     Set secMap = SectionMap.Create(sh)
     If secMap.Count = 0 Then Exit Function
 
+    MarkShowHideStep "build"
     Set showHideEntries = EntriesFor(sh, layer, DictionaryObject())
     Set activeLayout = LayoutFor(sh, layer)
 
     'The same reconciliation ClickShowHide does. With nothing saved yet the
     'sheet is the record, so a column the user hid by hand is read as hidden
     'and the toggle below agrees with what the user can see.
+    MarkShowHideStep "load"
     If LoadShowHideState(showHideEntries, activeLayout) > 0 Then
+        MarkShowHideStep "apply"
         showHideEntries.Apply activeLayout
     Else
+        MarkShowHideStep "adopt"
         showHideEntries.Adopt activeLayout
     End If
 
@@ -844,9 +947,14 @@ Public Sub ClickShowHideSection()
 
     InitializeTrads
 
+    'One walk per press. A press refused below still writes its line, because
+    'the map and the build were paid before the refusal.
+    StartShowHideWalk
+
     Set sections = SectionContextFor(sh, shType)
     If sections Is Nothing Then
         WarningOnSheet "ClickShowHideSection", "MSG_SectionTitleCell"
+        LogShowHideSteps "ClickShowHideSection", "showhide-section"
         Exit Sub
     End If
 
@@ -875,7 +983,9 @@ Public Sub ClickShowHideSection()
     On Error GoTo ErrHand
     LinelistEventsManager.LLEnterBusyState
 
+    MarkShowHideStep "hide"
     sections.SetHidden sectionIdx, hideIt
+    MarkShowHideStep "save"
     SaveShowHideState showHideEntries, activeLayout
 
     If hideIt Then
@@ -910,8 +1020,10 @@ CleanUp:
         Set showHideEntries = Nothing
         Set activeLayout = Nothing
     Else
+        MarkShowHideStep "list"
         PopulateShowHideList activeShowHideForm
     End If
+    LogShowHideSteps "ClickShowHideSection", "showhide-section"
 End Sub
 
 'What the user has selected, or Nothing when the selection is not a range. A
@@ -1081,6 +1193,15 @@ ErrHand:
     Set activeSectionsForm = Nothing
     LinelistEventsManager.LLRestPointer
     LinelistEventsManager.LLExitQuietState
+
+    'Previous with no show/hide form under this one. Today the sections form is
+    'only reached from that form, whose show loop reads the flag; if this is
+    'ever opened on its own, the show/hide form is opened here instead, after
+    'the cleanup above and outside any pending Show.
+    If showHideReturnWanted And activeShowHideForm Is Nothing Then
+        showHideReturnWanted = False
+        ClickShowHide
+    End If
 End Sub
 
 '@Description("Callback for click on the list of the sections form")
@@ -1223,6 +1344,10 @@ Public Sub ClickOptionsShowHide(ByVal Index As Long)
     posIdx = showHideEntries.PositionIndex(entryIdx)
     If posIdx = 0 Then Exit Sub
 
+    'One step for the whole click: the bracket, the write and the status word.
+    StartShowHideWalk
+    MarkShowHideStep "click"
+
     activeLayout.BeginBatch
     activeLayout.SetHidden posIdx, shouldHide
 
@@ -1241,6 +1366,7 @@ Public Sub ClickOptionsShowHide(ByVal Index As Long)
 
     'The status column of the row the user just changed
     RefreshShowHideRow entryIdx
+    LogShowHideSteps "ClickOptionsShowHide", "showhide"
 End Sub
 
 '@Description("Callback for click on column width in show/hide")
