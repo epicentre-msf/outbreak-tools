@@ -716,12 +716,21 @@ Public Function ExportMigration(ByVal folderPath As String, _
     ' A migration carries the whole dictionary, so it excludes nothing.
     Set excluded = New BetterArray
 
-    ' Write full dictionary to temp sheet (no filtering)
-    atStep = MarkStep("writing the dictionary to the temp sheet")
-    PrepareTempDictionary dict, vbNullString, True, excluded
-
-    atStep = MarkStep("reading the dictionary back off the temp sheet")
-    Set expDict = ExportDictionaryFromTemp(nbExp)
+    ' THE MIGRATION READS THE SOURCE DICTIONARY ITSELF
+    ' A migration carries every dictionary row and excludes nothing, so the
+    ' __temp copy held exactly the source dictionary. PrepareTempDictionary
+    ' wrote dict.DataRange(includeHeaders:=True) to Cells(1, 1), and
+    ' ExportDictionaryFromTemp read it back from that same anchor, which is
+    ' where SourceDictionary anchors too. The pair was one full write and one
+    ' full read of a block this walk already holds.
+    ' Nothing on this walk writes to the export dictionary: ExportMigration
+    ' never sorts it, and AddDataSheets only reads it. ExportCustom keeps the
+    ' temp sheet, because it filters on the export column, drops the excluded
+    ' rows and sorts what is left.
+    ' The dictionary of a built linelist is already prepared, so the Prepare
+    ' that AddShowHide can run below is a no-op and the rows AddDataSheets
+    ' reads are the rows read here.
+    Set expDict = dict
 
     ' Create output workbook
     atStep = MarkStep("adding the output workbook")
@@ -2498,6 +2507,21 @@ End Sub
 'from the corresponding source sheet, and writes it to the output sheet.
 'For HList sheets, delegates to CustomTable.Export. For VList sheets,
 'delegates to ExportVListData. Applies formatting to each output sheet.
+'
+'THE DICTIONARY IS READ ONCE AND GROUPED IN MEMORY
+'-------------------------------------------------------------------------------
+'The variable names of a sheet used to come off a real AutoFilter, and the
+'labels of that same sheet off a second one, so every data sheet cost two
+'filter applications, two SpecialCells reads and two filter removals on the
+'export dictionary.
+'The three columns those two filters read -- sheet name, variable name and
+'main label -- are read here as three whole-column blocks, once for the whole
+'export, and SheetRowsOf answers both lists per sheet out of memory. A file
+'with eight data sheets goes from sixteen filter runs to three reads.
+'The main label column is read only when the header format asks for labels.
+'A dictionary that carries no such column used to reach the label filter in
+'that case alone, so reading it unconditionally would raise ElementNotFound on
+'a file that exports today.
 '@param outwb Workbook. The output workbook.
 '@param expDict LLdictionary. The export dictionary with variable assignments.
 '@param useLabels Boolean. When True, writes label row above data headers.
@@ -2510,6 +2534,10 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As LLdictionary
     Dim sheetNames As BetterArray
     Dim headersList As BetterArray
     Dim labelsList As BetterArray
+    Dim writtenLabels As BetterArray
+    Dim sheetValues As Variant
+    Dim nameValues As Variant
+    Dim labelValues As Variant
     Dim sheetName As String
     Dim inpsh As Worksheet
     Dim outsh As Worksheet
@@ -2519,13 +2547,30 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As LLdictionary
     Dim counter As Long
 
     Set sheetNames = expDict.UniqueValues("sheet name")
+
+    'An export with no data sheet reads no dictionary column. The filters that
+    'used to raise ElementNotFound on a missing column raised from inside the
+    'loop, so a dictionary holding neither column and no sheet name never
+    'reached them, and it still does not.
+    If sheetNames.Length = 0 Then Exit Sub
+
     Set pass = PasswordsObject()
+
+    sheetValues = ColumnValues(expDict.DataRange("sheet name"))
+    nameValues = ColumnValues(expDict.DataRange("variable name"))
+    If useLabels Then labelValues = ColumnValues(expDict.DataRange("main label"))
 
     For counter = sheetNames.LowerBound To sheetNames.UpperBound
         sheetName = sheetNames.Item(counter)
         Set inpsh = this.sourceWkb.Worksheets(sheetName)
-        Set headersList = expDict.Data.FilterData("sheet name", sheetName, _
-                                                  "variable name", matchCase:=False)
+
+        Set headersList = New BetterArray
+        headersList.LowerBound = 1
+        Set labelsList = New BetterArray
+        labelsList.LowerBound = 1
+        SheetRowsOf sheetValues, nameValues, labelValues, sheetName, _
+                    headersList, labelsList
+
         Set outsh = outwb.Worksheets(sheetName)
 
         'Read through SheetTagOf rather than off a HiddenNames instance, because
@@ -2555,10 +2600,10 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As LLdictionary
             ' dictionary and absent from the ListObject put every label after
             ' it one column left of its data, for the rest of the sheet.
             If useLabels Then
-                Set labelsList = LabelsForWrittenColumns(expDict, sheetName, _
-                                                         headersList, _
-                                                         csTab.ExportColumnsNotFound)
-                labelsList.ToExcelRange outsh.Cells(1, 1), TransposeValues:=True
+                Set writtenLabels = LabelsForWrittenColumns(labelsList, _
+                                                            headersList, _
+                                                            csTab.ExportColumnsNotFound)
+                writtenLabels.ToExcelRange outsh.Cells(1, 1), TransposeValues:=True
             End If
 
         Case "VList"
@@ -2617,29 +2662,80 @@ Private Function FilteredTableOf(ByVal inpsh As Worksheet) As ListObject
     End If
 End Function
 
+'@label:sheet-rows-of
+'@sub-title The variable names and labels one data sheet owns
+'@details
+'Walks the dictionary columns AddDataSheets holds in memory and fills the two
+'lists of one sheet in a single pass. This is what the two AutoFilter runs per
+'sheet used to answer.
+'The sheet names are compared without regard to case, because that is what
+'AutoFilter did with its criteria, and the names being matched come off the
+'same column through LLdictionary.UniqueValues.
+'A cell holding an error value is stepped over rather than read, so one broken
+'cell in the sheet name column cannot raise a type mismatch and cost the whole
+'export.
+'@param sheetValues Variant. The sheet name column, 1-based.
+'@param nameValues Variant. The variable name column, 1-based, same rows.
+'@param labelValues Variant. The main label column, 1-based, same rows. Empty
+'   when the header format asks for no labels.
+'@param sheetName String. The sheet whose rows are wanted.
+'@param namesOut BetterArray. Filled with the variable names, in row order.
+'@param labelsOut BetterArray. Filled with the main labels, in the same order.
+Private Sub SheetRowsOf(ByRef sheetValues As Variant, _
+                        ByRef nameValues As Variant, _
+                        ByRef labelValues As Variant, _
+                        ByVal sheetName As String, _
+                        ByVal namesOut As BetterArray, _
+                        ByVal labelsOut As BetterArray)
+
+    Dim counter As Long
+    Dim lastRow As Long
+    Dim readLabels As Boolean
+
+    If IsEmpty(sheetValues) Or IsEmpty(nameValues) Then Exit Sub
+
+    'The three columns span the same rows of the same dictionary, so the three
+    'arrays are the same length. The walk stops at the shortest of them anyway:
+    'a subscript raised here would cost the whole export, and the sheet a row
+    'is missing from is not worth that.
+    lastRow = UBound(sheetValues)
+    If UBound(nameValues) < lastRow Then lastRow = UBound(nameValues)
+
+    readLabels = Not IsEmpty(labelValues)
+    If readLabels Then
+        If UBound(labelValues) < lastRow Then readLabels = False
+    End If
+
+    For counter = 1 To lastRow
+        If Not IsError(sheetValues(counter)) Then
+            If StrComp(CStr(sheetValues(counter)), sheetName, vbTextCompare) = 0 Then
+                namesOut.Push nameValues(counter)
+                If readLabels Then labelsOut.Push labelValues(counter)
+            End If
+        End If
+    Next counter
+End Sub
+
 '@label:labels-for-written-columns
 '@sub-title The label row that lines up with the columns an export wrote
 '@details
 'The dictionary answers one label per variable, in the same order as the
 'variable names, so the two lists match until the export skips one. Dropping the
 'label of every skipped variable is what keeps the row over its data.
-'@param expDict LLdictionary. The export dictionary.
-'@param sheetName String. The sheet the labels belong to.
+'Both lists are handed in. They come off the one grouping pass AddDataSheets
+'makes over the dictionary columns it holds, so this routine reads no worksheet.
+'@param allLabels BetterArray. The main labels of the sheet, in row order.
 '@param headersList BetterArray. The variable names the export was asked for.
 '@param skipped BetterArray. The variable names the export could not write.
 '@return BetterArray. One label per column written, in column order.
-Private Function LabelsForWrittenColumns(ByVal expDict As LLdictionary, _
-                                         ByVal sheetName As String, _
+Private Function LabelsForWrittenColumns(ByVal allLabels As BetterArray, _
                                          ByVal headersList As BetterArray, _
                                          ByVal skipped As BetterArray) As BetterArray
 
-    Dim allLabels As BetterArray
     Dim written As BetterArray
     Dim counter As Long
     Dim labelIndex As Long
 
-    Set allLabels = expDict.Data.FilterData("sheet name", sheetName, _
-                                            "main label", matchCase:=False)
     Set LabelsForWrittenColumns = allLabels
 
     If skipped Is Nothing Then Exit Function
