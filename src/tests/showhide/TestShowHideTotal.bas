@@ -253,6 +253,88 @@ TestFail:
 End Sub
 
 
+
+'@sub-title Splits the open into its two calls, with and without stored sizes.
+'@details
+'The open is ShowHide.Create then ShowHideStore.Load, and the session test
+'reports the pair as one number. This one takes them apart, and takes Load
+'twice over:
+'
+'  build the entry list        ShowHide.Create walks the dictionary
+'  read the store, sizes kept  Load matches N rows and writes every stored
+'                              width to the sheet
+'  read the store, no sizes    the same Load against a store whose widths were
+'                              never recorded, so the size branch is skipped
+'
+'The third is what the form pays today. Since Session 130 the open passes
+'`writeSizes:=False`, and a store saved with no layout holds no widths, so
+'both routes do the same work and this one is portable to the old code, which
+'has no such argument. The difference between the second and the third is the
+'N size writes.
+'@TestMethod("ShowHideTotal")
+Public Sub TestTimeOpenBreakdown()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTimeOpenBreakdown"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim seed As ShowHide
+    Dim fresh As ShowHide
+    Dim layout As ShowHideLayout
+    Dim store As ShowHideStore
+    Dim matched As Long
+    Dim startedAt As Double
+    Dim elapsed As Double
+
+    If Not FixtureReady("TestTimeOpenBreakdown") Then Exit Sub
+
+    Set sh = FixtureWorkbook.Worksheets(TIMED_SHEET)
+    ResetSheetGeometry sh
+
+    Set layout = ShowHideLayout.Create(sh, ShowHideLayerHList)
+    Set store = ShowHideStore.CreateOnSheet(FixtureWorkbook.Worksheets(STORE_SHEET))
+
+    'The store as a close leaves it: the rows, and a width for every entry
+    Set seed = ShowHide.Create(Dict, ShowHideLayerHList, TIMED_SHEET)
+    HideFirstFreeEntries seed, HIDDEN_ENTRIES, 1
+    seed.Apply layout
+    store.Save seed, layout
+
+    startedAt = Timer
+    Set fresh = ShowHide.Create(Dict, ShowHideLayerHList, TIMED_SHEET)
+    elapsed = ElapsedSince(startedAt)
+    LogTiming "open, build the entry list", elapsed
+
+    startedAt = Timer
+    matched = store.Load(fresh, layout)
+    elapsed = ElapsedSince(startedAt)
+    LogTiming "open, read the store with stored sizes", elapsed
+
+    Assert.IsTrue (matched = SHEET_VARS), _
+                  "The load matched the N rows of the sheet: " & _
+                  CStr(matched) & " of " & CStr(SHEET_VARS)
+
+    'The same rows with no widths recorded: a save with no layout writes
+    'visibility alone, which leaves entry_size empty on every row
+    store.Save seed
+
+    Set fresh = ShowHide.Create(Dict, ShowHideLayerHList, TIMED_SHEET)
+
+    startedAt = Timer
+    matched = store.Load(fresh, layout)
+    elapsed = ElapsedSince(startedAt)
+    LogTiming "open, read the store with no stored sizes", elapsed
+
+    Assert.IsTrue (matched = SHEET_VARS), _
+                  "The load without sizes matched the same N rows: " & _
+                  CStr(matched) & " of " & CStr(SHEET_VARS)
+
+    LogCount "writes the layout refused over the breakdown", layout.FailureCount
+    LogFixtureShape
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTimeOpenBreakdown", Err.Number, Err.Description
+End Sub
+
 '@section Reporting
 '===============================================================================
 
