@@ -1947,16 +1947,37 @@ End Sub
 '@label:drop-excluded-from-copy
 '@sub-title Take the excluded variables off an exported dictionary
 '@details
-'The rows are gathered into one range and deleted in a single call, so a
-'dictionary with many identifiers costs one crossing rather than one per row.
+'The row numbers of the excluded variables are gathered off one block read, and
+'the rows are deleted a run of neighbours at a time, from the bottom of the
+'sheet up.
+'
+'WHY THE ROW NUMBERS AND NOT ONE UNION
+'-------------------------------------------------------------------------------
+'The rows used to be gathered by calling Union once per excluded variable. Union
+'rebuilds the whole area list every time it is called, so a dictionary that
+'leaves out E variables paid a cost that grows with E squared: 200 identifiers
+'meant about 20,000 area copies before a single row was deleted.
+'
+'The names are already in hand as a block, so the walk keeps the row numbers
+'instead. They come out in order, so neighbouring numbers make a run and each
+'run is one Delete of a resized block. A dictionary whose excluded variables sit
+'together -- the usual shape, since the p-codes and the identifiers are grouped
+'-- comes down to a handful of calls.
+'
+'The runs are deleted from the last one backwards. Deleting a row moves every
+'row under it up, so working from the bottom leaves the row numbers still to be
+'used untouched.
 '@param outDict LLdictionary. The dictionary of the output workbook.
 '@param excluded BetterArray. Variable names to remove.
 Private Sub DropExcludedFromCopy(ByVal outDict As LLdictionary, _
                                  ByVal excluded As BetterArray)
 
     Dim namesRng As Range
-    Dim deleteRng As Range
+    Dim runRng As Range
     Dim varNames As Variant
+    Dim excludedRows() As Long
+    Dim foundCount As Long
+    Dim runEnd As Long
     Dim counter As Long
 
     If excluded.Length = 0 Then Exit Sub
@@ -1964,17 +1985,29 @@ Private Sub DropExcludedFromCopy(ByVal outDict As LLdictionary, _
     Set namesRng = outDict.DataRange("variable name")
     varNames = ColumnValues(namesRng)
 
+    ReDim excludedRows(1 To UBound(varNames) - LBound(varNames) + 1)
+    foundCount = 0
+
     For counter = LBound(varNames) To UBound(varNames)
         If excluded.Includes(CStr(varNames(counter))) Then
-            If deleteRng Is Nothing Then
-                Set deleteRng = namesRng.Cells(counter, 1)
-            Else
-                Set deleteRng = HostApplication.Union(deleteRng, namesRng.Cells(counter, 1))
-            End If
+            foundCount = foundCount + 1
+            excludedRows(foundCount) = counter
         End If
     Next counter
 
-    If Not deleteRng Is Nothing Then deleteRng.EntireRow.Delete
+    If foundCount = 0 Then Exit Sub
+
+    runEnd = foundCount
+    For counter = foundCount To 1 Step -1
+        If counter = 1 Then
+            Set runRng = namesRng.Cells(excludedRows(counter), 1)
+            runRng.Resize(runEnd - counter + 1, 1).EntireRow.Delete
+        ElseIf excludedRows(counter - 1) <> excludedRows(counter) - 1 Then
+            Set runRng = namesRng.Cells(excludedRows(counter), 1)
+            runRng.Resize(runEnd - counter + 1, 1).EntireRow.Delete
+            runEnd = counter - 1
+        End If
+    Next counter
 End Sub
 
 '@label:add-custom-dropdowns
@@ -2645,6 +2678,21 @@ End Function
 'names at all. `LLImporter.ImportVListSheet` resolves each row through
 '`currsh.Range(varName)`, so every row of such a file landed in "not imported".
 'Column A now always holds the variable name, whatever the format.
+'
+'THE BLOCK IS BUILT IN MEMORY AND WRITTEN ONCE
+'-------------------------------------------------------------------------------
+'The routine used to write the sheet a cell at a time. Per variable it resolved
+'inpsh.Range(varName) twice, read two values off it and wrote up to three cells
+'-- about seven crossings each, for as many variables as the info sheet carries.
+'
+'Now the named range is resolved once and held, the pair of reads comes off that
+'one range, and the whole sheet goes out in a single ToExcelRange. A VList of
+'300 variables goes from about 2,100 crossings to about 900, and the write end
+'of it to one.
+'
+'The clear covers the block this routine owns rather than the whole grid. The
+'output sheet is added empty by CreateOutputWorkbook, so there is nothing else
+'on it to clear, and Cells.Clear reaches all 17 billion cells to say so.
 '@param inpsh Worksheet. The source VList worksheet.
 '@param outsh Worksheet. The output worksheet.
 '@param headersList BetterArray. Variable names to export.
@@ -2653,39 +2701,60 @@ Private Sub ExportVListData(ByVal inpsh As Worksheet, ByVal outsh As Worksheet, 
                             ByVal headersList As BetterArray, _
                             ByVal useLabels As Boolean)
 
+    Dim block As BetterArray
+    Dim values() As Variant
+    Dim varRng As Range
     Dim varName As String
-    Dim varValue As String
-    Dim varLabel As String
     Dim counter As Long
     Dim outputRow As Long
+    Dim rowCount As Long
     Dim valueColumn As Long
 
-    outsh.Cells.Clear
-
     valueColumn = IIf(useLabels, 3, 2)
+    rowCount = headersList.Length + 1
 
-    outsh.Cells(1, 1).Value = "variable"
-    If useLabels Then outsh.Cells(1, 2).Value = "label"
-    outsh.Cells(1, valueColumn).Value = "value"
+    outsh.Range(outsh.Cells(1, 1), outsh.Cells(rowCount, valueColumn)).Clear
+
+    ReDim values(1 To rowCount, 1 To valueColumn)
+
+    values(1, 1) = "variable"
+    If useLabels Then values(1, 2) = "label"
+    values(1, valueColumn) = "value"
 
     outputRow = 2
 
     For counter = headersList.LowerBound To headersList.UpperBound
         varName = headersList.Item(counter)
-        varValue = vbNullString
-        varLabel = vbNullString
 
+        'A dictionary can name a variable the sheet carries no range for, so the
+        'range is resolved under a guard and the row goes out with the name
+        'alone when there is none.
+        Set varRng = Nothing
         On Error Resume Next
-        varValue = CStr(inpsh.Range(varName).Value)
-        varLabel = CStr(inpsh.Range(varName).Offset(, -1).Value)
+        Set varRng = inpsh.Range(varName)
         On Error GoTo 0
 
-        outsh.Cells(outputRow, 1).Value = varName
-        If useLabels Then outsh.Cells(outputRow, 2).Value = varLabel
-        outsh.Cells(outputRow, valueColumn).Value = varValue
+        values(outputRow, 1) = varName
+        values(outputRow, valueColumn) = vbNullString
+        If useLabels Then values(outputRow, 2) = vbNullString
+
+        If Not varRng Is Nothing Then
+            'A range of more than one cell answers an array, and a range in
+            'column A has no cell to its left. Neither is worth stopping the
+            'export for, so the cell that cannot be read stays empty.
+            On Error Resume Next
+            values(outputRow, valueColumn) = CStr(varRng.Value)
+            If useLabels Then values(outputRow, 2) = CStr(varRng.Offset(, -1).Value)
+            On Error GoTo 0
+        End If
 
         outputRow = outputRow + 1
     Next counter
+
+    Set block = New BetterArray
+    block.LowerBound = 1
+    block.Items = values
+    block.ToExcelRange outsh.Cells(1, 1)
 End Sub
 
 

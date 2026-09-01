@@ -97,6 +97,16 @@ Private Const IDENTIFIER_VARIABLE As String = "hid_end_v1"
 Private Const GEO_LEVEL3_VARIABLE As String = "geo_h2"
 Private Const GEO_LEVEL3_CONTROL As String = "geo3"
 
+'The two vlist1D-sheet1 variables the fixture gives a named value cell, and one
+'of that sheet it deliberately leaves without a range. ExportVListData has to
+'answer both arms: a variable whose range is there carries its value, and one
+'whose range is missing still carries its name.
+Private Const VLIST_VARIABLE As String = "choi_v1"
+Private Const VLIST_VALUE As String = "vlist-first-value"
+Private Const VLIST_SECOND_VARIABLE As String = "mand_v1"
+Private Const VLIST_SECOND_VALUE As String = "vlist-second-value"
+Private Const VLIST_UNNAMED_VARIABLE As String = "no_sec_v1_1"
+
 
 '@section Lifecycle
 '===============================================================================
@@ -1306,6 +1316,71 @@ TestFail:
     CustomTestLogFailure Assert, "TestAnExportPutsTheCalculationModeBack", failedNumber, failedText
 End Sub
 
+'@sub-title A VList row carries its variable name and the value beside it.
+'@details
+'ExportVListData used to write the output sheet a cell at a time: per variable it
+'resolved inpsh.Range(varName) twice, read two values off it and wrote up to
+'three cells, about seven crossings each. It now resolves the range once and
+'writes the whole sheet in one ToExcelRange.
+'
+'What must not change is where each piece lands. LLImporter.ImportVListSheet
+'reads the file back by that shape, so the variable name has to be in column A
+'and, on a migration, its value in column B on the same row. Acts by exporting a
+'migration over a VList sheet carrying two named value cells and reading both
+'rows back out of the saved file, plus the header and a variable the sheet has
+'no range for.
+'@TestMethod("LLExporter")
+Public Sub TestAVListRowCarriesItsNameAndItsValue()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAVListRowCarriesItsNameAndItsValue"
+    On Error GoTo TestFail
+
+    Dim sourceBook As Workbook
+    Dim exporter As LLExporter
+    Dim savedPath As String
+    Dim failedNumber As Long
+    Dim failedText As String
+
+    Set sourceBook = OldLayoutSourceWorkbook(tagTheSheets:=True)
+    Set exporter = LLExporter.Create(sourceBook)
+
+    savedPath = exporter.ExportMigration(BuildTempFolder(ThisWorkbook, FILES_FOLDER))
+
+    'The header is what says the block was written from A1.
+    Assert.AreEqual "value", ValueBesideNameInExport(savedPath, VLIST_SHEET, _
+                                                     "variable", 2), _
+                    "The VList sheet carries its header on the first row"
+
+    Assert.AreEqual VLIST_VALUE, _
+                    ValueBesideNameInExport(savedPath, VLIST_SHEET, _
+                                            VLIST_VARIABLE, 2), _
+                    "A named VList cell carries its value beside its name"
+
+    Assert.AreEqual VLIST_SECOND_VALUE, _
+                    ValueBesideNameInExport(savedPath, VLIST_SHEET, _
+                                            VLIST_SECOND_VARIABLE, 2), _
+                    "The second named VList cell carries its own value"
+
+    Assert.IsTrue ExportedFileHolds(savedPath, VLIST_SHEET, VLIST_UNNAMED_VARIABLE), _
+                  "A variable the sheet has no range for still carries its name"
+
+    Assert.AreEqual vbNullString, _
+                    ValueBesideNameInExport(savedPath, VLIST_SHEET, _
+                                            VLIST_UNNAMED_VARIABLE, 2), _
+                    "A variable the sheet has no range for carries no value"
+
+    DropExportArtefacts sourceBook, exporter, savedPath
+    Exit Sub
+TestFail:
+    failedNumber = Err.Number
+    failedText = Err.Description
+    If Not exporter Is Nothing Then _
+        failedText = failedText & " | " & exporter.LastFailure
+    On Error Resume Next
+    DropExportArtefacts sourceBook, exporter, savedPath
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestAVListRowCarriesItsNameAndItsValue", failedNumber, failedText
+End Sub
+
 '@section Fixture helpers
 '===============================================================================
 
@@ -1539,12 +1614,36 @@ Private Function OldLayoutSourceWorkbook(ByVal tagTheSheets As Boolean) As Workb
     BuildOldHListSheet sourceBook, HLIST_SHEET, tagTheSheets
     BuildOldHListSheet sourceBook, HLIST_SHEET_TWO, tagTheSheets
 
-    EnsureWorksheet VLIST_SHEET, sourceBook
-    If tagTheSheets Then _
-        sourceBook.Worksheets(VLIST_SHEET).Cells(1, 3).Value = "VList"
+    BuildOldVListSheet sourceBook, tagTheSheets
 
     Set OldLayoutSourceWorkbook = sourceBook
 End Function
+
+'@sub-title Put the VList data entry sheet of the old layout onto a workbook.
+'@details
+'A VList sheet keeps a label and, beside it, the cell that holds the value. The
+'export reads the value off the variable's own named range and the label off the
+'cell to its left, so the pair is what makes a row readable.
+'
+'Two of the vlist1D-sheet1 variables get such a pair here. Every other variable
+'the dictionary puts on that sheet is left with no range at all, which is the
+'other arm ExportVListData has to answer: the name goes out and the value cell
+'stays empty.
+'@param wkb Workbook. The workbook to add the sheet to.
+'@param tagTheSheet Boolean. When True, the old cell tag is written.
+Private Sub BuildOldVListSheet(ByVal wkb As Workbook, ByVal tagTheSheet As Boolean)
+    Dim sh As Worksheet
+
+    Set sh = EnsureWorksheet(VLIST_SHEET, wkb, clearSheet:=True)
+
+    WriteRow sh.Cells(3, 1), "First value", VLIST_VALUE
+    WriteRow sh.Cells(4, 1), "Second value", VLIST_SECOND_VALUE
+
+    sh.Cells(3, 2).Name = VLIST_VARIABLE
+    sh.Cells(4, 2).Name = VLIST_SECOND_VARIABLE
+
+    If tagTheSheet Then sh.Cells(1, 3).Value = "VList"
+End Sub
 
 '@sub-title Put one HList data entry sheet on the old layout onto a workbook.
 '@details
@@ -1640,6 +1739,47 @@ Private Function ExportedFileHolds(ByVal filePath As String, _
     On Error GoTo 0
 
     ExportedFileHolds = Not found Is Nothing
+End Function
+
+'@fun-title One cell of the row a variable name sits on in an exported sheet.
+'@details
+'Opens the file read-only, finds the name in column A, reads the cell asked for
+'on that row and closes the file again. A missing file, a missing sheet or a
+'name that is not there answers an empty string.
+'
+'The row is found rather than counted because the export writes the variables in
+'dictionary order, and this says where a value landed relative to its own name,
+'which is what LLImporter.ImportVListSheet reads the file back by.
+'@param filePath String. The saved export.
+'@param sheetName String. The sheet to read.
+'@param varName String. The variable name to find in column A.
+'@param columnIndex Long. The column to read on that row.
+'@return String. The cell value as text.
+Private Function ValueBesideNameInExport(ByVal filePath As String, _
+                                         ByVal sheetName As String, _
+                                         ByVal varName As String, _
+                                         ByVal columnIndex As Long) As String
+    Dim outwb As Workbook
+    Dim sh As Worksheet
+    Dim found As Range
+
+    If LenB(filePath) = 0 Then Exit Function
+    If Dir$(filePath) = vbNullString Then Exit Function
+
+    On Error Resume Next
+    Set outwb = Application.Workbooks.Open(fileName:=filePath, ReadOnly:=True)
+    On Error GoTo 0
+    If outwb Is Nothing Then Exit Function
+
+    On Error Resume Next
+    Set sh = outwb.Worksheets(sheetName)
+    If Not sh Is Nothing Then
+        Set found = sh.Columns(1).Find(What:=varName, LookAt:=xlWhole)
+        If Not found Is Nothing Then _
+            ValueBesideNameInExport = CStr(sh.Cells(found.Row, columnIndex).Value)
+    End If
+    outwb.Close savechanges:=False
+    On Error GoTo 0
 End Function
 
 '@sub-title Close the source, the exporter and the file one export test made.
