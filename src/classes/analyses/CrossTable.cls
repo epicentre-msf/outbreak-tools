@@ -1473,6 +1473,11 @@ Public Sub AddColumns()
                 .Cells(startRw - 1, StartColumn + 1).Value = trans.TranslatedValue("MSG_AllData")
                 .Cells(startRw - 1, StartColumn + 2).Value = trans.TranslatedValue("MSG_FilteredData")
                 .Cells(startRw - 1, StartColumn + 1).Name = "COLGS_SET"
+                'The second header cell has a name of its own, because the
+                'export carries values by name and this cell sat outside every
+                'one. COLGS_SET stays one cell wide: FormatHeaders widens it by
+                'hand to reach this cell and would format a third if it grew.
+                .Cells(startRw - 1, StartColumn + 2).Name = "COLGS_FILTERED"
             End If
             EndColumn = StartColumn + 2
             NumberOfColumns = 2
@@ -1888,7 +1893,13 @@ Public Sub NameRanges()
     RequirePhase PHASE_COLUMNS, "NameRanges"
     MarkPhase PHASE_NAMES
 
-    If TableScope() = ScopeGlobalSummary Then Exit Sub
+    'A global summary has no categories and no column structure beyond its
+    'two fixed columns, so none of the names below apply to it. Its two value
+    'cells still need a name, because the export carries values by name.
+    If TableScope() = ScopeGlobalSummary Then
+        NameGlobalSummaryValues
+        Exit Sub
+    End If
 
     NameEndTable
 
@@ -1901,6 +1912,27 @@ Public Sub NameRanges()
     NameIntersections
     NameInteriorValues
     NameColumnCategories
+End Sub
+
+'@label:name-global-summary-values
+'@sub-title Name the two value cells of a global summary row
+'@details
+'CrossTableFormula writes the all-data and the filtered formulas into the two
+'cells right of STARTROW_, and STARTROW_ names the label cell alone. Until this
+'name existed those two cells were the only written cells of a global summary
+'outside every name, and the analysis export, which carries values by name,
+'would have left them blank. TestCrossTableFormula pins the coverage.
+Private Sub NameGlobalSummaryValues()
+    Dim sh As Worksheet
+    Dim startRng As Range
+    Dim tabId As String
+
+    Set sh = Wksh()
+    tabId = TableId()
+    Set startRng = NamedRange("STARTROW_" & tabId)
+    If startRng Is Nothing Then Exit Sub
+
+    sh.Range(startRng.Cells(1, 2), startRng.Cells(1, 3)).Name = "STARTROW_VALUES_" & tabId
 End Sub
 
 '@label:name-end-table

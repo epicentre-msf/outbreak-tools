@@ -611,6 +611,58 @@ TestFail:
     CustomTestLogFailure Assert, "TestTransferNamesStepsOverANameHoldingAValue", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify the values of every name land on the output sheet
+'@details
+'The export used to carry values through a whole-grid clipboard copy, and the
+'fixture above writes the same values onto the output sheet by hand to stand in
+'for it. Values travel by name now, so this test hands TransferNames an EMPTY
+'output sheet and reads the values back. The three shapes are the ones that
+'read and write differently through BetterArray: a column, a row -- which
+'FromExcelRange flattens and ToExcelRange would write downwards unless told
+'otherwise -- and a single cell, which is a scalar and never enters the array.
+'@TestMethod("AnaTabIds")
+Public Sub TestTransferNamesCarriesTheValuesOfEveryName()
+    CustomTestSetTitles Assert, "AnaTabIds", "TestTransferNamesCarriesTheValuesOfEveryName"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim inpsh As Worksheet
+    Dim outsh As Worksheet
+    Dim ids As AnaTabIds
+    Dim counter As Long
+
+    Set sh = ResetFixtures()
+    Set inpsh = InputSheet()
+    Set outsh = OutputSheet()
+
+    'A column, a row and a single cell, on the input sheet alone.
+    For counter = 1 To 4
+        inpsh.Cells(counter + 1, 2).Value = counter * 10
+        inpsh.Cells(7, counter).Value = "lbl" & counter
+    Next counter
+    inpsh.Cells(9, 4).Value = "one"
+
+    inpsh.Names.Add Name:="VALCOL_1", RefersTo:="='" & inpsh.Name & "'!$B$2:$B$5"
+    inpsh.Names.Add Name:="LBLROW_1", RefersTo:="='" & inpsh.Name & "'!$A$7:$D$7"
+    inpsh.Names.Add Name:="ONE_1", RefersTo:="='" & inpsh.Name & "'!$D$9"
+
+    Set ids = AnaTabIds.Create(sh, check:=True)
+    ids.TransferNames inpsh, outsh
+
+    Assert.AreEqual 40, CLng(outsh.Cells(5, 2).Value), _
+                    "The last value of the column lands at its own address"
+    Assert.AreEqual "lbl4", CStr(outsh.Cells(7, 4).Value), _
+                    "The last value of the row lands ACROSS, at its own address"
+    Assert.IsTrue IsEmpty(outsh.Cells(10, 1).Value), _
+                  "Nothing of the row is written downwards"
+    Assert.AreEqual "one", CStr(outsh.Cells(9, 4).Value), _
+                    "A single-cell name carries its one value"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTransferNamesCarriesTheValuesOfEveryName", Err.Number, Err.Description
+End Sub
+
 '@section Writing the charts
 '===============================================================================
 

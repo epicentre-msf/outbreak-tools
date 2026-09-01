@@ -22,7 +22,8 @@ Option Explicit
 'the sheets it creates, and copies the named ranges those charts read.
 'PrepareSheet builds the tracking worksheet, AddGraphInfo records one chart
 'series and AddGraphFormat the look of one chart, TransferNames copies the
-'named ranges onto an output worksheet, and WriteGraphs draws the charts there.
+'named ranges and their values onto an output worksheet, and WriteGraphs draws
+'the charts there.
 '
 'ONE REGISTRY TABLE
 '-------------------------------------------------------------------------------
@@ -397,7 +398,7 @@ End Function
 '@description Copying the named ranges of an analysis sheet to the output sheet.
 
 '@label:transfer-names
-'@sub-title Recreate every named range of an analysis sheet on the output sheet
+'@sub-title Recreate every named range of an analysis sheet on the output sheet, values and all
 '@details
 'A chart reads its values and its labels through named ranges, so the output
 'sheet needs the same names at the same addresses. The names are read from the
@@ -405,6 +406,16 @@ End Function
 'the table builder, which is why nothing has to be stored to find them again.
 'A name holding a value has no range behind it, so it is skipped, and so is a
 'name that no longer resolves.
+'
+'THE VALUES TRAVEL WITH THE NAMES
+'-------------------------------------------------------------------------------
+'The export used to carry the values of an analysis sheet through a whole-grid
+'clipboard copy, every cell of the sheet, before this routine ran. That pass is
+'gone: each name here is one contiguous block, and its values ride onto the same
+'address of the output sheet through BetterArray. Every cell a table writes sits
+'inside a name (TestCrossTable and TestCrossTableFormula pin that, scope by
+'scope), so nothing is left behind. Two names that overlap write the same cells
+'twice with the same values, which is harmless.
 '@param inpsh Worksheet. The analysis sheet the names live on.
 '@param outsh Worksheet. The sheet the names are recreated on.
 '@throws ProjectError.InvalidArgument When either worksheet is Nothing.
@@ -422,7 +433,40 @@ Public Sub TransferNames(ByVal inpsh As Worksheet, ByVal outsh As Worksheet)
 
     For Each entry In bucket
         outsh.Range(entry(1)).Name = entry(0)
+        MoveValues inpsh.Range(entry(1)), outsh.Range(entry(1))
     Next entry
+End Sub
+
+'@label:move-values
+'@sub-title Copy the values of one named block onto the same address of the output sheet
+'@details
+'BetterArray.FromExcelRange flattens a single row and a single column to one
+'dimension, and ToExcelRange writes one dimension as a COLUMN. So a one-row
+'block goes back transposed, or its values would run down the sheet instead of
+'across it. A single cell never enters the array: its Value is a scalar, and
+'one read and one write is the whole move. A name over several areas is moved
+'an area at a time, each one a contiguous block.
+'@param source Range. The block on the analysis sheet.
+'@param target Range. The same address on the output sheet.
+Private Sub MoveValues(ByVal source As Range, ByVal target As Range)
+    Dim block As BetterArray
+    Dim area As Range
+
+    If source.Areas.Count > 1 Then
+        For Each area In source.Areas
+            MoveValues area, target.Worksheet.Range(area.Address)
+        Next area
+        Exit Sub
+    End If
+
+    If source.Cells.Count = 1 Then
+        target.Value = source.Value
+        Exit Sub
+    End If
+
+    Set block = New BetterArray
+    block.FromExcelRange source
+    block.ToExcelRange target.Cells(1, 1), TransposeValues:=(source.Rows.Count = 1)
 End Sub
 
 '@label:sheet-names

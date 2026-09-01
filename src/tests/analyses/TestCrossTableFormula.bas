@@ -993,6 +993,48 @@ TestFail:
     CustomTestLogFailure Assert, "TestGlobalSummaryWritesBothColumns", Err.Number, Err.Description
 End Sub
 
+'@sub-title Every cell of a global summary, formulas written, sits inside a name.
+'@details
+'The coverage gate of Session 125 for the one scope whose values the table
+'builder does not write itself. CrossTableFormula puts the all-data and the
+'filtered formulas into the two cells right of STARTROW_, and TestCrossTable
+'cannot see those cells because it never runs the writer. Until
+'STARTROW_VALUES_ existed they were the only written cells of a global summary
+'outside every name, and an export carrying values by name would have left them
+'blank. The formulas cannot resolve in this workbook and read as error values;
+'CellsOutsideEveryName counts those as written, which is the point.
+'@TestMethod("CrossTableFormula")
+Public Sub TestEveryWrittenCellOfAGlobalSummaryWithFormulasIsNamed()
+    CustomTestSetTitles Assert, "CrossTableFormula", "TestEveryWrittenCellOfAGlobalSummaryWithFormulasIsNamed"
+    On Error GoTo TestFail
+
+    BuildFixture TABLE_GLOBAL_SUMMARY, GlobalSummaryHeader(), _
+                 GlobalSummaryRows(LINELIST_FUNCTION)
+
+    Dim sh As Worksheet
+    Dim tabId As String
+    Dim secId As String
+    Dim writer As CrossTableFormula
+    Dim startRng As Range
+    Dim uncovered As String
+
+    Set writer = WriteTable(1, sh, tabId, secId)
+    Set startRng = NamedRange(sh, "STARTROW_" & tabId)
+
+    Assert.IsTrue (Not startRng Is Nothing), "The global summary row is named"
+    Assert.IsTrue (LenB(CStr(startRng.Cells(1, 2).Formula)) > 0), _
+                  "The arrange wrote a formula into the all-data cell"
+
+    uncovered = CellsOutsideEveryName(sh)
+
+    Assert.AreEqual vbNullString, uncovered, _
+                    "A global summary with its formulas written leaves no cell outside its names"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestEveryWrittenCellOfAGlobalSummaryWithFormulasIsNamed", Err.Number, Err.Description
+End Sub
+
 '@section Univariate
 '===============================================================================
 

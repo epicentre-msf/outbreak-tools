@@ -2389,10 +2389,10 @@ End Sub
 '@label:add-analysis-sheets
 '@sub-title Add analysis worksheets to the output workbook
 '@details
-'Copies values and formats from the four analysis sheets (univariate,
-'time series, spatial, spatio-temporal) in the source workbook to new
-'sheets in the output workbook. Removes gridlines, then asks AnaTabIds to
-'recreate the named ranges and the charts of each sheet.
+'Copies the formats of the four analysis sheets (univariate, time series,
+'spatial, spatio-temporal) in the source workbook to new sheets in the output
+'workbook, removes gridlines, then asks AnaTabIds to recreate the named ranges
+'-- values included -- and the charts of each sheet.
 '
 'WHAT THE ERROR TRAP COVERS
 '-------------------------------------------------------------------------------
@@ -2414,6 +2414,7 @@ Private Sub AddAnalysisSheets(ByVal outwb As Workbook, ByVal afterSheetName As S
     Dim namObj As AnaTabIds
     Dim outsh As Worksheet
     Dim inpsh As Worksheet
+    Dim usedRng As Range
     Dim sheetName As String
     Dim scope As Byte
     Dim counter As Long
@@ -2454,15 +2455,23 @@ Private Sub AddAnalysisSheets(ByVal outwb As Workbook, ByVal afterSheetName As S
         On Error GoTo 0
 
         If Not inpsh Is Nothing Then
-            ' The clipboard steps, and only those
+            ' THE VALUES TRAVEL BY NAME, THE FORMATS BY ONE BOUNDED COPY
+            ' Two whole-grid clipboard passes used to run here, values then
+            ' formats, each over inpsh.Cells -- every cell of the sheet. The
+            ' values pass is gone: every cell a table writes sits inside a
+            ' named range (TestCrossTable and TestCrossTableFormula pin that,
+            ' scope by scope), and AnaTabIds.TransferNames, reached through
+            ' WriteGraphs below, carries the values of each name onto the same
+            ' address. The formats pass stays as one clipboard copy, bounded to
+            ' UsedRange and pasted at the same address, because reapplying
+            ' formats block by block is the measured 65% cost centre of the
+            ' analyses build. The trap covers the clipboard steps alone.
             On Error Resume Next
+            Set usedRng = inpsh.UsedRange
             HostApplication.CutCopyMode = False
-            inpsh.Cells.Copy
-            outsh.Cells.PasteSpecial xlPasteValues
-
+            usedRng.Copy
+            outsh.Range(usedRng.Address).PasteSpecial xlPasteFormats
             HostApplication.CutCopyMode = False
-            inpsh.Cells.Copy
-            outsh.Cells.PasteSpecial xlPasteFormats
             On Error GoTo 0
 
             RemoveGridLines outsh

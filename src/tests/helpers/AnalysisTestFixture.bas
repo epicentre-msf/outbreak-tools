@@ -327,3 +327,101 @@ Private Function AddAnalysisTable(ByVal hostSheet As Worksheet, _
     AddAnalysisTable = bottomRow + 8
 End Function
 
+'@section Export coverage
+'===============================================================================
+'@description
+'The analysis export carries values through the named ranges of a sheet and
+'nothing else, so a cell a table writes outside every name arrives blank in the
+'exported workbook. These two helpers measure that, and the coverage tests of
+'TestCrossTable and TestCrossTableFormula assert over them scope by scope.
+
+'@sub-title The written cells of a sheet that no named range covers.
+'@details
+'The names are collected the way AnaTabIds.BuildNameBuckets collects them --
+'walk the workbook name collection and keep the ones whose RefersToRange sits
+'on this sheet -- so this measures exactly what TransferNames would carry and
+'not some other reading of "named". A cell holding an error value counts as
+'written: a formula that cannot resolve in the test workbook is still a cell the
+'export has to carry.
+'@param sh Worksheet. The sheet to measure.
+'@return String. The uncovered cell addresses, comma separated, empty when the
+'   names cover every written cell.
+Public Function CellsOutsideEveryName(ByVal sh As Worksheet) As String
+    Dim nm As Name
+    Dim target As Range
+    Dim covered As Range
+    Dim cellRng As Range
+    Dim answer As String
+    Dim shown As Long
+
+    Const MAX_SHOWN As Long = 12
+
+    For Each nm In sh.Parent.Names
+        Set target = Nothing
+        'A name holding a value has no range behind it and raises, which is how
+        'BuildNameBuckets tells the two apart.
+        On Error Resume Next
+        Set target = nm.RefersToRange
+        On Error GoTo 0
+
+        If Not target Is Nothing Then
+            If target.Worksheet.Name = sh.Name Then
+                If covered Is Nothing Then
+                    Set covered = target
+                Else
+                    Set covered = Application.Union(covered, target)
+                End If
+            End If
+        End If
+    Next nm
+
+    If sh.UsedRange Is Nothing Then Exit Function
+
+    For Each cellRng In sh.UsedRange
+        If CellIsWritten(cellRng) Then
+            If IsCellOutside(covered, cellRng) Then
+                shown = shown + 1
+                If shown <= MAX_SHOWN Then
+                    If LenB(answer) > 0 Then answer = answer & ", "
+                    answer = answer & cellRng.Address(False, False) & _
+                             " [" & Left$(cellRng.Text, 20) & "]"
+                End If
+            End If
+        End If
+    Next cellRng
+
+    If shown > MAX_SHOWN Then _
+        answer = answer & " and " & CStr(shown - MAX_SHOWN) & " more"
+
+    CellsOutsideEveryName = answer
+End Function
+
+'@sub-title Whether a cell holds anything the export would have to carry.
+'@param cellRng Range. The single cell to test.
+'@return Boolean. True for a value, a formula result or an error value.
+Public Function CellIsWritten(ByVal cellRng As Range) As Boolean
+    Dim cellValue As Variant
+
+    cellValue = cellRng.Value
+    If IsError(cellValue) Then
+        CellIsWritten = True
+        Exit Function
+    End If
+    If IsEmpty(cellValue) Then Exit Function
+    CellIsWritten = (LenB(CStr(cellValue)) > 0)
+End Function
+
+'@sub-title Whether one cell falls outside a union of ranges.
+'@param covered Range. The union, or Nothing when the sheet carries no name.
+'@param cellRng Range. The single cell to test.
+'@return Boolean. True when nothing covers the cell.
+Public Function IsCellOutside(ByVal covered As Range, _
+                              ByVal cellRng As Range) As Boolean
+    If covered Is Nothing Then
+        IsCellOutside = True
+        Exit Function
+    End If
+
+    IsCellOutside = (Application.Intersect(covered, cellRng) Is Nothing)
+End Function
+
