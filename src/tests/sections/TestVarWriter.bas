@@ -53,6 +53,12 @@ Private Const CHOICES_SHEET As String = "ChoicesFixture"
 Private Const VLIST_SHEET As String = "vlist1D-sheet1"
 Private Const HLIST_SHEET As String = "hlist2D-sheet1"
 
+'The date-bound row: a Min cell holding a real Date under a date number format.
+Private Const DATE_BOUND_VAR As String = "date_min_v1"
+Private Const DATE_BOUND_YEAR As Long = 2026
+Private Const DATE_BOUND_MONTH As Long = 1
+Private Const DATE_BOUND_DAY As Long = 1
+
 'VList puts the value at column 5 and the label at column 4.
 Private Const VLIST_VALUE_COL As Long = 5
 Private Const VLIST_LABEL_COL As Long = 4
@@ -553,6 +559,51 @@ TestFail:
 End Sub
 
 
+'@TestMethod("VarWriter")
+Public Sub TestADateMinFormattedAsADateKeepsItsValidation()
+    CustomTestSetTitles Assert, TESTMODULE, "TestADateMinFormattedAsADateKeepsItsValidation"
+    If Not FixtureReady("TestADateMinFormattedAsADateKeepsItsValidation") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sut As VarWriter
+    Dim rowIdx As Long
+    Dim boundText As String
+    Dim cellRng As Range
+    Dim readBound As String
+
+    Set sut = NewVListWriter()
+    sut.WriteVariable DATE_BOUND_VAR
+
+    rowIdx = ColumnIndexOf(DATE_BOUND_VAR)
+    Set cellRng = TargetSheet.Cells(rowIdx, VLIST_VALUE_COL)
+    boundText = ValidationBound(cellRng)
+
+    'What VarWriter read out of the dictionary, quoted into every message: a
+    'date cell reaches ValueOf through CStr, so this is the string the parser
+    'and CDate are handed.
+    readBound = sut.ValueOf("min")
+
+    Assert.IsTrue boundText <> vbNullString, _
+                  "A date minimum should produce a validation - min reads [" & readBound & _
+                  "], type reads [" & sut.ValueOf("variable type") & _
+                  "], the writer filed [" & FirstCheckingLabel(sut) & "]"
+
+    Assert.AreEqual CLng(xlValidateDate), CLng(ValidationType(cellRng)), _
+                    "A date minimum should make a date validation, min reads [" & readBound & _
+                    "], bound reads [" & boundText & "]"
+
+    Assert.IsTrue (BoundAsDate(boundText) = DATE_BOUND_MIN()), _
+                  "The date minimum should reach the validation as " & _
+                  Format$(DATE_BOUND_MIN(), "yyyy-mm-dd") & ", min reads [" & readBound & _
+                  "], bound reads [" & boundText & "], which is " & _
+                  Format$(BoundAsDate(boundText), "yyyy-mm-dd")
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestADateMinFormattedAsADateKeepsItsValidation", Err.Number, Err.Description
+End Sub
+
+
 '@section Formula tests
 '===============================================================================
 
@@ -884,6 +935,43 @@ Private Sub SeedBoundaryVariables(ByVal dictSheet As Worksheet)
                  "integer", vbNullString, "100000"
     SeedVariable dictSheet, firstFreeRow + 2, "dec_text_v1", "Decimal formatted as text", _
                  "decimal", "text", vbNullString
+    SeedDateBoundVariable dictSheet, firstFreeRow + 3
+End Sub
+
+'@description Write a variable whose Min cell is a REAL DATE carrying a date format.
+'@details
+'Every other seeded row writes its bound into a cell forced to text, so the
+'string the dictionary carries is the string the author typed. A dictionary
+'authored in Excel does not have to look like that: a min or max meant as a date
+'is typed into a cell, Excel stores a Date and formats it, and what VarWriter
+'reads back is whatever CStr makes of that Date on this host. This row is that
+'case, and it is the only one in the suite.
+Private Sub SeedDateBoundVariable(ByVal dictSheet As Worksheet, ByVal rowNumber As Long)
+
+    SeedCell dictSheet, rowNumber, "Variable Name", DATE_BOUND_VAR
+    SeedCell dictSheet, rowNumber, "Main Label", "Date bounded by a formatted date cell"
+    SeedCell dictSheet, rowNumber, "Sheet Name", VLIST_SHEET
+    SeedCell dictSheet, rowNumber, "Sheet Type", "vlist1D"
+    SeedCell dictSheet, rowNumber, "Variable Type", "date"
+    SeedCell dictSheet, rowNumber, "Alert", "error"
+    SeedCell dictSheet, rowNumber, "Message", "Seeded for the date bound test"
+
+    'The point of the row: a Date value under a date number format, which is what
+    'a person typing a date into the dictionary leaves behind.
+    SeedDateCell dictSheet, rowNumber, "Min", DATE_BOUND_MIN
+End Sub
+
+'@description Write one fixture cell as a real Date under a date number format.
+Private Sub SeedDateCell(ByVal dictSheet As Worksheet, _
+                         ByVal rowNumber As Long, _
+                         ByVal headerName As String, _
+                         ByVal cellValue As Date)
+    Dim columnNumber As Long
+
+    columnNumber = DictionaryTestFixture.DictionaryHeaderIndex(headerName) + 1
+
+    dictSheet.Cells(rowNumber, columnNumber).NumberFormat = "dd/mm/yyyy"
+    dictSheet.Cells(rowNumber, columnNumber).Value = cellValue
 End Sub
 
 '@description Write one dictionary row by header name.
@@ -949,6 +1037,47 @@ Private Function NewHListWriter() As VarWriter
         customDropdownObj:=CustDropStub)
 End Function
 
+'@description The day the date-bound row carries in its Min cell.
+'@details A Const cannot hold a DateSerial call, so the one day the seed and the
+'assertion both name lives here.
+Private Function DATE_BOUND_MIN() As Date
+    DATE_BOUND_MIN = DateSerial(DATE_BOUND_YEAR, DATE_BOUND_MONTH, DATE_BOUND_DAY)
+End Function
+
+'@description Read a validation bound as a date, whatever shape Excel stored it in.
+'@details
+'Validation.Formula1 comes back as text. A date bound can arrive as a date
+'string the host can read, or as the serial number behind it, so both are
+'tried. Answers 0 when it is neither, which is what a bound that came through
+'as arithmetic looks like.
+Private Function BoundAsDate(ByVal boundText As String) As Date
+    Dim stripped As String
+    Dim serialValue As Double
+
+    If LenB(boundText) = 0 Then Exit Function
+
+    stripped = Trim$(Replace(boundText, "=", vbNullString))
+    If LenB(stripped) = 0 Then Exit Function
+
+    On Error Resume Next
+        BoundAsDate = CDate(stripped)
+        If Err.Number = 0 Then
+            Err.Clear
+            On Error GoTo 0
+            Exit Function
+        End If
+        Err.Clear
+    On Error GoTo 0
+
+    serialValue = BoundAsNumber(stripped)
+    If serialValue < 1 Then Exit Function
+
+    On Error Resume Next
+        BoundAsDate = CDate(serialValue)
+        Err.Clear
+    On Error GoTo 0
+End Function
+
 '@description The decimal separator this host writes and reads numbers with.
 Private Function HostDecimalSeparator() As String
     HostDecimalSeparator = Mid$(CStr(1.5), 2, 1)
@@ -965,6 +1094,14 @@ Private Function BoundAsNumber(ByVal boundText As String) As Double
 
     On Error Resume Next
         BoundAsNumber = CDbl(normalised)
+        Err.Clear
+    On Error GoTo 0
+End Function
+
+'@description Read a cell's validation type, answering 0 when it carries none.
+Private Function ValidationType(ByVal cellRng As Range) As Long
+    On Error Resume Next
+        ValidationType = cellRng.Validation.Type
         Err.Clear
     On Error GoTo 0
 End Function
