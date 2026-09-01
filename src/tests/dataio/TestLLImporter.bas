@@ -59,6 +59,7 @@ Option Explicit
 'the same before-and-after pair whatever order they run in.
 '@depends LLImporter, ImportMetadata, ImportReport, ChoiceKeys, LLChoices
 '@depends DropdownLists, HiddenNames, Passwords, CustomTest, LLGeo, GeoTestFixture
+'@depends LLdictionary, LLVariables, DictionaryTestFixture, PasswordsTestFixture
 
 Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
@@ -127,6 +128,33 @@ Private Const VAR_ABSENT As String = "not_a_variable_h2"
 
 'The variable whose main label the file disagrees about
 Private Const RELABELLED_IN_FILE As String = "A label the file disagrees about"
+
+'TWO EDITABLE LABELS ON ONE SHEET, and both halves of that matter.
+'ImportEditableLabels reads table_name off the sheet a variable lives on, and
+'it used to build a HiddenNames store per variable. It holds one store per
+'sheet now, so the SECOND variable of a sheet is the one that reads through
+'the held store rather than a fresh one. Two variables of hlist2D-sheet1 are
+'marked editable for that reason; one would prove nothing about the reuse.
+'text_h2 carries "yes" in the shared dictionary fixture already, dec2_h2 is
+'marked by PrepareEditableLabelColumns. Neither is VAR_ONE, VAR_TWO or
+'VAR_THREE, so no other test of this module reads what these two carry.
+'The column numbers are the columns of the hlist table the labels are written
+'into, and they are deliberately not adjacent.
+Private Const EDITABLE_ONE As String = "text_h2"
+Private Const EDITABLE_TWO As String = "dec2_h2"
+Private Const EDITABLE_ONE_COLUMN As Long = 1
+Private Const EDITABLE_TWO_COLUMN As Long = 3
+
+'The labels those two carry in the shared fixture, and the ones the file brings
+Private Const EDITABLE_ONE_LABEL As String = "Random text variable"
+Private Const EDITABLE_TWO_LABEL As String = "Decimal 2 digits on hlist2D"
+Private Const EDITABLE_ONE_IN_FILE As String = "The label the file gives text_h2"
+Private Const EDITABLE_TWO_IN_FILE As String = "The label the file gives dec2_h2"
+
+'The column the source dictionary needs for an editable label to be placed, and
+'the name of the range an hlist sheet holds its first data cell under
+Private Const COLUMN_INDEX_HEADER As String = "column index"
+Private Const TABLE_START_SUFFIX As String = "_START"
 
 'The value the first imported row carries. It is plain text on purpose: Excel
 'parses anything that looks like a date and reads it back in the host's own
@@ -915,6 +943,163 @@ TestFail:
 End Sub
 
 
+'@section The editable labels
+'===============================================================================
+
+'@sub-title Both editable labels of one sheet land, on the sheet and in the
+'   dictionary.
+'@details
+'The routine reads table_name off the sheet each variable lives on, and it
+'holds one HiddenNames store per sheet rather than one per variable. The second
+'variable is what that reuse is about: it reads through a store built while the
+'first was being placed. So the test asserts on BOTH, and on two different
+'columns of the same table, because a held store answering the wrong sheet
+'would put both labels in one place or leave the second one unwritten.
+'
+'Four cells move and all four are asserted: the two header cells of the hlist
+'table and the two main labels of the dictionary. The dictionary write is the
+'half a user sees the next time the linelist is opened.
+'
+'EVERYTHING THIS TEST WRITES IS PUT BACK. The header row of the table carries
+'the variable names the data import matches its columns by, and the dictionary
+'is shared with every other test of this module, so both go back on the way out
+'and on the failure path too.
+'@TestMethod("LLImporter")
+Public Sub TestBothEditableLabelsOfASheetLand()
+    CustomTestSetTitles Assert, TESTMODULE, "TestBothEditableLabelsOfASheetLand"
+    If Not FixtureReady("TestBothEditableLabelsOfASheetLand") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim vars As LLVariables
+    Dim startAddress As String
+
+    UnprotectHListSheet
+    ResetHListSheet
+    EnsureTableStartName
+    Set sh = FixtureWorkbook.Worksheets(HLIST_SHEET)
+
+    'THE ARRANGE IS ASSERTED BEFORE THE ACT. ImportEditableLabels passes a
+    'variable over on five separate counts and says nothing about any of them,
+    'so a fixture that is one cell short reads as a silent pass. Each condition
+    'the walk needs is read here through the same classes the walk reads it
+    'through, and a broken fixture then names itself.
+    Set vars = LLVariables.Create( _
+        LLdictionary.Create(FixtureWorkbook.Worksheets(DICTIONARY_SHEET), 1, 1))
+
+    Assert.IsTrue ImportMetadataOfFile().UpdatesOnImport("editable_labels"), _
+                  "The file asks for its editable labels to be taken"
+    Assert.AreEqual "yes", _
+                    CStr(vars.Value(varName:=EDITABLE_ONE, colName:="editable label")), _
+                    "The first variable is marked editable in the linelist"
+    Assert.AreEqual "yes", _
+                    CStr(vars.Value(varName:=EDITABLE_TWO, colName:="editable label")), _
+                    "The second variable is marked editable in the linelist"
+    Assert.AreEqual CStr(EDITABLE_ONE_COLUMN), _
+                    CStr(vars.Value(varName:=EDITABLE_ONE, colName:="column index")), _
+                    "The first variable names the column its label goes in"
+    Assert.AreEqual CStr(EDITABLE_TWO_COLUMN), _
+                    CStr(vars.Value(varName:=EDITABLE_TWO, colName:="column index")), _
+                    "The second variable names the column its label goes in"
+    Assert.AreEqual HLIST_SHEET, vars.SheetName(EDITABLE_ONE), _
+                    "Both variables live on the sheet the held store is built for"
+    Assert.AreEqual "hlist2D", _
+                    CStr(vars.Value(varName:=EDITABLE_ONE, colName:="sheet type")), _
+                    "The sheet type is the one that writes into a header cell"
+    'Read under a guard rather than straight. A name whose cell has been deleted
+    'answers #REF! and asking the sheet for it RAISES, and a raise here reaches
+    'the harness as the bare test name with no message, which says nothing about
+    'which of the arrange conditions went. The guarded read fails as an ordinary
+    'assertion instead and names the address it wanted.
+    startAddress = "<the sheet holds no such name>"
+    On Error Resume Next
+        startAddress = sh.Range(HLIST_TABLE & TABLE_START_SUFFIX).Address
+    On Error GoTo TestFail
+
+    Assert.AreEqual sh.Cells(2, 1).Address, startAddress, _
+                    "The sheet names its first data cell, one under the headers"
+    Assert.AreEqual EDITABLE_ONE_IN_FILE, MainLabelOf(ImportWorkbook, EDITABLE_ONE), _
+                    "The file holds a different label for the first variable"
+    Assert.AreEqual EDITABLE_TWO_IN_FILE, MainLabelOf(ImportWorkbook, EDITABLE_TWO), _
+                    "The file holds a different label for the second variable"
+
+    FixtureImporter().ImportEditableLabels ImportWorkbook, ImportMetadataOfFile()
+
+    Assert.AreEqual EDITABLE_ONE_IN_FILE, _
+                    CStr(sh.Cells(1, EDITABLE_ONE_COLUMN).Value), _
+                    "The first editable label is written into its own column"
+    Assert.AreEqual EDITABLE_TWO_IN_FILE, _
+                    CStr(sh.Cells(1, EDITABLE_TWO_COLUMN).Value), _
+                    "The second one reads through the held store and lands too"
+
+    Assert.AreEqual EDITABLE_ONE_IN_FILE, MainLabelOf(FixtureWorkbook, EDITABLE_ONE), _
+                    "The dictionary carries the first new label"
+    Assert.AreEqual EDITABLE_TWO_IN_FILE, MainLabelOf(FixtureWorkbook, EDITABLE_TWO), _
+                    "The dictionary carries the second new label"
+
+    ResetEditableLabels
+    Exit Sub
+TestFail:
+    On Error Resume Next
+    ResetEditableLabels
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestBothEditableLabelsOfASheetLand", Err.Number, Err.Description
+End Sub
+
+'@sub-title A variable the file has no label for is passed over.
+'@details
+'The walk skips a variable on three counts, and the one worth pinning is the
+'editable flag: VAR_ONE sits in the same table and the same dictionary, the
+'file holds a label for it, and it is not marked editable, so its header cell
+'has to still read as the variable name after the import ran.
+'@TestMethod("LLImporter")
+Public Sub TestANonEditableLabelIsLeftAlone()
+    CustomTestSetTitles Assert, TESTMODULE, "TestANonEditableLabelIsLeftAlone"
+    If Not FixtureReady("TestANonEditableLabelIsLeftAlone") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+
+    UnprotectHListSheet
+    ResetHListSheet
+    EnsureTableStartName
+    Set sh = FixtureWorkbook.Worksheets(HLIST_SHEET)
+
+    FixtureImporter().ImportEditableLabels ImportWorkbook, ImportMetadataOfFile()
+
+    Assert.AreEqual VAR_TWO, CStr(sh.Cells(1, 2).Value), _
+                    "The column of a variable nobody may relabel is untouched"
+    Assert.AreEqual RELABELLED_IN_FILE, MainLabelOf(ImportWorkbook, VAR_TWO), _
+                    "And the file really does hold a different label for it"
+
+    ResetEditableLabels
+    Exit Sub
+TestFail:
+    On Error Resume Next
+    ResetEditableLabels
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestANonEditableLabelIsLeftAlone", Err.Number, Err.Description
+End Sub
+
+'@sub-title Put back everything an editable label import moves.
+'@details
+'The header row of the hlist table and the two main labels of the linelist
+'dictionary. Called by both editable label tests, on the way out and on the
+'failure path, so neither leaves the shared fixture changed for whatever runs
+'next.
+Private Sub ResetEditableLabels()
+    Dim sh As Worksheet
+
+    Set sh = FixtureWorkbook.Worksheets(HLIST_SHEET)
+
+    UnprotectHListSheet
+    WriteRow sh.Cells(1, 1), VAR_ONE, VAR_TWO, VAR_THREE
+
+    SetMainLabel FixtureWorkbook, EDITABLE_ONE, EDITABLE_ONE_LABEL
+    SetMainLabel FixtureWorkbook, EDITABLE_TWO, EDITABLE_TWO_LABEL
+End Sub
+
+
 '@section Comparing the two files
 '===============================================================================
 
@@ -1171,6 +1356,7 @@ Private Sub BuildLinelistFixture()
     Dim store As HiddenNames
 
     DictionaryTestFixture.PrepareDictionaryFixture DICTIONARY_SHEET, FixtureWorkbook
+    PrepareEditableLabelColumns
     PasswordsTestFixture.PreparePasswordsFixture PASSWORD_SHEET, FixtureWorkbook
 
     BuildLinelistChoices
@@ -1225,6 +1411,123 @@ Private Sub BuildHListSheet()
     store.SetValue "table_name", HLIST_TABLE
     store.EnsureName "blank_row_count", 0, HiddenNameTypeLong
     store.SetValue "blank_row_count", 0
+
+    EnsureTableStartName
+End Sub
+
+'@sub-title Name the first data cell of the hlist table, the way a linelist does.
+'@details
+'ImportEditableLabels finds the header row through <table_name>_START, the name
+'a generated linelist puts on the first data cell. It is a visible name rather
+'than a HiddenNames entry, which is why it is written here and not through the
+'store BuildHListSheet builds.
+'
+'Named by assigning to Range.Name, which is how the linelist itself names a cell
+'anchor -- VarWriter.cls:890 and :968 write this very name that way. Building it
+'with Names.Add and a hand-written RefersTo string was tried first and the name
+'did not come back, with nothing raised. Names.Add is not the problem there and
+'HiddenNames is built on it; a hand-built RefersTo string is, because the "=",
+'the sheet qualification and the absolutes all have to be right and a wrong one
+'fails silently.
+'
+'WHY THIS IS CALLED AGAIN BY THE TESTS THAT NEED IT. The anchor sits in the
+'data body of the table, and the import tests empty and resize that table --
+'ResetHListSheet says a table CustomTable.Import has emptied can come back with
+'no data body at all. A name whose cell went with it answers #REF!, and asking
+'the sheet for it then RAISES rather than answering Nothing, which is not one of
+'the ways ImportEditableLabels expects to be passed over. So the anchor is
+'written again by whoever is about to rely on it, and the order the tests run in
+'goes on deciding nothing.
+'
+'That is a state of this FIXTURE, not of a linelist. A generated linelist keeps
+'its first body row: CustomTable.RemoveEmptyDataRows protects it in both
+'branches (CustomTable.cls:1396 and :1451), which is what makes the anchor a
+'safe place to read the header from, and LLImporter.ClearData clears contents
+'rather than removing rows.
+Private Sub EnsureTableStartName()
+    FixtureWorkbook.Worksheets(HLIST_SHEET).Cells(2, 1).Name = _
+        HLIST_TABLE & TABLE_START_SUFFIX
+End Sub
+
+'@sub-title Give the linelist dictionary what an editable label import reads.
+'@details
+'Two things the shared fixture does not carry. ImportEditableLabels asks the
+'source dictionary for a `column index` and skips any variable whose index
+'reads as zero, so the column is added and the two editable variables are given
+'the columns of the hlist table their labels are written into. Every other row
+'is left blank on purpose: a blank index is the ordinary way a variable is
+'passed over, and it keeps the walk to the two variables this module asserts on.
+'
+'text_h2 already carries "yes" under Editable Label in the shared fixture.
+'dec2_h2 does not, and it is marked here.
+Private Sub PrepareEditableLabelColumns()
+    Dim sh As Worksheet
+    Dim indexColumn As Long
+    Dim editableColumn As Long
+
+    Set sh = FixtureWorkbook.Worksheets(DICTIONARY_SHEET)
+
+    indexColumn = DictionaryTestFixture.DictionaryFixtureColumnCount() + 1
+    sh.Cells(1, indexColumn).Value = COLUMN_INDEX_HEADER
+
+    editableColumn = DictionaryTestFixture.DictionaryHeaderIndex("Editable Label") + 1
+
+    DictionaryRowOf(FixtureWorkbook, EDITABLE_ONE).Cells(1, indexColumn).Value = _
+        EDITABLE_ONE_COLUMN
+    DictionaryRowOf(FixtureWorkbook, EDITABLE_TWO).Cells(1, indexColumn).Value = _
+        EDITABLE_TWO_COLUMN
+    DictionaryRowOf(FixtureWorkbook, EDITABLE_TWO).Cells(1, editableColumn).Value = "yes"
+End Sub
+
+'@fun-title The dictionary row of one variable, as a whole-row range.
+'@details
+'The two dictionaries of this module are the same fixture, so one lookup serves
+'both and the caller says which workbook it means. Answers Nothing when the
+'variable is not there, which no caller here expects and every caller would
+'rather see as error 91 than as a silent write into row 1.
+'@param wb Workbook. The workbook whose Dictionary sheet is read.
+'@param varName String. The variable to find.
+'@return Range. The row of that variable, or Nothing.
+Private Function DictionaryRowOf(ByVal wb As Workbook, _
+                                 ByVal varName As String) As Range
+    Dim sh As Worksheet
+    Dim nameColumn As Long
+    Dim lastRow As Long
+    Dim counter As Long
+
+    Set sh = wb.Worksheets(DICTIONARY_SHEET)
+    nameColumn = DictionaryTestFixture.DictionaryHeaderIndex("Variable Name") + 1
+    lastRow = DictionaryTestFixture.DictionaryFixtureRowCount() + 1
+
+    For counter = 2 To lastRow
+        If CStr(sh.Cells(counter, nameColumn).Value) = varName Then
+            Set DictionaryRowOf = sh.Rows(counter)
+            Exit Function
+        End If
+    Next counter
+End Function
+
+'@sub-title The main label one variable carries in a dictionary.
+'@param wb Workbook. The workbook whose Dictionary sheet is read.
+'@param varName String. The variable to read.
+'@return String. Its main label.
+Private Function MainLabelOf(ByVal wb As Workbook, ByVal varName As String) As String
+    Dim labelColumn As Long
+
+    labelColumn = DictionaryTestFixture.DictionaryHeaderIndex("Main Label") + 1
+    MainLabelOf = CStr(DictionaryRowOf(wb, varName).Cells(1, labelColumn).Value)
+End Function
+
+'@sub-title Write a main label into a dictionary.
+'@param wb Workbook. The workbook whose Dictionary sheet is written.
+'@param varName String. The variable to write.
+'@param newLabel String. The label to put there.
+Private Sub SetMainLabel(ByVal wb As Workbook, ByVal varName As String, _
+                         ByVal newLabel As String)
+    Dim labelColumn As Long
+
+    labelColumn = DictionaryTestFixture.DictionaryHeaderIndex("Main Label") + 1
+    DictionaryRowOf(wb, varName).Cells(1, labelColumn).Value = newLabel
 End Sub
 
 '@sub-title Empty the HList table back to one blank row.
@@ -1319,6 +1622,7 @@ Private Sub BuildImportFixture()
     DictionaryTestFixture.PrepareDictionaryFixture DICTIONARY_SHEET, ImportWorkbook
     MarkImportDictionaryPrepared
     RewriteOneLabel
+    RewriteEditableLabels
 
     BuildImportChoices
     BuildImportDataSheet
@@ -1393,6 +1697,17 @@ Private Sub RewriteOneLabel()
             Exit For
         End If
     Next counter
+End Sub
+
+'@sub-title Give the file its own labels for the two editable variables.
+'@details
+'ImportEditableLabels takes the main label the FILE holds, so the file has to
+'disagree with the linelist about both of them or the test asserts nothing.
+'These two are separate from RewriteOneLabel above, which rewrites VAR_TWO for
+'the label comparison and leaves it non-editable.
+Private Sub RewriteEditableLabels()
+    SetMainLabel ImportWorkbook, EDITABLE_ONE, EDITABLE_ONE_IN_FILE
+    SetMainLabel ImportWorkbook, EDITABLE_TWO, EDITABLE_TWO_IN_FILE
 End Sub
 
 '@sub-title Write the Choices worksheet of the file.

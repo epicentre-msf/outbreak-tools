@@ -746,6 +746,18 @@ End Function
 'workbook. Skips when the file carries no Dictionary sheet, when that
 'dictionary is not prepared, and when the `editable_labels` tag asks for no
 'update.
+'
+'ONE HIDDEN NAMES STORE PER SHEET
+'-------------------------------------------------------------------------------
+'The walk reads one name, table_name, off the sheet a variable lives on.
+'HiddenNames.Create walks every tracked name of that sheet and reads three
+'properties off each, and a data entry sheet holds hundreds of names. Built
+'inside the loop, a dictionary of 500 variables paid 500 of those walks for a
+'handful of sheets. The stores are held in a Collection keyed by sheet name, so
+'each sheet is walked once however many of its variables carry an editable
+'label.
+'QuickValue is not the answer here the way it is in SheetTagOf: this walk asks
+'the same sheet again and again, which is the case the instance is for.
 '@param impwb Workbook. The opened migration workbook.
 '@param meta ImportMetadata. The metadata of that workbook.
 '@export
@@ -765,6 +777,7 @@ Public Sub ImportEditableLabels(ByVal impwb As Workbook, ByVal meta As ImportMet
     Dim sh As Worksheet
     Dim colIndex As Long
     Dim shHn As HiddenNames
+    Dim heldNames As Collection
 
     ' Prerequisites
     If meta Is Nothing Then Exit Sub
@@ -780,6 +793,7 @@ Public Sub ImportEditableLabels(ByVal impwb As Workbook, ByVal meta As ImportMet
     Set currVars = LLVariables.Create(dict)
     Set inpVars = LLVariables.Create(inpDict)
     Set varRng = dict.DataRange("variable name")
+    Set heldNames = New Collection
 
     For counter = 1 To varRng.Rows.Count
         varName = CStr(varRng.Cells(counter, 1).Value)
@@ -810,7 +824,7 @@ Public Sub ImportEditableLabels(ByVal impwb As Workbook, ByVal meta As ImportMet
         If sh Is Nothing Then GoTo NextLabel
 
         ' Update label in worksheet
-        Set shHn = HiddenNames.Create(sh)
+        Set shHn = HeldSheetNames(heldNames, sh)
         Set cellRng = Nothing
         On Error Resume Next
         Set cellRng = sh.Range(shHn.ValueAsString("table_name") & "_START")
@@ -1640,14 +1654,58 @@ End Sub
 
 
 '@sub-title Get the sheet type tag from worksheet-level HiddenNames.
+'@details
+'The read goes through HiddenNames.QuickValue: three COM crossings for the one
+'name asked for, with no instance behind it. HiddenNames.Create walks every
+'tracked name of the sheet first and reads three properties off each, and a data
+'entry sheet holds hundreds of names. This routine runs once per sheet in
+'ClearData, ImportData and RecalculateEpiWeekSheets, so the walk was paid three
+'times over the workbook for one string each time.
+'LLExporter.SheetTagOf reads the same two keys the same way.
+'A sheet that carries no such name answers the empty string, which is what the
+'instance read answered too.
 '@param sh Worksheet. The worksheet to query.
-'@return String. The sheet type tag (HList, VList, etc.).
 '@param nameKey Optional String. Which worksheet-level name to read.
+'@return String. The sheet type tag (HList, VList, etc.).
 Private Function SheetTagOf(ByVal sh As Worksheet, _
                             Optional ByVal nameKey As String = "sheet_type") As String
-    Dim shHn As HiddenNames
-    Set shHn = HiddenNames.Create(sh)
-    SheetTagOf = shHn.ValueAsString(nameKey)
+    SheetTagOf = HiddenNames.QuickValue(sh, nameKey)
+End Function
+
+'@label:held-sheet-names
+'@sub-title The hidden names store of one worksheet, built once and kept
+'@details
+'A caller that reads the same sheet over and over hands in a Collection and
+'gets the same HiddenNames back every time. The first sight of a sheet pays the
+'name walk, every later one is a lookup. ImportEditableLabels is the caller
+'that needs this: it runs once per variable over a handful of sheets.
+'A Collection is what holds the stores because Mac Excel has no
+'Scripting.Dictionary; LLFormat and UpdatedValues key their caches the same way.
+'@param store Collection. The held stores, keyed by worksheet name.
+'@param sh Worksheet. The worksheet whose names are wanted.
+'@return HiddenNames. The store of that worksheet.
+Private Function HeldSheetNames(ByVal store As Collection, _
+                                ByVal sh As Worksheet) As HiddenNames
+
+    Dim held As HiddenNames
+
+    If store Is Nothing Or sh Is Nothing Then
+        Set HeldSheetNames = HiddenNames.Create(sh)
+        Exit Function
+    End If
+
+    'A Collection has no "does this key exist" test and raises 5 for a key it
+    'does not hold. An unseen sheet is the ordinary answer on the first turn.
+    On Error Resume Next
+        Set held = store.Item(sh.Name)
+    On Error GoTo 0
+
+    If held Is Nothing Then
+        Set held = HiddenNames.Create(sh)
+        store.Add held, sh.Name
+    End If
+
+    Set HeldSheetNames = held
 End Function
 
 '@section Private - Helpers
