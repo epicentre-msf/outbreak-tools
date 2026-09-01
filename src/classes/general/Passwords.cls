@@ -432,7 +432,14 @@ Private Sub ProtectSheet(sheetObject As Variant, _
         ReadProtectionFlags targetSheet.Name, storedDraw, storedDelete, storedRow
         allowDraw = (allowDraw And storedDraw)
         allowDelete = (allowDelete And storedDelete)
-        PersistProtectionSettings targetSheet.Name, allowDraw, allowDelete, storedRow
+
+        'The row is written when the sheet has none yet, or when the fold
+        'changed a flag. A protect call that changes nothing used to write its
+        'three cells anyway, and the show/hide bracket protects on every close:
+        'three cell writes per click for a row that already said the same.
+        If storedRow = 0 Or allowDraw <> storedDraw Or allowDelete <> storedDelete Then
+            PersistProtectionSettings targetSheet.Name, allowDraw, allowDelete, storedRow
+        End If
     End If
 
     ApplySheetProtection targetSheet, allowDraw, allowDelete, DebugPassword()

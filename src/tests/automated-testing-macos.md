@@ -201,6 +201,16 @@ Open `.test-runner/unit_tests_dev.xlsb` and, in the VBE (**File → Import File�
 import these components. They form the compile closure needed for `Development`
 + the harness to compile:
 
+> **The runner does NOT read the repo copy.** Since `d29ac6ca` (2026-08-31)
+> `run-tests.R` takes its driver from inside Excel's container,
+> `~/Library/Containers/com.microsoft.Excel/Data/Documents/OBTTestHome/unit_tests_dev.xlsb`,
+> and copies `.test-runner/unit_tests_dev.xlsb` there only ONCE, when the
+> container has none. After any hand import into the repo copy — the first
+> setup below, or a refresh of one of the baked-in classes — copy the file
+> over the container one (`cp .test-runner/unit_tests_dev.xlsb "<that path>"`),
+> or the next run drives the old workbook and its import log still shows the
+> old `lines=` count for the class. Seen on 2026-09-01 with `Passwords`.
+
 ```
 Development manager + dependencies
   BetterArray.cls        (src/classes/general)

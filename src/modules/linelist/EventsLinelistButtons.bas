@@ -82,6 +82,11 @@ Private lastHiddenSectionIndex As Long
 'show to after the opener has returned.
 Private showHideReturnWanted As Boolean
 
+'True while ClickShowHide holds the layout's bracket open across the form
+'session. Read at CleanUp, so a raise inside the form still gives the sheet its
+'protection and the screen back. See "ONE BRACKET FOR THE SESSION" there.
+Private showHideBatchHeld As Boolean
+
 'The event service of the running linelist
 '
 'It holds the translation helper, the workbook hidden names, the password
@@ -812,6 +817,20 @@ Public Sub ClickShowHide()
     PopulateShowHideList frm
     LogShowHideSteps "ClickShowHide", "showhide"
 
+    'ONE BRACKET FOR THE SESSION
+    '---------------------------------------------------------------------------
+    'Every write the layout makes sits inside a bracket that unprotects the
+    'sheet, turns ScreenUpdating off, and on the way out protects again and
+    'gives the screen back. That "back" is one repaint of the window with the
+    'form on top of it, and a click paid it every time: the flash. The bracket
+    'nests, so it is opened here once and every write inside the session --
+    'a click, the sections form, the section button, a layout apply on this
+    'sheet -- rides it and toggles nothing. The screen repaints once, at the
+    'close below. The form is modal, so nobody can type on the sheet while it
+    'is unprotected, and CleanUp closes the bracket on every path.
+    activeLayout.BeginBatch
+    showHideBatchHeld = True
+
     'The form is shown in a loop. A child form's Previous label hides the child
     'and sets the flag; the child's opener then finishes its own save and refill
     'and returns, the click handler that hid this form returns, Show returns,
@@ -836,6 +855,7 @@ CleanUp:
     If Err.Number <> 0 Then LogFailureLine "ClickShowHide", "showhide", Err.Description
     Set activeShowHideForm = Nothing
     MarkShowHideStep "protect"
+    CloseShowHideBatch
     ProtectAfterShowHide sh
     'The close walk on the normal path; on a raise, whichever walk was open,
     'with the step that refused still named.
@@ -854,6 +874,22 @@ Public Sub ClickShowHidePrevious()
     Attribute ClickShowHidePrevious.VB_Description = "Ask the show/hide form back once the child form that pressed Previous has closed"
 
     showHideReturnWanted = True
+End Sub
+
+'Close the bracket ClickShowHide holds across the form session, once. The
+'layout is the one the session opened it on; a layout replaced mid-session
+'(there is no such path today) would leave the old bracket to the protect
+'below. EndBatch on a layout with no open bracket would hand the screen a
+'value it never held, which is why this reads the flag first.
+Private Sub CloseShowHideBatch()
+    If Not showHideBatchHeld Then Exit Sub
+    showHideBatchHeld = False
+
+    If activeLayout Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    activeLayout.EndBatch
+    On Error GoTo 0
 End Sub
 
 'Put the sheet back under protection once a show/hide session ends.
@@ -878,7 +914,12 @@ End Sub
 '
 'The entry list and the layout are the module ones, so a section change made
 'while the show/hide form is open lands on the same pair that form is working
-'from.
+'from. When that form is open on THIS sheet the pair is reused as it stands:
+'the layout holds the session's bracket, so the section writes ride it, and
+'the entries already carry every click of the session. Adopt still reads the
+'sheet (N reads), so a column hidden by hand is seen. Building a fresh pair
+'here, as it used to, cost the dictionary walk and a Load with N size writes
+'on every press, through a second bracket that repainted the screen.
 Private Function SectionContextFor(ByVal sh As Worksheet, _
                                    ByVal shType As String) As SectionShowHide
     Dim layer As Byte
@@ -893,24 +934,40 @@ Private Function SectionContextFor(ByVal sh As Worksheet, _
     Set secMap = SectionMap.Create(sh)
     If secMap.Count = 0 Then Exit Function
 
-    MarkShowHideStep "build"
-    Set showHideEntries = EntriesFor(sh, layer, DictionaryObject())
-    Set activeLayout = LayoutFor(sh, layer)
-
-    'The same reconciliation ClickShowHide does. With nothing saved yet the
-    'sheet is the record, so a column the user hid by hand is read as hidden
-    'and the toggle below agrees with what the user can see.
-    MarkShowHideStep "load"
-    If LoadShowHideState(showHideEntries, activeLayout) > 0 Then
-        MarkShowHideStep "apply"
-        showHideEntries.Apply activeLayout
-    Else
+    If SessionHoldsSheet(sh) Then
         MarkShowHideStep "adopt"
         showHideEntries.Adopt activeLayout
+    Else
+        MarkShowHideStep "build"
+        Set showHideEntries = EntriesFor(sh, layer, DictionaryObject())
+        Set activeLayout = LayoutFor(sh, layer)
+
+        'The same reconciliation ClickShowHide does. With nothing saved yet the
+        'sheet is the record, so a column the user hid by hand is read as hidden
+        'and the toggle below agrees with what the user can see.
+        MarkShowHideStep "load"
+        If LoadShowHideState(showHideEntries, activeLayout) > 0 Then
+            MarkShowHideStep "apply"
+            showHideEntries.Apply activeLayout
+        Else
+            MarkShowHideStep "adopt"
+            showHideEntries.Adopt activeLayout
+        End If
     End If
 
     Set SectionContextFor = SectionShowHide.Create(secMap, showHideEntries, _
                                                    activeLayout)
+End Function
+
+'Whether the show/hide form is open on the given sheet with its pair standing.
+'Three objects and one identity, tested one at a time because VBA evaluates
+'every operand of an And.
+Private Function SessionHoldsSheet(ByVal sh As Worksheet) As Boolean
+    If activeShowHideForm Is Nothing Then Exit Function
+    If activeLayout Is Nothing Then Exit Function
+    If showHideEntries Is Nothing Then Exit Function
+
+    SessionHoldsSheet = (activeLayout.Wksh Is sh)
 End Function
 
 'Put the cursor somewhere that names no section, so the press that follows a
@@ -951,11 +1008,21 @@ Public Sub ClickShowHideSection()
     'the map and the build were paid before the refusal.
     StartShowHideWalk
 
+    'The busy state is entered BEFORE the context is built, with the handler
+    'armed above it. The Load and the Apply inside SectionContextFor each open
+    'a bracket that puts ScreenUpdating back where it found it; under the busy
+    'state that is False, so they repaint nothing, and the one repaint of a
+    'press is the busy exit. Built above the busy state, as it used to be, a
+    'press flashed three times. A refusal below leaves the busy state before
+    'it speaks, so the pointer is a pointer while the message is up.
+    On Error GoTo ErrHand
+    LinelistEventsManager.LLEnterBusyState
+
     Set sections = SectionContextFor(sh, shType)
     If sections Is Nothing Then
+        LinelistEventsManager.LLExitBusyState
         WarningOnSheet "ClickShowHideSection", "MSG_SectionTitleCell"
-        LogShowHideSteps "ClickShowHideSection", "showhide-section"
-        Exit Sub
+        GoTo CleanUp
     End If
 
     'A section is hidden only when the user is standing on its title, which is
@@ -971,17 +1038,16 @@ Public Sub ClickShowHideSection()
     End If
 
     If sectionIdx = 0 Then
+        LinelistEventsManager.LLExitBusyState
         WarningOnSheet "ClickShowHideSection", "MSG_SectionTitleCell"
         GoTo CleanUp
     End If
 
     If Not sections.CanChange(sectionIdx) Then
+        LinelistEventsManager.LLExitBusyState
         WarningOnSheet "ClickShowHideSection", "MSG_SectionTitleCell"
         GoTo CleanUp
     End If
-
-    On Error GoTo ErrHand
-    LinelistEventsManager.LLEnterBusyState
 
     MarkShowHideStep "hide"
     sections.SetHidden sectionIdx, hideIt

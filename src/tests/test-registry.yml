@@ -1461,6 +1461,20 @@ suites:
         covers: [ShowHide, ShowHideLayout, ShowHideStore]
       - module: TestSectionShowHide
         covers: [SectionShowHide]
+      # TestShowHideTiming is a MEASURING TOOL, not a behaviour suite, and it
+      # stays out of the loop on purpose, the way TestLLExporterTiming does.
+      # It times ShowHide.Create, Load, Apply, Save and SectionMap.Create on a
+      # synthetic dictionary of V variables with N on one sheet, M hidden names
+      # and H hidden entries, and reports seconds rather than pass or fail.
+      # Uncomment the row, run, read the TIMING lines out of the run CSV,
+      # comment it back out. Written for the show/hide speed block (Sessions
+      # 127 to 132); the numbers it answers are the yardstick between sessions.
+      # ADDED BY A DIFFERENT SESSION THAN THE ONE THAT WROTE THE MODULE, and
+      # the module HAS NEVER RUN -- outbreak-tools-3e wrote it during Session
+      # 127 and asked for the row here because this file was carrying another
+      # session's uncommitted edit at the time.
+#      - module: TestShowHideTiming
+#        covers: [ShowHide, ShowHideLayout, ShowHideStore]
 
   # --- dataio ---------------------------------------------------------------
   # Registered on 2026-08-02. Every class of the folder had never been compiled

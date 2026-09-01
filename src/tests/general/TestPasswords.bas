@@ -283,6 +283,53 @@ TestFail:
     CustomTestLogFailure Assert, "TestProtectWithoutRegisterStateKeepsIncomingFlags", Err.Number, Err.Description
 End Sub
 
+' @sub-title Verify that a Protect call with unchanged flags leaves the table's row alone
+' @details Arrange: one Protect writes the sheet's row, then the AllowDeletingRows
+'   cell of that row is rewritten as "kept". ParseBoolean reads any word but "no"
+'   as True, so the stored flag is unchanged and the fold answers the same;
+'   a second write would put "yes" back. Act: Protect again with the same flags.
+'   Assert: the sheet is protected, the cell still says "kept", and the shapes
+'   flag still reads "no". Every show/hide close used to pay three cell writes
+'   for a row that already said the same.
+'   The sentinel is a different WORD on purpose: the harness compares strings
+'   without case, so a case-swapped sentinel passed against the old code.
+'@TestMethod("Passwords")
+Public Sub TestProtectWithUnchangedFlagsLeavesTheRowAlone()
+    CustomTestSetTitles Assert, "Passwords", "TestProtectWithUnchangedFlagsLeavesTheRowAlone"
+    On Error GoTo TestFail
+
+    Dim settings As Range
+    Dim found As Range
+    Const SENTINEL As String = "kept"
+
+    PasswordSubject.Protect ProtectedSheet.Name, allowShapes:=False, allowDeletingRows:=True, registerState:=True
+
+    Set settings = PasswordSubject.TableRange(TABLEPROTECTED, includeHeaders:=False)
+    Assert.ObjectExists settings, "Range", "The first Protect populates the protected sheets table"
+
+    On Error Resume Next
+        Set found = settings.Columns(1).Find(What:=ProtectedSheet.Name, LookAt:=xlWhole, MatchCase:=False)
+    On Error GoTo TestFail
+    Assert.ObjectExists found, "Range", "The first Protect records the sheet name"
+
+    found.Offset(0, 2).Value = SENTINEL
+
+    PasswordSubject.UnProtect ProtectedSheet.Name
+    PasswordSubject.Protect ProtectedSheet.Name, allowShapes:=False, allowDeletingRows:=True, registerState:=True
+
+    Assert.IsTrue ProtectedSheet.ProtectContents, "The second Protect still protects the sheet"
+    Assert.AreEqual SENTINEL, CStr(found.Offset(0, 2).Value), _
+                    "A Protect call with unchanged flags leaves the row's cells untouched"
+    Assert.AreEqual DEFAULTBOOLNO, CStr(found.Offset(0, 1).Value), _
+                    "The stored AllowShapes flag still reads 'no'"
+    Assert.IsTrue ProtectedSheet.Protection.AllowDeletingRows, _
+                   "The flag the sentinel stands for still reaches the sheet"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestProtectWithUnchangedFlagsLeavesTheRowAlone", Err.Number, Err.Description
+End Sub
+
 ' @sub-title Verify that UnProtect reverses worksheet protection
 ' @details Tests the UnProtect method as the inverse of Protect. Arrange: the test first
 '   calls Protect on ProtectedSheet with registerState=False to apply protection without
