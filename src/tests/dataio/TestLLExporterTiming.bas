@@ -454,6 +454,200 @@ TestFail:
 End Sub
 
 
+'@sub-title Times the READ side of the format loop on its own, writing nothing.
+'@details
+'THIS IS THE GATE OF SESSION 126. Every cut the session proposes is on the
+'write side, so the question that has to be answered before any production code
+'is written is how much of the format loop is reads.
+'
+'The walk below is the SOURCE half of DataSheet.ApplyFormat, over the same seven
+'columns, the same fixture and the same ranges: the loop condition reads
+'`cellRng.Row`, then `Interior.Color`, `Font.Color`, `Font.Bold` and
+'`Font.Italic` come off the cell, then `Offset(1)` moves on. Nothing is written
+'and there is no destination range at all.
+'
+'Read it against the two tests above, in the same run:
+'   format loop  = (SEVEN format columns) - (NO format columns)
+'   read side    = this test
+'   write side   = format loop - read side
+'
+'`DataRange(colName)` spans DataStartRow + 1 to DataEndRow for one column, which
+'is exactly the block `Export` hands `ApplyFormat` as `impRng`. It is asked
+'WITHOUT regard to case, because that is what `AddFormatsColumns False, True`
+'does above: the fixture spells its headers `Formatting Condition`, and a
+'case-sensitive lookup for `formatting condition` matches nothing, skips all
+'seven columns and reports a walk of ZERO cells in 0.004 s.
+'The values are assigned to locals so the reads cannot be optimised away and so
+'the compiler has a use for each one.
+'@TestMethod("LLExporterTiming")
+Public Sub TestTimeFormatLoopReadSideOnly()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTimeFormatLoopReadSideOnly"
+    On Error GoTo TestFail
+
+    Dim sourceBook As Workbook
+    Dim dict As LLdictionary
+    Dim formatNames As Variant
+    Dim colName As String
+    Dim sourceRng As Range
+    Dim cellRng As Range
+    Dim lastRow As Long
+    Dim counter As Long
+    Dim cellsRead As Long
+    Dim interiorColor As Long
+    Dim fontColor As Long
+    Dim isBold As Boolean
+    Dim isItalic As Boolean
+    Dim startedAt As Double
+    Dim elapsed As Double
+    Dim failedNumber As Long
+    Dim failedText As String
+
+    Set sourceBook = TimingDictionaryWorkbook()
+    Set dict = LLdictionary.Create(sourceBook.Worksheets(DICTIONARY_SHEET), 1, 1, 5)
+
+    formatNames = Array("formatting condition", "formatting values", _
+                        "variable name", "control", "main label", _
+                        "lock cells", "dev comments")
+
+    startedAt = Timer
+
+    For counter = LBound(formatNames) To UBound(formatNames)
+        colName = CStr(formatNames(counter))
+
+        Set sourceRng = Nothing
+        On Error Resume Next
+        Set sourceRng = dict.Data.DataRange(colName, matchCase:=False)
+        On Error GoTo TestFail
+
+        If Not sourceRng Is Nothing Then
+            Set cellRng = sourceRng.Cells(1, 1)
+            lastRow = sourceRng.Cells(sourceRng.Rows.Count, 1).Row
+
+            Do While (cellRng.Row <= lastRow)
+                interiorColor = cellRng.Interior.Color
+                fontColor = cellRng.Font.Color
+                isBold = cellRng.Font.Bold
+                isItalic = cellRng.Font.Italic
+                cellsRead = cellsRead + 1
+                Set cellRng = cellRng.Offset(1)
+            Loop
+        End If
+    Next counter
+
+    elapsed = ElapsedSince(startedAt)
+
+    Assert.IsTrue (cellsRead > 0), "The read-only walk covered some cells"
+
+    LogTiming "ApplyFormat READ SIDE only, seven columns, " & _
+              CStr(cellsRead) & " cells, no writes", elapsed
+
+    'The last colour read is reported so the reads cannot be argued away as
+    'having been skipped; it is a value off the fixture, not an assertion.
+    Assert.LogSuccesses "TIMING read-side last interior colour: " & _
+                        CStr(interiorColor) & ", last font colour: " & _
+                        CStr(fontColor) & ", bold " & CStr(isBold) & _
+                        ", italic " & CStr(isItalic)
+
+    DropBooks sourceBook, Nothing
+    Exit Sub
+TestFail:
+    failedNumber = Err.Number
+    failedText = Err.Description
+    On Error Resume Next
+    DropBooks sourceBook, Nothing
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestTimeFormatLoopReadSideOnly", failedNumber, failedText
+End Sub
+
+
+'@sub-title Times the export when EVERY format cell carries a colour.
+'@details
+'THE WORST CASE FOR THE FORMAT LOOP, and the test that decides Session 126
+'step 3. The shared fixture colours ONE cell in 1260, so once the step 2 guard
+'skips the write on every unformatted cell there is almost nothing left to
+'batch, and a measurement taken on that fixture cannot answer whether batching
+'the writes into runs is worth the complexity.
+'
+'Here every cell of the seven format columns is given a fill, a font colour,
+'bold and italic, so EVERY guard passes and every write is issued. That is the
+'upper bound: a real dictionary a person has coloured by hand sits somewhere
+'between this and the shared fixture.
+'
+'Read it against "DataSheet.Export, SEVEN format columns" in the same run,
+'which is the same call over the same shape with the colours left alone.
+'@TestMethod("LLExporterTiming")
+Public Sub TestTimeDictionaryExportEveryCellFormatted()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTimeDictionaryExportEveryCellFormatted"
+    On Error GoTo TestFail
+
+    Dim sourceBook As Workbook
+    Dim targetBook As Workbook
+    Dim dict As LLdictionary
+    Dim formatNames As Variant
+    Dim colName As String
+    Dim sourceRng As Range
+    Dim counter As Long
+    Dim cellsPainted As Long
+    Dim startedAt As Double
+    Dim elapsed As Double
+    Dim failedNumber As Long
+    Dim failedText As String
+
+    Set sourceBook = TimingDictionaryWorkbook()
+    Set targetBook = NewWorkbook()
+    Set dict = LLdictionary.Create(sourceBook.Worksheets(DICTIONARY_SHEET), 1, 1, 5)
+
+    formatNames = Array("formatting condition", "formatting values", _
+                        "variable name", "control", "main label", _
+                        "lock cells", "dev comments")
+
+    'Paint every cell of every format column. This is arrange, not act, so it
+    'is outside the clock.
+    For counter = LBound(formatNames) To UBound(formatNames)
+        colName = CStr(formatNames(counter))
+
+        Set sourceRng = Nothing
+        On Error Resume Next
+        Set sourceRng = dict.Data.DataRange(colName, matchCase:=False)
+        On Error GoTo TestFail
+
+        If Not sourceRng Is Nothing Then
+            With sourceRng
+                .Interior.Color = 15773696
+                .Font.Color = 255
+                .Font.Bold = True
+                .Font.Italic = True
+            End With
+            cellsPainted = cellsPainted + sourceRng.Rows.Count
+        End If
+    Next counter
+
+    dict.Data.AddFormatsColumns False, True, _
+                                "formatting condition", "formatting values", _
+                                "variable name", "control", "main label", _
+                                "lock cells", "dev comments"
+
+    startedAt = Timer
+    dict.Data.Export toWkb:=targetBook, Hide:=xlSheetVisible
+    elapsed = ElapsedSince(startedAt)
+
+    Assert.IsTrue (cellsPainted > 0), "The worst-case fixture really was painted"
+
+    LogTiming "DataSheet.Export, SEVEN format columns, EVERY cell formatted (" & _
+              CStr(cellsPainted) & " cells)", elapsed
+
+    DropBooks sourceBook, targetBook
+    Exit Sub
+TestFail:
+    failedNumber = Err.Number
+    failedText = Err.Description
+    On Error Resume Next
+    DropBooks sourceBook, targetBook
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestTimeDictionaryExportEveryCellFormatted", failedNumber, failedText
+End Sub
+
+
 '@section Reporting
 '===============================================================================
 

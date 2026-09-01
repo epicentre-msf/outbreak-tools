@@ -1114,9 +1114,12 @@ Private Sub ApplyFormat(ByVal actRng As Range, ByVal impRng As Range)
 
     Dim cellRng As Range
     Dim actCellRng As Range
-    Dim lastRow As Long
+    Dim rowCount As Long
+    Dim counter As Long
     Dim interiorColor As Long
     Dim fontColor As Long
+    Dim isBold As Boolean
+    Dim isItalic As Boolean
 
     With actRng
         .Interior.ColorIndex = xlColorIndexNone
@@ -1125,19 +1128,23 @@ Private Sub ApplyFormat(ByVal actRng As Range, ByVal impRng As Range)
         .Font.Italic = False
     End With
 
+    'The count is read once and the loop is counted. The condition used to be
+    'Do While cellRng.Row <= lastRow, which asks a cell its own row number on
+    'every turn for a bound that cannot move while this runs.
+    rowCount = impRng.Rows.Count
+    If rowCount < 1 Then Exit Sub
+
     Set cellRng = impRng.Cells(1, 1)
     Set actCellRng = actRng.Cells(1, 1)
 
-    'The bound used to be measured from the worksheet on every single pass
-    'of the loop. It cannot move while this runs, so read it once.
-    lastRow = impRng.Cells(impRng.Rows.Count, 1).Row
+    For counter = 1 To rowCount
 
-    Do While (cellRng.Row <= lastRow)
-
-        'Read each source colour once. Reading Interior and Font again for
+        'Read each source property once. Reading Interior and Font again for
         'the assignment cost a second round trip per cell.
         interiorColor = cellRng.Interior.Color
         fontColor = cellRng.Font.Color
+        isBold = cellRng.Font.Bold
+        isItalic = cellRng.Font.Italic
 
         If (interiorColor <> vbWhite) Then
             actCellRng.Interior.color = interiorColor
@@ -1147,13 +1154,23 @@ Private Sub ApplyFormat(ByVal actRng As Range, ByVal impRng As Range)
             actCellRng.Font.color = fontColor
         End If
 
-        actCellRng.Font.Bold = cellRng.Font.Bold
-        actCellRng.Font.Italic = cellRng.Font.Italic
+        'Bold and Italic used to be written on every cell, unconditionally, and
+        'they were the odd ones out: both colours have always been guarded. The
+        'opening block above already sets both False across the whole
+        'destination range, so writing False here puts back a value that is
+        'already there, and on a dictionary almost every cell is neither bold
+        'nor italic.
+        'One difference this makes, and it is the only one: when impRng is
+        'LONGER than actRng the walk runs past the destination range, and those
+        'cells never got the opening block's False. They are outside the column
+        'being written and ImportFormat already logs that case as truncated.
+        If isBold Then actCellRng.Font.Bold = True
+        If isItalic Then actCellRng.Font.Italic = True
 
         'Move to the next cell
         Set cellRng = cellRng.Offset(1)
         Set actCellRng = actCellRng.Offset(1)
-    Loop
+    Next counter
 End Sub
 
 '@label:export

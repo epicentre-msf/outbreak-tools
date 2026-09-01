@@ -27,6 +27,8 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const DICTIONARYFIXTURESHEET As String = "LLDictTest"
 Private Const DICTOUTPUTSHEET As String = "DataOut"
 Private Const SPLITFILTERSHEET As String = "DataSplitFilter"
+Private Const FORMATSOURCESHEET As String = "DataFmtSource"
+Private Const FORMATTARGETSHEET As String = "DataFmtTarget"
 
 Private fixtureRowCount As Long
 Private fixtureColumnCount As Long
@@ -440,6 +442,112 @@ Public Sub TestExportIncludesHiddenNamesWhenRequested()
 Fail:
     If Not exportBook Is Nothing Then DeleteWorkbook exportBook
     CustomTestLogFailure Assert, "TestExportIncludesHiddenNamesWhenRequested", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("DataSheet")
+'@sub-title TestImportFormatCarriesOnlyNonDefaultValues
+'@details
+'PINS WHAT MAKES ApplyFormat NOT A STRAIGHT FORMAT COPY. Session 126, and it is
+'written before that session cuts anything, because both its cuts turn on this
+'behaviour and until now only ONE part of it was asserted anywhere:
+'`TestExport` checks that one interior colour survives an export. Font colour,
+'bold and italic travelling were pinned nowhere, and neither was the rule below.
+'
+'The rule, in three rows of one column:
+'  row 1  source fully formatted     -> all four values travel
+'  row 2  source left at the default -> the destination is CLEARED to the
+'                                       default, and the colour it carried of
+'                                       its own does NOT survive
+'  row 3  source bold and italic only -> those travel with no colour written
+'
+'Row 2 is the one worth having. `ApplyFormat` opens by clearing the whole
+'destination range, and only a non-default source value is written back, so a
+'destination colour on a row the source leaves default is GONE rather than kept.
+'That is easy to read the other way round from the routine's comment, and a
+'batching rewrite could quietly change it.
+Public Sub TestImportFormatCarriesOnlyNonDefaultValues()
+    CustomTestSetTitles Assert, "DataSheet", "TestImportFormatCarriesOnlyNonDefaultValues"
+    On Error GoTo Fail
+
+    Const SOURCE_FILL As Long = 15773696      'light blue
+    Const SOURCE_FONT As Long = 255           'red
+    Const TARGET_OWN_FILL As Long = 65535     'yellow, on the target only
+
+    Dim sourceSh As Worksheet
+    Dim targetSh As Worksheet
+    Dim sourceData As DataSheet
+    Dim targetData As DataSheet
+
+    'Arrange: one format column, three rows, on two sheets of this workbook.
+    Set sourceSh = EnsureWorksheet(FORMATSOURCESHEET)
+    Set targetSh = EnsureWorksheet(FORMATTARGETSHEET)
+    ClearWorksheet sourceSh
+    ClearWorksheet targetSh
+
+    sourceSh.Cells(1, 1).Value = "fmt"
+    sourceSh.Cells(2, 1).Value = "formatted"
+    sourceSh.Cells(3, 1).Value = "plain"
+    sourceSh.Cells(4, 1).Value = "weight only"
+
+    With sourceSh.Cells(2, 1)
+        .Interior.Color = SOURCE_FILL
+        .Font.Color = SOURCE_FONT
+        .Font.Bold = True
+        .Font.Italic = True
+    End With
+
+    With sourceSh.Cells(4, 1)
+        .Font.Bold = True
+        .Font.Italic = True
+    End With
+
+    targetSh.Cells(1, 1).Value = "fmt"
+    targetSh.Cells(2, 1).Value = "formatted"
+    targetSh.Cells(3, 1).Value = "plain"
+    targetSh.Cells(4, 1).Value = "weight only"
+
+    'The target carries a fill of its own on the row the source leaves default.
+    targetSh.Cells(3, 1).Interior.Color = TARGET_OWN_FILL
+
+    Set sourceData = DataSheet.Create(sourceSh, 1, 1)
+    Set targetData = DataSheet.Create(targetSh, 1, 1)
+    targetData.AddFormatsColumns False, True, "fmt"
+
+    'Act
+    targetData.ImportFormat sourceData
+
+    'Assert: everything non-default on the source row travels.
+    Assert.AreEqual SOURCE_FILL, CLng(targetSh.Cells(2, 1).Interior.Color), _
+                    "The source fill travels to the target"
+    Assert.AreEqual SOURCE_FONT, CLng(targetSh.Cells(2, 1).Font.Color), _
+                    "The source font colour travels to the target"
+    Assert.IsTrue targetSh.Cells(2, 1).Font.Bold, _
+                  "Bold travels to the target"
+    Assert.IsTrue targetSh.Cells(2, 1).Font.Italic, _
+                  "Italic travels to the target"
+
+    'Assert: the row the source leaves default is cleared, own colour and all.
+    Assert.AreEqual CLng(vbWhite), CLng(targetSh.Cells(3, 1).Interior.Color), _
+                    "A default source row clears the fill the target carried"
+    Assert.AreEqual CLng(vbBlack), CLng(targetSh.Cells(3, 1).Font.Color), _
+                    "A default source row leaves the target font black"
+    Assert.IsFalse targetSh.Cells(3, 1).Font.Bold, _
+                   "A default source row leaves the target not bold"
+    Assert.IsFalse targetSh.Cells(3, 1).Font.Italic, _
+                   "A default source row leaves the target not italic"
+
+    'Assert: bold and italic travel on their own, with no colour written.
+    Assert.IsTrue targetSh.Cells(4, 1).Font.Bold, _
+                  "Bold travels on a row that carries no colour"
+    Assert.IsTrue targetSh.Cells(4, 1).Font.Italic, _
+                  "Italic travels on a row that carries no colour"
+    Assert.AreEqual CLng(vbWhite), CLng(targetSh.Cells(4, 1).Interior.Color), _
+                    "A row with no source fill leaves the target unfilled"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestImportFormatCarriesOnlyNonDefaultValues", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("DataSheet")
