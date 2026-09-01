@@ -1539,6 +1539,17 @@ suites:
         covers: [ImportReport]
       - module: TestLLExporter
         covers: [LLExporter]
+      # TestLLExporterTiming is a MEASURING TOOL, not a behaviour suite, and it
+      # stays out of the loop on purpose, the way TestCustomTableTiming does.
+      # Every test in it drives a real export walk and logs the seconds into the
+      # results, so it reports numbers rather than pass or fail, and the numbers
+      # move with whatever else the machine is doing. It also builds a six-sheet
+      # source workbook per test, which is minutes the loop should not pay.
+      # Uncomment the row below to measure, read the TIMING lines out of the run
+      # CSV, then comment it back out. It is what the export and import speed
+      # block measures its changes against -- Sessions 117 to 125.
+#      - module: TestLLExporterTiming
+#        covers: [LLExporter]
       # TestLLImporter reaches DictionaryTestFixture, PasswordsTestFixture and,
       # since the geobase pair joined on 2026-08-12, GeoTestFixture -- all three
       # under helpers. That pair drives ImportGeobase over a geobase workbook of
