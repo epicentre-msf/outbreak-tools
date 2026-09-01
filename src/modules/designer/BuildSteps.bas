@@ -323,7 +323,7 @@ End Function
 
 '@Description("Save the linelist as .xlsb with its password and close it.")
 '@details
-'Linelist.SaveLL, which also empties the temporary repository. The state
+'Linelist.SaveLL, which also deletes the temporary folder. The state
 'objects are dropped here: the build is over, and a driver that wants the
 'totals reads BuildCounts, which survives.
 '@return String. "OK" or "ERROR <number> (<source>): <description>".

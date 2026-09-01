@@ -536,8 +536,10 @@ End Sub
 '@details
 'Saves the output workbook in .xlsb format with the configured password,
 'protects the workbook structure via Passwords.Protect, activates the sheet the
-'user should open the file on, closes the workbook and cleans up temporary files
-'via TemporaryRepos.Reset.
+'user should open the file on, closes the workbook and clears the working folder
+'via TemporaryRepos.Remove, which deletes the files and the folder itself. A
+'build that got this far keeps nothing, so nothing of OBTApp_ is left next to
+'the linelist.
 '
 'Both cached references to the workbook are dropped once it is closed. This
 'instance held one and LinelistSpecs held the other, and a read of either after
@@ -574,7 +576,7 @@ Public Sub SaveLL()
     Set this.outWkb = Nothing
     this.specs.ReleaseLLWorkbook
 
-    If Not this.tempRepos Is Nothing Then this.tempRepos.Reset
+    If Not this.tempRepos Is Nothing Then this.tempRepos.Remove
 End Sub
 
 '@label:activate-landing-sheet

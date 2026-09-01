@@ -23,19 +23,19 @@ Option Explicit
 'Create takes the base directory, or falls back to the default one. RootPath
 'answers the folder, EnsureReady creates it, and CreateFilePath builds a path
 'inside it from a file name it cleans first. DeleteFile removes one file,
-'DeleteAll empties the folder and creates it again, and Reset empties it and
-'marks the object as needing another EnsureReady. Terminating an instance
-'empties the folder.
+'DeleteAll empties the folder and creates it again, Reset empties it and
+'marks the object as needing another EnsureReady, and Remove empties it and
+'deletes the folder itself. Terminating an instance empties the folder.
 '
 'THE KEPT FILE
 '-------------------------------------------------------------------------------
 'A build that fails saves its unfinished workbook in this folder and drops
 'the instance right after. KeepFile marks one file name to survive that
 'drop: Class_Terminate deletes every other file and leaves the marked ones.
-'Reset and DeleteAll are explicit calls and wipe the folder whole, marks
-'included, so the next run that saves its linelist starts clean.
+'Reset, DeleteAll and Remove are explicit calls and wipe the folder whole,
+'marks included, so the next run that saves its linelist starts clean.
 '@depends ProjectError
-'@version 1.1 (2026-08-28)
+'@version 1.2 (2026-09-01)
 
 
 '@section State and constants
@@ -98,6 +98,28 @@ Public Sub Reset()
     DeleteAllInternal
     this.keptNames = vbNullString
     this.isReady = False
+End Sub
+
+'@label:remove
+'@sub-title Remove every file and the folder itself
+'@details
+'What Reset does, and then the folder goes too. A build that reached its
+'save calls this, so the working folder is not left behind next to the
+'linelist it wrote.
+'
+'The folder is removed only when it is empty. A removal the file system
+'refuses -- a file this class cannot see, a folder another program holds
+'open -- is left alone: the files this class wrote are gone either way,
+'and the next EnsureReady creates the folder again.
+'@export
+Public Sub Remove()
+    Reset
+
+    If LenB(this.rootPath) = 0 Then Exit Sub
+
+    On Error Resume Next
+        RmDir NormalizePath(this.rootPath, Application.PathSeparator)
+    On Error GoTo 0
 End Sub
 
 
