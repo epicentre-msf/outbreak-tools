@@ -301,6 +301,24 @@ Public Function HandleImportData(ByVal sourceWkb As Workbook, _
     impwb.Close savechanges:=False
     Set impwb = Nothing
 
+    ' THE ONE CALCULATION OF THE WALK, and it is here for three reasons. It is
+    ' after the last write, so nothing it computes is computed again. It is
+    ' after the import file is closed, so the pass does not walk that workbook
+    ' too. And it is before the busy state goes back: the restore puts the
+    ' calculation mode back to whatever the linelist was in, and a linelist held
+    ' in manual mode would otherwise never recalculate at all.
+    '
+    ' What it replaces: a UsedRange.Calculate per sheet inside ImportData, and
+    ' one more from ImportSingleValues. A file of ten data sheets recalculated
+    ' eleven times while it was still being written to.
+    '
+    ' A refused file was read no further and nothing was written, so it has
+    ' nothing to recalculate.
+    If Not refused Then
+        MarkWalkStep "recalculating the linelist"
+        impObj.RecalculateSheets
+    End If
+
     actsh.Activate
     appState.Restore
 

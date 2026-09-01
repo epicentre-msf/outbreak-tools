@@ -35,6 +35,8 @@ Option Explicit
 '  Choices             one list, list_correct_order, with three values
 '  __pass              the shared passwords fixture
 '  hlist2D-sheet1      a three-column ListObject, sheet_type HList
+'  vlist1D-sheet1      three label/value pairs from row 4, sheet_type VList,
+'                      the third of them a formula cell
 '  Custom dropdown     one dropdown named "contact type", registry-backed
 '  RNG_DictionaryLanguage, RNG_CustomDrop, RNG_EpiWeekStart
 '
@@ -44,6 +46,7 @@ Option Explicit
 '  Dictionary          the same fixture with one main label rewritten
 '  Choices             list_correct_order with a fourth value, and the dropdown
 '  hlist2D-sheet1      the three columns, a fourth the linelist lacks, two rows
+'  vlist1D-sheet1      the three pairs, plus a name the linelist has no range for
 '  ghost-sheet         a worksheet the linelist has none of
 '
 'WHAT THE GEOBASE FIXTURE CARRIES
@@ -160,6 +163,24 @@ Private Const TABLE_START_SUFFIX As String = "_START"
 'parses anything that looks like a date and reads it back in the host's own
 'format, so a date literal here asserts the locale rather than the import.
 Private Const FIRST_ROW_VALUE As String = "row-one"
+
+'The VList data entry sheet, and where it keeps its pairs: the label in column D
+'and the cell that holds the value beside it, from row 4 down. Three of the
+'vlist1D-sheet1 variables of the dictionary fixture get a pair, and one of the
+'three holds a formula, because a VList value cell does whenever its variable
+'carries a formula, case_when or choice_formula control. The fourth name is in
+'the file alone, so the sheet has no range for it.
+Private Const VLIST_SHEET As String = "vlist1D-sheet1"
+Private Const VLIST_FIRST_ROW As Long = 4
+Private Const VLIST_LABEL_COLUMN As Long = 4
+Private Const VLIST_VALUE_COLUMN As Long = 5
+Private Const VLIST_VAR_ONE As String = "choi_v1"
+Private Const VLIST_VAR_TWO As String = "mand_v1"
+Private Const VLIST_VAR_FORMULA As String = "form_v1"
+Private Const VLIST_VAR_ABSENT As String = "not_a_variable_v1"
+Private Const VLIST_TYPED_VALUE As String = "typed-by-hand"
+Private Const VLIST_FILE_VALUE As String = "from-the-file"
+Private Const VLIST_FORMULA As String = "=1+1"
 
 
 '@section Lifecycle
@@ -506,6 +527,113 @@ Public Sub TestImportDataWritesTheRows()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestImportDataWritesTheRows", Err.Number, Err.Description
+End Sub
+
+'@sub-title A VList value lands, and a formula cell is left standing.
+'@details
+'ImportVListSheet read the file a cell at a time -- two Value reads per row off
+'the used range -- and now reads the whole block once and walks the array. What
+'must not change is which value reaches which named cell, that a cell holding a
+'formula is passed over, and that a name the sheet has no range for is filed.
+'
+'The formula cell is the one worth having: the block read changed how the value
+'is fetched, and the HasFormula guard is what stands between an import and a
+'deleted formula.
+'@TestMethod("LLImporter")
+Public Sub TestAVListValueLandsAndAFormulaIsLeftAlone()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAVListValueLandsAndAFormulaIsLeftAlone"
+    If Not FixtureReady("TestAVListValueLandsAndAFormulaIsLeftAlone") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim impObj As LLImporter
+    Dim notImported As BetterArray
+    Dim entry As Variant
+    Dim counter As Long
+    Dim found As Boolean
+
+    ResetHListSheet
+    ResetVListSheet
+
+    Set impObj = FixtureImporter()
+    impObj.ImportData ImportWorkbook, False, ImportMetadataOfFile()
+
+    Assert.AreEqual VLIST_FILE_VALUE, CStr(VListCell(VLIST_VAR_ONE).Value), _
+                    "The file's value reaches the first named VList cell"
+    Assert.AreEqual VLIST_FILE_VALUE, CStr(VListCell(VLIST_VAR_TWO).Value), _
+                    "And the second"
+
+    Assert.IsTrue VListCell(VLIST_VAR_FORMULA).HasFormula, _
+                  "A VList cell holding a formula still holds one after the import"
+    Assert.AreEqual "2", CStr(VListCell(VLIST_VAR_FORMULA).Value), _
+                    "And the formula still answers what it computed"
+
+    Set notImported = impObj.ReportVariables(ImportReportNotImported)
+    For counter = notImported.LowerBound To notImported.UpperBound
+        entry = notImported.Item(counter)
+        If CStr(entry(LBound(entry))) = VLIST_VAR_ABSENT Then found = True
+    Next counter
+
+    Assert.IsTrue found, _
+                  "A name of the file the VList sheet has no range for is filed"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAVListValueLandsAndAFormulaIsLeftAlone", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Clearing empties the typed cells of both sheet kinds and keeps the formulas.
+'@details
+'ClearData walked an HList a column at a time and a VList a row at a time, three
+'crossings each. It now reads the formulas of each sheet as one block and clears
+'the runs of cells between them, which is a different way of deciding what to
+'clear and the same answer.
+'
+'The HList formula sits in the MIDDLE column on purpose. That is the case that
+'exercises both arms of the run walk: the run before it has to be closed and
+'cleared when the formula column is met, and the run after it has to be cleared
+'once the loop has ended. A formula in the last column would leave the second
+'arm unvisited.
+'@TestMethod("LLImporter")
+Public Sub TestClearingKeepsTheFormulasAndEmptiesTheRest()
+    CustomTestSetTitles Assert, TESTMODULE, "TestClearingKeepsTheFormulasAndEmptiesTheRest"
+    If Not FixtureReady("TestClearingKeepsTheFormulasAndEmptiesTheRest") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim impObj As LLImporter
+    Dim lo As ListObject
+    Dim sh As Worksheet
+
+    ResetHListSheet
+    ResetVListSheet
+
+    Set sh = FixtureWorkbook.Worksheets(HLIST_SHEET)
+    Set lo = sh.ListObjects(HLIST_TABLE)
+    lo.DataBodyRange.Cells(1, 1).Value = "typed one"
+    lo.DataBodyRange.Cells(1, 2).Formula = VLIST_FORMULA
+    lo.DataBodyRange.Cells(1, 3).Value = "typed three"
+
+    Set impObj = FixtureImporter()
+    impObj.ClearData
+
+    Assert.AreEqual vbNullString, CStr(lo.DataBodyRange.Cells(1, 1).Value), _
+                    "The typed column before the formula is emptied"
+    Assert.IsTrue lo.DataBodyRange.Cells(1, 2).HasFormula, _
+                  "The formula column of the table is left standing"
+    Assert.AreEqual vbNullString, CStr(lo.DataBodyRange.Cells(1, 3).Value), _
+                    "The typed column after the formula is emptied"
+
+    Assert.AreEqual vbNullString, CStr(VListCell(VLIST_VAR_ONE).Value), _
+                    "The typed VList cell is emptied"
+    Assert.AreEqual vbNullString, CStr(VListCell(VLIST_VAR_TWO).Value), _
+                    "And the one under it"
+    Assert.IsTrue VListCell(VLIST_VAR_FORMULA).HasFormula, _
+                  "The VList cell holding a formula is left standing"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestClearingKeepsTheFormulasAndEmptiesTheRest", _
+                         Err.Number, Err.Description
 End Sub
 
 '@sub-title A column of the file the linelist has no variable for is reported.
@@ -1361,6 +1489,7 @@ Private Sub BuildLinelistFixture()
 
     BuildLinelistChoices
     BuildHListSheet
+    BuildVListSheet
     BuildCustomDropdown
 
     Set store = HiddenNames.Create(FixtureWorkbook)
@@ -1576,6 +1705,82 @@ Private Sub UnprotectHListSheet()
     On Error GoTo 0
 End Sub
 
+'@sub-title Write the VList data entry worksheet of the linelist.
+'@details
+'A VList sheet keeps a label in column D and the cell that holds the value
+'beside it, and the value cell carries the variable's own defined name. That
+'shape is what LLImporter.ClearData walks and what ImportVListSheet resolves
+'each name against.
+'
+'The sheet_type name is written once here; the pairs themselves are written by
+'ResetVListSheet, which every test that touches them calls, so the order the
+'tests run in decides nothing.
+Private Sub BuildVListSheet()
+    Dim sh As Worksheet
+    Dim store As HiddenNames
+
+    Set sh = EnsureWorksheet(VLIST_SHEET, FixtureWorkbook, clearSheet:=True)
+
+    Set store = HiddenNames.Create(sh)
+    store.EnsureName "sheet_type", "VList", HiddenNameTypeString
+    store.SetValue "sheet_type", "VList"
+
+    ResetVListSheet
+End Sub
+
+'@sub-title Write the three label/value pairs of the VList sheet again.
+'@details
+'Two cells hold typed values and the third holds a formula, so a routine that
+'clears or overwrites the column can be caught keeping the formula or losing it.
+'The names are assigned again on every reset: they point at the same three cells
+'every time, and a name is what ImportVListSheet resolves.
+Private Sub ResetVListSheet()
+    Dim sh As Worksheet
+
+    Set sh = FixtureWorkbook.Worksheets(VLIST_SHEET)
+    UnprotectFixtureSheet sh
+
+    sh.Range(sh.Cells(VLIST_FIRST_ROW, VLIST_LABEL_COLUMN), _
+             sh.Cells(VLIST_FIRST_ROW + 10, VLIST_VALUE_COLUMN)).ClearContents
+
+    WriteRow sh.Cells(VLIST_FIRST_ROW, VLIST_LABEL_COLUMN), _
+             "Choices on vlist1D", VLIST_TYPED_VALUE
+    WriteRow sh.Cells(VLIST_FIRST_ROW + 1, VLIST_LABEL_COLUMN), _
+             "Mandatory on vlist1D", VLIST_TYPED_VALUE
+
+    sh.Cells(VLIST_FIRST_ROW + 2, VLIST_LABEL_COLUMN).Value = "Formula on vlist1D"
+    sh.Cells(VLIST_FIRST_ROW + 2, VLIST_VALUE_COLUMN).Formula = VLIST_FORMULA
+
+    sh.Cells(VLIST_FIRST_ROW, VLIST_VALUE_COLUMN).Name = VLIST_VAR_ONE
+    sh.Cells(VLIST_FIRST_ROW + 1, VLIST_VALUE_COLUMN).Name = VLIST_VAR_TWO
+    sh.Cells(VLIST_FIRST_ROW + 2, VLIST_VALUE_COLUMN).Name = VLIST_VAR_FORMULA
+End Sub
+
+'@fun-title The value cell of one VList variable.
+'@param varName String. The variable name the cell is named after.
+'@return Range. The named cell.
+Private Function VListCell(ByVal varName As String) As Range
+    Set VListCell = FixtureWorkbook.Worksheets(VLIST_SHEET).Range(varName)
+End Function
+
+'@sub-title Open one fixture worksheet for writing.
+'@details
+'The import and the clear both protect the sheets they touch on their way out,
+'and a protected sheet takes neither a ClearContents nor a cell write. Both
+'routes are tried, the way UnprotectHListSheet does: the Passwords object is
+'what protected it, and the raw Unprotect covers a passwords fixture that could
+'not be built.
+'@param sh Worksheet. The sheet to open.
+Private Sub UnprotectFixtureSheet(ByVal sh As Worksheet)
+    Dim pass As Passwords
+
+    On Error Resume Next
+        Set pass = Passwords.Create(FixtureWorkbook.Worksheets(PASSWORD_SHEET))
+        If Not pass Is Nothing Then pass.UnProtect sh.Name
+        If sh.ProtectContents Then sh.Unprotect
+    On Error GoTo 0
+End Sub
+
 '@sub-title Build the custom dropdown worksheet and register one dropdown.
 Private Sub BuildCustomDropdown()
     Dim sh As Worksheet
@@ -1626,6 +1831,7 @@ Private Sub BuildImportFixture()
 
     BuildImportChoices
     BuildImportDataSheet
+    BuildImportVListSheet
     BuildGhostSheet
 End Sub
 
@@ -1742,6 +1948,23 @@ Private Sub BuildImportDataSheet()
     WriteRow sh.Cells(1, 1), VAR_ONE, VAR_TWO, VAR_THREE, VAR_ABSENT
     WriteRow sh.Cells(2, 1), FIRST_ROW_VALUE, 11, "A", "dropped"
     WriteRow sh.Cells(3, 1), "row-two", 12, "B", "dropped"
+End Sub
+
+'@sub-title Write the VList worksheet of the import file.
+'@details
+'The shape LLExporter.ExportVListData writes: a variable/value header on row 1
+'and one row per variable under it. The fourth row names a variable the linelist
+'sheet has no range for, so the walk has something to file as not imported.
+Private Sub BuildImportVListSheet()
+    Dim sh As Worksheet
+
+    Set sh = EnsureWorksheet(VLIST_SHEET, ImportWorkbook, clearSheet:=True)
+
+    WriteRow sh.Cells(1, 1), "variable", "value"
+    WriteRow sh.Cells(2, 1), VLIST_VAR_ONE, VLIST_FILE_VALUE
+    WriteRow sh.Cells(3, 1), VLIST_VAR_TWO, VLIST_FILE_VALUE
+    WriteRow sh.Cells(4, 1), VLIST_VAR_FORMULA, VLIST_FILE_VALUE
+    WriteRow sh.Cells(5, 1), VLIST_VAR_ABSENT, VLIST_FILE_VALUE
 End Sub
 
 '@sub-title Write a worksheet the linelist has no match for.

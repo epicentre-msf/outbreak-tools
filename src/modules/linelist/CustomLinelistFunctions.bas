@@ -30,9 +30,16 @@ End Enum
 'HiddenNames written once when the linelist is built (RNG_Week, RNG_Quarter,
 'RNG_InfoStart, RNG_InfoEnd), and from RNG_EpiWeekStart. The two places that
 'write RNG_EpiWeekStart at run time -- FormLogicEpiWeek.RecomputeAndUpdate and
-'LLImporter.ImportSingleValues -- each run UsedRange.Calculate over every sheet
-'tag that can hold one of these formulas, and that forces a clean cell as well.
-'So they recalculate on their own arguments and carry no Volatile call.
+'LLImporter.ImportSingleValues -- each end in a UsedRange.Calculate over every
+'sheet tag that can hold one of these formulas, and that forces a clean cell as
+'well. So they recalculate on their own arguments and carry no Volatile call.
+'
+'ON THE IMPORT SIDE THAT PASS MOVED, and it is worth knowing where. It used to
+'sit inside ImportSingleValues itself. Since the import walk was cut down to one
+'calculation, LinelistRun.HandleImportData calls LLImporter.RecalculateSheets
+'once after its last write instead, and that is the same list of sheet tags.
+'Anything that comes to write RNG_EpiWeekStart by another road has to run that
+'pass itself, or these formulas keep showing the old week.
 '
 'One read still to fix: GetAgg reads the sheet tag of ActiveSheet, so the four
 'functions that go through it answer for whatever sheet is on screen. Leaving

@@ -73,6 +73,13 @@ Private Const PRINTPREFIX As String = "print_"
 Private Const CRFPREFIX As String = "crf_"
 Private Const RNGEPIWEEKSTART As String = "RNG_EpiWeekStart"
 
+'Where a VList data entry sheet keeps its pairs: the label in column D and the
+'cell that holds the value beside it, from row 4 down. ClearData walked those
+'three numbers by hand.
+Private Const VLIST_FIRST_ROW As Long = 4
+Private Const VLIST_LABEL_COLUMN As Long = 4
+Private Const VLIST_VALUE_COLUMN As Long = 5
+
 
 '@section State
 '===============================================================================
@@ -377,19 +384,35 @@ End Function
 '@label:clear-data
 '@sub-title Clear all user-entered data from HList and VList sheets
 '@details
-'Iterates over all worksheets in the source workbook. For HList sheets,
-'clears non-formula column values from the ListObject data body. For
-'VList sheets, clears non-formula named range values. Unprotects and
-'re-protects each sheet via Passwords.
+'Walks every worksheet of the source workbook. An HList sheet has the constant
+'cells of its table body cleared and its formula columns left standing; a VList
+'sheet has the constant cells of its value column cleared the same way. Each
+'sheet is unprotected and protected again through Passwords.
+'
+'WHAT IT COST BEFORE
+'-------------------------------------------------------------------------------
+'An HList paid three crossings per column: one to resolve
+'ListColumns(n).DataBodyRange, one to read HasFormula off its first cell and one
+'to ClearContents. A VList paid three per ROW: the IsEmpty test on the label, an
+'Offset onto the value cell and a HasFormula read on it, one row at a time down
+'column D. A wide table and a long VList sheet both paid for every one of them.
+'
+'Now each sheet reads its formulas as one block and clears the runs of cells
+'between them. A table of 200 columns with no formula in it goes from about 600
+'crossings to two.
+'
+'ONE CALCULATION, AT THE END
+'-------------------------------------------------------------------------------
+'There was a `lo.Range.Calculate` per table and a `sh.UsedRange.Calculate` per
+'VList sheet, so a workbook of ten data sheets recalculated ten times while it
+'was being emptied. The clear is one walk and it recalculates once, after the
+'last cell is cleared. RecalculateSheets is the same pass the import walk uses.
 '@export
 Public Sub ClearData()
 
     Dim sh As Worksheet
     Dim pass As Passwords
     Dim lo As ListObject
-    Dim valueRng As Range
-    Dim labelRng As Range
-    Dim counter As Long
     Dim actsh As Worksheet
 
     Set pass = PasswordsObject()
@@ -402,37 +425,200 @@ Public Sub ClearData()
         Case "HList"
             pass.UnProtect sh.Name
             Set lo = sh.ListObjects(1)
-
-            If Not lo.DataBodyRange Is Nothing Then
-                For counter = 1 To lo.DataBodyRange.Columns.Count
-                    Set valueRng = lo.ListColumns(counter).DataBodyRange
-                    If Not valueRng.Cells(1, 1).HasFormula Then
-                        valueRng.ClearContents
-                    End If
-                Next counter
-                lo.Range.Calculate
-            End If
-
+            If Not lo.DataBodyRange Is Nothing Then _
+                ClearConstantsAcross lo.DataBodyRange
             pass.Protect sh.Name
 
         Case "VList"
             pass.UnProtect sh.Name
-            Set labelRng = sh.Cells(4, 4)
-
-            Do While Not IsEmpty(labelRng)
-                Set valueRng = labelRng.Offset(, 1)
-                If Not valueRng.HasFormula Then valueRng.ClearContents
-                Set labelRng = labelRng.Offset(1)
-            Loop
-
-            sh.UsedRange.Calculate
+            ClearVListValues sh
             pass.Protect sh.Name
 
         End Select
     Next sh
 
+    RecalculateSheets
     actsh.Activate
 End Sub
+
+'@label:clear-constants-across
+'@sub-title Clear the constant columns of a table body, formula columns kept
+'@details
+'The first body row is read as one block, and a column whose first cell holds a
+'formula is kept. That is the reading the per-column HasFormula read made too: a
+'table column holds one formula all the way down or none at all.
+'
+'A column that LOOKS like a formula is confirmed with one HasFormula read before
+'it is kept. Range.Formula answers the text of a cell that holds "=abc" behind a
+'leading apostrophe as well, and a false reading there would leave a column of
+'typed data standing after the user asked for it to be deleted. Formula columns
+'are the few, so the confirmation costs a crossing for each of them and nothing
+'for the rest.
+'@param bodyRng Range. The data body of the table.
+Private Sub ClearConstantsAcross(ByVal bodyRng As Range)
+
+    Dim formulaText As Variant
+    Dim columnCount As Long
+    Dim runStart As Long
+    Dim counter As Long
+
+    columnCount = bodyRng.Columns.count
+    formulaText = FormulaBlockOf(bodyRng.Rows(1))
+
+    runStart = 0
+    For counter = 1 To columnCount
+        If LooksLikeFormula(formulaText, counter) And _
+           bodyRng.Cells(1, counter).HasFormula Then
+            If runStart > 0 Then
+                bodyRng.Columns(runStart).Resize(, counter - runStart).ClearContents
+                runStart = 0
+            End If
+        ElseIf runStart = 0 Then
+            runStart = counter
+        End If
+    Next counter
+
+    If runStart > 0 Then _
+        bodyRng.Columns(runStart).Resize(, columnCount - runStart + 1).ClearContents
+End Sub
+
+'@label:clear-vlist-values
+'@sub-title Clear the value column of a VList sheet, formula cells kept
+'@details
+'The labels of column D are read as one block and walked to the first empty one,
+'which is where the cell-at-a-time loop stopped as well. Reading to the end of
+'the used range instead would empty cells below a gap that the loop never
+'reached, so the block is walked the same way rather than to its end.
+'
+'The value column is then cleared in runs, the formula cells left standing. The
+'audit asked for the column to be cleared in one call; it cannot be. A VList
+'value cell holds a formula whenever its variable carries a formula, case_when
+'or choice_formula control, and one call over the column would delete every one
+'of them.
+'@param sh Worksheet. The VList data entry sheet.
+Private Sub ClearVListValues(ByVal sh As Worksheet)
+
+    Dim labels As Variant
+    Dim lastRow As Long
+    Dim stopRow As Long
+    Dim counter As Long
+
+    lastRow = sh.UsedRange.Row + sh.UsedRange.Rows.count - 1
+    If lastRow < VLIST_FIRST_ROW Then Exit Sub
+
+    labels = ColumnBlockOf(sh.Range(sh.Cells(VLIST_FIRST_ROW, VLIST_LABEL_COLUMN), _
+                                    sh.Cells(lastRow, VLIST_LABEL_COLUMN)))
+
+    stopRow = VLIST_FIRST_ROW - 1
+    For counter = LBound(labels) To UBound(labels)
+        If IsEmpty(labels(counter)) Then Exit For
+        stopRow = VLIST_FIRST_ROW + counter - 1
+    Next counter
+
+    If stopRow < VLIST_FIRST_ROW Then Exit Sub
+
+    ClearConstantsDown sh.Range(sh.Cells(VLIST_FIRST_ROW, VLIST_VALUE_COLUMN), _
+                                sh.Cells(stopRow, VLIST_VALUE_COLUMN))
+End Sub
+
+'@label:clear-constants-down
+'@sub-title Clear the constant cells of one column, formula cells kept
+'@param colRng Range. The single column to clear.
+Private Sub ClearConstantsDown(ByVal colRng As Range)
+
+    Dim formulaText As Variant
+    Dim rowCount As Long
+    Dim runStart As Long
+    Dim counter As Long
+
+    rowCount = colRng.Rows.count
+    formulaText = FormulaBlockOf(colRng)
+
+    runStart = 0
+    For counter = 1 To rowCount
+        If LooksLikeFormula(formulaText, counter) And _
+           colRng.Cells(counter, 1).HasFormula Then
+            If runStart > 0 Then
+                colRng.Cells(runStart, 1).Resize(counter - runStart, 1).ClearContents
+                runStart = 0
+            End If
+        ElseIf runStart = 0 Then
+            runStart = counter
+        End If
+    Next counter
+
+    If runStart > 0 Then _
+        colRng.Cells(runStart, 1).Resize(rowCount - runStart + 1, 1).ClearContents
+End Sub
+
+'@fun-title The formulas of a single row or a single column, read in one go
+'@details
+'A range of one cell answers a scalar rather than an array, so that arm is read
+'on its own. The answer is always a 1-based array whatever the range's own
+'address is.
+'@param rng Range. One row, or one column.
+'@return Variant. A 1-based array of formula text.
+Private Function FormulaBlockOf(ByVal rng As Range) As Variant
+
+    Dim block As Variant
+    Dim values() As Variant
+    Dim itemCount As Long
+    Dim counter As Long
+    Dim goingDown As Boolean
+
+    goingDown = (rng.Rows.count > 1)
+    itemCount = IIf(goingDown, rng.Rows.count, rng.Columns.count)
+    ReDim values(1 To itemCount)
+
+    If itemCount = 1 Then
+        values(1) = rng.Cells(1, 1).Formula
+    Else
+        block = rng.Formula
+        For counter = 1 To itemCount
+            If goingDown Then
+                values(counter) = block(counter, 1)
+            Else
+                values(counter) = block(1, counter)
+            End If
+        Next counter
+    End If
+
+    FormulaBlockOf = values
+End Function
+
+'@fun-title The values of one column, read in one go
+'@param rng Range. The single column to read.
+'@return Variant. A 1-based array of the cell values.
+Private Function ColumnBlockOf(ByVal rng As Range) As Variant
+
+    Dim block As Variant
+    Dim values() As Variant
+    Dim rowCount As Long
+    Dim counter As Long
+
+    rowCount = rng.Rows.count
+    ReDim values(1 To rowCount)
+
+    If rowCount = 1 Then
+        values(1) = rng.Cells(1, 1).Value
+    Else
+        block = rng.Value
+        For counter = 1 To rowCount
+            values(counter) = block(counter, 1)
+        Next counter
+    End If
+
+    ColumnBlockOf = values
+End Function
+
+'@fun-title Whether one entry of a formula block reads as a formula
+'@param formulaText Variant. A block answered by FormulaBlockOf.
+'@param index Long. Which entry to test.
+'@return Boolean. True when the text begins with an equals sign.
+Private Function LooksLikeFormula(ByVal formulaText As Variant, _
+                                  ByVal index As Long) As Boolean
+    LooksLikeFormula = (Left$(CStr(formulaText(index)), 1) = "=")
+End Function
 
 '@label:import-data
 '@sub-title Import data from HList and VList worksheets
@@ -492,10 +678,11 @@ Public Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean, _
 
             End Select
 
-            ' Recalculate after import
-            On Error Resume Next
-            currsh.UsedRange.Calculate
-            On Error GoTo 0
+            'NO CALCULATION HERE. It used to run currsh.UsedRange.Calculate per
+            'sheet, so a file carrying ten data sheets recalculated ten times
+            'while it was still being written to, and the save at the end paid
+            'another full pass on top. The walk calls RecalculateSheets once,
+            'after its last write. LinelistRun.HandleImportData is where.
 
         ElseIf Not IsReservedSheet(impsh.Name) Then
             ' Sheet from import not found in current workbook
@@ -874,17 +1061,35 @@ Public Sub ImportSingleValues(ByVal meta As ImportMetadata)
     Set wkbNames = HiddenNames.Create(this.sourceWkb)
     wkbNames.SetValue RNGEPIWEEKSTART, varValue
 
-    RecalculateEpiWeekSheets
+    'NO CALCULATION HERE EITHER, and this one has a reader to warn. The epiweek
+    'and date functions of CustomLinelistFunctions are deliberately not
+    'volatile: they read RNG_EpiWeekStart, and what used to bring Excel back to
+    'them after this write was the RecalculateEpiWeekSheets call that stood on
+    'this line. The walk runs the same pass once at its end instead, so the
+    'guarantee is unchanged and the note in CustomLinelistFunctions names the
+    'new caller. A future caller of ImportSingleValues that is NOT the import
+    'walk has to call RecalculateSheets itself.
 End Sub
 
-'@label:recalculate-epi-week-sheets
-'@sub-title Recompute every sheet whose formulas read the epiweek start
+'@label:recalculate-sheets
+'@sub-title Recompute every data and analysis sheet, once
 '@details
-'Each epiweek formula in the workbook reads RNG_EpiWeekStart, so changing that
-'value leaves every one of them showing the old week until the sheet is
-'recalculated. FormLogicEpiWeek does the same after the user picks a day, and
-'this is the same list of sheet tags.
-Private Sub RecalculateEpiWeekSheets()
+'THE ONE CALCULATION OF A WALK. ClearData calls it when it has emptied the last
+'sheet, and LinelistRun.HandleImportData calls it after its last write and
+'before the busy state goes back. It used to run per sheet inside ImportData,
+'per table and per VList sheet inside ClearData, and once more from
+'ImportSingleValues, so one import recalculated the workbook many times over.
+'
+'WHY THE LIST OF TAGS IS WHAT IT IS
+'-------------------------------------------------------------------------------
+'Every epiweek formula reads RNG_EpiWeekStart, and the date and validation
+'functions of CustomLinelistFunctions carry no Application.Volatile call on
+'purpose -- the note at the head of that module says so, and says that this pass
+'is what brings Excel back to them. So the tags here have to keep covering every
+'sheet that can hold one of those formulas. FormLogicEpiWeek runs the same list
+'after the user picks a day.
+'@export
+Public Sub RecalculateSheets()
 
     Dim sh As Worksheet
     Dim tagValues As BetterArray
@@ -1573,23 +1778,48 @@ End Function
 '@label:import-vlist-sheet
 '@sub-title Import VList data from a single import sheet to the current sheet
 '@details
-'Iterates over the import sheet used range rows, resolving each variable
-'name to a named range on the current sheet. Copies the value when the
-'target cell has no formula. Tracks variables not found as "not imported"
-'report entries.
+'Walks the rows of the import sheet, resolves each variable name to a named
+'range on the current sheet and copies the value across when the target cell
+'holds no formula. A name the sheet has no range for is filed as "not imported".
+'
+'THE FILE IS READ IN ONE BLOCK
+'-------------------------------------------------------------------------------
+'It used to read usedRng.Cells(counter, 1).Value and usedRng.Cells(counter, 2)
+'.Value off the worksheet a row at a time, so a VList of 300 variables paid 600
+'crossings to read a file it could have read in one. The block is read once and
+'the walk answers from the array; the writes stay one per variable, because each
+'one lands on a named cell of its own somewhere on the sheet.
+'
+'The block is indexed the way usedRng.Cells was, relative to the top left of the
+'used range rather than to A1, so a file whose used range does not start at A1
+'is read exactly where it was read before.
+'
+'A file of one row carries its header and nothing else, and a file of one column
+'carries names with no value column beside them. Range.Value answers a scalar
+'for the first and the walk never starts; the second used to read the cell to
+'the right of the used range, which is empty, so an absent value column reads as
+'an empty value here too.
 '@param currsh Worksheet. The current source VList worksheet.
 '@param impsh Worksheet. The import VList worksheet.
 Private Sub ImportVListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet)
 
     Dim usedRng As Range
     Dim vlistRng As Range
+    Dim block As Variant
     Dim varName As String
+    Dim rowCount As Long
+    Dim hasValueColumn As Boolean
     Dim counter As Long
 
     Set usedRng = impsh.UsedRange
+    rowCount = usedRng.Rows.count
+    If rowCount < 2 Then Exit Sub
 
-    For counter = 2 To usedRng.Rows.Count
-        varName = CStr(usedRng.Cells(counter, 1).Value)
+    block = usedRng.Value
+    hasValueColumn = (usedRng.Columns.count > 1)
+
+    For counter = 2 To rowCount
+        varName = CStr(block(counter, 1))
 
         Set vlistRng = Nothing
         On Error Resume Next
@@ -1600,9 +1830,11 @@ Private Sub ImportVListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet
             ' Variable from import not found in current sheet
             this.varsNotImported.Push Array(varName, impsh.Name)
             this.needReport = True
-        Else
-            If Not vlistRng.HasFormula Then
-                vlistRng.Value = usedRng.Cells(counter, 2).Value
+        ElseIf Not vlistRng.HasFormula Then
+            If hasValueColumn Then
+                vlistRng.Value = block(counter, 2)
+            Else
+                vlistRng.Value = vbNullString
             End If
         End If
 
@@ -1659,7 +1891,7 @@ End Sub
 'name asked for, with no instance behind it. HiddenNames.Create walks every
 'tracked name of the sheet first and reads three properties off each, and a data
 'entry sheet holds hundreds of names. This routine runs once per sheet in
-'ClearData, ImportData and RecalculateEpiWeekSheets, so the walk was paid three
+'ClearData, ImportData and RecalculateSheets, so the walk was paid three
 'times over the workbook for one string each time.
 'LLExporter.SheetTagOf reads the same two keys the same way.
 'A sheet that carries no such name answers the empty string, which is what the
