@@ -18,8 +18,8 @@ Option Explicit
 '   The show/hide speed block (`.obt/implementations.md` Sessions 127 to 132)
 '   changes five calls one session at a time: ShowHide.Create, ShowHideStore.Load,
 '   ShowHide.Apply, ShowHideStore.Save and SectionMap.Create. This module times
-'   each of them on the same fixture, so a session can be read against the one
-'   before it. To compare two versions of a class, run this module, check the
+'   each of them on the same fixture, and one sheet of a layout restore as the
+'   walk pays them, so a session can be read against the one before it. To compare two versions of a class, run this module, check the
 '   other version out, run it again, and put the file back. Nothing here touches
 '   a private member, so the same module compiles against both.
 '
@@ -72,6 +72,9 @@ Private Const TIMED_SHEET As String = "timing-sheet"
 Private Const OTHER_SHEET_PREFIX As String = "timing-other"
 Private Const STORE_SHEET As String = "__show_hide"
 Private Const SECTIONS_SHEET As String = "timing-sections"
+
+'The saved layout TestTimeLayoutRestoreWalk writes and reads back
+Private Const WALK_LAYOUT_NAME As String = "timing-layout"
 
 'What the dictionary calls a horizontal data entry sheet
 Private Const HLIST_TYPE As String = "hlist2D"
@@ -262,6 +265,172 @@ Public Sub TestTimeApplySaveLoad()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestTimeApplySaveLoad", Err.Number, Err.Description
+End Sub
+
+'@sub-title Times one sheet of a layout restore: named Load, Apply, Save.
+'@details
+'HandleRestoreShowHideLayout pays this per layered sheet, S times over, and
+'Session 132 reads the split to decide its two levers. The saved layout hides
+'H entries; the sheet and the current state show everything, so Apply has D = H
+'positions to write and N to read first:
+'
+'  restore load, with sizes     a table read and N size writes (writeSizes:=True,
+'                               because a restore's sizes come from the store)
+'  restore apply                N reads, then H hidden writes
+'  restore save                 a table read and a table write; the sizes come
+'                               from what the load kept, so no column is revealed
+'  restore load, table read     the same Load with writeSizes:=False, so the
+'                               table read stands apart from the N size writes
+'  ... rows in the store       the table read and the save again once the
+'                               store holds a full set of saved layouts, since
+'                               a real store grows with S and with the layouts
+'  RowCount, LayoutNames,      three calls that only read the table and walk
+'  HasLayout, Clear             every row of it, so what a walk of the block
+'                               costs stands apart from what Load and Save
+'                               spend on top of it
+'
+'The first lever (one table read and one table write for the whole walk) is
+'worth S times the table-read and table-write numbers; the second (hidden
+'writes grouped by address) is worth what the apply line pays over its N reads.
+'@TestMethod("ShowHideTiming")
+Public Sub TestTimeLayoutRestoreWalk()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTimeLayoutRestoreWalk"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim entries As ShowHide
+    Dim current As ShowHide
+    Dim fresh As ShowHide
+    Dim again As ShowHide
+    Dim layout As ShowHideLayout
+    Dim store As ShowHideStore
+    Dim hiddenCount As Long
+    Dim matched As Long
+    Dim applied As Long
+    Dim startedAt As Double
+    Dim elapsed As Double
+    Dim walkSeconds As Double
+    Dim layoutIndex As Long
+    Dim grownRows As Long
+
+    If Not FixtureReady("TestTimeLayoutRestoreWalk") Then Exit Sub
+
+    Set sh = FixtureWorkbook.Worksheets(TIMED_SHEET)
+    ResetSheetGeometry sh
+
+    Set layout = ShowHideLayout.Create(sh, ShowHideLayerHList)
+    Set store = ShowHideStore.CreateOnSheet(FixtureWorkbook.Worksheets(STORE_SHEET))
+
+    'The saved layout: H entries hidden, sizes recorded
+    Set entries = ShowHide.Create(Dict, ShowHideLayerHList, TIMED_SHEET)
+    hiddenCount = HideFirstFreeEntries(entries, HIDDEN_ENTRIES)
+    Assert.IsTrue (hiddenCount = HIDDEN_ENTRIES), _
+                  "H free entries were marked hidden in the saved layout: " & _
+                  CStr(hiddenCount) & " of " & CStr(HIDDEN_ENTRIES)
+    entries.Apply layout
+    store.Save entries, layout, WALK_LAYOUT_NAME
+
+    'The current state: everything shown, which is what the sheet shows too
+    ResetSheetGeometry sh
+    Set current = ShowHide.Create(Dict, ShowHideLayerHList, TIMED_SHEET)
+    store.Save current, layout
+
+    'The walk, one sheet, in the order HandleRestoreShowHideLayout pays it
+    Set fresh = ShowHide.Create(Dict, ShowHideLayerHList, TIMED_SHEET)
+
+    startedAt = Timer
+    matched = store.Load(fresh, layout, WALK_LAYOUT_NAME, writeSizes:=True)
+    elapsed = ElapsedSince(startedAt)
+    walkSeconds = elapsed
+    LogTiming "restore load, with sizes", elapsed
+
+    Assert.IsTrue (matched = SHEET_VARS), _
+                  "The named load matched the N rows of the saved layout: " & _
+                  CStr(matched) & " of " & CStr(SHEET_VARS)
+
+    startedAt = Timer
+    applied = fresh.Apply(layout)
+    elapsed = ElapsedSince(startedAt)
+    walkSeconds = walkSeconds + elapsed
+    LogTiming "restore apply, D = H positions differ", elapsed
+
+    Assert.IsTrue (applied = HIDDEN_ENTRIES), _
+                  "Apply wrote the H positions that differ and nothing else: " & _
+                  CStr(applied) & " of " & CStr(HIDDEN_ENTRIES)
+
+    startedAt = Timer
+    store.Save fresh, layout
+    elapsed = ElapsedSince(startedAt)
+    walkSeconds = walkSeconds + elapsed
+    LogTiming "restore save, current state", elapsed
+
+    LogTiming "restore walk, one sheet", walkSeconds
+
+    'The load again with no size writes: the table read on its own
+    Set again = ShowHide.Create(Dict, ShowHideLayerHList, TIMED_SHEET)
+
+    startedAt = Timer
+    matched = store.Load(again, layout, WALK_LAYOUT_NAME, writeSizes:=False)
+    elapsed = ElapsedSince(startedAt)
+    LogTiming "restore load, table read alone", elapsed
+
+    Assert.IsTrue (matched = SHEET_VARS), _
+                  "The load without sizes matched the same N rows: " & _
+                  CStr(matched) & " of " & CStr(SHEET_VARS)
+    Assert.IsTrue (layout.FailureCount = 0), _
+                  "The layout refused no write, so the numbers timed real writes"
+
+    'The same two table calls against a store that holds the rows of a full
+    'set of saved layouts, so the growth of the table shows on its own line
+    For layoutIndex = 1 To store.MaxSavedLayouts - 1
+        store.Save entries, layout, WALK_LAYOUT_NAME & "-" & CStr(layoutIndex)
+    Next layoutIndex
+    grownRows = store.RowCount
+    Set again = ShowHide.Create(Dict, ShowHideLayerHList, TIMED_SHEET)
+
+    startedAt = Timer
+    matched = store.Load(again, layout, WALK_LAYOUT_NAME, writeSizes:=False)
+    elapsed = ElapsedSince(startedAt)
+    LogTiming "restore load, table read alone, " & CStr(grownRows) & " rows in the store", elapsed
+
+    startedAt = Timer
+    store.Save again, layout
+    elapsed = ElapsedSince(startedAt)
+    LogTiming "restore save, current state, " & CStr(grownRows) & " rows in the store", elapsed
+
+    Assert.IsTrue (matched = SHEET_VARS), _
+                  "The load against the grown store matched the same N rows: " & _
+                  CStr(matched) & " of " & CStr(SHEET_VARS)
+
+    'Where the second of a grown store goes. RowCount reads the table and
+    'counts its rows; LayoutNames walks every row and adds to a keyed
+    'Collection, swallowing the duplicate-key error of each repeated name;
+    'HasLayout walks until it matches. None of the three touches an entry
+    'list, so what they cost is the walk of the block alone.
+    startedAt = Timer
+    matched = store.RowCount
+    elapsed = ElapsedSince(startedAt)
+    LogTiming "RowCount, " & CStr(grownRows) & " rows", elapsed
+
+    startedAt = Timer
+    store.LayoutNames
+    elapsed = ElapsedSince(startedAt)
+    LogTiming "LayoutNames, " & CStr(grownRows) & " rows", elapsed
+
+    startedAt = Timer
+    store.HasLayout WALK_LAYOUT_NAME
+    elapsed = ElapsedSince(startedAt)
+    LogTiming "HasLayout, " & CStr(grownRows) & " rows", elapsed
+
+    startedAt = Timer
+    store.Clear ShowHideLayerHList, WALK_LAYOUT_NAME & "-1"
+    elapsed = ElapsedSince(startedAt)
+    LogTiming "Clear one layout, " & CStr(grownRows) & " rows", elapsed
+
+    LogFixtureShape
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTimeLayoutRestoreWalk", Err.Number, Err.Description
 End Sub
 
 '@sub-title Times SectionMap.Create on a sheet carrying M hidden names.

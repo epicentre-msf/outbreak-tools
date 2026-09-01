@@ -610,7 +610,12 @@ Public Function HandleSaveShowHideLayout(ByVal sourceWkb As Workbook, _
 
     Set dict = LLdictionary.Create(sourceWkb.Worksheets(DICTIONARY_SHEET), 1, 1)
 
+    'One step per worksheet, the same shape as the restore below, so the
+    'two layout walks are read side by side in the log.
+    StartLayoutWalk
+
     For Each sh In sourceWkb.Worksheets
+        MarkLayoutStep sh.Name
         If LayerContextOf(sh, dict, pass, entries, layout) Then
             entries.Adopt layout
             store.Save entries, layout, layoutName
@@ -619,6 +624,7 @@ Public Function HandleSaveShowHideLayout(ByVal sourceWkb As Workbook, _
     Next
 
     LogSuccessLine "layout-save", layoutName
+    LogLayoutSteps "layout-save"
     HandleSaveShowHideLayout = True
 End Function
 
