@@ -8,10 +8,14 @@
 #     mode = list     name every component and its kind
 #     mode = content  also recover each component's source and compare it with
 #                     the matching file under the given roots
+#     mode = dump     recover each component's source and write it under the
+#                     given directory, one <name>.vba per component, document
+#                     modules included -- ThisWorkbook carries pasted event
+#                     logic and a reader of the workbook's code needs it too
 #
 # Writes one tab separated row per component: kind, name, path, status, detail.
-# Called by mock-import-drift.sh; useful on its own when a single binary needs
-# looking at.
+# Called by mock-import-drift.sh and workbook-closure-scan.R; useful on its own
+# when a single binary needs looking at.
 #
 # WHAT IS BEING READ
 # -----------------------------------------------------------------------------
@@ -41,6 +45,16 @@ if (length(args) < 2L) {
 bin_path <- args[1]
 mode <- args[2]
 roots <- if (length(args) > 2L) args[-(1:2)] else character(0)
+
+dump_dir <- NULL
+if (mode == "dump") {
+  if (length(args) < 3L) {
+    stop("mode dump needs an output directory as the third argument",
+         call. = FALSE)
+  }
+  dump_dir <- args[3]
+  dir.create(dump_dir, recursive = TRUE, showWarnings = FALSE)
+}
 
 FREESECT <- c(4294967294, 4294967295) # ENDOFCHAIN and FREESECT
 
@@ -435,7 +449,7 @@ kinds <- kinds[keep]
 names_ <- names_[keep]
 
 offsets <- list()
-if (mode == "content") {
+if (mode %in% c("content", "dump")) {
   dir_raw <- ole$stream("dir")
   if (!is.null(dir_raw)) {
     dd <- ovba_decompress(dir_raw, 0)
@@ -449,6 +463,22 @@ row <- function(...) out <<- c(out, paste(c(...), collapse = "\t"))
 for (i in seq_along(names_)) {
   kind <- kinds[i]
   name <- names_[i]
+
+  if (mode == "dump") {
+    sraw <- ole$stream(name)
+    src <- NULL
+    if (!is.null(sraw) && length(sraw)) src <- source_of(sraw, offsets[[name]])
+    if (is.null(src)) {
+      row(kind, name, "-", "noextract", "source not decodable")
+      next
+    }
+    outfile <- file.path(dump_dir, paste0(name, ".vba"))
+    con <- file(outfile, "wb")
+    writeChar(src, con, eos = NULL)
+    close(con)
+    row(kind, name, outfile, "dumped", "")
+    next
+  }
 
   if (mode == "list" || kind == "Document") {
     row(kind, name, "", "", "")

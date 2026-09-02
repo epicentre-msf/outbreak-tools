@@ -69,6 +69,15 @@ Set xlsApp = CreateObject("Excel.Application")
 xlsApp.Visible = False
 xlsApp.DisplayAlerts = False
 xlsApp.ScreenUpdating = False
+' New workbooks carry ONE sheet for the length of the run. Workbooks.Add
+' follows the profile option "Include this many sheets", this machine was
+' found set to 4 on 2026-09-01, and tests count the sheets of a workbook
+' they just made -- TestLLGeo expected 1 and met 4. The product guards the
+' paths that matter case by case (LLExporter passes xlWBATWorksheet); the
+' harness pins its own instance so a profile nobody audited cannot repaint
+' a green tree red. The operator's own Excel keeps its setting: this
+' instance is the trigger's.
+xlsApp.SheetsInNewWorkbook = 1
 
 ' Any failure below leaves Excel running as an orphan that wedges the NEXT run,
 ' so trap from here on and always reach the cleanup.

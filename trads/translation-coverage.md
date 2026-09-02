@@ -1,6 +1,6 @@
 # Translation coverage
 
-Written by `scripts/devtools/translation-coverage.R` on 2026-08-24 17:00.
+Written by `scripts/devtools/translation-coverage.R` on 2026-09-01 22:24.
 
 Workbook read: `trads/designer_translations.xlsx`.
 
@@ -11,13 +11,13 @@ Workbook read: `trads/designer_translations.xlsx`.
 | table | rows | missing | dead | oracle |
 | --- | --- | --- | --- | --- |
 | t_tradllshapes | 10 | see the message list | 2 | VBA string literals |
-| t_tradllmsg | 175 | see the message list | 52 | VBA string literals |
+| t_tradllmsg | 179 | see the message list | 52 | VBA string literals |
 | t_tradllforms | 125 | 0 | 27 | control names in `.mock/forms/designer` |
 | t_tradllribbon | 38 | 0 | 11 | getLabel ids in the linelist ribbon templates |
-| t_tradmsg | 78 | 0 | 49 | VBA literals + getLabel ids in the designer ribbon |
+| t_tradmsg | 80 | 0 | 50 | VBA literals + getLabel ids in the designer ribbon |
 | t_tradrange | 14 | 2 to check | 1 | defined names in designer.xlsb |
 | t_tradshape | 13 | 0 | 8 | shape names in designer.xlsb |
-| t_traddrop | 1 | 0 | 1 | defined names in designer.xlsb |
+| t_traddrop | 1 | 0 | 0 | defined names in designer.xlsb |
 
 Message tags the code asks for and no table carries: **0**. They are listed on their own below, because a string literal does not say which of the two sheets should carry it.
 
@@ -166,6 +166,7 @@ The designer workbook's own document modules live inside `designer.xlsb` and now
 - `MSG_VeriFichGeo`
 - `MSG_PathLL`
 - `MSG_NetoPrec`
+- `btnDelGeo`
 - `MSG_CloseDic`
 - `MSG_BuildLL`
 - `MSG_Title_Dictionnary`
@@ -223,7 +224,7 @@ The designer workbook's own document modules live inside `designer.xlsb` and now
 
 ## Dead rows: designer dropdowns (t_traddrop)
 
-- `DROPEPIWEEK`
+_Nothing._
 
 ## Cells left blank
 
@@ -259,9 +260,9 @@ A control still called `Label1` cannot be translated: no table row will ever be 
 
 ## What was read
 
-- VBA source: `src/classes` and `src/modules`, 19 files naming a tag.
+- VBA source: `src/classes` and `src/modules`, 20 files naming a tag.
 - Forms: `.mock/forms/designer`, 11 forms naming a tag.
-- Ribbons: `ribbons/_ribbontemplate_main/ribbon.xml`, `ribbons/_ribbontemplate_dev/ribbon.xml`, `ribbons/designer/ribbon.xml`, `ribbons/designer_mock/ribbon.xml`.
+- Ribbons: `ribbons/_ribbontemplate_dev/ribbon.xml`, `ribbons/designer_mock/ribbon.xml`.
 - Designer binary: `src/bin/designer/designer.xlsb`, 148 defined names, 5 shapes.
 
 Left out on purpose: `src/tests`, `src/classes/stale`, and the setup and master-setup folders. The setup workbooks carry their own translation table and are not in this workbook.
