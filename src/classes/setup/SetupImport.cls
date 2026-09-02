@@ -1519,7 +1519,10 @@ Private Function EnsureExportWorkbook() As Workbook
             Exit Function
         End If
 
-        Set this.exportWorkbook = Workbooks.Add
+        'xlWBATWorksheet: one sheet however the profile option "Include this
+        'many sheets" is set. The capture below still strips whatever the new
+        'workbook carries, so this only narrows what there is to strip.
+        Set this.exportWorkbook = Workbooks.Add(xlWBATWorksheet)
         Set this.exportBaseSheets = CaptureWorksheets(this.exportWorkbook)
     End If
 

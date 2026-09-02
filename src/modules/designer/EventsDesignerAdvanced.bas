@@ -1409,7 +1409,10 @@ Private Sub WriteSummaryFile(ByVal entry As DesignerEntry)
 
     On Error GoTo CloseFile
     Open filePath For Output As #fileNumber
-    Print #fileNumber, DesignerLastSummary()
+    'On disk the separators follow the platform, the same line LinelistRun
+    'writes with: a bare-LF file on Windows reads as one line through
+    'Line Input. The vbLf block itself stays the Application.Run contract.
+    Print #fileNumber, Replace(DesignerLastSummary(), vbLf, vbNewLine)
     Close #fileNumber
     Exit Sub
 

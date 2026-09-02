@@ -1387,7 +1387,13 @@ Private Sub WriteSummaryFile(ByVal folderPath As String, ByVal baseName As Strin
 
     On Error GoTo CloseFile
     Open filePath For Output As #fileNumber
-    Print #fileNumber, LinelistLastSummary()
+    'The block joins its lines with vbLf, which is the in-memory contract every
+    'Application.Run reader parses. ON DISK the separators follow the platform:
+    'a bare-LF file on Windows reads as ONE line through Line Input, so the
+    'first thing the file exists to carry -- the outcome line -- was unreadable
+    'exactly where the transport had already lost it. vbNewLine is vbLf on the
+    'Mac, so the Mac file keeps its bytes.
+    Print #fileNumber, Replace(LinelistLastSummary(), vbLf, vbNewLine)
     Close #fileNumber
     Exit Sub
 

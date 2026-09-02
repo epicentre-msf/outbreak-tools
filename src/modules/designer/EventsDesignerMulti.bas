@@ -537,8 +537,11 @@ Public Sub clickExportMulti(ByRef ribbonControl As IRibbonControl)
 
     Set table = CustomTable.Create(lo)
 
-    'Create a new workbook and export the table
-    Set exportBook = Workbooks.Add
+    'Create a new workbook and export the table. xlWBATWorksheet pins the
+    'workbook to one sheet: a bare Add follows the profile option "Include
+    'this many sheets", and every sheet past the first would ship blank in
+    'the saved export.
+    Set exportBook = Workbooks.Add(xlWBATWorksheet)
     Set exportSheet = exportBook.Worksheets(1)
     table.Export sh:=exportSheet, startLine:=1, startColumn:=1, addListObject:=True
 

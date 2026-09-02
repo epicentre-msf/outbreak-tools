@@ -50,7 +50,9 @@ Public Function EnsureWorkbook(ByVal excelApp As Application) As Excel.Workbook
     End If
 
     If Not HasWorkbook Then
-        Set this.Book = excelApp.Workbooks.Add
+        'xlWBATWorksheet: one sheet however the profile option "Include this
+        'many sheets" is set, so an export never carries extra blank sheets.
+        Set this.Book = excelApp.Workbooks.Add(xlWBATWorksheet)
     End If
 
     Set EnsureWorkbook = this.Book

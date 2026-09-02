@@ -987,7 +987,10 @@ Private Sub WriteSummaryFile(ByVal folderPath As String, ByVal baseName As Strin
 
     On Error GoTo CloseFile
     Open filePath For Output As #fileNumber
-    Print #fileNumber, SetupLastSummary()
+    'On disk the separators follow the platform, the same line LinelistRun
+    'writes with: a bare-LF file on Windows reads as one line through
+    'Line Input. The vbLf block itself stays the Application.Run contract.
+    Print #fileNumber, Replace(SetupLastSummary(), vbLf, vbNewLine)
     Close #fileNumber
     Exit Sub
 

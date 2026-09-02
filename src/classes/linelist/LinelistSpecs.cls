@@ -1481,7 +1481,12 @@ Public Sub Prepare(ByVal setupPath As String)
         'exported sheet can be mistaken for it later.
         Set defaultSheet = EmptyFirstSheet(outWkb)
     Else
-        Set outWkb = HostApplication.Workbooks.Add
+        'xlWBATWorksheet makes a workbook of exactly ONE sheet. A bare Add
+        'follows the profile option "Include this many sheets", and only the
+        'first of those ever reached defaultSheet below -- on a profile set
+        'to 4 the other three blank sheets travelled into the delivered
+        'linelist. Same guard as LLExporter.
+        Set outWkb = HostApplication.Workbooks.Add(xlWBATWorksheet)
         'The reference to the empty worksheet Workbooks.Add made is taken here,
         'before the first exporter writes to the workbook. Linelist used to
         'record Worksheets(1).Name on its own first read and delete that sheet
