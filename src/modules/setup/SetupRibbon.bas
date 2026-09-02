@@ -14,14 +14,16 @@ Option Explicit
 'A callback that asks the user a question asks it BEFORE entering busy state. A
 'prompt raised over a frozen screen with a busy cursor reads as a hang.
 '
-'THE EIGHT BOXES A SCRIPT CAN WALK INTO GO THROUGH THE MESSENGER
+'THE NINE BOXES A SCRIPT CAN WALK INTO GO THROUGH THE MESSENGER
 'Three boxes in RunTranslationsUpdate, two in clickExport and two in
 'clickImportFile call Messenger.Show. The closing summary of the tag update
-'does the same, over in SetupTranslationsTable. All eight are vbOKOnly, so
-'every silent answer is vbOK. While the messenger is disarmed each one opens
-'the box it always opened; while it is armed the text is written down and
-'Messenger.Messages reads it back. The other 21 boxes in this module sit on
-'buttons the R package never presses.
+'and its unseen labels question do the same, over in SetupTranslationsTable.
+'Eight of them are vbOKOnly and answer vbOK silently. The unseen labels
+'question is the one vbYesNo of the nine and answers vbYes, because it fires
+'only where a caller asked for that review. While the messenger is disarmed
+'each one opens the box it always opened; while it is armed the text is
+'written down and Messenger.Messages reads it back. The other 21 boxes in
+'this module sit on buttons the R package never presses.
 '
 'THREE ENTRY POINTS A SCRIPT CAN CALL SIT AT THE FOOT OF THIS MODULE
 'RunSetupExport, RunSetupImportFile and RunSetupTags take their paths as

@@ -1744,11 +1744,14 @@ Private Function ConfirmUnseenRemoval() As Boolean
 
     message = message & vbLf & vbLf & "Remove them from the translations table?"
 
-    'This box stays on MsgBox. It fires only when a caller asked for the review
-    'through RequestUnseenReview, and the setup wrapper the R package calls asks
-    'for the update with the review off. A caller running with prompts off is
-    'already answered by removeUnseen above.
-    ConfirmUnseenRemoval = (MsgBox(message, vbQuestion + vbYesNo + vbDefaultButton2, "Unseen labels") = vbYes)
+    'The question goes through the messenger, so a script driving the update
+    'reads it back from Messenger.Messages with no box waiting for a click. A
+    'quiet workbook answers ALWAYS YES: the box only fires because a caller
+    'asked for the review through RequestUnseenReview, and a run nobody is
+    'watching removes the labels no range of the setup produced.
+    ConfirmUnseenRemoval = (Messenger.Show(message, vbYes, _
+                                          vbQuestion + vbYesNo + vbDefaultButton2, _
+                                          "Unseen labels") = vbYes)
 End Function
 
 '@label:deduplicate-labels
