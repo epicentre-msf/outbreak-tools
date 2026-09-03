@@ -1186,11 +1186,13 @@ End Sub
 '@param filteredCondition Optional String. Filter criteria. Defaults to "<>".
 '@param Hide Optional Long. Worksheet visibility after export. Defaults to xlSheetHidden.
 '@param includeNames Optional Boolean. When True, exports hidden names alongside data. Defaults to False.
+'@param matchCase Optional Boolean. When True, the filter column is matched case-sensitively. Defaults to True.
 '@export
 Public Sub Export(ByVal toWkb As Workbook, Optional ByVal filteredVarName As String = "__all__", _
                    Optional ByVal filteredCondition As String = "<>", _
                    Optional ByVal Hide As Long = xlSheetHidden, _
-                   Optional ByVal includeNames As Boolean = False)
+                   Optional ByVal includeNames As Boolean = False, _
+                   Optional ByVal matchCase As Boolean = True)
 
     Dim dataExportData As BetterArray
     Dim sh As Worksheet
@@ -1234,7 +1236,8 @@ Public Sub Export(ByVal toWkb As Workbook, Optional ByVal filteredVarName As Str
     If filteredVarName = "__all__" Then
         dataExportData.FromExcelRange DataRange(colName:="__all__", includeHeaders:=True)
     Else
-        Set dataExportData = FilterData(filteredVarName, filteredCondition, "__all__", includeHeaders:=True)
+        Set dataExportData = FilterData(filteredVarName, filteredCondition, "__all__", _
+                                        includeHeaders:=True, matchCase:=matchCase)
     End If
 
     'Always export to first column, first row
