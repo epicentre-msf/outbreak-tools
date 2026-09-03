@@ -232,6 +232,7 @@ Public Function CreateFromFile(ByVal filePath As String, _
         'and the raise below is what carries the failure to the caller.
         On Error Resume Next
         Set wkb = excelApp.Workbooks.Open(fileName:=filePath, ReadOnly:=True, password:=password)
+        ActiveWindow.WindowState = xlMinimized
         On Error GoTo 0
         openedHere = True
     End If
@@ -1317,7 +1318,7 @@ Private Function CreateOutputWorkbook() As Workbook
     On Error GoTo 0
     this.calcHeld = (HostApplication.Calculation = xlCalculationManual)
 
-    HostApplication.ActiveWindow.WindowState = xlMinimized
+    ActiveWindow.WindowState = xlMinimized
     Set CreateOutputWorkbook = this.activeWkb
 End Function
 
