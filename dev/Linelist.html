@@ -50,7 +50,7 @@ them into the generation report right after Prepare returns.</p>
 the unfinished workbook as __temp.xlsb in the temporary repository, closes
 it and answers the path, so the report can name what the user may open.
 No question is asked: the build may run in an instance nobody sees.</p>
-<p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLSheets.html">LLSheets</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="LLFormat.html">LLFormat</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="CustomPivotTable.html">CustomPivotTable</a>, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="Buttons.html">Buttons</a>, <a href="CodeTransfer.html">CodeTransfer</a>, <a href="Passwords.html">Passwords</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="ShowHideStore.html">ShowHideStore</a>, <a href="AnalysisRanges.html">AnalysisRanges</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="Messenger.html">Messenger</a></p>
+<p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLSheets.html">LLSheets</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="LLFormat.html">LLFormat</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="CustomPivotTable.html">CustomPivotTable</a>, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="Buttons.html">Buttons</a>, <a href="CodeTransfer.html">CodeTransfer</a>, <a href="Passwords.html">Passwords</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="ShowHideStore.html">ShowHideStore</a>, <a href="AnalysisRanges.html">AnalysisRanges</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="Messenger.html">Messenger</a>, <a href="LLLog.html">LLLog</a></p>
 <p><strong>Version:</strong> 1.6 (2026-08-28)</p>
 </div>
 </details>
@@ -312,6 +312,7 @@ name onto the output workbook.</li>
 <li>Adds the six analysis and custom worksheets.</li>
 <li>Adds the six temporary worksheets and prepares them with their hidden names
 and ListObjects.</li>
+<li>Adds the user log worksheet, so the runtime never has to.</li>
 <li>Moves the instruction sheet to the front (template workbooks only).</li>
 <li>Adds and formats the admin sheet (non-template only).</li>
 <li>Transfers the VBA components into the workbook.</li>

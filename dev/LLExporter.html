@@ -1168,17 +1168,37 @@ workbook, removes gridlines, then asks AnaTabIds to recreate the named ranges
 <p>The trap covers the clipboard steps alone. It used to cover the chart writing
 too, and the chart writing raised on its first statement for every scope, so
 the export reported success and delivered analysis sheets with no named ranges
-and no charts. Each scope is written under its own trap now, the failures are
-collected, and the export refuses to report success while one is held.</p>
+and no charts. Each scope is written under its own trap now and the failures
+are collected.</p>
+<h2 id="int-a-scope-that-loses-its-charts-still-ships-its-sheet">A SCOPE THAT LOSES ITS CHARTS STILL SHIPS ITS SHEET</h2>
+<p>The collected failures are written to the workbook log as a warning and the
+export carries on. A chart is one part of an analysis sheet; the values, the
+formats and the tables are written before the charts are attempted and they
+stand whatever the charts do.</p>
+<p>This used to raise, so one scope that refused cost the user the whole file.
+A graph row that names no choice is a setup matter, and it left every export
+of that linelist with nothing to open. Owner decision, 2026-09-03.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>outwb</code>: Workbook. The output workbook.</li>
 <li><code>afterSheetName</code>: String. Name of the sheet to insert after.</li>
 </ul>
-<p><strong>Throws:</strong></p>
+<hr />
+<h3 id="int-reportgraphswarning">ReportGraphsWarning <a class="anchor-link" href="#int-reportgraphswarning">#</a></h3>
+<p><em>report-graphs-warning</em></p>
+<p><strong>Say in the workbook''s log which analysis sheets got no charts</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ReportGraphsWarning(ByVal failureText As String)
+</code></pre>
+<p>Written as a warning, and the export goes on to write its file. The values,
+the formats and the tables of the sheet are already on it by the time the
+charts are attempted, so a scope that loses its charts still carries most of
+what an analysis sheet holds.</p>
+<p>The user needs the line to know why a sheet came out with no chart on it,
+because the file opens and reads as complete.</p>
+<p><strong>Parameters:</strong></p>
 <ul>
-<li>ProjectError.SomethingWentWrong When a scope failed to write its
-charts.</li>
+<li><code>failureText</code>: String. The scopes that refused, each with its error text.</li>
 </ul>
 <hr />
 <h2 id="int-private-data-export">Private - Data Export</h2>

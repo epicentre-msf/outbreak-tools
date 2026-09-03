@@ -338,7 +338,8 @@ warning when the source and destination row counts differ.</p>
 <pre><code class="language-vb">Public Sub Export(ByVal toWkb As Workbook, Optional ByVal filteredVarName As String = &quot;__all__&quot;, _
                    Optional ByVal filteredCondition As String = &quot;&lt;&gt;&quot;, _
                    Optional ByVal Hide As Long = xlSheetHidden, _
-                   Optional ByVal includeNames As Boolean = False)
+                   Optional ByVal includeNames As Boolean = False, _
+                   Optional ByVal matchCase As Boolean = True)
 </code></pre>
 <p>Creates (or clears) a worksheet in the target workbook with the same
 name as this DataSheet, then writes all data. Optionally filters rows
@@ -352,6 +353,7 @@ exports hidden names.</p>
 <li><code>filteredCondition</code>: Optional String. Filter criteria. Defaults to &quot;&lt;&gt;&quot;.</li>
 <li><code>Hide</code>: Optional Long. Worksheet visibility after export. Defaults to xlSheetHidden.</li>
 <li><code>includeNames</code>: Optional Boolean. When True, exports hidden names alongside data. Defaults to False.</li>
+<li><code>matchCase</code>: Optional Boolean. When True, the filter column is matched case-sensitively. Defaults to True.</li>
 </ul>
 <hr />
 </div>

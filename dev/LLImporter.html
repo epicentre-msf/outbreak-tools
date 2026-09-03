@@ -251,7 +251,7 @@ VList for an info sheet.</p>
 into memory and never reached a sheet, so nothing was ever hidden; and a blank
 width cell was read as a width of zero and written to the sheet, which is how
 Excel hides a column, so entries vanished for the opposite reason.</p>
-<p>Skips when the file carries no show/hide sheet, and when its <code>show_hide</code> tag
+<p>Skips when The imported file has no show/hide sheet, and when its <code>show_hide</code> tag
 asks for no update.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -267,7 +267,7 @@ asks for no update.</p>
 </code></pre>
 <p>Reads the import workbook dictionary for editable label values and
 updates both the worksheet cells and dictionary entries in the source
-workbook. Skips when the file carries no Dictionary sheet, when that
+workbook. Skips when The imported file has no Dictionary sheet, when that
 dictionary is not prepared, and when the <code>editable_labels</code> tag asks for no
 update.</p>
 </div>
@@ -310,7 +310,7 @@ during preparation, so neither shape has anything to do in practice.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportSingleValues(ByVal meta As ImportMetadata)
 </code></pre>
-<p>Takes the epiweek start value the file carries and writes it into the
+<p>Takes the epiweek start value The imported file has and writes it into the
 RNG_EpiWeekStart hidden name of the source workbook, then recalculates every
 sheet that carries an epiweek formula. Skips when the file names no value.</p>
 </div>
@@ -812,7 +812,7 @@ no worksheet.</p>
 <ul>
 <li><code>varName</code>: String. The variable to compare.</li>
 <li><code>currLabel</code>: String. The label this linelist carries.</li>
-<li><code>impLabel</code>: String. The label the file carries.</li>
+<li><code>impLabel</code>: String. The label The imported file has.</li>
 </ul>
 <hr />
 <h3 id="int-compareonechoicelist">CompareOneChoiceList <a class="anchor-link" href="#int-compareonechoicelist">#</a></h3>
@@ -837,9 +837,9 @@ caller, so the only worksheets this routine reaches are the choice lists.</p>
 <li><code>varName</code>: String. The variable to compare.</li>
 <li><code>controlText</code>: String. The <code>control</code> cell of this linelist, as written.</li>
 <li><code>currList</code>: String. The <code>control details</code> of this linelist.</li>
-<li><code>impList</code>: String. The <code>control details</code> the file carries.</li>
+<li><code>impList</code>: String. The <code>control details</code> The imported file has.</li>
 <li><code>currChoi</code>: LLChoices. The Choices worksheet of this linelist.</li>
-<li><code>impChoi</code>: LLChoices. The Choices worksheet of the file.</li>
+<li><code>impChoi</code>: LLChoices. The Choices worksheet of the imported file.</li>
 <li><code>drop</code>: DropdownLists. The custom dropdowns of this linelist.</li>
 </ul>
 <hr />
@@ -850,10 +850,13 @@ caller, so the only worksheets this routine reaches are the choice lists.</p>
 <pre><code class="language-vb">Private Function ValuesMissingFrom(ByVal source As BetterArray, _
                                    ByVal other As BetterArray) As String
 </code></pre>
-<p>Values are matched without regard to case and to surrounding spaces, and they
-are shown as they were written, so &quot;Yes&quot; against &quot;yes&quot; is reported as a
-difference a person can act on. The list is capped, because a user reads a
-handful and the count is what tells them the size.</p>
+<p>Values are matched exactly. Case counts, and so do the spaces around a value,
+because a cell holds them and a dropdown is built from them: a list carrying
+&quot;Yes &quot; turns down a hand edit that types &quot;Yes&quot;, and a linelist offering &quot;yes&quot;
+against a file offering &quot;Yes&quot; is a setup fault the user has to see. A value
+that is only spaces is skipped, because it names no category. Every value is
+shown inside quotes, so a space at either end shows in the message. The list
+is capped, because a user reads a handful and the count tells them the size.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>source</code>: BetterArray. The list to walk.</li>
@@ -863,11 +866,13 @@ handful and the count is what tells them the size.</p>
 <hr />
 <h3 id="int-holdsvalue">HoldsValue <a class="anchor-link" href="#int-holdsvalue">#</a></h3>
 <p><em>holds-value</em></p>
-<p><strong>Whether a list holds one value, ignoring case and outer spaces</strong></p>
+<p><strong>Whether a list holds one value, matched exactly</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HoldsValue(ByVal listValues As BetterArray, _
                             ByVal oneValue As String) As Boolean
 </code></pre>
+<p>Two values are the same when they carry the same letters, in the same case,
+with the same spaces around them.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>listValues</code>: BetterArray. The list to search.</li>
