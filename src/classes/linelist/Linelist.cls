@@ -59,7 +59,7 @@ Option Explicit
 '  LLFormat, DropdownLists, CustomPivotTable, TemporaryRepos,
 '  Buttons, CodeTransfer, Passwords, HiddenNames, AnaTabIds,
 '  ShowHideStore, AnalysisRanges, Checking, BetterArray, LLTranslation,
-'  Messenger
+'  Messenger, LLLog
 '@version 1.6 (2026-08-28)
 
 
@@ -409,10 +409,11 @@ End Sub
 '5. Adds the six analysis and custom worksheets.
 '6. Adds the six temporary worksheets and prepares them with their hidden names
 '   and ListObjects.
-'7. Moves the instruction sheet to the front (template workbooks only).
-'8. Adds and formats the admin sheet (non-template only).
-'9. Transfers the VBA components into the workbook.
-'10. Folds the code transfer's report entries into this instance's.
+'7. Adds the user log worksheet, so the runtime never has to.
+'8. Moves the instruction sheet to the front (template workbooks only).
+'9. Adds and formats the admin sheet (non-template only).
+'10. Transfers the VBA components into the workbook.
+'11. Folds the code transfer's report entries into this instance's.
 '
 'The default worksheet Workbooks.Add made is dropped by LinelistSpecs.Prepare,
 'before any exporter writes to the workbook.
@@ -488,6 +489,15 @@ Public Sub Prepare()
         AddOutputSheet CStr(extraSheets.Item(counter)), xlSheetVeryHidden, _
                        beforeSheet:=anchorSheet
     Next
+
+    'The user log, very hidden and before Geo like everything else this adds.
+    'LLLog builds the sheet itself when it is missing, and it appends it after
+    'the last worksheet -- Worksheets.Add activates what it adds, and hiding it
+    'again hands the activation to the visible sheet before it, which is Geo.
+    'So the first open of a new linelist wrote its "open" log line, and the
+    'landing sheet the save had chosen was replaced by Geo while the user was
+    'still reading it. A log sheet that is already there is never added again.
+    AddOutputSheet LLLog.SheetName, xlSheetVeryHidden, beforeSheet:=anchorSheet
 
     PrepareTemporarySheets
     PrepareAnalysisLists
@@ -623,7 +633,8 @@ Private Sub ActivateLandingSheet(ByVal outWkb As Workbook, _
 
     'A workbook that refuses the activation is still saved.
     On Error Resume Next
-    landingSheet.Select
+    outWkb.Activate
+    landingSheet.Activate
     On Error GoTo 0
 End Sub
 
