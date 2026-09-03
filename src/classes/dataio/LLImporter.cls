@@ -346,50 +346,44 @@ Public Function CheckImportFile(ByVal impwb As Workbook, _
 
     If Not meta.Exists Then
         FileChecking "metadata sheet", _
-                     "The file carries no Metadata worksheet, so nothing is " & _
-                     "known about how it was written. It is read as a file " & _
+                     "The imported file has no Metadata worksheet. " & _
+                     "It is read as a file " & _
                      "with the variable names on the first row.", _
                      checkingWarning
     End If
 
     If Not SheetExists(impwb, DICTIONARYSHEET) Then
         FileChecking "dictionary sheet", _
-                     "The file carries no Dictionary worksheet. The labels and " & _
+                     "The imported file has no Dictionary worksheet. The labels and " & _
                      "the choice lists of this linelist cannot be compared with " & _
-                     "the ones the file was written from.", _
+                     "the ones of the imported file.", _
                      checkingError
     End If
 
     If Not SheetExists(impwb, CHOICESSHEET) Then
         FileChecking "choices sheet", _
-                     "The file carries no Choices worksheet. The custom " & _
-                     "dropdowns are left as they are and the category lists " & _
+                     "The imported file has no Choices worksheet. The custom " & _
+                     "dropdowns are left as they are and the choices categories " & _
                      "cannot be compared.", _
                      checkingError
     End If
 
     If ShowHideSheetOf(impwb) Is Nothing Then
         FileChecking "show hide sheet", _
-                     "The file carries no show/hide worksheet, so the " & _
+                     "The imported file has no show/hide worksheet, so the " & _
                      "hidden and shown state of this linelist is left as it is.", _
-                     checkingWarning
-    End If
-
-    If Not SheetExists(impwb, LINELISTTRANSLATIONSHEET) Then
-        FileChecking "linelist translation sheet", _
-                     "The file carries no LinelistTranslation worksheet.", _
                      checkingWarning
     End If
 
     If Not SheetExists(impwb, DICTTRANSLATIONSHEET) Then
         FileChecking "dictionary translation sheet", _
-                     "The file carries no Translations worksheet.", _
+                     "The imported file has no Translations worksheet.", _
                      checkingWarning
     End If
 
     If Not meta.CarriesVariableNames Then
         FileChecking "header row", _
-                     "This file was exported with the variable labels as its " & _
+                     "The imported file was exported with the variable labels as its " & _
                      "header row (" & meta.ExportType & "), so it carries no " & _
                      "variable name at all and no column of it can be matched " & _
                      "to a column of this linelist. Export it again with a " & _
@@ -887,7 +881,7 @@ Public Sub ImportCustomDropdown(ByVal impwb As Workbook, ByVal pasteAtBottom As 
 
     If Not SheetExists(impwb, CHOICESSHEET) Then
         FileChecking "custom dropdowns", _
-                     "The file carries no Choices worksheet, so the custom " & _
+                     "The imported file has no Choices worksheet, so the custom " & _
                      "dropdowns of this linelist are left as they are.", _
                      checkingWarning
         Exit Sub
@@ -930,7 +924,7 @@ End Sub
 'width cell was read as a width of zero and written to the sheet, which is how
 'Excel hides a column, so entries vanished for the opposite reason.
 '
-'Skips when the file carries no show/hide sheet, and when its `show_hide` tag
+'Skips when The imported file has no show/hide sheet, and when its `show_hide` tag
 'asks for no update.
 '@param impwb Workbook. The opened migration workbook.
 '@param meta ImportMetadata. The metadata of that workbook.
@@ -1006,7 +1000,7 @@ NextShowHideSheet:
         If skippedNames.Length = 0 Then Exit Sub
         For counter = skippedNames.LowerBound To skippedNames.UpperBound
             FileChecking "show hide layout " & CStr(skippedNames.Item(counter)), _
-                         "The file carries a saved layout named '" & _
+                         "The imported file has a saved layout named '" & _
                          CStr(skippedNames.Item(counter)) & "', and this " & _
                          "linelist already holds " & _
                          CStr(localStore.MaxSavedLayouts) & " saved layouts, " & _
@@ -1097,7 +1091,7 @@ End Function
 '@details
 'Reads the import workbook dictionary for editable label values and
 'updates both the worksheet cells and dictionary entries in the source
-'workbook. Skips when the file carries no Dictionary sheet, when that
+'workbook. Skips when The imported file has no Dictionary sheet, when that
 'dictionary is not prepared, and when the `editable_labels` tag asks for no
 'update.
 '
@@ -1219,7 +1213,7 @@ End Sub
 '@label:import-single-values
 '@sub-title Import single metadata values from a migration workbook
 '@details
-'Takes the epiweek start value the file carries and writes it into the
+'Takes the epiweek start value The imported file has and writes it into the
 'RNG_EpiWeekStart hidden name of the source workbook, then recalculates every
 'sheet that carries an epiweek formula. Skips when the file names no value.
 '
@@ -1440,7 +1434,7 @@ End Function
 'no worksheet.
 '@param varName String. The variable to compare.
 '@param currLabel String. The label this linelist carries.
-'@param impLabel String. The label the file carries.
+'@param impLabel String. The label The imported file has.
 Private Sub CompareOneLabel(ByVal varName As String, _
                             ByVal currLabel As String, _
                             ByVal impLabel As String)
@@ -1466,9 +1460,9 @@ End Sub
 '@param varName String. The variable to compare.
 '@param controlText String. The `control` cell of this linelist, as written.
 '@param currList String. The `control details` of this linelist.
-'@param impList String. The `control details` the file carries.
+'@param impList String. The `control details` The imported file has.
 '@param currChoi LLChoices. The Choices worksheet of this linelist.
-'@param impChoi LLChoices. The Choices worksheet of the file.
+'@param impChoi LLChoices. The Choices worksheet of the imported file.
 '@param drop DropdownLists. The custom dropdowns of this linelist.
 Private Sub CompareOneChoiceList(ByVal varName As String, _
                                  ByVal controlText As String, _
@@ -1519,17 +1513,16 @@ Private Sub CompareOneChoiceList(ByVal varName As String, _
 
     If LenB(onlyImport) > 0 Then
         FileChecking "choices of " & varName, _
-                     "The file offers values for " & varName & " that this " & _
-                     "linelist does not: " & onlyImport & ". Imported rows can " & _
-                     "carry them, and no dropdown of this linelist can produce " & _
-                     "them.", _
+                     "The imported file has dropdown values for " & varName & " that the current " & _
+                     "linelist does not: " & onlyImport & ". Imported rows will " & _
+                     "carry them, but they are not in any dropdown of this linelist.", _
                      checkingWarning
     End If
 
     If LenB(onlyCurrent) > 0 Then
-        FileChecking "choices of " & varName & " missing from the file", _
-                     "This linelist offers values for " & varName & " that the " & _
-                     "file does not: " & onlyCurrent & ".", _
+        FileChecking "choices of " & varName & " are missing from the imported file", _
+                     "This linelist has dropdown values for " & varName & " that the " & _
+                     "imported file does not have: " & onlyCurrent & ".", _
                      checkingWarning
     End If
 End Sub
@@ -1547,7 +1540,7 @@ End Sub
 Private Function ValuesMissingFrom(ByVal source As BetterArray, _
                                    ByVal other As BetterArray) As String
 
-    Const MAX_SHOWN As Long = 8
+    Const MAX_SHOWN As Long = 10
 
     Dim missing As BetterArray
     Dim oneValue As String
@@ -1777,7 +1770,7 @@ Private Sub FileReportCheckings()
 
     For counter = this.sheetsNotImported.LowerBound To this.sheetsNotImported.UpperBound
         FileChecking "sheet not imported: " & CStr(this.sheetsNotImported.Item(counter)), _
-                     "The file carries a worksheet named " & _
+                     "The imported file has a worksheet named " & _
                      CStr(this.sheetsNotImported.Item(counter)) & _
                      " and this linelist has none, so none of its data was read.", _
                      checkingWarning
@@ -1786,7 +1779,7 @@ Private Sub FileReportCheckings()
     For counter = this.sheetsNotTouched.LowerBound To this.sheetsNotTouched.UpperBound
         FileChecking "sheet not touched: " & CStr(this.sheetsNotTouched.Item(counter)), _
                      "The worksheet " & CStr(this.sheetsNotTouched.Item(counter)) & _
-                     " of this linelist took no data, because the file carries " & _
+                     " of this linelist took no data, because The imported file has " & _
                      "no worksheet of that name.", _
                      checkingWarning
     Next counter
@@ -1794,7 +1787,7 @@ Private Sub FileReportCheckings()
     For counter = this.varsNotImported.LowerBound To this.varsNotImported.UpperBound
         entry = this.varsNotImported.Item(counter)
         FileChecking "variable not imported: " & CStr(entry(LBound(entry))), _
-                     "The file carries a variable named " & _
+                     "The imported file has a variable named " & _
                      CStr(entry(LBound(entry))) & " on " & _
                      CStr(entry(LBound(entry) + 1)) & " and this linelist has " & _
                      "none, so its values were dropped.", _
@@ -1806,7 +1799,7 @@ Private Sub FileReportCheckings()
         FileChecking "variable not touched: " & CStr(entry(LBound(entry))), _
                      "The variable " & CStr(entry(LBound(entry))) & " on " & _
                      CStr(entry(LBound(entry) + 1)) & " took no data, because " & _
-                     "the file carries no variable of that name.", _
+                     "The imported file has no variable of that name.", _
                      checkingWarning
     Next counter
 End Sub
