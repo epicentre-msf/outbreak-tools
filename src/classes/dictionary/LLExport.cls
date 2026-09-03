@@ -1695,8 +1695,16 @@ Private Function ResolveVariableChunk(ByVal chunk As String, _
         Exit Function
     End If
 
-    resolved = CStr(namedRange.Value)
-    resolved = SanitizeChunk(resolved)
+    'The value is trimmed and cleaned here without the SanitizeChunk
+    'placeholder. An empty answer belongs to the caller: ResolveTemplateChunk
+    'writes the variable name in its place and files the line that says the
+    'entry was blank.
+    '
+    'SanitizeChunk answers its own "chunk" placeholder for a value that comes
+    'to nothing. Calling it here meant an unfilled entry answered "chunk", the
+    'caller read that as a resolved value, and the word reached the delivered
+    'file name once per blank entry while the fallback below it never ran.
+    resolved = ReplaceInvalidCharacters(Trim$(CStr(namedRange.Value)))
 
     ResolveVariableChunk = resolved
 End Function

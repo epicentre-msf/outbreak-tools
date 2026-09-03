@@ -232,7 +232,6 @@ Public Function CreateFromFile(ByVal filePath As String, _
         'and the raise below is what carries the failure to the caller.
         On Error Resume Next
         Set wkb = excelApp.Workbooks.Open(fileName:=filePath, ReadOnly:=True, password:=password)
-        ActiveWindow.WindowState = xlMinimized
         On Error GoTo 0
         openedHere = True
     End If
@@ -1318,7 +1317,7 @@ Private Function CreateOutputWorkbook() As Workbook
     On Error GoTo 0
     this.calcHeld = (HostApplication.Calculation = xlCalculationManual)
 
-    ActiveWindow.WindowState = xlMinimized
+    ThisWorkbook.Activate
     Set CreateOutputWorkbook = this.activeWkb
 End Function
 
@@ -2400,12 +2399,21 @@ End Sub
 'The trap covers the clipboard steps alone. It used to cover the chart writing
 'too, and the chart writing raised on its first statement for every scope, so
 'the export reported success and delivered analysis sheets with no named ranges
-'and no charts. Each scope is written under its own trap now, the failures are
-'collected, and the export refuses to report success while one is held.
+'and no charts. Each scope is written under its own trap now and the failures
+'are collected.
+'
+'A SCOPE THAT LOSES ITS CHARTS STILL SHIPS ITS SHEET
+'-------------------------------------------------------------------------------
+'The collected failures are written to the workbook log as a warning and the
+'export carries on. A chart is one part of an analysis sheet; the values, the
+'formats and the tables are written before the charts are attempted and they
+'stand whatever the charts do.
+'
+'This used to raise, so one scope that refused cost the user the whole file.
+'A graph row that names no choice is a setup matter, and it left every export
+'of that linelist with nothing to open. Owner decision, 2026-09-03.
 '@param outwb Workbook. The output workbook.
 '@param afterSheetName String. Name of the sheet to insert after.
-'@throws ProjectError.SomethingWentWrong When a scope failed to write its
-'charts.
 Private Sub AddAnalysisSheets(ByVal outwb As Workbook, ByVal afterSheetName As String)
 
     Dim wkbNames As HiddenNames
@@ -2502,8 +2510,38 @@ Private Sub AddAnalysisSheets(ByVal outwb As Workbook, ByVal afterSheetName As S
         failureText = failureText & failuresList.Item(counter)
     Next counter
 
-    ThrowError ProjectError.SomethingWentWrong, _
-               "The analysis charts could not be written on: " & failureText
+    ReportGraphsWarning failureText
+End Sub
+
+'@label:report-graphs-warning
+'@sub-title Say in the workbook''s log which analysis sheets got no charts
+'@details
+'Written as a warning, and the export goes on to write its file. The values,
+'the formats and the tables of the sheet are already on it by the time the
+'charts are attempted, so a scope that loses its charts still carries most of
+'what an analysis sheet holds.
+'
+'The user needs the line to know why a sheet came out with no chart on it,
+'because the file opens and reads as complete.
+'@param failureText String. The scopes that refused, each with its error text.
+Private Sub ReportGraphsWarning(ByVal failureText As String)
+
+    Dim detail As String
+    Dim logStore As LLLog
+
+    If LenB(failureText) = 0 Then Exit Sub
+
+    detail = "The analysis charts could not be written on: " & failureText & _
+             ". The values, the formats and the tables of those sheets were " & _
+             "written, and the export carried on."
+
+    Set logStore = UserLog()
+    If logStore Is Nothing Then Exit Sub
+
+    'A log that will not take the entry is not worth losing the export over.
+    On Error Resume Next
+    logStore.LogWarning "export-analyses", detail, "LLExporter.AddAnalysisSheets"
+    On Error GoTo 0
 End Sub
 
 
