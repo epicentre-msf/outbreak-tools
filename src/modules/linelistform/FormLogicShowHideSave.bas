@@ -204,8 +204,9 @@ Private Sub UserForm_Initialize()
 
     Me.Caption = tradform.TranslatedValue(Me.Name)
     tradform.TranslateForm Me
-    Me.Width = 425
-    Me.Height = 480
+    Me.LBL_ShowHideSave.Caption = tradform.TranslatedValue("LBL_ShowHideSave")
+    Me.Width = 483
+    Me.Height = 490
 End Sub
 
 'The store can change between two shows of the form, so the list is read
