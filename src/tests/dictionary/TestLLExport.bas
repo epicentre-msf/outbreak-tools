@@ -710,6 +710,44 @@ Fail:
     CustomTestLogFailure Assert, "TestExportFileNameBuildsFromTemplate", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify that an empty variable puts its own name in the file name
+'@details
+'Writes the default template, empties the cell the choi_v1 named range points
+'at, and calls ExportFileName. Asserts the name carries "choi_v1", carries no
+'"chunk", and that the run filed a checking entry for the blank value.
+'
+'"chunk" is the placeholder SanitizeChunk answers for a piece that comes to
+'nothing. It used to be applied to the variable value as well, so a blank
+'entry answered "chunk", the caller read it as a resolved value, and the word
+'landed in the delivered file name once per blank entry. Restores the cell.
+'@TestMethod("LLExport")
+Public Sub TestExportFileNameNamesAnEmptyVariable()
+    CustomTestSetTitles Assert, "LLExport", "TestExportFileNameNamesAnEmptyVariable"
+
+    Dim fileName As String
+
+    On Error GoTo Fail
+
+    ExportSheet.ListObjects(1).DataBodyRange.Cells(1, ColumnIndexOf("file name")).Value = "choi_v1 + ""literal suffix"""
+    VListSheet.Range("A1").ClearContents
+
+    fileName = Manager.ExportFileName(1, LLdictionary.Create(DictionarySheet, 1, 1), PasswordsSubject)
+
+    Assert.IsTrue InStr(1, fileName, "choi_v1", vbTextCompare) > 0, _
+                  "An empty variable should put its own name in the file name - Actual: " & fileName
+    Assert.IsTrue InStr(1, fileName, "chunk", vbTextCompare) = 0, _
+                  "An empty variable should leave the chunk placeholder out of the file name - Actual: " & fileName
+    Assert.IsTrue Manager.HasCheckings, _
+                  "An empty variable should file a checking entry"
+
+    VListSheet.Range("A1").Value = "custom value"
+    Exit Sub
+
+Fail:
+    VListSheet.Range("A1").Value = "custom value"
+    CustomTestLogFailure Assert, "TestExportFileNameNamesAnEmptyVariable", Err.Number, Err.Description
+End Sub
+
 '@sub-title Verify that ExportFileName preserves single-quoted literal chunks
 '@details
 'Overwrites the file name template to use single-quoted literals. Calls

@@ -580,6 +580,53 @@ Fail:
     CustomTestLogFailure Assert, "TestExportCreatesWorkbook", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify an export column name is read without regard to case
+'@details
+'Arranges two temporary workbooks. Acts by exporting the dictionary into the
+'first filtered on "export 1" and into the second filtered on "Export 1",
+'which is the spelling the fixture headers hold. Asserts that both exports
+'carry rows and that they carry the same number of them. The lowercase name
+'used to raise ElementNotFound, and `LLExporter` builds the name that way for
+'every custom export, so each one stopped before it wrote a file. Cleans up by
+'deleting both temporary workbooks.
+'@TestMethod("LLdictionary")
+Public Sub TestExportColumnNameIgnoresCase()
+    CustomTestSetTitles Assert, "LLdictionary", "TestExportColumnNameIgnoresCase"
+
+    Dim lowerBook As Workbook
+    Dim spelledBook As Workbook
+    Dim lowerSheet As Worksheet
+    Dim spelledSheet As Worksheet
+    Dim lowerRows As Long
+    Dim spelledRows As Long
+
+    On Error GoTo Fail
+
+    Set lowerBook = NewWorkbook()
+    Set spelledBook = NewWorkbook()
+
+    Dictionary.Export lowerBook, exportType:="export 1", addListObject:=False
+    Dictionary.Export spelledBook, exportType:="Export 1", addListObject:=False
+
+    Set lowerSheet = lowerBook.Worksheets(DICT_SHEET)
+    Set spelledSheet = spelledBook.Worksheets(DICT_SHEET)
+
+    lowerRows = lowerSheet.Cells(lowerSheet.Rows.Count, 1).End(xlUp).Row
+    spelledRows = spelledSheet.Cells(spelledSheet.Rows.Count, 1).End(xlUp).Row
+
+    Assert.IsTrue (lowerRows > 1), "A lowercase export column should export rows"
+    Assert.IsTrue (lowerRows = spelledRows), "Both spellings of the export column should export the same rows"
+
+    If Not lowerBook Is Nothing Then DeleteWorkbook lowerBook
+    If Not spelledBook Is Nothing Then DeleteWorkbook spelledBook
+    Exit Sub
+
+Fail:
+    If Not lowerBook Is Nothing Then DeleteWorkbook lowerBook
+    If Not spelledBook Is Nothing Then DeleteWorkbook spelledBook
+    CustomTestLogFailure Assert, "TestExportColumnNameIgnoresCase", Err.Number, Err.Description
+End Sub
+
 '@section Export Counter Tests
 '===============================================================================
 '@description Tests that verify the TotalNumberOfExports property persists via
