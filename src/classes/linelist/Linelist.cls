@@ -621,10 +621,9 @@ Private Sub ActivateLandingSheet(ByVal outWkb As Workbook, _
 
     If landingSheet Is Nothing Then Exit Sub
 
-    'A workbook that refuses the activation is still saved, and it is saved on
-    'the sheet it was already on. That is worth no more than the sheet it costs.
+    'A workbook that refuses the activation is still saved.
     On Error Resume Next
-    landingSheet.Activate
+    landingSheet.Select
     On Error GoTo 0
 End Sub
 

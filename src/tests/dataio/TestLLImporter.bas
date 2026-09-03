@@ -1283,6 +1283,76 @@ TestFail:
     CustomTestLogFailure Assert, "TestADifferingChoiceListIsFiled", Err.Number, Err.Description
 End Sub
 
+'@sub-title A choice value written in another case is filed.
+'@details
+'A dropdown built from "C" turns down a cell that holds "c", so the two files
+'offer a different vocabulary and both directions have to be named. The
+'comparison used to fold case, and a linelist offering "c" against a file
+'offering "C" passed as a match, which hid a setup fault.
+'@TestMethod("LLImporter")
+Public Sub TestAChoiceValueInAnotherCaseIsFiled()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAChoiceValueInAnotherCaseIsFiled"
+    If Not FixtureReady("TestAChoiceValueInAnotherCaseIsFiled") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim impObj As LLImporter
+
+    ResetHListSheet
+
+    'The third value of list_correct_order, in lower case on this side alone.
+    FixtureWorkbook.Worksheets(CHOICES_SHEET).Cells(4, 2).Value = "c"
+
+    Set impObj = FixtureImporter()
+    impObj.ImportData ImportWorkbook, False, ImportMetadataOfFile()
+    impObj.CompareWithImportFile ImportWorkbook
+
+    Assert.IsTrue impObj.CheckingValues.KeyExists("choices of " & VAR_THREE & _
+                                    " are missing from the imported file"), _
+                  "The value this linelist writes in another case is named"
+
+    BuildLinelistChoices
+
+    Exit Sub
+TestFail:
+    BuildLinelistChoices
+    CustomTestLogFailure Assert, "TestAChoiceValueInAnotherCaseIsFiled", Err.Number, Err.Description
+End Sub
+
+'@sub-title A choice value carrying an outer space is filed.
+'@details
+'A cell holding "B " and a cell holding "B" are two values, and a dropdown
+'built from one turns down the other. The comparison used to trim both sides,
+'so the two lists matched on a value neither of them shares.
+'@TestMethod("LLImporter")
+Public Sub TestAChoiceValueWithAnOuterSpaceIsFiled()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAChoiceValueWithAnOuterSpaceIsFiled"
+    If Not FixtureReady("TestAChoiceValueWithAnOuterSpaceIsFiled") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim impObj As LLImporter
+
+    ResetHListSheet
+
+    'The second value of list_correct_order, with a trailing space on this
+    'side alone.
+    FixtureWorkbook.Worksheets(CHOICES_SHEET).Cells(3, 2).Value = "B "
+
+    Set impObj = FixtureImporter()
+    impObj.ImportData ImportWorkbook, False, ImportMetadataOfFile()
+    impObj.CompareWithImportFile ImportWorkbook
+
+    Assert.IsTrue impObj.CheckingValues.KeyExists("choices of " & VAR_THREE & _
+                                    " are missing from the imported file"), _
+                  "The value this linelist writes with a trailing space is named"
+
+    BuildLinelistChoices
+
+    Exit Sub
+TestFail:
+    BuildLinelistChoices
+    CustomTestLogFailure Assert, "TestAChoiceValueWithAnOuterSpaceIsFiled", Err.Number, Err.Description
+End Sub
+
 '@sub-title A file with no dictionary is compared against nothing and says so.
 '@TestMethod("LLImporter")
 Public Sub TestComparingAgainstNoDictionaryDoesNothing()

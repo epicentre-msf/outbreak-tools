@@ -1530,10 +1530,13 @@ End Sub
 '@label:values-missing-from
 '@sub-title The values of one list that the other does not hold
 '@details
-'Values are matched without regard to case and to surrounding spaces, and they
-'are shown as they were written, so "Yes" against "yes" is reported as a
-'difference a person can act on. The list is capped, because a user reads a
-'handful and the count is what tells them the size.
+'Values are matched exactly. Case counts, and so do the spaces around a value,
+'because a cell holds them and a dropdown is built from them: a list carrying
+'"Yes " turns down a hand edit that types "Yes", and a linelist offering "yes"
+'against a file offering "Yes" is a setup fault the user has to see. A value
+'that is only spaces is skipped, because it names no category. Every value is
+'shown inside quotes, so a space at either end shows in the message. The list
+'is capped, because a user reads a handful and the count tells them the size.
 '@param source BetterArray. The list to walk.
 '@param other BetterArray. The list to look each value up in.
 '@return String. The missing values, joined, empty when there are none.
@@ -1552,8 +1555,8 @@ Private Function ValuesMissingFrom(ByVal source As BetterArray, _
     missing.LowerBound = 1
 
     For counter = source.LowerBound To source.UpperBound
-        oneValue = Trim$(CStr(source.Item(counter)))
-        If LenB(oneValue) > 0 Then
+        oneValue = CStr(source.Item(counter))
+        If LenB(Trim$(oneValue)) > 0 Then
             If Not HoldsValue(other, oneValue) Then missing.Push oneValue
         End If
     Next counter
@@ -1576,7 +1579,10 @@ Private Function ValuesMissingFrom(ByVal source As BetterArray, _
 End Function
 
 '@label:holds-value
-'@sub-title Whether a list holds one value, ignoring case and outer spaces
+'@sub-title Whether a list holds one value, matched exactly
+'@details
+'Two values are the same when they carry the same letters, in the same case,
+'with the same spaces around them.
 '@param listValues BetterArray. The list to search.
 '@param oneValue String. The value to look for.
 '@return Boolean. True when the list holds it.
@@ -1586,7 +1592,7 @@ Private Function HoldsValue(ByVal listValues As BetterArray, _
     Dim counter As Long
 
     For counter = listValues.LowerBound To listValues.UpperBound
-        If StrComp(Trim$(CStr(listValues.Item(counter))), oneValue, vbTextCompare) = 0 Then
+        If StrComp(CStr(listValues.Item(counter)), oneValue, vbBinaryCompare) = 0 Then
             HoldsValue = True
             Exit Function
         End If
