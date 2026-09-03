@@ -2192,7 +2192,12 @@ Public Sub Export(ByVal toWkb As Workbook, _
     Set targetData = Data()
 
     If ColumnExists(exportType) Then
-        targetData.Export toWkb, filteredVarName:=exportType, Hide:=Hide
+        'ColumnExists reads the name without regard to case, so the filter
+        'is asked to read it the same way. LLExporter builds the name as
+        '"export 1" and the dictionary header has "Export 1", which used
+        'to pass the guard here and raise ElementNotFound in the filter.
+        targetData.Export toWkb, filteredVarName:=exportType, _
+                          Hide:=Hide, matchCase:=False
     Else
         targetData.Export toWkb, Hide:=Hide
     End If
