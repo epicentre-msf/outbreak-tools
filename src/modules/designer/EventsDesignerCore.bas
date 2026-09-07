@@ -171,6 +171,8 @@ Public Sub clickImpPass(ByRef ribbonControl As IRibbonControl)
     Dim importer As Passwords
     Dim target As Passwords
     Dim appScope As ApplicationState
+    Dim errNumber As Long
+    Dim errDescription As String
 
     Set io = OSFiles.Create()
     io.LoadFile "*.xlsx"
@@ -188,11 +190,20 @@ Public Sub clickImpPass(ByRef ribbonControl As IRibbonControl)
     MsgBox "Done!", vbInformation + vbOKOnly, PROMPT_TITLE
 
 Cleanup:
+    'The error is read BEFORE the cleanup runs. ApplicationState.Restore carries
+    'its own On Error statements, and any form of On Error empties the Err
+    'object, so a failed import used to reach the test below with number 0 and
+    'the user was told nothing at all. Mac also drops Err.Description on the way
+    'out of a class method, which is a second reason to read it here.
+    errNumber = Err.Number
+    errDescription = Err.Description
+
     If Not importBook Is Nothing Then importBook.Close saveChanges:=False
     If Not appScope Is Nothing Then appScope.Restore
-    If Err.Number <> 0 Then
-        Debug.Print "clickImpPass: "; Err.Number; Err.Description
-        MsgBox "Unable to import passwords: " & Err.Description, vbExclamation + vbOKOnly, PROMPT_TITLE
+
+    If errNumber <> 0 Then
+        Debug.Print "clickImpPass: "; errNumber; errDescription
+        MsgBox "Unable to import passwords: " & errDescription, vbExclamation + vbOKOnly, PROMPT_TITLE
         Err.Clear
     End If
 End Sub
@@ -315,32 +326,50 @@ Handler:
     Err.Clear
 End Sub
 
-'@Description("Initialise the build-in-place checkbox from persisted hidden names.")
+'@Description("Initialise the show-progress-bar checkbox from persisted hidden names.")
+'@details
+'THE BOX AND THE FLAG SAY OPPOSITE THINGS
+'-------------------------------------------------------------------------------
+'The box asks "Show progress bar" and the stored flag is chkBuildInPlace, which
+'means "build in this Excel". Those are opposites, and the two callbacks here
+'are the only place the negation lives.
+'
+'A build in place runs in the designer's own Excel, which is busy the whole
+'time and paints nothing, so GenerateInPlace carries no bar. GenerateInInstance
+'sends the work to a hidden Excel and the visible designer is free to paint
+'one, which is why EventsDesignerAdvanced.ResolveMainProgressBar is called on
+'that path alone. So a ticked box means the instance path, and the flag it
+'writes is False.
+'
+'The flag keeps its name and its meaning, so GenerationHost.ResolveInPlace,
+'DesignerPreparation and the hidden name every designer already carries are
+'unchanged, and a designer built before this keeps the choice it was saved with.
 '@EntryPoint
 Public Sub initBuildInPlace(ByRef ribbonControl As IRibbonControl, ByRef returnedVal)
 
-    'getPressed fires at ribbon load; a raise here drops the whole tab,
-    'so any failure falls back to the unchecked default. The box picks the
-    'build path on Windows; on Mac the build always runs in place.
+    'getPressed fires at ribbon load; a raise here drops the whole tab, so any
+    'failure falls back to the seeded default. EnsureDefaultFlags seeds the flag
+    '"No", which is the instance path, and the box that shows it is TICKED.
     On Error GoTo Fallback
-    returnedVal = ResolvePreparation().GetFlag("chkBuildInPlace", False)
+    returnedVal = Not ResolvePreparation().GetFlag("chkBuildInPlace", False)
     Exit Sub
 
 Fallback:
-    returnedVal = False
+    returnedVal = True
 End Sub
 
-'@Description("Persist the build-in-place checkbox state.")
+'@Description("Persist the show-progress-bar checkbox state.")
 '@EntryPoint
 Public Sub clickBuildInPlace(ByRef ribbonControl As IRibbonControl, ByVal pressed As Boolean)
 
+    'Ticked asks for the bar, which is the instance path, which is not in place.
     On Error GoTo Handler
-    ResolvePreparation().SetFlag "chkBuildInPlace", pressed
+    ResolvePreparation().SetFlag "chkBuildInPlace", Not pressed
     Exit Sub
 
 Handler:
     Debug.Print "clickBuildInPlace: "; Err.Number; Err.Description
-    MsgBox "Unable to save the build-in-place setting: " & Err.Description, _
+    MsgBox "Unable to save the progress bar setting: " & Err.Description, _
            vbExclamation + vbOKOnly, PROMPT_TITLE
     Err.Clear
 End Sub
