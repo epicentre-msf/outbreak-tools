@@ -1048,7 +1048,7 @@ End Sub
 '@param namObj AnaTabIds. The registry the export reads back.
 '@param scope Byte. A constant from the AnalysisScope enum.
 Private Sub DrawPendingCharts(ByVal pending As Collection, ByVal outsh As Worksheet, _
-                              ByVal namObj As AnaTabIds, ByVal scope As Byte)
+                              ByRef namObj As AnaTabIds, ByVal scope As Byte)
     Dim tabl As CrossTable
     Dim specs As TableSpecs
     Dim gr As Graphs
@@ -1141,7 +1141,7 @@ End Sub
 '@param outRangeAddress String. Address the chart is placed at.
 '@param prefix Optional String. Label prefix. Defaults to vbNullString.
 '@param prefixOnly Optional Boolean. True uses the prefix as the whole label.
-Private Sub AddGraphSeries(ByVal gr As Graphs, ByVal namObj As AnaTabIds, _
+Private Sub AddGraphSeries(ByRef gr As Graphs, ByRef namObj As AnaTabIds, _
                            ByVal scope As Byte, ByVal graphId As String, _
                            ByVal seriesName As String, ByVal seriesType As String, _
                            ByVal seriesPos As String, ByVal seriesLabel As String, _
@@ -1176,20 +1176,32 @@ End Sub
 'The second half every chart shares. The chart scope comes from the analysis
 'scope through GraphScopeOf, so a chart is never formatted against a number
 'that happens to line up.
+'
+'THE PARAMETER ORDER IS MEASURED, NOT CHOSEN
+'-------------------------------------------------------------------------------
+'Excel 16.112 on macOS died on the CALL into this procedure, before its first
+'statement, whenever the list read ..., valuesTitle, hardCodeLabels,
+'heightFactor, plotTitle: eight headless builds out of eight, with the body
+'reduced to an Exit Sub and every argument a literal. With plotTitle moved
+'before the Boolean and the Long, the same call was entered on every chart of
+'sixteen builds across three setups. Nothing the procedure does changed.
+'Keep this order, and keep the objects ByRef, which is the shape those builds
+'ran; whether ByRef is part of it is not measured. The bisection is written
+'up in .obt/gotchas/finishgraph-signature-16112.md.
 '@param gr Graphs. The chart being finished.
 '@param namObj AnaTabIds. The registry the export reads back.
 '@param scope Byte. A constant from the AnalysisScope enum.
 '@param graphId String. Identifier of the chart.
 '@param catTitle String. Category axis title.
 '@param valuesTitle String. Value axis title.
+'@param plotTitle String. Chart title.
 '@param hardCodeLabels Boolean. True writes the labels as literals.
 '@param heightFactor Long. Height multiplier of the chart.
-'@param plotTitle String. Chart title.
-Private Sub FinishGraph(ByVal gr As Graphs, ByVal namObj As AnaTabIds, _
+Private Sub FinishGraph(ByRef gr As Graphs, ByRef namObj As AnaTabIds, _
                         ByVal scope As Byte, ByVal graphId As String, _
                         ByVal catTitle As String, ByVal valuesTitle As String, _
-                        ByVal hardCodeLabels As Boolean, _
-                        ByVal heightFactor As Long, ByVal plotTitle As String)
+                        ByVal plotTitle As String, ByVal hardCodeLabels As Boolean, _
+                        ByVal heightFactor As Long)
 
     gr.Format catTitle:=catTitle, valuesTitle:=valuesTitle, _
               hardCodeLabels:=hardCodeLabels, scope:=GraphScopeOf(scope), _
