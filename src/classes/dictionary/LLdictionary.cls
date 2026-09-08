@@ -1219,7 +1219,7 @@ Private Function ValidDictionaryColumn(ByVal columnName As String, _
     ValidDictionaryColumn = this.allowedColumns.Includes(columnName) Or (Split(columnName, " ")(0) = "export")
 
     If Not ValidDictionaryColumn Then
-        LogInfo "Column " & columnName & " exists but is not part of the allowed dictionary columns", checkingWarning
+        LogInfo "Column " & columnName & " exists but is not part of the allowed dictionary columns. Probably added by the user or a program.", checkingNote
     End If
 End Function
 
