@@ -473,7 +473,7 @@ End Function
 
 '@Description("Return the default configuration worksheets list.")
 Private Function DefaultConfigSheets() As Variant
-    DefaultConfigSheets = Array("Dev", "__pass", "__updated", "__compRep", "__dropdowns", "__log")
+    DefaultConfigSheets = Array("Dev", "__pass", "__updated", "__dropdowns", "__log")
 End Function
 
 '@Description("Populate the choices dropdown from the list names of the Choices sheet.")
@@ -744,10 +744,9 @@ Private Function ResolveOrCreateWorksheet(ByVal sheetName As String, _
     If wsTarget Is Nothing Then
         Set wsTarget = wbHost.Worksheets.Add(After:=wbHost.Worksheets(wbHost.Worksheets.Count))
         wsTarget.Name = sheetName
-    End If
-
-    If applyVisibility Then
-        wsTarget.Visible = visibility
+        If applyVisibility Then
+            wsTarget.Visible = visibility
+        End If
     End If
 
     Set ResolveOrCreateWorksheet = wsTarget

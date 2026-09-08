@@ -42,7 +42,25 @@ Option Explicit
 'carries them in the language of the disease, so a list added from a file
 'in another language takes its name and its rows with every label left
 'empty, for the user to fill in English. A tag starting with "en" counts as
-'English.
+'English. A list the sheet already carries keeps every label it holds; only
+'the cells that are empty are filled from an English file, which is what
+'brings back the labels a file in another language left blank.
+'
+'THE CHOICE OF A VARIABLE
+'-------------------------------------------------------------------------------
+'Two dictionary shapes reach this class and they name the list of a
+'variable in two different places.
+'- A setup dictionary carries "Control" and "Control Details": the control
+'  says what kind of variable it is (choice_manual, formula, text, ...) and
+'  the details carry the list name, plain for the choice controls and
+'  wrapped in CHOICE_FORMULA(...) for choice_formula. A variable that is no
+'  choice names no list.
+'- The file DiseaseExporter writes carries no "Control Details" column at
+'  all: its "Control" column already holds the list name, because that is
+'  what the "Choice" column of a disease worksheet holds.
+'ChoiceNameAt reads the first shape when the dictionary carries the details
+'column and the second when it does not, so both files land the list name
+'and never the control itself.
 
 '@section Constants
 '===============================================================================
@@ -68,8 +86,19 @@ Private Const HEADER_VARIABLE_NAME As String = "Variable Name"
 Private Const HEADER_MAIN_SECTION As String = "Main Section"
 Private Const HEADER_MAIN_LABEL As String = "Main Label"
 Private Const HEADER_CONTROL As String = "Control"
+'A setup dictionary carries the list name here; the exported file has no
+'such column and keeps the name in "Control" instead.
+Private Const HEADER_CONTROL_DETAILS As String = "Control Details"
 Private Const HEADER_STATUS As String = "Status"
 Private Const HEADER_VARIABLE_ORDER As String = "Variable Order"
+
+'The controls whose details name a list, spelled the way the setup
+'dropdown "__var_control" spells them.
+Private Const CONTROL_CHOICE_MANUAL As String = "choice_manual"
+Private Const CONTROL_CHOICE_MULTIPLE As String = "choice_multiple"
+Private Const CONTROL_CHOICE_CUSTOM As String = "choice_custom"
+Private Const CONTROL_CHOICE_FORMULA As String = "choice_formula"
+Private Const CHOICE_FORMULA_HEAD As String = "CHOICE_FORMULA("
 
 'Headers of the exported choices, spelled the way the setup Choices sheet
 'and DiseaseExporter spell them. Every match stays case-insensitive.
@@ -452,13 +481,16 @@ End Function
 
 '@sub-title Add to the Variables table every variable of the dictionary it lacks.
 '@details One read of the dictionary block serves every line. A name the
-'table carries, or one the file names twice, is passed over.
+'table carries, or one the file names twice, is passed over. The Default
+'Choice column takes the list the variable points at, never the control
+'itself: ChoiceNameAt settles which column of the file carries it.
 Private Sub UpdateVariables(ByVal dictionaryTable As ListObject, ByVal logger As DiseaseLogger)
     Dim block As Variant
     Dim nameColumn As Long
     Dim sectionColumn As Long
     Dim labelColumn As Long
     Dim controlColumn As Long
+    Dim detailsColumn As Long
     Dim statusColumn As Long
     Dim rowIndex As Long
     Dim variableName As String
@@ -472,6 +504,7 @@ Private Sub UpdateVariables(ByVal dictionaryTable As ListObject, ByVal logger As
     sectionColumn = HeaderColumn(block, HEADER_MAIN_SECTION)
     labelColumn = HeaderColumn(block, HEADER_MAIN_LABEL)
     controlColumn = HeaderColumn(block, HEADER_CONTROL)
+    detailsColumn = HeaderColumn(block, HEADER_CONTROL_DETAILS)
     statusColumn = HeaderColumn(block, HEADER_STATUS)
 
     For rowIndex = 2 To UBound(block, 1)
@@ -483,13 +516,81 @@ Private Sub UpdateVariables(ByVal dictionaryTable As ListObject, ByVal logger As
         this.variables.AddVariable variableName, _
                                    CellAt(block, rowIndex, sectionColumn), _
                                    CellAt(block, rowIndex, labelColumn), _
-                                   CellAt(block, rowIndex, controlColumn), _
+                                   ChoiceNameAt(block, rowIndex, controlColumn, detailsColumn), _
                                    CellAt(block, rowIndex, statusColumn)
         this.addedVariables.Push variableName
         Info logger, "Added the variable '" & variableName & "' to the Variables table"
 NextRow:
     Next rowIndex
 End Sub
+
+'@sub-title The list one dictionary line points at, whatever shape the file has.
+'@details With no "Control Details" column the file is one DiseaseExporter
+'wrote, whose "Control" column already carries the list name, so that value
+'is answered as it stands. With the column there the file is a setup
+'dictionary: the control decides whether the details name a list at all,
+'plain for choice_manual, choice_multiple and choice_custom and wrapped in
+'CHOICE_FORMULA(...) for choice_formula. Every other control names none and
+'answers empty, which leaves the Default Choice of the variable blank.
+'@param block Variant. The dictionary block, headers on line 1.
+'@param rowIndex Long. The line to read.
+'@param controlColumn Long. Column of the control, 0 when the file has none.
+'@param detailsColumn Long. Column of the control details, 0 when the file has none.
+'@return String. The list name, empty when the line names none.
+Private Function ChoiceNameAt(ByRef block As Variant, ByVal rowIndex As Long, _
+                              ByVal controlColumn As Long, ByVal detailsColumn As Long) As String
+    Dim controlValue As String
+    Dim controlDetails As String
+
+    If detailsColumn = 0 Then
+        ChoiceNameAt = CellAt(block, rowIndex, controlColumn)
+        Exit Function
+    End If
+
+    controlValue = NormaliseControl(CellAt(block, rowIndex, controlColumn))
+    controlDetails = CellAt(block, rowIndex, detailsColumn)
+
+    Select Case controlValue
+    Case CONTROL_CHOICE_MANUAL, CONTROL_CHOICE_MULTIPLE, CONTROL_CHOICE_CUSTOM
+        ChoiceNameAt = controlDetails
+    Case CONTROL_CHOICE_FORMULA
+        ChoiceNameAt = ChoiceFromFormula(controlDetails)
+    End Select
+End Function
+
+'@sub-title A control read without its case and without a parenthesised tail.
+'@details A setup writes "choice_manual" and also "choice_manual (something)";
+'both name the same control. This is the rule LinelistSpecs follows.
+'@param controlValue String. The raw control cell.
+'@return String. The control, lower case and cut at the first bracket.
+Private Function NormaliseControl(ByVal controlValue As String) As String
+    Dim trimmed As String
+    Dim bracket As Long
+
+    trimmed = LCase$(Trim$(controlValue))
+    bracket = InStr(1, trimmed, "(", vbBinaryCompare)
+    If bracket > 0 Then trimmed = Left$(trimmed, bracket - 1)
+
+    NormaliseControl = Trim$(trimmed)
+End Function
+
+'@sub-title The list name held in a CHOICE_FORMULA(...) control details.
+'@details The name is the first argument. The head, the closing bracket and
+'anything past the first comma are dropped.
+'@param controlDetails String. The raw control details cell.
+'@return String. The list name, empty when there is none.
+Private Function ChoiceFromFormula(ByVal controlDetails As String) As String
+    Dim working As String
+    Dim commaPosition As Long
+
+    working = Replace$(controlDetails, CHOICE_FORMULA_HEAD, vbNullString, 1, -1, vbTextCompare)
+
+    commaPosition = InStr(1, working, ",", vbBinaryCompare)
+    If commaPosition > 0 Then working = Left$(working, commaPosition - 1)
+
+    working = Replace$(working, ")", vbNullString, 1, -1, vbBinaryCompare)
+    ChoiceFromFormula = Trim$(working)
+End Function
 
 '@sub-title Fill the joined choices values of the variables just added.
 '@details Only a default choice the Choices sheet carried before this import
@@ -516,11 +617,17 @@ End Sub
 '@section Choices
 '===============================================================================
 
-'@sub-title Add to the Choices sheet every list of the file it lacks.
+'@sub-title Add to the Choices sheet every list of the file it lacks, and fill the labels it lacks.
 '@details The labels travel only when the file is in English; otherwise the
 'list lands with its name and its rows and every label empty. The choices
 'ListObject of the master sheet, when there is one, is stretched over the
 'rows added so the event handlers keep reading them.
+'A list the sheet already carries is not added again, but its empty label
+'cells are filled from an English file. That is the path back for a list
+'added earlier from a file in another language, which lands with its rows
+'and no label at all: the next English file naming the same list writes
+'them. A cell that already holds a label, and a cell answering through a
+'formula, are both left alone.
 Private Sub UpdateChoices(ByVal choicesTable As ListObject, ByVal logger As DiseaseLogger)
     Dim block As Variant
     Dim listNameColumn As Long
@@ -558,7 +665,13 @@ Private Sub UpdateChoices(ByVal choicesTable As ListObject, ByVal logger As Dise
 
     For listIndex = listNames.LowerBound To listNames.UpperBound
         listName = CStr(listNames.Item(listIndex))
-        If this.choices.ChoiceExists(listName) Then GoTo NextList
+        If this.choices.ChoiceExists(listName) Then
+            If keepLabels Then
+                FillAbsentLabels block, listNameColumn, listName, labelColumn, translatedColumn, _
+                                 rawColumn, shortColumn, logger
+            End If
+            GoTo NextList
+        End If
 
         Set labels = New BetterArray
         labels.LowerBound = 1
@@ -628,6 +741,138 @@ NextRow:
     Next rowIndex
 End Sub
 
+'@sub-title Write the labels of the file into the empty label cells of a list already there.
+'@details The rows of the list are matched by their position: the nth row
+'of the list on the master sheet takes the nth label of the file. That is
+'the order AddChoice wrote them in, so a list added from a file in another
+'language lines up with the English file naming it later. Only a cell that
+'is empty and holds no formula is written, so a label the user typed and a
+'label answered by a formula both stand.
+'@param block Variant. The choices block of the file, headers on line 1.
+'@param listNameColumn Long. Column of the list names in that block.
+'@param listName String. The list to fill.
+'@param labelColumn Long. Column of the label in the file, 0 when there is none.
+'@param translatedColumn Long. Column of the translated label in the file.
+'@param rawColumn Long. Column of the non translated label in the file.
+'@param shortColumn Long. Column of the short label in the file.
+'@param logger DiseaseLogger. Takes one line when a cell was written.
+Private Sub FillAbsentLabels(ByRef block As Variant, _
+                             ByVal listNameColumn As Long, _
+                             ByVal listName As String, _
+                             ByVal labelColumn As Long, _
+                             ByVal translatedColumn As Long, _
+                             ByVal rawColumn As Long, _
+                             ByVal shortColumn As Long, _
+                             ByVal logger As DiseaseLogger)
+    Dim labels As BetterArray
+    Dim shortLabels As BetterArray
+    Dim choicesSheet As Worksheet
+    Dim nameColumnAt As Long
+    Dim labelColumnAt As Long
+    Dim shortColumnAt As Long
+    Dim headerRow As Long
+    Dim lastRow As Long
+    Dim rowIndex As Long
+    Dim seen As Long
+    Dim filled As Long
+
+    Set labels = New BetterArray
+    labels.LowerBound = 1
+    Set shortLabels = New BetterArray
+    shortLabels.LowerBound = 1
+
+    CollectListLabels block, listNameColumn, listName, labelColumn, translatedColumn, rawColumn, _
+                      shortColumn, True, labels, shortLabels
+    If labels.Length = 0 Then Exit Sub
+
+    Set choicesSheet = this.choices.Wksh
+    If choicesSheet Is Nothing Then Exit Sub
+
+    headerRow = this.choices.StartRow
+    'The list names sit in the column the header names, and in the first
+    'column of the block when the sheet spells that header another way.
+    nameColumnAt = MasterChoicesColumn(HEADER_LIST_NAME)
+    If nameColumnAt = 0 Then nameColumnAt = this.choices.StartColumn
+    labelColumnAt = MasterLabelColumn()
+    If labelColumnAt = 0 Then Exit Sub
+    shortColumnAt = MasterChoicesColumn(HEADER_SHORT_LABEL)
+
+    lastRow = choicesSheet.Cells(choicesSheet.Rows.Count, nameColumnAt).End(xlUp).Row
+
+    For rowIndex = headerRow + 1 To lastRow
+        If StrComp(Trim$(TextOf(choicesSheet.Cells(rowIndex, nameColumnAt).Value)), listName, vbTextCompare) <> 0 Then GoTo NextRow
+
+        seen = seen + 1
+        If seen > labels.Length Then Exit For
+
+        If WriteWhenAbsent(choicesSheet.Cells(rowIndex, labelColumnAt), CStr(labels.Item(seen))) Then
+            filled = filled + 1
+        End If
+        If shortColumnAt > 0 Then
+            WriteWhenAbsent choicesSheet.Cells(rowIndex, shortColumnAt), CStr(shortLabels.Item(seen))
+        End If
+NextRow:
+    Next rowIndex
+
+    If filled > 0 Then
+        Info logger, "Filled " & filled & " label(s) the list '" & listName & "' was missing on the Choices sheet"
+    End If
+End Sub
+
+'@sub-title Write a value in a cell that holds nothing, and say whether it was written.
+'@details A cell carrying a formula answers its own value and is never
+'written over, whatever that value comes to.
+'@param targetCell Range. The cell to fill.
+'@param newValue String. The value to write; an empty one writes nothing.
+'@return Boolean. True when the cell took the value.
+Private Function WriteWhenAbsent(ByVal targetCell As Range, ByVal newValue As String) As Boolean
+    If LenB(newValue) = 0 Then Exit Function
+    If targetCell.HasFormula Then Exit Function
+    If LenB(TextOf(targetCell.Value)) > 0 Then Exit Function
+
+    targetCell.Value = newValue
+    WriteWhenAbsent = True
+End Function
+
+'@sub-title The column of the master Choices sheet holding the labels.
+'@details The translated label column wins when the sheet carries one; that
+'is the column LLChoices.AddChoice writes, so the fill lands where the add
+'would have.
+'@return Long. The worksheet column, 0 when the sheet carries neither.
+Private Function MasterLabelColumn() As Long
+    MasterLabelColumn = MasterChoicesColumn(HEADER_TRANSLATED_LABEL)
+    If MasterLabelColumn > 0 Then Exit Function
+    MasterLabelColumn = MasterChoicesColumn(HEADER_LABEL)
+End Function
+
+'@sub-title One column of the master Choices sheet, found on its header row.
+'@details The header row is the start row of the LLChoices block and it is
+'read from its start column rightwards until it runs out of headers.
+'@param headerName String. The header to look for, matched without regard to case.
+'@return Long. The worksheet column, 0 when the sheet carries no such header.
+Private Function MasterChoicesColumn(ByVal headerName As String) As Long
+    Dim choicesSheet As Worksheet
+    Dim headerRow As Long
+    Dim columnIndex As Long
+    Dim headerText As String
+
+    Set choicesSheet = this.choices.Wksh
+    If choicesSheet Is Nothing Then Exit Function
+
+    headerRow = this.choices.StartRow
+    columnIndex = this.choices.StartColumn
+
+    Do
+        headerText = Trim$(TextOf(choicesSheet.Cells(headerRow, columnIndex).Value))
+        If LenB(headerText) = 0 Then Exit Function
+        If StrComp(headerText, headerName, vbTextCompare) = 0 Then
+            MasterChoicesColumn = columnIndex
+            Exit Function
+        End If
+        columnIndex = columnIndex + 1
+    Loop While columnIndex <= choicesSheet.Columns.Count
+End Function
+
 '@sub-title Stretch the choices ListObject over the rows AddChoice wrote under it.
 '@details LLChoices writes below the last filled line and knows nothing of
 'the table; the master event handlers read the sheet through the table.
@@ -659,8 +904,9 @@ End Sub
 '@details Seven columns in the disease table order. The order column takes
 'the dictionary order when it is a number and the position of the line
 'otherwise; the choice values column stays empty, its formula comes back
-'once the block has landed. A dictionary with no named line stages a
-'header-only table.
+'once the block has landed. The Choice column of a disease table holds a
+'list name, so it takes what ChoiceNameAt reads and never the control. A
+'dictionary with no named line stages a header-only table.
 Private Function BuildStagingTable(ByVal dictionaryTable As ListObject) As ListObject
     Dim block As Variant
     Dim matrix() As Variant
@@ -669,6 +915,7 @@ Private Function BuildStagingTable(ByVal dictionaryTable As ListObject) As ListO
     Dim sectionColumn As Long
     Dim labelColumn As Long
     Dim controlColumn As Long
+    Dim detailsColumn As Long
     Dim statusColumn As Long
     Dim rowIndex As Long
     Dim rowCount As Long
@@ -685,6 +932,7 @@ Private Function BuildStagingTable(ByVal dictionaryTable As ListObject) As ListO
     sectionColumn = HeaderColumn(block, HEADER_MAIN_SECTION)
     labelColumn = HeaderColumn(block, HEADER_MAIN_LABEL)
     controlColumn = HeaderColumn(block, HEADER_CONTROL)
+    detailsColumn = HeaderColumn(block, HEADER_CONTROL_DETAILS)
     statusColumn = HeaderColumn(block, HEADER_STATUS)
 
     rowCount = CountNamedRows(block, nameColumn)
@@ -707,7 +955,7 @@ Private Function BuildStagingTable(ByVal dictionaryTable As ListObject) As ListO
         matrix(written + 1, DiseaseNameColumn) = variableName
         matrix(written + 1, DiseaseSectionColumn) = CellAt(block, rowIndex, sectionColumn)
         matrix(written + 1, DiseaseLabelColumn) = CellAt(block, rowIndex, labelColumn)
-        matrix(written + 1, DiseaseControlColumn) = CellAt(block, rowIndex, controlColumn)
+        matrix(written + 1, DiseaseControlColumn) = ChoiceNameAt(block, rowIndex, controlColumn, detailsColumn)
         matrix(written + 1, DiseaseChoicesColumn) = vbNullString
         matrix(written + 1, DiseaseStatusColumn) = CellAt(block, rowIndex, statusColumn)
 NextRow:

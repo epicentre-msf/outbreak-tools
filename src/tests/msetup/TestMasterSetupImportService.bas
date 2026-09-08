@@ -34,6 +34,8 @@ Private MasterChoices As LLChoices
 Private TranslationTable As ListObject
 Private Service As MasterSetupImportService
 Private ExportBook As Workbook
+'A second exported file, for the tests that import two diseases in a row.
+Private ExportBookTwo As Workbook
 
 '@section Module lifecycle
 '===============================================================================
@@ -60,6 +62,7 @@ Private Sub ModuleCleanup()
     Set Builder = Nothing
     Set Exporter = Nothing
     Set ExportManager = Nothing
+    Set ExportBookTwo = Nothing
     Set Dropdowns = Nothing
     Set VariablesManager = Nothing
     Set MasterChoices = Nothing
@@ -277,8 +280,227 @@ Fail:
     CustomTestLogFailure Assert, "TestFileWithoutNameTakesTheGivenOneAndOnlyItsColumns", Err.Number, Err.Description
 End Sub
 
+'@TestMethod("MasterSetupImportService")
+Public Sub TestSetupDictionaryTakesTheChoiceFromControlDetails()
+    CustomTestSetTitles Assert, "MasterSetupImportService", "TestSetupDictionaryTakesTheChoiceFromControlDetails"
+
+    Dim diseaseWksh As Worksheet
+    Dim rebuiltTable As ListObject
+    Dim manager As DiseaseWorksheetManager
+
+    On Error GoTo Fail
+
+    'Three lines: a plain choice, a choice through a formula and a variable
+    'that is no choice at all. None of the three is on the Variables table.
+    Set diseaseWksh = Builder.Build(DISEASE_NAME)
+    FillDiseaseTable diseaseWksh.ListObjects(1), Array( _
+        Array(1, "var_pick", "demographics", "Pick", "choice_age", "0 to 4 | 5 to 14", "core"), _
+        Array(2, "var_calc", "symptoms", "Calc", "choice_fever", "yes | no", "core"), _
+        Array(3, "var_text", "history", "Free text", "", "", "optional") _
+    )
+    Set ExportBook = Exporter.BuildDiseaseWorkbook(diseaseWksh, TranslationTable, DISEASE_NAME, "ENG", "DISSHEET001")
+
+    'Reshape the file into a setup dictionary: the list name moves to a
+    '"Control Details" column and "Control" takes the control itself.
+    ReshapeAsSetupDictionary ExportBook, Array( _
+        Array("choice_manual", "choice_age"), _
+        Array("choice_formula", "CHOICE_FORMULA(choice_fever, var_pick)"), _
+        Array("text", "") _
+    )
+
+    Set manager = DiseaseWorksheetManager.Create()
+    manager.RemoveWorksheet ThisWorkbook, DISEASE_NAME
+
+    Service.ImportSetupExport ExportBook
+
+    Assert.AreEqual "choice_age", VariablesManager.DefaultChoiceFor("var_pick"), "A choice_manual line takes its list from the control details"
+    Assert.AreEqual "choice_fever", VariablesManager.DefaultChoiceFor("var_calc"), "A choice_formula line takes the list out of CHOICE_FORMULA"
+    Assert.AreEqual vbNullString, VariablesManager.DefaultChoiceFor("var_text"), "A line that is no choice takes no default choice"
+
+    Set rebuiltTable = ThisWorkbook.Worksheets(DISEASE_NAME).ListObjects(1)
+    Assert.AreEqual "choice_age", rebuiltTable.DataBodyRange.Cells(1, 5).Value, "The Choice column of the disease sheet takes the list"
+    Assert.AreEqual "choice_fever", rebuiltTable.DataBodyRange.Cells(2, 5).Value, "The formula line lands its list on the disease sheet"
+    Assert.AreEqual vbNullString, CStr(rebuiltTable.DataBodyRange.Cells(3, 5).Value), "A line that is no choice leaves the Choice cell empty"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSetupDictionaryTakesTheChoiceFromControlDetails", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("MasterSetupImportService")
+Public Sub TestAbsentChoiceLabelsAreFilledByAnEnglishFile()
+    CustomTestSetTitles Assert, "MasterSetupImportService", "TestAbsentChoiceLabelsAreFilledByAnEnglishFile"
+
+    Dim diseaseWksh As Worksheet
+    Dim store As HiddenNames
+
+    On Error GoTo Fail
+
+    'A French file lands the list with its rows and no label at all.
+    Set diseaseWksh = Builder.Build(DISEASE_NAME, "FRA")
+    FillDiseaseTable diseaseWksh.ListObjects(1), Array( _
+        Array(1, "var_a", "demographics", "Age", "choice_fra", "bas | haut", "core") _
+    )
+    Set ExportBook = Exporter.BuildDiseaseWorkbook(diseaseWksh, TranslationTable, DISEASE_NAME, "FRA", "DISSHEET001")
+
+    Service.ImportSetupExport ExportBook
+
+    Assert.IsTrue MasterChoices.ChoiceExists("choice_fra"), "The French file lands the list under its name"
+    Assert.AreEqual vbNullString, ChoiceLabel("choice_fra", 1), "The French file leaves the labels empty"
+
+    'The same file, now tagged English: the labels it carries fill the cells
+    'the first import left blank.
+    Set store = HiddenNames.Create(ExportBook)
+    store.SetValue "__Var_DISLANG", "ENG"
+
+    Service.ImportSetupExport ExportBook
+
+    Assert.AreEqual "ENG", Service.LanguageTag, "The second read of the file answers the new tag"
+    Assert.AreEqual "bas", ChoiceLabel("choice_fra", 1), "The first absent label is filled from the English file"
+    Assert.AreEqual "haut", ChoiceLabel("choice_fra", 2), "The second absent label is filled too"
+    Assert.AreEqual 0, Service.AddedChoices.Length, "A list already there is filled, never added again"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestAbsentChoiceLabelsAreFilledByAnEnglishFile", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("MasterSetupImportService")
+Public Sub TestASecondImportKeepsTheDiseaseWorksheetFilled()
+    CustomTestSetTitles Assert, "MasterSetupImportService", "TestASecondImportKeepsTheDiseaseWorksheetFilled"
+
+    Dim diseaseWksh As Worksheet
+    Dim mergedTable As ListObject
+    Dim summary As DiseaseImportSummary
+    Dim manager As DiseaseWorksheetManager
+
+    On Error GoTo Fail
+
+    Set diseaseWksh = Builder.Build(DISEASE_NAME)
+    FillDiseaseTable diseaseWksh.ListObjects(1), Array( _
+        Array(1, "var_a", "demographics", "Age", "choice_age", "0 to 4 | 5 to 14", "core"), _
+        Array(2, "var_b", "symptoms", "Fever", "choice_fever", "yes | no", "core") _
+    )
+    Set ExportBook = Exporter.BuildDiseaseWorkbook(diseaseWksh, TranslationTable, DISEASE_NAME, "ENG", "DISSHEET001")
+
+    'The first import rebuilds the sheet, the second one merges into it.
+    Set manager = DiseaseWorksheetManager.Create()
+    manager.RemoveWorksheet ThisWorkbook, DISEASE_NAME
+
+    Service.ImportSetupExport ExportBook
+    Assert.IsTrue WorksheetExists(DISEASE_NAME), "The first import rebuilds the disease worksheet"
+
+    Set summary = Service.ImportSetupExport(ExportBook)
+
+    Assert.IsFalse summary Is Nothing, "The second import answers a summary of its merge"
+    Assert.IsTrue WorksheetExists(DISEASE_NAME), "The second import leaves the disease worksheet in place"
+
+    Set mergedTable = ThisWorkbook.Worksheets(DISEASE_NAME).ListObjects(1)
+    Assert.AreEqual "var_a", mergedTable.DataBodyRange.Cells(1, 2).Value, "The first line is still there after the second import"
+    Assert.AreEqual "var_b", mergedTable.DataBodyRange.Cells(2, 2).Value, "The second line is still there after the second import"
+    Assert.AreEqual "choice_fever", mergedTable.DataBodyRange.Cells(2, 5).Value, "The second import writes the choice again"
+    Assert.AreEqual "core", mergedTable.DataBodyRange.Cells(2, 7).Value, "The second import writes the status again"
+    Assert.AreEqual 2, summary.UpdatedVariables.Length, "Both lines are updated rather than appended"
+    Assert.IsTrue Left$(mergedTable.DataBodyRange.Cells(1, 4).Formula, 1) = "=", "The label formula goes back on after the merge"
+    Assert.IsFalse WorksheetExists(STAGING_SHEET), "The staging sheet goes away on the second import too"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestASecondImportKeepsTheDiseaseWorksheetFilled", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("MasterSetupImportService")
+Public Sub TestASecondFileForAnotherDiseaseFillsItsWorksheet()
+    CustomTestSetTitles Assert, "MasterSetupImportService", "TestASecondFileForAnotherDiseaseFillsItsWorksheet"
+
+    Dim firstWksh As Worksheet
+    Dim secondWksh As Worksheet
+    Dim secondTable As ListObject
+    Dim secondService As MasterSetupImportService
+    Dim manager As DiseaseWorksheetManager
+
+    On Error GoTo Fail
+
+    'Two diseases, two files. The ribbon builds a service of its own per
+    'click, so the second import runs through a fresh one over the same
+    'managers, which is the shape MasterSetupExports.BuildImportService has.
+    Set firstWksh = Builder.Build(DISEASE_NAME)
+    FillDiseaseTable firstWksh.ListObjects(1), Array( _
+        Array(1, "var_a", "demographics", "Age", "choice_age", "0 to 4 | 5 to 14", "core") _
+    )
+    Set ExportBook = Exporter.BuildDiseaseWorkbook(firstWksh, TranslationTable, DISEASE_NAME, "ENG", "DISSHEET001")
+
+    Set secondWksh = Builder.Build("Beta")
+    FillDiseaseTable secondWksh.ListObjects(1), Array( _
+        Array(1, "var_b", "symptoms", "Fever", "choice_fever", "yes | no", "core"), _
+        Array(2, "var_c", "history", "Travel", "choice_age", "0 to 4 | 5 to 14", "optional") _
+    )
+    Set ExportBookTwo = Exporter.BuildDiseaseWorkbook(secondWksh, TranslationTable, "Beta", "ENG", "DISSHEET002")
+
+    'Both worksheets go away, so both imports take the rebuild path.
+    Set manager = DiseaseWorksheetManager.Create()
+    manager.RemoveWorksheet ThisWorkbook, DISEASE_NAME
+    manager.RemoveWorksheet ThisWorkbook, "Beta"
+
+    Service.ImportSetupExport ExportBook
+    Assert.IsTrue WorksheetExists(DISEASE_NAME), "The first file rebuilds its disease worksheet"
+
+    Set secondService = MasterSetupImportService.Create(ThisWorkbook, _
+                            DiseaseSheet.Create(ThisWorkbook, Dropdowns, VariablesManager), _
+                            Dropdowns, VariablesManager, MasterChoices)
+    secondService.ImportSetupExport ExportBookTwo
+
+    Assert.IsTrue WorksheetExists("Beta"), "The second file builds the worksheet of its own disease"
+    Assert.AreEqual "Beta", secondService.DiseaseName, "The second import reads the name of the second file"
+
+    Set secondTable = ThisWorkbook.Worksheets("Beta").ListObjects(1)
+    Assert.AreEqual 2, secondTable.ListRows.Count, "The second worksheet takes both lines of its file"
+    Assert.AreEqual "var_b", secondTable.DataBodyRange.Cells(1, 2).Value, "The first line of the second file lands"
+    Assert.AreEqual "var_c", secondTable.DataBodyRange.Cells(2, 2).Value, "The second line of the second file lands"
+    Assert.AreEqual "choice_fever", secondTable.DataBodyRange.Cells(1, 5).Value, "The choice travels with the line"
+    Assert.AreEqual "optional", secondTable.DataBodyRange.Cells(2, 7).Value, "The status travels with the line"
+
+    'The first worksheet is untouched by the second import.
+    Assert.AreEqual "var_a", ThisWorkbook.Worksheets(DISEASE_NAME).ListObjects(1).DataBodyRange.Cells(1, 2).Value, _
+                    "The worksheet of the first import keeps its line"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestASecondFileForAnotherDiseaseFillsItsWorksheet", Err.Number, Err.Description
+End Sub
+
 '@section Fixtures
 '===============================================================================
+
+'@description Turn the exported dictionary into the shape a setup carries.
+'@details The export keeps the list name in its "Control" column, which is
+'what a disease worksheet holds. A setup dictionary carries the control
+'there and the list name in a "Control Details" column beside it, so the
+'pairs given are written down those two columns, line by line.
+'@param sourceBook Workbook. The exported workbook to reshape.
+'@param controlPairs Variant. One Array(control, control details) per line.
+Private Sub ReshapeAsSetupDictionary(ByVal sourceBook As Workbook, ByVal controlPairs As Variant)
+    Dim dictionaryTable As ListObject
+    Dim detailsColumn As ListColumn
+    Dim controlColumn As ListColumn
+    Dim pair As Variant
+    Dim rowIndex As Long
+
+    Set dictionaryTable = sourceBook.Worksheets("Dictionary").ListObjects("Tab_Dictionary")
+    Set controlColumn = dictionaryTable.ListColumns("Control")
+    Set detailsColumn = dictionaryTable.ListColumns.Add
+    detailsColumn.Name = "Control Details"
+
+    For rowIndex = LBound(controlPairs) To UBound(controlPairs)
+        pair = controlPairs(rowIndex)
+        controlColumn.DataBodyRange.Cells(rowIndex - LBound(controlPairs) + 1, 1).Value = pair(LBound(pair))
+        detailsColumn.DataBodyRange.Cells(rowIndex - LBound(controlPairs) + 1, 1).Value = pair(LBound(pair) + 1)
+    Next rowIndex
+End Sub
 
 Private Sub PrepareEnvironment()
     Dim variablesSheet As Worksheet
@@ -352,8 +574,10 @@ End Sub
 Private Sub CleanupEnvironment()
     On Error Resume Next
         If Not ExportBook Is Nothing Then ExportBook.Close SaveChanges:=False
+        If Not ExportBookTwo Is Nothing Then ExportBookTwo.Close SaveChanges:=False
     On Error GoTo 0
     Set ExportBook = Nothing
+    Set ExportBookTwo = Nothing
 
     DeleteWorksheetSafe DISEASE_NAME
     DeleteWorksheetSafe "Beta"

@@ -188,7 +188,7 @@ Private Function AskDiseaseName(ByVal service As MasterSetupImportService) As St
     Dim candidate As String
     Dim prompt As String
 
-    prompt = "The file names no disease. Enter the name of the disease worksheet to create:"
+    prompt = "Unable to find the disease name from the imported file. Enter the name of the disease worksheet to create:"
 
     For attempt = 1 To MAX_NAME_ATTEMPTS
         candidate = MasterSetupHelpers.CleanMasterSheetName(InputBox(prompt, "Import"))

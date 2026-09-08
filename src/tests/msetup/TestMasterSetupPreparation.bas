@@ -104,6 +104,28 @@ Fail:
     CustomTestLogFailure Assert, "TestPrepareGrowsTheReportSheetVeryHidden", Err.Number, Err.Description
 End Sub
 
+'@TestMethod("MasterSetupPreparation")
+Public Sub TestEnsureDropdownsKeepsAVeryHiddenSheetVeryHidden()
+    CustomTestSetTitles Assert, "MasterSetupPreparation", "TestEnsureDropdownsKeepsAVeryHiddenSheetVeryHidden"
+
+    On Error GoTo Fail
+
+    'A deployed master setup carries __dropdowns very hidden, and the imports
+    'rebuild the dropdowns on it afterwards.
+    DropdownSheet.Visible = xlSheetVeryHidden
+
+    Subject.EnsureDropdowns
+
+    Assert.AreEqual CLng(xlSheetVeryHidden), CLng(DropdownSheet.Visible), _
+                    "An existing dropdowns sheet should keep its visibility"
+    Assert.IsTrue Subject.Dropdowns.Exists(YESNO_DROPDOWN), "The dropdowns should still be registered on the very hidden sheet"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestEnsureDropdownsKeepsAVeryHiddenSheetVeryHidden", Err.Number, Err.Description
+End Sub
+
 '@section Test lifecycle
 '===============================================================================
 '@TestInitialize

@@ -377,7 +377,7 @@ Private Sub CollectMissing(ByRef owner As TDiseaseData, ByRef other As TDiseaseD
             bundle.Add keyPrefix & "-" & counter, _
                        VariableWhere(owner, rowIndex) & "--" & _
                        "Missing from " & other.displayName & ". Label: " & owner.labels.Item(rowIndex), _
-                       checkingError
+                       checkingWarning
         End If
     Next rowIndex
 End Sub
