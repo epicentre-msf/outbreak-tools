@@ -797,7 +797,13 @@ Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, _
     PersistCounterValue registrySheet, updateSequence
 
     SortTranslations
+
+    'The layout runs only when a row came or went. The duplicate rules run on
+    'every update: a translator who fixes a duplicate by hand moves no row, and
+    'the EXACT rule written for the old value would otherwise stay on the column
+    'and keep colouring the one cell still carrying it.
     If this.dirty Then ApplyFormatting
+    ApplyDuplicateRules
 
     EndTagIntegration
 
@@ -2308,21 +2314,12 @@ Private Sub PaintHairlineBorder(ByVal target As Range, ByVal edge As Long)
 End Sub
 
 '@label:apply-lang-column-formatting
-'@sub-title Apply font, sizing, and duplicate highlighting to a language column.
-'@details The group rules go on first and the red catch-all goes on last.
-'         FormatConditions.Add appends, so the rule added last holds the lowest
-'         priority and shows through only where no group rule claimed the cell.
-'
-'         The key language column takes the font and the sizing and none of the
-'         duplicate rules. See ApplyFormatting for why.
+'@sub-title Apply font and sizing to a language column.
+'@details The duplicate rules are HighlightDuplicateColumn's, run from
+'         ApplyDuplicateRules on every update. This one runs only when a row
+'         came or went, so it carries the layout alone.
 '@param langRng Range. The language column to format.
-'@param painted ByRef Long. How many groups the pass has coloured so far, carried
-'       across every column so no two groups share a colour. See
-'       HighlightDuplicateGroups.
-'@param highlightDuplicates Boolean. False for the key language column, which is
-'       the source of truth and has nothing to be checked against.
-Private Sub ApplyLangColumnFormatting(ByVal langRng As Range, ByRef painted As Long, _
-                                      ByVal highlightDuplicates As Boolean)
+Private Sub ApplyLangColumnFormatting(ByVal langRng As Range)
 
     If langRng Is Nothing Then Exit Sub
 
@@ -2338,7 +2335,20 @@ Private Sub ApplyLangColumnFormatting(ByVal langRng As Range, ByRef painted As L
 
     End With
 
-    If Not highlightDuplicates Then Exit Sub
+End Sub
+
+'@label:highlight-duplicate-column
+'@sub-title Put the duplicate rules on one translation column.
+'@details The group rules go on first and the red catch-all goes on last.
+'         FormatConditions.Add appends, so the rule added last holds the lowest
+'         priority and shows through only where no group rule claimed the cell.
+'@param langRng Range. The translation column to paint.
+'@param painted ByRef Long. How many groups the pass has coloured so far, carried
+'       across every column so no two groups share a colour. See
+'       HighlightDuplicateGroups.
+Private Sub HighlightDuplicateColumn(ByVal langRng As Range, ByRef painted As Long)
+
+    If langRng Is Nothing Then Exit Sub
 
     HighlightDuplicateGroups langRng, painted
 
@@ -2743,10 +2753,14 @@ Private Sub SortTranslations()
 End Sub
 
 '@label:apply-formatting
-'@sub-title Apply light formatting and duplicate highlighting once per update.
+'@sub-title Apply the table layout once per update that moved a row.
 '@details The row autofit runs once at the end. EntireRow.AutoFit measures
 '         every used column on the sheet, so one call per language column was
 '         the same measurement done again and again.
+'
+'         The duplicate rules are not here. They depend on the values, and a
+'         value changes with no row moving, so ApplyDuplicateRules runs on every
+'         update whether this one ran or not.
 Private Sub ApplyFormatting()
     Dim dataRange As Range
     Dim tableRange As Range
@@ -2754,8 +2768,6 @@ Private Sub ApplyFormatting()
     Dim unlockRange As Range
     Dim unlockOffset As Long
     Dim unlockWidth As Long
-    Dim paintedGroups As Long
-    Dim isKeyColumn As Boolean
 
 
     Set dataRange = this.table.DataBodyRange
@@ -2768,11 +2780,6 @@ Private Sub ApplyFormatting()
     tableRange.Rows(1).Font.Color = vbWhite
 
     If dataRange Is Nothing Then Exit Sub
-
-    'A delete that fails leaves the old rules in place and a new one is added
-    'below on every update, until the sheet is slow to scroll.
-    'TestFormatConditionsDoNotAccumulate watches the count.
-    dataRange.FormatConditions.Delete
 
     unlockWidth = this.table.ListColumns.Count - LabelColumnIndex()
     If unlockWidth > 0 Then
@@ -2794,23 +2801,60 @@ Private Sub ApplyFormatting()
 
     If columnRange Is Nothing Then Exit Sub
 
-    'One counter for the whole pass, so the first duplicate group of the second
-    'language does not draw the colour the first language already used.
-    '
-    'The loop opens on LabelColumnIndex(), the key language, and that column is
-    'the source of truth: DeduplicateLabels already keeps it unique, and a value
-    'repeated there is the sheet's own doing rather than a translator's. Every
-    'column after it is a translation of that one, and a repeat there is two
-    'source labels given the same wording, which is what the colours are for.
-    isKeyColumn = True
     Do While Not columnRange Is Nothing And Not Intersect(columnRange, dataRange) Is Nothing
-        ApplyLangColumnFormatting columnRange, paintedGroups, Not isKeyColumn
-        isKeyColumn = False
+        ApplyLangColumnFormatting columnRange
         Set columnRange = columnRange.Offset(0, 1)
         If columnRange.Column > dataRange.Columns(dataRange.Columns.Count).Column Then Exit Do
     Loop
 
     dataRange.EntireRow.AutoFit
+End Sub
+
+'@label:apply-duplicate-rules
+'@sub-title Rebuild the duplicate rules of every translation column, on every update.
+'@details The rules are the sheet's copy of what CollectDuplicateGroups found,
+'         one EXACT rule per group, so they are only right for the values they
+'         were built from. Rebuilding them used to wait for a row to come or go.
+'         A translator who fixed a duplicate by hand moved no row, so the rule
+'         for the old value stayed and the cell still carrying it kept its
+'         colour with nothing left to pair it with. TestFixedDuplicateLosesItsRuleOnNextUpdate
+'         pins that.
+'
+'         A delete that fails leaves the old rules in place and a new one is
+'         added below on every update, until the sheet is slow to scroll.
+'         TestFormatConditionsDoNotAccumulate watches the count.
+'
+'         One counter for the whole pass, so the first duplicate group of the
+'         second language does not draw the colour the first language already
+'         used.
+'
+'         The loop opens one column after LabelColumnIndex(). The key language
+'         is the source of truth: DeduplicateLabels already keeps it unique, and
+'         a value repeated there is the sheet's own doing rather than a
+'         translator's, so it takes no rule at all. Every column after it is a
+'         translation of that one, and a repeat there is two source labels given
+'         the same wording, which is what the colours are for.
+Private Sub ApplyDuplicateRules()
+    Dim dataRange As Range
+    Dim columnRange As Range
+    Dim paintedGroups As Long
+
+    Set dataRange = this.table.DataBodyRange
+    If dataRange Is Nothing Then Exit Sub
+
+    dataRange.FormatConditions.Delete
+
+    On Error Resume Next
+        Set columnRange = dataRange.Columns(LabelColumnIndex() + 1)
+    On Error GoTo 0
+
+    If columnRange Is Nothing Then Exit Sub
+
+    Do While Not Intersect(columnRange, dataRange) Is Nothing
+        HighlightDuplicateColumn columnRange, paintedGroups
+        Set columnRange = columnRange.Offset(0, 1)
+        If columnRange.Column > dataRange.Columns(dataRange.Columns.Count).Column Then Exit Do
+    Loop
 End Sub
 
 

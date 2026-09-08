@@ -2270,6 +2270,55 @@ Fail:
 End Sub
 
 
+'@TestMethod("SetupTranslationsTable")
+'@sub-title A duplicate fixed by hand loses its rule on the next update.
+'@details The group rules used to be rebuilt only when a row was added or
+'         removed. A translator who retyped one of two "Salut" cells and ran
+'         the update moved no row, so the rule EXACT(cell,"Salut") written by
+'         the previous update stayed on the column and the cell still reading
+'         "Salut" kept its fill with nothing left to pair it with.
+'
+'         The second update runs with every registry flag on "no", which is the
+'         table the ribbon leaves behind: SwitchTagsToNo runs after every
+'         update, so the click that follows a hand fix processes no range and
+'         moves no row.
+Public Sub TestFixedDuplicateLosesItsRuleOnNextUpdate()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestFixedDuplicateLosesItsRuleOnNextUpdate"
+    On Error GoTo Fail
+
+    Dim rulesWhileDuplicated As Long
+    Dim rulesAfterFix As Long
+    Dim rowsBeforeFix As Long
+    Dim summary As String
+
+    Subject.UpdateFromRegistry RegistrySheet, "French"
+    FillLanguageColumn "French", Array("Salut", "Salut")
+    RunUpdateThatAddsARow
+
+    rulesWhileDuplicated = GroupRuleColors("French").Length
+    Assert.AreEqual CLng(1), rulesWhileDuplicated, "The duplicated pair takes one group rule"
+
+    'The fix is a value edit, and the update after it comes or goes with no row.
+    FillLanguageColumn "French", Array("Salut", "Bonjour")
+    rowsBeforeFix = TranslationsTable.ListRows.Count
+    SetRegistryStatus "no", "no", "no"
+    Subject.UpdateFromRegistry RegistrySheet
+
+    rulesAfterFix = GroupRuleColors("French").Length
+    Assert.LogSuccesses "TestFixedDuplicateLosesItsRuleOnNextUpdate: rows=" & CStr(rowsBeforeFix) & _
+                        " rulesBefore=" & CStr(rulesWhileDuplicated) & " rulesAfter=" & CStr(rulesAfterFix)
+
+    Assert.AreEqual rowsBeforeFix, TranslationsTable.ListRows.Count, "The update after the fix moves no row"
+    Assert.AreEqual CLng(0), rulesAfterFix, "No group rule may outlive the duplicate it was written for"
+    Assert.AreEqual CLng(1), ColumnRuleCount("French"), "The red catch-all still stands on the column"
+    Assert.IsFalse Subject.DuplicateLabels(summary, "French"), "The summary reports no duplicate either"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestFixedDuplicateLosesItsRuleOnNextUpdate", Err.Number, Err.Description
+End Sub
+
+
 '@section Helpers
 '===============================================================================
 '@sub-title Write one value per row into a language column, top down.
@@ -2291,7 +2340,9 @@ End Sub
 
 '@sub-title Run an update that brings one new label in, so ApplyFormatting fires.
 '@details ApplyFormatting runs only when a row was added or removed. Everything
-'         these tests set up is a value edit, which leaves the table clean.
+'         these tests set up is a value edit, which leaves the table clean. The
+'         duplicate rules no longer wait for it, see ApplyDuplicateRules; the
+'         helper stays for the tests that read the layout back.
 Private Sub RunUpdateThatAddsARow()
     SourceSheet.Range("A3").Value = "Fresh label " & CStr(TranslationsTable.ListRows.Count)
     DropName "RNG_Greetings"

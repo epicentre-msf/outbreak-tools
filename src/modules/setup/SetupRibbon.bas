@@ -650,14 +650,32 @@ Handler:
     Resume Cleanup
 End Sub
 
+'@Description("Callback for btnCheck onAction: run the setup checks and open the report")
+'@details A check that died used to end without a word. PrintReport never ran,
+'so the report sheet kept the previous run, and a count that had not moved read
+'as "the check found the same thing again". The number and the description are
+'read first: Mac drops Err.Description on the way out of a class method.
+'@EntryPoint
 Public Sub clickCheck(ByRef ribbonControl As IRibbonControl)
-    On Error GoTo Cleanup
+    Dim errNumber As Long
+    Dim errDescription As String
+
+    On Error GoTo Handler
 
     EventsManager.EnterBusyState
     SetupHelpers.CheckTheSetup
 
 Cleanup:
     EventsManager.ExitBusyState
+    Exit Sub
+
+Handler:
+    errNumber = Err.Number
+    errDescription = Err.Description
+    Debug.Print "clickCheck: "; errNumber; errDescription
+    Messenger.Show "The setup check did not run. The checking worksheet shows the previous run. Error: " & _
+                   errDescription, vbOK, vbCritical
+    Resume Cleanup
 End Sub
 
 
