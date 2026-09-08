@@ -9,7 +9,8 @@
 #   2. plumbing    ribbon-doctor.sh is clean on every workbook that has a ribbon
 #   3. ribbons     the unpacked sources under ribbons/ match the workbooks
 #   4. imports     hand-imported classes and modules match the repo
-#   5. closure     the dev binaries carry every component their code names
+#   5. closure     the dev binaries carry every component the Dev sheet
+#                  declares and their code names, and every ribbon callback
 #   6. trads       no translation the product asks for is missing from the
 #                  designer binaries a build can read
 #   7. rebuild     the ribbon sources are re-read out of the workbooks
@@ -114,8 +115,12 @@ bash "$DRIFT" || FAILED=1
 
 # --- 5. component closure ----------------------------------------------------
 # The dev binaries compile from whatever was pasted into them, and a component
-# left off the paste is a project-wide compile failure in the field. The scan
-# reads the pasted code itself out of vbaProject.bin, in plain R on either OS.
+# left off the paste is a project-wide compile failure in the field. Closed is
+# three things, in this order: every component the Dev sheet tables declare is
+# in the project (a bare mock copied over its _dev twin fails here first), the
+# pasted code names nothing the project lacks, and every ribbon callback has a
+# procedure behind it. The scan reads the code out of vbaProject.bin and the
+# Dev tables out of the sheet cells, in plain R on either OS.
 # The repo .Rprofile loads packages these scans never ask for, and R dying at
 # startup over them reads exactly like a failed check, so it is held back.
 echo
