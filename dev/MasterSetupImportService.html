@@ -182,7 +182,57 @@ read by label so the order of the lines carries no weight.</p>
 <pre><code class="language-vb">Private Sub UpdateVariables(ByVal dictionaryTable As ListObject, ByVal logger As DiseaseLogger)
 </code></pre>
 <p>One read of the dictionary block serves every line. A name the
-table carries, or one the file names twice, is passed over.</p>
+table carries, or one the file names twice, is passed over. The Default
+Choice column takes the list the variable points at, never the control
+itself: ChoiceNameAt settles which column of the file carries it.</p>
+<hr />
+<h3 id="int-choicenameat">ChoiceNameAt <a class="anchor-link" href="#int-choicenameat">#</a></h3>
+<p><strong>The list one dictionary line points at, whatever shape the file has.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ChoiceNameAt(ByRef block As Variant, ByVal rowIndex As Long, _
+                              ByVal controlColumn As Long, ByVal detailsColumn As Long) As String
+</code></pre>
+<p>With no &quot;Control Details&quot; column the file is one DiseaseExporter
+wrote, whose &quot;Control&quot; column already carries the list name, so that value
+is answered as it stands. With the column there the file is a setup
+dictionary: the control decides whether the details name a list at all,
+plain for choice_manual, choice_multiple and choice_custom and wrapped in
+CHOICE_FORMULA(...) for choice_formula. Every other control names none and
+answers empty, which leaves the Default Choice of the variable blank.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>block</code>: Variant. The dictionary block, headers on line 1.</li>
+<li><code>rowIndex</code>: Long. The line to read.</li>
+<li><code>controlColumn</code>: Long. Column of the control, 0 when the file has none.</li>
+<li><code>detailsColumn</code>: Long. Column of the control details, 0 when the file has none.</li>
+</ul>
+<p><strong>Returns:</strong> String. The list name, empty when the line names none.</p>
+<hr />
+<h3 id="int-normalisecontrol">NormaliseControl <a class="anchor-link" href="#int-normalisecontrol">#</a></h3>
+<p><strong>A control read without its case and without a parenthesised tail.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NormaliseControl(ByVal controlValue As String) As String
+</code></pre>
+<p>A setup writes &quot;choice_manual&quot; and also &quot;choice_manual (something)&quot;;
+both name the same control. This is the rule LinelistSpecs follows.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>controlValue</code>: String. The raw control cell.</li>
+</ul>
+<p><strong>Returns:</strong> String. The control, lower case and cut at the first bracket.</p>
+<hr />
+<h3 id="int-choicefromformula">ChoiceFromFormula <a class="anchor-link" href="#int-choicefromformula">#</a></h3>
+<p><strong>The list name held in a CHOICE_FORMULA(...) control details.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ChoiceFromFormula(ByVal controlDetails As String) As String
+</code></pre>
+<p>The name is the first argument. The head, the closing bracket and
+anything past the first comma are dropped.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>controlDetails</code>: String. The raw control details cell.</li>
+</ul>
+<p><strong>Returns:</strong> String. The list name, empty when there is none.</p>
 <hr />
 <h3 id="int-refreshaddedvariables">RefreshAddedVariables <a class="anchor-link" href="#int-refreshaddedvariables">#</a></h3>
 <p><strong>Fill the joined choices values of the variables just added.</strong></p>
@@ -195,14 +245,20 @@ user types them, and the label column follows once the sheet is edited.</p>
 <hr />
 <h2 id="int-choices">Choices</h2>
 <h3 id="int-updatechoices">UpdateChoices <a class="anchor-link" href="#int-updatechoices">#</a></h3>
-<p><strong>Add to the Choices sheet every list of the file it lacks.</strong></p>
+<p><strong>Add to the Choices sheet every list of the file it lacks, and fill the labels it lacks.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UpdateChoices(ByVal choicesTable As ListObject, ByVal logger As DiseaseLogger)
 </code></pre>
 <p>The labels travel only when the file is in English; otherwise the
 list lands with its name and its rows and every label empty. The choices
 ListObject of the master sheet, when there is one, is stretched over the
-rows added so the event handlers keep reading them.</p>
+rows added so the event handlers keep reading them.
+A list the sheet already carries is not added again, but its empty label
+cells are filled from an English file. That is the path back for a list
+added earlier from a file in another language, which lands with its rows
+and no label at all: the next English file naming the same list writes
+them. A cell that already holds a label, and a cell answering through a
+formula, are both left alone.</p>
 <hr />
 <h3 id="int-collectlistlabels">CollectListLabels <a class="anchor-link" href="#int-collectlistlabels">#</a></h3>
 <p><strong>Gather the labels of one list, in the order the file carries them.</strong></p>
@@ -222,6 +278,73 @@ rows added so the event handlers keep reading them.</p>
 translated label, then the non translated label. The short label falls
 back on the label. With keepLabels False both come out empty.</p>
 <hr />
+<h3 id="int-fillabsentlabels">FillAbsentLabels <a class="anchor-link" href="#int-fillabsentlabels">#</a></h3>
+<p><strong>Write the labels of the file into the empty label cells of a list already there.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FillAbsentLabels(ByRef block As Variant, _
+                             ByVal listNameColumn As Long, _
+                             ByVal listName As String, _
+                             ByVal labelColumn As Long, _
+                             ByVal translatedColumn As Long, _
+                             ByVal rawColumn As Long, _
+                             ByVal shortColumn As Long, _
+                             ByVal logger As DiseaseLogger)
+</code></pre>
+<p>The rows of the list are matched by their position: the nth row
+of the list on the master sheet takes the nth label of the file. That is
+the order AddChoice wrote them in, so a list added from a file in another
+language lines up with the English file naming it later. Only a cell that
+is empty and holds no formula is written, so a label the user typed and a
+label answered by a formula both stand.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>block</code>: Variant. The choices block of the file, headers on line 1.</li>
+<li><code>listNameColumn</code>: Long. Column of the list names in that block.</li>
+<li><code>listName</code>: String. The list to fill.</li>
+<li><code>labelColumn</code>: Long. Column of the label in the file, 0 when there is none.</li>
+<li><code>translatedColumn</code>: Long. Column of the translated label in the file.</li>
+<li><code>rawColumn</code>: Long. Column of the non translated label in the file.</li>
+<li><code>shortColumn</code>: Long. Column of the short label in the file.</li>
+<li><code>logger</code>: DiseaseLogger. Takes one line when a cell was written.</li>
+</ul>
+<hr />
+<h3 id="int-writewhenabsent">WriteWhenAbsent <a class="anchor-link" href="#int-writewhenabsent">#</a></h3>
+<p><strong>Write a value in a cell that holds nothing, and say whether it was written.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function WriteWhenAbsent(ByVal targetCell As Range, ByVal newValue As String) As Boolean
+</code></pre>
+<p>A cell carrying a formula answers its own value and is never
+written over, whatever that value comes to.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetCell</code>: Range. The cell to fill.</li>
+<li><code>newValue</code>: String. The value to write; an empty one writes nothing.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the cell took the value.</p>
+<hr />
+<h3 id="int-masterlabelcolumn">MasterLabelColumn <a class="anchor-link" href="#int-masterlabelcolumn">#</a></h3>
+<p><strong>The column of the master Choices sheet holding the labels.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MasterLabelColumn() As Long
+</code></pre>
+<p>The translated label column wins when the sheet carries one; that
+is the column LLChoices.AddChoice writes, so the fill lands where the add
+would have.</p>
+<p><strong>Returns:</strong> Long. The worksheet column, 0 when the sheet carries neither.</p>
+<hr />
+<h3 id="int-masterchoicescolumn">MasterChoicesColumn <a class="anchor-link" href="#int-masterchoicescolumn">#</a></h3>
+<p><strong>One column of the master Choices sheet, found on its header row.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MasterChoicesColumn(ByVal headerName As String) As Long
+</code></pre>
+<p>The header row is the start row of the LLChoices block and it is
+read from its start column rightwards until it runs out of headers.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>headerName</code>: String. The header to look for, matched without regard to case.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The worksheet column, 0 when the sheet carries no such header.</p>
+<hr />
 <h3 id="int-stretchchoicestable">StretchChoicesTable <a class="anchor-link" href="#int-stretchchoicestable">#</a></h3>
 <p><strong>Stretch the choices ListObject over the rows AddChoice wrote under it.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -239,8 +362,9 @@ the table; the master event handlers read the sheet through the table.</p>
 <p>Seven columns in the disease table order. The order column takes
 the dictionary order when it is a number and the position of the line
 otherwise; the choice values column stays empty, its formula comes back
-once the block has landed. A dictionary with no named line stages a
-header-only table.</p>
+once the block has landed. The Choice column of a disease table holds a
+list name, so it takes what ChoiceNameAt reads and never the control. A
+dictionary with no named line stages a header-only table.</p>
 <hr />
 <h3 id="int-ordervalue">OrderValue <a class="anchor-link" href="#int-ordervalue">#</a></h3>
 <p><strong>The dictionary order of a line when it is a number, its position otherwise.</strong></p>
