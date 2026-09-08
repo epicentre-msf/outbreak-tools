@@ -677,7 +677,7 @@ the line.</p>
 <p><strong>Draw every chart the table pass put off, in one pass.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub DrawPendingCharts(ByVal pending As Collection, ByVal outsh As Worksheet, _
-                              ByVal namObj As AnaTabIds, ByVal scope As Byte)
+                              ByRef namObj As AnaTabIds, ByVal scope As Byte)
 </code></pre>
 <p>The charts used to be drawn one per table, in the middle of writing the
 tables. Excel 16.112 dies on the FIRST of them: the table before it is
@@ -702,7 +702,7 @@ to be true here, or one bad chart would cost every chart after it.</p>
 <p><em>add-graph-series</em></p>
 <p><strong>Add one series to a chart and register it for the export</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddGraphSeries(ByVal gr As Graphs, ByVal namObj As AnaTabIds, _
+<pre><code class="language-vb">Private Sub AddGraphSeries(ByRef gr As Graphs, ByRef namObj As AnaTabIds, _
                            ByVal scope As Byte, ByVal graphId As String, _
                            ByVal seriesName As String, ByVal seriesType As String, _
                            ByVal seriesPos As String, ByVal seriesLabel As String, _
@@ -740,15 +740,25 @@ make that mistake twice.</p>
 <p><em>finish-graph</em></p>
 <p><strong>Format a chart, register its look and harvest what it reported</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub FinishGraph(ByVal gr As Graphs, ByVal namObj As AnaTabIds, _
+<pre><code class="language-vb">Private Sub FinishGraph(ByRef gr As Graphs, ByRef namObj As AnaTabIds, _
                         ByVal scope As Byte, ByVal graphId As String, _
                         ByVal catTitle As String, ByVal valuesTitle As String, _
-                        ByVal hardCodeLabels As Boolean, _
-                        ByVal heightFactor As Long, ByVal plotTitle As String)
+                        ByVal plotTitle As String, ByVal hardCodeLabels As Boolean, _
+                        ByVal heightFactor As Long)
 </code></pre>
 <p>The second half every chart shares. The chart scope comes from the analysis
 scope through GraphScopeOf, so a chart is never formatted against a number
 that happens to line up.</p>
+<h2 id="int-the-parameter-order-is-measured-not-chosen">THE PARAMETER ORDER IS MEASURED, NOT CHOSEN</h2>
+<p>Excel 16.112 on macOS died on the CALL into this procedure, before its first
+statement, whenever the list read ..., valuesTitle, hardCodeLabels,
+heightFactor, plotTitle: eight headless builds out of eight, with the body
+reduced to an Exit Sub and every argument a literal. With plotTitle moved
+before the Boolean and the Long, the same call was entered on every chart of
+sixteen builds across three setups. Nothing the procedure does changed.
+Keep this order, and keep the objects ByRef, which is the shape those builds
+ran; whether ByRef is part of it is not measured. The bisection is written
+up in .obt/gotchas/finishgraph-signature-16112.md.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>gr</code>: Graphs. The chart being finished.</li>
@@ -757,9 +767,9 @@ that happens to line up.</p>
 <li><code>graphId</code>: String. Identifier of the chart.</li>
 <li><code>catTitle</code>: String. Category axis title.</li>
 <li><code>valuesTitle</code>: String. Value axis title.</li>
+<li><code>plotTitle</code>: String. Chart title.</li>
 <li><code>hardCodeLabels</code>: Boolean. True writes the labels as literals.</li>
 <li><code>heightFactor</code>: Long. Height multiplier of the chart.</li>
-<li><code>plotTitle</code>: String. Chart title.</li>
 </ul>
 <hr />
 <h3 id="int-graphanchor">GraphAnchor <a class="anchor-link" href="#int-graphanchor">#</a></h3>

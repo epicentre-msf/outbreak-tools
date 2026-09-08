@@ -920,24 +920,33 @@ mismatch that pointed nowhere.</p>
 <hr />
 <h3 id="int-applylangcolumnformatting">ApplyLangColumnFormatting <a class="anchor-link" href="#int-applylangcolumnformatting">#</a></h3>
 <p><em>apply-lang-column-formatting</em></p>
-<p><strong>Apply font, sizing, and duplicate highlighting to a language column.</strong></p>
+<p><strong>Apply font and sizing to a language column.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyLangColumnFormatting(ByVal langRng As Range, ByRef painted As Long, _
-                                      ByVal highlightDuplicates As Boolean)
+<pre><code class="language-vb">Private Sub ApplyLangColumnFormatting(ByVal langRng As Range)
+</code></pre>
+<p>The duplicate rules are HighlightDuplicateColumn's, run from
+ApplyDuplicateRules on every update. This one runs only when a row
+came or went, so it carries the layout alone.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>langRng</code>: Range. The language column to format.</li>
+</ul>
+<hr />
+<h3 id="int-highlightduplicatecolumn">HighlightDuplicateColumn <a class="anchor-link" href="#int-highlightduplicatecolumn">#</a></h3>
+<p><em>highlight-duplicate-column</em></p>
+<p><strong>Put the duplicate rules on one translation column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub HighlightDuplicateColumn(ByVal langRng As Range, ByRef painted As Long)
 </code></pre>
 <p>The group rules go on first and the red catch-all goes on last.
 FormatConditions.Add appends, so the rule added last holds the lowest
 priority and shows through only where no group rule claimed the cell.</p>
-<p>The key language column takes the font and the sizing and none of the
-duplicate rules. See ApplyFormatting for why.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>langRng</code>: Range. The language column to format.</li>
+<li><code>langRng</code>: Range. The translation column to paint.</li>
 <li><code>painted</code>: ByRef Long. How many groups the pass has coloured so far, carried
 across every column so no two groups share a colour. See
 HighlightDuplicateGroups.</li>
-<li><code>highlightDuplicates</code>: Boolean. False for the key language column, which is
-the source of truth and has nothing to be checked against.</li>
 </ul>
 <hr />
 <h3 id="int-highlightduplicategroups">HighlightDuplicateGroups <a class="anchor-link" href="#int-highlightduplicategroups">#</a></h3>
@@ -1111,13 +1120,42 @@ adjacent, and resizing over the wrong column follows from that.</p>
 <hr />
 <h3 id="int-applyformatting">ApplyFormatting <a class="anchor-link" href="#int-applyformatting">#</a></h3>
 <p><em>apply-formatting</em></p>
-<p><strong>Apply light formatting and duplicate highlighting once per update.</strong></p>
+<p><strong>Apply the table layout once per update that moved a row.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyFormatting()
 </code></pre>
 <p>The row autofit runs once at the end. EntireRow.AutoFit measures
 every used column on the sheet, so one call per language column was
 the same measurement done again and again.</p>
+<p>The duplicate rules are not here. They depend on the values, and a
+value changes with no row moving, so ApplyDuplicateRules runs on every
+update whether this one ran or not.</p>
+<hr />
+<h3 id="int-applyduplicaterules">ApplyDuplicateRules <a class="anchor-link" href="#int-applyduplicaterules">#</a></h3>
+<p><em>apply-duplicate-rules</em></p>
+<p><strong>Rebuild the duplicate rules of every translation column, on every update.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyDuplicateRules()
+</code></pre>
+<p>The rules are the sheet's copy of what CollectDuplicateGroups found,
+one EXACT rule per group, so they are only right for the values they
+were built from. Rebuilding them used to wait for a row to come or go.
+A translator who fixed a duplicate by hand moved no row, so the rule
+for the old value stayed and the cell still carrying it kept its
+colour with nothing left to pair it with. TestFixedDuplicateLosesItsRuleOnNextUpdate
+pins that.</p>
+<p>A delete that fails leaves the old rules in place and a new one is
+added below on every update, until the sheet is slow to scroll.
+TestFormatConditionsDoNotAccumulate watches the count.</p>
+<p>One counter for the whole pass, so the first duplicate group of the
+second language does not draw the colour the first language already
+used.</p>
+<p>The loop opens one column after LabelColumnIndex(). The key language
+is the source of truth: DeduplicateLabels already keeps it unique, and
+a value repeated there is the sheet's own doing rather than a
+translator's, so it takes no rule at all. Every column after it is a
+translation of that one, and a repeat there is two source labels given
+the same wording, which is what the colours are for.</p>
 <hr />
 <h2 id="int-data-exchange">Data exchange</h2>
 <h3 id="int-export">Export <a class="anchor-link" href="#int-export">#</a></h3>

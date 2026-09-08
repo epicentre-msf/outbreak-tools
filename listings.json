@@ -1,19 +1,9 @@
 [
   {
-    "listing": "/getting_started/home_obt.html",
+    "listing": "/cheatsheets/home_cheatsheets.html",
     "items": [
-      "/getting_started/download.html",
-      "/getting_started/workflow.html",
-      "/getting_started/create_dic.html",
-      "/getting_started/compile.html"
-    ]
-  },
-  {
-    "listing": "/getting_started/home_linelist.html",
-    "items": [
-      "/getting_started/get_linelist.html",
-      "/getting_started/use_linelist.html",
-      "/getting_started/use_analyses_sheets.html"
+      "/cheatsheets/analyses.html",
+      "/cheatsheets/variable_control.html"
     ]
   },
   {
@@ -31,10 +21,12 @@
     ]
   },
   {
-    "listing": "/cheatsheets/home_cheatsheets.html",
+    "listing": "/getting_started/home_obt.html",
     "items": [
-      "/cheatsheets/analyses.html",
-      "/cheatsheets/variable_control.html"
+      "/getting_started/download.html",
+      "/getting_started/workflow.html",
+      "/getting_started/create_dic.html",
+      "/getting_started/compile.html"
     ]
   },
   {
@@ -51,6 +43,14 @@
       "/how_to/export_subset_geo.html",
       "/how_to/link_tables.html",
       "/how_to/migrate_setup.html"
+    ]
+  },
+  {
+    "listing": "/getting_started/home_linelist.html",
+    "items": [
+      "/getting_started/get_linelist.html",
+      "/getting_started/use_linelist.html",
+      "/getting_started/use_analyses_sheets.html"
     ]
   }
 ]
