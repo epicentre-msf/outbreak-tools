@@ -68,6 +68,13 @@
             "problemMatcher": []
         },
         {
+            "label": "update dev binaries",
+            "detail": "Copies the setup, master setup and designer mocks over their _dev twins in one R session",
+            "type": "shell",
+            "command": "Rscript -e \"source('scripts/devtools/update-files.R'); update_setup('mock'); update_master_setup('mock'); update_designer('dev')\"",
+            "problemMatcher": []
+        },
+        {
             "label": "update unit test",
             "type": "shell",
             "command": "Rscript -e \"source('scripts/devtools/update-files.R'); update_unit_test()\"",
@@ -192,6 +199,12 @@
             "label": "ribbon: pack",
             "type": "shell",
             "command": "bash scripts/devtools/ribbon-pack.sh '${input:ribbonDir}' --out '${input:ribbonOut}' --overwrite",
+            "problemMatcher": []
+        },
+        {
+            "label": "ribbon: pack all",
+            "type": "shell",
+            "command": "fail=0; for d in ribbons/*/; do d=${d%/}; [ -f \"$d/.source\" ] || { echo \"skip $d (no .source)\"; continue; }; out=$(sed -n 's/^workbook=//p' \"$d/.source\"); echo \"=== $d -> $out\"; bash scripts/devtools/ribbon-pack.sh \"$d\" --out \"$out\" --overwrite || fail=1; done; exit $fail",
             "problemMatcher": []
         },
         {
