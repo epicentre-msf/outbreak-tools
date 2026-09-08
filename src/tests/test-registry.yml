@@ -268,16 +268,16 @@ suites:
       # import log reporting "done". Refreshing the baked-in copy is a hand
       # re-import in the VBE, not a registry row.
     tests:
-#      - module: TestOSFiles
-#        covers: [OSFiles]
-#      - module: TestDropdownLists
-#        covers: [DropdownLists]
-#      - module: TestTranslationObject
-#        covers: [TranslationObject]
-#      - module: TestDataSheet
-#        covers: [DataSheet]
-#      - module: TestCustomTable
-#        covers: [CustomTable]
+      - module: TestOSFiles
+        covers: [OSFiles]
+      - module: TestDropdownLists
+        covers: [DropdownLists]
+      - module: TestTranslationObject
+        covers: [TranslationObject]
+      - module: TestDataSheet
+        covers: [DataSheet]
+      - module: TestCustomTable
+        covers: [CustomTable]
       # TestCustomTableTiming is a MEASURING TOOL, not a behaviour suite, and it
       # stays out of the loop on purpose. Every test in it times a call and logs
       # the seconds into the results, so it reports numbers rather than pass or
@@ -288,12 +288,12 @@ suites:
       # 2.5 ms each.
 #      - module: TestCustomTableTiming
 #        covers: [CustomTable]
-#      - module: TestApplicationState
-#        covers: [ApplicationState]
-#      - module: TestLLFormat
-#        covers: [LLFormat]
-#      - module: TestLLChoices
-#        covers: [LLChoices]
+      - module: TestApplicationState
+        covers: [ApplicationState]
+      - module: TestLLFormat
+        covers: [LLFormat]
+      - module: TestLLChoices
+        covers: [LLChoices]
       # HiddenNames itself gets NO class row: it is one of the classes baked
       # into the driver workbook by hand, and importing it again would leave
       # Excel holding two copies under a second name. Only the test module is
@@ -301,26 +301,26 @@ suites:
       # A change to HiddenNames.cls reaches this suite through a hand re-import
       # in the VBE, so a green run here measures whichever copy the workbook
       # currently holds.
-#      - module: TestHiddenNames
-#        covers: [HiddenNames]
+      - module: TestHiddenNames
+        covers: [HiddenNames]
       # TestTemporaryRepos writes real files. Every test hands the factory a
       # base folder under ThisWorkbook.Path, because the default base is
       # Application.DefaultFilePath, which sits outside the granted folder.
-#      - module: TestTemporaryRepos
-#        covers: [TemporaryRepos]
+      - module: TestTemporaryRepos
+        covers: [TemporaryRepos]
       # TestPasswords was parked by owner decision for a while and is back in
       # the loop as of 2026-08-12. It drives the copy of Passwords baked into
       # the driver workbook, the same way TestHiddenNames and
       # TestTranslationObject do, so an edit to src/classes/general/Passwords.cls
       # reaches it only after a hand re-import in the VBE.
       # PasswordsTestFixture stays registered because five other suites use it.
-#      - module: TestPasswords
-#        covers: [Passwords]
+      - module: TestPasswords
+        covers: [Passwords]
       # TestProgressBar drives the bar over a hidden fixture sheet. The seam
       # test toggles Application.ScreenUpdating through the forced renders
       # and pins that every forced tick hands it back turned off.
-#      - module: TestProgressBar
-#        covers: [ProgressBar]
+      - module: TestProgressBar
+        covers: [ProgressBar]
       # TestButtons drives the class that draws the linelist's command shapes:
       # the three values the factory stores, the one shape Add puts on the
       # sheet, the checking a repeated Add logs instead of a second shape, and
@@ -330,15 +330,15 @@ suites:
       # PrepareLLFormatFixture, FixtureCell and DeleteLLFormatFixture in
       # LLFormatTestFixture under `helpers`; its other helper calls are
       # unqualified, so they resolve to TestHelpersLite.
-#      - module: TestButtons
-#        covers: [Buttons]
+      - module: TestButtons
+        covers: [Buttons]
       # TestMessenger drives the silence helper: the Arm and Disarm pair, the
       # force state CarryOn reads, the record a swallowed box leaves behind,
       # and the stored switch __OBT__SILENT_OPERATIONS__ read off a workbook.
       # No test in it calls Show while the messenger is disarmed: that path
       # opens a real box, and a box nobody clicks holds the whole run.
-#      - module: TestMessenger
-#        covers: [Messenger]
+      - module: TestMessenger
+        covers: [Messenger]
 
       # FOUR MODULES IN src/tests/general/ ARE OUT OF THIS LIST ON PURPOSE, and
       # a green count here says nothing about any of them.
@@ -377,18 +377,18 @@ suites:
       - name: LLExport
       - name: LLSheets
     tests:
-#      - module: TestLLExport
-#        covers: [LLExport]
-#      - module: TestLLdictionary
-#        covers: [LLdictionary]
-#      - module: TestLLVariables
-#        covers: [LLVariables]
-#      - module: TestLLVariablesExtra
-#        covers: [LLVariables]
-#      - module: TestLLSheets
-#        covers: [LLSheets]
-#      - module: TestLLSheetsExtra
-#        covers: [LLSheets]
+      - module: TestLLExport
+        covers: [LLExport]
+      - module: TestLLdictionary
+        covers: [LLdictionary]
+      - module: TestLLVariables
+        covers: [LLVariables]
+      - module: TestLLVariablesExtra
+        covers: [LLVariables]
+      - module: TestLLSheets
+        covers: [LLSheets]
+      - module: TestLLSheetsExtra
+        covers: [LLSheets]
 
   # --- formulas (CaseWhen, ChoiceFormula, ValueOfFormula, FormulaData, ------
   #     FormulaCondition, Formulas) ----------------------------------------
@@ -408,18 +408,18 @@ suites:
       - name: FormulaCondition
       - name: Formulas
     tests:
-#      - module: TestCaseWhen
-#        covers: [CaseWhen]
-#      - module: TestChoiceFormula
-#        covers: [ChoiceFormula]
-#      - module: TestValueOfFormula
-#        covers: [ValueOfFormula]
-#      - module: TestFormulaData
-#        covers: [FormulaData]
-#      - module: TestFormulaCondition
-#        covers: [FormulaCondition]
-#      - module: TestFormulas
-#        covers: [Formulas]
+      - module: TestCaseWhen
+        covers: [CaseWhen]
+      - module: TestChoiceFormula
+        covers: [ChoiceFormula]
+      - module: TestValueOfFormula
+        covers: [ValueOfFormula]
+      - module: TestFormulaData
+        covers: [FormulaData]
+      - module: TestFormulaCondition
+        covers: [FormulaCondition]
+      - module: TestFormulas
+        covers: [Formulas]
 
   # --- setup (SetupTranslationsTable) ---------------------------------------
   # This block is shared. The other four setup classes (UpdatedValues,
@@ -547,18 +547,18 @@ suites:
       # and reports no error at all.
       - name: Imports
     tests:
-#      - module: TestSetupTranslationsTable
-#        covers: [SetupTranslationsTable]
-#      - module: TestUpdatedValues
-#        covers: [UpdatedValues]
-#      - module: TestSetupPreparation
-#        covers: [SetupPreparation]
+      - module: TestSetupTranslationsTable
+        covers: [SetupTranslationsTable]
+      - module: TestUpdatedValues
+        covers: [UpdatedValues]
+      - module: TestSetupPreparation
+        covers: [SetupPreparation]
       # TestSetupErrors builds its workbook through SetupImportTestFixture,
       # PasswordsTestFixture and FormulaTestFixture, all three registered under
       # `helpers`. Its helper calls are unqualified, so they resolve to
       # TestHelpersLite.
-#      - module: TestSetupErrors
-#        covers: [SetupErrors]
+      - module: TestSetupErrors
+        covers: [SetupErrors]
       # TestSetupImport is heavy: 38 tests, 137 assertions, and even after
       # Session 25 cut its churn to 9 exports and 4 opens it is the single
       # costliest module in the loop.
@@ -573,15 +573,15 @@ suites:
       #
       # SetupImportTestFixture, PasswordsTestFixture and ProgressDisplayStub
       # all stay registered.
-#      - module: TestSetupImport
-#        covers: [SetupImport]
+      - module: TestSetupImport
+        covers: [SetupImport]
       # TestEventSetup builds its own fixture workbook and calls
       # PreparePasswordsFixture from PasswordsTestFixture under `helpers`. Its
       # helper calls are unqualified, so they resolve to TestHelpersLite.
-#      - module: TestEventSetup
-#        covers: [EventSetup]
-#      - module: TestEventsManager
-#        covers: [EventsManager]
+      - module: TestEventSetup
+        covers: [EventSetup]
+      - module: TestEventsManager
+        covers: [EventsManager]
       # TestSetupRibbon drives the three entry points of Session 112. It never
       # reaches a successful export or import: this workbook is the test driver,
       # not a setup, so the bodies raise and the wrapper turns the raise into its
@@ -589,8 +589,8 @@ suites:
       # a string answer on every path, the guard on a path that is not there, the
       # messenger disarmed when the call returns, and the summary read back.
       # Its helper calls are unqualified, so they resolve to TestHelpersLite.
-#      - module: TestSetupRibbon
-#        covers: [SetupRibbon]
+      - module: TestSetupRibbon
+        covers: [SetupRibbon]
 
   # --- analyses (Analysis) ---------------------------------------------------
   # Opened by SetupImport, which names Analysis and cannot reach it from
@@ -714,39 +714,39 @@ suites:
       # This row closes the analyses folder.
       - name: AnalysisOutput
     tests:
-#      - module: TestAnalysis
-#        covers: [Analysis]
-#      - module: TestAnalysisRanges
-#        covers: [AnalysisRanges]
-#      - module: TestTableSpecs
-#        covers: [TableSpecs]
-#      - module: TestCrossTable
-#        covers: [CrossTable]
-#      - module: TestCrossTableFormula
-#        covers: [CrossTableFormula]
+      - module: TestAnalysis
+        covers: [Analysis]
+      - module: TestAnalysisRanges
+        covers: [AnalysisRanges]
+      - module: TestTableSpecs
+        covers: [TableSpecs]
+      - module: TestCrossTable
+        covers: [CrossTable]
+      - module: TestCrossTableFormula
+        covers: [CrossTableFormula]
       # TestFormulaBuilder reaches PrepareDictionaryFixture in
       # DictionaryTestFixture and PrepareFormulaFixtureSheet in
       # FormulaTestFixture, both registered under `helpers`. Its helper calls are
       # unqualified, so they resolve to TestHelpersLite.
-#      - module: TestFormulaBuilder
-#        covers: [FormulaBuilder]
+      - module: TestFormulaBuilder
+        covers: [FormulaBuilder]
       # TestSpatialTables builds a real Tab_Spatial_Analysis fixture, a
       # CrossTable on an output worksheet and a linelist for the formulas to
       # point at, the same way TestCrossTableFormula does. It hands over
       # LinelistDataStub, registered under `helpers`.
-#      - module: TestSpatialTables
-#        covers: [SpatialTables]
+      - module: TestSpatialTables
+        covers: [SpatialTables]
       # TestAnaTabIds builds three sheets: one for the registry table, one
       # standing in for an analysis sheet with its named ranges, and a visible
       # one standing in for the sheet the export writes. The output sheet has to
       # be selectable because WriteGraphs calls Application.GoTo.
-#      - module: TestAnaTabIds
-#        covers: [AnaTabIds]
+      - module: TestAnaTabIds
+        covers: [AnaTabIds]
       # TestTemporalSection needs no fixture at all: the class it drives holds
       # strings and a list, so the suite runs with no workbook, no linelist and
       # no dictionary.
-#      - module: TestTemporalSection
-#        covers: [TemporalSection]
+      - module: TestTemporalSection
+        covers: [TemporalSection]
       # TestCustomPivotTable builds its own workbook with a ListObject to pivot
       # over and an empty sheet to stack blocks on, through NewWorkbook,
       # DeleteWorkbook and EnsureWorksheet. Those calls are UNQUALIFIED so they
@@ -754,8 +754,8 @@ suites:
       # `TestHelpers.` and that never compiles, because the full TestHelpers is
       # deliberately never imported. It also reaches PrepareLLFormatFixture
       # under `helpers` for the tests that drive Format against a real LLFormat.
-#      - module: TestCustomPivotTable
-#        covers: [CustomPivotTable]
+      - module: TestCustomPivotTable
+        covers: [CustomPivotTable]
       # TestAnalysisOutput builds a complete linelist workbook -- the analysis
       # setup ListObjects, the four output worksheets, the translation tables,
       # the formula data and a prepared dictionary -- and runs
@@ -770,8 +770,8 @@ suites:
       # the section-loop tests landed. A stale coverage note is worse than none:
       # Session 97 believed it over the module and reported the probe as blind
       # to WriteAnalysis when it had just run it.
-#      - module: TestAnalysisOutput
-#        covers: [AnalysisOutput]
+      - module: TestAnalysisOutput
+        covers: [AnalysisOutput]
 
   # --- graphs (Graphs, SeriesBuffer, GraphSeries, TimeSeriesGraphs) ----------
   # A class row is resolved against src/classes/<folder>/, so every class here
@@ -814,14 +814,14 @@ suites:
       # CreateObject("Rubberduck.AssertClass") plus Rubberduck.FakesProvider,
       # which is a COM class this host does not have. It draws real charts on a
       # fixture worksheet, so read the clock after adding it.
-#      - module: TestSeriesBuffer
-#        covers: [SeriesBuffer]
-#      - module: TestGraphSeries
-#        covers: [GraphSeries]
-#      - module: TestTimeSeriesGraphs
-#        covers: [TimeSeriesGraphs]
-#      - module: TestGraphs
-#        covers: [Graphs]
+      - module: TestSeriesBuffer
+        covers: [SeriesBuffer]
+      - module: TestGraphSeries
+        covers: [GraphSeries]
+      - module: TestTimeSeriesGraphs
+        covers: [TimeSeriesGraphs]
+      - module: TestGraphs
+        covers: [Graphs]
 
   # --- geo (LLGeo, for LinelistSpecs) ----------------------------------------
   # LLGeo owns the Geo worksheet: the four admin tables, the health facility
@@ -865,12 +865,12 @@ suites:
       - name: LLSpatial
       - name: GeoFormCache
     tests:
-#      - module: TestLLGeo
-#        covers: [LLGeo]
-#      - module: TestLLSpatial
-#        covers: [LLSpatial]
-#      - module: TestGeoFormCache
-#        covers: [GeoFormCache]
+      - module: TestLLGeo
+        covers: [LLGeo]
+      - module: TestLLSpatial
+        covers: [LLSpatial]
+      - module: TestGeoFormCache
+        covers: [GeoFormCache]
       # TestGeoModule drives the module behind the F_Geo geo picker. The module
       # itself is registered under `linelist`, because a module row resolves
       # against src/modules/<the suite folder>/ and the file is
@@ -897,8 +897,8 @@ suites:
       # names the picker reads its lists through are all dropped in
       # ModuleCleanup. Its other helper calls are unqualified, so they resolve
       # to TestHelpersLite.
-#      - module: TestGeoModule
-#        covers: [GeoModule]
+      - module: TestGeoModule
+        covers: [GeoModule]
 
   # --- designer (DesignerPreparation, DesignerEntry, DesignerTranslation) ---
   # LinelistSpecs.Prepare calls InitTransfer.TransferToLinelist and its seven
@@ -975,20 +975,20 @@ suites:
       - EventsDesignerMulti
       - BuildSteps
     tests:
-#      - module: TestDesignerPreparation
-#        covers: [DesignerPreparation]
-#      - module: TestDesignerEntry
-#        covers: [DesignerEntry]
-#      - module: TestDesignerTranslation
-#        covers: [DesignerTranslation]
-#      - module: TestInitTransfer
-#        covers: [InitTransfer]
-#      - module: TestDesignerMulti
-#        covers: [EventsDesignerMulti, EventsDesignerAdvanced]
-#      - module: TestGenerationLog
-#        covers: [GenerationLog]
-#      - module: TestGenerationHost
-#        covers: [GenerationHost]
+      - module: TestDesignerPreparation
+        covers: [DesignerPreparation]
+      - module: TestDesignerEntry
+        covers: [DesignerEntry]
+      - module: TestDesignerTranslation
+        covers: [DesignerTranslation]
+      - module: TestInitTransfer
+        covers: [InitTransfer]
+      - module: TestDesignerMulti
+        covers: [EventsDesignerMulti, EventsDesignerAdvanced]
+      - module: TestGenerationLog
+        covers: [GenerationLog]
+      - module: TestGenerationHost
+        covers: [GenerationHost]
 
   # --- headless (HeadlessBuild) ---------------------------------------------
   # The headless workflow: fill a setup from another setup, then build a
@@ -1013,16 +1013,16 @@ suites:
     modules:
       - HeadlessBuild
     tests:
-#      - module: TestHeadlessSetupFill
-#        covers: [HeadlessBuild]
+      - module: TestHeadlessSetupFill
+        covers: [HeadlessBuild]
       # The generation, end to end and with no designer machinery. It is the
       # only suite that runs Linelist.Prepare to completion, because the code
       # transfer needs a source project carrying the ten forms and the driver
       # workbook carries none. Its forms come from .test-runner/forms/merged,
       # written by scripts/headless/merge-form-code.R -- run that script before
       # the harness or the suite reports the folder as missing.
-#      - module: TestHeadlessLinelistBuild
-#        covers: [HeadlessBuild]
+      - module: TestHeadlessLinelistBuild
+        covers: [HeadlessBuild]
 
   # --- linelist (LinelistSpecs, LLTranslation) -------------------------------
   # THIS IS THE FIRST TIME EITHER CLASS HAS BEEN COMPILED. The whole generation
@@ -1224,17 +1224,17 @@ suites:
       # its other helper calls are unqualified so they resolve to
       # TestHelpersLite. The aggregation tests build the shared time unit
       # dropdown, so they also name DropdownLists, registered under `general`.
-#      - module: TestCustomLinelistFunctions
-#        covers: [CustomLinelistFunctions]
+      - module: TestCustomLinelistFunctions
+        covers: [CustomLinelistFunctions]
       # TestLinelistSpecs moved here from the src/tests/ root, where it had no
       # folder to be registered under. Its four tests had never run.
-#      - module: TestLinelistSpecs
-#        covers: [LinelistSpecs]
+      - module: TestLinelistSpecs
+        covers: [LinelistSpecs]
       # TestLLTranslation builds a workbook carrying the five translation
       # tables and the two language codes. It reaches no fixture module; its
       # helper calls are unqualified, so they resolve to TestHelpersLite.
-#      - module: TestLLTranslation
-#        covers: [LLTranslation]
+      - module: TestLLTranslation
+        covers: [LLTranslation]
       # TestCodeTransfer adds a standard module and a class module to a fresh
       # workbook through VBComponents.Add, then moves them into a second one.
       # The runner already needs "Trust access to the VBA project object model"
@@ -1242,8 +1242,8 @@ suites:
       # every test of this module report the setup error rather than wedging.
       # Its repository sits under ThisWorkbook.Path, because the default base is
       # Application.DefaultFilePath, outside the folder the run is granted.
-#      - module: TestCodeTransfer
-#        covers: [CodeTransfer]
+      - module: TestCodeTransfer
+        covers: [CodeTransfer]
       # TestLinelist builds one designer-shaped workbook and one workbook
       # standing in for the linelist, both once per module, and hands the second
       # one over through LinelistSpecs.TestAssignLLWorkbook. That is what lets it
@@ -1251,8 +1251,8 @@ suites:
       # and the two memoised managers without running a generation. Its helper
       # calls are unqualified, so they resolve to TestHelpersLite, and it reaches
       # PrepareDictionaryFixture in DictionaryTestFixture under `helpers`.
-#      - module: TestLinelist
-#        covers: [Linelist]
+      - module: TestLinelist
+        covers: [Linelist]
       # TestLLDataEntry builds one designer-shaped workbook and one workbook
       # standing in for the linelist, both once per module, then builds the
       # VList sheet and the HList sheet once each and asserts over what they
@@ -1262,8 +1262,8 @@ suites:
       # PrepareChoicesFixture, PrepareLLFormatFixture,
       # PrepareFormulaFixtureSheet and PreparePasswordsFixture under `helpers`,
       # and its helper calls are unqualified so they resolve to TestHelpersLite.
-#      - module: TestLLDataEntry
-#        covers: [LLDataEntry]
+      - module: TestLLDataEntry
+        covers: [LLDataEntry]
       # TestEventLinelist drives the class every event of a generated linelist
       # comes through. It aims at the held managers and the flags that guard
       # them: the translation helper is the one manager with a public reader, so
@@ -1294,8 +1294,8 @@ suites:
       # so a disarmed run would put a real dialog on screen. TestCleanup calls
       # Messenger.Disarm for every test, because the messenger is a default
       # instance the whole run shares.
-#      - module: TestEventLinelist
-#        covers: [EventLinelist]
+      - module: TestEventLinelist
+        covers: [EventLinelist]
       # TestEventLinelistSheets drives the four heavy members of EventLinelist
       # -- OnSheetChange, OnSelectionChange, UpdateFilterTables and
       # UpdateAllListAuto -- over worksheets LLDataEntry built, which is what
@@ -1314,8 +1314,8 @@ suites:
       # PrepareLLFormatFixture, PrepareFormulaFixtureSheet and
       # PreparePasswordsFixture under `helpers`, and its helper calls are
       # unqualified so they resolve to TestHelpersLite.
-#      - module: TestEventLinelistSheets
-#        covers: [EventLinelist]
+      - module: TestEventLinelistSheets
+        covers: [EventLinelist]
       # TestLLLog drives the log store over a bare workbook per test: the
       # sheet provisioning, the append across two flushes, the outcome
       # colours, the rotation past the row cap and the separator guard on
@@ -1323,8 +1323,8 @@ suites:
       # cap, so the suite never writes ten thousand rows. It reaches no
       # fixture module; its helper calls are unqualified, so they resolve
       # to TestHelpersLite.
-#      - module: TestLLLog
-#        covers: [LLLog]
+      - module: TestLLLog
+        covers: [LLLog]
       # TestLinelistRun drives the four entry points a script can call on a
       # running linelist. The driver workbook is NOT a linelist: it holds no
       # dictionary, no translation sheet, no data entry table and no Exports
@@ -1350,8 +1350,8 @@ suites:
       # is a default instance the whole run shares, and a test that left it
       # armed would silence every later suite. Its helper calls are unqualified,
       # so they resolve to TestHelpersLite.
-#      - module: TestLinelistRun
-#        covers: [LinelistRun]
+      - module: TestLinelistRun
+        covers: [LinelistRun]
 
   # --- dev (Development) ----------------------------------------------------
   # THIS BLOCK CARRIES A TEST MODULE AND NO CLASS, AND IT MUST STAY THAT WAY.
@@ -1392,8 +1392,8 @@ suites:
       # nothing already there.
       - RibbonDev
     tests:
-#      - module: TestDevelopment
-#        covers: [Development]
+      - module: TestDevelopment
+        covers: [Development]
 
   # --- sections -------------------------------------------------------------
   # SectionBuilder and VarWriter are the terminals of linelist generation:
@@ -1426,12 +1426,12 @@ suites:
       # compile.
       - name: SectionMap
     tests:
-#      - module: TestVarWriter
-#        covers: [VarWriter]
-#      - module: TestSectionBuilder
-#        covers: [SectionBuilder]
-#      - module: TestSectionMap
-#        covers: [SectionMap]
+      - module: TestVarWriter
+        covers: [VarWriter]
+      - module: TestSectionBuilder
+        covers: [SectionBuilder]
+      - module: TestSectionMap
+        covers: [SectionMap]
 
   # --- showhide (ShowHide, ShowHideLayout, ShowHideStore) --------------------
   # The show/hide feature is three classes: ShowHide says which variables a
@@ -1464,10 +1464,10 @@ suites:
       - name: ShowHideStore
       - name: SectionShowHide
     tests:
-#      - module: TestShowHide
-#        covers: [ShowHide, ShowHideLayout, ShowHideStore]
-#      - module: TestSectionShowHide
-#        covers: [SectionShowHide]
+      - module: TestShowHide
+        covers: [ShowHide, ShowHideLayout, ShowHideStore]
+      - module: TestSectionShowHide
+        covers: [SectionShowHide]
       # TestShowHideTotal is the third measuring module, and it stays commented
       # out like the other two. It times ONE WHOLE show/hide session -- the
       # open, one section press and the close, added up -- on a sheet of 800
@@ -1532,16 +1532,16 @@ suites:
       - name: LLExporter
       - name: LLImporter
     tests:
-#      - module: TestChoiceKeys
-#        covers: [ChoiceKeys]
+      - module: TestChoiceKeys
+        covers: [ChoiceKeys]
       # TestExportButton drives the wrapper behind every custom export button
       # on F_Export: the factory guards, the export number read off the button
       # name, and the filter checkbox. RunExport opens a folder picker and ends
       # in a message box, so the click path stays a hand check. It reaches no
       # fixture module; its helper calls are unqualified, so they resolve to
       # TestHelpersLite.
-#      - module: TestExportButton
-#        covers: [ExportButton]
+      - module: TestExportButton
+        covers: [ExportButton]
       # TestExportOtherLinelist walks the other-linelist export of F_ExportMig
       # one step at a time against a real linelist, src/tests/.input/
       # old_linelist.xlsb, which the path used to fail on. The walk is
@@ -1555,8 +1555,8 @@ suites:
       # scripts, so a machine that has not pulled it reads every step as a
       # skip and no step as a failure. It reaches no fixture module; its helper
       # calls are unqualified, so they resolve to TestHelpersLite.
-#      - module: TestExportOtherLinelist
-#        covers: [LLExporter]
+      - module: TestExportOtherLinelist
+        covers: [LLExporter]
       # TestFilteredData drives the filtered-companion sync two callers run:
       # ExportButton ahead of a filtered export, and
       # EventLinelist.UpdateFilterTables on every filter refresh. It covers the
@@ -1564,14 +1564,14 @@ suites:
       # skip-and-record failure surface and the failure line of the user log.
       # The fixture is a fresh workbook per test. It reaches no fixture module;
       # its helper calls are unqualified, so they resolve to TestHelpersLite.
-#      - module: TestFilteredData
-#        covers: [FilteredData]
-#      - module: TestImportMetadata
-#        covers: [ImportMetadata]
-#      - module: TestImportReport
-#        covers: [ImportReport]
-#      - module: TestLLExporter
-#        covers: [LLExporter]
+      - module: TestFilteredData
+        covers: [FilteredData]
+      - module: TestImportMetadata
+        covers: [ImportMetadata]
+      - module: TestImportReport
+        covers: [ImportReport]
+      - module: TestLLExporter
+        covers: [LLExporter]
       # TestLLExporterTiming is a MEASURING TOOL, not a behaviour suite, and it
       # stays out of the loop on purpose, the way TestCustomTableTiming does.
       # Every test in it drives a real export walk and logs the seconds into the
@@ -1599,8 +1599,8 @@ suites:
       # its own and pins the contract every caller of an import owes: a manager
       # read before the import keeps the level label it cached, so the import
       # has to be followed by a cache drop.
-#      - module: TestLLImporter
-#        covers: [LLImporter]
+      - module: TestLLImporter
+        covers: [LLImporter]
 
   # --- msetup (the master setup and its Disease subsystem) -------------------
   # The whole master setup joined on 2026-08-25 (15 suites): the nine IDisease* interfaces

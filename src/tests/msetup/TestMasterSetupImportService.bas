@@ -420,6 +420,7 @@ Public Sub TestASecondFileForAnotherDiseaseFillsItsWorksheet()
     Dim secondWksh As Worksheet
     Dim secondTable As ListObject
     Dim secondService As MasterSetupImportService
+    Dim secondExporter As DiseaseExporter
     Dim manager As DiseaseWorksheetManager
 
     On Error GoTo Fail
@@ -438,7 +439,13 @@ Public Sub TestASecondFileForAnotherDiseaseFillsItsWorksheet()
         Array(1, "var_b", "symptoms", "Fever", "choice_fever", "yes | no", "core"), _
         Array(2, "var_c", "history", "Travel", "choice_age", "0 to 4 | 5 to 14", "optional") _
     )
-    Set ExportBookTwo = Exporter.BuildDiseaseWorkbook(secondWksh, TranslationTable, "Beta", "ENG", "DISSHEET002")
+    'A second exporter over a manager of its own. One manager holds one
+    'workbook and BuildDiseaseWorkbook releases what it holds before it
+    'builds, so a second build through Exporter would close the first file.
+    'The ribbon builds an exporter per click, so this is its shape too.
+    Set secondExporter = DiseaseExporter.Create(DiseaseExportWorkbook.Create(), _
+                                                ApplicationState.Create(Application))
+    Set ExportBookTwo = secondExporter.BuildDiseaseWorkbook(secondWksh, TranslationTable, "Beta", "ENG", "DISSHEET002")
 
     'Both worksheets go away, so both imports take the rebuild path.
     Set manager = DiseaseWorksheetManager.Create()
