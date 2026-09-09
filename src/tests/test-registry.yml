@@ -5,24 +5,27 @@
 # other, so a green count on one platform says nothing about the other.
 #
 # windows:
-#   when:        2026-09-02 01:07 (run assembled 2026-09-01 23:36, about 92 minutes)
-#   where:       Windows 11, Excel 16.0.20326.20112 hidden (windows/run-tests.vbs), --build
-#   result:      total=6020 failures=0
-#   modulesRun:  114   testsFound: 2010   vbe: ok(247)
-#   before it:   total=5656 failures=0 modulesRun=111 testsFound=1894 (2026-08-29
-#                03:31, Windows 11)
-#   what moved:  first Windows run of everything since 90fd5e0e -- the
-#                export/import and show/hide speed blocks, the messenger, the
-#                headless container work; the three new suites carry the count
-#                from 5656 to 6020. DataSheet.ApplyFormat (the Session 126
-#                debt) drew no red in any folder. Two machine-shaped faults
-#                were fixed on the way in, found by a profile set to 4-sheet
-#                workbooks: the trigger now pins SheetsInNewWorkbook=1, four
-#                bare Workbooks.Add product sites pass xlWBATWorksheet, and
-#                the three -obt-summary.txt writers put platform EOLs on disk
-#                (bare vbLf read as ONE line through Windows Line Input).
-#                Fresh unit_tests_dev.xlsb from src/bin/test-files.
-#   commit:      a0ffbf10 + the working-tree fixes above
+#   when:        2026-09-08 22:30 (run assembled 20:14, about 136 minutes)
+#   where:       Windows 11, Excel 16.0.20326.20132 hidden (windows/run-tests.vbs), --build
+#   result:      total=6066 failures=0
+#   modulesRun:  114   testsFound: 2020   vbe: ok(248)
+#   before it:   total=6020 failures=0 modulesRun=114 testsFound=2010 (2026-09-02
+#                01:07, Windows 11)
+#   what moved:  the 23 commits since a0ffbf10. Case matching on the dictionary
+#                export, the export file name that carries the name of an empty
+#                variable, the master setup import fixes for Default Choice and
+#                for absent labels, the messenger driven through translations,
+#                the duplicate rules rebuilt on every translations update, and
+#                the FinishGraph parameter order Excel 16.112 needs on macOS.
+#                Ten new tests in TestLLImporter, TestLLExport, TestLLdictionary,
+#                TestMasterSetupImportService, TestMasterSetupPreparation and
+#                TestSetupTranslationsTable carry the count from 6020 to 6066.
+#                The dictionary and msetup probes were the only cover any of
+#                this had before the run, and 71 of the 114 modules had seen
+#                none of it. Every folder came back green on the first attempt.
+#                One thing is open: vbe moved from ok(247) to ok(248) while no
+#                source file was added between the two runs.
+#   commit:      dcdbd4fa
 #
 # macos:
 #   when:        2026-08-28 17:05 (run assembled 16:11, about 53 minutes)
