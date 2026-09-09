@@ -28,24 +28,29 @@
 #   commit:      dcdbd4fa
 #
 # macos:
-#   when:        2026-08-28 17:05 (run assembled 16:11, about 53 minutes)
+#   when:        2026-09-09 13:00 (run assembled 11:43, about 77 minutes)
 #   where:       macOS 27.0, Excel 16.111 headless (macos/run-tests.applescript), --build
-#   result:      total=5579 failures=0
-#   modulesRun:  111   testsFound: 1894   vbe: ok(236)
-#   before it:   total=5656 failures=0 modulesRun=111 testsFound=1894 (2026-08-28
-#                13:27, Windows 11)
-#   what moved:  the first green full run on macOS at this module count. Four
-#                faults Windows cannot see were fixed to get here: the
-#                DupeUnique compile fault in MasterSetupVariables (it took the
-#                whole msetup folder down), MasterSetupMigration.LastRefusal
-#                for the description Mac drops leaving a class, the hard-coded
-#                66.7% against an en_FR locale, and the two in-place Run tests
-#                in TestGenerationHost that re-entered Application.Run and
-#                killed the run with -50. The headless fixture also moved to
-#                src/tests/.input/package.
-#   note:        5579 against 5656 on Windows is the two guarded Run tests;
-#                the module and test counts match, so nothing dropped out.
-#   commit:      28fb3182 (+ the working-tree fixes above)
+#   result:      total=5989 failures=0
+#   modulesRun:  114   testsFound: 2020   vbe: ok(248)
+#   before it:   total=5579 failures=0 modulesRun=111 testsFound=1894 (2026-08-28
+#                17:05, macOS, Excel 16.111)
+#   what moved:  everything since 28fb3182 -- the speed blocks, the messenger,
+#                the headless container work, the dictionary export and master
+#                setup fixes -- plus, in this commit, the `headless` block moved
+#                to the END of this file. Read the note above that block: on
+#                macOS the headless build leaves the VBE unable to rename a
+#                class module in any later project (error 51), which put 21
+#                rows of red into CodeTransfer and Development in the full run
+#                whichever Excel ran it. With the block last: 661/0 on
+#                `headless,linelist,dev` against 644/19 before, and this run.
+#                The run outlives the 3600 s AppleScript cap on this Excel
+#                (`-1712` at 12:43); Excel finished alone and the counts are
+#                read from the run-dir CSV, written 13:00:47. The first attempt
+#                died at 11:43 (`-609`, inside `linelist`), the ledger's F4.
+#                The machine had sat on 16.112 since 09-07; 16.111 was restored
+#                first (conventions section 14), and the version alone did not
+#                make the run green -- the order did.
+#   commit:      0e82a4df + the registry order change in this commit
 #
 # Update the matching platform block after every full run: a probe count (a
 # narrowed registry) says nothing about the suites outside it and never
@@ -993,40 +998,6 @@ suites:
       - module: TestGenerationHost
         covers: [GenerationHost]
 
-  # --- headless (HeadlessBuild) ---------------------------------------------
-  # The headless workflow: fill a setup from another setup, then build a
-  # linelist, both with no designer and no dialog. HeadlessBuild takes every
-  # path as a parameter and answers a string outcome, because its callers are
-  # a suite today and an R package later, and neither can read a dialog.
-  #
-  # The setup import is INJECTED into the target workbook rather than called
-  # from here: SetupImport resolves its destination as ThisWorkbook, so a call
-  # from the driver would import the source into the driver. The injected
-  # module is scripts/headless/vba/OBTSetupImportHeadless.bas, read off disk at
-  # run time and never registered.
-  #
-  # HeadlessBuild names DesignerPreparation, under `designer` below. It calls
-  # EnsureGeoFlags on the designer copy before the generation, because a
-  # designer that never went through DesignerPreparation.Prepare carries none of
-  # the hidden names LLGeo requires and every geo variable then stays one column
-  # instead of the twelve it expands into. A NARROWED registry probe over this
-  # folder has to keep the designer row for that reason: without it the driver
-  # workbook does not compile.
-  - folder: headless
-    modules:
-      - HeadlessBuild
-    tests:
-      - module: TestHeadlessSetupFill
-        covers: [HeadlessBuild]
-      # The generation, end to end and with no designer machinery. It is the
-      # only suite that runs Linelist.Prepare to completion, because the code
-      # transfer needs a source project carrying the ten forms and the driver
-      # workbook carries none. Its forms come from .test-runner/forms/merged,
-      # written by scripts/headless/merge-form-code.R -- run that script before
-      # the harness or the suite reports the folder as missing.
-      - module: TestHeadlessLinelistBuild
-        covers: [HeadlessBuild]
-
   # --- linelist (LinelistSpecs, LLTranslation) -------------------------------
   # THIS IS THE FIRST TIME EITHER CLASS HAS BEEN COMPILED. The whole generation
   # path sat in the expansion backlog below, so LinelistSpecs, Linelist,
@@ -1732,6 +1703,55 @@ suites:
       # CustomMasterSetupFunctions over the fixture sheets.
       - module: TestMasterSetupExports
         covers: [MasterSetupExports, CustomMasterSetupFunctions, MasterSetupImportService]
+
+  # --- headless (HeadlessBuild) --- RUNS LAST, ON PURPOSE --------------------
+  # This block sits at the end of the registry because the run follows the
+  # order here, and on macOS the headless build leaves the VBE unable to
+  # rename a class module in ANY project afterwards: every VBComponents.Add
+  # followed by a .Name write answers error 51 "Internal error". Measured on
+  # 2026-09-09 on Excel 16.111 and 16.112 alike: with this block in its old
+  # place (after designer) the full run carried 21 rows of error 51, all in
+  # CodeTransfer (16) and Development (5), the two suites that add a class
+  # to a fresh workbook and rename it; `linelist,dev` alone was 645/0 and
+  # `headless,linelist,dev` was 644/19 in the old order against 661/0 with
+  # this block last. The site is ReadDeliveredComponents in
+  # TestHeadlessLinelistBuild -- opening the built linelist and reading its
+  # VBProject -- skipping that read clears the 21; opening it read-write or
+  # releasing the project references before the close does not. Windows
+  # shows none of this and is green in either order.
+  # The headless workflow: fill a setup from another setup, then build a
+  # linelist, both with no designer and no dialog. HeadlessBuild takes every
+  # path as a parameter and answers a string outcome, because its callers are
+  # a suite today and an R package later, and neither can read a dialog.
+  #
+  # The setup import is INJECTED into the target workbook rather than called
+  # from here: SetupImport resolves its destination as ThisWorkbook, so a call
+  # from the driver would import the source into the driver. The injected
+  # module is scripts/headless/vba/OBTSetupImportHeadless.bas, read off disk at
+  # run time and never registered.
+  #
+  # HeadlessBuild names DesignerPreparation, under `designer` below. It calls
+  # EnsureGeoFlags on the designer copy before the generation, because a
+  # designer that never went through DesignerPreparation.Prepare carries none of
+  # the hidden names LLGeo requires and every geo variable then stays one column
+  # instead of the twelve it expands into. A NARROWED registry probe over this
+  # folder has to keep the designer row for that reason: without it the driver
+  # workbook does not compile.
+  - folder: headless
+    modules:
+      - HeadlessBuild
+    tests:
+      - module: TestHeadlessSetupFill
+        covers: [HeadlessBuild]
+      # The generation, end to end and with no designer machinery. It is the
+      # only suite that runs Linelist.Prepare to completion, because the code
+      # transfer needs a source project carrying the ten forms and the driver
+      # workbook carries none. Its forms come from .test-runner/forms/merged,
+      # written by scripts/headless/merge-form-code.R -- run that script before
+      # the harness or the suite reports the folder as missing.
+      - module: TestHeadlessLinelistBuild
+        covers: [HeadlessBuild]
+
 
 # ---------------------------------------------------------------------------
 # TEMPLATE -- copy per folder as coverage is added. Delete fields left empty.
