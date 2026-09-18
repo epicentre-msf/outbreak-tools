@@ -1449,20 +1449,31 @@ Private Sub ApplyRangeFormat(ByVal baseRng As Range, _
 
     Case AnalysisMissingRow, AnalysisMissingColumn, AnalysisMissingRowWithoutHeader
 
-        FormatMissingLook rng, xlHAlignRight, drawInsideLines:=True
-
-        If scope = AnalysisMissingRow Then
-            'Straight to the range formatter: the object kind and the base font
-            'size were both settled on the way in.
-            '
-            'The label sits one column left of the band, so a range handed in as
-            'several areas has one label per area. Cells(1, 0) reads against the
-            'first area alone, which left every other band's label unformatted
-            'once the caller started grouping its ranges.
-            For Each areaRng In baseRng.Areas
-                ApplyRangeFormat areaRng.Cells(1, 0), AnalysisOneCellLeft, 0
-            Next
-        End If
+        'A band is one row or one column, and the caller hands several bands
+        'in as one union. A Total band and a Missing band sit side by side, so
+        'Excel folds the two into ONE area. Walking the areas alone framed
+        'that pair as a single block and, for a row band, formatted the label
+        'of its first row only: the Total label of a univariate table with a
+        'Missing row and the Missing label of a temporal table stayed plain.
+        'Each row of a row band, and each column of a column band, is drawn on
+        'its own, which is the look one band per call gave.
+        '
+        'The label sits one column left of a row band, and it goes straight to
+        'the range formatter: the object kind and the base font size were both
+        'settled on the way in.
+        For Each areaRng In baseRng.Areas
+            If scope = AnalysisMissingColumn Then
+                For Each cellRng In areaRng.Columns
+                    FormatMissingLook cellRng, xlHAlignRight, drawInsideLines:=True
+                Next
+            Else
+                For Each cellRng In areaRng.Rows
+                    FormatMissingLook cellRng, xlHAlignRight, drawInsideLines:=True
+                    If scope = AnalysisMissingRow Then _
+                        ApplyRangeFormat cellRng.Cells(1, 0), AnalysisOneCellLeft, 0
+                Next
+            End If
+        Next
 
     Case AnalysisOneCell, AnalysisOneCellLeft, AnalysisOneCellCenter
 
