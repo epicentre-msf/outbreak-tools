@@ -1081,3 +1081,48 @@ Public Sub TestApplyFormatFramesEveryAreaOfAUnion()
 TestFail:
     CustomTestLogFailure Assert, "TestApplyFormatFramesEveryAreaOfAUnion", Err.Number, Err.Description
 End Sub
+
+'@TestMethod("LLFormat")
+' @sub-title TestApplyFormatLabelsEveryRowOfAMissingBand
+' @details A Total band and a Missing band are adjacent rows, and the union the
+'   analysis tables hand in folds the two into ONE area. Walking the areas alone
+'   framed the pair as a single block and formatted the label of its first row
+'   only, so the Total label of a univariate table with a Missing row and the
+'   Missing label of a temporal table stayed plain. Each row has to come back
+'   framed on its own and with its own label formatted.
+Public Sub TestApplyFormatLabelsEveryRowOfAMissingBand()
+    CustomTestSetTitles Assert, "LLFormat", "TestApplyFormatLabelsEveryRowOfAMissingBand"
+    On Error GoTo TestFail
+
+    Dim firstBand As Range
+    Dim secondBand As Range
+    Dim bothBands As Range
+    Dim firstLabel As Range
+    Dim secondLabel As Range
+
+    Set firstBand = FormatSheet.Range("C20:E20")
+    Set secondBand = FormatSheet.Range("C21:E21")
+    Set bothBands = Application.Union(firstBand, secondBand)
+    Set firstLabel = FormatSheet.Range("B20")
+    Set secondLabel = FormatSheet.Range("B21")
+    firstLabel.Value = "Missing"
+    secondLabel.Value = "Total"
+
+    Assert.AreEqual 1&, CLng(bothBands.Areas.Count), "Two adjacent bands fold into one area"
+
+    FormatUnderTest.ApplyFormat bothBands, scope:=AnalysisMissingRow
+
+    Assert.IsTrue firstLabel.Font.Bold, "The label of the first band is bold"
+    Assert.IsTrue secondLabel.Font.Bold, "The label of the second band is bold too"
+    Assert.AreEqual ExpectedDesignColour(LABEL_MISSING_FONT_COLOR), CLng(secondLabel.Font.Color), _
+                    "The label of the second band takes the missing font colour"
+    Assert.AreEqual CLng(xlDouble), CLng(secondBand.Cells(1, 1).Borders(xlEdgeTop).LineStyle), _
+                    "The second band is framed on its own"
+    Assert.AreEqual CLng(xlDouble), CLng(firstBand.Cells(1, 1).Borders(xlEdgeBottom).LineStyle), _
+                    "And the first band closes above it"
+
+    Exit Sub
+
+TestFail:
+    CustomTestLogFailure Assert, "TestApplyFormatLabelsEveryRowOfAMissingBand", Err.Number, Err.Description
+End Sub

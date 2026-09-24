@@ -332,9 +332,19 @@ Private Sub RewriteCompanion(ByVal sourceTable As ListObject, _
     filtLo.Resize filtsh.Range( _
         sourceTable.HeaderRowRange.Resize(keptCount + 1).Address)
 
-    'Resize is what gives the table its body back, and a resize the sheet
-    'refused leaves the table on its header row alone. Writing to the body then
-    'raised 91 with nothing naming the sheet it happened on.
+    'A resize to one kept row can leave the body missing while the table
+    'still spans two rows. Excel keeps a blank insert row under a header
+    'whose body was deleted, the resize asks for that same shape, and
+    'DataBodyRange answers Nothing over it. ListRows.Add turns that row into
+    'the one data row and the range stays where it is. CustomTable carries
+    'the same step under EnsureOneBodyRow.
+    If filtLo.DataBodyRange Is Nothing Then
+        If (keptCount = 1) And (filtLo.Range.Rows.Count > 1) Then filtLo.ListRows.Add
+    End If
+
+    'What is left is a resize the sheet refused, which leaves the table on
+    'its header row alone. Writing to the body then raised 91 with nothing
+    'naming the sheet it happened on.
     If filtLo.DataBodyRange Is Nothing Then
         ThrowError ElementNotFound, _
                    "the companion table on " & filtsh.Name & _
