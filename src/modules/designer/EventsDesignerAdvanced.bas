@@ -885,12 +885,26 @@ End Sub
 'A Quit that fails leaves the instance behind, and the outcome names its
 'window handle; the report is where the user learns that. A host that is
 'Nothing, or was never acquired, releases nothing and files nothing.
+'
+'A step that runs long can make this Excel stop waiting for it; the host
+'then reads the answer back from the instance once the step has ended.
+'The build goes on with that answer, so the count of those read backs is
+'filed here, where a slow machine shows up in the report.
 '@param host GenerationHost. The host to release.
 Public Sub ReleaseBuildHost(ByVal host As GenerationHost)
     Dim outcome As String
     Dim note As Checking
 
     If host Is Nothing Then Exit Sub
+
+    If host.RecoveredCalls > 0 Then
+        Set note = Checking.Create(TITLE_BUILD_INSTANCE)
+        note.Add "late answers", "This Excel stopped waiting for " & CStr(host.RecoveredCalls) & _
+                                 " step(s) of the build instance; each answer was read back " & _
+                                 "once the step had ended", checkingInfo
+        CollectIntoLog note
+        Set note = Nothing
+    End If
 
     outcome = host.ReleaseInstance()
     If Not IsErrorOutcome(outcome) Then Exit Sub
@@ -986,6 +1000,10 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, _
     WriteStatus statusTarget, STATUS_LINELIST
     StepBar bar
 
+    'The output workbook exists from here on. The hidden instance paints it
+    'once, so the sheets built next take their freeze.
+    PaintBuildInstance host
+
     sheetCount = CLng(RunStep(StepOutcome(host, STEP_SHEET_COUNT), host))
     If Not bar Is Nothing Then bar.Maximum = FIXED_STEPS + sheetCount
 
@@ -1041,6 +1059,30 @@ Public Function AbortBuild(Optional ByVal host As GenerationHost = Nothing) As S
 
     AbortBuild = kept
 End Function
+
+'@Description("Let the hidden instance paint the output workbook once, so its windows take the freeze.")
+'@details
+'The instance builds with ScreenUpdating off, and a window that was never
+'painted refuses the freeze of every data entry sheet. The host paints it
+'from this side, between two steps. In place there is nothing to do. A paint
+'that fails costs the frozen panes and nothing else, so it is filed as a
+'warning and the build goes on; an instance that went away is met by the
+'next step.
+'@param host GenerationHost. The host the steps run through, or Nothing.
+Private Sub PaintBuildInstance(ByVal host As GenerationHost)
+    Dim outcome As String
+    Dim note As Checking
+
+    If Not UsesInstance(host) Then Exit Sub
+
+    outcome = host.PaintInstance()
+    If Not IsErrorOutcome(outcome) Then Exit Sub
+
+    Set note = Checking.Create(TITLE_BUILD_INSTANCE)
+    note.Add "paint", "The build instance could not paint the output workbook, so the panes of " & _
+                      "its sheets may be left unfrozen: " & outcome, checkingWarning
+    CollectIntoLog note
+End Sub
 
 '@Description("Whether a build runs in another instance through its host.")
 '@param host GenerationHost. The host, or Nothing.
