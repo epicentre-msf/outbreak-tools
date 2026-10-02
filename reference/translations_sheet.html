@@ -170,6 +170,8 @@ ul.task-list li input[type="checkbox"] {
   <ul>
   <li><a href="#update-the-translation-table" id="toc-update-the-translation-table" class="nav-link active" data-scroll-target="#update-the-translation-table">Update the translation table</a></li>
   <li><a href="#add-a-new-language" id="toc-add-a-new-language" class="nav-link" data-scroll-target="#add-a-new-language">Add a new language</a></li>
+  <li><a href="#translate-the-setup" id="toc-translate-the-setup" class="nav-link" data-scroll-target="#translate-the-setup">Translate the setup</a></li>
+  <li><a href="#reset-translation-tags" id="toc-reset-translation-tags" class="nav-link" data-scroll-target="#reset-translation-tags">Reset translation tags</a></li>
   </ul>
 </nav>
     </div>
@@ -208,16 +210,16 @@ ul.task-list li input[type="checkbox"] {
 <p>The <em>Translation</em> sheet contains all text values to translate. This works because by design, the text fields that require translation in the various sheets of the <strong>setup file</strong> are tagged with a “translate as text” tag.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
 <p>The <em>Translation</em> sheet contains at least one column, with the default language, <em>i.e</em>. the language you chose to complete the <strong>setup file</strong>.</p>
 <p>The columns headings can be modified. It is important to name the languages in the table headings, as they will be used to populate a dropdown menu in the <strong>designer file</strong> when the linelist is to be compiled.</p>
-<section id="update-the-translation-table" class="level2">
-<h2 class="anchored" data-anchor-id="update-the-translation-table">Update the translation table</h2>
+<section id="update-the-translation-table" class="level3">
+<h3 class="anchored" data-anchor-id="update-the-translation-table">Update the translation table</h3>
 <p>Click on the button <em>“Update translation table”</em> from the <a href="../reference/ribbons_setup.html">Setup Options ribbon</a> to scrap the file and import all the fields to be translated into the table. They are listed in alphabetical order.</p>
 </section>
-<section id="add-a-new-language" class="level2">
-<h2 class="anchored" data-anchor-id="add-a-new-language">Add a new language</h2>
+<section id="add-a-new-language" class="level3">
+<h3 class="anchored" data-anchor-id="add-a-new-language">Add a new language</h3>
 <p>To add a language to the table, use the <em>Setup Options</em> ribbon.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="../reference/images/im-103-translations-sheet.png" class="img-fluid quarto-figure quarto-figure-center figure-img"></p>
+<p><img src="../images/img-add-language-setup.png" class="img-fluid quarto-figure quarto-figure-center figure-img"></p>
 </figure>
 </div>
 <p>In the “Translation” tab, in the “Add language” field, enter the name of the language you want to add, then press the “Enter” key on your keyboard.</p>
@@ -356,6 +358,24 @@ Note
 <div class="callout-body-container callout-body">
 <p>If, when the linelist is generated, certain fields of the chosen language are missing, these fields will appear in the default language (the first column). That being said, if a string of text contains special characters, this could cause a bug. In general, we advise to fill all cells in all languages.</p>
 </div>
+</div>
+</section>
+<section id="translate-the-setup" class="level3">
+<h3 class="anchored" data-anchor-id="translate-the-setup">Translate the setup</h3>
+<p>Use this button to translate the setup. When you click it, a pop-up appears listing the available languages. Instead of typing the language name, simply enter the number assigned to your preferred language.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="../images/img-setup-translate.png" class="img-fluid quarto-figure quarto-figure-center figure-img"></p>
+</figure>
+</div>
+</section>
+<section id="reset-translation-tags" class="level3">
+<h3 class="anchored" data-anchor-id="reset-translation-tags">Reset translation tags</h3>
+<p>Clicking on this button will clear missing labels from the translation table. Additionally when When you import the translations table, the first update looks for labels that are missing from the setup and asks whether you want to remove them.You can keep them and once you are done, clear them using this button.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="../images/img-translation-tags.png" class="img-fluid quarto-figure quarto-figure-center figure-img"></p>
+</figure>
 </div>
 
 
