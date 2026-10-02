@@ -6,7 +6,7 @@ categories:
   - Sheet
 ---
 
-![](../reference/images/im-088-exports-sheet.png){fig-align="center"}
+![](../images/img-export-sheet.png){fig-align="center"}
 
 It is possible to predefine exports, such as a specific export for a given MoH. The preparation of exports is done in two different sheets:
 
