@@ -15,29 +15,17 @@ Attribute VB_Description = "Convert formulas from setup to Excel"
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, MissingAnnotationArgument, ReadOnlyPropertyAssignment, UseMeaningfulName, HungarianNotation
 
 Option Explicit
+Implements IFormulas
 
 '@class Formulas
 '@description
-'Reads a setup expression and answers the Excel formula it stands for. The
-'expression is split into tokens, the variable names are resolved through an
-'LLdictionary, and the custom functions are handed to CaseWhen, ChoiceFormula
-'and ValueOfFormula. SetupFormula takes the expression in, Valid says whether
-'it can be read, Reason names what stopped it, Varlists lists the variables it
-'names and HasSetupVariables says whether it names any. ParsedLinelistFormula
-'answers the formula for a data entry sheet, and ParsedAnalysisFormula the one
-'for an analysis sheet.
-'
-'GROUPED FORMULAS
-'-------------------------------------------------------------------------------
-'IsGrouped says whether the expression uses one of the grouped custom
-'functions. Such an expression is written out as the Excel aggregation
-'FormulaData maps the token to.
-'
-'WHAT IS REPORTED
-'-------------------------------------------------------------------------------
-'Entries filed while an expression is read leave through HasChecking and
-'CheckingValues.
-'@depends BetterArray, Checking, LLdictionary, LLVariables, LLSheets, CaseWhen, ChoiceFormula, ValueOfFormula, FormulaData, FormulaCondition
+'Parses setup expressions, validates token sequences, and exposes
+'Excel-compatible formulas for linelist and analysis contexts. The class
+'tokenises incoming pseudo-formulas, resolves variable references through
+'an LLdictionary, and delegates to CaseWhen, ChoiceFormula, and
+'ValueOfFormula for custom function conversion. Grouped formulas are
+'detected and rewritten as aggregated Excel expressions.
+'@depends BetterArray, Checking, LLdictionary, LLVariables, LLSheets, CaseWhen, ChoiceFormula, ValueOfFormula
 '@version 1.0 (2026-02-09)
 
 
@@ -58,8 +46,8 @@ Private Type TGroupContext
 End Type
 
 Private Type TFormulas
-    dict As LLdictionary                       'Dictionary describing available variables and metadata
-    data As FormulaData                        'Configuration of accepted Excel formulas and tokens
+    dict As ILLdictionary                       'Dictionary describing available variables and metadata
+    data As IFormulaData                        'Configuration of accepted Excel formulas and tokens
     setupForm As String                         'Original pseudo-formula provided by setup
     tokens As BetterArray                       'Tokenised representation of the parsed formula
     variables As BetterArray                    'Ordered list of variables detected in the formula
@@ -67,15 +55,14 @@ Private Type TFormulas
     isValid As Boolean                          'Flag capturing the latest validation outcome
     invalidReason As String                     'Human-readable explanation when validation fails
     validityComputed As Boolean                 'Marks whether EnsureEvaluation already processed a context
-    lastContext As String                       'Context the cached evaluation belongs to
-    conversionFailure As String                 'Why a custom function converter gave back nothing
-    varsHelper As LLVariables                   'Lazy wrapper resolving variable metadata
-    sheetsHelper As LLSheets                    'Lazy wrapper resolving worksheet addresses
-    internalChecks As Checking                  'Diagnostic entries collected while parsing
-    checkCounter As Long                        'Key counter for the diagnostic entries
-    hasChecks As Boolean                        'True once a diagnostic entry has been written
-    sealed As Boolean                           'Set by the factory, closes the setters
+    lastFormulaType As String                   'Context (analysis/simple) associated with the cached evaluation
     group As TGroupContext                      'Captured state describing grouped formula evaluation
+End Type
+
+Private Type TDependencies
+    variables As ILLVariables                   'Lazy wrapper resolving variable metadata
+    sheets As ILLSheets                         'Lazy wrapper resolving worksheet addresses
+    customFormulas As BetterArray               'Registered custom formula identifiers
 End Type
 
 Private Const CLASSNAME As String = "Formulas"
@@ -91,21 +78,11 @@ Private Const FORMULA_GROUP_MISSING_AGGREGATOR As String = "Grouped formula '%1'
 Private Const FORMULA_GROUP_INVALID_GENERIC As String = "Grouped formula '%1' must specify a valid aggregator after the GROUP prefix."
 Private Const FORMULA_GROUP_UNKNOWN_AGGREGATOR As String = "Grouped formula '%1' targets aggregator '%2', which is not allowed."
 
-'The two contexts the class really has. Callers pass "analysis", "linelist"
-'or "simple", and every branch below asks one question: is this the analysis
-'context. EvaluationContext maps the three names onto these two, so a caller
-'that asks Valid("linelist") and then ParsedLinelistFormula() parses once.
-Private Const CONTEXT_ANALYSIS As String = "analysis"
-Private Const CONTEXT_LINELIST As String = "linelist"
-
-Private Const QUOTE_CHAR As String = """"
-Private Const QUOTED_EQUAL As String = """="""
-Private Const QUOTED_LESS_EQUAL As String = """<="""
-Private Const QUOTED_GREATER_EQUAL As String = """>="""
-Private Const QUOTED_NOT_EQUAL As String = """<>"""
-
-
 Private this As TFormulas
+Private deps As TDependencies
+Private internalChecks As IChecking
+Private checkCounter As Long
+Private hasChecks As Boolean
 
 '@section Factory
 '===============================================================================
@@ -118,59 +95,47 @@ Private this As TFormulas
 'present, then stores them in a new instance alongside the setup
 'expression. No eager parsing occurs; the formula is parsed lazily on
 'first access to Valid, Varlists, or any parsed formula property.
-'@param dict LLdictionary. Variable metadata provider.
-'@param formData FormulaData. Catalogue of approved Excel functions and separators.
+'@param dict ILLdictionary. Variable metadata provider.
+'@param formData IFormulaData. Catalogue of approved Excel functions and separators.
 '@param setupForm String. Pseudo-formula to parse and validate.
-'@return Formulas. Initialised instance.
+'@return IFormulas. Initialised instance.
 '@throws ProjectError.ObjectNotInitialized When dict is Nothing.
 '@throws ProjectError.ObjectNotInitialized When formData is Nothing.
 '@export
-Public Function Create(ByVal dict As LLdictionary, _
-                       ByVal formData As FormulaData, _
-                       ByVal setupForm As String) As Formulas
+Public Function Create(ByVal dict As ILLdictionary, _
+                       ByVal formData As IFormulaData, _
+                       ByVal setupForm As String) As IFormulas
 
     If dict Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Dictionary is not found"
     If formData Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Formula Data not found"
 
-    Dim instance As Formulas
-    Set instance = New Formulas
-    instance.Initialise dict, formData, setupForm
-    instance.Seal
-    Set Create = instance
+    With New Formulas
+        .Initialise dict, formData, setupForm
+        Set Create = .Self
+    End With
 End Function
-
-'@label:seal
-'@sub-title Prevent further changes to setup-only properties
-'@details
-'Marks the instance as sealed so guarded setters raise when invoked after
-'construction. Called by the factory before returning. The class holds a
-'parse result, and a setter running behind it would leave tokens that
-'belong to another expression.
-Public Sub Seal()
-    this.sealed = True
-End Sub
-
-'@label:guard-not-sealed
-'@sub-title Reject writes to setup-only properties after sealing
-'@details
-'Raises an error when a guarded setter is invoked on a sealed instance.
-'@param propName String. Name of the property being guarded.
-Private Sub GuardNotSealed(ByVal propName As String)
-    If this.sealed Then _
-        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
-End Sub
 
 '@section PublicAccessors
 '===============================================================================
 '@description Exposes configured dependencies, cached evaluation results, and parsed Excel expressions.
 
+'@label:self
+'@sub-title Return the interface pointer for the current instance
+'@details
+'Returns the current instance cast to its interface. Used internally
+'by the factory method to return an IFormulas reference.
+'@return IFormulas. Reference to the current object.
+Public Property Get Self() As IFormulas
+    Set Self = Me
+End Property
+
 '@label:dictionary
 '@sub-title Retrieve the underlying dictionary used during parsing
 '@details
-'Returns the LLdictionary previously supplied during Create or
+'Returns the ILLdictionary previously supplied during Create or
 'Initialise. Used by downstream helpers to resolve variable metadata.
-'@return LLdictionary. Dictionary backing metadata lookups.
-Public Property Get Dictionary() As LLdictionary
+'@return ILLdictionary. Dictionary backing metadata lookups.
+Public Property Get Dictionary() As ILLdictionary
     Set Dictionary = this.dict
 End Property
 
@@ -178,28 +143,22 @@ End Property
 '@sub-title Assign a new dictionary and reset dependent caches
 '@details
 'Replaces the current dictionary and invalidates all lazily resolved
-'dependencies. The factory seals the instance, so this raises after
-'construction.
-'@param dict LLdictionary. Variable metadata provider.
+'dependencies so subsequent property accesses trigger a fresh parse.
+'@param dict ILLdictionary. Variable metadata provider.
 '@throws ProjectError.ObjectNotInitialized When dict is Nothing.
-'@throws ProjectError.SomethingWentWrong When the instance is sealed.
-Public Property Set Dictionary(ByVal dict As LLdictionary)
-    GuardNotSealed "Dictionary"
-
+Public Property Set Dictionary(ByVal dict As ILLdictionary)
     If dict Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Dictionary is not found"
     Set this.dict = dict
-    Set this.varsHelper = Nothing
-    Set this.sheetsHelper = Nothing
-    InvalidateCaches
+    ResetDependencies
 End Property
 
 '@label:data
 '@sub-title Retrieve the formula configuration catalogue
 '@details
-'Returns the FormulaData describing available Excel tokens,
+'Returns the IFormulaData describing available Excel tokens,
 'operators, and special characters used during tokenisation.
-'@return FormulaData. Configuration catalogue.
-Public Property Get Data() As FormulaData
+'@return IFormulaData. Configuration catalogue.
+Public Property Get Data() As IFormulaData
     Set Data = this.data
 End Property
 
@@ -207,14 +166,10 @@ End Property
 '@sub-title Update the formula configuration catalogue and invalidate caches
 '@details
 'Replaces the current formula data and invalidates all cached parsing
-'results. The factory seals the instance, so this raises after
-'construction.
-'@param formData FormulaData. Catalogue of allowed operators and functions.
+'results so subsequent accesses trigger a fresh evaluation.
+'@param formData IFormulaData. Catalogue of allowed operators and functions.
 '@throws ProjectError.ObjectNotInitialized When formData is Nothing.
-'@throws ProjectError.SomethingWentWrong When the instance is sealed.
-Public Property Set Data(ByVal formData As FormulaData)
-    GuardNotSealed "Data"
-
+Public Property Set Data(ByVal formData As IFormulaData)
     If formData Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Formula Data not found"
     Set this.data = formData
     InvalidateCaches
@@ -234,13 +189,9 @@ End Property
 '@sub-title Store the setup pseudo-formula and reset computed caches
 '@details
 'Replaces the stored expression and invalidates all cached parsing
-'results. The factory seals the instance, so this raises after
-'construction.
+'results so subsequent accesses trigger a fresh evaluation.
 '@param setupForm String. Pseudo-formula captured from setup.
-'@throws ProjectError.SomethingWentWrong When the instance is sealed.
 Public Property Let SetupFormula(ByVal setupForm As String)
-    GuardNotSealed "SetupFormula"
-
     this.setupForm = setupForm
     InvalidateCaches
 End Property
@@ -259,12 +210,12 @@ End Property
 '@label:is-grouped
 '@sub-title Indicate whether the parsed formula targets grouped evaluation
 '@details
-'Forces evaluation in the linelist context, then inspects the captured
+'Forces evaluation in the "simple" context, then inspects the captured
 'group metadata. Returns "Yes" when grouped logic applies, "No" otherwise.
 '@return String. "Yes" for grouped formulas, "No" otherwise.
 '@export
 Public Property Get IsGrouped() As String
-    Call EnsureEvaluation(CONTEXT_LINELIST)
+    Call EnsureEvaluation("simple")
 
     If this.group.Enabled Then
         IsGrouped = "Yes"
@@ -280,14 +231,16 @@ End Property
 'Returns a human-readable explanation of the current validity state.
 'When the formula is valid the default success message is returned;
 'otherwise the recorded invalidation reason is returned.
-'EnsureEvaluation answers with the validity flag, so one test decides
-'which of the two messages comes back.
-'@param formulaType Optional String. Context (analysis/linelist/simple).
+'@param formulaType Optional String. Context (analysis/simple).
 '@return String. Explanation of the current validity state.
 '@export
-Public Property Get Reason(Optional ByVal formulaType As String = CONTEXT_ANALYSIS) As String
+Public Property Get Reason(Optional ByVal formulaType As String = "analysis") As String
     If EnsureEvaluation(formulaType) Then
-        Reason = FORMULA_DEFAULT_REASON
+        If this.isValid Then
+            Reason = FORMULA_DEFAULT_REASON
+        Else
+            Reason = this.invalidReason
+        End If
     Else
         Reason = this.invalidReason
     End If
@@ -298,10 +251,10 @@ End Property
 '@details
 'Triggers a lazy evaluation for the requested context, then returns
 'the cached validity flag.
-'@param formulaType Optional String. Context (analysis/linelist/simple).
+'@param formulaType Optional String. Context (analysis/simple).
 '@return Boolean. True when parsing succeeded.
 '@export
-Public Property Get Valid(Optional ByVal formulaType As String = CONTEXT_ANALYSIS) As Boolean
+Public Property Get Valid(Optional ByVal formulaType As String = "analysis") As Boolean
     Valid = EnsureEvaluation(formulaType)
 End Property
 
@@ -309,106 +262,104 @@ End Property
 '@sub-title Provide a clone of the variables detected in the expression
 '@details
 'Returns a BetterArray containing the variable names encountered
-'during tokenisation. The result is a clone so callers cannot mutate the
-'internal cache.
-'@param formulaType Optional String. Context (analysis/linelist/simple).
+'during tokenisation. The result is always a clone so callers cannot
+'mutate the internal cache.
+'@param formulaType Optional String. Context (analysis/simple).
 '@return BetterArray. Variable names.
 '@export
-Public Property Get Varlists(Optional ByVal formulaType As String = CONTEXT_ANALYSIS) As BetterArray
+Public Property Get Varlists(Optional ByVal formulaType As String = "analysis") As BetterArray
     Dim result As BetterArray
-
-    If EnsureEvaluation(formulaType) Then
-        If Not this.variables Is Nothing Then
-            Set Varlists = this.variables.Clone()
-            Exit Property
-        End If
-    End If
 
     Set result = New BetterArray
     result.LowerBound = 1
-    Set Varlists = result
+
+    If EnsureEvaluation(formulaType) Then
+        If Not this.variables Is Nothing Then
+            Set result = this.variables.Clone()
+        End If
+    End If
+
+    Set Varlists = result.Clone()
 End Property
 
 '@label:parsed-linelist-formula
 '@sub-title Build the Excel expression for linelist worksheets
 '@details
-'Walks the cached token list and writes the output string as it goes,
-'replacing variable tokens with worksheet addresses or structured
-'references depending on the useTableName flag. Grouped formulas are
-'delegated to BuildGroupedFormula. Custom tokens MEAN and N are mapped to
-'their Excel equivalents (AVERAGE, COUNT).
-'The token list is read where it lies. CrossTableFormula reaches one
-'instance from 47 call sites, and each of those used to copy the whole list.
+'Iterates through the cached token list and replaces variable tokens
+'with worksheet addresses or structured references depending on the
+'useTableName flag. Grouped formulas are delegated to
+'BuildGroupedFormula. Custom tokens MEAN and N are mapped to their
+'Excel equivalents (AVERAGE, COUNT).
 '@param useTableName Optional Boolean. Toggles structured references.
 '@param tablePrefix Optional String. Prefixed to structured references.
 '@return String. Excel formula referencing linelist variables.
 '@export
 Public Property Get ParsedLinelistFormula(Optional ByVal useTableName As Boolean = False, _
                                           Optional ByVal tablePrefix As String = vbNullString) As String
+    Dim workingTokens As BetterArray
     Dim idx As Long
     Dim current As String
-    Dim vars As LLVariables
-    Dim sheets As LLSheets
-    Dim builder As String
+    Dim vars As ILLVariables
+    Dim sheets As ILLSheets
 
-    If Not EnsureEvaluation(CONTEXT_LINELIST) Then Exit Property
+    If Not EnsureEvaluation("simple") Then Exit Property
 
     If this.group.Enabled Then
         ParsedLinelistFormula = BuildGroupedFormula(useTableName, tablePrefix)
         Exit Property
     End If
 
-    Set vars = VariablesProvider()
+    Set workingTokens = this.tokens.Clone()
+    Set vars = Variables()
     Set sheets = SheetProvider()
 
-    For idx = this.tokens.LowerBound To this.tokens.UpperBound
-        current = CStr(this.tokens.Item(idx))
-
+    For idx = workingTokens.LowerBound To workingTokens.UpperBound
+        current = CStr(workingTokens.Item(idx))
         If vars.Contains(current) Then
             If useTableName Then
-                builder = builder & tablePrefix & vars.Value(colName:="table name", varName:=current) & "[" & current & "]"
+                workingTokens.Item(idx) = tablePrefix & vars.Value(colName:="table name", varName:=current) & "[" & current & "]"
             Else
-                builder = builder & sheets.VariableAddress(current)
+                workingTokens.Item(idx) = sheets.VariableAddress(current)
             End If
         ElseIf StrComp(current, "MEAN", vbTextCompare) = 0 Then
-            builder = builder & "AVERAGE"
+            workingTokens.Item(idx) = "AVERAGE"
         ElseIf StrComp(current, "N", vbTextCompare) = 0 Then
-            builder = builder & "COUNT"
-        Else
-            builder = builder & current
+            workingTokens.Item(idx) = "COUNT"
         End If
     Next idx
 
-    ParsedLinelistFormula = builder
+    ParsedLinelistFormula = workingTokens.ToString(Separator:=vbNullString, _
+                                                   OpeningDelimiter:=vbNullString, _
+                                                   ClosingDelimiter:=vbNullString, _
+                                                   QuoteStrings:=False)
 End Property
 
 '@label:parsed-analysis-formula
 '@sub-title Build the Excel expression for aggregated analysis results
 '@details
-'Walks the cached token list and writes the output string as it goes,
-'replacing variable tokens with conditional aggregation fragments supplied
-'by formCond. Custom formula tokens are delegated to ParsedCustomFormula.
-'Grouped formulas are delegated to BuildGroupedFormula.
-'A custom token that expands to a whole call swallows the "(" and ")"
-'tokens behind it, which is what the token removal used to do by shortening
-'the list while the loop ran.
-'@param formCond FormulaCondition. Provides conditional aggregation logic.
+'Iterates through the cached token list and replaces variable tokens
+'with conditional aggregation fragments supplied by formCond. Custom
+'formula tokens are delegated to ParsedCustomFormula. Grouped formulas
+'are delegated to BuildGroupedFormula.
+'@param formCond IFormulaCondition. Provides conditional aggregation logic.
 '@param tablePrefix Optional String. Prefix for table references.
 '@param Connector Optional String. Connector between conditional fragments.
 '@return String. Excel expression ready for analysis worksheets.
 '@export
-Public Property Get ParsedAnalysisFormula(ByVal formCond As FormulaCondition, _
+Public Property Get ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, _
                                           Optional ByVal tablePrefix As String = vbNullString, _
                                           Optional ByVal Connector As String = "*") As String
-    Dim vars As LLVariables
+    Dim vars As ILLVariables
+    Dim dict As ILLdictionary
+    Dim tokensCopy As BetterArray
     Dim idx As Long
-    Dim upperBound As Long
     Dim chunk As String
     Dim tableName As String
     Dim parsedCustom As String
-    Dim builder As String
+    Dim lowerBound As Long
+    Dim upperBound As Long
 
-    If Not EnsureEvaluation(CONTEXT_ANALYSIS) Then Exit Property
+    If Not EnsureEvaluation("analysis") Then Exit Property
 
     If this.group.Enabled Then
         ParsedAnalysisFormula = BuildGroupedFormula(True, tablePrefix)
@@ -417,40 +368,40 @@ Public Property Get ParsedAnalysisFormula(ByVal formCond As FormulaCondition, _
 
     If formCond Is Nothing Then Exit Property
 
-    Set vars = VariablesProvider()
+    Set tokensCopy = this.tokens.Clone()
+    Set vars = Variables()
+    Set dict = Dictionary()
 
-    'Every formula arrives with a fresh condition object. Handing it the
-    'helper this instance already holds keeps each formula from reading the
-    'dictionary sheet again for the same table.
-    formCond.AdoptVariablesHelper vars, this.dict
-
-    idx = this.tokens.LowerBound
-    upperBound = this.tokens.UpperBound
+    lowerBound = tokensCopy.LowerBound
+    upperBound = tokensCopy.UpperBound
+    idx = lowerBound
 
     Do While idx <= upperBound
-        chunk = CStr(this.tokens.Item(idx))
+        chunk = CStr(tokensCopy.Item(idx))
 
         If vars.Contains(chunk) Then
             tableName = vars.Value(varName:=chunk, colName:="table name")
-            If Not formCond.Valid(this.dict, tableName) Then Exit Property
-            builder = builder & formCond.ConditionString(varName:=chunk, _
-                                                         TableName:=tablePrefix & tableName, _
-                                                         Connector:=Connector)
-        ElseIf IsCustomFormula(chunk) Then
+            If Not formCond.Valid(dict, tableName) Then Exit Property
+            tokensCopy.Item(idx) = formCond.ConditionString(varName:=chunk, _
+                                                            TableName:=tablePrefix & tableName, _
+                                                            Connector:=Connector)
+        ElseIf deps.customFormulas.Includes(chunk) Then
             parsedCustom = ParsedCustomFormula(customFunction:=chunk, _
                                                formCond:=formCond, _
+                                               TableName:=tableName, _
                                                tablePrefix:=tablePrefix)
-            If LenB(parsedCustom) = 0 Then Exit Property
-            builder = builder & parsedCustom
-            If EmptyInvocationFollows(idx) Then idx = idx + 2
-        Else
-            builder = builder & chunk
+            If parsedCustom = vbNullString Then Exit Property
+            tokensCopy.Item(idx) = parsedCustom
+            RemoveEmptyInvocationTokens tokensCopy, idx
+            upperBound = tokensCopy.UpperBound
         End If
-
         idx = idx + 1
     Loop
 
-    ParsedAnalysisFormula = builder
+    ParsedAnalysisFormula = tokensCopy.ToString(Separator:=vbNullString, _
+                                                OpeningDelimiter:=vbNullString, _
+                                                ClosingDelimiter:=vbNullString, _
+                                                QuoteStrings:=False)
 End Property
 
 '@section PrivateHelpers
@@ -460,42 +411,67 @@ End Property
 '@label:initialise
 '@sub-title Store incoming dependencies and prepare caches
 '@details
-'Assigns the dictionary, formula data, and setup expression, then drops the
-'lazily built helpers and invalidates the parse cache once.
-'It stays Public because the factory calls it on a second instance, and it
-'is guarded: after the factory seals that instance, this raises.
-'@param dict LLdictionary. Variable metadata provider.
-'@param formData FormulaData. Catalogue of allowed tokens and operators.
+'Assigns the dictionary, formula data, and setup expression, then
+'invalidates all caches and registers the default custom formulas
+'recognised during analysis parsing.
+'@param dict ILLdictionary. Variable metadata provider.
+'@param formData IFormulaData. Catalogue of allowed tokens and operators.
 '@param setupForm String. Pseudo-formula to parse.
-'@throws ProjectError.SomethingWentWrong When the instance is sealed.
-Public Sub Initialise(ByVal dict As LLdictionary, _
-                       ByVal formData As FormulaData, _
+Public Sub Initialise(ByVal dict As ILLdictionary, _
+                       ByVal formData As IFormulaData, _
                        ByVal setupForm As String)
-    GuardNotSealed "Initialise"
-
     Set this.dict = dict
     Set this.data = formData
     this.setupForm = setupForm
-    Set this.varsHelper = Nothing
-    Set this.sheetsHelper = Nothing
+    InvalidateCaches
+    ResetDependencies
+    RegisterDefaultCustomFormulas
+End Sub
+
+'@label:reset-dependencies
+'@sub-title Clear lazily instantiated dependencies and invalidate token caches
+'@details
+'Sets variables and sheets providers to Nothing and re-initialises
+'the custom formulas list when absent. Triggers InvalidateCaches to
+'ensure downstream properties reparse.
+Private Sub ResetDependencies()
+    Set deps.variables = Nothing
+    Set deps.sheets = Nothing
+    If deps.customFormulas Is Nothing Then
+        Set deps.customFormulas = New BetterArray
+        deps.customFormulas.LowerBound = 0
+    End If
     InvalidateCaches
 End Sub
 
-'@label:is-custom-formula
-'@sub-title Determine whether a token is one of the custom analysis formulas
+'@label:register-default-custom-formulas
+'@sub-title Seed built-in custom formulas recognised by analysis parsing
 '@details
-'MEAN, N and N() are the whole set and they are compiled in. The match is
-'case-sensitive, which is what the old list lookup did.
-'AppendToken accepts these in the analysis context only, and
-'ParsedAnalysisFormula tests the same three. Both tests are needed.
-'@param token String. Candidate token.
-'@return Boolean. True when the token is a custom analysis formula.
-Private Function IsCustomFormula(ByVal token As String) As Boolean
-    Select Case token
-        Case "MEAN", "N", "N()"
-            IsCustomFormula = True
-    End Select
-End Function
+'Replaces the custom formulas list and registers MEAN, N, and N()
+'as known tokens that receive special handling during analysis
+'formula construction.
+Private Sub RegisterDefaultCustomFormulas()
+    Set deps.customFormulas = New BetterArray
+    deps.customFormulas.LowerBound = 0
+    RegisterCustomFormula "MEAN"
+    RegisterCustomFormula "N"
+    RegisterCustomFormula "N()"
+End Sub
+
+'@label:register-custom-formula
+'@sub-title Add a custom formula identifier if not already registered
+'@details
+'Initialises the custom formulas list when absent, then pushes the
+'token if it is not already present.
+'@param customFormula String. Token representing a custom formula.
+Private Sub RegisterCustomFormula(ByVal customFormula As String)
+    If LenB(customFormula) = 0 Then Exit Sub
+    If deps.customFormulas Is Nothing Then
+        Set deps.customFormulas = New BetterArray
+        deps.customFormulas.LowerBound = 0
+    End If
+    If Not deps.customFormulas.Includes(customFormula) Then deps.customFormulas.Push customFormula
+End Sub
 
 '@label:invalidate-caches
 '@sub-title Reset cached parsing results and computed flags
@@ -509,9 +485,8 @@ Private Sub InvalidateCaches()
     this.containsSetupVariables = False
     this.isValid = False
     this.invalidReason = vbNullString
-    this.conversionFailure = vbNullString
     this.validityComputed = False
-    this.lastContext = vbNullString
+    this.lastFormulaType = vbNullString
     ResetGroupContext
 End Sub
 
@@ -532,17 +507,17 @@ Private Sub ResetGroupContext()
     End With
 End Sub
 
-'@label:variables-provider
+'@label:variables
 '@sub-title Lazily instantiate the LLVariables helper from the dictionary
 '@details
 'Creates the LLVariables wrapper on first access and caches it for
 'subsequent calls.
-'@return LLVariables. Bound to the current dictionary.
-Private Function VariablesProvider() As LLVariables
-    If this.varsHelper Is Nothing Then
-        Set this.varsHelper = LLVariables.Create(this.dict)
+'@return ILLVariables. Bound to the current dictionary.
+Private Function Variables() As ILLVariables
+    If deps.variables Is Nothing Then
+        Set deps.variables = LLVariables.Create(Dictionary())
     End If
-    Set VariablesProvider = this.varsHelper
+    Set Variables = deps.variables
 End Function
 
 '@label:sheet-provider
@@ -550,30 +525,12 @@ End Function
 '@details
 'Creates the LLSheets wrapper on first access and caches it for
 'subsequent calls.
-'@return LLSheets. Bound to the current dictionary.
-Private Function SheetProvider() As LLSheets
-    If this.sheetsHelper Is Nothing Then
-        Set this.sheetsHelper = LLSheets.Create(this.dict)
+'@return ILLSheets. Bound to the current dictionary.
+Private Function SheetProvider() As ILLSheets
+    If deps.sheets Is Nothing Then
+        Set deps.sheets = LLSheets.Create(Dictionary())
     End If
-    Set SheetProvider = this.sheetsHelper
-End Function
-
-'@label:evaluation-context
-'@sub-title Map the three context names onto the two real contexts
-'@details
-'"analysis" is one context and everything else is the other. Production
-'passes "linelist", the class passes itself "simple", and the public
-'defaults are "analysis". Every branch of EvaluateFormula asks the same
-'question, so holding three names made the same expression parse twice for
-'the same answer.
-'@param formulaType String. Context name as the caller wrote it.
-'@return String. CONTEXT_ANALYSIS or CONTEXT_LINELIST.
-Private Function EvaluationContext(ByVal formulaType As String) As String
-    If StrComp(formulaType, CONTEXT_ANALYSIS, vbTextCompare) = 0 Then
-        EvaluationContext = CONTEXT_ANALYSIS
-    Else
-        EvaluationContext = CONTEXT_LINELIST
-    End If
+    Set SheetProvider = deps.sheets
 End Function
 
 '@label:ensure-evaluation
@@ -582,17 +539,12 @@ End Function
 'Checks whether the cached evaluation matches the requested context.
 'When a mismatch is detected or no evaluation has been performed, a
 'full EvaluateFormula pass is triggered.
-'@param formulaType String. Context (analysis/linelist/simple).
+'@param formulaType String. Context (analysis/simple).
 '@return Boolean. True when the cached evaluation is valid.
 Private Function EnsureEvaluation(ByVal formulaType As String) As Boolean
-    Dim context As String
-
-    context = EvaluationContext(formulaType)
-
-    If Not this.validityComputed Or StrComp(this.lastContext, context, vbBinaryCompare) <> 0 Then
-        EvaluateFormula context
+    If Not this.validityComputed Or StrComp(this.lastFormulaType, formulaType, vbTextCompare) <> 0 Then
+        EvaluateFormula formulaType
     End If
-
     EnsureEvaluation = this.isValid
 End Function
 
@@ -604,40 +556,34 @@ End Function
 'Short-circuits for single-variable or single-custom-function
 'expressions. Delegates grouped formula detection to
 'GroupContexExtractionSucceed.
-'@param context String. CONTEXT_ANALYSIS or CONTEXT_LINELIST.
-Private Sub EvaluateFormula(ByVal context As String)
+'@param formulaType String. Context (analysis/simple).
+Private Sub EvaluateFormula(ByVal formulaType As String)
     Dim converted As String
-    Dim vars As LLVariables
-    Dim dataSource As FormulaData
+    Dim vars As ILLVariables
+    Dim dataSource As IFormulaData
     Dim tokens As BetterArray
     Dim variableTokens As BetterArray
     Dim formulaHasSetupVariables As Boolean
     Dim reasonText As String
 
     InvalidateCaches
-    this.lastContext = context
+    this.lastFormulaType = formulaType
+
 
     converted = ConvertedSetupFormula()
     converted = CleanString(converted)
 
-    Set vars = VariablesProvider()
-    Set dataSource = this.data
+    Set vars = Variables()
+    Set dataSource = Data()
 
     If LenB(converted) = 0 Then
-        'A custom function that could not be converted also comes back empty.
-        'Reporting that as "the formula is empty" told the user nothing about
-        'an expression they did write.
-        If LenB(this.conversionFailure) > 0 Then
-            reasonText = this.conversionFailure
-        Else
-            reasonText = FORMULA_EMPTY_MESSAGE
-        End If
+        reasonText = FORMULA_EMPTY_MESSAGE
         SetInvalid reasonText
         Exit Sub
     End If
 
     If vars.Contains(converted) Then
-        If StrComp(context, CONTEXT_ANALYSIS, vbTextCompare) = 0 Then
+        If StrComp(formulaType, "analysis", vbTextCompare) = 0 Then
             SetInvalid FORMULA_ANALYSIS_SINGLE_VAR
             Exit Sub
         Else
@@ -658,7 +604,7 @@ Private Sub EvaluateFormula(ByVal context As String)
         End If
     End If
 
-    If StrComp(context, CONTEXT_ANALYSIS, vbTextCompare) = 0 And IsCustomFormula(converted) Then
+    If StrComp(formulaType, "analysis", vbTextCompare) = 0 And deps.customFormulas.Includes(converted) Then
         Set tokens = New BetterArray
         tokens.LowerBound = 1
         tokens.Push converted
@@ -672,18 +618,22 @@ Private Sub EvaluateFormula(ByVal context As String)
         Exit Sub
     End If
 
+    '@Ignore AssignmentNotUsed
     Set tokens = New BetterArray
     tokens.LowerBound = 1
+    '@Ignore AssignmentNotUsed
     Set variableTokens = New BetterArray
     variableTokens.LowerBound = 1
 
-    If Not TokeniseFormula(converted, context, tokens, variableTokens, formulaHasSetupVariables, reasonText) Then
+
+    If Not TokeniseFormula(converted, formulaType, tokens, variableTokens, formulaHasSetupVariables, reasonText) Then
         SetInvalid reasonText
         Exit Sub
     End If
 
     If Not GroupContexExtractionSucceed(tokens, variableTokens, vars, dataSource) Then Exit Sub
 
+    '@Ignore UnassignedVariableUsage
     this.containsSetupVariables = formulaHasSetupVariables
     Set this.tokens = tokens
     Set this.variables = variableTokens
@@ -705,13 +655,13 @@ End Sub
 'in the TGroupContext UDT for BuildGroupedFormula.
 '@param tokens BetterArray. Tokenised formula.
 '@param variableTokens BetterArray. Variable names in encounter order.
-'@param vars LLVariables. Helper exposing dictionary metadata.
-'@param dataSource FormulaData. Configuration describing grouped functions.
+'@param vars ILLVariables. Helper exposing dictionary metadata.
+'@param dataSource IFormulaData. Configuration describing grouped functions.
 '@return Boolean. True when grouped context is captured or not required.
 Private Function GroupContexExtractionSucceed(ByVal tokens As BetterArray, _
                                        ByVal variableTokens As BetterArray, _
-                                       ByVal vars As LLVariables, _
-                                       ByVal dataSource As FormulaData) As Boolean
+                                       ByVal vars As ILLVariables, _
+                                       ByVal dataSource As IFormulaData) As Boolean
     Dim functionName As String
     Dim aggregatorName As String
     Dim usesNative As Boolean
@@ -826,9 +776,7 @@ End Function
 '@label:is-generic-group-function
 '@sub-title Determine whether a function uses the GROUP prefix for grouped evaluation
 '@details
-'Returns True when the token starts with "GROUP" (case-insensitive). A
-'token such as GROUPING_X is read as generic and its aggregator fails the
-'whitelist check with a clear message, which is the wanted behaviour.
+'Returns True when the token starts with "GROUP" (case-insensitive).
 '@param functionName String. Token under inspection.
 '@return Boolean. True when the token starts with "GROUP".
 Private Function IsGenericGroupFunction(ByVal functionName As String) As Boolean
@@ -873,7 +821,7 @@ End Function
 '@return String. Grouped Excel formula ready for consumption.
 Private Function BuildGroupedFormula(ByVal useTableName As Boolean, _
                                      ByVal tablePrefix As String) As String
-    Dim sheets As LLSheets
+    Dim sheets As ILLSheets
     Dim criteriaRange As String
     Dim conditionValue As String
     Dim resultRange As String
@@ -893,7 +841,7 @@ Private Function BuildGroupedFormula(ByVal useTableName As Boolean, _
             Case "SUMIFS"
                 BuildGroupedFormula = "SUMIFS(" & resultRange & ", " & criteriaRange & ", " & conditionValue & ")"
             Case "COUNTIFS"
-                BuildGroupedFormula = "COUNTIFS(" & criteriaRange & ", " & conditionValue & ", " & resultRange & ", " & QUOTED_NOT_EQUAL & ")"
+                BuildGroupedFormula = "COUNTIFS(" & criteriaRange & ", " & conditionValue & ", " & resultRange & ", " & Quoted("<>") & ")"
             Case Else
                 BuildGroupedFormula = aggregator & "(" & resultRange & ", " & criteriaRange & ", " & conditionValue & ")"
         End Select
@@ -910,12 +858,12 @@ End Function
 '@param variableName String. Variable identifier.
 '@param useTableName Boolean. True to emit structured references.
 '@param tablePrefix String. Prefix applied to structured references.
-'@param sheets LLSheets. Provider for address resolution.
+'@param sheets ILLSheets. Provider for address resolution.
 '@return String. Excel reference targeting the grouped variable.
 Private Function GroupedDataRange(ByVal variableName As String, _
                                   ByVal useTableName As Boolean, _
                                   ByVal tablePrefix As String, _
-                                  ByVal sheets As LLSheets) As String
+                                  ByVal sheets As ILLSheets) As String
     Dim tableName As String
 
     tableName = this.group.TableName
@@ -935,22 +883,18 @@ End Function
 '@sub-title Break the converted formula into tokens while validating parentheses and literals
 '@details
 'Walks the formula character by character, splitting on special
-'characters defined by the FormulaData configuration. Tracks
+'characters defined by the IFormulaData configuration. Tracks
 'parenthesis depth and quotation state. Each extracted chunk is
 'validated through AppendToken.
-'The walk reads one character at a time. CaseWhen, ChoiceFormula and
-'ValueOfFormula hold the same shape of walk over their own bodies. What
-'made this loop expensive was the three Excel calls inside CleanString and
-'the array copy inside the character lookup, and both of those are gone.
 '@param formula String. Cleaned setup expression.
-'@param context String. CONTEXT_ANALYSIS or CONTEXT_LINELIST.
+'@param formulaType String. Context (analysis/simple).
 '@param tokens BetterArray. Recipient for all tokens.
 '@param variableTokens BetterArray. Recipient for variable-only tokens.
 '@param HasSetupVariables Boolean. Flag capturing literal presence.
 '@param failureReason String. Explanation when tokenisation fails.
 '@return Boolean. True when parsing succeeds.
 Private Function TokeniseFormula(ByVal formula As String, _
-                                 ByVal context As String, _
+                                 ByVal formulaType As String, _
                                  ByVal tokens As BetterArray, _
                                  ByVal variableTokens As BetterArray, _
                                  ByRef HasSetupVariables As Boolean, _
@@ -961,17 +905,17 @@ Private Function TokeniseFormula(ByVal formula As String, _
     Dim chunk As String
     Dim parenthesisLevel As Long
     Dim inQuotes As Boolean
-    Dim dataSource As FormulaData
-    Dim vars As LLVariables
+    Dim dataSource As IFormulaData
+    Dim vars As ILLVariables
 
     previousBreak = 1
-    Set dataSource = this.data
-    Set vars = VariablesProvider()
+    Set dataSource = Data()
+    Set vars = Variables()
 
     For idx = 1 To Len(formula)
         currentChar = Mid$(formula, idx, 1)
 
-        If currentChar = QUOTE_CHAR Then
+        If currentChar = Chr$(34) Then
             inQuotes = Not inQuotes
         ElseIf Not inQuotes Then
             Select Case currentChar
@@ -988,14 +932,14 @@ Private Function TokeniseFormula(ByVal formula As String, _
 
         If Not inQuotes And dataSource.SpecialCharacterIncludes(currentChar) Then
             chunk = CleanString(Mid$(formula, previousBreak, idx - previousBreak))
-            If Not AppendToken(chunk, context, tokens, variableTokens, vars, dataSource, HasSetupVariables, failureReason) Then Exit Function
+            If Not AppendToken(chunk, formulaType, tokens, variableTokens, vars, dataSource, HasSetupVariables, failureReason) Then Exit Function
             tokens.Push currentChar
             previousBreak = idx + 1
         End If
     Next idx
 
     chunk = CleanString(Mid$(formula, previousBreak, Len(formula) - previousBreak + 1))
-    If Not AppendToken(chunk, context, tokens, variableTokens, vars, dataSource, HasSetupVariables, failureReason) Then Exit Function
+    If Not AppendToken(chunk, formulaType, tokens, variableTokens, vars, dataSource, HasSetupVariables, failureReason) Then Exit Function
 
     If parenthesisLevel <> 0 Then
         failureReason = FORMULA_PAREN_MISMATCH
@@ -1011,26 +955,25 @@ End Function
 'Classifies the chunk as a grouped function, known variable, boolean
 'literal, registered Excel formula, custom formula, numeric literal,
 'or quoted string. Unknown chunks cause a validation failure.
-'The grouped-function test runs on the FIRST token only. That is what
-'stops SUM(SUMIFS(...)) from being read as a grouped formula.
 '@param chunk String. Candidate token.
-'@param context String. CONTEXT_ANALYSIS or CONTEXT_LINELIST.
+'@param formulaType String. Context (analysis/simple).
 '@param tokens BetterArray. Recipient for all tokens.
 '@param variableTokens BetterArray. Recipient for variable-only tokens.
-'@param vars LLVariables. Metadata provider.
-'@param dataSource FormulaData. Formula metadata provider.
+'@param vars ILLVariables. Metadata provider.
+'@param dataSource IFormulaData. Formula metadata provider.
 '@param HasSetupVariables Boolean. Flag capturing literal presence.
 '@param failureReason String. Explanation when parsing fails.
 '@return Boolean. True when the chunk is accepted.
 Private Function AppendToken(ByVal chunk As String, _
-                             ByRef context As String, _
+                             ByRef formulaType As String, _
                              ByRef tokens As BetterArray, _
                              ByRef variableTokens As BetterArray, _
-                             ByRef vars As LLVariables, _
-                             ByRef dataSource As FormulaData, _
+                             ByRef vars As ILLVariables, _
+                             ByRef dataSource As IFormulaData, _
                              ByRef HasSetupVariables As Boolean, _
                              ByRef failureReason As String) As Boolean
     Dim upperChunk As String
+    Dim functionName As String
 
     If LenB(chunk) = 0 Then
         AppendToken = True
@@ -1075,13 +1018,13 @@ Private Function AppendToken(ByVal chunk As String, _
         Exit Function
     End If
 
-    If StrComp(context, CONTEXT_ANALYSIS, vbTextCompare) = 0 And IsCustomFormula(chunk) Then
+    If StrComp(formulaType, "analysis", vbTextCompare) = 0 And deps.customFormulas.Includes(chunk) Then
         tokens.Push chunk
         AppendToken = True
         Exit Function
     End If
 
-    If IsNumericLiteral(chunk) Then
+    If IsNumeric(chunk) Then
         tokens.Push chunk
         AppendToken = True
         Exit Function
@@ -1106,88 +1049,21 @@ End Function
 '@return Boolean. True when the string is quoted.
 Private Function IsQuotedString(ByVal value As String) As Boolean
     If Len(value) < 2 Then Exit Function
-    IsQuotedString = (Left$(value, 1) = QUOTE_CHAR And Right$(value, 1) = QUOTE_CHAR)
-End Function
-
-'@label:is-numeric-literal
-'@sub-title Determine whether the supplied chunk is an English-form numeric literal
-'@details
-'Accepts digits around at most one dot. The convention keeps setup formulas
-'in English, and Range.Formula reads US syntax on every host, so the English
-'form is the one form a literal may take here. IsNumeric would read the
-'chunk in the HOST's regional separators, and on a comma machine it refused
-'every dot literal a setup file carried. A sign never reaches this test:
-''+' and '-' are separator characters, so they split off before the chunk
-'arrives.
-'@param chunk String. Candidate literal.
-'@return Boolean. True when the chunk holds at least one digit and nothing besides digits and a single dot.
-Private Function IsNumericLiteral(ByVal chunk As String) As Boolean
-    Dim idx As Long
-    Dim oneChar As String
-    Dim dotSeen As Boolean
-    Dim digitSeen As Boolean
-
-    For idx = 1 To Len(chunk)
-        oneChar = Mid$(chunk, idx, 1)
-        If oneChar = "." Then
-            If dotSeen Then Exit Function
-            dotSeen = True
-        ElseIf oneChar >= "0" And oneChar <= "9" Then
-            digitSeen = True
-        Else
-            Exit Function
-        End If
-    Next idx
-
-    IsNumericLiteral = digitSeen
+    IsQuotedString = (Left$(value, 1) = Chr$(34) And Right$(value, 1) = Chr$(34))
 End Function
 
 '@label:clean-string
 '@sub-title Normalise the incoming token by removing control characters and duplicate spaces
 '@details
-'Replaces non-breaking spaces, drops control characters, squeezes runs of
-'spaces to one, and trims the ends. This is what the worksheet SUBSTITUTE,
-'CLEAN and TRIM trio did, written in plain VBA: the three of them crossed
-'into Excel once each, and this runs once per token of every formula in the
-'workbook.
-'AscW answers a negative number above code point 32767, so the control-code
-'test guards on zero. Worksheet TRIM squeezes runs of spaces INSIDE the
-'text as well as at the ends, so that is reproduced.
+'Replaces non-breaking spaces, strips control characters via
+'Application.WorksheetFunction.Clean, and trims whitespace.
 '@param value String. Token to clean.
 '@return String. Trimmed and cleaned representation.
 Private Function CleanString(ByVal value As String) As String
-    Dim source As String
-    Dim result As String
-    Dim counter As Long
-    Dim charCode As Long
-    Dim oneChar As String
-    Dim previousWasSpace As Boolean
-
-    'ChrW$(160) is U+00A0 NO-BREAK SPACE. ChrW$ reads 160 as a Unicode code
-    'point, so the answer is the same on every machine. Chr$ would read it as a
-    'byte position in the machine's ANSI codepage, which on this Mac holds the
-    'dagger, and the non-breaking spaces would all survive. It cannot sit in a
-    'Const either way, since a Const takes a constant expression.
-    source = Replace$(value, ChrW$(160), " ")
-
-    For counter = 1 To Len(source)
-        oneChar = Mid$(source, counter, 1)
-        charCode = AscW(oneChar)
-
-        If charCode >= 0 And charCode < 32 Then
-            'Dropped, the same as the worksheet CLEAN function.
-        ElseIf oneChar = " " Then
-            If Not previousWasSpace Then
-                result = result & " "
-                previousWasSpace = True
-            End If
-        Else
-            result = result & oneChar
-            previousWasSpace = False
-        End If
-    Next
-
-    CleanString = Trim$(result)
+    Dim cleaned As String
+    cleaned = Application.WorksheetFunction.Substitute(value, Chr$(160), " ")
+    cleaned = Application.WorksheetFunction.Clean(cleaned)
+    CleanString = Application.WorksheetFunction.Trim(cleaned)
 End Function
 
 '@label:parsed-custom-formula
@@ -1195,83 +1071,108 @@ End Function
 '@details
 'Handles MEAN (mapped to AVERAGE), N/N() (mapped to COUNTIFS), and
 'passes through unknown custom identifiers unchanged. The COUNTIFS
-'expansion builds criteria pairs from the FormulaCondition.
-'The table always comes from the FormulaCondition. It used to be carried
-'from whichever variable token came first, so the same expression gave two
-'answers depending on the order of its tokens.
+'expansion builds criteria pairs from the IFormulaCondition.
 '@param customFunction String. Identifier of the custom formula.
-'@param formCond FormulaCondition. Provides condition logic.
+'@param formCond IFormulaCondition. Provides condition logic.
+'@param TableName Optional String. Table name resolved for variables.
 '@param tablePrefix Optional String. Prefix for structured references.
 '@return String. Excel fragment produced by the custom handler.
 Private Function ParsedCustomFormula(ByVal customFunction As String, _
-                                     ByVal formCond As FormulaCondition, _
+                                     ByVal formCond As IFormulaCondition, _
+                                     Optional ByVal TableName As String = vbNullString, _
                                      Optional ByVal tablePrefix As String = vbNullString) As String
     Dim cond As BetterArray
     Dim condVars As BetterArray
-    Dim builder As String
+    Dim parsedFormula As String
     Dim customTableName As String
+    Dim dictObj As ILLdictionary
     Dim idx As Long
 
-    customTableName = tablePrefix & formCond.VariablesTable(this.dict)
+    Set dictObj = Dictionary()
+    customTableName = TableName
+    If customTableName = vbNullString Then customTableName = formCond.VariablesTable(dictObj)
+    customTableName = tablePrefix & customTableName
 
     Select Case UCase$(customFunction)
         Case "N", "N()"
             Set cond = formCond.Conditions()
             Set condVars = formCond.Variables()
-            builder = customTableName & "[" & condVars.Item(condVars.LowerBound) & "]" & ", " & ClearCountIf(cond.Item(condVars.LowerBound))
+            parsedFormula = customTableName & "[" & condVars.Item(condVars.LowerBound) & "]" & ", " & ClearCountIf(cond.Item(condVars.LowerBound))
             For idx = condVars.LowerBound + 1 To condVars.UpperBound
-                builder = builder & "," & customTableName & "[" & condVars.Item(idx) & "]" & "," & ClearCountIf(cond.Item(idx))
+                parsedFormula = parsedFormula & "," & customTableName & "[" & condVars.Item(idx) & "]" & "," & ClearCountIf(cond.Item(idx))
             Next idx
-            builder = "COUNTIFS(" & builder & ")"
+            parsedFormula = "COUNTIFS(" & parsedFormula & ")"
         Case "MEAN"
-            builder = "AVERAGE"
+            parsedFormula = "AVERAGE"
         Case Else
-            builder = customFunction
+            parsedFormula = customFunction
     End Select
 
-    ParsedCustomFormula = builder
+    ParsedCustomFormula = parsedFormula
 End Function
 
-'@label:empty-invocation-follows
-'@sub-title Report whether the two tokens after a custom formula are an empty ()
+'@label:remove-empty-invocation-tokens
+'@sub-title Strip trailing empty parentheses after replacing custom formulas
 '@details
-'When a custom formula token is replaced inline, the "(" and ")" tokens
-'behind it become redundant and are skipped.
+'When a custom formula token is replaced inline, the following "("
+'and ")" tokens may become redundant. This helper removes them when
+'they immediately follow the replaced token.
+'@param tokens BetterArray. Tokens list to mutate.
 '@param functionIndex Long. Index of the custom function token.
-'@return Boolean. True when the next two tokens are "(" then ")".
-Private Function EmptyInvocationFollows(ByVal functionIndex As Long) As Boolean
+Private Sub RemoveEmptyInvocationTokens(ByRef tokens As BetterArray, _
+                                        ByVal functionIndex As Long)
+    Dim openIndex As Long
+    Dim closeIndex As Long
     Dim upperBound As Long
+    Dim openToken As String
+    Dim closeToken As String
 
-    If this.tokens Is Nothing Then Exit Function
+    If tokens Is Nothing Then Exit Sub
 
-    upperBound = this.tokens.UpperBound
-    If functionIndex + 2 > upperBound Then Exit Function
+    upperBound = tokens.UpperBound
+    openIndex = functionIndex + 1
+    closeIndex = functionIndex + 2
 
-    If StrComp(CStr(this.tokens.Item(functionIndex + 1)), "(", vbBinaryCompare) <> 0 Then Exit Function
-    If StrComp(CStr(this.tokens.Item(functionIndex + 2)), ")", vbBinaryCompare) <> 0 Then Exit Function
+    If openIndex > upperBound Then Exit Sub
+    openToken = CStr(tokens.Item(openIndex))
+    If StrComp(openToken, "(", vbBinaryCompare) <> 0 Then Exit Sub
 
-    EmptyInvocationFollows = True
-End Function
+    If closeIndex > tokens.UpperBound Then Exit Sub
+    closeToken = CStr(tokens.Item(closeIndex))
+    If StrComp(closeToken, ")", vbBinaryCompare) <> 0 Then Exit Sub
+
+    Call tokens.Remove(closeIndex)
+    Call tokens.Remove(openIndex)
+End Sub
 
 '@label:clear-count-if
 '@sub-title Remove equality fragments from COUNTIF-style conditions
 '@details
 'Sanitises predicate fragments by stripping equality operators and
 'normalising less-than and greater-than comparisons for COUNTIFS
-'compatibility. FormulaCondition builds the fragments this rewrites, so
-'the two have to keep agreeing on their shape.
+'compatibility.
 '@param value String. Predicate fragment.
 '@return String. Sanitised predicate suitable for COUNTIFS.
 Private Function ClearCountIf(ByVal value As String) As String
     Dim cleared As String
-    cleared = Replace(value, QUOTED_EQUAL & "&", vbNullString)
+    cleared = Replace(value, Quoted("=") & "&", vbNullString)
     cleared = Replace(cleared, "=", vbNullString)
-    cleared = Replace(cleared, QUOTE_CHAR & QUOTE_CHAR & QUOTE_CHAR & QUOTE_CHAR, QUOTE_CHAR & QUOTE_CHAR)
+    cleared = Replace(cleared, Chr$(34) & Chr$(34) & Chr$(34) & Chr$(34), Chr$(34) & Chr$(34))
     cleared = Replace(cleared, "<>", "######")
-    cleared = Replace(cleared, "<", QUOTED_LESS_EQUAL & " & ")
-    cleared = Replace(cleared, ">", QUOTED_GREATER_EQUAL & " & ")
+    cleared = Replace(cleared, "<", Quoted("<=") & " & ")
+    cleared = Replace(cleared, ">", Quoted(">=") & " & ")
     cleared = Replace(cleared, "######", "<>")
     ClearCountIf = cleared
+End Function
+
+'@label:quoted
+'@sub-title Wrap a value in Excel double quotes
+'@details
+'Prepends and appends a double-quote character to the supplied value.
+'@param value String. Text to wrap.
+'@return String. Quoted representation.
+Private Function Quoted(ByVal value As String) As String
+    Quoted = Chr$(34) & value & Chr$(34)
 End Function
 
 '@label:converted-setup-formula
@@ -1280,33 +1181,24 @@ End Function
 'Detects CASE_WHEN, CHOICE_FORMULA, and VALUE_OF prefixes in the
 'stored setup expression and delegates to the corresponding parser
 'class. Returns the original expression when no prefix matches.
-'The expression is trimmed first. The three prefix tests anchor at
-'position 1, so a leading space sent the raw CASE_WHEN text to the
-'tokeniser, which reported it as an unknown token.
-'When a converter answers with an empty string, its own failure message is
-'held so the caller can report what really went wrong.
 '@return String. Converted formula ready for tokenising.
 Private Function ConvertedSetupFormula() As String
     Dim result As String
-    Dim caseWhenObj As CaseWhen
-    Dim choiceObj As ChoiceFormula
-    Dim valueObj As ValueOfFormula
+    Dim caseWhenObj As ICaseWhen
+    Dim choiceObj As IChoiceFormula
+    Dim valueObj As IValueOfFormula
 
-    this.conversionFailure = vbNullString
-    result = Trim$(this.setupForm)
+    result = SetupFormula()
 
     If InStr(1, result, "CASE_WHEN", vbTextCompare) = 1 Then
         Set caseWhenObj = CaseWhen.Create(result)
-        result = caseWhenObj.ParsedFormula()
-        If LenB(result) = 0 Then this.conversionFailure = caseWhenObj.FailureReason
+        result = caseWhenObj.parsedFormula()
     ElseIf InStr(1, result, "CHOICE_FORMULA", vbTextCompare) = 1 Then
         Set choiceObj = ChoiceFormula.Create(result)
-        result = choiceObj.ParsedFormula()
-        If LenB(result) = 0 Then this.conversionFailure = choiceObj.FailureReason
+        result = choiceObj.parsedFormula()
     ElseIf InStr(1, result, "VALUE_OF", vbTextCompare) = 1 Then
-        Set valueObj = ValueOfFormula.Create(result, this.dict, VariablesProvider(), SheetProvider())
+        Set valueObj = ValueOfFormula.Create(result, Dictionary(), Variables(), SheetProvider())
         result = valueObj.ConvertedFormula
-        If LenB(result) = 0 Then this.conversionFailure = valueObj.FailureReason
     End If
 
     ConvertedSetupFormula = result
@@ -1340,36 +1232,35 @@ End Sub
 Private Sub LogCheck(ByVal label As String, _
                      Optional ByVal scope As Byte = checkingNote)
 
-    If this.internalChecks Is Nothing Then
-        Set this.internalChecks = Checking.Create(CLASSNAME)
+    If internalChecks Is Nothing Then
+        Set internalChecks = Checking.Create("Formulas")
     End If
 
-    this.internalChecks.Add CStr(this.checkCounter), label, scope
-    this.checkCounter = this.checkCounter + 1
-    this.hasChecks = True
+    internalChecks.Add CStr(checkCounter), label, scope
+    checkCounter = checkCounter + 1
+    hasChecks = True
 End Sub
 
 '@label:has-checkings
 '@sub-title Indicate whether any diagnostic entries were recorded
 '@details
-'Returns the flag set by LogCheck. VarWriter reads this name at four call
-'sites, so the spelling stays until a session owns that file.
+'Returns the module-level flag set by LogCheck.
 '@return Boolean. True when checkings exist.
 '@export
-Public Property Get HasChecking() As Boolean
-    HasChecking = this.hasChecks
+Private Property Get HasCheckings() As Boolean
+    HasCheckings = hasChecks
 End Property
 
 '@label:checking-values
 '@sub-title Expose the collected checking entries if available
 '@details
-'Returns the internal Checking store when at least one entry has
+'Returns the internal IChecking store when at least one entry has
 'been recorded. Returns Nothing otherwise.
-'@return Checking. Logged diagnostics.
+'@return IChecking. Logged diagnostics.
 '@export
-Public Property Get CheckingValues() As Checking
-    If Not this.hasChecks Then Exit Property
-    Set CheckingValues = this.internalChecks
+Private Property Get CheckingValues() As IChecking
+    If Not HasCheckings Then Exit Property
+    Set CheckingValues = internalChecks
 End Property
 
 '@section ErrorHandling
@@ -1380,11 +1271,62 @@ End Property
 '@sub-title Raise a VBA error with the class signature
 '@details
 'Wrapper around Err.Raise that standardises the source to the class
-'constant CLASSNAME for consistent stack traces. The message goes through
-'as written, the same as the other five classes in this folder.
+'constant CLASSNAME for consistent stack traces.
 '@param errNumb Long. ProjectError code.
 '@param errorMessage String. Descriptive message.
 '@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
-    Err.Raise errNumb, CLASSNAME, errorMessage
+    Err.Raise errNumb, CLASSNAME, "Error: " & errorMessage
 End Sub
+
+'@section Interface
+'===============================================================================
+'@description Delegated members satisfying the IFormulas contract.
+
+Private Property Get IFormulas_Varlists(Optional ByVal formulaType As String = "analysis") As BetterArray
+    Set IFormulas_Varlists = Varlists(formulaType)
+End Property
+
+Private Property Get IFormulas_Valid(Optional ByVal formulaType As String = "analysis") As Boolean
+    IFormulas_Valid = Valid(formulaType)
+End Property
+
+'@label:formula-table-list
+Private Property Get IFormulas_FormulaTableList() As BetterArray
+    If EnsureEvaluation("analysis") Then
+        Set IFormulas_FormulaTableList = this.tokens.Clone()
+    Else
+        Set IFormulas_FormulaTableList = New BetterArray
+    End If
+End Property
+
+Private Property Get IFormulas_ParsedLinelistFormula(Optional ByVal useTableName As Boolean = False, _
+                                                    Optional ByVal tablePrefix As String = vbNullString) As String
+    IFormulas_ParsedLinelistFormula = ParsedLinelistFormula(useTableName, tablePrefix)
+End Property
+
+Private Property Get IFormulas_ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, _
+                                                    Optional ByVal tablePrefix As String = vbNullString, _
+                                                    Optional ByVal Connector As String = "*") As String
+    IFormulas_ParsedAnalysisFormula = ParsedAnalysisFormula(formCond, tablePrefix, Connector)
+End Property
+
+Private Property Get IFormulas_HasSetupVariables() As Boolean
+    IFormulas_HasSetupVariables = HasSetupVariables()
+End Property
+
+Private Property Get IFormulas_IsGrouped() As String
+    IFormulas_IsGrouped = IsGrouped()
+End Property
+
+Private Property Get IFormulas_Reason(Optional ByVal formulaType As String = "analysis") As String
+    IFormulas_Reason = Reason(formulaType)
+End Property
+
+Private Property Get IFormulas_CheckingValues() As IChecking
+    Set IFormulas_CheckingValues = CheckingValues
+End Property
+
+Private Property Get IFormulas_HasChecking() As Boolean
+    IFormulas_HasChecking = HasCheckings
+End Property

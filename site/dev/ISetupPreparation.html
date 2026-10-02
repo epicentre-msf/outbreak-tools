@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ISetupPreparation - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ISetupPreparation</h1>
+<p>Defines the public contract for the SetupPreparation class, exposing
+methods to bind a preparation helper to a workbook, execute the full
+preparation workflow (dropdowns, updated values registry, validations,
+hidden/protected sheets), and access the resulting dropdown manager
+and update watcher objects.</p>
+<p><strong>Depends on:</strong> <a href="IDevelopment.html">IDevelopment</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="IUpdatedValues.html">IUpdatedValues</a></p>
+<h2>Lifecycle</h2>
+<h3>Configure</h3>
+<p><strong>Bind the preparation helper to a workbook hosting setup worksheets</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
+</code></pre>
+<p>Stores the workbook reference and resets cached worksheet and manager
+objects. Must be called before any other method or property on this
+instance.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The workbook owning the setup assets.</li>
+</ul>
+<hr />
+<h3>Prepare</h3>
+<p><strong>Execute the full preparation workflow</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Prepare(ByRef manager As IDevelopment)
+</code></pre>
+<p>Runs the complete preparation sequence: registers all dropdown list
+objects, initialises the updated values registry, applies data
+validations to setup tables (Dictionary, Exports, Analysis), and
+ensures hidden and protected sheet configuration via the supplied
+development manager.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>manager</code>: IDevelopment. Development manager providing hidden/protected sheet registration.</li>
+</ul>
+<hr />
+<h2>Operations</h2>
+<h3>EnsureDropdowns</h3>
+<p><strong>Ensure dropdown list objects exist with the expected default entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub EnsureDropdowns()
+</code></pre>
+<p>Creates the dropdown manager if needed, then registers all standard
+dropdown lists (yes/no, formats, variable types, etc.) on the dropdown
+worksheet. Safe to call multiple times; subsequent calls are no-ops
+when the manager is already initialised.</p>
+<hr />
+<h3>EnsureUpdatedRegistry</h3>
+<p><strong>Initialise the updated values registry and register watched tables</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub EnsureUpdatedRegistry()
+</code></pre>
+<p>Creates the update watcher if needed, clears any existing registry data,
+registers the watched setup sheets (Dictionary, Choices, Analysis, Exports),
+and resets all status tags to their default values.</p>
+<hr />
+<h2>State</h2>
+<h3>Dropdowns</h3>
+<p><strong>Dropdown manager created during preparation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Dropdowns() As IDropdownLists
+</code></pre>
+<p>Returns the IDropdownLists manager bound to the dropdown worksheet.
+Lazily initialises the manager on first access if it was not already
+created by EnsureDropdowns or Prepare.</p>
+<p><strong>Returns:</strong> IDropdownLists. The dropdown manager instance.</p>
+<hr />
+<h3>UpdatedWatcher</h3>
+<p><strong>Updated values watcher created during preparation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get UpdatedWatcher() As IUpdatedValues
+</code></pre>
+<p>Returns the IUpdatedValues watcher bound to the registry worksheet.
+Lazily initialises the watcher on first access if it was not already
+created by EnsureUpdatedRegistry or Prepare.</p>
+<p><strong>Returns:</strong> IUpdatedValues. The update watcher instance.</p>
+<hr />
+<h3>HostWorkbook</h3>
+<p><strong>Workbook hosting the setup worksheets</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HostWorkbook() As Workbook
+</code></pre>
+<p>Returns the workbook reference stored during Configure. Raises an
+error when the instance has not been configured.</p>
+<p><strong>Returns:</strong> Workbook. The bound workbook.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

@@ -5,29 +5,16 @@ END
 Attribute VB_Name = "DiseaseLogger"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = True
+Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Attribute VB_Description = "Collects lightweight log entries for disease workflows"
 
-'@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Collects lightweight log entries for disease workflows")
-'@depends BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-
-'Keeps the info, warning and error entries a disease workflow records so the
-'caller can flush them once the work is done.
-
-'@section Enumerations
-'===============================================================================
-
-Public Enum DiseaseLogSeverity
-    DiseaseLogInfo = 1
-    DiseaseLogWarning = 2
-    DiseaseLogError = 3
-End Enum
+Implements IDiseaseLogger
 
 '@section Types
 '===============================================================================
@@ -35,7 +22,7 @@ End Enum
 Private Type TLogEntry
     Timestamp As Date
     Operation As String
-    Severity As Byte
+    Severity As DiseaseLogSeverity
     Message As String
     Details As BetterArray
 End Type
@@ -45,15 +32,6 @@ Private Type TLogger
 End Type
 
 Private this As TLogger
-
-'@section Factory
-'===============================================================================
-
-'@sub-title Build a fresh, empty logger.
-'@return DiseaseLogger ready to record entries.
-Public Function Create() As DiseaseLogger
-    Set Create = New DiseaseLogger
-End Function
 
 '@section Lifecycle
 '===============================================================================
@@ -65,13 +43,8 @@ End Sub
 '@section Logging
 '===============================================================================
 
-'@sub-title Record a new log entry.
-'@param operation String operation identifier (e.g., "Import", "Export").
-'@param severity Byte holding a DiseaseLogSeverity value.
-'@param message String descriptive message.
-'@param details Optional BetterArray containing additional context strings.
 Public Sub Record(ByVal operation As String, _
-                  ByVal severity As Byte, _
+                  ByVal severity As DiseaseLogSeverity, _
                   ByVal message As String, _
                   Optional ByVal details As BetterArray)
 
@@ -93,7 +66,7 @@ End Sub
 '===============================================================================
 
 Public Property Get Entries() As BetterArray
-    Set Entries = CloneEntries()
+    Entries = CloneEntries()
 End Property
 
 Public Property Get HasEntries() As Boolean
@@ -111,7 +84,7 @@ End Sub
 '@section Internal Helpers
 '===============================================================================
 
-Private Sub AppendEntry(ByRef entry As TLogEntry)
+Private Sub AppendEntry(ByVal entry As TLogEntry)
     Dim snapshot As BetterArray
     Set snapshot = New BetterArray
 
@@ -174,4 +147,23 @@ End Sub
 
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
     Err.Raise errNumber, "DiseaseLogger", errMessage
+End Sub
+
+'@section Interface
+'===============================================================================
+
+Private Sub IDiseaseLogger_Record(ByVal operation As String, ByVal severity As DiseaseLogSeverity, ByVal message As String, Optional ByVal details As BetterArray)
+    Record operation, severity, message, details
+End Sub
+
+Private Property Get IDiseaseLogger_Entries() As BetterArray
+    Set IDiseaseLogger_Entries = Entries
+End Property
+
+Private Property Get IDiseaseLogger_HasEntries() As Boolean
+    IDiseaseLogger_HasEntries = HasEntries
+End Property
+
+Private Sub IDiseaseLogger_Clear()
+    Clear
 End Sub

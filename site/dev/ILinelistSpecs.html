@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ILinelistSpecs - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ILinelistSpecs</h1>
+<p>Defines the public contract for the LinelistSpecs class, exposing lazy-loaded
+accessors for all specification collaborators (dictionary, choices, translations,
+geo, analysis, passwords, format, exports, formulas, main), metadata helpers
+for temporary sheet names and category lookups, and lifecycle methods for
+preparing, exporting, and error-managing the specifications workbook.</p>
+<h2>Lifecycle</h2>
+<h3>ResetCaches</h3>
+<p><strong>Refresh all cached collaborators</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ResetCaches()
+</code></pre>
+<p>Cache management and workbook reference.
+Resets every cached collaborator object, sheet reference, translation cache,
+and category cache so subsequent reads query the workbook again. Call after
+importing new data to ensure stale caches are cleared.</p>
+<hr />
+<h3>Workbook</h3>
+<p><strong>Workbook hosting the specifications</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Workbook() As Workbook
+</code></pre>
+<p>Returns the workbook reference that backs all specification queries. Raises
+an error if the workbook has not been assigned.</p>
+<p><strong>Returns:</strong> Workbook. The specifications workbook.</p>
+<hr />
+<h2>CoreSpecifications</h2>
+<h3>Dictionary</h3>
+<p><strong>Linelist dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary
+</code></pre>
+<p>Lazy-loaded accessors for specification collaborator objects.
+Returns the ILLdictionary instance providing column and row access to the
+Dictionary worksheet. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> ILLdictionary. The dictionary collaborator.</p>
+<hr />
+<h3>Choices</h3>
+<p><strong>Choices catalogue</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Choices() As ILLChoices
+</code></pre>
+<p>Returns the ILLChoices instance providing category lookups from the Choices
+worksheet. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> ILLChoices. The choices collaborator.</p>
+<hr />
+<h3>DesignFormat</h3>
+<p><strong>Visual formatting specifications</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DesignFormat() As ILLFormat
+</code></pre>
+<p>Returns the ILLFormat instance providing sheet and cell formatting methods
+based on the LinelistStyle worksheet. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> ILLFormat. The format collaborator.</p>
+<hr />
+<h3>Analysis</h3>
+<p><strong>Analysis setup specifications</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Analysis() As ILLAnalysis
+</code></pre>
+<p>Returns the ILLAnalysis instance providing access to the Analysis worksheet
+configuration. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> ILLAnalysis. The analysis collaborator.</p>
+<hr />
+<h3>ExportObject</h3>
+<p><strong>Export column specifications</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportObject() As ILLExport
+</code></pre>
+<p>Returns the ILLExport instance providing access to export column definitions
+from the Exports worksheet. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> ILLExport. The export collaborator.</p>
+<hr />
+<h3>Password</h3>
+<p><strong>Password manager</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Password() As IPasswords
+</code></pre>
+<p>Returns the IPasswords instance providing workbook and sheet protection
+utilities from the __pass worksheet. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> IPasswords. The password collaborator.</p>
+<hr />
+<h3>GeoObject</h3>
+<p><strong>Geographic data manager</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get GeoObject() As ILLGeo
+</code></pre>
+<p>Returns the ILLGeo instance providing geographic hierarchy lookups from the
+Geo worksheet. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> ILLGeo. The geo collaborator.</p>
+<hr />
+<h3>FormulaDataObject</h3>
+<p><strong>Formula data provider</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get FormulaDataObject() As IFormulaData
+</code></pre>
+<p>Returns the IFormulaData instance providing formula parsing support from the
+__formula worksheet. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> IFormulaData. The formula data collaborator.</p>
+<hr />
+<h3>MainObject</h3>
+<p><strong>Main configuration sheet accessor</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get MainObject() As IMain
+</code></pre>
+<p>Returns the IMain instance providing key-value configuration from the Main
+worksheet. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> IMain. The main configuration collaborator.</p>
+<hr />
+<h3>Translations</h3>
+<p><strong>Translation tables manager</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Translations() As ILLTranslation
+</code></pre>
+<p>Returns the ILLTranslation instance providing access to all translation
+ListObjects on the consolidated translation worksheet. Lazy-loaded on
+first access.</p>
+<p><strong>Returns:</strong> ILLTranslation. The translations collaborator.</p>
+<hr />
+<h3>DesignerTranslations</h3>
+<p><strong>Designer translation accessor</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DesignerTranslations() As IDesignerTranslation
+</code></pre>
+<p>Returns the IDesignerTranslation instance providing designer UI translations from
+the DesignerTranslation worksheet. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> IDesignerTranslation. The designer translation collaborator.</p>
+<hr />
+<h3>TransObject</h3>
+<p><strong>Scoped translation object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As ITranslationObject
+</code></pre>
+<p>Returns an ITranslationObject for the requested translation scope. Results
+are cached per scope value for efficient repeated access.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>translationScope</code>: Optional Byte. The translation scope constant
+(e.g., TranslationOfMessages, TranslationOfDictionary, TranslationOfShapes).
+Defaults to TranslationOfMessages.</li>
+</ul>
+<p><strong>Returns:</strong> ITranslationObject. The scoped translation object.</p>
+<hr />
+<h2>MetadataHelpers</h2>
+<h3>TemporarySheetName</h3>
+<p><strong>Temporary sheet name for a given scope</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TemporarySheetName(ByVal scope As Byte) As String
+</code></pre>
+<p>Derived accessors for temporary sheet names, tag values, and categories.
+Returns the fixed worksheet name used for temporary internal sheets, based
+on the scope constant (TEMP_SHEET_ANALYSIS, TEMP_SHEET_LIST, etc.).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scope</code>: Byte. The temporary sheet scope constant.</li>
+</ul>
+<p><strong>Returns:</strong> String. The worksheet name string.</p>
+<hr />
+<h3>Value</h3>
+<p><strong>Configuration value by tag name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Value(ByVal tagName As String) As String
+</code></pre>
+<p>Returns a configuration value from the Main worksheet for the given tag name.
+The special tag &quot;numberofexports&quot; returns the export count from the Exports
+worksheet; all other tags delegate to MainObject.ValueOf.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tagName</code>: String. The configuration key to look up.</li>
+</ul>
+<p><strong>Returns:</strong> String. The configuration value.</p>
+<hr />
+<h3>Categories</h3>
+<p><strong>Resolve category values for a variable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Categories(ByVal varName As String, Optional ByVal useShortlabels As Boolean = False) As BetterArray
+</code></pre>
+<p>Returns the list of category values for a choice-type variable (choice_manual,
+choice_multiple, choice_custom, or choice_formula). Results are cached per
+variable name and short-label flag for efficient repeated access.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The variable name whose categories to resolve.</li>
+<li><code>useShortlabels</code>: Optional Boolean. When True, returns short labels
+instead of full labels. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. Cloned list of category values.</p>
+<hr />
+<h2>WorkbookManagement</h2>
+<h3>Prepare</h3>
+<p><strong>Import and prepare all specifications from external workbooks</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Prepare()
+</code></pre>
+<p>Preparation, export, and error management operations.
+Orchestrates the full specification preparation workflow: validates the Main
+sheet readiness, opens the setup workbook, imports dictionary, choices,
+translations, analysis, and optionally geo data, then prepares the dictionary
+with preserved names, adds list auto columns, translates and sorts all
+collaborators. Handles errors with cleanup of open workbooks.</p>
+<hr />
+<h3>Export</h3>
+<p><strong>Export all specifications to an output workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Export(ByVal toWkb As Workbook)
+</code></pre>
+<p>Exports dictionary, choices, translations, export specs, geo data, and
+passwords to the given workbook, creating hidden worksheets for each.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>toWkb</code>: Workbook. The destination workbook to export specifications into.</li>
+</ul>
+<hr />
+<h3>ErrorManage</h3>
+<p><strong>Display an error dialog for specification failures</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ErrorManage(Optional ByVal textMessage As String = vbNullString)
+</code></pre>
+<p>Shows a message box describing the error and aborts the linelist creation
+process.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>textMessage</code>: Optional String. Error description. Defaults to vbNullString.</li>
+</ul>
+<hr />
+
+  </main>
+</body>
+</html>
+

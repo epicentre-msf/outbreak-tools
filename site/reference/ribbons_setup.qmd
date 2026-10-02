@@ -10,17 +10,17 @@ categories:
 Recent version of Excel have a top [ribbon/menu](https://www.ablebits.com/office-addins-blog/excel-ribbon-guide/) that display most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities.
 
 
-![OutbreakTools tab in the **setup file**](../images/img-setup-ribbon.png){#fig-setup-ribbon fig-align="center"}
+![OutbreakTools tab in the **setup file**](../images/img-003-ribbon-setup.png){#fig-setup-ribbon fig-align="center"}
 
 ## Table management
 
 The buttons of this section provide action on tables within the setup: main table on the *Dictionary sheet*, table for choices, table for exports, tables for analyses etc.
 
-![Table management section](../images/img-table-management.png){fig-align="center"}
+![Table management section](images/img-003-ribbon-setup-table.png){fig-align="center"}
 
-### Add rows to tables
+### Add rows
 
-This button inserts rows at the bottom of the table in the current sheet.
+This button insert rows at the bottom of the table in the current sheet.
 
 
 When this functionality is used in the *Analyses* sheet, you can use the drop-down menu in *cell A1* to choose whether you want to add rows to all tables or just one in particular.
@@ -28,7 +28,7 @@ When this functionality is used in the *Analyses* sheet, you can use the drop-do
 ![Button to add or remove rows of diffeent analyses tables](../images/im-115-table-managment.png){fig-align="center"}
 
 
-### Resize tables
+### Resize table in the current sheet
 
 This button remove empty rows (whether at the end or in the middle).
 
@@ -38,23 +38,7 @@ When this functionality is used in the *Analyses* sheet, you can use the drop-do
 ![Button to add or remove rows of diffeent analyses tables](../images/im-117-table-managment.png){fig-align="center"}
 
 
-### Insert row
-
-This button inserts a row between existing rows in each of the setup's worksheets.
-
-### Delete table row
-
-This button deletes rows. To delete a row, select it and then click the button. Before the row is deleted, a warning message will appear to let you know that the operation cannot be undone.
-
-### Delete table column
-
-This button deletes table columns, but only on the Translation sheet.
-
-### Sort tables
-
-This button organises the Dictionary and the tables in the Choices, Analyses, and Export sheets. The sorting method depends on the sheet.
-
-### Remove all filters
+### Remove filters
 
 This button clears filters. It is usefull if you have applied Excel filters in several columns, no need to track them all one by one, just clear them in one go.
 
@@ -63,7 +47,7 @@ This button clears filters. It is usefull if you have applied Excel filters in s
 
 This section provides functionalities for the [Translation sheet](../reference/translations_sheet.qmd).
 
-![Translation section](../images/img-translation-setup.png){fig-align="center"}
+![Translation section](images/img-003-ribbon-setup-translations.png){fig-align="center"}
 
 
 
@@ -89,15 +73,15 @@ At the end, it will open a popup window with information on the update of the tr
 Go to the [Translation sheet](../reference/translations_sheet.qmd) for more information on translations.
 
 
-## Import/ Export
+## Import
 
-These buttons allow to import data into an empty setup as well as exporting for migration.
+These buttons allow to import data into an empty setup.
 
-![Import section](../images/img-import-setup.png){fig-align="center"}
+![Import section](images/img-003-ribbon-setup-import.png){fig-align="center"}
 
 ### Import data from another setup
 
-Use this button to import data from another **setup file** to an empty setup file^[An upgraded version, or an empty file for the same version in case the original file got corrupted.].
+Use this button to migrate data from one **setup file** to another empty setup file^[An upgraded version, or an empty file fo the same version in case the original file got corrupted.].
 
 1. Click on the button; it opens a popup window
 2. Click on the "Load another setup file" button. It will open a window to select the file to import data from.
@@ -108,24 +92,20 @@ Use this button to import data from another **setup file** to an empty setup fil
 ![](images/img-004-import-setup.png){fig-align="center"}
 
 ::: {.callout-note}
-If you are importing a setup to a new **setup file**, you should check all boxes to import everything.
+If you are migrating a setup to a new **setup file**, you should check all boxes to import everything.
 
 You can run the coherence checks now, or do it at a later stage with the [Check setup button](#sec-check-setup)
 :::
 
 
-### Import from migration
+### Import from disease (in developpment)
 
-Use this button to import back the previously exported file from migration.
-
-### Export for migration
-
-This button allows you to export the setup for migration. 
+This button is used to import a "disease setup" from a disease **Master file**. This file is being piloted for Epinetwork discussions.
 
 
 ## Advanced {#sec-advanced}
 
-![Advanced section](../images/img-ribbon-advanced-setup.png){fig-align="center"}
+![Advanced section](images/img-003-ribbon-setup-advanced.png){fig-align="center"}
 
 ### Check current setup for errors {#sec-check-setup}
 

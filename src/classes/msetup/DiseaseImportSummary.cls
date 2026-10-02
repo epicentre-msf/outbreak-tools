@@ -5,20 +5,16 @@ END
 Attribute VB_Name = "DiseaseImportSummary"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = True
+Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Attribute VB_Description = "Collects the outcome of disease import merge operations"
 
-'@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Collects the outcome of disease import merge operations")
-'@depends BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-
-'Collects the variables an import found missing, updated or appended so the
-'caller knows whether a report is due.
+Implements IDiseaseImportSummary
 
 '@section State
 '===============================================================================
@@ -35,16 +31,21 @@ Private this As TImportSummary
 '@section Factory
 '===============================================================================
 
-'@sub-title Return a new, initialised summary instance.
-Public Function Create() As DiseaseImportSummary
+'@sub-title Return a new summary instance as its interface.
+Public Function Create() As IDiseaseImportSummary
     Dim summary As DiseaseImportSummary
     Set summary = New DiseaseImportSummary
     summary.Initialise
-    Set Create = summary
+    Set Create = summary.Self
 End Function
 
 '@section Public API
 '===============================================================================
+
+'@sub-title Provide the interface reference to the current instance.
+Public Property Get Self() As IDiseaseImportSummary
+    Set Self = Me
+End Property
 
 '@sub-title Ensure arrays are initialised before use.
 Public Sub Initialise()
@@ -110,3 +111,34 @@ Private Function CloneArray(ByVal source As BetterArray) As BetterArray
         Set CloneArray = source.Clone()
     End If
 End Function
+
+'@section Interface
+'===============================================================================
+
+Private Property Get IDiseaseImportSummary_MissingVariables() As BetterArray
+    Set IDiseaseImportSummary_MissingVariables = MissingVariables
+End Property
+
+Private Property Get IDiseaseImportSummary_UpdatedVariables() As BetterArray
+    Set IDiseaseImportSummary_UpdatedVariables = UpdatedVariables
+End Property
+
+Private Property Get IDiseaseImportSummary_AppendedVariables() As BetterArray
+    Set IDiseaseImportSummary_AppendedVariables = AppendedVariables
+End Property
+
+Private Property Get IDiseaseImportSummary_RequiresReport() As Boolean
+    IDiseaseImportSummary_RequiresReport = RequiresReport
+End Property
+
+Private Sub IDiseaseImportSummary_RegisterMissing(ByVal varName As String)
+    RegisterMissing varName
+End Sub
+
+Private Sub IDiseaseImportSummary_RegisterUpdated(ByVal varName As String)
+    RegisterUpdated varName
+End Sub
+
+Private Sub IDiseaseImportSummary_RegisterAppended(ByVal varName As String)
+    RegisterAppended varName
+End Sub

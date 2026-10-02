@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IAnalysisOutput - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IAnalysisOutput</h1>
+<p>Defines the public contract for the AnalysisOutput class. Exposes a single
+method that orchestrates the full analysis output pipeline: building
+cross-tables, writing formulas, registering graphs, and rendering charts
+across all analysis scopes.
+Scope for analysis worksheet selection</p>
+<h2>Methods</h2>
+<h3>WriteAnalysis</h3>
+<p><strong>Write all analysis tables, formulas, and graphs to the output</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub WriteAnalysis(): End Sub
+</code></pre>
+<p>Orchestrates the complete analysis output pipeline. Iterates through
+each analysis scope (normal, time series, spatial, spatio-temporal),
+builds cross-tables from the table specifications, writes formulas via
+CrossTableFormula, registers table and graph metadata in AnaTabIds,
+and renders all tracked graphs on the output worksheets.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

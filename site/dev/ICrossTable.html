@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ICrossTable - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ICrossTable</h1>
+<p>Defines the public contract for the CrossTable class. Exposes properties
+for table geometry (rows, columns, ranges) and methods for building,
+formatting, and naming the cross-table on an analysis output worksheet.</p>
+<h2>Methods</h2>
+<h3>AddRows</h3>
+<p><strong>Add row headers and row category labels to the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddRows(): End Sub
+</code></pre>
+<p>Operations for building and formatting the cross-table.
+Writes the row variable label and all row category values into the
+first column of the cross-table region. Includes optional total and
+missing rows based on the table specification flags.</p>
+<hr />
+<h3>AddColumns</h3>
+<p><strong>Add column headers and column category labels to the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddColumns(): End Sub
+</code></pre>
+<p>Writes the column variable label and all column category values into the
+header row of the cross-table region. Includes optional total and
+missing columns based on the table specification flags.</p>
+<hr />
+<h3>AddHeader</h3>
+<p><strong>Add the table title and header to the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddHeader(): End Sub
+</code></pre>
+<p>Writes the table title cell above the cross-table and any section
+header when IsNewSection is True. Positions the header based on the
+start row computed from the previous table.</p>
+<hr />
+<h3>NameRanges</h3>
+<p><strong>Create all named ranges for the table data regions</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub NameRanges(): End Sub
+</code></pre>
+<p>Defines workbook-level named ranges for the row categories, column
+headers, data body, total row, total column, and other structural
+regions. The names follow a convention based on the table identifier
+and are registered in NamedRangesList for export tracking.</p>
+<hr />
+<h3>Build</h3>
+<p><strong>Build the complete cross-table on the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Build(): End Sub
+</code></pre>
+<p>Orchestrates the full table construction by calling AddHeader, AddRows,
+AddColumns, and NameRanges in sequence. This is the primary entry point
+for AnalysisOutput when building analysis tables.</p>
+<hr />
+<h3>Format</h3>
+<p><strong>Apply formatting to the table using design specifications</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Format(ByVal designFormat As ILLFormat): End Sub
+</code></pre>
+<p>Applies visual formatting (borders, fills, fonts, number formats) to
+the cross-table cells using the provided ILLFormat design specification.
+Handles header rows, data cells, total rows, and percentage columns
+according to the table scope.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>designFormat</code>: ILLFormat. The formatting specification to apply.</li>
+</ul>
+<hr />
+<h2>Properties</h2>
+<h3>HeaderRange</h3>
+<p><strong>Header range of the table on the output worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HeaderRange() As Range: End Property
+</code></pre>
+<p>Read-only accessors for table geometry, navigation, and metadata.
+Returns the Range spanning the column headers of the built cross-table.
+Used by formatting and formula-writing routines to locate header cells.</p>
+<p><strong>Returns:</strong> Range. The header row range.</p>
+<hr />
+<h3>RowsCategoriesRange</h3>
+<p><strong>Row categories range with optional filtering</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get RowsCategoriesRange( _
+    Optional ByVal includeHeaders As Boolean = True, _
+    Optional ByVal onlyCategories As Boolean = False) As Range
+</code></pre>
+<p>Returns the Range spanning the row category labels. When includeHeaders
+is True, the header row is included. When onlyCategories is True, only
+the category label column is returned without accompanying data columns.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>includeHeaders</code>: Optional Boolean. When True, includes the header
+row in the returned range. Defaults to True.</li>
+<li><code>onlyCategories</code>: Optional Boolean. When True, returns only the
+label column. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The row categories range.</p>
+<hr />
+<h3>ColumnRange</h3>
+<p><strong>Column data range for a specific column value</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ColumnRange(ByVal colVal As String, _
+    Optional ByVal onlyCategories As Boolean = False, _
+    Optional ByVal includeHeaders As Boolean = False) As Range
+</code></pre>
+<p>Returns the Range spanning a single data column identified by its
+header value. Used by formula writers to target a specific column
+when building COUNTIFS or SUMPRODUCT expressions.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colVal</code>: String. The column header value to locate.</li>
+<li><code>onlyCategories</code>: Optional Boolean. When True, returns only the
+category cells. Defaults to False.</li>
+<li><code>includeHeaders</code>: Optional Boolean. When True, includes the header
+cell. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The data range for the specified column.</p>
+<hr />
+<h3>RowRange</h3>
+<p><strong>Row data range for a specific row value</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get RowRange(ByVal rowVal As String, _
+    Optional ByVal includeHeaders As Boolean = True) As Range
+</code></pre>
+<p>Returns the Range spanning a single data row identified by its row
+label value. Used by formula writers to target a specific row when
+building cross-table expressions.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rowVal</code>: String. The row label value to locate.</li>
+<li><code>includeHeaders</code>: Optional Boolean. When True, includes the row
+label cell. Defaults to True.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The data range for the specified row.</p>
+<hr />
+<h3>StartRow</h3>
+<p><strong>Starting row of the table on the output worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get StartRow() As Long: End Property
+</code></pre>
+<p>Returns the 1-based row index where this cross-table begins. Computed
+from the previous table end row or the section start row when this is
+the first table.</p>
+<p><strong>Returns:</strong> Long. The starting row index.</p>
+<hr />
+<h3>Previous</h3>
+<p><strong>Previous cross-table in the same section</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Previous() As ICrossTable: End Property
+</code></pre>
+<p>Returns the ICrossTable instance that precedes this one in the build
+chain. Returns Nothing when this is the first table in its section.
+Used to compute start-row offsets for stacked tables.</p>
+<p><strong>Returns:</strong> ICrossTable. The preceding cross-table, or Nothing.</p>
+<hr />
+<h3>Specifications</h3>
+<p><strong>Table specifications used to build this cross-table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Specifications() As ITableSpecs: End Property
+</code></pre>
+<p>Returns the ITableSpecs instance that defines the configuration for
+this cross-table. Provides access to table scope, variable names,
+category lists, and validation flags.</p>
+<p><strong>Returns:</strong> ITableSpecs. The backing table specification.</p>
+<hr />
+<h3>Wksh</h3>
+<p><strong>Output worksheet where the table is built</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet: End Property
+</code></pre>
+<p>Returns the Worksheet reference where this cross-table writes its
+headers, row labels, column labels, and data cells.</p>
+<p><strong>Returns:</strong> Worksheet. The output worksheet.</p>
+<hr />
+<h3>NumberOfColumns</h3>
+<p><strong>Number of data columns in the table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get NumberOfColumns() As Long: End Property
+</code></pre>
+<p>Returns the count of data columns excluding the row-label column.
+For bivariate and time series tables this equals the number of column
+categories plus optional total and missing columns.</p>
+<p><strong>Returns:</strong> Long. The data column count.</p>
+<hr />
+<h3>EndColumn</h3>
+<p><strong>Last column used by the table on the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get EndColumn() As Long: End Property
+</code></pre>
+<p>Returns the 1-based column index of the rightmost cell occupied by
+this cross-table. Used by sibling tables and formatting routines to
+avoid overlapping output.</p>
+<p><strong>Returns:</strong> Long. The ending column index.</p>
+<hr />
+<h3>EndRow</h3>
+<p><strong>Last row used by the table on the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get EndRow() As Long: End Property
+</code></pre>
+<p>Returns the 1-based row index of the bottommost cell occupied by this
+cross-table. Used to compute the start row for the next stacked table.</p>
+<p><strong>Returns:</strong> Long. The ending row index.</p>
+<hr />
+<h3>TimeSeriesHeader</h3>
+<p><strong>Header label for time series tables</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TimeSeriesHeader() As String: End Property
+</code></pre>
+<p>Returns the translated header text used for the time-period column in
+time series cross-tables. Returns an empty string for non-time-series
+table scopes.</p>
+<p><strong>Returns:</strong> String. The time series column header label.</p>
+<hr />
+<h3>NamedRangesList</h3>
+<p><strong>List of named range names created by this table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get NamedRangesList() As BetterArray: End Property
+</code></pre>
+<p>Returns a BetterArray containing all the named range names that
+NameRanges created for this cross-table. Used by AnaTabIds to register
+the ranges for export tracking.</p>
+<p><strong>Returns:</strong> BetterArray. The collection of named range names.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

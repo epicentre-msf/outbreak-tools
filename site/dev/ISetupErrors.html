@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ISetupErrors - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ISetupErrors</h1>
+<p>Defines the public contract for the SetupErrors class, exposing methods
+to initialise a setup consistency checker, execute all validation checks
+(dictionary, choices, exports, translations), and retrieve the resulting
+collection of IChecking report objects.</p>
+<h2>Lifecycle</h2>
+<h3>Initialise</h3>
+<p><strong>Bind the setup checker to a workbook and optional collaborators</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Initialise(ByVal hostBook As Workbook, _
+                      Optional ByVal passwordService As IPasswords, _
+                      Optional ByVal dictionary As ILLdictionary, _
+                      Optional ByVal choices As ILLChoices, _
+                      Optional ByVal formulaStore As IFormulaData, _
+                      Optional ByVal transManager As ISetupTranslationsTable, _
+                      Optional ByVal stateScope As IApplicationState)
+</code></pre>
+<p>Stores the workbook reference and optional collaborators (password manager,
+dictionary, choices, formula store, application state). When optional
+parameters are omitted, the checker creates default instances internally
+during ConfigureDependencies.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The workbook containing setup tables and helper sheets.</li>
+<li><code>passwordService</code>: Optional IPasswords. Password manager handling sheet protection.</li>
+<li><code>dictionary</code>: Optional ILLdictionary. Dictionary wrapper providing data access.</li>
+<li><code>choices</code>: Optional ILLChoices. Choices wrapper exposing list names and categories.</li>
+<li><code>formulaStore</code>: Optional IFormulaData. Formula data handler used to validate expressions.</li>
+<li><code>transManager</code>: Optional ISetupTranslationsTable. Translations table accessor.</li>
+<li><code>stateScope</code>: Optional IApplicationState. Application state scope guarding Excel settings.</li>
+</ul>
+<hr />
+<h2>Execution</h2>
+<h3>Run</h3>
+<p><strong>Execute all setup consistency checks and publish the report</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Run()
+</code></pre>
+<p>Suspends Excel UI, resets the internal check container, then runs each
+checker in sequence (dictionary, choices, exports, translations). On
+completion, publishes all collected IChecking objects to the reporting
+worksheet. Restores Excel state even when an error occurs.</p>
+<hr />
+<h2>Results</h2>
+<h3>Checkings</h3>
+<p><strong>Collection of generated checking objects</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Checkings() As BetterArray
+</code></pre>
+<p>Returns a BetterArray containing the IChecking instances produced by the
+most recent Run call. Each entry covers one validation domain (dictionary,
+choices, exports, translations).</p>
+<p><strong>Returns:</strong> BetterArray. The generated IChecking instances.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

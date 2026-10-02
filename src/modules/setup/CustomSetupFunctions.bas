@@ -2,11 +2,10 @@ Attribute VB_Name = "CustomSetupFunctions"
 Option Explicit
 'Custom functions for the setup
 '@IgnoreModule UnrecognizedAnnotation, SheetAccessedUsingString
-'@depends EventsManager, EventSetup
 '@Folder("User Define Functions")
 
-Private Function EventService() As EventSetup
-    Set EventService = EventsManager.EventSetupService
+Private Function EventService() As IEventSetup
+    Set EventService = SetupEventsManager.EventSetupService
 End Function
 
 '@section Headers

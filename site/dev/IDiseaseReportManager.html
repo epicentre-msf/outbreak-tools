@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IDiseaseReportManager - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IDiseaseReportManager</h1>
+<h2>Queries</h2>
+<h3>HasPendingReport</h3>
+<p><strong>Check whether a disease requires a follow-up report.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function HasPendingReport(ByVal reportTable As ListObject, ByVal diseaseName As String, Optional ByVal expectedValue As String = &quot;yes&quot;) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>reportTable</code>: ListObject hosting the import report entries.</li>
+<li><code>diseaseName</code>: String disease identifier to search for.</li>
+<li><code>expectedValue</code>: Optional String value indicating a pending report (defaults to &quot;&quot;yes&quot;&quot;).</li>
+</ul>
+<p><strong>Returns:</strong> Boolean True when the disease row exists and matches the expected flag.</p>
+<hr />
+<h2>Commands</h2>
+<h3>ClearReportStatus</h3>
+<p><strong>Remove all report rows related to the disease from every table on the worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ClearReportStatus(ByVal reportSheet As Worksheet, ByVal diseaseName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>reportSheet</code>: Worksheet hosting import report tables.</li>
+<li><code>diseaseName</code>: String disease identifier to purge.</li>
+</ul>
+<hr />
+
+  </main>
+</body>
+</html>
+

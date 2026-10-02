@@ -12,7 +12,7 @@ Attribute VB_Description = "Designer import/export service for setup and linelis
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Imports setup components into a designer workbook and exports them to a linelist workbook.")
-'@depends ProjectError, LLdictionary, LLdictionary, LLChoices, LLExport, Analysis, IAnalysis, LLGeo, Passwords, Passwords, LLFormat, LLTranslation, HiddenNames
+'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, ILLChoices, LLExport, ILLExport, Analysis, IAnalysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, ILLFormat, LLTranslation, ILLTranslation, HiddenNames, IHiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -35,13 +35,13 @@ Implements IDesignerImportService
 
 Private Type TDesignerImportService
     hostBook As Workbook            'Designer workbook
-    exportedDict As LLdictionary   'Dictionary manager on exported workbook
-    exportedChoices As LLChoices   'Choices manager on exported workbook
+    exportedDict As ILLdictionary   'Dictionary manager on exported workbook
+    exportedChoices As ILLChoices   'Choices manager on exported workbook
     exportedAnalysis As IAnalysis   'Analysis manager on exported workbook
-    exportedExport As LLExport    'Export manager on exported workbook
-    exportedGeo As LLGeo          'Geo manager on exported workbook
-    exportedPass As Passwords     'Passwords manager on exported workbook
-    exportedTrans As LLTranslation 'Translations manager on exported workbook
+    exportedExport As ILLExport    'Export manager on exported workbook
+    exportedGeo As ILLGeo          'Geo manager on exported workbook
+    exportedPass As IPasswords     'Passwords manager on exported workbook
+    exportedTrans As ILLTranslation 'Translations manager on exported workbook
 End Type
 
 Private this As TDesignerImportService
@@ -270,12 +270,12 @@ End Sub
 '===============================================================================
 
 '@label:exported-dictionary
-Public Property Get ExportedDictionary() As LLdictionary
+Public Property Get ExportedDictionary() As ILLdictionary
     Set ExportedDictionary = this.exportedDict
 End Property
 
 '@label:exported-choices
-Public Property Get ExportedChoices() As LLChoices
+Public Property Get ExportedChoices() As ILLChoices
     Set ExportedChoices = this.exportedChoices
 End Property
 
@@ -285,22 +285,22 @@ Public Property Get ExportedAnalysis() As IAnalysis
 End Property
 
 '@label:exported-export
-Public Property Get ExportedExport() As LLExport
+Public Property Get ExportedExport() As ILLExport
     Set ExportedExport = this.exportedExport
 End Property
 
 '@label:exported-geo
-Public Property Get ExportedGeo() As LLGeo
+Public Property Get ExportedGeo() As ILLGeo
     Set ExportedGeo = this.exportedGeo
 End Property
 
 '@label:exported-passwords
-Public Property Get ExportedPasswords() As Passwords
+Public Property Get ExportedPasswords() As IPasswords
     Set ExportedPasswords = this.exportedPass
 End Property
 
 '@label:exported-translations
-Public Property Get ExportedTranslations() As LLTranslation
+Public Property Get ExportedTranslations() As ILLTranslation
     Set ExportedTranslations = this.exportedTrans
 End Property
 
@@ -316,7 +316,7 @@ End Property
 'at row 1.
 Private Sub ImportDictionary(ByVal setupBook As Workbook, ByVal hostBook As Workbook)
     Dim setupSheet As Worksheet
-    Dim dictManager As LLdictionary
+    Dim dictManager As ILLdictionary
 
     Set setupSheet = ResolveWorksheet(setupBook, SHEET_DICTIONARY)
     If setupSheet Is Nothing Then Exit Sub
@@ -330,7 +330,7 @@ End Sub
 '@sub-title Export choices from setup into the host workbook
 Private Sub ImportChoices(ByVal setupBook As Workbook, ByVal hostBook As Workbook)
     Dim setupSheet As Worksheet
-    Dim choicesManager As LLChoices
+    Dim choicesManager As ILLChoices
 
     Set setupSheet = ResolveWorksheet(setupBook, SHEET_CHOICES)
     If setupSheet Is Nothing Then Exit Sub
@@ -344,7 +344,7 @@ End Sub
 '@sub-title Export export specs from setup into the host workbook
 Private Sub ImportExports(ByVal setupBook As Workbook, ByVal hostBook As Workbook)
     Dim setupSheet As Worksheet
-    Dim exportsManager As LLExport
+    Dim exportsManager As ILLExport
 
     Set setupSheet = ResolveWorksheet(setupBook, SHEET_EXPORTS)
     If setupSheet Is Nothing Then Exit Sub
@@ -374,8 +374,8 @@ End Sub
 '(clickImpStyle sets TAG_FORMATTER_IMPORTED on the host workbook).
 Private Sub ImportFormatter(ByVal setupBook As Workbook, ByVal hostBook As Workbook)
     Dim setupSheet As Worksheet
-    Dim formatManager As LLFormat
-    Dim store As HiddenNames
+    Dim formatManager As ILLFormat
+    Dim store As IHiddenNames
 
     'Skip if the formatter was already imported via the ribbon
     Set store = HiddenNames.Create(hostBook)
@@ -404,7 +404,7 @@ Private Sub ImportTranslations(ByVal setupBook As Workbook, ByVal hostBook As Wo
     Dim setupSheet As Worksheet
     Dim hostTransSheet As Worksheet
     Dim sourceTable As ListObject
-    Dim translations As LLTranslation
+    Dim translations As ILLTranslation
 
     Set setupSheet = ResolveWorksheet(setupBook, SHEET_TRANSLATIONS)
     If setupSheet Is Nothing Then Exit Sub
@@ -422,7 +422,7 @@ End Sub
 '@label:import-hidden-names
 '@sub-title Export hidden names from setup into the host workbook
 Private Sub ImportHiddenNames(ByVal setupBook As Workbook, ByVal hostBook As Workbook)
-    Dim store As HiddenNames
+    Dim store As IHiddenNames
 
     Set store = HiddenNames.Create(setupBook)
     store.ExportNamesToWorkbook hostBook
@@ -440,7 +440,7 @@ End Sub
 'original setup file format.
 Private Sub ExportDictionary(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
     Dim hostSheet As Worksheet
-    Dim dictManager As LLdictionary
+    Dim dictManager As ILLdictionary
 
     Set hostSheet = ResolveWorksheet(hostBook, SHEET_DICTIONARY)
     If hostSheet Is Nothing Then Exit Sub
@@ -453,7 +453,7 @@ End Sub
 '@sub-title Export choices from host to target workbook
 Private Sub ExportChoices(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
     Dim hostSheet As Worksheet
-    Dim choicesManager As LLChoices
+    Dim choicesManager As ILLChoices
 
     Set hostSheet = ResolveWorksheet(hostBook, SHEET_CHOICES)
     If hostSheet Is Nothing Then Exit Sub
@@ -466,7 +466,7 @@ End Sub
 '@sub-title Export export specs from host to target workbook
 Private Sub ExportExports(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
     Dim hostSheet As Worksheet
-    Dim exportsManager As LLExport
+    Dim exportsManager As ILLExport
 
     Set hostSheet = ResolveWorksheet(hostBook, SHEET_EXPORTS)
     If hostSheet Is Nothing Then Exit Sub
@@ -497,8 +497,8 @@ End Sub
 Private Sub ExportGeo(ByVal hostBook As Workbook, ByVal targetBook As Workbook, _
                       ByVal llName As String, ByVal setupPath As String)
     Dim hostSheet As Worksheet
-    Dim geoManager As LLGeo
-    Dim geoStore As HiddenNames
+    Dim geoManager As ILLGeo
+    Dim geoStore As IHiddenNames
     Dim dictLang As String
     Dim langCode As String
 
@@ -529,7 +529,7 @@ End Sub
 '@sub-title Export passwords from host to target workbook
 Private Sub ExportPasswords(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
     Dim hostSheet As Worksheet
-    Dim passManager As Passwords
+    Dim passManager As IPasswords
 
     Set hostSheet = ResolveWorksheet(hostBook, SHEET_PASS)
     If hostSheet Is Nothing Then Exit Sub
@@ -542,7 +542,7 @@ End Sub
 '@sub-title Export translations from host to target workbook
 Private Sub ExportTranslations(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
     Dim hostSheet As Worksheet
-    Dim translations As LLTranslation
+    Dim translations As ILLTranslation
 
     Set hostSheet = ResolveWorksheet(hostBook, SHEET_LL_TRANSLATION)
     If hostSheet Is Nothing Then Exit Sub
@@ -555,7 +555,7 @@ End Sub
 '@sub-title Export formatter from host to target workbook
 Private Sub ExportFormatter(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
     Dim hostSheet As Worksheet
-    Dim formatManager As LLFormat
+    Dim formatManager As ILLFormat
 
     Set hostSheet = ResolveWorksheet(hostBook, SHEET_FORMATTER)
     If hostSheet Is Nothing Then Exit Sub
@@ -667,7 +667,7 @@ End Sub
 'prefix (e.g., "FRA-Fran" & ChrW$(231) & "ais" -> "FRA").
 '@param hostBook Workbook. The designer workbook to update.
 Private Sub SyncDesignerLanguageNames(ByVal hostBook As Workbook)
-    Dim store As HiddenNames
+    Dim store As IHiddenNames
     Dim dictLang As String
     Dim llFormValue As String
     Dim llLang As String
@@ -701,7 +701,7 @@ End Sub
 '@param hostBook Workbook. The designer workbook (source).
 '@param targetBook Workbook. The linelist workbook (destination).
 Private Sub ExportDesignerHiddenNames(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
-    Dim store As HiddenNames
+    Dim store As IHiddenNames
 
     Set store = HiddenNames.Create(hostBook)
     store.ExportNamesToWorkbook targetBook
@@ -821,11 +821,11 @@ Private Sub IDesignerImportService_ExportToLinelist(ByVal targetBook As Workbook
     ExportToLinelist targetBook
 End Sub
 
-Private Property Get IDesignerImportService_ExportedDictionary() As LLdictionary
+Private Property Get IDesignerImportService_ExportedDictionary() As ILLdictionary
     Set IDesignerImportService_ExportedDictionary = ExportedDictionary
 End Property
 
-Private Property Get IDesignerImportService_ExportedChoices() As LLChoices
+Private Property Get IDesignerImportService_ExportedChoices() As ILLChoices
     Set IDesignerImportService_ExportedChoices = ExportedChoices
 End Property
 
@@ -833,19 +833,19 @@ Private Property Get IDesignerImportService_ExportedAnalysis() As IAnalysis
     Set IDesignerImportService_ExportedAnalysis = ExportedAnalysis
 End Property
 
-Private Property Get IDesignerImportService_ExportedExport() As LLExport
+Private Property Get IDesignerImportService_ExportedExport() As ILLExport
     Set IDesignerImportService_ExportedExport = ExportedExport
 End Property
 
-Private Property Get IDesignerImportService_ExportedGeo() As LLGeo
+Private Property Get IDesignerImportService_ExportedGeo() As ILLGeo
     Set IDesignerImportService_ExportedGeo = ExportedGeo
 End Property
 
-Private Property Get IDesignerImportService_ExportedPasswords() As Passwords
+Private Property Get IDesignerImportService_ExportedPasswords() As IPasswords
     Set IDesignerImportService_ExportedPasswords = ExportedPasswords
 End Property
 
-Private Property Get IDesignerImportService_ExportedTranslations() As LLTranslation
+Private Property Get IDesignerImportService_ExportedTranslations() As ILLTranslation
     Set IDesignerImportService_ExportedTranslations = ExportedTranslations
 End Property
 

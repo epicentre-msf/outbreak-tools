@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IDesignerImportService - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IDesignerImportService</h1>
+<p>Defines the public contract for the DesignerImportService class, exposing
+methods to import setup components (dictionary, choices, analysis, exports,
+formatter, translations) from a setup workbook into the designer, and to
+export components (dictionary, choices, analysis, exports, geo, passwords)
+to a linelist workbook. After export, the service provides accessor
+properties for new domain manager instances targeting the exported workbook.</p>
+<h2>Lifecycle</h2>
+<h3>Configure</h3>
+<p><strong>Bind the service to a designer workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
+</code></pre>
+<p>Sets the internal host workbook reference. Must be called before any
+other operation. Raises an error when the workbook is Nothing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The designer workbook.</li>
+</ul>
+<hr />
+<h2>Core Operations</h2>
+<h3>ImportFromSetup</h3>
+<p><strong>Import setup components into the host workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ImportFromSetup(ByVal setupPath As String)
+</code></pre>
+<p>Opens the setup workbook at the supplied path, then imports dictionary,
+choices, exports, analysis, and formatter worksheets by exporting from
+setup domain managers into the host workbook. Translations are imported
+via LLTranslation.ImportDictionary using the setup Translations ListObject.
+The setup workbook is closed after import completes (or on error).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>setupPath</code>: String. Full path to the setup workbook (.xlsb or .xlsx).</li>
+</ul>
+<hr />
+<h3>ExportToLinelist</h3>
+<p><strong>Export designer components to a linelist workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ExportToLinelist(ByVal targetBook As Workbook)
+</code></pre>
+<p>Exports dictionary, choices, analysis, exports, geo, and passwords
+worksheets from the host workbook into the provided target workbook.
+The target workbook is NOT closed after export. New domain manager
+instances targeting the exported workbook are stored and accessible
+via the Exported* properties.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetBook</code>: Workbook. The linelist workbook to receive exported data.</li>
+</ul>
+<hr />
+<h2>Exported Instances</h2>
+<h3>ExportedDictionary</h3>
+<p><strong>Dictionary manager targeting the exported workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedDictionary() As ILLdictionary
+</code></pre>
+<p>Returns an ILLdictionary instance bound to the Dictionary sheet in the
+target workbook after ExportToLinelist completes. Returns Nothing before
+export or when the sheet was not exported.</p>
+<p><strong>Returns:</strong> ILLdictionary. The exported dictionary manager, or Nothing.</p>
+<hr />
+<h3>ExportedChoices</h3>
+<p><strong>Choices manager targeting the exported workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedChoices() As ILLChoices
+</code></pre>
+<p><strong>Returns:</strong> ILLChoices. The exported choices manager, or Nothing.</p>
+<hr />
+<h3>ExportedAnalysis</h3>
+<p><strong>Analysis manager targeting the exported workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedAnalysis() As IAnalysis
+</code></pre>
+<p><strong>Returns:</strong> IAnalysis. The exported analysis manager, or Nothing.</p>
+<hr />
+<h3>ExportedExport</h3>
+<p><strong>Export manager targeting the exported workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedExport() As ILLExport
+</code></pre>
+<p><strong>Returns:</strong> ILLExport. The exported export manager, or Nothing.</p>
+<hr />
+<h3>ExportedGeo</h3>
+<p><strong>Geo manager targeting the exported workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedGeo() As ILLGeo
+</code></pre>
+<p><strong>Returns:</strong> ILLGeo. The exported geo manager, or Nothing.</p>
+<hr />
+<h3>ExportedPasswords</h3>
+<p><strong>Passwords manager targeting the exported workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedPasswords() As IPasswords
+</code></pre>
+<p><strong>Returns:</strong> IPasswords. The exported passwords manager, or Nothing.</p>
+<hr />
+<h2>State</h2>
+<h3>HostWorkbook</h3>
+<p><strong>The configured host workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HostWorkbook() As Workbook
+</code></pre>
+<p><strong>Returns:</strong> Workbook. The host workbook.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

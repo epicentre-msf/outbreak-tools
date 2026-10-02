@@ -4,43 +4,34 @@ Attribute VB_Description = "Events for epiweek start selection"
 '@Folder("Linelist Forms")
 '@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
 '@ModuleDescription("Events for epiweek start selection")
-'@depends LinelistEventsManager, EventLinelist, LLTranslation, TranslationObject, HiddenNames, BetterArray
 
 Option Explicit
 
+Private Const LLSHEET As String = "LinelistTranslation"
 Private Const RNGEPIWEEKSTART As String = "RNG_EpiWeekStart"
 
-Private wkbNames As HiddenNames
-Private tradform As TranslationObject
-Private tradmess As TranslationObject
+Private wkbNames As IHiddenNames
+Private tradform As ITranslationObject
+Private tradmess As ITranslationObject
 Private TriggerMode As Boolean
 
 'Get the sheet type tag (HiddenNames first, cell fallback for legacy sheets).
 Private Function SheetTag(ByVal sh As Worksheet) As String
-    Dim shHn As HiddenNames
+    Dim shHn As IHiddenNames
     Set shHn = HiddenNames.Create(sh)
     SheetTag = shHn.ValueAsString("sheet_type")
 End Function
 
 
-'The translation helper and the workbook name store are the ones EventLinelist
-'holds. This module used to build both, and LLTranslation.Create validates all
-'five translation tables per build while HiddenNames.Create walks the whole
-'Names collection.
 Private Sub InitializeTrads()
-    Dim linelistEvents As EventLinelist
-    Dim lltrads As LLTranslation
+    Dim lltrads As ILLTranslation
+    Dim wb As Workbook
 
-    Set linelistEvents = LinelistEventsManager.EventLinelistService()
-    If Not linelistEvents Is Nothing Then Set lltrads = linelistEvents.Translation()
-
-    If lltrads Is Nothing Then _
-        Err.Raise ProjectError.ObjectNotInitialized, "FormLogicEpiWeek", _
-                  "This linelist carries no usable translation sheet"
-
+    Set wb = ThisWorkbook
+    Set lltrads = LLTranslation.Create(wb.Worksheets(LLSHEET))
     Set tradform = lltrads.TransObject(TranslationOfForms)
     Set tradmess = lltrads.TransObject()
-    Set wkbNames = linelistEvents.WorkbookNames()
+    Set wkbNames = HiddenNames.Create(wb)
 End Sub
 
 Private Sub RecomputeAndUpdate(ByVal startVal As Integer, ByVal captionValue As String)

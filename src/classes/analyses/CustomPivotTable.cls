@@ -16,31 +16,16 @@ Attribute VB_Description = "Custom pivot table creation on a dedicated worksheet
 
 Option Explicit
 
+Implements ICustomPivotTable
+
 '@class CustomPivotTable
 '@description
-'Stacks one titled PivotTable block per data entry sheet on the custom pivot
-'worksheet of a linelist. Add creates the next block, its title and its pivot
-'together, Title answers the title of one table, Format runs the cosmetic pass
-'once, and InitialiseMetadata sets the published state up. The class also
-'decides whether the sheet has earned its place in front of the user. Entries
-'filed along the way leave through HasCheckings and CheckingValues.
+'Manages pivot table creation on a dedicated worksheet during linelist
+'building. Each call to Add creates a new PivotTable block (title + pivot)
+'stacked vertically. Position tracking and title references are stored as
+'worksheet-level HiddenNames instead of hidden cell values.
 '
-'PUBLISHED STATE
-'-------------------------------------------------------------------------------
-'Every fact this class records lives in a worksheet-level HiddenName on the
-'pivot sheet. The cells of the sheet carry the pivot tables and their titles
-'and nothing else. Three of the five names are read from outside this class, so
-'renaming one changes what those readers find:
-'
-'  pivot_output_row    Long     private   the next block's base row
-'  pivot_counter       Long     private   the number printed in the next title
-'  pivot_has_content   Boolean  private   set once a pivot has landed
-'  pivot_formatted     Boolean  private   guards the once-only cosmetic pass
-'  pivot_title_<table> String   PUBLIC    read by EventsLinelistButtons
-'                                         (ClickOpenVarLab), which lists every
-'                                         variable under its pivot's title
-'
-'@depends LLFormat, HiddenNames, Checking, ProjectError
+'@depends ICustomPivotTable, ILLFormat, IHiddenNames, HiddenNames, ProjectError
 
 
 '@section State
@@ -48,11 +33,6 @@ Option Explicit
 
 Private Type TCustomPivotTable
     sh As Worksheet
-    shNames As HiddenNames
-    hasChecks As Boolean
-    sealed As Boolean
-    checkCounter As Long
-    internalChecks As Checking
 End Type
 
 Private this As TCustomPivotTable
@@ -65,23 +45,11 @@ Private Const CLASS_NAME       As String = "CustomPivotTable"
 Private Const PIVOT_PREFIX     As String = "PivotTable_"
 Private Const HNME_OUTPUT_ROW  As String = "pivot_output_row"
 Private Const HNME_COUNTER     As String = "pivot_counter"
-Private Const HNME_HAS_CONTENT As String = "pivot_has_content"
-Private Const HNME_FORMATTED   As String = "pivot_formatted"
-Private Const TITLE_PREFIX     As String = "pivot_title_"
+Private Const TITLE_PREFIX     As String = "RNG_PivotTitle_"
 Private Const DEFAULT_START_ROW As Long = 2
 Private Const TITLE_OFFSET     As Long = 2
 Private Const PIVOT_OFFSET     As Long = 6
-Private Const TITLE_COLUMN     As Long = 2
-
-' Rows between one block's base and the next. A pivot is created empty and
-' grows as the user drags fields into it, so the gap is what decides how big a
-' pivot can get before it runs into the block below. Sizing it from the pivot's
-' height at creation time would give every block three rows, which is why this
-' is a fixed generous constant.
-Private Const BLOCK_SIZE       As Long = 66
-
-' RGB(155, 109, 88) - a Const cannot call RGB.
-Private Const TITLE_FONT_COLOR As Long = 5795227
+Private Const BLOCK_SIZE       As Long = 60
 
 
 '@section Factory
@@ -90,45 +58,36 @@ Private Const TITLE_FONT_COLOR As Long = 5795227
 '@label:create
 '@sub-title Create a new CustomPivotTable instance
 '@details
-'Validates the worksheet argument and initialises the worksheet-level
-'HiddenNames listed under PUBLISHED STATE if they do not already exist. This
-'allows multiple Create calls on the same sheet to resume from the current
-'position.
+'Validates the worksheet argument and initialises worksheet-level HiddenNames
+'for position tracking (pivot_output_row, pivot_counter) if they do not
+'already exist. This allows multiple Create calls on the same sheet to
+'resume from the current position.
 '@param sh Worksheet. The dedicated pivot table worksheet in the output workbook.
-'@return CustomPivotTable. The initialised instance.
+'@return ICustomPivotTable. The initialised instance.
 '@throws InvalidArgument. When sh is Nothing.
 '@export
-Public Function Create(ByVal sh As Worksheet) As CustomPivotTable
+Public Function Create(ByVal sh As Worksheet) As ICustomPivotTable
 
-    If sh Is Nothing Then ThrowError ProjectError.InvalidArgument, _
+    If sh Is Nothing Then ThrowError InvalidArgument, _
         "Unable to create custom pivot table, sheet is Nothing"
 
-    Dim instance As CustomPivotTable
-    Set instance = New CustomPivotTable
-    Set instance.Wksh = sh
-    instance.InitialiseMetadata
-    instance.Seal
-    Set Create = instance
+    With New CustomPivotTable
+        Set .Wksh = sh
+        .InitialiseMetadata
+        Set Create = .Self
+    End With
 End Function
 
-'@label:seal
-'@sub-title Seal the instance against further setup writes.
-Public Sub Seal()
-    this.sealed = True
-End Sub
-
-'@label:guard-not-sealed
-'@sub-title Guard a setup setter against post-creation writes.
-'@param propName String. The property name for the error message.
-Private Sub GuardNotSealed(ByVal propName As String)
-    If this.sealed Then _
-        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
-End Sub
+'@label:self
+'@prop-title Return the current instance as ICustomPivotTable
+'@return ICustomPivotTable. Self-reference for factory pattern.
+Public Property Get Self() As ICustomPivotTable
+    Set Self = Me
+End Property
 
 '@label:wksh-get
 '@prop-title The dedicated pivot table worksheet
 '@return Worksheet. The host worksheet.
-'@export
 Public Property Get Wksh() As Worksheet
     Set Wksh = this.sh
 End Property
@@ -137,7 +96,6 @@ End Property
 '@prop-title Assign the host worksheet (factory use only)
 '@param sh Worksheet. The worksheet to assign.
 Public Property Set Wksh(ByVal sh As Worksheet)
-    GuardNotSealed "Wksh"
     Set this.sh = sh
 End Property
 
@@ -148,336 +106,96 @@ End Property
 '@label:add
 '@sub-title Create a pivot table from a ListObject source and add a titled block
 '@details
-'Reads the current position from the worksheet-level HiddenNames, creates a
-'PivotTable, writes a styled title, stores the title text under
-'pivot_title_<tableName>, and advances the position for the next block.
-'
-'The pivot is built through PivotCaches.Create, NOT through
-'Worksheet.PivotTableWizard. The wizard does not stack: handed a worksheet that
-'already carries a PivotTable, it retargets that one at the destination it was
-'given rather than creating another. Every block after the first therefore
-'moved the first block's pivot down to its own row and left the sheet holding
-'one pivot table, with nothing raised and nothing recorded. The title, the
-'cursor and pivot_title_<tableName> all advanced normally, which is what made
-'it look like a build that had worked.
-'
-'The source table is resolved against every worksheet of the workbook before
-'the pivot is built. A name that resolves to nothing is recorded as a checking
-'and nothing is built: the wizard answered such a name with a modal dialog,
-'which On Error cannot see, and that dialog froze Excel in front of the user in
-'the middle of a build and hung a headless run. See SourceTableExists for why
-'the guard outlived the wizard. An error the creation call does raise is
-'recorded the same way, so one bad table leaves the rest of the build alone.
-'The position advances in both cases, so the next block cannot land on top of
-'whatever the failed attempt left behind.
+'Reads the current position from worksheet-level HiddenNames, creates a
+'PivotTable via PivotTableWizard, writes a styled title, stores the title
+'cell address as a HiddenName, and advances the position for the next block.
+'If the PivotTableWizard call fails (e.g. invalid source), the error is
+'logged to Debug.Print and the method exits without creating a title.
 '@param title String. Display label for the pivot block (typically the sheet name).
 '@param tableName String. Name of the source ListObject providing pivot data.
 '@param pivotName String. Localised prefix for the title. Defaults to "Pivot Table".
-'@throws ObjectNotInitialized. When the instance holds no worksheet.
-'@export
 Public Sub Add(ByVal title As String, _
                ByVal tableName As String, _
                Optional ByVal pivotName As String = "Pivot Table")
 
     Dim sh As Worksheet
-    Dim shNames As HiddenNames
+    Dim shNames As IHiddenNames
     Dim startRow As Long
     Dim counter As Long
     Dim titleCell As Range
     Dim outputCell As Range
-    Dim titleText As String
-    Dim pivotAdded As Boolean
-    Dim errNumber As Long
-    Dim errDescription As String
-
-    GuardReady "Add"
 
     Set sh = this.sh
-    Set shNames = SheetNames()
+    Set shNames = HiddenNames.Create(sh)
 
     'Read current position
-    startRow = shNames.ValueAsLong(HNME_OUTPUT_ROW, DEFAULT_START_ROW)
-    counter = shNames.ValueAsLong(HNME_COUNTER, 1)
+    startRow = CLng(shNames.ValueAsString(HNME_OUTPUT_ROW))
+    counter = CLng(shNames.ValueAsString(HNME_COUNTER))
 
     'Compute ranges
-    Set titleCell = sh.Cells(startRow + TITLE_OFFSET, TITLE_COLUMN)
-    Set outputCell = sh.Cells(startRow + PIVOT_OFFSET, TITLE_COLUMN)
+    Set titleCell = sh.Cells(startRow + TITLE_OFFSET, 2)
+    Set outputCell = sh.Cells(startRow + PIVOT_OFFSET, 2)
 
-    'Create pivot table - a failure is logged, and the block is skipped. The
-    'source is resolved first, because the wizard shows a dialog for a name it
-    'cannot find and a dialog is out of reach of the handler below.
-    If SourceTableExists(tableName) Then
-        On Error GoTo PivotFailed
-        sh.Parent.PivotCaches.Create(SourceType:=xlDatabase, _
-                                     SourceData:=tableName) _
-            .CreatePivotTable TableDestination:=outputCell, _
-                              tableName:=UniquePivotName(PIVOT_PREFIX & tableName)
-        On Error GoTo 0
-        pivotAdded = True
-    Else
-        LogCheck tableName, "Unable to add pivot table " & tableName & _
-                 ": the workbook holds no table of that name", checkingError
-    End If
-
-AdvanceBlock:
+    'Create pivot table — exit gracefully on failure
+    On Error GoTo ErrAdding
+    sh.PivotTableWizard SourceType:=xlDatabase, _
+                         SourceData:=tableName, _
+                         tableName:=PIVOT_PREFIX & tableName, _
+                         TableDestination:=outputCell
     On Error GoTo 0
 
-    If errNumber <> 0 Then
-        LogCheck tableName, "Unable to add pivot table " & tableName & ": " & _
-                 errNumber & " - " & errDescription, checkingError
-    End If
+    'Write title
+    titleCell.Value = pivotName & " " & counter & " - " & title
+    titleCell.Font.Color = RGB(155, 109, 88)
+    titleCell.Font.Italic = True
 
-    If pivotAdded Then
-        titleText = pivotName & " " & counter & " - " & title
+    'Store title cell address as worksheet-level HiddenName
+    shNames.EnsureName TITLE_PREFIX & tableName, titleCell.Address, HiddenNameTypeString
 
-        With titleCell
-            .Value = titleText
-            With .Font
-                .Color = TITLE_FONT_COLOR
-                .Italic = True
-            End With
-        End With
-
-        'The linelist reads the title text back, so the name holds the text
-        'itself.
-        shNames.EnsureName TITLE_PREFIX & tableName, titleText, HiddenNameTypeString
-        shNames.SetValue TITLE_PREFIX & tableName, titleText
-
-        'The sheet has earned its visibility
-        shNames.SetValue HNME_HAS_CONTENT, True
-    End If
-
-    'Advance position for next block, whether or not the pivot landed
-    shNames.SetValue HNME_OUTPUT_ROW, startRow + BLOCK_SIZE
-    shNames.SetValue HNME_COUNTER, counter + 1
+    'Advance position for next block
+    shNames.EnsureName HNME_OUTPUT_ROW, CStr(startRow + BLOCK_SIZE), HiddenNameTypeLong
+    shNames.SetValue HNME_OUTPUT_ROW, CStr(startRow + BLOCK_SIZE)
+    shNames.EnsureName HNME_COUNTER, CStr(counter + 1), HiddenNameTypeLong
+    shNames.SetValue HNME_COUNTER, CStr(counter + 1)
 
     Exit Sub
 
-PivotFailed:
-    errNumber = Err.Number
-    errDescription = Err.Description
-    Resume AdvanceBlock
+ErrAdding:
+    Debug.Print "Unable to add pivot table " & tableName & ": " & _
+                Err.Number & " - " & Err.Description
 End Sub
 
 '@label:format
 '@sub-title Apply design formatting to the pivot table worksheet
 '@details
-'Owns the sheet's visibility: a pivot sheet that never took a pivot stays
-'very hidden, and one that did becomes visible. The cosmetic pass rewrites
-'every row of the worksheet, so pivot_formatted holds it to one run however
-'many times this is called.
-'@param design LLFormat. The format object providing style rules.
-'@throws ObjectNotInitialized. When the instance holds no worksheet.
-'@throws InvalidArgument. When design is Nothing.
-'@export
-Public Sub Format(ByVal design As LLFormat)
-
-    Dim shNames As HiddenNames
-
-    GuardReady "Format"
-
-    If design Is Nothing Then ThrowError ProjectError.InvalidArgument, _
-        "Unable to format the custom pivot table sheet, design is Nothing"
-
-    Set shNames = SheetNames()
-
-    If Not shNames.ValueAsBoolean(HNME_HAS_CONTENT, False) Then
-        this.sh.Visible = xlSheetVeryHidden
-        Exit Sub
-    End If
-
-    this.sh.Visible = xlSheetVisible
-
-    If shNames.ValueAsBoolean(HNME_FORMATTED, False) Then Exit Sub
-
+'Delegates to ILLFormat.ApplyFormat with the HListCustomPivotTables scope.
+'@param design ILLFormat. The format object providing style rules.
+Public Sub Format(ByVal design As ILLFormat)
     design.ApplyFormat this.sh, HListCustomPivotTables
-    shNames.SetValue HNME_FORMATTED, True
 End Sub
-
-'@label:title
-'@sub-title The stored title of one table's pivot block
-'@details
-'Answers what Add wrote for that table, which is what the linelist shows when
-'it lists variables under their pivot. Empty when that table has no block.
-'@param tableName String. Name of the source ListObject.
-'@return String. The title text, or an empty string.
-'@throws ObjectNotInitialized. When the instance holds no worksheet.
-'@export
-Public Function Title(ByVal tableName As String) As String
-    GuardReady "Title"
-    Title = SheetNames().ValueAsString(TITLE_PREFIX & tableName)
-End Function
 
 
 '@section Internal Helpers
 '===============================================================================
 
 '@label:initialise-metadata
-'@sub-title Seed the worksheet-level HiddenNames this class reads
+'@sub-title Initialise worksheet-level HiddenNames for position tracking
 '@details
-'Creates the four private names if they do not already exist. Called by the
-'factory, so every later write can be a bare SetValue and re-wrapping a
-'populated sheet resumes from the position it left.
+'Creates pivot_output_row and pivot_counter HiddenNames if they do not
+'already exist. Called by the factory to allow resuming from the current
+'position when the same sheet is re-wrapped.
 Public Sub InitialiseMetadata()
-    Dim shNames As HiddenNames
+    Dim shNames As IHiddenNames
+    Set shNames = HiddenNames.Create(this.sh)
 
-    Set shNames = SheetNames()
+    If Not shNames.HasName(HNME_OUTPUT_ROW) Then
+        shNames.EnsureName HNME_OUTPUT_ROW, CStr(DEFAULT_START_ROW), HiddenNameTypeLong
+    End If
 
-    If Not shNames.HasName(HNME_OUTPUT_ROW) Then _
-        shNames.EnsureName HNME_OUTPUT_ROW, DEFAULT_START_ROW, HiddenNameTypeLong
-
-    If Not shNames.HasName(HNME_COUNTER) Then _
-        shNames.EnsureName HNME_COUNTER, 1, HiddenNameTypeLong
-
-    If Not shNames.HasName(HNME_HAS_CONTENT) Then _
-        shNames.EnsureName HNME_HAS_CONTENT, False, HiddenNameTypeBoolean
-
-    If Not shNames.HasName(HNME_FORMATTED) Then _
-        shNames.EnsureName HNME_FORMATTED, False, HiddenNameTypeBoolean
+    If Not shNames.HasName(HNME_COUNTER) Then
+        shNames.EnsureName HNME_COUNTER, CStr(1), HiddenNameTypeLong
+    End If
 End Sub
-
-'@label:sheet-names
-'@sub-title The one HiddenNames manager for the host worksheet
-'@details
-'Creating a HiddenNames scans and caches every name in the container, so the
-'instance is built once and held. Add, Format and InitialiseMetadata all read
-'through this.
-'@return HiddenNames. The cached manager.
-Private Function SheetNames() As HiddenNames
-    If this.shNames Is Nothing Then Set this.shNames = HiddenNames.Create(this.sh)
-    Set SheetNames = this.shNames
-End Function
-
-'@label:source-table-exists
-'@sub-title Whether the workbook defines the source ListObject
-'@details
-'PivotTableWizard showed a modal dialog for a SourceData naming no ListObject.
-'In production that was a frozen Excel in the middle of a generation, and in a
-'headless run it hung the harness and left a zero-byte results file under a
-'healthy import log. On Error reached none of it, so the name is resolved here
-'before the pivot is built.
-'
-'The wizard is gone -- Add builds through PivotCaches.Create now -- but this
-'guard stays. What that call does with a name no ListObject holds has never
-'been measured, and the cost of finding out the hard way is a hung run.
-'
-'The source table of a pivot sits on the data entry sheet it was built from, so
-'the walk covers every worksheet of the pivot sheet's workbook. It runs once
-'per block added.
-'@param tableName String. Name of the source ListObject.
-'@return Boolean. True when one worksheet of the workbook defines that table.
-Private Function SourceTableExists(ByVal tableName As String) As Boolean
-    Dim candidateSheet As Worksheet
-    Dim candidateTable As ListObject
-
-    If tableName = vbNullString Then Exit Function
-
-    For Each candidateSheet In this.sh.Parent.Worksheets
-        For Each candidateTable In candidateSheet.ListObjects
-            If StrComp(candidateTable.Name, tableName, vbTextCompare) = 0 Then
-                SourceTableExists = True
-                Exit Function
-            End If
-        Next candidateTable
-    Next candidateSheet
-End Function
-
-'@label:unique-pivot-name
-'@sub-title A PivotTable name no pivot in the workbook already holds
-'@details
-'CreatePivotTable raises on a name that is taken, and asking for the same
-'source table twice is a real case: a rebuild over a populated pivot sheet does
-'it. The wizard this replaced renamed such a clash away on its own. This does
-'the same explicitly, so the first block for a table keeps the plain
-'PivotTable_<tableName> that TestAddCreatesPivotTable and any reader expect,
-'and a later block for the same table takes a numbered spelling.
-'@param baseName String. The name the block would like.
-'@return String. baseName, or baseName with a numeric suffix.
-Private Function UniquePivotName(ByVal baseName As String) As String
-    Dim candidate As String
-    Dim suffix As Long
-
-    candidate = baseName
-    Do While PivotNameTaken(candidate)
-        suffix = suffix + 1
-        candidate = baseName & "_" & suffix
-    Loop
-
-    UniquePivotName = candidate
-End Function
-
-'@label:pivot-name-taken
-'@sub-title Whether some worksheet of the workbook holds a pivot of that name
-'@details
-'PivotTable names are unique across the workbook, not the worksheet, so the
-'walk covers every sheet the way SourceTableExists does.
-'@param pivotName String. The candidate name.
-'@return Boolean. True when a pivot table of that name already exists.
-Private Function PivotNameTaken(ByVal pivotName As String) As Boolean
-    Dim candidateSheet As Worksheet
-    Dim candidatePivot As PivotTable
-
-    For Each candidateSheet In this.sh.Parent.Worksheets
-        For Each candidatePivot In candidateSheet.PivotTables
-            If StrComp(candidatePivot.Name, pivotName, vbTextCompare) = 0 Then
-                PivotNameTaken = True
-                Exit Function
-            End If
-        Next candidatePivot
-    Next candidateSheet
-End Function
-
-'@label:guard-ready
-'@sub-title Guard a member against use on an instance with no worksheet
-'@param memberName String. The member name for the error message.
-Private Sub GuardReady(ByVal memberName As String)
-    If this.sh Is Nothing Then _
-        ThrowError ProjectError.ObjectNotInitialized, _
-                   CLASS_NAME & "." & memberName & " requires a worksheet. Use Create first."
-End Sub
-
-
-'@section Checkings
-'===============================================================================
-
-'@label:log-check
-'@sub-title Append a diagnostic entry to the internal checking log
-'@details
-'The key carries the source table, so a reader of the generation report can see
-'which pivot block the entry is about. The counter keeps the key free when the
-'same table files twice, which `Checking.Add` requires.
-'@param tableName String. Name of the source ListObject the entry is about.
-'@param label String. Message describing the issue.
-'@param scope Byte. Severity scope for the log entry.
-Private Sub LogCheck(ByVal tableName As String, _
-                     ByVal label As String, _
-                     Optional ByVal scope As Byte = checkingNote)
-
-    If this.internalChecks Is Nothing Then _
-        Set this.internalChecks = Checking.Create("Custom pivot tables")
-
-    this.internalChecks.Add _
-        CLASS_NAME & " " & tableName & " #" & CStr(this.checkCounter), label, scope
-    this.checkCounter = this.checkCounter + 1
-    this.hasChecks = True
-End Sub
-
-'@label:has-checkings
-'@prop-title Whether diagnostic entries have been recorded
-'@return Boolean. True when at least one entry exists.
-'@export
-Public Property Get HasCheckings() As Boolean
-    HasCheckings = this.hasChecks
-End Property
-
-'@label:checking-values
-'@prop-title Retrieve the diagnostic log entries
-'@return Checking. The checking instance, or Nothing.
-'@export
-Public Property Get CheckingValues() As Checking
-    If Not HasCheckings Then Exit Property
-    Set CheckingValues = this.internalChecks
-End Property
 
 
 '@section Error Handling
@@ -486,10 +204,24 @@ End Property
 '@label:throw-error
 '@sub-title Raise a project error with class context
 '@details
-'Wraps Err.Raise with CLASS_NAME as the source. The ProjectError value is
-'raised as it stands, the way every other class in the tree raises it.
+'Wraps Err.Raise with CLASS_NAME as the source, providing consistent
+'error attribution across all methods in this class.
 '@param errNumber Long. The ProjectError constant to raise.
 '@param errMessage String. Descriptive error message.
 Private Sub ThrowError(ByVal errNumber As Long, ByVal errMessage As String)
-    Err.Raise errNumber, CLASS_NAME, "Error: " & errMessage
+    Err.Raise VBA.vbObjectError + errNumber, CLASS_NAME, "Error: " & errMessage
+End Sub
+
+
+'@section Interface Implementation
+'===============================================================================
+
+Private Sub ICustomPivotTable_Add(ByVal title As String, _
+                                   ByVal tableName As String, _
+                                   Optional ByVal pivotName As String = "Pivot Table")
+    Add title, tableName, pivotName
+End Sub
+
+Private Sub ICustomPivotTable_Format(ByVal design As ILLFormat)
+    Format design
 End Sub

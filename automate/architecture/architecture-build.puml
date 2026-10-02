@@ -1,0 +1,291 @@
+@startuml architecture-build
+
+' =============================================================================
+' OutbreakTools — Build / Output Layer Detail
+' =============================================================================
+' Packages: sections/ (2), tables/ (1), graphs/ (2), analyses/ (7), linelist/ (5)
+' Shows intra-layer + key cross-layer dependencies.
+' Arrow semantics:
+'   ──>  (solid)  = creates / delegates to / owns
+'   ..>  (dashed) = uses / reads / calls methods on
+' =============================================================================
+
+title OutbreakTools — Build Layer\nsections/ + tables/ + graphs/ + analyses/ + linelist/
+
+skinparam packageStyle rectangle
+skinparam classFontSize 11
+skinparam packageFontSize 13
+skinparam packageFontStyle bold
+skinparam defaultTextAlignment center
+
+top to bottom direction
+
+' =============================================================================
+' EXTERNAL REFERENCES (simplified)
+' =============================================================================
+
+rectangle "Foundation (general/)" as EXT_GEN [[architecture-foundation.svg]] #LightSteelBlue {
+    together {
+        class CustomTable <<ICustomTable>> #LightSteelBlue
+        class HiddenNames <<IHiddenNames>> #LightSteelBlue
+        class LLFormat <<ILLFormat>> #LightSteelBlue
+    }
+    together {
+        class TranslationObject <<ITranslationObject>> #LightSteelBlue
+        class TemporaryRepos <<ITemporaryRepos>> #LightSteelBlue
+        class Buttons <<IButtons>> #LightSteelBlue
+    }
+    together {
+        class DropdownLists <<IDropdownLists>> #LightSteelBlue
+        class Passwords <<IPasswords>> #LightSteelBlue
+        class ApplicationState <<IApplicationState>> #LightSteelBlue
+    }
+}
+
+rectangle "Domain (dictionary/)" as EXT_DICT [[architecture-domain.svg]] #DarkSeaGreen {
+    together {
+        class LLdictionary <<ILLdictionary>> #DarkSeaGreen
+        class LLVariables <<ILLVariables>> #DarkSeaGreen
+    }
+    together {
+        class LLSheets <<ILLSheets>> #DarkSeaGreen
+        class LLChoices <<ILLChoices>> #DarkSeaGreen
+    }
+}
+
+rectangle "Domain (formulas/)" as EXT_FORM [[architecture-domain.svg]] #PaleGreen {
+    class Formulas <<IFormulas>> #PaleGreen
+    class FormulaCondition <<IFormulaCondition>> #PaleGreen
+    class FormulaData <<IFormulaData>> #PaleGreen
+}
+
+' =============================================================================
+' SECTIONS PACKAGE
+' =============================================================================
+
+package "sections" as PKG_SEC #NavajoWhite {
+
+    class VarWriter <<IVarWriter>> {
+        Writes a single variable
+        to linelist worksheets
+    }
+
+    class SectionBuilder <<ISectionBuilder>> {
+        Builds all sections for
+        a single linelist sheet
+    }
+}
+
+SectionBuilder --> VarWriter
+VarWriter ..> LLdictionary
+VarWriter ..> LLVariables
+VarWriter ..> LLSheets
+VarWriter ..> LLFormat
+
+' =============================================================================
+' TABLES PACKAGE
+' =============================================================================
+
+package "tables" as PKG_TAB #NavajoWhite {
+    class CustomPivotTable <<ICustomPivotTable>> {
+        Pivot table creation on
+        dedicated worksheet
+    }
+}
+
+CustomPivotTable ..> LLFormat
+CustomPivotTable ..> HiddenNames
+
+' =============================================================================
+' GRAPHS PACKAGE
+' =============================================================================
+
+package "graphs" as PKG_GRA #NavajoWhite {
+
+    class GraphSpecs <<IGraphSpecs>> {
+        Chart series specifications
+        for analysis graphs
+    }
+
+    class Graphs <<IGraphs>> {
+        Excel ChartObject creation
+        and formatting
+    }
+}
+
+' =============================================================================
+' ANALYSES PACKAGE
+' =============================================================================
+
+package "analyses" as PKG_ANA #Moccasin {
+
+    class TableSpecs <<ITableSpecs>> {
+        Single analysis setup row
+        with table properties
+    }
+
+    class Analysis <<IAnalysis>> {
+        Analysis worksheet manager:
+        rows, data, translation
+    }
+
+    class CrossTable <<ICrossTable>> {
+        Builds formatted output
+        tables on worksheets
+    }
+
+    class CrossTableFormula <<ICrossTableFormula>> {
+        Translates table specs
+        to Excel formulas
+    }
+
+    class SpatialTables <<ISpatialTables>> {
+        Spatial analysis ListObjects
+        on spatial_tables__ sheet
+    }
+
+    class AnaTabIds <<IAnaTabIds>> {
+        Named range + graph series
+        tracking for export
+    }
+
+    class AnalysisOutput <<IAnalysisOutput>> {
+        Orchestrates the complete
+        analysis output pipeline
+    }
+}
+
+' Analyses internal
+CrossTable ..> TableSpecs
+CrossTableFormula ..> CrossTable
+CrossTableFormula ..> TableSpecs
+CrossTableFormula --> SpatialTables
+SpatialTables ..> CrossTable
+AnalysisOutput --> CrossTable
+AnalysisOutput --> CrossTableFormula
+AnalysisOutput ..> TableSpecs
+AnalysisOutput --> AnaTabIds
+
+' Analyses -> Graphs
+AnalysisOutput --> GraphSpecs
+AnalysisOutput --> Graphs
+AnaTabIds ..> Graphs
+GraphSpecs ..> CrossTable
+GraphSpecs ..> TableSpecs
+
+' Analyses -> Formulas
+CrossTableFormula ..> Formulas
+CrossTableFormula ..> FormulaCondition
+CrossTableFormula ..> FormulaData
+SpatialTables ..> Formulas
+SpatialTables ..> FormulaCondition
+AnaTabIds ..> Formulas
+
+' Analyses -> Dictionary
+TableSpecs ..> LLdictionary
+TableSpecs ..> LLVariables
+
+' Analyses -> Foundation
+CrossTable ..> LLFormat
+CrossTable ..> LLVariables
+CrossTable ..> HiddenNames
+CrossTable ..> TranslationObject
+Analysis ..> CustomTable
+Analysis ..> TranslationObject
+AnaTabIds ..> CustomTable
+AnalysisOutput ..> LLFormat
+AnalysisOutput --> Buttons
+AnalysisOutput ..> DropdownLists
+AnalysisOutput ..> Passwords
+AnalysisOutput ..> LLdictionary
+AnalysisOutput ..> LLVariables
+AnalysisOutput ..> FormulaData
+
+' =============================================================================
+' LINELIST PACKAGE
+' =============================================================================
+
+package "linelist" as PKG_LL #LightSalmon {
+
+    class CodeTransfer <<ICodeTransfer>> {
+        VBA code transfer between
+        source and target workbooks
+    }
+
+    class LLTranslation <<ILLTranslation>> {
+        Translation ListObjects on
+        worksheet + scoped I/O
+    }
+
+    class LinelistSpecs <<ILinelistSpecs>> {
+        Specs workbook facade with
+        lazy-loaded accessors
+    }
+
+    class Linelist <<ILinelist>> {
+        Output linelist workbook
+        lifecycle facade
+    }
+
+    class ListBuilder <<IListBuilder>> {
+        HList / VList data entry
+        sheet builder
+    }
+}
+
+' Linelist internal
+Linelist --> LinelistSpecs
+ListBuilder ..> Linelist
+ListBuilder ..> LinelistSpecs
+
+' Linelist -> other Build packages
+ListBuilder --> SectionBuilder
+ListBuilder --> CustomPivotTable
+
+' Linelist -> Domain
+LinelistSpecs ..> LLdictionary
+LinelistSpecs ..> LLChoices
+LinelistSpecs ..> Formulas
+LinelistSpecs ..> FormulaData
+ListBuilder ..> LLSheets
+ListBuilder ..> LLFormat
+ListBuilder ..> DropdownLists
+
+' Linelist -> Foundation
+CodeTransfer ..> TemporaryRepos
+LLTranslation ..> TranslationObject
+LLTranslation ..> CustomTable
+LLTranslation ..> HiddenNames
+LinelistSpecs ..> ApplicationState
+LinelistSpecs ..> TranslationObject
+LinelistSpecs ..> Passwords
+Linelist ..> TranslationObject
+
+' =============================================================================
+' LAYOUT HINTS
+' =============================================================================
+
+PKG_SEC -[hidden]right-> PKG_TAB
+PKG_TAB -[hidden]right-> PKG_GRA
+
+' =============================================================================
+' NOTES
+' =============================================================================
+
+note as N_ANALYSISOUTPUT
+  **AnalysisOutput** is the analysis pipeline
+  orchestrator with the most dependencies
+  (~15 interfaces). It delegates to CrossTable,
+  CrossTableFormula, GraphSpecs, Graphs,
+  AnaTabIds, and TableSpecs.
+end note
+
+note as N_ARROWS
+  **Arrow semantics:**
+  ──> (solid) = creates / delegates to / owns
+  ..> (dashed) = uses / reads / calls methods on
+end note
+
+center footer [[architecture-overview.svg Back to Overview]]
+
+@enduml

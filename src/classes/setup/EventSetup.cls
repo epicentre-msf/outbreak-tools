@@ -16,56 +16,41 @@ Option Explicit
 '@ModuleDescription("Encapsulates workbook level setup events and caches for high-frequency handlers")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
+Implements IEventSetup
+
 '@class EventSetup
 '@description
-'Handles the workbook events of the setup file and holds the domain managers
-'those events need. OnWorkbookOpen, OnSheetActivate and OnSheetChange are the
-'three entry points. ManageRows, InsertRows, DeleteRows and SortTables work on
-'the rows of a setup sheet, ApplySetupTranslation translates the four content
-'sheets, and UpdateAnalysisDropdowns, RecalculateAnalysis,
-'BuildTimeSeriesHeader, AnalysisGraphValue, AnalysisTimeSeriesValue and
-'SpatioTemporalSpecValue serve the analysis sheet. UnprotectSetupSheet and
-'ProtectSetupSheet bracket a write, ResetCaches drops the held managers, and
-'ResetTranslationCounter puts the translation sequence back to its start.
-'
-'THE MANAGERS ARE BUILT ON FIRST USE
-'-------------------------------------------------------------------------------
-'LLdictionary, LLChoices, LLExport, Analysis and the rest are created the first
-'time they are asked for and held for the life of the instance. ResetCaches
-'drops them.
-'
-'SHEET NAMES ARE DECLARED TWICE
-'-------------------------------------------------------------------------------
-'SetupHelpers.bas declares the same sheet names for the import and clean flow.
-'Each file keeps the constants it needs. Change one and change the other.
-'
-'PROTECTION IS APPLIED IN ONE PLACE
-'-------------------------------------------------------------------------------
-'ProtectSetupSheet is the one routine that decides the protection flags of a
-'setup sheet, and BeginSheetUpdate and EndSheetUpdate go through it. The ribbon
-'calls it too, so a sheet unlocked on one path and locked again on the other
-'comes back with the flags it started with.
-'@depends BetterArray, HiddenNames, Passwords, TranslationObject, UpdatedValues, DropdownLists, LLdictionary, LLVariables, LLChoices, LLExport, Analysis, CustomTable, ChoiceFormula, ProjectError
+'Encapsulates workbook-level setup events and lazily-cached domain managers.
+'This class is the single entry point for all workbook event handling in the
+'setup workbook. It reacts to worksheet activation, change, and open events,
+'manages setup rows (add, insert, delete, sort) through cached helpers
+'(LLdictionary, LLChoices, LLExport, Analysis), and provides analysis table
+'value lookups. All domain managers are created lazily on first use and cached
+'for the lifetime of the instance.
+'@depends BetterArray, HiddenNames, Passwords, UpdatedValues, DropdownLists, LLdictionary, LLVariables, LLChoices, LLExport, Analysis, SetupTranslationsTable, CustomTable, ChoiceFormula, RibbonDev, ProjectError
 
 
 '@section State
 '===============================================================================
 Private Type TEventSetup
     hostBook            As Workbook          'Workbook owning the setup sheets
-    updater             As UpdatedValues    'Registry tracker for watched columns
-    drop                As DropdownLists    'Cached dropdown manager
-    tsTable             As CustomTable      'Analysis time-series table wrapper
-    graphTable          As CustomTable      'Analysis graph table wrapper
-    graphLabTable       As CustomTable      'Analysis graph table label wrapper
-    spatioTable         As CustomTable      'Analysis spatio-temporal table wrapper
-    spatioSpecsTable    As CustomTable     'Spatio-temporal specification table wrapper
-    variables           As LLVariables      'Dictionary variable helper
-    dictionary          As LLdictionary     'Cached dictionary reference
-    choices             As LLChoices        'Cached choices helper
-    ana                 As Analysis         'Cached analysis helper
-    exportSpecs             As LLExport         'Cached exports manager
-    passManager           As Passwords        'Cached password helper (lazily created once)
-    choicesTable        As CustomTable      'Cached Choices table wrapper
+    updater             As IUpdatedValues    'Registry tracker for watched columns
+    drop                As IDropdownLists    'Cached dropdown manager
+    ribbon              As IRibbonUI         'Cached ribbon instance when available
+    tsTable             As ICustomTable      'Analysis time-series table wrapper
+    graphTable          As ICustomTable      'Analysis graph table wrapper
+    graphLabTable       As ICustomTable      'Analysis graph table label wrapper
+    spatioTable         As ICustomTable      'Analysis spatio-temporal table wrapper
+    spatioSpecsTable    As ICustomTable     'Spatio-temporal specification table wrapper
+    exportsTable        As ICustomTable      'Exports listobject wrapper
+    variables           As ILLVariables      'Dictionary variable helper
+    dictionary          As ILLdictionary     'Cached dictionary reference
+    choices             As ILLChoices        'Cached choices helper
+    ana                 As IAnalysis         'Cached analysis helper
+    exports             As ILLExport         'Cached exports manager
+    translations        As ISetupTranslationsTable 'Cached translations manager
+    passwords           As IPasswords        'Cached password helper (lazily created once)
+    choicesTable        As ICustomTable      'Cached Choices table wrapper
 End Type
 
 Private this As TEventSetup
@@ -80,7 +65,6 @@ Private Const SHEET_EXPORTS          As String = "Exports"
 Private Const SHEET_TRANSLATIONS     As String = "Translations"
 Private Const SHEET_DROPDOWN         As String = "__variables"
 Private Const SHEET_PASSWORDS        As String = "__pass"
-Private Const SHEET_CHECKING         As String = "__checkRep"
 Private Const COUNTER_NAME           As String = "_SetupTranslationsCounter"
 
 Private Const LIST_TS_DATA           As String = "Tab_TimeSeries_Analysis"
@@ -88,6 +72,7 @@ Private Const LIST_GRAPH_TS          As String = "Tab_Graph_TimeSeries"
 Private Const LIST_LAB_GRAPH_TS      As String = "Tab_Label_TSGraph"
 Private Const LIST_SPATIO_TEMPORAL   As String = "Tab_SpatioTemporal_Analysis"
 Private Const LIST_SPATIO_TEMPORAL_SPECS As String = "Tab_SpatioTemporal_Specs"
+Private Const TABLE_TRANSLATIONS     As String = "Tab_Translations"
 Private Const TABLE_CHOICES          As String = "Tab_Choices"
 
 Private Const DICT_START_ROW         As Long = 5
@@ -101,6 +86,8 @@ Private Const KEY_DICTIONARY         As String = "dictionary"
 Private Const KEY_CHOICES            As String = "choices"
 Private Const KEY_ANALYSIS           As String = "analysis"
 Private Const KEY_EXPORTS            As String = "exports"
+Private Const KEY_TRANSLATIONS       As String = "translations"
+Private Const EXPORT_SORT_COLUMN     As String = "export number"
 
 Private Const DROPDOWN_PREFIX        As String = "dropdown_"
 Private Const CLASSNAME              As String = "EventSetup"
@@ -113,23 +100,32 @@ Private Const CLASSNAME              As String = "EventSetup"
 '@details
 'Factory method using the predeclared-instance pattern. Creates a new
 'EventSetup, calls Configure to bind it to the host workbook and reset all
-'internal caches, then returns the initialised object. Raises an error when
-'hostBook is Nothing because Configure performs the validation.
+'internal caches, then returns the initialised object through the IEventSetup
+'interface. Raises an error when hostBook is Nothing because Configure
+'performs the validation.
 '@param hostBook Workbook. The workbook owning the setup sheets.
-'@return EventSetup. Configured service instance.
+'@return IEventSetup. Configured service instance.
 '@throws ProjectError.ObjectNotInitialized When hostBook is Nothing (raised by Configure).
 '@export
-Public Function Create(ByVal hostBook As Workbook) As EventSetup
+Public Function Create(ByVal hostBook As Workbook) As IEventSetup
     Dim instance As EventSetup
 
     Set instance = New EventSetup
     instance.Configure hostBook
-    Set Create = instance
+    Set Create = instance.Self
 End Function
 
-'@section Event handling and operations
+'@label:self
+'@prop-title Current object instance cast to the interface.
+'@return IEventSetup. The current instance.
+Public Property Get Self() As IEventSetup
+    Set Self = Me
+End Property
+
+'@section IEventSetup implementation
 '===============================================================================
-'@description Workbook event handlers and setup row operations.
+'@description Direct implementations and thin delegation stubs for each
+'IEventSetup interface member.
 
 '@label:configure
 '@sub-title Configure the service with its host workbook context.
@@ -150,6 +146,10 @@ Public Sub Configure(ByVal hostBook As Workbook)
     ResetInternalCaches
 End Sub
 
+Private Sub IEventSetup_Configure(ByVal hostBook As Workbook)
+    Configure hostBook
+End Sub
+
 '@label:on-workbook-open
 '@sub-title React to workbook open notifications.
 '@details
@@ -158,26 +158,8 @@ End Sub
 'disables Application.FormatStaleValues to suppress recalculation prompts,
 'and applies the full password protection matrix across all setup sheets.
 'Silently skips each step when the required helper cannot be created.
-'
-'OPENING THE FILE IS WHAT ENDS A DEBUG SESSION
-'-------------------------------------------------------------------------------
-'A workbook saved during a debug session reopens with the debug flag still set,
-'and the flag is what Passwords.Protect reads before it does anything: while it
-'is set, every re-protect is ignored and only the unprotects go through. Putting
-'the matrix back without clearing it left the workbook reading as locked while
-'the first sheet any ribbon action unlocked stayed unlocked for the rest of the
-'session, with a log line and nothing else.
-'
-'LeaveDebugMode is the inverse of the EnterDebugMode that started the session:
-'it puts the matrix back, re-locks the workbook structure, and clears the flag,
-'so re-protects are honoured again. It returns untouched when the flag is off,
-'which is why the matrix is applied on its own below as well. Every open needs
-'that, debug session or not: Excel drops UserInterfaceOnly when a file closes,
-'and a sheet protected without it is closed to this code as much as to the user.
 '@export
-Public Sub OnWorkbookOpen()
-    Dim pass As Passwords
-
+Private Sub IEventSetup_OnWorkbookOpen()
     EnsureUpdatedValues
     If Not (this.updater Is Nothing) Then
         On Error Resume Next
@@ -191,31 +173,34 @@ Public Sub OnWorkbookOpen()
         Application.FormatStaleValues = False
     On Error GoTo 0
 
-    Set pass = CachedPasswordManager()
-    If pass Is Nothing Then Exit Sub
-
-    pass.LeaveDebugMode this.hostBook
-    pass.ApplyProtectionMatrix this.hostBook
+    PasswordManager.ApplyProtectionMatrix this.hostBook
 End Sub
 
 '@label:on-sheet-activate
 '@sub-title Handle worksheet activation events.
 '@details
-'When the Analysis sheet becomes active, primes the analysis table wrappers and
-'asks the update watcher whether the dropdowns need rebuilding. Every other
-'sheet activates without work: the ribbon buttons no longer change with the
-'sheet, each callback checks the sheet it was clicked on instead.
+'Invalidates relevant ribbon controls (delete row, delete column, sort) so
+'their enabled state reflects the newly active sheet. When the Analysis sheet
+'becomes active, refreshes all analysis-related dropdown lists to ensure they
+'are current.
 '@param sh Worksheet. The worksheet that became active.
 '@export
-Public Sub OnSheetActivate(ByVal sh As Worksheet)
+Private Sub IEventSetup_OnSheetActivate(ByVal sh As Worksheet)
     If (sh Is Nothing) Then Exit Sub
+
+    EnsureRibbon
+    If Not (this.ribbon Is Nothing) Then
+        this.ribbon.InvalidateControl "btnDelLoRow"
+        this.ribbon.InvalidateControl "btnDelLoCol"
+        this.ribbon.InvalidateControl "btnSort"
+    End If
 
     If StrComp(sh.Name, SHEET_ANALYSIS, vbTextCompare) = 0 Then
         'Pre-init analysis tables so first SheetChange doesn't pay init cost
         EnsureAnalysisTable this.tsTable, LIST_TS_DATA, "title"
         EnsureAnalysisTable this.graphTable, LIST_GRAPH_TS, "series title"
         EnsureAnalysisTable this.spatioTable, LIST_SPATIO_TEMPORAL, "section"
-        UpdateAnalysisDropdowns
+        UpdateAnalysisDropdowns True
     End If
 End Sub
 
@@ -231,7 +216,7 @@ End Sub
 '@param sh Worksheet. The worksheet raising the change event.
 '@param target Range. The edited cells.
 '@export
-Public Sub OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
+Private Sub IEventSetup_OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
     If (sh Is Nothing) Or (target Is Nothing) Then Exit Sub
 
     EnsureUpdatedValues
@@ -266,18 +251,14 @@ End Sub
 '@sub-title Refresh cached dropdowns and related analysis helpers.
 '@details
 'Conditionally rebuilds dropdown lists used by the Analysis sheet. When
-'forceUpdate is True or when the update watcher reports that "control details"
-'or "variable name" columns changed, refreshes geo, choices, and special-
-'variable dropdowns. When "variable type" or "variable name" changed, refreshes
-'the time-variable dropdown. The keys are the Dictionary header names as the
-'sheet carries them. It then tells the watcher what it has acted on, and
-'invalidates the LLVariables cache so subsequent lookups reflect the latest
-'dictionary state.
+'forceUpdate is True or when the update watcher reports that "control_details"
+'or "variable_name" columns changed, refreshes geo, choices, and special-
+'variable dropdowns. When "variable_type" or "variable_name" changed, refreshes
+'the time-variable dropdown. Finally invalidates the LLVariables cache so
+'subsequent lookups reflect the latest dictionary state.
 '@param forceUpdate Optional Boolean. When True, forces a full refresh regardless of update tags. Defaults to False.
 '@export
-Public Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
-    Dim refreshVariables As Boolean
-    Dim refreshTimeVariables As Boolean
+Private Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
 
     EnsureUpdatedValues
     If (this.updater Is Nothing) Then Exit Sub
@@ -287,30 +268,23 @@ Public Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False
     EnsureDropdownValues
     If this.drop Is Nothing Then Exit Sub
 
-    'VBA runs both sides of Or, so each question is asked in its own statement
-    'and a forced refresh asks the watcher nothing at all.
-    refreshVariables = forceUpdate
-    If Not refreshVariables Then refreshVariables = this.updater.IsUpdated("control details")
-    If Not refreshVariables Then refreshVariables = this.updater.IsUpdated("variable name")
+    If forceUpdate Or _
+       this.updater.IsUpdated("control_details") Or _
+       this.updater.IsUpdated("variable_name") Then
 
-    refreshTimeVariables = forceUpdate
-    If Not refreshTimeVariables Then refreshTimeVariables = this.updater.IsUpdated("variable type")
-    If Not refreshTimeVariables Then refreshTimeVariables = this.updater.IsUpdated("variable name")
 
-    If refreshVariables Then
         AddOrUpdateDrop this.dictionary.GeoVars, "__geo_vars"
         AddOrUpdateDrop this.dictionary.ChoicesVars, "__choice_vars"
         AddOrUpdateDrop this.dictionary.SpecialVars("hf"), "__hfonly_vars"
         AddOrUpdateDrop this.dictionary.SpecialVars("geo"), "__geoonly_vars"
+
     End If
 
-    If refreshTimeVariables Then
+    If forceUpdate Or _
+       this.updater.IsUpdated("variable_type") Or _
+       this.updater.IsUpdated("variable_name") Then
         AddOrUpdateDrop this.dictionary.TimeVars, "__time_vars"
     End If
-
-    'Every flag that reads "yes" now has been acted on, so the next activation
-    'rebuilds only what the user has edited since.
-    this.updater.AcknowledgeUpdates
 
     EnsureVars
     If Not this.variables Is Nothing Then
@@ -319,51 +293,74 @@ Public Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False
 
 End Sub
 
+Private Sub IEventSetup_UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
+    UpdateAnalysisDropdowns forceUpdate
+End Sub
+
 '@label:reset-caches
 '@sub-title Clear cached resources so they are lazily rebuilt on demand.
 '@export
-Public Sub ResetCaches()
+Private Sub IEventSetup_ResetCaches()
     ResetInternalCaches
 End Sub
 
 '@label:recalculate-analysis
 '@sub-title Recalculate analysis tables in response to structural edits.
 '@export
-Public Sub RecalculateAnalysis()
+Private Sub IEventSetup_RecalculateAnalysis()
     CalculateAnalysis
 End Sub
 
-'@label:build-time-series-header
-'@sub-title Compose the time-series header displayed in analysis tables.
+'@label:reset-translation-counter
+'@sub-title Reset the translation update counter stored in hidden names.
 '@export
-Public Function BuildTimeSeriesHeader(ByVal timeVar As String, _
-                                      ByVal groupVar As String, _
-                                      ByVal sumLabel As String) As String
-    BuildTimeSeriesHeader = BuildTimeSeriesHeaderInternal(timeVar, groupVar, sumLabel)
+Private Sub IEventSetup_ResetTranslationCounter()
+    ResetTranslationCounter
+End Sub
+
+Private Sub IEventSetup_ManageRows(ByVal sheetName As String, Optional ByVal del As Boolean = False)
+    ManageRows sheetName, del
+End Sub
+
+Private Sub IEventSetup_InsertRows(ByVal sheetName As String, _
+                                   ByVal targetCell As Range, _
+                                   Optional ByVal insertShift As Boolean = False)
+    InsertRows sheetName, targetCell, insertShift
+End Sub
+
+Private Sub IEventSetup_DeleteRows(ByVal sheetName As String, _
+                                   ByVal targetCell As Range, _
+                                   Optional ByVal forceShift As Boolean = False)
+    DeleteRows sheetName, targetCell, forceShift
+End Sub
+
+Private Sub IEventSetup_SortTables(ByVal sheetName As String)
+    SortTables sheetName
+End Sub
+
+'@label:build-time-series-header
+Private Function IEventSetup_BuildTimeSeriesHeader(ByVal timeVar As String, _
+                                                   ByVal groupVar As String, _
+                                                   ByVal sumLabel As String) As String
+    IEventSetup_BuildTimeSeriesHeader = BuildTimeSeriesHeaderInternal(timeVar, groupVar, sumLabel)
 End Function
 
 '@label:analysis-graph-value
-'@sub-title Retrieve a value from the analysis graph label table.
-'@export
-Public Function AnalysisGraphValue(ByVal graphTitle As String, _
-                                   Optional ByVal graphCol As String = "Graph ID") As String
-    AnalysisGraphValue = AnalysisGraphValueInternal(graphTitle, graphCol)
+Private Function IEventSetup_AnalysisGraphValue(ByVal graphTitle As String, _
+                                                Optional ByVal graphCol As String = "Graph ID") As String
+    IEventSetup_AnalysisGraphValue = AnalysisGraphValueInternal(graphTitle, graphCol)
 End Function
 
 '@label:analysis-time-series-value
-'@sub-title Retrieve a value from the analysis time-series table.
-'@export
-Public Function AnalysisTimeSeriesValue(ByVal seriesTitle As String, _
-                                        Optional ByVal tsColumn As String = "Series ID") As String
-    AnalysisTimeSeriesValue = AnalysisTimeSeriesValueInternal(seriesTitle, tsColumn)
+Private Function IEventSetup_AnalysisTimeSeriesValue(ByVal seriesTitle As String, _
+                                                     Optional ByVal tsColumn As String = "Series ID") As String
+    IEventSetup_AnalysisTimeSeriesValue = AnalysisTimeSeriesValueInternal(seriesTitle, tsColumn)
 End Function
 
 '@label:spatio-temporal-spec-value
-'@sub-title Retrieve a value from the spatio-temporal specifications table.
-'@export
-Public Function SpatioTemporalSpecValue(ByVal sectionName As String, _
-                                        Optional ByVal specColumn As String = "N geo max") As String
-    SpatioTemporalSpecValue = SpatioTemporalSpecValueInternal(sectionName, specColumn)
+Private Function IEventSetup_SpatioTemporalSpecValue(ByVal sectionName As String, _
+                                                     Optional ByVal specColumn As String = "N geo max") As String
+    IEventSetup_SpatioTemporalSpecValue = SpatioTemporalSpecValueInternal(sectionName, specColumn)
 End Function
 
 '@section Row management and sorting
@@ -372,8 +369,8 @@ End Function
 '@label:manage-rows
 '@sub-title Manage setup worksheet rows using cached helpers.
 '@details
-'Delegates to the appropriate domain manager (dictionary, choices, analysis or
-'exports) to add or remove rows. Each branch lazily creates
+'Delegates to the appropriate domain manager (dictionary, choices, analysis,
+'exports, or translations) to add or remove rows. Each branch lazily creates
 'its helper, unlocks the target sheet, invokes the manager, then re-locks the
 'sheet in a cleanup block. For exports, the dictionary sheet is also unlocked
 'because export row changes can propagate to dictionary columns. Silently exits
@@ -384,8 +381,8 @@ End Function
 '@export
 Public Sub ManageRows(ByVal sheetName As String, Optional ByVal del As Boolean = False)
     Dim normalized As String
-    Dim sheetPass As Passwords
-    Dim dictPass As Passwords
+    Dim sheetPass As IPasswords
+    Dim dictPass As IPasswords
     Dim unlockedSheet As String
     Dim unlockedDict As String
 
@@ -418,7 +415,9 @@ Public Sub ManageRows(ByVal sheetName As String, Optional ByVal del As Boolean =
                 Set dictPass = BeginSheetUpdate(SHEET_DICTIONARY)
                 unlockedDict = SHEET_DICTIONARY
             End If
-            this.exportSpecs.ManageRows del, this.dictionary
+            this.exports.ManageRows del, this.dictionary
+        Case KEY_TRANSLATIONS
+            EnsureTranslationsManager
         Case Else
             GoTo CleanExit
     End Select
@@ -464,8 +463,8 @@ Public Sub InsertRows(ByVal sheetName As String, _
                       ByVal targetCell As Range, _
                       Optional ByVal insertShift As Boolean = False)
     Dim normalized As String
-    Dim sheetPass As Passwords
-    Dim dictPass As Passwords
+    Dim sheetPass As IPasswords
+    Dim dictPass As IPasswords
     Dim unlockedSheet As String
     Dim unlockedDict As String
     Dim effectiveShift As Boolean
@@ -501,7 +500,7 @@ Public Sub InsertRows(ByVal sheetName As String, _
                 Set dictPass = BeginSheetUpdate(SHEET_DICTIONARY)
                 unlockedDict = SHEET_DICTIONARY
             End If
-            this.exportSpecs.InsertRows targetCell, this.dictionary, insertShift
+            this.exports.InsertRows targetCell, this.dictionary, insertShift
         Case Else
             GoTo CleanExit
     End Select
@@ -547,8 +546,8 @@ Public Sub DeleteRows(ByVal sheetName As String, _
                       ByVal targetCell As Range, _
                       Optional ByVal forceShift As Boolean = False)
     Dim normalized As String
-    Dim sheetPass As Passwords
-    Dim dictPass As Passwords
+    Dim sheetPass As IPasswords
+    Dim dictPass As IPasswords
     Dim unlockedSheet As String
     Dim unlockedDict As String
 
@@ -578,13 +577,13 @@ Public Sub DeleteRows(ByVal sheetName As String, _
             If Not EnsureExports() Then GoTo CleanExit
             Set sheetPass = BeginSheetUpdate(SHEET_EXPORTS)
             unlockedSheet = SHEET_EXPORTS
-            Dim dictRef As LLdictionary
+            Dim dictRef As ILLdictionary
             If EnsureDictionary() And Not this.dictionary Is Nothing Then
                 Set dictPass = BeginSheetUpdate(SHEET_DICTIONARY)
                 unlockedDict = SHEET_DICTIONARY
                 Set dictRef = this.dictionary
             End If
-            this.exportSpecs.DeleteRows targetCell, dictRef, forceShift
+            this.exports.DeleteRows targetCell, dictRef, forceShift
         Case Else
             GoTo CleanExit
     End Select
@@ -625,8 +624,8 @@ End Sub
 '@export
 Public Sub SortTables(ByVal sheetName As String)
     Dim normalized As String
-    Dim sheetPass As Passwords
-    Dim dictPass As Passwords
+    Dim sheetPass As IPasswords
+    Dim dictPass As IPasswords
     Dim unlockedSheet As String
     Dim unlockedDict As String
 
@@ -655,13 +654,15 @@ Public Sub SortTables(ByVal sheetName As String)
             If Not EnsureExports() Then GoTo CleanExit
             Set sheetPass = BeginSheetUpdate(SHEET_EXPORTS)
             unlockedSheet = SHEET_EXPORTS
-            Dim dictRef As LLdictionary
+            Dim dictRef As ILLdictionary
             If EnsureDictionary() And Not this.dictionary Is Nothing Then
                 Set dictPass = BeginSheetUpdate(SHEET_DICTIONARY)
                 unlockedDict = SHEET_DICTIONARY
                 Set dictRef = this.dictionary
             End If
-            this.exportSpecs.Sort dictRef
+            this.exports.Sort dictRef
+        Case KEY_TRANSLATIONS
+            EnsureTranslationsManager
         Case Else
             GoTo CleanExit
     End Select
@@ -690,86 +691,6 @@ CleanFail:
     ThrowError ProjectError.SomethingWentWrong, "Failed to sort sheet '" & sheetName & "': " & Err.Description
 End Sub
 
-'@section Translations
-'===============================================================================
-
-'@label:apply-setup-translation
-'@sub-title Rewrite every header and label on the four content sheets.
-'@details
-'Translates the Dictionary, Choices, Analysis and Exports sheets through the
-'managers this service already holds, then drops every cache.
-'
-'THE CACHE DROP IS THE POINT
-'-------------------------------------------------------------------------------
-'A translation renames the columns the cached managers were built against. A row
-'insert, a sort or a dropdown refresh made after it would look for a column name
-'the sheet no longer carries, and the lazy getters answer Nothing on a failure,
-'so nothing would report it. Dropping the caches here makes the next caller
-'rebuild against the sheet as it now reads.
-'
-'Each sheet is unlocked, translated and locked again on its own, so a failure
-'leaves no sheet unlocked. The failure is raised to the caller.
-'@param translator TranslationObject. Label source for the target language.
-'@throws ProjectError.ObjectNotInitialized When translator is Nothing.
-'@throws ProjectError.SomethingWentWrong When a sheet translation fails.
-'@export
-Public Sub ApplySetupTranslation(ByVal translator As TranslationObject)
-    Dim unlockedSheet As String
-    Dim failure As String
-
-    If translator Is Nothing Then
-        ThrowError ProjectError.ObjectNotInitialized, "A translator is required to translate the setup"
-    End If
-
-    On Error GoTo CleanFail
-
-    If EnsureDictionary() Then
-        unlockedSheet = SHEET_DICTIONARY
-        UnprotectSetupSheet unlockedSheet
-        this.dictionary.Translate translator
-        ProtectSetupSheet unlockedSheet
-        unlockedSheet = vbNullString
-    End If
-
-    If EnsureChoices() Then
-        unlockedSheet = SHEET_CHOICES
-        UnprotectSetupSheet unlockedSheet
-        this.choices.Translate translator
-        ProtectSetupSheet unlockedSheet
-        unlockedSheet = vbNullString
-    End If
-
-    If EnsureAnalysisManager() Then
-        unlockedSheet = SHEET_ANALYSIS
-        UnprotectSetupSheet unlockedSheet
-        this.ana.Translate translator
-        ProtectSetupSheet unlockedSheet
-        unlockedSheet = vbNullString
-    End If
-
-    If EnsureExports() Then
-        unlockedSheet = SHEET_EXPORTS
-        UnprotectSetupSheet unlockedSheet
-        this.exportSpecs.Translate translator
-        ProtectSetupSheet unlockedSheet
-        unlockedSheet = vbNullString
-    End If
-
-    ResetInternalCaches
-    Exit Sub
-
-CleanFail:
-    failure = Err.Description
-
-    'Neither call below can raise, so the recovery finishes inside the handler.
-    'ProtectSetupSheet swallows a protect failure and ResetInternalCaches only
-    'drops references.
-    If LenB(unlockedSheet) > 0 Then ProtectSetupSheet unlockedSheet
-    ResetInternalCaches
-
-    ThrowError ProjectError.SomethingWentWrong, "Failed to translate the setup: " & failure
-End Sub
-
 '@section Internal helpers
 '===============================================================================
 
@@ -777,25 +698,23 @@ End Sub
 '@sub-title Clear all lazily-cached domain managers and table helpers.
 '@details
 'Sets every cached reference to Nothing so the next access triggers lazy
-'creation. Called by Configure, by ResetCaches and at the end of
-'ApplySetupTranslation. The password helper and the Choices table wrapper are
-'cleared here too: Configure binds the service to another workbook, and a
-'wrapper built against the old one answers for the wrong sheet.
+'creation. Called by Configure and by the ResetCaches interface method.
 Private Sub ResetInternalCaches()
     Set this.updater = Nothing
     Set this.drop = Nothing
+    Set this.ribbon = Nothing
     Set this.tsTable = Nothing
     Set this.graphTable = Nothing
     Set this.graphLabTable = Nothing
     Set this.spatioTable = Nothing
     Set this.spatioSpecsTable = Nothing
+    Set this.exportsTable = Nothing
     Set this.variables = Nothing
     Set this.dictionary = Nothing
     Set this.choices = Nothing
     Set this.ana = Nothing
-    Set this.exportSpecs = Nothing
-    Set this.passManager = Nothing
-    Set this.choicesTable = Nothing
+    Set this.exports = Nothing
+    Set this.translations = Nothing
 End Sub
 
 '@label:add-or-update-drop
@@ -820,7 +739,7 @@ End Sub
 '@label:ensure-updated-values
 '@sub-title Lazily initialise the update watcher from the registry worksheet.
 '@details
-'Creates an UpdatedValues instance from the "__updated" registry worksheet.
+'Creates an IUpdatedValues instance from the "__updated" registry worksheet.
 'Exits silently when the worksheet does not exist or creation fails, so
 'callers must always check this.updater before use.
 Private Sub EnsureUpdatedValues()
@@ -839,7 +758,7 @@ End Sub
 '@label:ensure-dropdown-values
 '@sub-title Lazily initialise the dropdown manager from the variables worksheet.
 '@details
-'Creates an DropdownLists instance from the "__variables" worksheet using
+'Creates an IDropdownLists instance from the "__variables" worksheet using
 'the standard dropdown prefix. Exits silently when the worksheet does not
 'exist or creation fails.
 Private Sub EnsureDropdownValues()
@@ -853,6 +772,13 @@ Private Sub EnsureDropdownValues()
     On Error Resume Next
         Set this.drop = DropdownLists.Create(dropSheet, DROPDOWN_PREFIX)
     On Error GoTo 0
+End Sub
+
+'@label:ensure-ribbon
+'@sub-title Lazily cache the ribbon instance.
+Private Sub EnsureRibbon()
+    If Not (this.ribbon Is Nothing) Then Exit Sub
+    Set this.ribbon = RibbonDev.ActualRibbon()
 End Sub
 
 '@label:ensure-dictionary
@@ -950,7 +876,7 @@ End Function
 'cached. Returns True when the exports helper is available.
 '@return Boolean. True when the exports helper is available.
 Private Function EnsureExports() As Boolean
-    If Not (this.exportSpecs Is Nothing) Then
+    If Not (this.exports Is Nothing) Then
         EnsureExports = True
         Exit Function
     End If
@@ -961,10 +887,38 @@ Private Function EnsureExports() As Boolean
     If exportSheet Is Nothing Then Exit Function
 
     On Error Resume Next
-        Set this.exportSpecs = LLExport.Create(exportSheet, EXPORT_START_ROW, EXPORT_START_COLUMN)
+        Set this.exports = LLExport.Create(exportSheet, EXPORT_START_ROW, EXPORT_START_COLUMN)
     On Error GoTo 0
 
-    EnsureExports = Not (this.exportSpecs Is Nothing)
+    EnsureExports = Not (this.exports Is Nothing)
+End Function
+
+'@label:ensure-translations-manager
+'@sub-title Lazily create the translations table manager.
+'@details
+'Creates a SetupTranslationsTable instance from the translations ListObject.
+'Disables display prompts on the newly created manager so operations proceed
+'silently. Returns True when available.
+'@return Boolean. True when the translations manager is available.
+Private Function EnsureTranslationsManager() As Boolean
+    If Not (this.translations Is Nothing) Then
+        EnsureTranslationsManager = True
+        Exit Function
+    End If
+
+    Dim translationsTable As ListObject
+
+    Set translationsTable = TranslationsListObject()
+    If translationsTable Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set this.translations = SetupTranslationsTable.Create(translationsTable)
+        If Not this.translations Is Nothing Then
+            this.translations.SetDisplayPrompts False
+        End If
+    On Error GoTo 0
+
+    EnsureTranslationsManager = Not (this.translations Is Nothing)
 End Function
 
 '@label:ensure-analysis-table
@@ -973,11 +927,11 @@ End Function
 'Creates a CustomTable wrapper around the named ListObject on the Analysis
 'sheet. The ByRef tableRef parameter is populated on success and reused on
 'subsequent calls. Returns True when the table is available.
-'@param tableRef ByRef CustomTable. Cached table reference, populated on first call and reused.
+'@param tableRef ByRef ICustomTable. Cached table reference, populated on first call and reused.
 '@param listName String. Name of the ListObject on the Analysis worksheet.
 '@param keyColumn String. Column to use as the table key.
 '@return Boolean. True when the table is available.
-Private Function EnsureAnalysisTable(ByRef tableRef As CustomTable, _
+Private Function EnsureAnalysisTable(ByRef tableRef As ICustomTable, _
                                      ByVal listName As String, _
                                      ByVal keyColumn As String) As Boolean
     If Not (tableRef Is Nothing) Then
@@ -1001,10 +955,10 @@ End Function
 '@details
 'Ensures the analysis table is initialised via EnsureAnalysisTable, then
 'recalculates its data range. Silently exits when the table cannot be created.
-'@param tableRef ByRef CustomTable. Cached table reference.
+'@param tableRef ByRef ICustomTable. Cached table reference.
 '@param listName String. Name of the ListObject on the Analysis worksheet.
 '@param keyColumn String. Column to use as the table key.
-Private Sub EnsureTableCalculated(ByRef tableRef As CustomTable, _
+Private Sub EnsureTableCalculated(ByRef tableRef As ICustomTable, _
                                   ByVal listName As String, _
                                   ByVal keyColumn As String)
     If Not EnsureAnalysisTable(tableRef, listName, keyColumn) Then Exit Sub
@@ -1030,6 +984,23 @@ Private Function AnalysisListObject(ByVal loName As String) As ListObject
     On Error GoTo 0
 
     Set AnalysisListObject = lo
+End Function
+
+'@label:translations-list-object
+'@sub-title Retrieve the translations ListObject from the Translations worksheet.
+'@return ListObject. The translations ListObject, or Nothing when not found.
+Private Function TranslationsListObject() As ListObject
+    Dim translationsSheet As Worksheet
+    Dim lo As ListObject
+
+    Set translationsSheet = SheetOrNothing(SHEET_TRANSLATIONS)
+    If translationsSheet Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set lo = translationsSheet.ListObjects(TABLE_TRANSLATIONS)
+    On Error GoTo 0
+
+    Set TranslationsListObject = lo
 End Function
 
 '@label:sheet-or-nothing
@@ -1059,10 +1030,10 @@ End Function
 '@label:password-manager
 '@sub-title Build a password helper from the passwords worksheet.
 '@details
-'Creates an Passwords helper from the "__pass" worksheet. Returns Nothing
+'Creates an IPasswords helper from the "__pass" worksheet. Returns Nothing
 'when the sheet does not exist or creation fails.
-'@return Passwords. The password helper, or Nothing when unavailable.
-Private Function PasswordManager() As Passwords
+'@return IPasswords. The password helper, or Nothing when unavailable.
+Private Function PasswordManager() As IPasswords
     Dim passSheet As Worksheet
 
     Set passSheet = SheetOrNothing(SHEET_PASSWORDS)
@@ -1076,107 +1047,53 @@ End Function
 '@label:cached-password-manager
 '@sub-title Return the cached password helper, creating it on first call.
 '@details
-'Lazily creates the Passwords instance once and caches it for the lifetime
+'Lazily creates the IPasswords instance once and caches it for the lifetime
 'of this EventSetup instance. Eliminates repeated Passwords.Create calls
 'during BeginSheetUpdate / EndSheetUpdate cycles.
-'@return Passwords. The cached password helper, or Nothing when unavailable.
-Private Function CachedPasswordManager() As Passwords
-    If this.passManager Is Nothing Then
-        Set this.passManager = PasswordManager()
+'@return IPasswords. The cached password helper, or Nothing when unavailable.
+Private Function CachedPasswordManager() As IPasswords
+    If this.passwords Is Nothing Then
+        Set this.passwords = PasswordManager()
     End If
-    Set CachedPasswordManager = this.passManager
+    Set CachedPasswordManager = this.passwords
 End Function
-
-'@label:unprotect-setup-sheet
-'@sub-title Unlock a setup sheet through the cached password helper.
-'@details
-'The ribbon and the import flow call this, and so does BeginSheetUpdate, so a
-'sheet is always unlocked the same way.
-'@param sheetName String. Name of the sheet to unprotect.
-'@export
-Public Sub UnprotectSetupSheet(ByVal sheetName As String)
-    Dim pass As Passwords
-
-    If LenB(sheetName) = 0 Then Exit Sub
-
-    Set pass = CachedPasswordManager()
-    If pass Is Nothing Then Exit Sub
-
-    On Error Resume Next
-        pass.UnProtect sheetName
-    On Error GoTo 0
-End Sub
-
-'@label:protect-setup-sheet
-'@sub-title Lock a setup sheet with the flags that sheet is entitled to.
-'@details
-'This is the one place the protection flags of a setup sheet are decided.
-'Translations and Analysis are locked with row deletion off, because both carry
-'stacked tables a deleted worksheet row would tear apart. Every other sheet
-'keeps row deletion. The checking report sheet is left alone: SetupErrors writes
-'to it while events are live.
-'
-'Passwords.Protect folds the flag it is given with the flag already stored for
-'the sheet and never widens it back, so two callers passing two different
-'answers leave the sheet with whichever answer came first. One rule here is what
-'stops that.
-'@param sheetName String. Name of the sheet to re-protect.
-'@export
-Public Sub ProtectSetupSheet(ByVal sheetName As String)
-    Dim pass As Passwords
-    Dim allowRowDelete As Boolean
-
-    If LenB(sheetName) = 0 Then Exit Sub
-    If StrComp(sheetName, SHEET_CHECKING, vbTextCompare) = 0 Then Exit Sub
-
-    Set pass = CachedPasswordManager()
-    If pass Is Nothing Then Exit Sub
-
-    allowRowDelete = Not (StrComp(sheetName, SHEET_TRANSLATIONS, vbTextCompare) = 0 _
-                          Or StrComp(sheetName, SHEET_ANALYSIS, vbTextCompare) = 0)
-
-    On Error Resume Next
-        pass.Protect sheetName, allowDeletingRows:=allowRowDelete
-    On Error GoTo 0
-End Sub
 
 '@label:begin-sheet-update
 '@sub-title Temporarily unlock the provided sheet and return the password helper.
 '@details
 'Removes sheet protection using the cached password helper so callers can modify
-'protected cells. Returns the Passwords instance for later re-locking via
+'protected cells. Returns the IPasswords instance for later re-locking via
 'EndSheetUpdate.
 '@param sheetName String. Name of the sheet to unprotect.
-'@return Passwords. The password helper for later re-locking.
-Private Function BeginSheetUpdate(ByVal sheetName As String) As Passwords
-    UnprotectSetupSheet sheetName
-    Set BeginSheetUpdate = CachedPasswordManager()
+'@return IPasswords. The password helper for later re-locking.
+Private Function BeginSheetUpdate(ByVal sheetName As String) As IPasswords
+    Dim pass As IPasswords
+
+    Set pass = CachedPasswordManager()
+    On Error Resume Next
+        If Not pass Is Nothing Then pass.UnProtect sheetName
+    On Error GoTo 0
+
+    Set BeginSheetUpdate = pass
 End Function
 
 '@label:end-sheet-update
 '@sub-title Restore sheet protection previously removed via BeginSheetUpdate.
-'@param pass Passwords. Password helper returned by BeginSheetUpdate.
+'@param pass IPasswords. Password helper returned by BeginSheetUpdate.
 '@param sheetName String. Name of the sheet to re-protect.
-Private Sub EndSheetUpdate(ByVal pass As Passwords, ByVal sheetName As String)
-    If pass Is Nothing Then Exit Sub
-    ProtectSetupSheet sheetName
+Private Sub EndSheetUpdate(ByVal pass As IPasswords, ByVal sheetName As String)
+    On Error Resume Next
+        If Not pass Is Nothing Then pass.Protect sheetName
+    On Error GoTo 0
 End Sub
 
 '@label:calculate-analysis
 '@sub-title Recalculate analysis tables, optionally targeting a single table.
 '@details
 'When a target range is provided, identifies which analysis table it belongs
-'to via target.ListObject.Name and recalculates that table together with the
-'ones that read it, instead of all of them. When no target is given
-'(structural edits, post-import), recalculates the five analysis tables.
-'
-'WHICH TABLE READS WHICH
-'-------------------------------------------------------------------------------
-'Tab_Graph_TimeSeries is the consumer: AnalysisGraphValue reads
-'Tab_Label_TSGraph by graph title and AnalysisTimeSeriesValue reads
-'Tab_TimeSeries_Analysis by series title. Tab_SpatioTemporal_Analysis reads
-'Tab_SpatioTemporal_Specs by section. An edit recalculates the table it landed
-'on and then whatever reads that table.
+'to via target.ListObject.Name and recalculates only that table (75% savings
+'on per-cell edits). When no target is given (structural edits, post-import),
+'recalculates all four tables.
 '@param target Optional Range. The edited cell(s); Nothing means recalculate all.
 Private Sub CalculateAnalysis(Optional ByVal target As Range = Nothing)
 
@@ -1190,32 +1107,15 @@ Private Sub CalculateAnalysis(Optional ByVal target As Range = Nothing)
                 EnsureTableCalculated this.tsTable, LIST_TS_DATA, "title"
                 EnsureTableCalculated this.graphTable, LIST_GRAPH_TS, "series title"
             Case LIST_GRAPH_TS
-                'The graph title and series title dropdowns sit on this table and
-                'its own Graph ID, Series ID, time variable, group by, choices and
-                'label columns read them back, so the table it recalculates first
-                'is itself. It used to recalculate only the time series table, and
-                'a title picked from either dropdown left its own row stale.
-                EnsureTableCalculated this.graphTable, LIST_GRAPH_TS, "series title"
                 EnsureTableCalculated this.tsTable, LIST_TS_DATA, "title"
-            Case LIST_LAB_GRAPH_TS
-                'AnalysisGraphValue reads this table by graph title, so a title
-                'renamed or reordered here is what the graph table looks up.
-                EnsureTableCalculated this.graphLabTable, LIST_LAB_GRAPH_TS, "graph title"
-                EnsureTableCalculated this.graphTable, LIST_GRAPH_TS, "series title"
             Case LIST_SPATIO_TEMPORAL, LIST_SPATIO_TEMPORAL_SPECS
-                EnsureTableCalculated this.spatioSpecsTable, LIST_SPATIO_TEMPORAL_SPECS, "section"
                 EnsureTableCalculated this.spatioTable, LIST_SPATIO_TEMPORAL, "section"
         End Select
         Exit Sub
     End If
 
-    'A source is calculated before the table that reads it: the label table and
-    'the time series table both feed the graph table, and the specifications
-    'table feeds the spatio-temporal table.
-    EnsureTableCalculated this.graphLabTable, LIST_LAB_GRAPH_TS, "graph title"
     EnsureTableCalculated this.tsTable, LIST_TS_DATA, "title"
     EnsureTableCalculated this.graphTable, LIST_GRAPH_TS, "series title"
-    EnsureTableCalculated this.spatioSpecsTable, LIST_SPATIO_TEMPORAL_SPECS, "section"
     EnsureTableCalculated this.spatioTable, LIST_SPATIO_TEMPORAL, "section"
 End Sub
 
@@ -1259,9 +1159,9 @@ End Sub
 'Resets the "_SetupTranslationsCounter" hidden name to zero on the registry
 'worksheet. Uses HiddenNames to ensure the name exists before setting its
 'value, so the operation is safe on fresh workbooks.
-Public Sub ResetTranslationCounter()
+Private Sub ResetTranslationCounter()
     Dim registrySheet As Worksheet
-    Dim namesManager As HiddenNames
+    Dim namesManager As IHiddenNames
 
     Set registrySheet = SheetOrNothing(SHEET_UPDATED)
     If registrySheet Is Nothing Then Exit Sub
@@ -1379,11 +1279,11 @@ End Function
 
 '@label:safe-table-value
 '@sub-title Safely retrieve a value from a CustomTable, returning empty on error.
-'@param tableRef CustomTable. The table to query.
+'@param tableRef ICustomTable. The table to query.
 '@param columnName String. Column header to read.
 '@param keyName String. Key value to look up.
 '@return String. The retrieved value, or empty on error.
-Private Function SafeTableValue(ByVal tableRef As CustomTable, _
+Private Function SafeTableValue(ByVal tableRef As ICustomTable, _
                                 ByVal columnName As String, _
                                 ByVal keyName As String) As String
     Dim value As Variant
@@ -1404,13 +1304,13 @@ End Function
 '@details
 'Ensures the requested analysis table is initialised via EnsureAnalysisTable,
 'then delegates to SafeTableValue for the actual retrieval.
-'@param tableRef ByRef CustomTable. Cached table reference.
+'@param tableRef ByRef ICustomTable. Cached table reference.
 '@param listName String. Name of the ListObject.
 '@param keyColumn String. Column used as the table key.
 '@param valueColumn String. Column to read.
 '@param keyValue String. Key value to look up.
 '@return String. The retrieved value, or empty.
-Private Function AnalysisTableValue(ByRef tableRef As CustomTable, _
+Private Function AnalysisTableValue(ByRef tableRef As ICustomTable, _
                                     ByVal listName As String, _
                                     ByVal keyColumn As String, _
                                     ByVal valueColumn As String, _
@@ -1432,7 +1332,7 @@ Private Sub AddGeoDropdown(ByVal target As Range)
     Dim geoCell As Range
     Dim spatialTypeCell As Range
     Dim spatialType As String
-    Dim pass As Passwords
+    Dim pass As IPasswords
     Const ANALYSIS_SHEET As String = SHEET_ANALYSIS
 
     If Not EnsureAnalysisTable(this.spatioTable, LIST_SPATIO_TEMPORAL, "section") Then Exit Sub
@@ -1484,7 +1384,7 @@ Private Sub SyncGeoFromSpecs(ByVal target As Range)
     Dim spatialTypeCell As Range
     Dim sectionName As String
     Dim newSpatialType As String
-    Dim pass As Passwords
+    Dim pass As IPasswords
     Const ANALYSIS_SHEET As String = SHEET_ANALYSIS
 
     'Ensure the specs table is cached
@@ -1543,21 +1443,17 @@ Private Sub AddChoicesDropdown(ByVal target As Range)
     Dim columnVariable As String
     Dim seriesValue As String
     Dim dropArray As BetterArray
-    Dim resolvedChoice As String
+    Dim choiceName As String
     Dim listName As String
     Dim choiceCell As Range
     Dim valueCell As Range
-    Dim pass As Passwords
+    Dim pass As IPasswords
 
     If Not EnsureAnalysisTable(this.graphTable, LIST_GRAPH_TS, "series title") Then Exit Sub
     If Not EnsureAnalysisTable(this.tsTable, LIST_TS_DATA, "title") Then Exit Sub
 
     If this.graphTable Is Nothing Then Exit Sub
     If this.tsTable Is Nothing Then Exit Sub
-
-    'AddGeoDropdown builds the dropdown manager on its way in and runs after
-    'this one, so a first edit here used to find the cache empty and skip.
-    EnsureDropdownValues
     If this.drop Is Nothing Then Exit Sub
 
     Set seriesRange = this.graphTable.DataRange("series title")
@@ -1570,12 +1466,12 @@ Private Sub AddChoicesDropdown(ByVal target As Range)
     On Error GoTo 0
     If columnVariable = vbNullString Then Exit Sub
 
-    Set dropArray = GetCategories(columnVariable, seriesValue, resolvedChoice)
+    Set dropArray = GetCategories(columnVariable, seriesValue, choiceName)
 
     If dropArray Is Nothing Then Exit Sub
     If dropArray.Length = 0 Then Exit Sub
 
-    listName = resolvedChoice & "__"
+    listName = choiceName & "__"
 
     AddOrUpdateDrop dropArray, listName
 
@@ -1607,11 +1503,11 @@ End Sub
 'time-series table indicates addTotal is "yes" for the series.
 '@param columnVariable String. The variable whose control details determine the category list.
 '@param seriesValue String. The series title for looking up the addTotal flag.
-'@param resolvedChoice ByRef String. Populated with the resolved choice list name.
+'@param choiceName ByRef String. Populated with the resolved choice list name.
 '@return BetterArray. The list of categories.
 Private Function GetCategories(ByVal columnVariable As String, _
                                ByVal seriesValue As String, _
-                               ByRef resolvedChoice As String) As BetterArray
+                               ByRef choiceName As String) As BetterArray
     Dim categoryList As BetterArray
     Dim controlDetails As String
     Dim choiceResolver As Object
@@ -1628,9 +1524,9 @@ Private Function GetCategories(ByVal columnVariable As String, _
     If Left$(controlDetails, Len("CHOICE_FORMULA")) = "CHOICE_FORMULA" Then
         Set choiceResolver = ChoiceFormula.Create(controlDetails)
         Set categoryList = choiceResolver.Categories()
-        resolvedChoice = choiceResolver.ChoiceName()
+        choiceName = choiceResolver.choiceName()
     Else
-        resolvedChoice = controlDetails
+        choiceName = controlDetails
         Set categoryList = ChoiceCategories(controlDetails)
     End If
 

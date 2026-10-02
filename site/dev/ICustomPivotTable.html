@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ICustomPivotTable - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ICustomPivotTable</h1>
+<p>Defines the public contract for the CustomPivotTable class.
+Manages pivot table creation on a dedicated worksheet during linelist
+building. Each call to Add creates a new PivotTable block (title + pivot)
+stacked vertically on the sheet.</p>
+<h2>Methods</h2>
+<h3>Add</h3>
+<p><strong>Create a pivot table from a ListObject source and add a titled block</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Add(ByVal title As String, _
+               ByVal tableName As String, _
+               Optional ByVal pivotName As String = &quot;Pivot Table&quot;)
+</code></pre>
+<p>Pivot table creation and formatting.
+Creates a PivotTable using PivotTableWizard with the given table as data
+source. Writes a styled title above the pivot and stores the title cell
+address as a worksheet-level HiddenName (RNG_PivotTitle_<tableName>).
+Successive calls stack blocks vertically on the sheet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>title</code>: String. Display label for the pivot block (typically the sheet name).</li>
+<li><code>tableName</code>: String. Name of the source ListObject providing pivot data.</li>
+<li><code>pivotName</code>: String. Localised prefix for the title (e.g. &quot;Pivot Table&quot;). Defaults to &quot;Pivot Table&quot;.</li>
+</ul>
+<hr />
+<h3>Format</h3>
+<p><strong>Apply design formatting to the pivot table worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Format(ByVal design As ILLFormat)
+</code></pre>
+<p>Delegates to ILLFormat.ApplyFormat with the HListCustomPivotTables scope
+to style the entire pivot worksheet according to the linelist design.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>design</code>: ILLFormat. The format object providing style rules.</li>
+</ul>
+<hr />
+
+  </main>
+</body>
+</html>
+

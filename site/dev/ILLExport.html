@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ILLExport - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ILLExport</h1>
+<h2>Properties</h2>
+<h3>Data</h3>
+<p><strong>Datasheet abstraction of the export table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Data() As IDataSheet
+</code></pre>
+<hr />
+<h3>Worksheet</h3>
+<p><strong>Worksheet hosting the export table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Worksheet() As Worksheet
+</code></pre>
+<hr />
+<h3>NumberOfExports</h3>
+<p><strong>Count of configured export rows.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get NumberOfExports() As Long
+</code></pre>
+<hr />
+<h3>HasCheckings</h3>
+<p><strong>Whether informational checkings are available.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
+</code></pre>
+<hr />
+<h3>CheckingValues</h3>
+<p><strong>Collected informational diagnostics about export generation.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CheckingValues() As IChecking
+</code></pre>
+<hr />
+<h2>Rows management</h2>
+<h3>AddRows</h3>
+<p><strong>Append export definition rows.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddRows(Optional ByVal dict As ILLdictionary)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: Optional dictionary to keep export columns aligned.</li>
+</ul>
+<hr />
+<h3>InsertRows</h3>
+<p><strong>Insert export rows based on a target selection.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub InsertRows(ByVal targetCell As Range, _
+                      Optional ByVal dict As ILLdictionary, _
+                      Optional ByVal insertShift As Boolean = False)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetCell</code>: Range representing the rows to mirror.</li>
+<li><code>dict</code>: Optional dictionary to keep export columns aligned.</li>
+<li><code>insertShift</code>: Optional Boolean to insert worksheet rows when needed.</li>
+</ul>
+<hr />
+<h3>RemoveRows</h3>
+<p><strong>Remove trailing export rows.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RemoveRows(Optional ByVal dict As ILLdictionary, Optional ByVal rowCount As Long = 2)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rowCount</code>: Optional Long. Rows with non-empty cell counts at or below this value are removed.</li>
+</ul>
+<hr />
+<h3>SyncDictionaryExports</h3>
+<p><strong>Synchronise dictionary export columns with current export definitions.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SyncDictionaryExports(Optional ByVal dict As ILLdictionary)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: Optional dictionary reference to align. When omitted, the last cached dictionary is reused.</li>
+</ul>
+<hr />
+<h2>SpecManagement</h2>
+<h3>ImportSpecs</h3>
+<p><strong>Import export specifications from another worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ImportSpecs(ByVal fromWksh As Worksheet, _
+                       ByVal fromStartRow As Long, _
+                       ByVal fromStartColumn As Long)
+</code></pre>
+<hr />
+<h3>ExportSpecs</h3>
+<p><strong>Export specifications into another workbook.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ExportSpecs(ByVal toWkb As Workbook, _
+                       Optional ByVal Hide As Long = xlSheetHidden)
+</code></pre>
+<hr />
+<h3>InvalidateCaches</h3>
+<p><strong>Reset cached column lookups and diagnostics.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub InvalidateCaches()
+</code></pre>
+<hr />
+<h2>FileName</h2>
+<h3>ExportFileName</h3>
+<p><strong>Build a filename for one export definition.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ExportFileName(ByVal exportNumber As Long, _
+                               ByVal dict As ILLdictionary, _
+                               ByVal pass As IPasswords, _
+                               Optional ByVal exportAll As Boolean = False) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>exportNumber</code>: Export definition identifier.</li>
+<li><code>dict</code>: Dictionary supplying metadata for chunk substitution.</li>
+<li><code>pass</code>: Password provider for version metadata.</li>
+<li><code>exportAll</code>: Optional flag to force the export-all naming scheme.</li>
+</ul>
+<hr />
+<h2>Utilities</h2>
+<h3>IsActive</h3>
+<p><strong>Determine if an export definition is marked active.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function IsActive(ByVal exportNumber As Long) As Boolean
+</code></pre>
+<hr />
+<h3>ColumnValue</h3>
+<p><strong>Retrieve a column value for a given export row.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ColumnValue(ByVal exportNumber As Long, ByVal columnName As String) As String
+</code></pre>
+<hr />
+<h3>ActiveExportNumbers</h3>
+<p><strong>Enumerate export numbers that are currently active.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ActiveExportNumbers() As BetterArray
+</code></pre>
+<hr />
+
+  </main>
+</body>
+</html>
+

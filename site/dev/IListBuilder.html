@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IListBuilder - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IListBuilder</h1>
+<p>Defines the public contract for the ListBuilder class, exposing a single
+Build method that constructs an HList (horizontal) or VList (vertical) data
+entry sheet with formatting, freeze panes, sections, buttons, ListObjects,
+and worksheet protection.
+ListBuilderLayer modes: HList is horizontal, VList is vertical.</p>
+<h2>Operations</h2>
+<h3>Build</h3>
+<p><strong>Build the data entry sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Build()
+</code></pre>
+<p>Data entry sheet construction.
+Dispatches to the appropriate builder based on the layer mode set during
+factory construction. HList mode creates a horizontal data entry sheet with
+a ListObject table, printed companion sheet, filtered companion sheet, buttons,
+and pivot table. VList mode creates a vertical data entry sheet with sections,
+a GoTo dropdown, and PLAGEVALUES range reference. Both modes apply formatting,
+freeze panes, build sections via SectionBuilder, and protect the sheet.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

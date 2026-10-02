@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ISectionBuilder - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ISectionBuilder</h1>
+<p>Defines the public contract for the SectionBuilder class, exposing a
+single Build method that iterates dictionary rows for a given sheet,
+groups them into sections and subsections, writes all variables via
+VarWriter, and applies section and subsection header formatting. The
+active mode (HList or VList) controls layout direction and companion
+sheet handling.
+Building modes control layout direction. HList builds horizontally on
+the main sheet plus printed and CRF companions. VList builds vertically
+on the main sheet only.</p>
+<h2>Methods</h2>
+<h3>Build</h3>
+<p><strong>Build all sections, subsections, and variables for a sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Build(ByVal sheetName As String, ByVal startRow As Long)
+</code></pre>
+<p>Scans the dictionary for rows matching sheetName starting from
+startRow, then iterates through sections and subsections, writing each
+variable via VarWriter and applying merged-cell section and subsection
+header formatting. For HList mode, headers appear on the main, printed,
+and CRF companion worksheets. For VList mode, headers appear on the
+main sheet only.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. The sheet name as it appears in the dictionary &quot;sheet name&quot; column.</li>
+<li><code>startRow</code>: Long. The first data row index in the dictionary for this sheet (1-based).</li>
+</ul>
+<hr />
+
+  </main>
+</body>
+</html>
+

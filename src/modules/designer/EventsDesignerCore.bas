@@ -3,86 +3,48 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, DesignerEntry, RibbonDev, OSFiles, Passwords, LLFormat, ApplicationState, DesignerTranslation
+'@depends DesignerPreparation, IDesignerPreparation, RibbonDev, OSFiles, IOSFiles, BetterArray, CustomTable, ICustomTable, Passwords, IPasswords, LLFormat, ILLFormat, ApplicationState, IApplicationState, DesignerTranslation, IDesignerTranslation, HiddenNames, IHiddenNames
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const SHEET_FORMAT As String = "__formatter"
-Private Const SHEET_PASS As String = "__pass"
 Private Const DESTRADSSHEET As String = "DesignerTranslation"
 Private Const MAINSHEET As String = "Main"
 Private Const PROMPT_TITLE As String = "Designer"
+Private Const TAG_FORMATTER_IMPORTED As String = "TAG_FORMATTER_IMPORTED"
 
-'The designer holds one entry-and-translator pair for the whole session.
-'Every callback used to build its own DesignerEntry, and the entry lazily
-'built a DesignerTranslation, which reads four translation tables -- per
-'press. The pair is dropped when the language changes and when an import
-'rewrites the tables.
-'
-'triedTranslation is the flag the linelist event surface needed for the same
-'reason: a build that fails leaves the field Nothing, and the guard "the
-'field is Nothing" then reads as "never tried", so every press rebuilt and
-'re-failed the same object. The flag says the attempt was made.
-Private trads As DesignerTranslation
-Private prep As DesignerPreparation
-Private entry As DesignerEntry
-Private triedTranslation As Boolean
-
-'@section Shared designer services
-'===============================================================================
-
-'@Description("The one DesignerEntry over the Main worksheet, with the shared translator.")
-Public Function EntryManager() As DesignerEntry
-    If entry Is Nothing Then
-        Set entry = DesignerEntry.Create(ThisWorkbook.Worksheets(MAINSHEET))
-
-        'The entry resolves a translator of its own on first use. Handing it
-        'the held one keeps the pair to a single DesignerTranslation.
-        EnsureTranslation
-        If Not trads Is Nothing Then entry.UseTranslator trads
-    End If
-
-    Set EntryManager = entry
-End Function
-
-'@Description("Drop the held entry and translator so the next caller builds them again.")
-Public Sub ResetDesignerCaches()
-    Set entry = Nothing
-    Set trads = Nothing
-    triedTranslation = False
-End Sub
-
+Private trads As IDesignerTranslation
+Private prep As IDesignerPreparation
 
 '@section Ribbon lifecycle
 '===============================================================================
 
 '@Description("Return the translated label for a control; fallback to the control id.")
 '@EntryPoint
-Public Sub LangLabel(ByRef ribbonControl As IRibbonControl, ByRef returnedVal)
+Public Sub LangLabel(ByRef control As IRibbonControl, ByRef returnedVal)
 
     On Error GoTo Fallback
     EnsureTranslation
     If trads Is Nothing Then GoTo Fallback
-    returnedVal = trads.TranslatedValue(ribbonControl.Id)
+    returnedVal = trads.TranslatedValue(control.Id)
     Exit Sub
 
 Fallback:
-    returnedVal = ribbonControl.Id
+    returnedVal = control.Id
 End Sub
 
 Private Sub EnsureTranslation()
-    Dim sh As Worksheet
-
-    If triedTranslation Then Exit Sub
-    triedTranslation = True
 
     On Error Resume Next
+    Dim sh As Worksheet
     Set sh = ThisWorkbook.Worksheets(DESTRADSSHEET)
     On Error GoTo 0
 
     If sh Is Nothing Then Exit Sub
 
     On Error Resume Next
-    Set trads = DesignerTranslation.Create(sh)
+    If trads Is Nothing Then
+        Set trads = DesignerTranslation.Create(sh)
+    End If
     On Error GoTo 0
 End Sub
 
@@ -95,9 +57,9 @@ End Sub
 
 '@Description("Switch designer language and re-run translations.")
 '@EntryPoint
-Public Sub clickLangChange(ByRef ribbonControl As IRibbonControl, ByRef langId As String, ByRef Index As Integer)
+Public Sub clickLangChange(ByRef control As IRibbonControl, ByRef langId As String, ByRef Index As Integer)
     Dim targetSheet As Worksheet
-    Dim appScope As ApplicationState
+    Dim appScope As IApplicationState
 
     On Error GoTo Cleanup
     Set targetSheet = ThisWorkbook.Worksheets(MAINSHEET)
@@ -109,10 +71,6 @@ Public Sub clickLangChange(ByRef ribbonControl As IRibbonControl, ByRef langId A
     If trads Is Nothing Then GoTo Cleanup
     trads.TranslateDesigner targetSheet, langId
     InvalidateRibbon
-
-    'The designer speaks another language now, so the pair is dropped and the
-    'next callback reads the rows of the new language.
-    ResetDesignerCaches
 
 Cleanup:
     If Not appScope Is Nothing Then appScope.Restore
@@ -128,12 +86,21 @@ End Sub
 '===============================================================================
 '@Description("Import translations tables from an external workbook.")
 '@EntryPoint
-Public Sub clickImpTrans(ByRef ribbonControl As IRibbonControl)
-    Dim io As OSFiles
+Public Sub clickImpTrans(ByRef control As IRibbonControl)
+    Dim io As IOSFiles
     Dim importBook As Workbook
-    Dim appScope As ApplicationState
+    Dim targetBook As Workbook
+    Dim sheetNames As BetterArray
+    Dim tableNames As BetterArray
+    Dim sheetName As Variant
+    Dim idx As Long
+    Dim targetSheet As Worksheet
+    Dim sourceSheet As Worksheet
+    Dim lo As ListObject
+    Dim targetTable As ICustomTable
+    Dim sourceTable As ICustomTable
+    Dim appScope As IApplicationState
 
-    'The picker runs before the busy state, because the dialog needs the UI
     Set io = OSFiles.Create()
     io.LoadFile "*.xlsx"
     If Not io.HasValidFile() Then Exit Sub
@@ -142,14 +109,33 @@ Public Sub clickImpTrans(ByRef ribbonControl As IRibbonControl)
     Set appScope = ApplicationState.Create(Application)
     appScope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
-    'The import body lives on DesignerPreparation, which the preparation
-    'sequence uses too. The workbook is opened here and closed here, so the
-    'class reads an open book and leaves it alone.
-    Set importBook = Workbooks.Open(io.File(), ReadOnly:=True)
-    ResolvePreparation().ImportTranslations importBook
+    Set targetBook = ThisWorkbook
+    Set sheetNames = New BetterArray
+    sheetNames.Push "LinelistTranslation", "DesignerTranslation"
 
-    'The translation tables were rewritten under the held translator.
-    ResetDesignerCaches
+    Set tableNames = New BetterArray
+    tableNames.Push "t_tradllshapes", "t_tradllmsg", "t_tradllforms", "t_tradllribbon", _
+                    "t_tradmsg", "t_tradrange", "t_tradshape"
+
+    Set importBook = Workbooks.Open(io.File())
+
+    For idx = sheetNames.LowerBound To sheetNames.UpperBound
+        sheetName = sheetNames.Item(idx)
+        On Error Resume Next
+        Set targetSheet = targetBook.Worksheets(CStr(sheetName))
+        Set sourceSheet = importBook.Worksheets(CStr(sheetName))
+        On Error GoTo 0
+
+        If (targetSheet Is Nothing) Or (sourceSheet Is Nothing) Then GoTo Cleanup
+
+        For Each lo In targetSheet.ListObjects
+            If tableNames.Includes(LCase$(lo.Name)) Then
+                Set targetTable = CustomTable.Create(lo)
+                Set sourceTable = CustomTable.Create(sourceSheet.ListObjects(lo.Name))
+                targetTable.Import sourceTable
+            End If
+        Next lo
+    Next idx
 
     MsgBox "Done!", vbInformation + vbOKOnly, PROMPT_TITLE
 
@@ -165,14 +151,12 @@ End Sub
 
 '@Description("Import passwords from an external workbook.")
 '@EntryPoint
-Public Sub clickImpPass(ByRef ribbonControl As IRibbonControl)
-    Dim io As OSFiles
+Public Sub clickImpPass(ByRef control As IRibbonControl)
+    Dim io As IOSFiles
     Dim importBook As Workbook
-    Dim importer As Passwords
-    Dim target As Passwords
-    Dim appScope As ApplicationState
-    Dim errNumber As Long
-    Dim errDescription As String
+    Dim importer As IPasswords
+    Dim target As IPasswords
+    Dim appScope As IApplicationState
 
     Set io = OSFiles.Create()
     io.LoadFile "*.xlsx"
@@ -184,37 +168,28 @@ Public Sub clickImpPass(ByRef ribbonControl As IRibbonControl)
 
     Set importBook = Workbooks.Open(io.File(), ReadOnly:=False)
     Set importer = Passwords.Create(importBook.Worksheets(1))
-    Set target = Passwords.Create(ThisWorkbook.Worksheets(SHEET_PASS))
-    target.ImportFrom importer
+    Set target = Passwords.Create(ThisWorkbook.Worksheets("__pass"))
+    target.Import importer
 
     MsgBox "Done!", vbInformation + vbOKOnly, PROMPT_TITLE
 
 Cleanup:
-    'The error is read BEFORE the cleanup runs. ApplicationState.Restore carries
-    'its own On Error statements, and any form of On Error empties the Err
-    'object, so a failed import used to reach the test below with number 0 and
-    'the user was told nothing at all. Mac also drops Err.Description on the way
-    'out of a class method, which is a second reason to read it here.
-    errNumber = Err.Number
-    errDescription = Err.Description
-
     If Not importBook Is Nothing Then importBook.Close saveChanges:=False
     If Not appScope Is Nothing Then appScope.Restore
-
-    If errNumber <> 0 Then
-        Debug.Print "clickImpPass: "; errNumber; errDescription
-        MsgBox "Unable to import passwords: " & errDescription, vbExclamation + vbOKOnly, PROMPT_TITLE
+    If Err.Number <> 0 Then
+        Debug.Print "clickImpPass: "; Err.Number; Err.Description
+        MsgBox "Unable to import passwords: " & Err.Description, vbExclamation + vbOKOnly, PROMPT_TITLE
         Err.Clear
     End If
 End Sub
 
 '@Description("Import linelist format from a workbook.")
 '@EntryPoint
-Public Sub clickImpStyle(ByRef ribbonControl As IRibbonControl)
-    Dim io As OSFiles
+Public Sub clickImpStyle(ByRef control As IRibbonControl)
+    Dim io As IOSFiles
     Dim importBook As Workbook
-    Dim formatManager As LLFormat
-    Dim appScope As ApplicationState
+    Dim formatManager As ILLFormat
+    Dim appScope As IApplicationState
 
     Set io = OSFiles.Create()
     io.LoadFile "*.xlsx"
@@ -228,12 +203,9 @@ Public Sub clickImpStyle(ByRef ribbonControl As IRibbonControl)
     Set formatManager = LLFormat.Create(ThisWorkbook.Worksheets(SHEET_FORMAT))
     formatManager.Import importBook.Worksheets(1)
 
-    'The designer now holds the live formatter. Loading a setup file clears
-    'this flag again, so the styles imported here belong to the setup that is
-    'loaded now.
-    Dim designerPrep As DesignerPreparation
-    Set designerPrep = ResolvePreparation()
-    designerPrep.FormatterImported = True
+    Dim store As IHiddenNames
+    Set store = HiddenNames.Create(ThisWorkbook)
+    store.Add TAG_FORMATTER_IMPORTED, "Yes"
 
     MsgBox "Done!", vbInformation + vbOKOnly, PROMPT_TITLE
 
@@ -252,8 +224,8 @@ End Sub
 '===============================================================================
 '@Description("Open a linelist workbook selected by the user.")
 '@EntryPoint
-Public Sub clickOpen(ByRef ribbonControl As IRibbonControl)
-    Dim io As OSFiles
+Public Sub clickOpen(ByRef control As IRibbonControl)
+    Dim io As IOSFiles
 
     Set io = OSFiles.Create()
     io.LoadFile "*.xlsb"
@@ -270,108 +242,26 @@ End Sub
 
 '@Description("Initialise checkbox state for alerts from persisted hidden names.")
 '@EntryPoint
-Public Sub initMainAlert(ByRef ribbonControl As IRibbonControl, ByRef returnedVal)
-
-    'getPressed fires at ribbon load; a raise here drops the whole tab,
-    'so any failure falls back to the checked default.
-    On Error GoTo Fallback
+Public Sub initMainAlert(ByRef control As IRibbonControl, ByRef returnedVal)
     returnedVal = ResolvePreparation().GetFlag("chkAlert", True)
-    Exit Sub
-
-Fallback:
-    returnedVal = True
 End Sub
 
 '@Description("Persist alert checkbox state.")
 '@EntryPoint
-Public Sub clickMainAlert(ByRef ribbonControl As IRibbonControl, ByVal pressed As Boolean)
-
-    On Error GoTo Handler
+Public Sub clickMainAlert(ByRef control As IRibbonControl, ByVal pressed As Boolean)
     ResolvePreparation().SetFlag "chkAlert", pressed
-    Exit Sub
-
-Handler:
-    Debug.Print "clickMainAlert: "; Err.Number; Err.Description
-    MsgBox "Unable to save the alert setting: " & Err.Description, _
-           vbExclamation + vbOKOnly, PROMPT_TITLE
-    Err.Clear
 End Sub
 
 '@Description("Initialise checkbox state for instructions from persisted hidden names.")
 '@EntryPoint
-Public Sub initMainInstruct(ByRef ribbonControl As IRibbonControl, ByRef returnedVal)
-
-    'getPressed fires at ribbon load; a raise here drops the whole tab,
-    'so any failure falls back to the checked default.
-    On Error GoTo Fallback
+Public Sub initMainInstruct(ByRef control As IRibbonControl, ByRef returnedVal)
     returnedVal = ResolvePreparation().GetFlag("chkInstruct", True)
-    Exit Sub
-
-Fallback:
-    returnedVal = True
 End Sub
 
 '@Description("Persist instruction checkbox state.")
 '@EntryPoint
-Public Sub clickMainInstruct(ByRef ribbonControl As IRibbonControl, ByVal pressed As Boolean)
-
-    On Error GoTo Handler
+Public Sub clickMainInstruct(ByRef control As IRibbonControl, ByVal pressed As Boolean)
     ResolvePreparation().SetFlag "chkInstruct", pressed
-    Exit Sub
-
-Handler:
-    Debug.Print "clickMainInstruct: "; Err.Number; Err.Description
-    MsgBox "Unable to save the instruction setting: " & Err.Description, _
-           vbExclamation + vbOKOnly, PROMPT_TITLE
-    Err.Clear
-End Sub
-
-'@Description("Initialise the show-progress-bar checkbox from persisted hidden names.")
-'@details
-'THE BOX AND THE FLAG SAY OPPOSITE THINGS
-'-------------------------------------------------------------------------------
-'The box asks "Show progress bar" and the stored flag is chkBuildInPlace, which
-'means "build in this Excel". Those are opposites, and the two callbacks here
-'are the only place the negation lives.
-'
-'A build in place runs in the designer's own Excel, which is busy the whole
-'time and paints nothing, so GenerateInPlace carries no bar. GenerateInInstance
-'sends the work to a hidden Excel and the visible designer is free to paint
-'one, which is why EventsDesignerAdvanced.ResolveMainProgressBar is called on
-'that path alone. So a ticked box means the instance path, and the flag it
-'writes is False.
-'
-'The flag keeps its name and its meaning, so GenerationHost.ResolveInPlace,
-'DesignerPreparation and the hidden name every designer already carries are
-'unchanged, and a designer built before this keeps the choice it was saved with.
-'@EntryPoint
-Public Sub initBuildInPlace(ByRef ribbonControl As IRibbonControl, ByRef returnedVal)
-
-    'getPressed fires at ribbon load; a raise here drops the whole tab, so any
-    'failure falls back to the seeded default. EnsureDefaultFlags seeds the flag
-    '"No", which is the instance path, and the box that shows it is TICKED.
-    On Error GoTo Fallback
-    returnedVal = Not ResolvePreparation().GetFlag("chkBuildInPlace", False)
-    Exit Sub
-
-Fallback:
-    returnedVal = True
-End Sub
-
-'@Description("Persist the show-progress-bar checkbox state.")
-'@EntryPoint
-Public Sub clickBuildInPlace(ByRef ribbonControl As IRibbonControl, ByVal pressed As Boolean)
-
-    'Ticked asks for the bar, which is the instance path, which is not in place.
-    On Error GoTo Handler
-    ResolvePreparation().SetFlag "chkBuildInPlace", Not pressed
-    Exit Sub
-
-Handler:
-    Debug.Print "clickBuildInPlace: "; Err.Number; Err.Description
-    MsgBox "Unable to save the progress bar setting: " & Err.Description, _
-           vbExclamation + vbOKOnly, PROMPT_TITLE
-    Err.Clear
 End Sub
 
 
@@ -379,7 +269,7 @@ End Sub
 '===============================================================================
 
 '@Description("Lazily resolve and cache the designer preparation helper bound to ThisWorkbook.")
-Private Function ResolvePreparation() As DesignerPreparation
+Private Function ResolvePreparation() As IDesignerPreparation
     If prep Is Nothing Then
         Set prep = DesignerPreparation.Create(ThisWorkbook)
     End If

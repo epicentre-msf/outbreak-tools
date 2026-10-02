@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IDiseaseExportWorkbook - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IDiseaseExportWorkbook</h1>
+<h2>Lifecycle</h2>
+<h3>EnsureWorkbook</h3>
+<p><strong>Ensure a workbook instance is available for exports.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function EnsureWorkbook(ByVal excelApp As Application) As Workbook
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>excelApp</code>: Application host used to create the workbook.</li>
+</ul>
+<p><strong>Returns:</strong> Workbook ready for export operations.</p>
+<hr />
+<h3>SaveAs</h3>
+<p><strong>Persist the workbook to disk.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SaveAs(ByVal filePath As String, _
+                  Optional ByVal fileFormat As XlFileFormat = xlOpenXMLWorkbook, _
+                  Optional ByVal createBackup As Boolean = False)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>filePath</code>: String destination path.</li>
+<li><code>fileFormat</code>: Optional XlFileFormat. Defaults to xlOpenXMLWorkbook.</li>
+<li><code>createBackup</code>: Optional Boolean. Defaults to False.</li>
+</ul>
+<hr />
+<h3>Close</h3>
+<p><strong>Close the workbook and clear references.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Close(Optional ByVal saveChanges As Boolean = False)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>saveChanges</code>: Optional Boolean controlling SaveChanges flag.</li>
+</ul>
+<hr />
+<h3>Release</h3>
+<p><strong>Release the workbook without saving, ensuring references are cleared.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Release()
+</code></pre>
+<hr />
+<h2>State</h2>
+<h3>HasWorkbook</h3>
+<p><strong>Indicates whether a workbook is currently managed.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasWorkbook() As Boolean
+</code></pre>
+<hr />
+<h3>Workbook</h3>
+<p><strong>Retrieve the managed workbook reference.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Workbook() As Workbook
+</code></pre>
+<hr />
+
+  </main>
+</body>
+</html>
+

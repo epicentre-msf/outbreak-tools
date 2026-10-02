@@ -1,14 +1,3 @@
 * text=auto
 *.bas text eol=crlf
 *.cls text eol=crlf
-
-# Ribbon sources are stored byte-for-byte as they sit inside the workbook, so
-# that ribbon-pack.sh rebuilds a customUI part identical to the shipped one and
-# any real drift shows up as the only difference.
-ribbons/**/ribbon.xml -text
-
-# HTML must not be detectable (useless)
-*.applescript linguist-detectable=false
-*.scpt linguist-detectable=false
-*.html linguist-detectable=false
-*.htm linguist-detectable=false
