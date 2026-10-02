@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ICodeTransfer - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ICodeTransfer</h1>
+<p>Defines the public contract for the CodeTransfer class, exposing methods to
+transfer VBA code components (classes, modules, forms, workbook code) between
+workbooks using temporary file export/import cycles.</p>
+<h2>CodeTransfer</h2>
+<h3>TransferClass</h3>
+<p><strong>Transfer a class module from source to target workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TransferClass(ByVal className As String)
+</code></pre>
+<p>Methods for moving VBA components between workbooks.
+Exports the named class module (.cls) from the source workbook to a temporary
+file, then imports it into the target workbook.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>className</code>: String. The VBA component name of the class to transfer.</li>
+</ul>
+<hr />
+<h3>TransferModule</h3>
+<p><strong>Transfer a standard module from source to target workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TransferModule(ByVal moduleName As String)
+</code></pre>
+<p>Exports the named standard module (.bas) from the source workbook to a
+temporary file, then imports it into the target workbook.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>moduleName</code>: String. The VBA component name of the module to transfer.</li>
+</ul>
+<hr />
+<h3>TransferForm</h3>
+<p><strong>Transfer a UserForm from source to target workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TransferForm(ByVal formName As String)
+</code></pre>
+<p>Exports the named UserForm (.frm/.frx) from the source workbook to temporary
+files, then imports it into the target workbook. Both the .frm and .frx files
+are cleaned up after import.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formName</code>: String. The VBA component name of the form to transfer.</li>
+</ul>
+<hr />
+<h3>TransferWorkbookCode</h3>
+<p><strong>Copy code from a source module into the target's ThisWorkbook component</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TransferWorkbookCode(ByVal moduleName As String)
+</code></pre>
+<p>Reads all code lines from the named module in the source workbook and writes
+them into the target workbook's ThisWorkbook code module, replacing any
+existing content.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>moduleName</code>: String. The source module whose code will be copied.</li>
+</ul>
+<hr />
+<h3>CopyModuleText</h3>
+<p><strong>Copy code text from a source module to an existing target module</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub CopyModuleText(ByVal moduleName As String)
+</code></pre>
+<p>Reads all code from the named module in the source workbook and writes it
+into the same-named module in the target workbook, replacing existing content.
+Used for template workbooks where the target module already exists.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>moduleName</code>: String. The module name (must exist in both workbooks).</li>
+</ul>
+<hr />
+<h3>CopyModuleCode</h3>
+<p><strong>Copy code between components within the target workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub CopyModuleCode(ByVal sourceName As String, ByVal targetName As String)
+</code></pre>
+<p>Within the target workbook, reads code from the source component, writes it
+into the target component (replacing any existing content), then removes the
+source component. Useful after importing a module that should be injected
+into a different component (e.g., a worksheet module or ThisWorkbook).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceName</code>: String. The component to read code from and then remove.</li>
+<li><code>targetName</code>: String. The component to write code into.</li>
+</ul>
+<hr />
+
+  </main>
+</body>
+</html>
+

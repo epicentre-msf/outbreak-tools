@@ -3,200 +3,81 @@ Attribute VB_Description = "Combined geo and spatial analysis logic for the line
 
 '@Folder("Geo")
 '@ModuleDescription("Combined geo and spatial analysis logic for the linelist")
-'@depends LinelistEventsManager, EventLinelist, LLGeo, LLSpatial, GeoFormCache, AnalysisRanges, DropdownLists, Passwords, BetterArray, LLTranslation, TranslationObject
 '@IgnoreModule UnrecognizedAnnotation, ImplicitActiveSheetReference, UseMeaningfulName, HungarianNotation
 
 Option Explicit
+Option Base 1
 Option Private Module
 
 '@section Constants
 '===============================================================================
 
-Private Const DROPDOWNSHEET As String = "__dropdown_lists"
-Private Const SPATIALSHEET As String = "__spatial_tables"
+Private Const GEOSHEET As String = "Geo"
+Private Const DROPDOWNSHEET As String = "dropdown_lists__"
+Private Const LLSHEET As String = "LinelistTranslation"
+Private Const SPATIALSHEET As String = "spatial_tables__"
 Private Const PASSSHEET As String = "__pass"
-
-' How many admin levels a geobase carries.
-Private Const MAX_ADMIN_LEVEL As Long = 4
-
-' The separator of a joined admin path, the one the caption of the form uses.
-Private Const GEO_SEPARATOR As String = " | "
-
-' Whether the tab strip of each frame has been put back on its first page. The
-' picker keeps its state between opens through its default instance, so the tab
-' it comes up on the very first time is the tab the form was saved on, which is
-' whichever one the designer happened to close. The user starts on the four
-' admin lists, not on the concatenated list and not on the historic.
-'
-' One flag per frame, because the two pickers open independently and the first
-' open of each is the one that needs it. Every later open gives the user back
-' the tab they left.
-Private adminPageSettled As Boolean
-Private facilityPageSettled As Boolean
 
 '@section Module-Level State
 '===============================================================================
 
-Private drop As DropdownLists
-Private pass As Passwords
-
-' The test seams of this module. Three statements of the geo path put a window
-' on the screen and wait for a hand: the picker of LoadGeo, the name prompt of
-' AddAdminName and the failure box every handler reports through. A headless run
-' has nobody to close them, so it stops there and writes no result file. Each
-' flag below turns its own statement off and leaves the rest of the procedure
-' whole, which is what makes the procedure worth testing at all.
-'
-' The flags live here with the rest of the module state, where a reader finds
-' every declaration of the module in one place.
-Private suppressGeoShow As Boolean
-Private suppressGeoBox As Boolean
-Private stubbedAdminNameSet As Boolean
-Private stubbedAdminName As Variant
-
-'@section Test Seams
-'===============================================================================
-
-' @description Hold the picker back. LoadGeo fills every control and returns, so
-'              a test reads the form the way the user would see it. The cleanup
-'              of the test module calls this with False.
-' @param suppress True holds the form back, False gives it back
-Public Sub GeoSuppressShow(ByVal suppress As Boolean)
-    suppressGeoShow = suppress
-End Sub
-
-' @description Hold the failure box of ReportGeoError back. The log line is
-'              still written, so a test reads the failure back off the __log
-'              worksheet. The cleanup of the test module calls this with False.
-' @param suppress True holds the box back, False gives it back
-Public Sub GeoSuppressBox(ByVal suppress As Boolean)
-    suppressGeoBox = suppress
-End Sub
-
-' @description Answer the name prompt of AddAdminName from a test. The prompt
-'              stays closed and the value given here goes through the rest of
-'              the procedure.
-'              The value is a Variant because the box answers two shapes: a
-'              String for a typed name, and the Boolean False for a cancel. So
-'              GeoStubAdminName False walks the cancel path.
-' @param answer What the prompt gives back
-Public Sub GeoStubAdminName(ByVal answer As Variant)
-    stubbedAdminName = answer
-    stubbedAdminNameSet = True
-End Sub
-
-' @description Drop the stubbed answer. The prompt opens again from here on.
-Public Sub GeoClearAdminNameStub()
-    stubbedAdminName = Empty
-    stubbedAdminNameSet = False
-End Sub
+Private historicGeoTable As BetterArray
+Private historicHFTable As BetterArray
+Private concatenateGeoTable As BetterArray
+Private concatenateHFTable As BetterArray
+Private geo As ILLGeo
+Private drop As IDropdownLists
+Private tradmess As ITranslationObject
+Private lltrads As ILLTranslation
+Private pass As IPasswords
 
 '@section Initialization
 '===============================================================================
 
-' @description Initialize the dropdown lists. The object is built when it is
-'              missing and kept when it is there.
+' @description Initialize geo elements: LLGeo, dropdowns, and translations.
 Private Sub InitializeGeoElements()
     Dim wb As Workbook
 
+    Set historicGeoTable = New BetterArray
+    Set historicHFTable = New BetterArray
+    Set concatenateGeoTable = New BetterArray
+    Set concatenateHFTable = New BetterArray
+
     Set wb = ThisWorkbook
-    If drop Is Nothing Then Set drop = DropdownLists.Create(wb.Worksheets(DROPDOWNSHEET))
+    Set geo = LLGeo.Create(wb.Worksheets(GEOSHEET))
+    Set drop = DropdownLists.Create(wb.Worksheets(DROPDOWNSHEET))
+
+    Set lltrads = LLTranslation.Create(wb.Worksheets(LLSHEET))
+    Set tradmess = lltrads.TransObject()
 End Sub
 
-' @description Initialize passwords for spatial analysis events. The old shape
-'              rebuilt the manager on every Validate.
+' @description Initialize passwords and translations for spatial analysis events.
 Private Sub InitializeSpatialElements()
-    If pass Is Nothing Then Set pass = Passwords.Create(ThisWorkbook.Worksheets(PASSSHEET))
+    Dim wb As Workbook
+
+    Set wb = ThisWorkbook
+    Set pass = Passwords.Create(wb.Worksheets(PASSSHEET))
 End Sub
 
-'@section Error Reporting
+'@section Application State
 '===============================================================================
 
-' @description Tell the user a geo operation failed. The handler that calls
-'              this has already restored the application. The message comes off
-'              the shared surface, so every failure box of the linelist reads
-'              the same way. The fallback is what a workbook with no usable
-'              translation sheet shows, and a geo failure is exactly the state
-'              where that can happen.
-'              The typed local is what call-signature-scan.R reads to check the
-'              member. A chained call is invisible to it, and this module carries
-'              no registry row, so a chain here would be checked by nothing.
-'              The caller names itself in source. VBA carries no call stack to
-'              read a name from, nine call sites in five procedures of this
-'              module report through here, and a log line that names none of
-'              them leaves a reader with a reason and no idea which press
-'              produced it.
-'              GeoSuppressBox empties the fallback. A filled fallback is the one
-'              thing that carries EventLinelist.ShowMessage past its early exit
-'              to the MsgBox, so emptying it is what keeps a headless run going.
-'              The log line is written either way, and that is where a test
-'              reads the failure back.
-Private Sub ReportGeoError(ByVal source As String, ByVal detail As String)
-    Dim linelistEvents As EventLinelist
-    Dim spokenFallback As String
-
-    spokenFallback = "The geobase could not be read"
-    If suppressGeoBox Then spokenFallback = vbNullString
-
-    Set linelistEvents = LinelistEventsManager.EventLinelistService()
-    linelistEvents.Fail "MSG_ErrGeo", detail, spokenFallback, source
+' @description Suspend heavy Excel UI features for performance.
+Private Sub BusyApp(Optional ByVal cursor As Long = xlDefault)
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+    Application.Calculation = xlCalculationManual
+    Application.EnableAnimations = False
+    Application.cursor = cursor
 End Sub
 
-' @description Tell the user the picker refused a press. The same shape as
-'              ReportGeoError: the warning line is written to the log either
-'              way, and the fallback is what a workbook with no usable
-'              translation sheet shows. GeoSuppressBox empties it, which is
-'              what keeps a headless run going through the refusals of
-'              AddAdminName.
-' @param msgCode The code of the message in the message translation table
-' @param fallback The plain English line a workbook with no translator shows
-' @param source The procedure that refused
-Private Sub ReportGeoWarning(ByVal msgCode As String, ByVal fallback As String, _
-                             ByVal source As String)
-    Dim linelistEvents As EventLinelist
-    Dim spokenFallback As String
-
-    spokenFallback = fallback
-    If suppressGeoBox Then spokenFallback = vbNullString
-
-    Set linelistEvents = LinelistEventsManager.EventLinelistService()
-    linelistEvents.Warn msgCode, source, spokenFallback
+' @description Restore Excel UI to normal state.
+Private Sub NotBusyApp()
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    Application.EnableAnimations = True
+    Application.cursor = xlDefault
 End Sub
-
-' @description The text of one message code for the name prompt. A workbook
-'              with no usable translation sheet has no translator, and the
-'              prompt then shows the code itself, the way MessageText in
-'              EventLinelist reads a code with no row. The prompt used to
-'              raise in that state, which put the add out of reach of exactly
-'              the workbook whose geobase is most likely to need it.
-' @param tradmess The message translator, or Nothing
-' @param msgCode The code to read
-Private Function PromptText(ByVal tradmess As TranslationObject, _
-                            ByVal msgCode As String) As String
-    If tradmess Is Nothing Then
-        PromptText = msgCode
-    Else
-        PromptText = tradmess.TranslatedValue(msgCode)
-    End If
-End Function
-
-' @description The one geobase manager of the workbook. EventLinelist builds it
-'              once and drops it in ResetCaches, so a geobase import is followed
-'              by a fresh build and the level labels below are read again. The
-'              answer lives in a procedure-local at every use site: a module
-'              field here would hold a manager nothing invalidates.
-'              The typed local is what call-signature-scan.R reads to check the
-'              member, the same reason ReportGeoError above carries one.
-Private Function GeoOf() As LLGeo
-    Dim linelistEvents As EventLinelist
-
-    Set linelistEvents = LinelistEventsManager.EventLinelistService()
-    If linelistEvents Is Nothing Then Exit Function
-
-    Set GeoOf = linelistEvents.GeoManager()
-End Function
-
-
 
 '@section LoadGeo — Form Display
 '===============================================================================
@@ -206,159 +87,90 @@ End Function
 ' @param hfOrGeo GeoScopeAdmin (0) for geo, GeoScopeHF (1) for health facility
 '@EntryPoint
 Public Sub LoadGeo(ByVal hfOrGeo As Byte)
-    Dim geoList As BetterArray
-    Dim historicList As BetterArray
-    Dim geoObj As LLGeo
+    Dim transValue As BetterArray
 
     On Error GoTo ErrLoadGeo
 
     InitializeGeoElements
 
-    'The manager answers Nothing when its build failed, where LLGeo.Create used
-    'to raise, so the report the user reads is asked for here.
-    Set geoObj = GeoOf()
-    If geoObj Is Nothing Then
-        ReportGeoError "LoadGeo", "The geobase manager could not be built"
-        Exit Sub
-    End If
+    Set transValue = New BetterArray
+    BusyApp
 
-    LinelistEventsManager.LLEnterBusyState busyCursor:=xlNorthwestArrow
+    Select Case hfOrGeo
 
-    'The form survives between opens through its default instance, so the
-    'lists are emptied first, whatever the geobase holds: an emptied geobase
-    'must show none of the previous session's places.
-    ClearLists
+    Case GeoScopeAdmin
+        F_Geo.LBL_Adm1.Caption = geo.GeoNames("adm1_name")
+        F_Geo.LBL_Adm2.Caption = geo.GeoNames("adm2_name")
+        F_Geo.LBL_Adm3.Caption = geo.GeoNames("adm3_name")
+        F_Geo.LBL_Adm4.Caption = geo.GeoNames("adm4_name")
 
-    'One read of each list per open. The search boxes then scan memory on
-    'every keystroke, off the same cache the form reads.
-    GeoFormCache.LoadFrom ThisWorkbook
+        drop.ClearList "admin2"
+        drop.ClearList "admin3"
+        drop.ClearList "admin4"
 
-    'Every control below is reached through one block. Naming F_Geo resolves
-    'the default instance and looks the control up again on each line, and the
-    'open touched about twenty of them.
-    With F_Geo
+        If Not geo.HasNoData() Then
+            Set transValue = geo.GeoLevel(LevelAdmin1, GeoScopeAdmin)
+            ClearLists
+            F_Geo.LST_Adm1.List = transValue.Items
+            concatenateGeoTable.FromExcelRange Range("adm4_concat")
+            F_Geo.LST_ListeAgre.List = concatenateGeoTable.Items
+        End If
 
-        Select Case hfOrGeo
+        historicGeoTable.FromExcelRange Range("histo_geo")
+        F_Geo.LST_Histo.List = historicGeoTable.Items
 
-        Case GeoScopeAdmin
-            .LBL_Adm1.Caption = geoObj.GeoNames("adm1_name")
-            .LBL_Adm2.Caption = geoObj.GeoNames("adm2_name")
-            .LBL_Adm3.Caption = geoObj.GeoNames("adm3_name")
-            .LBL_Adm4.Caption = geoObj.GeoNames("adm4_name")
+        F_Geo.FRM_Facility.Visible = False
+        F_Geo.FRM_Geo.Visible = True
+        F_Geo.LBL_Fac1.Visible = False
+        F_Geo.LBL_Geo1.Visible = True
 
-            drop.ClearList "admin2"
-            drop.ClearList "admin3"
-            drop.ClearList "admin4"
+    Case GeoScopeHF
+        F_Geo.LBL_Adm4F.Caption = geo.GeoNames("hf_name")
+        F_Geo.LBL_Adm3F.Caption = geo.GeoNames("adm3_name")
+        F_Geo.LBL_Adm2F.Caption = geo.GeoNames("adm2_name")
+        F_Geo.LBL_Adm1F.Caption = geo.GeoNames("adm1_name")
 
-            If Not geoObj.HasNoData() Then
-                Set geoList = geoObj.GeoLevel(LevelAdmin1, GeoScopeAdmin)
-                .LST_Adm1.List = geoList.Items
-            End If
+        If Not geo.HasNoData() Then
+            Set transValue = geo.GeoLevel(LevelAdmin1, GeoScopeHF)
+            ClearLists
+            F_Geo.LST_AdmF1.List = transValue.Items
+            concatenateHFTable.FromExcelRange Range("hf_concat")
+            F_Geo.LST_ListeAgreF.List = concatenateHFTable.Items
+        End If
 
-            'The concatenated tab is a search surface: its list starts empty
-            'and fills from the search box at three characters. Pushing the
-            'whole adm4 column here was the largest single allocation of the
-            'open, and an MSForms ListBox stops outright at 65536 rows.
+        historicHFTable.FromExcelRange Range("histo_hf")
+        F_Geo.LST_HistoF.List = historicHFTable.Items
+        F_Geo.FRM_Facility.Visible = True
+        F_Geo.FRM_Geo.Visible = False
+        F_Geo.LBL_Fac1.Visible = True
+        F_Geo.LBL_Geo1.Visible = False
 
-            Set historicList = GeoFormCache.HistoricList(GeoScopeAdmin)
-            .LST_Histo.List = historicList.Items
+    End Select
 
-            .FRM_Facility.Visible = False
-            .FRM_Geo.Visible = True
-            .LBL_Fac1.Visible = False
-            .LBL_Geo1.Visible = True
+    NotBusyApp
 
-            ShowFirstGeoPage .FRM_Geo, adminPageSettled
-
-        Case GeoScopeHF
-            .LBL_Adm4F.Caption = geoObj.GeoNames("hf_name")
-            .LBL_Adm3F.Caption = geoObj.GeoNames("adm3_name")
-            .LBL_Adm2F.Caption = geoObj.GeoNames("adm2_name")
-            .LBL_Adm1F.Caption = geoObj.GeoNames("adm1_name")
-
-            If Not geoObj.HasNoData() Then
-                Set geoList = geoObj.GeoLevel(LevelAdmin1, GeoScopeHF)
-                .LST_AdmF1.List = geoList.Items
-            End If
-
-            'The facility concatenated list follows the admin one: empty until
-            'the search box holds three characters.
-
-            Set historicList = GeoFormCache.HistoricList(GeoScopeHF)
-            .LST_HistoF.List = historicList.Items
-            .FRM_Facility.Visible = True
-            .FRM_Geo.Visible = False
-            .LBL_Fac1.Visible = True
-            .LBL_Geo1.Visible = False
-
-            ShowFirstGeoPage .FRM_Facility, facilityPageSettled
-
-        Case Else
-            'GeoScopeBoth exists on the enum and has no layout in the form. An
-            'unknown scope used to configure nothing and show the form as the
-            'previous open left it.
-            LinelistEventsManager.LLExitBusyState
-            ReportGeoError "LoadGeo", "Unknown geo scope " & hfOrGeo
-            Exit Sub
-
-        End Select
-
-        .TXT_Msg.Value = vbNullString
-    End With
-
-    'Exit the busy state before the modal form comes up, so it is never
-    'raised over a frozen screen. Show blocks until the form hides, so it
-    'stands outside the block above: nothing holds a reference to the form
-    'while the form runs.
-    'Under GeoSuppressShow the open ends here, with every control of the form
-    'already filled by the block above.
-    LinelistEventsManager.LLExitBusyState
-    If Not suppressGeoShow Then F_Geo.Show
+    F_Geo.TXT_Msg.Value = vbNullString
+    F_Geo.Show
     Exit Sub
 
 ErrLoadGeo:
-    LinelistEventsManager.LLExitBusyState
-    ReportGeoError "LoadGeo", Err.Description
+    MsgBox tradmess.TranslatedValue("MSG_ErrGeo"), _
+           vbOKOnly + vbCritical, _
+           tradmess.TranslatedValue("MSG_Error")
+    NotBusyApp
 End Sub
 
-' @description Put the tab strip of one frame on its first page, the four admin
-'              lists, and only the first time that frame is opened in the
-'              session. The page is chosen by position: the two frames carry a
-'              tab strip each and the form gives them different names, so the
-'              control is found by type rather than by name.
-' @param frameControl The FRM_Geo or FRM_Facility frame of the picker
-' @param alreadySettled The session flag of that frame, raised here
-Private Sub ShowFirstGeoPage(ByVal frameControl As Object, _
-                             ByRef alreadySettled As Boolean)
-    Dim ctrl As Object
-
-    If alreadySettled Then Exit Sub
-    alreadySettled = True
-
-    ' A frame carrying no tab strip has nothing to settle, and a tab strip that
-    ' refuses the page leaves the picker on the one it was already showing.
-    ' Neither is worth stopping an open for.
-    On Error Resume Next
-    For Each ctrl In frameControl.Controls
-        If TypeName(ctrl) = "MultiPage" Then ctrl.Value = 0
-    Next
-    On Error GoTo 0
-End Sub
-
-' @description Empty every list control of the F_Geo form, entries and
-'              selection both. Assigning a Value outside the list entries is
-'              the documented route to error 380, so nothing is cleared that
-'              way.
+' @description Clear all list controls in the F_Geo form.
 Private Sub ClearLists()
     Dim counter As Long
 
     With F_Geo
-        .LST_Adm1.Clear
-        .LST_AdmF1.Clear
-        .LST_ListeAgre.Clear
-        .LST_ListeAgreF.Clear
-        .LST_Histo.Clear
-        .LST_HistoF.Clear
+        .LST_AdmF1.Value = ""
+        .LST_Adm1.Value = ""
+        .LST_ListeAgreF.Value = ""
+        .LST_ListeAgre.Value = ""
+        .LST_Histo.Value = ""
+        .LST_HistoF.Value = ""
         For counter = 2 To 4
             .Controls("LST_Adm" & counter).Clear
             .Controls("LST_AdmF" & counter).Clear
@@ -366,335 +178,151 @@ Private Sub ClearLists()
     End With
 End Sub
 
-'@section Admin Cascade
+'@section Admin Cascade — ShowAdmin*List
 '===============================================================================
 
-' @description Fill the admin list of one cascade level from the levels above
-'              it, in the geo or the facility scope. The lists from the given
-'              level down are emptied first, because they hold children of a
-'              selection that just changed. The caption joins the parents with
-'              the selected value: the geo scope reads admin1 first and the
-'              facility scope reads the deepest level first, which is the
-'              order CMD_Copier_Click splits back out.
-' @param level Cascade level to fill, 2 to 4
-' @param selectedValue The value clicked at the level above
-' @param scope GeoScopeAdmin (0) or GeoScopeHF (1)
-' @param separator Separator of the caption
+' @description Show admin2 list filtered by selected admin1.
 '@EntryPoint
-Public Sub ShowAdminList(ByVal level As Long, ByVal selectedValue As String, _
-                         Optional ByVal scope As Byte = GeoScopeAdmin, _
-                         Optional ByVal separator As String = " | ")
+Public Sub ShowAdmin2List(ByVal selectedAdmin1 As String, _
+                          Optional ByVal scope As Byte = 0)
+
+    If scope = GeoScopeAdmin Then
+        F_Geo.LST_Adm2.Clear
+        F_Geo.LST_Adm3.Clear
+        F_Geo.LST_Adm4.Clear
+    Else
+        F_Geo.LST_AdmF2.Clear
+        F_Geo.LST_AdmF3.Clear
+        F_Geo.LST_AdmF4.Clear
+    End If
+
+    Dim adminTable As BetterArray
+    Application.cursor = xlNorthwestArrow
+
+    Set adminTable = geo.GeoLevel(LevelAdmin2, scope, selectedAdmin1)
+    F_Geo.TXT_Msg.Value = selectedAdmin1
+
+    If adminTable.Length = 0 Then Exit Sub
+
+    If scope = GeoScopeAdmin Then
+        F_Geo.LST_Adm2.List = adminTable.Items
+    Else
+        F_Geo.LST_AdmF2.List = adminTable.Items
+    End If
+
+    Application.cursor = xlDefault
+End Sub
+
+' @description Show admin3 list filtered by selected admin1 and admin2.
+'@EntryPoint
+Public Sub ShowAdmin3List(ByVal selectedAdmin2 As String, _
+                          Optional ByVal scope As Byte = 0, _
+                          Optional ByVal separator As String = " | ")
+
+    Dim selectedAdmin1 As String
+    Dim concatenateAdmins As String
+    Dim adminTable As BetterArray
+    Dim adminNames As BetterArray
+
+    If scope = GeoScopeAdmin Then
+        F_Geo.LST_Adm3.Clear
+        F_Geo.LST_Adm4.Clear
+        selectedAdmin1 = F_Geo.LST_Adm1.Value
+        concatenateAdmins = selectedAdmin1 & separator & selectedAdmin2
+    Else
+        F_Geo.LST_AdmF3.Clear
+        F_Geo.LST_AdmF4.Clear
+        selectedAdmin1 = F_Geo.LST_AdmF1.Value
+        concatenateAdmins = selectedAdmin2 & separator & selectedAdmin1
+    End If
+
+    Set adminNames = New BetterArray
+    adminNames.LowerBound = 1
+    Application.cursor = xlNorthwestArrow
+
+    adminNames.Push selectedAdmin1, selectedAdmin2
+    Set adminTable = geo.GeoLevel(LevelAdmin3, scope, adminNames)
+    F_Geo.TXT_Msg.Value = concatenateAdmins
+
+    If adminTable.Length = 0 Then Exit Sub
+
+    If scope = GeoScopeAdmin Then
+        F_Geo.LST_Adm3.List = adminTable.Items
+    Else
+        F_Geo.LST_AdmF3.List = adminTable.Items
+    End If
+
+    Application.cursor = xlDefault
+End Sub
+
+' @description Show admin4 list filtered by selected admin1, admin2, and admin3.
+'@EntryPoint
+Public Sub ShowAdmin4List(ByVal selectedAdmin3 As String, _
+                          Optional ByVal scope As Byte = 0, _
+                          Optional ByVal separator As String = " | ")
 
     Dim adminTable As BetterArray
     Dim adminNames As BetterArray
-    Dim parentValues() As String
-    Dim listPrefix As String
-    Dim caption As String
-    Dim counter As Long
-    Dim levelWanted As Byte
-    Dim geoObj As LLGeo
+    Dim selectedAdmin1 As String
+    Dim selectedAdmin2 As String
+    Dim concatenateAdmins As String
 
-    On Error GoTo ErrShowAdmin
-    Application.Cursor = xlNorthwestArrow
-
-    'The form outlives any dead module state, so the manager is read fresh on
-    'every click.
-    Set geoObj = GeoOf()
-    If geoObj Is Nothing Then
-        Application.Cursor = xlNorthwestArrow
-        ReportGeoError "ShowAdminList", "The geobase manager could not be built"
-        Exit Sub
-    End If
-
-    'GeoScopeBoth exists on the enum and has no lists in the form. An
-    'unknown scope used to mean facility in silence.
-    If scope <> GeoScopeAdmin And scope <> GeoScopeHF Then _
-        Err.Raise 5, "GeoModule", "The cascade knows no scope " & scope
-
-    Select Case level
-    Case 2
-        levelWanted = LevelAdmin2
-    Case 3
-        levelWanted = LevelAdmin3
-    Case 4
-        levelWanted = LevelAdmin4
-    Case Else
-        Err.Raise 5, "GeoModule", "The cascade knows no level " & level
-    End Select
-
-    listPrefix = IIf(scope = GeoScopeAdmin, "LST_Adm", "LST_AdmF")
-
-    With F_Geo
-        For counter = level To MAX_ADMIN_LEVEL
-            .Controls(listPrefix & counter).Clear
-        Next
-
-        'The parents above the clicked value are read off their lists. A
-        'list with nothing selected answers Null, and refilling a list
-        'drops its selection, so the read has to survive both.
-        ReDim parentValues(1 To level - 1)
-        For counter = 1 To level - 2
-            parentValues(counter) = ListValueOf(.Controls(listPrefix & counter))
-        Next
-        parentValues(level - 1) = selectedValue
-
-        Set adminNames = New BetterArray
-        adminNames.LowerBound = 1
-        For counter = 1 To level - 1
-            adminNames.Push parentValues(counter)
-        Next
-
-        If scope = GeoScopeAdmin Then
-            caption = parentValues(1)
-            For counter = 2 To level - 1
-                caption = caption & separator & parentValues(counter)
-            Next
-        Else
-            caption = parentValues(level - 1)
-            For counter = level - 2 To 1 Step -1
-                caption = caption & separator & parentValues(counter)
-            Next
-        End If
-
-        'Admin 2 wants the name of its one parent as a single value, and the
-        'deeper levels want the table of names. GuardLevelNames holds that
-        'line on the LLGeo side.
-        If level = 2 Then
-            Set adminTable = geoObj.GeoLevel(levelWanted, scope, selectedValue)
-        Else
-            Set adminTable = geoObj.GeoLevel(levelWanted, scope, adminNames)
-        End If
-
-        .TXT_Msg.Value = caption
-
-        If adminTable.Length > 0 Then
-            .Controls(listPrefix & level).List = adminTable.Items
-        End If
-    End With
-
-    'The arrow is the standing cursor of a linelist session, set at open by
-    'EventLinelist.OnWorkbookOpen. Leaving the default cursor here made the
-    'pointer change under the geo form.
-    Application.Cursor = xlNorthwestArrow
-    Exit Sub
-
-ErrShowAdmin:
-    Application.Cursor = xlNorthwestArrow
-    ReportGeoError "ShowAdminList", Err.Description
-End Sub
-
-' @description The value of one list control, as a string. A list with
-'              nothing selected answers Null.
-Private Function ListValueOf(ByVal listControl As Object) As String
-    If IsNull(listControl.Value) Then Exit Function
-    ListValueOf = CStr(listControl.Value)
-End Function
-
-' @description Add one admin name where the user stands in the geo picker.
-'              A double click on the list of level 2, 3 or 4 arrives here.
-'              The lists below the level are emptied and the selection of the
-'              level is dropped, so the user stands at that level with
-'              nothing chosen there yet; the caption shows the parents alone.
-'              A parent list with no selection stops the walk with a warning,
-'              which is what keeps an admin 4 from landing with no admin 3
-'              behind it. A prompt then asks for the name, LLGeo writes the
-'              row under the parents, the concat search list is dropped so
-'              the next search reads the new row, and the list refills with
-'              the new name selected, which runs its Click and fills the level
-'              below the way a click by hand does.
-'              The prompt is Application.InputBox in text mode. A cancelled
-'              box answers the Boolean False, so the answer is read into a
-'              Variant and its type tested before it is treated as text.
-'              A workbook with no usable translation sheet still gets the
-'              prompt, worded in message codes, and its two refusals in plain
-'              English through ReportGeoWarning.
-'              The cursor follows ShowAdminList: the arrow is put back on
-'              every exit.
-' @param level The level of the list double-clicked, 2 to 4
-'@EntryPoint
-Public Sub AddAdminName(ByVal level As Long)
-    Dim geoObj As LLGeo
-    Dim linelistEvents As EventLinelist
-    Dim lltrads As LLTranslation
-    Dim tradmess As TranslationObject
-    Dim parentNames As BetterArray
-    Dim parentValue As String
-    Dim parentPath As String
-    Dim levelLabel As String
-    Dim prompt As String
-    Dim answer As Variant
-    Dim newName As String
-    Dim levelWanted As Byte
-    Dim counter As Long
-    Dim listControl As Object
-
-    On Error GoTo ErrAddAdmin
-    Application.Cursor = xlNorthwestArrow
-
-    'The form outlives any dead module state, so the manager is read fresh on
-    'every double click.
-    Set geoObj = GeoOf()
-    If geoObj Is Nothing Then
-        Application.Cursor = xlNorthwestArrow
-        ReportGeoError "AddAdminName", "The geobase manager could not be built"
-        Exit Sub
-    End If
-
-    Select Case level
-    Case 2
-        levelWanted = LevelAdmin2
-    Case 3
-        levelWanted = LevelAdmin3
-    Case 4
-        levelWanted = LevelAdmin4
-    Case Else
-        Err.Raise 5, "GeoModule", "The picker adds no admin " & level
-    End Select
-
-    'The translator is Nothing on a workbook with no usable translation
-    'sheet. PromptText reads the codes themselves then, and the two
-    'refusals below carry a plain English fallback for the same state.
-    Set linelistEvents = LinelistEventsManager.EventLinelistService()
-    Set lltrads = linelistEvents.Translation()
-    If Not lltrads Is Nothing Then Set tradmess = lltrads.TransObject()
-
-    Set parentNames = New BetterArray
-    parentNames.LowerBound = 1
-
-    With F_Geo
-        'The user stands at the level double-clicked with nothing chosen
-        'there. The Click that fired before this double click filled the
-        'level below, and that fill goes with the rest.
-        For counter = level + 1 To MAX_ADMIN_LEVEL
-            .Controls("LST_Adm" & counter).Clear
-        Next
-        .Controls("LST_Adm" & level).ListIndex = -1
-
-        'The parents are read off the lists above, the way ShowAdminList
-        'reads them. The caption shows the ones found, so a stopped walk
-        'still leaves the path the user stands on.
-        For counter = 1 To level - 1
-            parentValue = ListValueOf(.Controls("LST_Adm" & counter))
-            If LenB(parentValue) = 0 Then
-                .TXT_Msg.Value = parentPath
-                Application.Cursor = xlNorthwestArrow
-                ReportGeoWarning "MSG_AddAdminNoParent", _
-                                 "Select every level above before adding a name", _
-                                 "AddAdminName"
-                Exit Sub
-            End If
-            parentNames.Push parentValue
-            If counter = 1 Then
-                parentPath = parentValue
-            Else
-                parentPath = parentPath & GEO_SEPARATOR & parentValue
-            End If
-        Next
-
-        .TXT_Msg.Value = parentPath
-    End With
-
-    'The prompt names the level in the words of the geobase in use, and the
-    'path the name will sit under.
-    levelLabel = geoObj.GeoNames("adm" & level & "_name")
-    prompt = PromptText(tradmess, "MSG_AddAdminName") & vbNewLine & _
-             levelLabel & ": " & parentPath
-
-    'GeoStubAdminName gives the answer straight, and the box stays closed.
-    If stubbedAdminNameSet Then
-        answer = stubbedAdminName
+    If scope = GeoScopeAdmin Then
+        F_Geo.LST_Adm4.Clear
+        selectedAdmin1 = F_Geo.LST_Adm1.Value
+        selectedAdmin2 = F_Geo.LST_Adm2.Value
+        concatenateAdmins = selectedAdmin1 & separator & _
+                            selectedAdmin2 & separator & _
+                            selectedAdmin3
     Else
-        answer = Application.InputBox(prompt, _
-                                      PromptText(tradmess, "MSG_AddAdminTitle"), _
-                                      Type:=2)
+        F_Geo.LST_AdmF4.Clear
+        selectedAdmin1 = F_Geo.LST_AdmF1.Value
+        selectedAdmin2 = F_Geo.LST_AdmF2.Value
+        concatenateAdmins = selectedAdmin3 & separator & _
+                            selectedAdmin2 & separator & _
+                            selectedAdmin1
     End If
 
-    'A cancelled box answers the Boolean False. A blank answer changes
-    'nothing either: the form stays as the double click left it.
-    If VarType(answer) = vbBoolean Then
-        Application.Cursor = xlNorthwestArrow
-        Exit Sub
+    Set adminNames = New BetterArray
+    adminNames.LowerBound = 1
+    adminNames.Push selectedAdmin1, selectedAdmin2, selectedAdmin3
+
+    Application.cursor = xlNorthwestArrow
+
+    Set adminTable = geo.GeoLevel(LevelAdmin4, scope, adminNames)
+    F_Geo.TXT_Msg.Value = concatenateAdmins
+
+    If adminTable.Length = 0 Then Exit Sub
+
+    If scope = GeoScopeAdmin Then
+        F_Geo.LST_Adm4.List = adminTable.Items
+    Else
+        F_Geo.LST_AdmF4.List = adminTable.Items
     End If
 
-    newName = Trim$(CStr(answer))
-    If LenB(newName) = 0 Then
-        Application.Cursor = xlNorthwestArrow
-        Exit Sub
-    End If
-
-    If Not geoObj.AddAdminEntry(levelWanted, parentNames, newName) Then
-        Application.Cursor = xlNorthwestArrow
-        ReportGeoWarning "MSG_AddAdminExists", _
-                         "The geobase already holds that name under these parents", _
-                         "AddAdminName"
-        Exit Sub
-    End If
-
-    'The concat search list is held in memory from the open, and an admin 4
-    'add changes adm4_concat. The next search re-reads the named range.
-    GeoFormCache.Refresh
-
-    'The list refills with the new name in its sorted place, and selecting
-    'it runs its Click, which fills the level below and writes the caption
-    'down to the new name.
-    ShowAdminList level, parentNames.Item(level - 1), GeoScopeAdmin, GEO_SEPARATOR
-
-    Set listControl = F_Geo.Controls("LST_Adm" & level)
-    For counter = 0 To listControl.ListCount - 1
-        If StrComp(CStr(listControl.List(counter)), newName, vbTextCompare) = 0 Then
-            listControl.ListIndex = counter
-            Exit For
-        End If
-    Next
-
-    Application.Cursor = xlNorthwestArrow
-    Exit Sub
-
-ErrAddAdmin:
-    Application.Cursor = xlNorthwestArrow
-    ReportGeoError "AddAdminName", Err.Description
+    Application.cursor = xlDefault
 End Sub
 
 '@section Spatial Table Updates
 '===============================================================================
 
 ' @description Update all spatial tables from HList filtered data.
-'              The spatial refresh button reaches this sub bare through its
-'              shape's OnAction, so it holds the shared busy state and a
-'              handler itself. The busy depth counts, so the wrap that
-'              ClickCalculate puts around the same call nests cleanly.
 '@EntryPoint
 Public Sub UpdateSpTables()
-    Dim sp As LLSpatial
-
-    On Error GoTo ErrUpdate
-    LinelistEventsManager.LLEnterBusyState
-
+    Dim sp As ILLSpatial
     Set sp = LLSpatial.Create(ThisWorkbook.Worksheets(SPATIALSHEET))
 
     UpdateFilterTables calculate:=False
 
+    BusyApp
     sp.Update
-
-    LinelistEventsManager.LLExitBusyState
-    Exit Sub
-
-ErrUpdate:
-    LinelistEventsManager.LLExitBusyState
-    ReportGeoError "UpdateSpTables", Err.Description
+    NotBusyApp
 End Sub
 
 '@section Spatio-Temporal Formula Updates
 '===============================================================================
 
 ' @description Update formulas in spatio-temporal tables when admin level changes.
-'              Runs after the user validates a place on an SPT analysis sheet.
-'              The section walk is LLSpatial.MigrateSection, so the harness
-'              measures it through TestLLSpatial: every formula column of the
-'              section moves from the previous admin level's concat column to
-'              the new one, and a plain formula stays plain while an array one
-'              stays an array one. This sub keeps the event side: the busy
-'              state, the active sheet, the protection pair and the report.
 ' @param rngName Named range of the admin level selector
 ' @param actAdm New admin level (number of admin levels selected)
 '@EntryPoint
@@ -703,51 +331,72 @@ Public Sub UpdateSpatioTemporalFormulas(ByVal rngName As String, _
     Dim tabId As String
     Dim prevAdm As Long
     Dim sh As Worksheet
-    Dim sp As LLSpatial
-    Dim unprotected As Boolean
+    Dim counter As Long
+    Dim headerRng As Range
+    Dim cellRng As Range
+    Dim valuesRng As Range
+    Dim headerFormula As String
+    Dim valuesFormula As String
+    Dim headerCellName As String
+    Dim hasFormula As Boolean
 
-    'The handler is armed first, so a raise in the busy-state entry or in
-    'InitializeSpatialElements reaches ErrSPT and restores the application.
-    On Error GoTo ErrSPT
-    LinelistEventsManager.LLEnterBusyState busyCursor:=xlNorthwestArrow
+    BusyApp cursor:=xlNorthwestArrow
     InitializeSpatialElements
 
-    'An unnamed active cell hands an empty rngName over, and AnalysisRanges
-    'answers an empty id for any name it did not build. Both shapes used to
-    'be sliced by position, which raised into the handler.
-    tabId = AnalysisRanges.IdOfSpatialInput(rngName)
-    If LenB(tabId) = 0 Then
-        LinelistEventsManager.LLExitBusyState
-        Exit Sub
-    End If
+    On Error GoTo ErrSPT
 
     Set sh = ActiveSheet
-    Set sp = LLSpatial.Create(ThisWorkbook.Worksheets(SPATIALSHEET))
-
-    'The level is read and checked above the UnProtect, so a bad level
-    'raises while a deliberately open sheet is still open.
-    prevAdm = sp.PreviousSectionLevel(sh, rngName, tabId)
-
-    'The caller fires on every Validate with no idea whether the level
-    'changed.
-    If prevAdm = actAdm Then
-        LinelistEventsManager.LLExitBusyState
-        Exit Sub
-    End If
+    tabId = "SPT_" & Split(rngName, "_")(3)
+    Set headerRng = sh.Range("SPT_FORMULA_COLUMN_" & tabId)
+    prevAdm = sh.Range(rngName).Offset(, 1).Value
 
     pass.UnProtect "_active"
-    unprotected = True
 
-    sp.MigrateSection sh, rngName, tabId, prevAdm, actAdm
+    For counter = 1 To headerRng.Columns.Count
+        headerFormula = Replace(headerRng.Cells(1, counter).Formula, "=", vbNullString)
+        headerFormula = Application.WorksheetFunction.Trim(headerFormula)
 
-    pass.Protect sh, allowShapes:=True
-    LinelistEventsManager.LLExitBusyState
-    Exit Sub
+        If InStr(1, headerFormula, rngName) > 0 Then
+            Set valuesRng = Nothing
+
+            On Error Resume Next
+            headerCellName = headerRng.Cells(1, counter).Name.Name
+            Set valuesRng = sh.Range(Replace(headerCellName, "LABEL", "VALUES"))
+            On Error GoTo ErrSPT
+
+            If Not valuesRng Is Nothing Then
+                Set valuesRng = sh.Range(valuesRng.Cells(1, 1), _
+                                         valuesRng.Cells(valuesRng.Rows.Count + 2, 1))
+
+                For Each cellRng In valuesRng
+                    hasFormula = False
+                    valuesFormula = cellRng.FormulaArray
+
+                    If valuesFormula = vbNullString Then
+                        valuesFormula = cellRng.Formula
+                        hasFormula = True
+                    End If
+
+                    If InStr(1, valuesFormula, "concat_adm" & prevAdm) > 0 Then
+                        valuesFormula = Replace(valuesFormula, _
+                                                "concat_adm" & prevAdm, _
+                                                "concat_adm" & actAdm)
+
+                        If hasFormula Then
+                            cellRng.Formula = valuesFormula
+                        Else
+                            cellRng.FormulaArray = valuesFormula
+                        End If
+                    End If
+                Next
+            End If
+        End If
+    Next
+
+    sh.Range(rngName).Offset(, 1).Value = actAdm
+    sh.UsedRange.Calculate
 
 ErrSPT:
-    'The protection is put back only when this run took it off, so a raise
-    'above the UnProtect leaves a deliberately open sheet open.
-    If unprotected Then pass.Protect sh, allowShapes:=True
-    LinelistEventsManager.LLExitBusyState
-    ReportGeoError "UpdateSpatioTemporalFormulas", Err.Description
+    pass.Protect sh, True
+    NotBusyApp
 End Sub

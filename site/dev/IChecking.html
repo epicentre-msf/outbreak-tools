@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IChecking - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IChecking</h1>
+<p>Defines the public contract for the Checking class, exposing entry
+management (add, clone, append), key lookup, and property retrieval
+for diagnostic messages tagged with severity scopes. Also hosts
+project-wide enumerations for CheckingScope, CheckingValue, and
+ProjectError.</p>
+<h2>Elements</h2>
+<h3>Name</h3>
+<p><strong>Name of the checking object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Name() As String
+</code></pre>
+<p>Read-only metadata properties.
+Returns the checking title as the object name.</p>
+<p><strong>Returns:</strong> String. The checking title.</p>
+<hr />
+<h3>Heading</h3>
+<p><strong>Title or subtitle of the checking object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Heading(Optional ByVal subtitle As Boolean = False) As String
+</code></pre>
+<p>Returns the subtitle when the flag is True, otherwise returns the title.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>subtitle</code>: Optional Boolean. When True, returns the subtitle. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> String. The title or subtitle.</p>
+<hr />
+<h3>Length</h3>
+<p><strong>Total number of entries in the checking</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Length() As Long
+</code></pre>
+<p>Returns the count of diagnostic messages stored.</p>
+<p><strong>Returns:</strong> Long. Number of entries.</p>
+<hr />
+<h2>Keys</h2>
+<h3>ListOfKeys</h3>
+<p><strong>Get the list of keys in the checking</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ListOfKeys() As BetterArray
+</code></pre>
+<p>Key enumeration and lookup.
+Returns a clone of the internal keys array. Returns an empty
+BetterArray when no entries have been added.</p>
+<p><strong>Returns:</strong> BetterArray. Clone of stored keys.</p>
+<hr />
+<h3>KeyExists</h3>
+<p><strong>Test whether a key is present in the checking</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get KeyExists(ByVal keyName As String) As Boolean
+</code></pre>
+<p>Returns True when the specified key exists in the entries.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>keyName</code>: String. Key to search for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the key is found.</p>
+<hr />
+<h2>InputOutput</h2>
+<h3>Add</h3>
+<p><strong>Add a new entry to the checking</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Add(ByVal keyName As String, ByVal label As String, _
+                Optional ByVal scope As Byte = checkingNote)
+</code></pre>
+<p>Adding, retrieving, cloning, and appending diagnostic entries.
+Adds a key, label, and scope to the checking. Keys must be unique.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>keyName</code>: String. Unique identifier for the entry.</li>
+<li><code>label</code>: String. Diagnostic message for the entry.</li>
+<li><code>scope</code>: Optional Byte. Severity scope. Defaults to checkingNote.</li>
+</ul>
+<hr />
+<h3>ValueOf</h3>
+<p><strong>Retrieve a property of one specific key</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ValueOf(ByVal keyName As String, Optional ByVal retrievedValue As Byte = 1) As String
+</code></pre>
+<p>Returns the label, type descriptor, or colour string depending on
+the retrievedValue selector.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>keyName</code>: String. Key from which to retrieve values.</li>
+<li><code>retrievedValue</code>: Optional Byte. CheckingValue enum selector. Defaults to checkingLabel.</li>
+</ul>
+<p><strong>Returns:</strong> String. The requested property value.</p>
+<hr />
+<h3>Clone</h3>
+<p><strong>Return an independent copy of the current checking object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Clone() As IChecking
+</code></pre>
+<p>Creates a deep copy with the same title, subtitle, and all entries.</p>
+<p><strong>Returns:</strong> IChecking. Independent clone.</p>
+<hr />
+<h3>Append</h3>
+<p><strong>Add entries from another checking to the current one</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Append(ByVal checks As IChecking)
+</code></pre>
+<p>Merges all entries from the supplied checking into this one.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>checks</code>: IChecking. Source checking to merge from.</li>
+</ul>
+<hr />
+
+  </main>
+</body>
+</html>
+

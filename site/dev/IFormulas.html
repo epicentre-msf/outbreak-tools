@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IFormulas - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IFormulas</h1>
+<p>Defines the public contract for the Formulas class, exposing
+read-only access to parsing results, validity checks, and derived
+Excel expressions for both linelist and analysis contexts.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="IFormulaCondition.html">IFormulaCondition</a></p>
+<h2>Elements</h2>
+<h3>Varlists</h3>
+<p><strong>Retrieve the variables referenced by the setup formula</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Varlists(Optional ByVal formulaType As String = &quot;analysis&quot;) As BetterArray
+</code></pre>
+<p>Parsed formula metadata and variable lists.
+Returns a clone of the variable names detected during tokenisation.
+The formulaType parameter controls whether the formula is evaluated
+in an analysis or simple context.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formulaType</code>: Optional String. Context (analysis/simple).</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. Copy of variable names.</p>
+<hr />
+<h3>FormulaTableList</h3>
+<p><strong>Retrieve the tokenised representation of the formula</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get FormulaTableList() As BetterArray
+</code></pre>
+<p>Returns a clone of the ordered token list produced during parsing.</p>
+<p><strong>Returns:</strong> BetterArray. Ordered tokens.</p>
+<hr />
+<h3>HasSetupVariables</h3>
+<p><strong>Determine whether the formula contains literal values</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasSetupVariables() As Boolean
+</code></pre>
+<p>Returns True when numeric or text literals were encountered during
+tokenisation.</p>
+<p><strong>Returns:</strong> Boolean. True when literals are present.</p>
+<hr />
+<h3>IsGrouped</h3>
+<p><strong>Indicate whether the parsed formula targets grouped evaluation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get IsGrouped() As String
+</code></pre>
+<p>Returns &quot;Yes&quot; when the formula uses a grouped function (e.g.
+GROUP_SUM), &quot;No&quot; otherwise.</p>
+<p><strong>Returns:</strong> String. &quot;Yes&quot; for grouped formulas, &quot;No&quot; otherwise.</p>
+<hr />
+<h3>HasChecking</h3>
+<p><strong>Determine whether parsing recorded diagnostic messages</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasChecking() As Boolean
+</code></pre>
+<p>Returns True when at least one checking entry was logged during
+evaluation.</p>
+<p><strong>Returns:</strong> Boolean. True when internal checkings exist.</p>
+<hr />
+<h3>CheckingValues</h3>
+<p><strong>Retrieve the internal checking log</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CheckingValues() As IChecking
+</code></pre>
+<p>Returns the IChecking store containing accumulated diagnostics
+logged during evaluation.</p>
+<p><strong>Returns:</strong> IChecking. Accumulated diagnostics.</p>
+<hr />
+<h3>Reason</h3>
+<p><strong>Provide the last computed validity explanation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Reason(Optional ByVal formulaType As String = &quot;analysis&quot;) As String
+</code></pre>
+<p>Returns a human-readable message describing the validity outcome
+for the requested context. Returns the default success message when
+the formula is valid.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formulaType</code>: Optional String. Context (analysis/simple).</li>
+</ul>
+<p><strong>Returns:</strong> String. Message describing the validity outcome.</p>
+<hr />
+<h2>Operations</h2>
+<h3>Valid</h3>
+<p><strong>Determine whether the formula is valid for the supplied context</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Valid(Optional ByVal formulaType As String = &quot;analysis&quot;) As Boolean
+</code></pre>
+<p>Validation and Excel formula generation.
+Triggers a lazy evaluation for the requested context and returns
+the cached validity flag.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formulaType</code>: Optional String. Context (analysis/simple).</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. Validity flag.</p>
+<hr />
+<h3>ParsedLinelistFormula</h3>
+<p><strong>Build the Excel expression for a linelist worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ParsedLinelistFormula(Optional ByVal useTableName As Boolean = False, _
+                                          Optional ByVal tablePrefix As String = vbNullString) As String
+</code></pre>
+<p>Replaces variable tokens with worksheet addresses or structured
+references depending on the useTableName flag.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>useTableName</code>: Optional Boolean. True to use structured references.</li>
+<li><code>tablePrefix</code>: Optional String. Prefix for structured references.</li>
+</ul>
+<p><strong>Returns:</strong> String. Excel formula text.</p>
+<hr />
+<h3>ParsedAnalysisFormula</h3>
+<p><strong>Build the Excel expression for an analysis worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, _
+                                          Optional ByVal tablePrefix As String = vbNullString, _
+                                          Optional ByVal Connector As String = &quot;*&quot;) As String
+</code></pre>
+<p>Replaces variable tokens with conditional aggregation fragments
+supplied by the IFormulaCondition provider.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formCond</code>: IFormulaCondition. Provides aggregator behaviour.</li>
+<li><code>tablePrefix</code>: Optional String. Prefix for structured references.</li>
+<li><code>Connector</code>: Optional String. Connector between conditions.</li>
+</ul>
+<p><strong>Returns:</strong> String. Excel formula text.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

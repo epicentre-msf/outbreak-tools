@@ -13,10 +13,11 @@ Attribute VB_Description = "Translate various objects from one language to anoth
 '@Folder("General")
 '@ModuleDescription("Translate various objects from one language to another")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
-'@depends BetterArray, Checking
+'@depends BetterArray, Checking, IChecking, ProjectError
 
 
 Option Explicit
+Implements ITranslationObject
 
 '@class TranslationObject
 '@description
@@ -24,35 +25,24 @@ Option Explicit
 'the first column and returns the value from the active language column.
 'Supports plain text, formula-aware translation (quoted chunks only),
 'range bulk-translation, and user-form caption translation.
-'The table is read once into memory and every value is matched against that
-'copy through a keyed index. The copy is kept until the table changes shape or
-'Refresh is called, so a run that translates a thousand strings reads the
-'worksheet twice and looks each string up without walking the copy.
-'@depends BetterArray, Checking
+'@depends BetterArray, Checking, IChecking, ProjectError
 '@version 1.0 (2026-02-09)
 
 
 Private Const CLASSNAME As String = "TranslationObject"
-Private Const KEY_CASE_SEPARATOR As String = "|"
 
 Private Type TTranslationObject
     transLo As ListObject
     transLng As String
     hasChecks As Boolean
-    sealed As Boolean
-    lookupTags() As String
-    lookupValues() As String
-    lookupIndex As Collection
-    lookupCount As Long
-    lookupSignature As String
-    lookupLoaded As Boolean
+    languageColumnIndex As Long
 End Type
 
 Private this As TTranslationObject
 
 'checking objects
 Private checkCounter As Long
-Private internalChecks As Checking
+Private internalChecks As IChecking
 
 '@section Factory
 '===============================================================================
@@ -66,24 +56,29 @@ Private internalChecks As Checking
 'translation are returned as-is.
 '@param translationLo ListObject. The translation table.
 '@param translationLang String. The target language column header.
-'@return TranslationObject. Ready to use.
+'@return ITranslationObject. Ready to use.
 '@export
-Public Function Create(ByVal translationLo As ListObject, ByVal translationLang As String) As TranslationObject
+Public Function Create(ByVal translationLo As ListObject, ByVal translationLang As String) As ITranslationObject
 
     ValidateListObject translationLo, "Create"
 
-    Dim newTranslation As TranslationObject
-    Set newTranslation = New TranslationObject
-
-    Set newTranslation.Table = translationLo
-    newTranslation.Language = Trim$(translationLang)
-    newTranslation.Seal
-    Set Create = newTranslation
+    With New TranslationObject
+        Set .Table = translationLo
+        .Language = Trim$(translationLang)
+        Set Create = .Self
+    End With
 End Function
 
 '@section Elements
 '===============================================================================
 'Core translation accessors and lookups.
+
+'@label:self
+'@prop-title Self-reference as ITranslationObject
+'@return ITranslationObject. Self-reference.
+Public Property Get Self() As ITranslationObject
+    Set Self = Me
+End Property
 
 '@label:table
 '@prop-title The backing ListObject translation table
@@ -93,12 +88,12 @@ Public Property Get Table() As ListObject
 End Property
 
 '@label:table-set
-'@prop-title Assign the backing ListObject
+'@prop-title Assign the backing ListObject and reset caches
 '@param lo ListObject. The translation table.
 Public Property Set Table(ByVal lo As ListObject)
-    GuardNotSealed "Table"
     ValidateListObject lo, "Table"
     Set this.transLo = lo
+    ResetCaches
 End Property
 
 '@label:language
@@ -112,51 +107,48 @@ End Property
 '@label:languages-list
 '@prop-title List of available language headers
 '@return BetterArray. Each language header, excluding the helper/tag column.
-'@details A table carrying its tag column alone answers an empty list. The
-'language block is resized onto the columns the table has: read as a plain
-'Offset it reached one cell past the table, and whatever the sheet held
-'there was answered as a language.
 '@export
 Public Property Get LanguagesList() As BetterArray
     Dim headerRow As Range
-    Dim headerBlock As Variant
     Dim languages As BetterArray
     Dim idx As Long
     Dim valueText As String
 
     Set languages = New BetterArray
     languages.LowerBound = 1
-    Set LanguagesList = languages
 
-    'Read the header row afresh on every call: columns can be added or
-    'removed from the table while this object is alive.
     Set headerRow = HeaderRowRange()
-    If headerRow Is Nothing Then Exit Property
-    If headerRow.Columns.Count < 2 Then Exit Property
+    If headerRow Is Nothing Then
+        Set LanguagesList = languages
+        Exit Property
+    End If
 
-    headerBlock = RangeBlock(headerRow.Offset(, 1).Resize(1, headerRow.Columns.Count - 1))
-    If Not IsArray(headerBlock) Then Exit Property
+    languages.FromExcelRange headerRow.Offset(, 1), DetectLastRow:=False, DetectLastColumn:=False
 
-    For idx = LBound(headerBlock, 2) To UBound(headerBlock, 2)
-        valueText = Trim$(TextOf(headerBlock(1, idx)))
-        If LenB(valueText) > 0 Then languages.Push valueText
+    For idx = languages.LowerBound To languages.UpperBound
+        valueText = Trim$(CStr(languages.Item(idx)))
+        languages.Item(idx) = valueText
     Next idx
+
+    languages.Filter vbNullString, Include:=False
+
+    Set LanguagesList = languages
 End Property
 
 
 '@label:language-set
-'@prop-title Set the target language
+'@prop-title Set the target language and reset caches
 '@param transLng String. The new language column header.
 Public Property Let Language(ByVal transLng As String)
-    GuardNotSealed "Language"
     this.transLng = Trim$(transLng)
+    ResetCaches
 End Property
 
 '@label:name
 '@prop-title Descriptive name including table and language
 '@return String. Identifier for diagnostic output.
 '@export
-Public Property Get Name() As String
+Private Property Get Name() As String
     If this.transLo Is Nothing Then
         Name = CLASSNAME & " (uninitialised)"
     Else
@@ -164,26 +156,62 @@ Public Property Get Name() As String
     End If
 End Property
 
+'@label:language-index
+'@sub-title Resolve the one-based column index of the active language
+'@return Long. Column index, or -1 when not found.
+Private Function LanguageIndex() As Long
+
+    Dim headerRow As Range
+    Dim found As Range
+    Dim currentName As String
+
+    If this.transLo Is Nothing Then Exit Function
+    If LenB(this.transLng) = 0 Then Exit Function
+
+    If this.languageColumnIndex > 0 Then
+        On Error Resume Next
+        currentName = this.transLo.ListColumns(this.languageColumnIndex).Name
+        On Error GoTo 0
+        If StrComp(currentName, this.transLng, vbBinaryCompare) <> 0 Then
+            this.languageColumnIndex = 0
+        End If
+    End If
+
+    If this.languageColumnIndex <= 0 Then
+        this.languageColumnIndex = -1
+        Set headerRow = HeaderRowRange()
+        If headerRow Is Nothing Then
+            LanguageIndex = this.languageColumnIndex
+            Exit Function
+        End If
+        Set found = headerRow.Find(What:=this.transLng, LookAt:=xlWhole, MatchCase:=True)
+        If Not found Is Nothing Then
+            this.languageColumnIndex = found.Column - headerRow.Column + 1
+        End If
+    End If
+
+    LanguageIndex = this.languageColumnIndex
+End Function
+
 '@label:value-exists
 '@prop-title Whether a tag exists in the translation table
 '@param Text String. Tag to search.
 '@return Boolean. True when the tag is found.
 '@export
-Public Function ValueExists(ByVal Text As String) As Boolean
+Private Function ValueExists(ByVal Text As String) As Boolean
+    Dim translationCell As Range
     Dim sanitized As String
 
-    RefreshLookup
+    Set translationCell = ResolveTranslationCell(Text)
 
-    If LookupRow(Text) > 0 Then
-        ValueExists = True
-        Exit Function
+    If translationCell Is Nothing Then
+        sanitized = SanitizeText(Text)
+        If StrComp(sanitized, Text, vbBinaryCompare) <> 0 Then
+            Set translationCell = ResolveTranslationCell(sanitized)
+        End If
     End If
 
-    'Second chance on the cleaned text, in case the caller passed a raw value.
-    sanitized = SanitizeText(Text)
-    If StrComp(sanitized, Text, vbBinaryCompare) <> 0 Then
-        ValueExists = (LookupRow(sanitized) > 0)
-    End If
+    ValueExists = Not translationCell Is Nothing
 End Function
 
 '@label:translated-value
@@ -195,11 +223,29 @@ End Function
 '@param containsFormula Boolean. Translate as formula. Defaults to False.
 '@return String. The translated value, or the original text when not found.
 '@export
-Public Function TranslatedValue(ByVal textToTranslate As String, _
-                                Optional ByVal containsFormula As Boolean = False) As String
+Private Function TranslatedValue(ByVal textToTranslate As String, _ 
+                                 Optional ByVal containsFormula As Boolean = False) As String
 
-    RefreshLookup
-    TranslatedValue = TranslateText(textToTranslate, containsFormula)
+    Dim cleanedText As String
+    Dim translationCell As Range
+    Dim returnedValue As String
+
+    cleanedText = SanitizeText(textToTranslate)
+
+    If containsFormula Then
+        TranslatedValue = TranslateFormulaText(cleanedText)
+        Exit Function
+    End If
+
+    Set translationCell = ResolveTranslationCell(textToTranslate)
+
+    If translationCell Is Nothing Then
+        TranslatedValue = cleanedText
+    Else
+        returnedValue = SanitizeText(CStr(translationCell.Value))
+        'If returned value is an empty string, return the text to translate
+        TranslatedValue = IIF(LenB(returnedValue) = 0, cleanedText, returnedValue)
+    End If
 End Function
 
 '@section Outside
@@ -211,34 +257,21 @@ End Function
 '@param colRng Range. Column range whose values should be translated.
 '@param containsFormula Boolean. When True, translates as formulas. Defaults to False.
 '@export
-Public Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
-    Dim targetColumn As Range
-    Dim cellValues As Variant
-    Dim rowCount As Long
-    Dim idx As Long
+Private Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
+    Dim targetCell As Range
 
     If colRng Is Nothing Then Exit Sub
 
-    Set targetColumn = colRng.Columns(1)
-    rowCount = targetColumn.Cells.Count
-    If rowCount = 0 Then Exit Sub
-
-    RefreshLookup
-
-    'One read, translate in memory, one write back.
-    cellValues = RangeBlock(targetColumn)
-    For idx = 1 To rowCount
-        cellValues(idx, 1) = TranslateText(TextOf(cellValues(idx, 1)), containsFormula)
-    Next idx
-
-    targetColumn.Value = cellValues
+    For Each targetCell In colRng.Columns(1).Cells
+        targetCell.Value = TranslatedValue(targetCell.Value, containsFormula:=containsFormula)
+    Next targetCell
 End Sub
 
 '@label:translate-form
 '@sub-title Translate all supported controls on a user form
 '@param UserFrm Object. Any user form exposing a Controls collection.
 '@export
-Public Sub TranslateForm(ByVal UserFrm As Object)
+Private Sub TranslateForm(ByVal UserFrm As Object)
     Dim formControl As Control
     Dim controlType As String
 
@@ -247,15 +280,13 @@ Public Sub TranslateForm(ByVal UserFrm As Object)
         Exit Sub
     End If
 
-    RefreshLookup
-
     For Each formControl In UserFrm.Controls
         controlType = TypeName(formControl)
         If StrComp(controlType, "MultiPage", vbTextCompare) = 0 Then
             TranslateMultiPageControl formControl
         ElseIf ShouldTranslateControl(controlType) Then
             If Trim$(CStr(formControl.Caption)) <> vbNullString Then
-                formControl.Caption = TranslateTag(formControl.Name)
+                formControl.Caption = TranslatedValue(formControl.Name)
             End If
         Else
             LogInfo "Attempt to translate a control that is not supported :'" & controlType & "'", checkingNote
@@ -271,7 +302,7 @@ End Sub
 '@sub-title Record a diagnostic entry
 '@param label String. The message to add.
 '@param scope Byte. The checking scope. Defaults to checkingNote.
-Private Sub LogInfo(ByVal label As String, _
+Private Sub LogInfo(ByVal label As String, _ 
                     Optional ByVal scope As Byte = checkingNote)
 
     Dim checkName As String
@@ -280,7 +311,7 @@ Private Sub LogInfo(ByVal label As String, _
 
     'First, instanciante the internalCheks Objects
     If internalChecks Is Nothing Then Set internalChecks = Checking.Create(checkName)
-
+    
     'Add new informations to the checking object
     internalChecks.Add CStr(checkCounter), label, scope
     checkCounter = checkCounter + 1
@@ -292,7 +323,7 @@ End Sub
 '@prop-title Whether diagnostic entries have been recorded
 '@return Boolean. True when at least one entry exists.
 '@export
-Public Property Get HasCheckings() As Boolean
+Private Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
@@ -300,7 +331,7 @@ End Property
 '@prop-title Retrieve the diagnostic log entries
 '@return Object. The checking instance, or Nothing.
 '@export
-Public Property Get CheckingValues() As Object
+Private Property Get CheckingValues() As Object
 
     'If there is no checking, exit the property
     If Not HasCheckings() Then  Exit Property
@@ -308,66 +339,28 @@ Public Property Get CheckingValues() As Object
     Set CheckingValues = internalChecks
 End Property
 
+'@label:show-debug
+'@sub-title Print diagnostic information to the Immediate window
+Private Sub ShowDebug()
+    Debug.Print "Check the informations of Translation object " & Name()
+End Sub
+
 '@section Helpers
 '===============================================================================
 'Internal utilities.
 
 '@label:sanitize-text
-'@sub-title Clean a raw value the way the worksheet functions used to
-'@details
-'Does the same three jobs as SUBSTITUTE + CLEAN + TRIM did, in plain VBA
-'so a call no longer goes out to Excel: the non-breaking space becomes an
-'ordinary space, characters below code 32 are dropped, then leading, trailing
-'and repeated spaces are squeezed. Worksheet TRIM squeezes inner runs of spaces
-'down to one, which VBA Trim$ does not do, so that part is written out here.
-'
-'This routine used to substitute Chr$(60) instead, which is '<'. Every
-'comparison operator was deleted from the text it was handed, so a translated
-'CHOICE_FORMULA came back with "age_months < 6" reading "age_months 6", and a
-'plain cell holding '<' was altered even when the tag had no translation at
-'all. The character meant here is the non-breaking space, the same one
-'Formulas.CleanString replaces.
+'@sub-title Clean a raw value using worksheet functions
 '@param rawValue String. The raw text.
 '@return String. Cleaned text.
 Private Function SanitizeText(ByVal rawValue As String) As String
-    Dim substituted As String
     Dim cleaned As String
-    Dim currentChar As String
-    Dim charCode As Long
-    Dim idx As Long
-    Dim cleanedLength As Long
-    Dim pendingSpace As Boolean
 
-    'ChrW$(160) is U+00A0 NO-BREAK SPACE. ChrW$ reads 160 as a Unicode code
-    'point, so the answer is the same on every machine. Chr$ would read it as a
-    'byte position in the machine's ANSI codepage, which on this Mac holds the
-    'dagger, and the non-breaking spaces would all survive.
-    substituted = Replace(rawValue, ChrW$(160), " ", Compare:=vbBinaryCompare)
-    If LenB(substituted) = 0 Then Exit Function
+    cleaned = Application.WorksheetFunction.SUBSTITUTE(rawValue, Chr$(60), " ")
+    cleaned = Application.WorksheetFunction.CLEAN(cleaned)
+    cleaned = Application.WorksheetFunction.TRIM(cleaned)
 
-    cleaned = Space$(Len(substituted))
-
-    For idx = 1 To Len(substituted)
-        currentChar = Mid$(substituted, idx, 1)
-        charCode = AscW(currentChar)
-
-        If charCode >= 0 And charCode < 32 Then
-            'dropped, as CLEAN does
-        ElseIf charCode = 32 Then
-            'a space is only kept when a printable character follows it
-            If cleanedLength > 0 Then pendingSpace = True
-        Else
-            If pendingSpace Then
-                cleanedLength = cleanedLength + 1
-                Mid$(cleaned, cleanedLength, 1) = " "
-                pendingSpace = False
-            End If
-            cleanedLength = cleanedLength + 1
-            Mid$(cleaned, cleanedLength, 1) = currentChar
-        End If
-    Next idx
-
-    SanitizeText = Left$(cleaned, cleanedLength)
+    SanitizeText = cleaned
 End Function
 
 '@label:header-row-range
@@ -381,279 +374,45 @@ Private Function HeaderRowRange() As Range
     On Error GoTo 0
 End Function
 
-'@label:range-block
-'@sub-title Read a range into a two dimensional array in one go
-'@details
-'Range.Value hands back a plain value for a single cell, so that case is
-'wrapped to keep one shape for every caller.
-'A range that is Nothing answers a one cell block holding nothing, not Empty:
-'every caller walks the answer with LBound and UBound, and those raise 13 on
-'an Empty. The reader then finds no tag, which is what an absent range means.
-'@param target Range. The range to read.
-'@return Variant. A two dimensional array, always.
-Private Function RangeBlock(ByVal target As Range) As Variant
-    Dim oneCell(1 To 1, 1 To 1) As Variant
-
-    If target Is Nothing Then
-        RangeBlock = oneCell
-        Exit Function
-    End If
-
-    If target.Cells.Count = 1 Then
-        oneCell(1, 1) = target.Value
-        RangeBlock = oneCell
-    Else
-        RangeBlock = target.Value
-    End If
-End Function
-
-'@label:text-of
-'@sub-title Turn a cell value into text without ever raising
-'@param cellValue Variant. The value read from a cell.
-'@return String. The value as text, empty for errors and blanks.
-Private Function TextOf(ByVal cellValue As Variant) As String
-    If IsError(cellValue) Then Exit Function
-    If IsNull(cellValue) Then Exit Function
-    TextOf = CStr(cellValue)
-End Function
-
-'@label:language-index
-'@sub-title Resolve the one-based column index of the active language
-'@return Long. Column index, or -1 when not found.
-Private Function LanguageIndex() As Long
-    Dim headerRow As Range
-    Dim headerBlock As Variant
-    Dim idx As Long
-
-    LanguageIndex = -1
-
-    If this.transLo Is Nothing Then Exit Function
-    If LenB(this.transLng) = 0 Then Exit Function
-
-    Set headerRow = HeaderRowRange()
-    If headerRow Is Nothing Then Exit Function
-
-    headerBlock = RangeBlock(headerRow)
-
-    'the match is exact and case sensitive, as the worksheet search was
-    For idx = LBound(headerBlock, 2) To UBound(headerBlock, 2)
-        If StrComp(TextOf(headerBlock(1, idx)), this.transLng, vbBinaryCompare) = 0 Then
-            LanguageIndex = idx
-            Exit Function
-        End If
-    Next idx
-End Function
-
-'@label:refresh
-'@sub-title Drop the copy held in memory
-'@details
-'The next translation reads the table again. Call this after writing into the
-'translation table through anything other than this object.
-'@export
-Public Sub Refresh()
-    this.lookupLoaded = False
-    this.lookupSignature = vbNullString
-End Sub
-
-'@label:table-signature
-'@sub-title What the copy in memory was read from
-'@details
-'The table name, the address of its body and the target language. A row added
-'or removed, a column added or removed, a table replaced or a language switched
-'all change it, and each one is a reason to read the table again.
-'
-'The empty table is spelled out with If, not with IIf: IIf evaluates both of
-'its arms, so the address of a body range that is Nothing was read on a table
-'with no data row and raised 91 through every public translation call.
-'@return String. The signature of the table as it stands now.
-Private Function TableSignature() As String
-    Dim bodyRange As Range
-    Dim bodyPart As String
-
-    If this.transLo Is Nothing Then Exit Function
-
-    'A table with no data row has no body range, which is a state of its own.
+'@label:keys-data-range
+'@sub-title Retrieve the data body range of the first (tags) column
+'@return Range. The keys column data, or Nothing.
+Private Function KeysDataRange() As Range
     On Error Resume Next
-    Set bodyRange = this.transLo.DataBodyRange
-    On Error GoTo 0
-
-    If bodyRange Is Nothing Then
-        bodyPart = "empty"
-    Else
-        bodyPart = bodyRange.Address(External:=True)
+    If Not this.transLo Is Nothing Then
+        Set KeysDataRange = this.transLo.ListColumns(1).DataBodyRange
     End If
-
-    TableSignature = this.transLo.Name & "|" & this.transLng & "|" & bodyPart
+    On Error GoTo 0
 End Function
 
-'@label:refresh-lookup
-'@sub-title Read the tags and the active language column into memory
-'@details
-'Called at the start of every public translation call. The copy is kept between
-'calls and reread when the table it came from changes shape or the language
-'moves. Building one analysis sheet asks for four translations per chart, and
-'every one of them used to read the whole table.
-'
-'THE LIMIT OF THIS
-'-------------------------------------------------------------------------------
-'A value typed over an existing cell leaves the shape of the table alone, so
-'the copy does not notice it. Refresh drops the copy for a caller that has just
-'done that.
-Private Sub RefreshLookup()
+'@label:resolve-translation-cell
+'@sub-title Find the translated cell for a given tag token
+'@param token String. The tag to look up.
+'@return Range. The cell in the language column, or Nothing.
+Private Function ResolveTranslationCell(ByVal token As String) As Range
+    Dim keyRange As Range
+    Dim found As Range
     Dim bodyRange As Range
-    Dim bodyBlock As Variant
+    Dim relativeRow As Long
     Dim languageColumn As Long
-    Dim rowCount As Long
-    Dim idx As Long
-    Dim signature As String
 
-    signature = TableSignature()
-    If this.lookupLoaded And StrComp(signature, this.lookupSignature, vbBinaryCompare) = 0 Then Exit Sub
-
-    this.lookupCount = 0
-    this.lookupLoaded = True
-    this.lookupSignature = signature
-    Set this.lookupIndex = New Collection
-
-    If this.transLo Is Nothing Then Exit Sub
+    If LenB(token) = 0 Then Exit Function
+    If this.transLo Is Nothing Then Exit Function
 
     languageColumn = LanguageIndex()
-    If languageColumn <= 0 Then Exit Sub
+    If languageColumn <= 0 Then Exit Function
+
+    Set keyRange = KeysDataRange()
+    If keyRange Is Nothing Then Exit Function
+
+    Set found = keyRange.Find(What:=token, LookAt:=xlWhole, MatchCase:=True)
+    If found Is Nothing Then Exit Function
 
     Set bodyRange = this.transLo.DataBodyRange
-    If bodyRange Is Nothing Then Exit Sub
+    If bodyRange Is Nothing Then Exit Function
 
-    bodyBlock = RangeBlock(bodyRange)
-    If languageColumn > UBound(bodyBlock, 2) Then Exit Sub
-
-    rowCount = UBound(bodyBlock, 1)
-    ReDim this.lookupTags(1 To rowCount)
-    ReDim this.lookupValues(1 To rowCount)
-
-    For idx = 1 To rowCount
-        this.lookupTags(idx) = TextOf(bodyBlock(idx, 1))
-        this.lookupValues(idx) = TextOf(bodyBlock(idx, languageColumn))
-        RegisterLookupKey this.lookupTags(idx), idx
-    Next idx
-
-    this.lookupCount = rowCount
-End Sub
-
-'@label:register-lookup-key
-'@sub-title Record the row a tag sits on, keeping the first row when a tag repeats
-'@details
-'Collection.Add raises 457 on a key it already holds, so the first row a tag
-'appears on is the row that stays. That is the row the scan this index replaced
-'answered with, because the scan stopped at its first match.
-'@param token String. The tag read out of the first column.
-'@param rowIndex Long. The one-based row it sits on.
-Private Sub RegisterLookupKey(ByVal token As String, ByVal rowIndex As Long)
-    If LenB(token) = 0 Then Exit Sub
-
-    On Error Resume Next
-        this.lookupIndex.Add rowIndex, LookupKey(token)
-    On Error GoTo 0
-End Sub
-
-'@label:lookup-key
-'@sub-title Build the index key for a tag, one key per spelling
-'@details
-'A Collection matches its own keys without regard to case, and this lookup is
-'case sensitive, so the key carries the capitalisation as a separate part and
-'"Hello" never answers for "hello". The leading character keeps a numeric tag
-'legal as a key. Same construction as SetupTranslationsTable.LabelKey.
-'@param token String. The tag to key.
-'@return String. The key.
-Private Function LookupKey(ByVal token As String) As String
-    LookupKey = "k" & token & KEY_CASE_SEPARATOR & CaseSignature(token)
-End Function
-
-'@label:case-signature
-'@sub-title Spell a tag's capitalisation out in digits
-'@details
-'Digits carry no case of their own, so a Collection holds this part of the key
-'exactly as written. A character reads 1 when it differs from its own lower
-'case, which is the whole of what a case-insensitive comparison throws away.
-'@param token String. The tag to describe.
-'@return String. One digit per character.
-Private Function CaseSignature(ByVal token As String) As String
-    Dim idx As Long
-    Dim tokenLength As Long
-    Dim character As String
-    Dim digits() As String
-
-    tokenLength = Len(token)
-    If tokenLength = 0 Then Exit Function
-
-    ReDim digits(1 To tokenLength)
-
-    For idx = 1 To tokenLength
-        character = Mid$(token, idx, 1)
-        If character = LCase$(character) Then
-            digits(idx) = "0"
-        Else
-            digits(idx) = "1"
-        End If
-    Next idx
-
-    CaseSignature = Join(digits, vbNullString)
-End Function
-
-'@label:lookup-row
-'@sub-title Find the row of a tag in the copy held in memory
-'@details
-'Answered by the keyed index built with the copy. It used to walk the copy from
-'the top on every call, and translating the setup asks this once per cell of
-'every translated column, so the walk cost rows times cells and was the whole of
-'why translating a setup took as long as it did.
-'@param token String. The tag to look up.
-'@return Long. The one-based row, or 0 when the tag is not there.
-Private Function LookupRow(ByVal token As String) As Long
-    If LenB(token) = 0 Then Exit Function
-    If this.lookupIndex Is Nothing Then Exit Function
-
-    'A key the index does not hold raises 5, and that is the answer "not there".
-    On Error Resume Next
-        LookupRow = this.lookupIndex(LookupKey(token))
-    On Error GoTo 0
-End Function
-
-'@label:translate-text
-'@sub-title Translate one value against the copy already in memory
-'@param textToTranslate String. Text to translate.
-'@param containsFormula Boolean. Translate as formula.
-'@return String. The translated value.
-Private Function TranslateText(ByVal textToTranslate As String, _
-                               ByVal containsFormula As Boolean) As String
-
-    If containsFormula Then
-        TranslateText = TranslateFormulaText(SanitizeText(textToTranslate))
-        Exit Function
-    End If
-
-    TranslateText = TranslateTag(textToTranslate)
-End Function
-
-'@label:translate-tag
-'@sub-title Return the translation of one tag, or the cleaned tag itself
-'@param token String. The tag to look up.
-'@return String. The translation, or the cleaned token when there is none.
-Private Function TranslateTag(ByVal token As String) As String
-    Dim matchRow As Long
-    Dim translated As String
-
-    matchRow = LookupRow(token)
-
-    If matchRow > 0 Then
-        translated = SanitizeText(this.lookupValues(matchRow))
-        'an empty translation cell falls back to the text to translate
-        If LenB(translated) > 0 Then
-            TranslateTag = translated
-            Exit Function
-        End If
-    End If
-
-    TranslateTag = SanitizeText(token)
+    relativeRow = found.Row - keyRange.Row + 1
+    Set ResolveTranslationCell = bodyRange.Cells(relativeRow, languageColumn)
 End Function
 
 '@label:translate-formula-text
@@ -690,7 +449,7 @@ Private Function TranslateFormulaText(ByVal formulaText As String) As String
                 chunk = Mid$(strippedText, quoteStart, idx - quoteStart)
                 If LenB(chunk) > 0 Then
                     If Not replacements.Includes(chunk) Then
-                        translated = TranslateTag(chunk)
+                        translated = TranslatedValue(chunk)
                         workingText = Replace(workingText, DOUBLE_QUOTE & chunk & DOUBLE_QUOTE, DOUBLE_QUOTE & translated & DOUBLE_QUOTE)
                         replacements.Push chunk
                     End If
@@ -744,7 +503,7 @@ Private Sub TranslateMultiPageControl(ByVal multiPageControl As Object)
     If controlName <> "MultiPage1" And controlName <> "MultiPage2" Then Exit Sub
 
     For pageIndex = 0 To multiPageControl.Pages.Count - 1
-        multiPageControl.Pages(pageIndex).Caption = TranslateTag(multiPageControl.Pages(pageIndex).Name)
+        multiPageControl.Pages(pageIndex).Caption = TranslatedValue(multiPageControl.Pages(pageIndex).Name)
     Next pageIndex
 End Sub
 
@@ -755,6 +514,15 @@ End Sub
 Private Sub ValidateListObject(ByVal source As ListObject, ByVal sourceMember As String)
     If source Is Nothing Then
         RaiseError ProjectError.ObjectNotInitialized, "ListObject is not defined.", sourceMember
+    End If
+End Sub
+
+'@label:reset-caches
+'@sub-title Invalidate cached column index
+'@param resetLanguageIndex Boolean. When True, clears the language column cache. Defaults to True.
+Private Sub ResetCaches(Optional ByVal resetLanguageIndex As Boolean = True)
+    If resetLanguageIndex Then
+        this.languageColumnIndex = 0
     End If
 End Sub
 
@@ -774,16 +542,46 @@ Private Sub RaiseError(ByVal errNumber As ProjectError, ByVal message As String,
     Err.Raise CLng(errNumber), sourceName, message
 End Sub
 
-'@label:seal
-'@sub-title Seal the instance so setup setters can no longer be written
-Public Sub Seal()
-    this.sealed = True
+'@section Interface
+'===============================================================================
+'ITranslationObject delegation wiring.
+
+Private Property Get ITranslationObject_Name() As String
+    ITranslationObject_Name = Name()
+End Property
+
+Private Property Get ITranslationObject_Language() As String
+    ITranslationObject_Language = Language
+End Property
+
+Private Property Get ITranslationObject_LanguagesList() As BetterArray
+    Set ITranslationObject_LanguagesList = LanguagesList
+End Property
+
+Private Property Get ITranslationObject_ValueExists(ByVal text As String) As Boolean
+    ITranslationObject_ValueExists = ValueExists(text)
+End Property
+
+Private Function ITranslationObject_TranslatedValue( _
+    ByVal Text As String, _
+    Optional ByVal containsFormula As Boolean = False) As String
+    ITranslationObject_TranslatedValue = TranslatedValue(Text, containsFormula)
+End Function
+
+Private Sub ITranslationObject_TranslateRange( _
+    ByVal colRng As Range, _
+    Optional ByVal containsFormula As Boolean = False)
+    TranslateRange colRng:=colRng, containsFormula:=containsFormula
 End Sub
 
-'@label:guard-not-sealed
-'@sub-title Guard a setup setter against writes after sealing
-'@param propName String. Name of the property being guarded.
-Private Sub GuardNotSealed(ByVal propName As String)
-    If this.sealed Then _
-        RaiseError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+Private Sub ITranslationObject_TranslateForm(ByVal UserFrm As Object)
+    TranslateForm UserFrm
 End Sub
+
+Private Property Get ITranslationObject_HasCheckings() As Boolean
+    ITranslationObject_HasCheckings = HasCheckings()
+End Property
+
+Private Property Get ITranslationObject_CheckingValues() As Object
+    Set ITranslationObject_CheckingValues = CheckingValues()
+End Property

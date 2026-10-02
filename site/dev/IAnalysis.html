@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IAnalysis - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IAnalysis</h1>
+<p>Defines the public contract for the Analysis class: worksheet access, row
+management (add, insert, delete, remove), data exchange (import, export,
+translate, sort, clean), table validation, and checking/trace access.</p>
+<h2>Elements</h2>
+<h3>Wksh</h3>
+<p><strong>Worksheet hosting the analysis tables</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet: End Property
+</code></pre>
+<p>Returns the worksheet bound to this analysis controller during construction.</p>
+<p><strong>Returns:</strong> Worksheet. The backing analysis worksheet.</p>
+<hr />
+<h2>RowManagement</h2>
+<h3>AddRows</h3>
+<p><strong>Add rows to analysis tables based on the selection header</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddRows(): End Sub
+</code></pre>
+<p>Add, insert, delete, and remove rows in analysis ListObjects.
+Reads the header instruction in cell A1 of the analysis worksheet and appends
+rows to the matching analysis table(s). Delegates to ManageRows internally.</p>
+<hr />
+<h3>InsertRows</h3>
+<p><strong>Insert rows based on a worksheet selection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub InsertRows(ByVal targetCell As Range, _
+                      Optional ByVal insertShift As Boolean = True)
+</code></pre>
+<p>Determines which analysis table hosts the selection and mirrors the selection
+height inside that table. Worksheet row insertion is enabled by default to
+protect stacked ListObjects.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetCell</code>: Range. Anchor describing the rows to mirror.</li>
+<li><code>insertShift</code>: Optional Boolean. When True, worksheet rows are inserted
+to keep stacked tables aligned. Defaults to True.</li>
+</ul>
+<hr />
+<h3>DeleteRows</h3>
+<p><strong>Delete rows intersecting the selection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub DeleteRows(ByVal targetCell As Range, _
+                      Optional ByVal includeIds As Boolean = True, _
+                      Optional ByVal forceShift As Boolean = True)
+</code></pre>
+<p>Locates the analysis table hosting the selection and removes the intersecting
+rows, optionally including identifier columns and forcing row shifts.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetCell</code>: Range. Anchor describing the rows to delete.</li>
+<li><code>includeIds</code>: Optional Boolean. When True, identifiers are cleared along
+with data. Defaults to True.</li>
+<li><code>forceShift</code>: Optional Boolean. When True, worksheet rows are shifted up
+after deletion. Defaults to True.</li>
+</ul>
+<hr />
+<h3>RemoveRows</h3>
+<p><strong>Remove rows from analysis tables while preserving required rows</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RemoveRows(): End Sub
+</code></pre>
+<p>Calls the row manager in deletion mode to trim each table down to its required
+minimum row count.</p>
+<hr />
+<h3>ManageRows</h3>
+<p><strong>Central row-management dispatcher</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ManageRows(Optional ByVal del As Boolean = False): End Sub
+</code></pre>
+<p>Reads the header instruction and adjusts analysis tables accordingly, either
+by adding or deleting rows depending on the del flag.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>del</code>: Optional Boolean. When True, rows are removed; otherwise rows are
+added. Defaults to False.</li>
+</ul>
+<hr />
+<h2>DataExchange</h2>
+<h3>Import</h3>
+<p><strong>Import analysis ListObjects from another worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Import(ByVal sourchesheet As Worksheet): End Sub
+</code></pre>
+<p>Import, export, translate, sort, clean, and validate operations.
+Copies each ListObject and its associated headers from the source worksheet
+into the managed worksheet, preserving cell formatting and validating the
+result afterward.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourcesheet</code>: Worksheet. The worksheet providing the source analysis tables.</li>
+</ul>
+<hr />
+<h3>Export</h3>
+<p><strong>Export the analysis worksheet to a workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Export(ByVal sourcewb As Workbook, Optional ByVal Hide As Long = xlSheetHidden): End Sub
+</code></pre>
+<p>Duplicates the managed worksheet into the provided workbook so external
+processes can consume the analysis tables.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourcewb</code>: Workbook. The workbook receiving the exported worksheet.</li>
+<li><code>Hide</code>: Optional Long. Excel visibility constant. Defaults to xlSheetHidden.</li>
+</ul>
+<hr />
+<h3>Translate</h3>
+<p><strong>Translate analysis labels using a translation object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Translate(ByVal translator As ITranslationObject): End Sub
+</code></pre>
+<p>Pushes known textual columns through the translation object so the analysis
+worksheet reflects the currently selected language.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>translator</code>: ITranslationObject. The translation engine to use.</li>
+</ul>
+<hr />
+<h3>Sort</h3>
+<p><strong>Sort analysis ListObjects and enforce minimum rows</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Sort(): End Sub
+</code></pre>
+<p>Iterates through the known analysis tables, sorts them with the correct
+priorities and trims trailing rows so every table meets its structural rules.</p>
+<hr />
+<h3>Clean</h3>
+<p><strong>Clean the analysis worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Clean(): End Sub
+</code></pre>
+<p>Iterates through all ListObjects on the worksheet and cleans each one via
+CustomTable.Clean.</p>
+<hr />
+<h3>EnsureAnalysisTables</h3>
+<p><strong>Ensure all expected analysis tables are present</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub EnsureAnalysisTables(): End Sub
+</code></pre>
+<p>Validates that every expected ListObject exists on the analysis worksheet.
+Raises an error or logs a warning for any that are missing.</p>
+<hr />
+<h2>Checkings</h2>
+<h3>HasCheckings</h3>
+<p><strong>Whether trace entries were recorded</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean: End Property
+</code></pre>
+<p>Trace and diagnostic access.
+Provides a quick way for callers to know if diagnostics are available.</p>
+<p><strong>Returns:</strong> Boolean. True when at least one trace entry has been logged.</p>
+<hr />
+<h3>CheckingValues</h3>
+<p><strong>Retrieve the collected trace entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CheckingValues() As Object: End Property
+</code></pre>
+<p>Returns the underlying checking object when traces are available.</p>
+<p><strong>Returns:</strong> Object. The IChecking instance, or Nothing when no traces exist.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

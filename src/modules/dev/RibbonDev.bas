@@ -3,10 +3,10 @@ Option Explicit
 
 '@Folder("Dev")
 '@ModuleDescription("Ribbon callbacks coordinating development workflows")
-'@depends Development, CustomTable, Passwords, OSFiles
+'@depends Development, CustomTable, ICustomTable, Passwords, OSFiles, IOSFiles
 '@IgnoreModule UnrecognizedAnnotation, ExcelMemberMayReturnNothing, UseMeaningfulName
 
-Private devManager As Development
+Private devManager As IDevelopment
 Private Const DEV_SHEET_NAME As String = "Dev"
 Private Const CODE_SHEET_NAME As String = "Codes"
 Private Const PASS_SHEET_NAME As String = "__pass"
@@ -36,31 +36,22 @@ End Function
 
 '@EntryPoint
 '@Description("Select root code folder and populate Dev named ranges")
-Public Sub clickDevFolder(ByRef ribbonControl As IRibbonControl)
+Public Sub clickDevFolder(ByRef control As IRibbonControl)
     On Error GoTo Handler
 
     Dim sh As Worksheet
     Set sh = DevSheet()
 
-    Dim io As OSFiles
+    Dim io As IOSFiles
     Set io = OSFiles.Create()
     io.LoadFolder
     If Not io.HasValidFolder() Then Exit Sub
 
-    Dim sep As String
-    sep = Application.PathSeparator
-
     Dim rootPath As String
     rootPath = io.Folder()
 
-    'A drive root comes back already ending in a separator, and the three
-    'paths below add one of their own, so Y:\ gives Y:\\src\modules. Windows
-    'collapses repeated separators and finds the folder, so this is about the
-    'three cells reading the same way whatever folder was picked.
-    Do While Len(rootPath) > 0
-        If Right$(rootPath, 1) <> sep Then Exit Do
-        rootPath = Left$(rootPath, Len(rootPath) - 1)
-    Loop
+    Dim sep As String
+    sep = Application.PathSeparator
 
     sh.Range("ModulesCodes").Value = rootPath & sep & "src" & sep & "modules"
     sh.Range("TestsCodes").Value = rootPath & sep & "src" & sep & "tests"
@@ -74,8 +65,8 @@ End Sub
 
 '@EntryPoint
 '@Description("Import modules and classes declared on the Dev tables")
-Public Sub clickDevImport(ByRef ribbonControl As IRibbonControl)
-    Dim manager As Development
+Public Sub clickDevImport(ByRef control As IRibbonControl)
+    Dim manager As IDevelopment
 
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
@@ -94,8 +85,8 @@ End Sub
 
 '@EntryPoint
 '@Description("Export modules and classes declared on the Dev tables")
-Public Sub clickDevExport(ByRef ribbonControl As IRibbonControl)
-    Dim manager As Development
+Public Sub clickDevExport(ByRef control As IRibbonControl)
+    Dim manager As IDevelopment
 
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
@@ -114,21 +105,21 @@ End Sub
 
 '@EntryPoint
 '@Description("Open the VBA editor window")
-Public Sub clickDevVBE(ByRef ribbonControl As IRibbonControl)
+Public Sub clickDevVBE(ByRef control As IRibbonControl)
     Application.VBE.MainWindow.Visible = True
 End Sub
 
 '@EntryPoint
 '@Description("Deploy workbook protections and hide Dev artefacts")
-Public Sub clickDevDeploy(ByRef ribbonControl As IRibbonControl)
-    Dim manager As Development
+Public Sub clickDevDeploy(ByRef control As IRibbonControl)
+    Dim manager As IDevelopment
     
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
 
     EnsureCodeSheet manager
 
-    Dim pass As Passwords
+    Dim pass As IPasswords
     Set pass = ResolvePasswords()
     If pass Is Nothing Then
         MsgBox "Passwords sheet '" & PASS_SHEET_NAME & "' not found. Cannot deploy.", vbExclamation + vbOKOnly, PROMPT_TITLE
@@ -148,20 +139,20 @@ End Sub
 
 '@EntryPoint
 '@Description("Add default rows to each registered development table")
-Public Sub clickDevAddRows(ByRef ribbonControl As IRibbonControl)
+Public Sub clickDevAddRows(ByRef control As IRibbonControl)
     UpdateTables addRows:=True
 End Sub
 
 '@EntryPoint
 '@Description("Resize development tables by trimming data rows")
-Public Sub clickDevResize(ByRef ribbonControl As IRibbonControl)
+Public Sub clicDevResize(ByRef control As IRibbonControl)
     UpdateTables addRows:=False
 End Sub
 
 '@EntryPoint
 '@Description("Copy module code into mapped forms")
-Public Sub clickDevAddFormsCodes(ByRef ribbonControl As IRibbonControl)
-    Dim manager As Development
+Public Sub clicDevAddFormTable(ByRef control As IRibbonControl)
+    Dim manager As IDevelopment
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
 
@@ -178,8 +169,8 @@ End Sub
 
 '@EntryPoint
 '@Description("Create a new forms mapping table")
-Public Sub clickDevAddFormTable(ByRef ribbonControl As IRibbonControl)
-    Dim manager As Development
+Public Sub clickDevAddFormTable(ByRef control As IRibbonControl)
+    Dim manager As IDevelopment
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
 
@@ -198,8 +189,8 @@ End Sub
 
 '@EntryPoint
 '@Description("Create a new classes table (general or tests)")
-Public Sub clickDevAddClassTable(ByRef ribbonControl As IRibbonControl)
-    Dim manager As Development
+Public Sub clickDevAddClassTable(ByRef control As IRibbonControl)
+    Dim manager As IDevelopment
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
 
@@ -221,8 +212,8 @@ End Sub
 
 '@EntryPoint
 '@Description("Create a new modules table (general or tests)")
-Public Sub clickDevAddModulesTable(ByRef ribbonControl As IRibbonControl)
-    Dim manager As Development
+Public Sub clickDevAddModulesTable(ByRef control As IRibbonControl)
+    Dim manager As IDevelopment
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
 
@@ -242,9 +233,9 @@ Handler:
     Err.Clear
 End Sub
 
-Public Sub DevGroupVisible(ribbonControl As IRibbonControl, ByRef returnedVal)
-    If (ribbonControl.Id = "customGroupDev") Then
-        Dim manager As Development        
+Public Sub DevGroupVisible(control As IRibbonControl, ByRef returnedVal)
+    If (control.Id = "customGroupDev") Then
+        Dim manager As IDevelopment        
         Set manager = EnsureDevelopment()
         If manager Is Nothing Then Exit Sub
         returnedVal = CBool(Not manager.InDeployment())
@@ -256,7 +247,7 @@ End Sub
 
 '@section Helpers
 '===============================================================================
-Public Function EnsureDevelopment() As Development
+Public Function EnsureDevelopment() As IDevelopment
     On Error GoTo Handler
 
     If devManager Is Nothing Then
@@ -302,7 +293,7 @@ Private Function TryWorksheet(ByVal sheetName As String) As Worksheet
     On Error GoTo 0
 End Function
 
-Private Function EnsureCodeSheet(ByVal manager As Development) As Worksheet
+Private Function EnsureCodeSheet(ByVal manager As IDevelopment) As Worksheet
     Dim sh As Worksheet
     Set sh = manager.CodeWorksheet
 
@@ -324,7 +315,7 @@ Private Function EnsureCodeSheet(ByVal manager As Development) As Worksheet
     Set EnsureCodeSheet = sh
 End Function
 
-Private Function ResolvePasswords() As Passwords
+Private Function ResolvePasswords() As IPasswords
     Dim passSheet As Worksheet
     On Error Resume Next
         Set passSheet = ThisWorkbook.Worksheets(PASS_SHEET_NAME)
@@ -338,14 +329,14 @@ Private Function ResolvePasswords() As Passwords
 End Function
 
 Private Sub UpdateTables(ByVal addRows As Boolean)
-    Dim manager As Development
+    Dim manager As IDevelopment
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
 
     Dim targetSheet As Worksheet
     Set targetSheet = EnsureCodeSheet(manager)
 
-    Dim pass As Passwords
+    Dim pass As IPasswords
     Set pass = ResolvePasswords()
 
     On Error GoTo Cleanup
@@ -353,7 +344,7 @@ Private Sub UpdateTables(ByVal addRows As Boolean)
 
     Dim lo As ListObject
     For Each lo In targetSheet.ListObjects
-        Dim table As CustomTable
+        Dim table As ICustomTable
         Set table = CustomTable.Create(lo)
         If addRows Then
             'Pad tables with one extra row to speed up data entry.

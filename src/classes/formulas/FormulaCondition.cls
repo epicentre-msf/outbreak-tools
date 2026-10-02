@@ -15,17 +15,16 @@ Attribute VB_Description = "Conditions used to create formulas for analysis"
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
+Implements IFormulaCondition
 
 '@class FormulaCondition
 '@description
-'Pairs the variables of an analysis formula with their condition fragments and
-'builds the Excel predicates from them. LstVars takes the variable list and
-'LstConditions the matching condition list. Valid says whether the two lists
-'line up and whether every variable sits in one table, VariablesTable names
-'that table, ConditionString renders one condition wrapped in an IF, and
-'ConditionPredicate joins the conditions into a single predicate. Variables and
-'Conditions give the two lists back, and entries filed on the way leave through
-'HasCheckings and CheckingValues.
+'Couples variable names with their condition fragments, validates alignment
+'against the dictionary, and produces structured Excel predicates for
+'analysis formulas. The class pairs two BetterArray lists (variables and
+'conditions), validates that all variables belong to the same table, and
+'exposes methods to render IF-wrapped condition strings and joined predicates.
+'Consumers interact through the IFormulaCondition interface.
 '@depends BetterArray, Checking, LLVariables, LLdictionary
 '@version 1.0 (2026-02-09)
 
@@ -40,28 +39,15 @@ Private Type TFormulaCondition
     varList As BetterArray                      'Variables for the formulas
     cachedTableName As String                    'Validated table name across variables
     hasChecks As Boolean
-    internalChecks As Checking
+    internalChecks As IChecking
     checkCounter As Long
     cachedValidDone As Boolean                   'Whether Valid has produced a cached result
     cachedValidResult As Boolean                 'Cached True/False from last Valid call
     cachedValidTable As String                   'The tablename parameter used for cached result
-    cachedValidDict As LLdictionary              'The dictionary the cached result belongs to
-    varsHelper As LLVariables                    'Helper built once per dictionary
-    varsHelperDict As LLdictionary               'The dictionary the helper was built over
-    cachedPredicateKey As String                 'tablename and connector the predicate belongs to
-    cachedPredicate As String                    'Last predicate built
-    cachedPredicateDone As Boolean               'Whether a predicate has been built
-    sealed As Boolean
 End Type
 
 
 Private this As TFormulaCondition
-
-Private Const CLASSNAME As String = "FormulaCondition"
-
-'Separates the two parts of the predicate cache key. A table name and a
-'connector cannot hold this character.
-Private Const KEY_SEPARATOR As String = vbNullChar
 
 '@section Factory
 '===============================================================================
@@ -71,13 +57,14 @@ Private Const KEY_SEPARATOR As String = vbNullChar
 '@sub-title Construct a FormulaCondition instance from paired arrays
 '@details
 'Validates that both arrays are non-Nothing and have equal lengths, then
-'stores normalised copies with a lower bound of 1.
+'stores normalised copies with a lower bound of 1. The returned instance
+'is cast to IFormulaCondition for consistent downstream consumption.
 '@param formVar BetterArray. The array containing variable names.
 '@param formCond BetterArray. The array containing predicate fragments.
-'@return FormulaCondition. A ready-to-use condition helper.
+'@return IFormulaCondition. A ready-to-use condition helper.
 '@throws ProjectError.InvalidArgument When formVar or formCond is Nothing or lengths differ.
 '@export
-Public Function Create(ByVal formVar As BetterArray, ByVal formCond As BetterArray) As FormulaCondition
+Public Function Create(ByVal formVar As BetterArray, ByVal formCond As BetterArray) As IFormulaCondition
 
     If formVar Is Nothing Then ThrowError ProjectError.InvalidArgument, "Variables array cannot be null"
     If formCond Is Nothing Then ThrowError ProjectError.InvalidArgument, "Conditions array cannot be null"
@@ -86,36 +73,26 @@ Public Function Create(ByVal formVar As BetterArray, ByVal formCond As BetterArr
         ThrowError ProjectError.InvalidArgument, _
                   "Condition length " & formCond.Length & " different from variable length " & formVar.Length
 
-    Dim instance As FormulaCondition
-    Set instance = New FormulaCondition
-    Set instance.LstConditions = formCond
-    Set instance.LstVars = formVar
-    instance.Seal
-    Set Create = instance
+    With New FormulaCondition
+        Set .LstConditions = formCond
+        Set .LstVars = formVar
+        Set Create = .Self
+    End With
 End Function
-
-'@label:seal
-'@sub-title Prevent further changes to setup-only properties
-'@details
-'Marks the instance as sealed so guarded setters raise when invoked
-'after construction. Called by the factory before returning.
-Public Sub Seal()
-    this.sealed = True
-End Sub
-
-'@label:guard-not-sealed
-'@sub-title Reject writes to setup-only properties after sealing
-'@details
-'Raises an error when a guarded setter is invoked on a sealed instance.
-'@param propName String. Name of the property being guarded.
-Private Sub GuardNotSealed(ByVal propName As String)
-    If this.sealed Then _
-        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
-End Sub
 
 '@section PublicAccessors
 '===============================================================================
-'@description Provide controlled access to stored collections.
+'@description Provide controlled access to stored collections and interface pointer.
+
+'@label:self
+'@prop-title Current object instance
+'@details
+'Returns the current instance cast to its interface. Used internally
+'by the factory method to return an IFormulaCondition reference.
+'@return IFormulaCondition. The current object.
+Public Property Get Self() As IFormulaCondition
+    Set Self = Me
+End Property
 
 '@label:conditions
 '@prop-title Retrieve the stored condition fragments
@@ -134,12 +111,8 @@ End Property
 'Copies the incoming array into a new BetterArray normalised to a
 'lower bound of 1, then resets all cached validation artefacts so
 'the next call to Valid triggers a fresh check.
-'Both setters copy with LowerBound 1, so the two lists always share one
-'lower bound. ConditionPredicate indexes both lists from that bound and it
-'is correct because of this.
 '@param formCond BetterArray. The array containing predicate fragments.
 Public Property Set LstConditions(ByVal formCond As BetterArray)
-    GuardNotSealed "LstConditions"
     Set this.condList = New BetterArray
     this.condList.LowerBound = 1
     this.condList.Items = formCond.Items
@@ -164,7 +137,6 @@ End Property
 'lower bound of 1, then invalidates all cached data.
 '@param formVar BetterArray. The array containing variable identifiers.
 Public Property Set LstVars(ByVal formVar As BetterArray)
-    GuardNotSealed "LstVars"
     Set this.varList = New BetterArray
     this.varList.LowerBound = 1
     this.varList.Items = formVar.Items
@@ -178,38 +150,25 @@ End Property
 '@label:reset-caches
 '@sub-title Clear cached table names, validation results, and diagnostics
 '@details
-'Resets all memoised state so the next call to Valid, VariablesTable or
-'ConditionPredicate starts fresh. Its two callers are the setters above,
-'and both are guarded by Seal, so this runs at construction only.
-Private Sub ResetCaches()
+'Resets all memoised validation state so the next call to Valid or
+'VariablesTable triggers a fresh evaluation. Also clears any
+'diagnostic entries accumulated during previous validations.
+Public Sub ResetCaches()
     this.cachedTableName = vbNullString
-    this.cachedValidDone = False
-    this.cachedValidResult = False
-    this.cachedValidTable = vbNullString
-    Set this.cachedValidDict = Nothing
-    Set this.varsHelper = Nothing
-    Set this.varsHelperDict = Nothing
-    this.cachedPredicateKey = vbNullString
-    this.cachedPredicate = vbNullString
-    this.cachedPredicateDone = False
-    ClearCheckings
-End Sub
-
-'@label:clear-checkings
-'@sub-title Drop the diagnostic entries of the previous validation run
-Private Sub ClearCheckings()
     this.hasChecks = False
     this.checkCounter = 0
     Set this.internalChecks = Nothing
+    this.cachedValidDone = False
+    this.cachedValidResult = False
+    this.cachedValidTable = vbNullString
 End Sub
 
 '@label:log-info
 '@sub-title Append a diagnostic entry to the internal checking log
 '@details
 'Creates the checking instance on first use and appends the message
-'using a monotonically increasing counter key. The log is what says WHY
-'a formula failed: the analysis path gives up quietly when Valid is False,
-'and the reason lives here.
+'using a monotonically increasing counter key. The checking store
+'is exposed through the interface for callers needing diagnostic traces.
 '@param message String. The event description to record.
 '@param scope Optional Byte. Severity level from CheckingLogType. Defaults to checkingInfo.
 Private Sub LogInfo(ByVal message As String, Optional ByVal scope As Byte = checkingInfo)
@@ -219,15 +178,25 @@ Private Sub LogInfo(ByVal message As String, Optional ByVal scope As Byte = chec
     this.hasChecks = True
 End Sub
 
-'@label:has-checkings
+'@label:has-internal-checks
 '@prop-title Determine whether diagnostics have been captured
 '@details
 'Returns True when at least one LogInfo call has been made since the
-'last validation run, indicating that diagnostic information is available.
+'last ResetCaches, indicating that diagnostic information is available.
 '@return Boolean. True when internal checks exist.
 '@export
-Public Property Get HasCheckings() As Boolean
-    HasCheckings = this.hasChecks
+Private Property Get HasInternalChecks() As Boolean
+    HasInternalChecks = this.hasChecks
+End Property
+
+'@label:cached-table
+'@prop-title Retrieve the memoised table name resolved during validation
+'@details
+'Holds the table name that all variables were confirmed to share
+'after a successful call to Valid. Empty until validation completes.
+'@return String. Cached table identifier.
+Private Property Get CachedTable() As String
+    CachedTable = this.cachedTableName
 End Property
 
 '@section MetadataHelpers
@@ -240,17 +209,14 @@ End Property
 'Returns the cached table name when validation has already occurred.
 'When the cache is empty, triggers a full validation pass against
 'the supplied dictionary before returning the result.
-'Formulas.ParsedCustomFormula calls this as a fallback when the table name
-'is unknown, so it sits on the hot path for N and N() formulas.
-'@param dict LLdictionary. The dictionary used when validation has not occurred yet.
+'@param dict ILLdictionary. The dictionary used when validation has not occurred yet.
 '@return String. Table identifier or empty string when unavailable.
 '@export
-Public Property Get VariablesTable(ByVal dict As LLdictionary) As String
-    If LenB(this.cachedTableName) = 0 Then
+Public Property Get VariablesTable(ByVal dict As ILLdictionary) As String
+    If LenB(CachedTable) = 0 Then
         If Not Valid(dict) Then Exit Property
     End If
-
-    VariablesTable = this.cachedTableName
+    VariablesTable = CachedTable
 End Property
 
 '@section Validation
@@ -260,86 +226,96 @@ End Property
 '@label:valid
 '@sub-title Validate variable/condition lists against the dictionary
 '@details
-'Checks that the lists are non-empty, then verifies each variable exists in
-'the dictionary and belongs to the expected table. When a tablename argument
-'is supplied it overrides the table resolved from the first variable.
-'The result is cached against BOTH the tablename argument and the dictionary
-'object. Keying on the tablename alone handed the answer computed for one
-'dictionary back to a caller asking about another one.
-'@param dict LLdictionary. The metadata provider used for variable lookups.
+'Checks that both lists are non-empty and equal in length, then
+'verifies each variable exists in the dictionary and belongs to the
+'expected table. When a tablename argument is supplied it overrides
+'the table resolved from the first variable. Results are cached so
+'repeated calls with the same tablename parameter return immediately
+'without re-validating. The cache is invalidated when underlying data
+'changes (via Set LstVars or Set LstConditions).
+'@param dict ILLdictionary. The metadata provider used for variable lookups.
 '@param tablename Optional String. When supplied, forces the expected table name. Defaults to vbNullString.
 '@return Boolean. True when validation succeeds.
 '@export
-Public Function Valid(ByVal dict As LLdictionary, Optional ByVal tablename As String = vbNullString) As Boolean
+Public Function Valid(ByVal dict As ILLdictionary, Optional ByVal tablename As String = vbNullString) As Boolean
 
-    Dim vars As LLVariables
+    Dim vars As ILLVariables
     Dim varList As BetterArray
+    Dim condList As BetterArray
     Dim idx As Long
-    Dim lower As Long
-    Dim varName As String
+    Dim firstVar As String
     Dim targetTable As String
     Dim currentTable As String
 
+    ' Return cached result when validation was already done with matching parameters.
+    ' The cache is cleared by ResetCaches (called from Set LstVars / Set LstConditions)
+    ' whenever the underlying data changes.
     If this.cachedValidDone Then
         If StrComp(tablename, this.cachedValidTable, vbBinaryCompare) = 0 Then
-            If this.cachedValidDict Is dict Then
-                Valid = this.cachedValidResult
-                Exit Function
-            End If
+            Valid = this.cachedValidResult
+            Exit Function
         End If
     End If
 
-    'Fresh validation: drop the previous answer and the previous diagnostics.
+    ' Fresh validation needed — clear prior diagnostics
     this.cachedTableName = vbNullString
-    ClearCheckings
+    this.hasChecks = False
+    this.checkCounter = 0
+    Set this.internalChecks = Nothing
 
-    'Mark cache as populated (default result is False)
+    ' Mark cache as populated (default result is False)
     this.cachedValidDone = True
     this.cachedValidTable = tablename
-    Set this.cachedValidDict = dict
     this.cachedValidResult = False
+    Valid = False
 
-    Set varList = this.varList
+    Set varList = LstVars()
+    Set condList = LstConditions()
 
-    'Create raises on a length mismatch and both setters are sealed, so the
-    'two lists cannot get out of step after construction. Only the empty
-    'case is left to test.
-    If varList.Length = 0 Then
+    If varList.Length = 0 Or condList.Length = 0 Then
         LogInfo "Validation failed: empty variable or condition list", checkingError
         Exit Function
     End If
 
+    If varList.Length <> condList.Length Then
+        LogInfo "Validation failed: variable/condition length mismatch", checkingError
+        Exit Function
+    End If
+
     On Error GoTo ValidationError
-        Set vars = VariablesProvider(dict)
+        Set vars = LLVariables.Create(dict)
     On Error GoTo 0
 
-    targetTable = tablename
-    lower = varList.LowerBound
+    firstVar = CStr(varList.Item(varList.LowerBound))
+    If Not vars.Contains(firstVar) Then
+        LogInfo "Validation failed: variable not found - " & firstVar, checkingError
+        Exit Function
+    End If
 
-    For idx = lower To varList.UpperBound
+    If tablename = vbNullString Then
+        targetTable = vars.TableName(firstVar)
+    Else
+        targetTable = tablename
+    End If
+
+    If LenB(targetTable) = 0 Then
+        LogInfo "Validation failed: table name not resolved", checkingError
+        Exit Function
+    End If
+
+    Dim varName As String
+    For idx = varList.LowerBound To varList.UpperBound
 
         varName = CStr(varList.Item(idx))
 
-        'Contains is answered from the name block LLVariables holds, so it
-        'costs no worksheet read. It stays because a missing variable and a
-        'variable with no table need different messages.
         If Not vars.Contains(varName) Then
             LogInfo "Validation failed: variable not found - " & varName, checkingError
             Exit Function
         End If
 
         currentTable = vars.TableName(varName)
-
-        If idx = lower And LenB(targetTable) = 0 Then
-            targetTable = currentTable
-            If LenB(targetTable) = 0 Then
-                LogInfo "Validation failed: table name not resolved", checkingError
-                Exit Function
-            End If
-        End If
-
         If StrComp(currentTable, targetTable, vbBinaryCompare) <> 0 Then
-            LogInfo "Validation failed: variable belongs to different table - " & varName, checkingError
+            LogInfo "Validation failed: variable belongs to different table - " & varName
             Exit Function
         End If
     Next idx
@@ -350,50 +326,9 @@ Public Function Valid(ByVal dict As LLdictionary, Optional ByVal tablename As St
     Exit Function
 
 ValidationError:
-    'A raise from LLVariables.Create is cached as an invalid formula, which
-    'is the intended answer: the dictionary could not be read.
-    LogInfo "Validation failed: " & Err.Description, checkingError
+    LogInfo "Validation failed: " & Err.Description
     Err.Clear
 End Function
-
-'@label:variables-provider
-'@sub-title Build the variables helper once per dictionary
-'@details
-'Valid used to build a fresh LLVariables on every call, and
-'Formulas.ParsedAnalysisFormula calls Valid once per variable token of every
-'analysis formula. Each helper carries its own block reads over the same
-'dictionary worksheet. The helper is held against the dictionary it was
-'built over, so a call naming another dictionary builds a new one.
-'@param dict LLdictionary. The dictionary to read.
-'@return LLVariables. Helper bound to that dictionary.
-Private Function VariablesProvider(ByVal dict As LLdictionary) As LLVariables
-    If this.varsHelper Is Nothing Or Not (this.varsHelperDict Is dict) Then
-        Set this.varsHelper = LLVariables.Create(dict)
-        Set this.varsHelperDict = dict
-    End If
-
-    Set VariablesProvider = this.varsHelper
-End Function
-
-'@label:adopt-variables-helper
-'@sub-title Take the helper the owner already holds for this dictionary
-'@details
-'A fresh instance of this class is built for every analysis formula, and each
-'one used to read the dictionary sheet again to build its own LLVariables:
-'several block reads per formula, repeated for every column of every table.
-'Formulas holds one helper per table and hands it in here before Valid runs,
-'so VariablesProvider finds the pair already bound. The helper handed in must
-'have been built over dict; the caller owns that pairing.
-'@param varsHelper LLVariables. The helper to reuse.
-'@param dict LLdictionary. The dictionary the helper was built over.
-'@export
-Public Sub AdoptVariablesHelper(ByVal varsHelper As LLVariables, ByVal dict As LLdictionary)
-    If varsHelper Is Nothing Then Exit Sub
-    If dict Is Nothing Then Exit Sub
-
-    Set this.varsHelper = varsHelper
-    Set this.varsHelperDict = dict
-End Sub
 
 '@section FormulaRendering
 '===============================================================================
@@ -406,8 +341,6 @@ End Sub
 'wraps the result in an IF function that returns the variable value
 'when the predicate evaluates to True. Returns an empty string when
 'the predicate is empty.
-'The space before the comma is deliberate: CrossTableFormula compares
-'generated formulas in its tests.
 '@param tablename String. Structured reference table name.
 '@param varName String. Variable/column name to return when the condition is met.
 '@param Connector Optional String. Connector used between predicates. Defaults to "*".
@@ -430,13 +363,7 @@ End Function
 'Iterates through all variable/condition pairs and concatenates them
 'into a single predicate string using the supplied connector (typically
 '"*" for AND logic). Each fragment is wrapped in parentheses using
-'structured table references, and the condition fragment carries its own
-'operator: ">= 5" becomes (f_table[age]>= 5). Formulas.ClearCountIf rewrites
-'those fragments for COUNTIFS, so the two have to keep agreeing on the shape.
-'The answer is held against the table name and the connector. The lists
-'cannot change after Seal, so the same pair always gives the same string,
-'and Formulas.ParsedAnalysisFormula asks for it once per variable token of
-'the same formula.
+'structured table references.
 '@param tablename String. Structured reference table name.
 '@param Connector Optional String. Connector between predicate fragments. Defaults to "*".
 '@return String. Concatenated predicate or empty string when inputs are missing.
@@ -444,35 +371,15 @@ End Function
 Public Function ConditionPredicate(ByVal tablename As String, Optional ByVal Connector As String = "*") As String
     Dim counter As Long
     Dim parsed As String
-    Dim requestKey As String
-    Dim vars As BetterArray
-    Dim conds As BetterArray
 
-    requestKey = tablename & KEY_SEPARATOR & Connector
+    If LstVars.Length = 0 Or LstConditions.Length = 0 Then Exit Function
 
-    If this.cachedPredicateDone Then
-        If StrComp(requestKey, this.cachedPredicateKey, vbBinaryCompare) = 0 Then
-            ConditionPredicate = this.cachedPredicate
-            Exit Function
-        End If
-    End If
+    parsed = "(" & tablename & "[" & LstVars.Item(LstVars.LowerBound) & "]" & LstConditions.Item(LstVars.LowerBound) & ")"
 
-    this.cachedPredicateDone = True
-    this.cachedPredicateKey = requestKey
-    this.cachedPredicate = vbNullString
-
-    Set vars = this.varList
-    Set conds = this.condList
-
-    If vars.Length = 0 Or conds.Length = 0 Then Exit Function
-
-    parsed = "(" & tablename & "[" & vars.Item(vars.LowerBound) & "]" & conds.Item(vars.LowerBound) & ")"
-
-    For counter = vars.LowerBound + 1 To vars.UpperBound
-        parsed = parsed & Connector & "(" & tablename & "[" & vars.Item(counter) & "]" & conds.Item(counter) & ")"
+    For counter = LstVars.LowerBound + 1 To LstVars.UpperBound
+        parsed = parsed & Connector & "(" & tablename & "[" & LstVars.Item(counter) & "]" & LstConditions.Item(counter) & ")"
     Next
 
-    this.cachedPredicate = parsed
     ConditionPredicate = parsed
 End Function
 
@@ -489,42 +396,43 @@ End Function
 '@param errorMessage String. Descriptive text.
 '@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
-    Err.Raise errNumb, CLASSNAME, errorMessage
+    Err.Raise errNumb, "FormulaCondition", errorMessage
 End Sub
 
-'@section PublicDiagnostics
+'@section Interface
 '===============================================================================
-'@description Defensive copies of the tracked lists and the diagnostic log.
+'@description Explicit interface implementations delegating to the public members.
 
-'@label:variables-clone
-'@prop-title Retrieve a clone of the stored variable names
-'@details
-'Returns a BetterArray copy of the variable identifiers in the order
-'they were supplied at creation.
-'@return BetterArray. The variable names preserving the original order.
-'@export
-Public Property Get Variables() As BetterArray
-    Set Variables = this.varList.Clone()
+Private Property Get IFormulaCondition_Variables() As BetterArray
+    Set IFormulaCondition_Variables = LstVars.Clone()
 End Property
 
-'@label:conditions-clone
-'@prop-title Retrieve a clone of the stored condition fragments
-'@details
-'Returns a BetterArray copy of the predicate fragments in the order
-'they were supplied at creation.
-'@return BetterArray. The condition fragments preserving the original order.
-'@export
-Public Property Get Conditions() As BetterArray
-    Set Conditions = this.condList.Clone()
+Private Property Get IFormulaCondition_Conditions() As BetterArray
+    Set IFormulaCondition_Conditions = LstConditions.Clone()
 End Property
+
+Private Property Get IFormulaCondition_VariablesTable(ByVal dict As ILLdictionary) As String
+    IFormulaCondition_VariablesTable = VariablesTable(dict)
+End Property
+
+Private Function IFormulaCondition_ConditionString(ByVal tablename As String, ByVal varName As String, _
+                                                  Optional ByVal Connector As String = "*") As String
+    IFormulaCondition_ConditionString = ConditionString(tablename:=tablename, varName:=varName, Connector:=Connector)
+End Function
+
+Private Function IFormulaCondition_ConditionPredicate(ByVal tablename As String, Optional ByVal Connector As String = "*") As String
+    IFormulaCondition_ConditionPredicate = ConditionPredicate(tablename, Connector)
+End Function
+
+Private Function IFormulaCondition_Valid(ByVal dict As ILLdictionary, Optional ByVal tablename As String = vbNullString) As Boolean
+    IFormulaCondition_Valid = Valid(dict, tablename)
+End Function
+
+Private Function IFormulaCondition_HasCheckings() As Boolean
+    IFormulaCondition_HasCheckings = HasInternalChecks
+End Function
 
 '@label:checking-values
-'@prop-title Retrieve the internal checking log
-'@details
-'Returns the accumulated Checking instance containing all diagnostic
-'messages from the last validation run, or Nothing when none recorded.
-'@return Checking. The diagnostic log.
-'@export
-Public Property Get CheckingValues() As Checking
-    If this.hasChecks Then Set CheckingValues = this.internalChecks
+Private Property Get IFormulaCondition_CheckingValues() As IChecking
+    If HasInternalChecks Then Set IFormulaCondition_CheckingValues = this.internalChecks
 End Property

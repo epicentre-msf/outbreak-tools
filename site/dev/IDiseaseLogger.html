@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IDiseaseLogger - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IDiseaseLogger</h1>
+<h2>Logging</h2>
+<h3>Record</h3>
+<p><strong>Record a new log entry.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Record(ByVal operation As String, _
+                  ByVal severity As DiseaseLogSeverity, _
+                  ByVal message As String, _
+                  Optional ByVal details As BetterArray)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>operation</code>: String operation identifier (e.g., &quot;Import&quot;, &quot;Export&quot;).</li>
+<li><code>severity</code>: DiseaseLogSeverity describing the entry importance.</li>
+<li><code>message</code>: String descriptive message.</li>
+<li><code>details</code>: Optional BetterArray containing additional context strings.</li>
+</ul>
+<hr />
+<h2>Query</h2>
+<h3>Entries</h3>
+<p><strong>Retrieve recorded entries.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Entries() As BetterArray
+</code></pre>
+<p><strong>Returns:</strong> BetterArray clone containing log entry snapshots.</p>
+<hr />
+<h3>HasEntries</h3>
+<p><strong>Indicates whether any entries have been recorded.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasEntries() As Boolean
+</code></pre>
+<hr />
+<h2>Maintenance</h2>
+<h3>Clear</h3>
+<p><strong>Clear all recorded entries.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Clear()
+</code></pre>
+<hr />
+
+  </main>
+</body>
+</html>
+

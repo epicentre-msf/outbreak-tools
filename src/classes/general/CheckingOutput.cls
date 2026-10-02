@@ -16,10 +16,11 @@ Attribute VB_Description = "Writes checking results to a worksheet"
 '@depends BetterArray, Checking, HiddenNames
 
 Option Explicit
+Implements ICheckingOutput
 
 '@class CheckingOutput
 '@description
-'Renders Checking diagnostic entries to a worksheet with formatted rows,
+'Renders IChecking diagnostic entries to a worksheet with formatted rows,
 'severity-based colour coding, and interactive drop-down filters for
 'status and title. The class manages hidden helper columns, a title
 'store for filter validation lists, and optional worksheet event
@@ -36,9 +37,7 @@ Option Explicit
 Private Type TState
     targetSheet As Worksheet
     nm As String
-    store As HiddenNames
-    compactAppend As Boolean
-    sealed As Boolean
+    store As IHiddenNames
 End Type
 
 Private Type TFormatting
@@ -81,26 +80,20 @@ Private Const VBIDE_PROC_KIND As Long = 0 'Matches vbext_pk_Proc to avoid VBIDE 
 'marker.
 '@param sh Worksheet. Target worksheet that will receive the checking output.
 '@param title Optional String. Label for the output session. Defaults to vbNullString.
-'@param compactAppend Optional Boolean. Writes one line per entry. Defaults to False.
-'@return CheckingOutput. Fully initialised instance.
+'@return ICheckingOutput. Fully initialised instance.
 '@throws ProjectError.ElementNotFound When sh is Nothing.
 '@export
-Public Function Create(ByVal sh As Worksheet, _
-                       Optional ByVal title As String = vbNullString, _
-                       Optional ByVal compactAppend As Boolean = False) As CheckingOutput
+Public Function Create(ByVal sh As Worksheet, Optional ByVal title As String = vbNullString) As ICheckingOutput
     If sh Is Nothing Then
         ThrowError ProjectError.ElementNotFound, _
          "Unable to create an instance of the class, please provide a valid worksheet"
     End If
 
-    Dim newOutput As CheckingOutput
-    Set newOutput = New CheckingOutput
-
-    Set newOutput.Wksh = sh
-    newOutput.Name = title
-    newOutput.CompactAppend = compactAppend
-    newOutput.Seal
-    Set Create = newOutput
+    With New CheckingOutput
+        Set .Wksh = sh
+         .Name = title
+        Set Create = .Self
+    End With
 End Function
 
 '@section PublicAccessors
@@ -120,8 +113,17 @@ End Property
 '@prop-title Define the worksheet that will receive the output
 '@param sh Worksheet. Target worksheet to use.
 Public Property Set Wksh(ByVal sh As Worksheet)
-    GuardNotSealed "Wksh"
     Set this.targetSheet = sh
+End Property
+
+'@label:self
+'@prop-title Current object instance
+'@details
+'Returns the current instance cast to its interface. Used internally
+'by the factory method to return an ICheckingOutput reference.
+'@return ICheckingOutput. Reference to the current object.
+Public Property Get Self() As ICheckingOutput
+    Set Self = Me
 End Property
 
 '@label:name
@@ -137,33 +139,7 @@ End Property
 '@prop-title Assign the output session name
 '@param nm String. Label to assign.
 Public Property Let Name(ByVal nm As String)
-    GuardNotSealed "Name"
     this.nm = nm
-End Property
-
-'@label:compact-append
-'@prop-title Whether the writer appends one line per entry
-'@details
-'A checking sheet is read one render at a time: a render opens with its
-'title and the blocks stand apart. A running log is the other shape. It is
-'one sheet written a single entry at a time over a whole session, and the
-'title of an entry has almost always been written by an earlier render.
-'Compact mode writes a title only when the sheet has never carried it, and
-'writes a line at the foot of the block its title heads rather than at the
-'foot of the sheet, so a session of a hundred actions reads as a handful of
-'blocks, each one line per action, with a blank row between them.
-'@return Boolean. True when the writer is in compact mode.
-'@export
-Public Property Get CompactAppend() As Boolean
-    CompactAppend = this.compactAppend
-End Property
-
-'@label:compact-append-set
-'@prop-title Turn compact appending on
-'@param compact Boolean. Value to assign.
-Public Property Let CompactAppend(ByVal compact As Boolean)
-    GuardNotSealed "CompactAppend"
-    this.compactAppend = compact
 End Property
 
 '@section FormattingHelpers
@@ -339,18 +315,16 @@ End Function
 '@description Outputs headings and detail entries for individual checking bundles.
 
 '@label:write-checking
-'@sub-title Write a single Checking bundle to the worksheet
+'@sub-title Write a single IChecking bundle to the worksheet
 '@details
 'Outputs the title heading (once per unique title), optional subtitle,
 'and all keyed entries with their severity colour coding. Advances the
-'current row counter and tracks written titles to avoid duplicates. This
-'is the render path of a checking sheet; a compact log is written by
-'WriteCompactChecking instead.
-'@param checking Checking. Bundle to render.
+'current row counter and tracks written titles to avoid duplicates.
+'@param checking IChecking. Bundle to render.
 '@param currentRow Long. ByRef row counter advanced during writing.
 '@param writtenTitles Collection. ByRef collection tracking emitted titles.
 '@param sep Optional String. Separator for text fragments. Defaults to "--".
-Private Sub WriteChecking(ByVal checksObject As Checking, _
+Private Sub WriteChecking(ByVal checking As IChecking, _
                           ByRef currentRow As Long, _
                           ByRef writtenTitles As Collection, _
                           Optional ByVal sep As String = DEFAULT_SEPARATOR)
@@ -366,8 +340,8 @@ Private Sub WriteChecking(ByVal checksObject As Checking, _
     Dim keyType As String
     Dim fullLabel As String
 
-    title = checksObject.Heading
-    subtitle = checksObject.Heading(subtitle:=True)
+    title = checking.Heading
+    subtitle = checking.Heading(subtitle:=True)
 
     If Not TitleAlreadyWritten(title, writtenTitles) Then
         WriteRow rowIndex:=currentRow, textValue:=title, formatTag:="level 1", sep:=sep, parentTitle:=title
@@ -382,139 +356,18 @@ Private Sub WriteChecking(ByVal checksObject As Checking, _
         currentRow = currentRow + 2
     End If
 
-    Set keys = checksObject.ListOfKeys
+    Set keys = checking.ListOfKeys
     For keyIndex = keys.lowerBound To keys.upperBound
         keyName = CStr(keys.Item(keyIndex))
-        keyColour = checksObject.ValueOf(keyName, checkingColor)
-        keyLabel = checksObject.ValueOf(keyName, checkingLabel)
-        keyType = checksObject.ValueOf(keyName, checkingType)
+        keyColour = checking.ValueOf(keyName, checkingColor)
+        keyLabel = checking.ValueOf(keyName, checkingLabel)
+        keyType = checking.ValueOf(keyName, checkingType)
         fullLabel = keyType & sep & keyLabel
         WriteRow rowIndex:=currentRow, textValue:=fullLabel, formatTag:=keyColour, sep:=sep, parentTitle:=title
         currentRow = currentRow + 1
     Next keyIndex
 
     currentRow = currentRow + 2
-End Sub
-
-'@label:write-compact-checking
-'@sub-title Write one bundle at the foot of the block its title heads
-'@details
-'The compact writer of a running log. A title the sheet has never carried
-'opens a block of its own, one blank row under whatever stands above it. A
-'title already on the sheet heads a block somewhere up the sheet, and its
-'new line is opened at the foot of THAT block rather than at the foot of
-'the sheet, so a section stays whole however far apart in time its actions
-'were taken.
-'
-'Opening a line inside the sheet pushes every row under it down one, the
-'end marker included, so the bottom cursor moves with each inserted line.
-'@param checksObject Checking. Bundle to render.
-'@param bottomRow Long. ByRef cursor on the first free row at the foot of the sheet.
-'@param sep Optional String. Separator for text fragments. Defaults to "--".
-Private Sub WriteCompactChecking(ByVal checksObject As Checking, _
-                                 ByRef bottomRow As Long, _
-                                 Optional ByVal sep As String = DEFAULT_SEPARATOR)
-
-    Dim title As String
-    Dim keys As BetterArray
-    Dim keyIndex As Long
-    Dim keyName As String
-    Dim keyColour As String
-    Dim keyLabel As String
-    Dim keyType As String
-    Dim fullLabel As String
-    Dim sectionRow As Long
-    Dim targetRow As Long
-    Dim inserting As Boolean
-
-    title = checksObject.Heading
-    sectionRow = LastRowOfTitle(title)
-    inserting = (sectionRow >= FIRST_ROW_OUTPUT)
-
-    If inserting Then
-        targetRow = sectionRow + 1
-    Else
-        If bottomRow > FIRST_ROW_OUTPUT Then bottomRow = bottomRow + 1
-        WriteRow rowIndex:=bottomRow, textValue:=title, formatTag:="level 1", _
-                 sep:=sep, parentTitle:=title
-        If LenB(Trim$(title)) > 0 Then AppendTitleToStore title
-        bottomRow = bottomRow + 1
-        targetRow = bottomRow
-    End If
-
-    Set keys = checksObject.ListOfKeys
-    For keyIndex = keys.lowerBound To keys.upperBound
-        keyName = CStr(keys.Item(keyIndex))
-        keyColour = checksObject.ValueOf(keyName, checkingColor)
-        keyLabel = checksObject.ValueOf(keyName, checkingLabel)
-        keyType = checksObject.ValueOf(keyName, checkingType)
-        fullLabel = keyType & sep & keyLabel
-
-        If inserting Then InsertEntryCells targetRow
-        WriteRow rowIndex:=targetRow, textValue:=fullLabel, formatTag:=keyColour, _
-                 sep:=sep, parentTitle:=title
-        targetRow = targetRow + 1
-        bottomRow = bottomRow + 1
-    Next keyIndex
-End Sub
-
-'@label:last-row-of-title
-'@sub-title Last row the sheet already carries for a title
-'@details
-'The hidden title column says which block a row belongs to, and the last
-'row bearing a title is the foot of that block. The column is read in one
-'shot: a log runs to thousands of rows and a cell-by-cell scan would be
-'felt on every single event.
-'@param title String. The title to look for.
-'@return Long. The last row bearing the title, or 0 when the sheet carries none.
-Private Function LastRowOfTitle(ByVal title As String) As Long
-    Dim sh As Worksheet
-    Dim lastRow As Long
-    Dim titles As Variant
-    Dim rowIndex As Long
-    Dim searched As String
-
-    searched = Trim$(title)
-    If LenB(searched) = 0 Then Exit Function
-
-    Set sh = Wksh()
-    lastRow = sh.Cells(sh.rows.Count, HIDDEN_TITLE_COLUMN).End(xlUp).row
-    If lastRow < FIRST_ROW_OUTPUT Then Exit Function
-
-    titles = sh.Range(sh.Cells(FIRST_ROW_OUTPUT, HIDDEN_TITLE_COLUMN), _
-                      sh.Cells(lastRow, HIDDEN_TITLE_COLUMN)).Value2
-
-    'A one-cell range answers a scalar rather than an array
-    If Not IsArray(titles) Then
-        If StrComp(Trim$(CStr(titles)), searched, vbTextCompare) = 0 Then _
-            LastRowOfTitle = FIRST_ROW_OUTPUT
-        Exit Function
-    End If
-
-    For rowIndex = UBound(titles, 1) To LBound(titles, 1) Step -1
-        If StrComp(Trim$(CStr(titles(rowIndex, 1))), searched, vbTextCompare) = 0 Then
-            LastRowOfTitle = FIRST_ROW_OUTPUT + rowIndex - 1
-            Exit Function
-        End If
-    Next rowIndex
-End Function
-
-'@label:insert-entry-cells
-'@sub-title Open a line inside a block without moving the title store
-'@details
-'Only the hidden title column and the written columns are shifted down. The
-'title store sits far to the right on rows of its own, and a whole-row
-'insert would carry it down with the log and leave the filter dropdown
-'reading a range the titles have walked out of.
-'@param rowIndex Long. Row the new line is opened at.
-Private Sub InsertEntryCells(ByVal rowIndex As Long)
-    Dim sh As Worksheet
-    Dim target As Range
-
-    Set sh = Wksh()
-    Set target = sh.Range(sh.Cells(rowIndex, HIDDEN_TITLE_COLUMN), _
-                          sh.Cells(rowIndex, FIRST_OUTPUT_COLUMN + OUTPUT_COLUMN_COUNT - 1))
-    target.Insert Shift:=xlDown
 End Sub
 
 
@@ -757,7 +610,7 @@ Private Function InitialiseWorksheet() As Long
     Dim sh As Worksheet
     Dim startingRow As Long
     Dim view As WorksheetView
-    Dim store As HiddenNames
+    Dim store As IHiddenNames
 
     Set sh = Wksh()
     sh.Rows.Hidden = False
@@ -790,12 +643,7 @@ Private Function InitialiseWorksheet() As Long
             EnsureTitleStore True
         Else
             EnsureTitleStore False
-            'Only the written columns are cleared. The title store sits far to
-            'the right on rows of its own, and a compact log climbs through
-            'those row numbers within its first few entries, so clearing the
-            'whole row would wipe a stored title and empty the filter list.
-            sh.Range(sh.Cells(startingRow, HIDDEN_TITLE_COLUMN), _
-                     sh.Cells(startingRow, FIRST_OUTPUT_COLUMN + OUTPUT_COLUMN_COUNT - 1)).ClearContents
+            sh.Rows(startingRow).ClearContents
         End If
         ApplyHiddenColumnsFormatting sh
         EnsureFilterDropdown
@@ -1001,11 +849,11 @@ End Sub
 'Skips injection when the event marker hidden name is already present.
 '@throws ProjectError.SomethingWentWrong When code injection fails.
 '@export
-Public Sub EnsureWorksheetChangeHandler()
+Private Sub EnsureWorksheetChangeHandler()
     Dim codeModule As Object
     Dim injectionCode As String
     Dim moduleLines As Long
-    Dim store As HiddenNames
+    Dim store As IHiddenNames
 
     On Error GoTo Handler
 
@@ -1236,18 +1084,18 @@ End Sub
 '@description Private utility methods for validation, normalisation, and storage.
 
 '@label:validate-check-table
-'@sub-title Verify that the BetterArray contains only Checking entries
+'@sub-title Verify that the BetterArray contains only IChecking entries
 '@details
 'Iterates the array and raises an error for any item that does not
-'implement Checking.
+'implement IChecking.
 '@param checkTable BetterArray. Table of checking entries to validate.
-'@throws ProjectError.InvalidArgument When an item does not implement Checking.
+'@throws ProjectError.InvalidArgument When an item does not implement IChecking.
 Private Sub ValidateCheckTable(ByVal checkTable As BetterArray)
     Dim index As Long
     For index = checkTable.lowerBound To checkTable.upperBound
-        If Not TypeOf checkTable.Item(index) Is Checking Then
+        If Not TypeOf checkTable.Item(index) Is IChecking Then
            ThrowError ProjectError.InvalidArgument, _
-            "Items in PrintOutput must implement Checking. Item " & CStr(index) & " does not."
+            "Items in PrintOutput must implement IChecking. Item " & CStr(index) & " does not."
         End If
     Next index
 End Sub
@@ -1278,7 +1126,7 @@ End Function
 '@param propName String. Property name to check.
 '@return Boolean. True when the property exists.
 Private Function CustomPropertyExists(ByVal propName As String) As Boolean
-    Dim store As HiddenNames
+    Dim store As IHiddenNames
     Set store = HiddenStore()
     CustomPropertyExists = store.HasName(propName)
 End Function
@@ -1288,20 +1136,20 @@ End Function
 '@param propName String. Property name to store.
 '@param propValue String. Value to persist.
 Private Sub StoreCustomProperty(propName As String, propValue As String)
-    Dim store As HiddenNames
+    Dim store As IHiddenNames
     Set store = HiddenStore()
     store.EnsureName propName, propValue, HiddenNameTypeString
     store.SetValue propName, propValue
 End Sub
 
 '@label:hidden-store
-'@sub-title Lazily create and return the HiddenNames store
+'@sub-title Lazily create and return the IHiddenNames store
 '@details
 'Creates the HiddenNames wrapper bound to the target worksheet on
 'first access. Raises an error when no worksheet is assigned.
-'@return HiddenNames. Hidden name store.
+'@return IHiddenNames. Hidden name store.
 '@throws ProjectError.ObjectNotInitialized When the worksheet is Nothing.
-Private Function HiddenStore() As HiddenNames
+Private Function HiddenStore() As IHiddenNames
     If this.store Is Nothing Then
         If Wksh() Is Nothing Then
             ThrowError ProjectError.ObjectNotInitialized, _
@@ -1352,23 +1200,17 @@ Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, "CheckingOutput", errorMessage
 End Sub
 
-'@label:seal
-'@sub-title Seal the instance so setup setters can no longer be written
-Public Sub Seal()
-    this.sealed = True
-End Sub
-
-'@label:guard-not-sealed
-'@sub-title Guard a setup setter against writes after sealing
-'@param propName String. Name of the property being guarded.
-Private Sub GuardNotSealed(ByVal propName As String)
-    If this.sealed Then _
-        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
-End Sub
-
-'@section Output
+'@section Interface
 '===============================================================================
-'@description End-to-end rendering of checking entries to the worksheet.
+'@description Delegated members satisfying the ICheckingOutput contract.
+
+Private Property Get ICheckingOutput_Wksh() As Worksheet
+    Set ICheckingOutput_Wksh = Wksh()
+End Property
+
+Private Property Get ICheckingOutput_Name() As String
+    ICheckingOutput_Name = Name()
+End Property
 
 '@label:print-output
 '@sub-title Write checking values to a worksheet
@@ -1376,18 +1218,18 @@ End Sub
 'Coordinates the end-to-end rendering: validates the input array,
 'initialises the worksheet, writes each checking bundle, appends the
 'end marker, and records the final row position.
-'@param checkTable BetterArray. Collection of Checking instances to print.
+'@param checkTable BetterArray. Collection of IChecking instances to print.
 '@throws ProjectError.ElementNotFound When checkTable is Nothing.
 '@export
-Public Sub PrintOutput(ByVal checkTable As BetterArray)
+Private Sub ICheckingOutput_PrintOutput(ByVal checkTable As BetterArray)
     Dim currentRow As Long
     Dim writtenTitles As Collection
     Dim index As Long
     Dim previousEventState As Boolean
-    Dim store As HiddenNames
+    Dim store As IHiddenNames
 
     If checkTable Is Nothing Then
-        ThrowError ProjectError.ElementNotFound, "PrintOutput requires a BetterArray of Checking instances"
+        ThrowError ProjectError.ElementNotFound, "PrintOutput requires a BetterArray of IChecking instances"
     End If
 
     previousEventState = Application.EnableEvents
@@ -1401,19 +1243,24 @@ Public Sub PrintOutput(ByVal checkTable As BetterArray)
     Set writtenTitles = New Collection
 
     For index = checkTable.lowerBound To checkTable.upperBound
-        If this.compactAppend Then
-            WriteCompactChecking checkTable.Item(index), currentRow
-        Else
-            WriteChecking checkTable.Item(index), currentRow, writtenTitles
-        End If
+        WriteChecking checkTable.Item(index), currentRow, writtenTitles
     Next index
 
     '@Ignore AssignmentNotUsed
-    If Not this.compactAppend Then currentRow = currentRow + 4
+    currentRow = currentRow + 4
     WriteRow currentRow, formatTag:="level 4", textValue:="End of checkings " & Name(), parentTitle:=END_TAG
     store.SetValue ROW_MARKER_NAME, currentRow
 
 CleanExit:
     Application.EnableEvents = previousEventState
     If Err.Number <> 0 Then ThrowError Err.Number, Err.description
+End Sub
+
+Private Sub ICheckingOutput_FilterWorksheet(Optional ByVal selectionValue As String = vbNullString, _
+                                            Optional ByVal titleSelection As String = vbNullString)
+    FilterWorksheet selectionValue, titleSelection
+End Sub
+
+Private Sub ICheckingOutput_EnsureWorksheetChangeHandler()
+    EnsureWorksheetChangeHandler
 End Sub

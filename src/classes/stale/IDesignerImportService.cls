@@ -76,19 +76,19 @@ End Sub
 '@jump:exported-dictionary
 '@prop-title Dictionary manager targeting the exported workbook
 '@details
-'Returns an LLdictionary instance bound to the Dictionary sheet in the
+'Returns an ILLdictionary instance bound to the Dictionary sheet in the
 'target workbook after ExportToLinelist completes. Returns Nothing before
 'export or when the sheet was not exported.
-'@return LLdictionary. The exported dictionary manager, or Nothing.
+'@return ILLdictionary. The exported dictionary manager, or Nothing.
 '@export
-Public Property Get ExportedDictionary() As LLdictionary
+Public Property Get ExportedDictionary() As ILLdictionary
 End Property
 
 '@jump:exported-choices
 '@prop-title Choices manager targeting the exported workbook
-'@return LLChoices. The exported choices manager, or Nothing.
+'@return ILLChoices. The exported choices manager, or Nothing.
 '@export
-Public Property Get ExportedChoices() As LLChoices
+Public Property Get ExportedChoices() As ILLChoices
 End Property
 
 '@jump:exported-analysis
@@ -100,30 +100,30 @@ End Property
 
 '@jump:exported-export
 '@prop-title Export manager targeting the exported workbook
-'@return LLExport. The exported export manager, or Nothing.
+'@return ILLExport. The exported export manager, or Nothing.
 '@export
-Public Property Get ExportedExport() As LLExport
+Public Property Get ExportedExport() As ILLExport
 End Property
 
 '@jump:exported-geo
 '@prop-title Geo manager targeting the exported workbook
-'@return LLGeo. The exported geo manager, or Nothing.
+'@return ILLGeo. The exported geo manager, or Nothing.
 '@export
-Public Property Get ExportedGeo() As LLGeo
+Public Property Get ExportedGeo() As ILLGeo
 End Property
 
 '@jump:exported-passwords
 '@prop-title Passwords manager targeting the exported workbook
-'@return Passwords. The exported passwords manager, or Nothing.
+'@return IPasswords. The exported passwords manager, or Nothing.
 '@export
-Public Property Get ExportedPasswords() As Passwords
+Public Property Get ExportedPasswords() As IPasswords
 End Property
 
 '@jump:exported-translations
 '@prop-title Translations manager targeting the exported workbook
-'@return LLTranslation. The exported translations manager, or Nothing.
+'@return ILLTranslation. The exported translations manager, or Nothing.
 '@export
-Public Property Get ExportedTranslations() As LLTranslation
+Public Property Get ExportedTranslations() As ILLTranslation
 End Property
 
 

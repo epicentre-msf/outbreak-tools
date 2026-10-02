@@ -13,40 +13,19 @@ Attribute VB_Description = "Worksheet progress bar helper"
 '@Folder("General")
 '@ModuleDescription("Worksheet progress bar helper used while generating linelist artefacts")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, UseMeaningfulName, ExcelMemberMayReturnNothing, HungarianNotation
-'@depends ProjectError
+'@depends IProgressBar, ProjectError
 
 Option Explicit
+
+Implements IProgressBar
 
 '@class ProgressBar
 '@description
 'Cell-based visual progress indicator on a worksheet. Tints cells
 'to reflect completion ratio and optionally writes status text to
 'a companion cell.
-'
-'THE BAR PAINTS IN THE INSTANCE IT LIVES IN
-'-------------------------------------------------------------------------------
-'Every render writes the cells and calls DoEvents once, so the paint lands
-'before the caller goes on. The bar leaves the screen switch alone. It is
-'driven from an instance whose screen is on, where a cell write paints by
-'itself, and a bar that switched the screen on and off would be the
-'flicker the in-place build keeps out.
-'
-'THE BAR CELLS CARRY COLOUR ONLY
-'-------------------------------------------------------------------------------
-'The bar shows progress by tint. Attach clears its cells and they stay
-'empty for the whole run, so one band of colour moving along the range is
-'the whole display.
-'
-'The bar used to write the value pair into its first cell. It gave the
-'user a second thing to read at every tick, and Excel parsed the pair a
-'milestone count produces -- "3 / 12" -- as a date, so the cell showed
-'12-Mar under a dd-mmm format while the band moved.
-'
-'Words go to the status cell. It is set to the text format at the point of
-'write, since the driver's text can be anything, a setup file named for a
-'date included.
 '@depends ProjectError
-'@version 1.3 (2026-08-27)
+'@version 1.0 (2026-02-09)
 
 
 Private Type TProgressBar
@@ -57,6 +36,7 @@ Private Type TProgressBar
     isInitialised As Boolean
     completedColor As Long
     pendingColor As Long
+    valueFormat As String
     statusText As String
 End Type
 
@@ -64,7 +44,7 @@ Private this As TProgressBar
 
 Private Const CLASSNAME As String = "ProgressBar"
 Private Const DEFAULT_MAXIMUM As Long = 100
-Private Const TEXT_NUMBER_FORMAT As String = "@"
+Private Const DEFAULT_VALUE_FORMAT As String = "#,##0"
 Private Const DEFAULT_COMPLETED_COLOR As Long = &H4DB870 '  Clean green
 Private Const DEFAULT_PENDING_COLOR As Long = &HEEF1F5   '  Light grey
 
@@ -73,26 +53,33 @@ Private Const DEFAULT_PENDING_COLOR As Long = &HEEF1F5   '  Light grey
 'Initialisation and factory.
 
 '@label:class-initialize
-'@sub-title Set default values for colours and maximum
+'@sub-title Set default values for colours, format, and maximum
 Private Sub Class_Initialize()
     this.maximum = DEFAULT_MAXIMUM
     this.completedColor = DEFAULT_COMPLETED_COLOR
     this.pendingColor = DEFAULT_PENDING_COLOR
+    this.valueFormat = DEFAULT_VALUE_FORMAT
 End Sub
 
 '@label:create
 '@sub-title Factory returning an initialised interface
 '@param barRange Range. Range that will host the indicator.
 '@param maximum Long. Maximum value. Defaults to DEFAULT_MAXIMUM.
-'@return ProgressBar. Ready to use.
+'@return IProgressBar. Ready to use.
 '@export
-Public Function Create(ByVal barRange As Range, Optional ByVal maximum As Long = DEFAULT_MAXIMUM) As ProgressBar
-    Dim newBar As ProgressBar
-    Set newBar = New ProgressBar
-
-    newBar.Attach barRange, maximum
-    Set Create = newBar
+Public Function Create(ByVal barRange As Range, Optional ByVal maximum As Long = DEFAULT_MAXIMUM) As IProgressBar
+    With New ProgressBar
+        .Attach barRange, maximum
+        Set Create = .Self
+    End With
 End Function
+
+'@label:self
+'@prop-title Self-reference as IProgressBar
+'@return IProgressBar. Self-reference.
+Public Property Get Self() As IProgressBar
+    Set Self = Me
+End Property
 
 '@section Public API
 '===============================================================================
@@ -131,6 +118,22 @@ Public Sub ConfigureColors(ByVal completedColor As Long, ByVal pendingColor As L
     End If
 End Sub
 
+'@label:configure-value-format
+'@sub-title Configure the number format for progress text
+'@param formatPattern String. VBA format pattern.
+'@export
+Public Sub ConfigureValueFormat(ByVal formatPattern As String)
+    If LenB(formatPattern) = 0 Then
+        ThrowError ProjectError.InvalidArgument, "formatPattern cannot be blank"
+    End If
+
+    this.valueFormat = formatPattern
+
+    If this.isInitialised Then
+        RenderProgress
+    End If
+End Sub
+
 '@label:attach-status-cell
 '@sub-title Bind a cell for textual status messages
 '@param statusRange Range. Single-cell range that will receive status text.
@@ -146,14 +149,12 @@ End Sub
 '@param currentValue Long. Absolute progress value.
 '@param statusMessage String. Message pushed to the status cell. Defaults to vbNullString.
 '@export
-Public Sub Update(ByVal currentValue As Long, _
-                  Optional ByVal statusMessage As String = vbNullString)
+Public Sub Update(ByVal currentValue As Long, Optional ByVal statusMessage As String = vbNullString)
     EnsureInitialised
 
     this.value = ClampValue(currentValue)
     RenderProgress
     RenderStatus statusMessage
-    Settle
 End Sub
 
 '@label:step-by
@@ -161,8 +162,7 @@ End Sub
 '@param stepValue Long. Increment. Defaults to 1.
 '@param statusMessage String. Message pushed to the status cell. Defaults to vbNullString.
 '@export
-Public Sub StepBy(Optional ByVal stepValue As Long = 1, _
-                  Optional ByVal statusMessage As String = vbNullString)
+Public Sub StepBy(Optional ByVal stepValue As Long = 1, Optional ByVal statusMessage As String = vbNullString)
     EnsureInitialised
 
     Dim targetValue As Long
@@ -190,7 +190,6 @@ Public Sub Reset(Optional ByVal statusMessage As String = vbNullString)
     this.value = 0
     RenderProgress
     RenderStatus statusMessage
-    Settle
 End Sub
 
 '@section Properties
@@ -249,6 +248,66 @@ End Property
 '@export
 Public Property Get PercentComplete() As Double
     PercentComplete = ComputeRatio(this.value)
+End Property
+
+'@section Interface
+'===============================================================================
+'IProgressBar delegation wiring.
+
+Private Sub IProgressBar_Attach(ByVal barRange As Range, Optional ByVal maximum As Long = DEFAULT_MAXIMUM)
+    Attach barRange, maximum
+End Sub
+
+Private Sub IProgressBar_AttachStatusCell(ByVal statusRange As Range)
+    AttachStatusCell statusRange
+End Sub
+
+Private Property Get IProgressBar_BarRange() As Range
+    Set IProgressBar_BarRange = BarRange
+End Property
+
+Private Sub IProgressBar_Complete(Optional ByVal statusMessage As String = vbNullString)
+    Complete statusMessage
+End Sub
+
+Private Sub IProgressBar_ConfigureColors(ByVal completedColor As Long, ByVal pendingColor As Long)
+    ConfigureColors completedColor, pendingColor
+End Sub
+
+Private Sub IProgressBar_ConfigureValueFormat(ByVal formatPattern As String)
+    ConfigureValueFormat formatPattern
+End Sub
+
+Private Sub IProgressBar_Reset(Optional ByVal statusMessage As String = vbNullString)
+    Reset statusMessage
+End Sub
+
+Private Sub IProgressBar_StepBy(Optional ByVal stepValue As Long = 1, Optional ByVal statusMessage As String = vbNullString)
+    StepBy stepValue, statusMessage
+End Sub
+
+Private Property Get IProgressBar_StatusCell() As Range
+    Set IProgressBar_StatusCell = StatusCell
+End Property
+
+Private Sub IProgressBar_Update(ByVal currentValue As Long, Optional ByVal statusMessage As String = vbNullString)
+    Update currentValue, statusMessage
+End Sub
+
+Private Property Get IProgressBar_Maximum() As Long
+    IProgressBar_Maximum = Maximum
+End Property
+
+Private Property Let IProgressBar_Maximum(ByVal value As Long)
+    Maximum = value
+End Property
+
+Private Property Get IProgressBar_Value() As Long
+    IProgressBar_Value = Value
+End Property
+
+Private Property Get IProgressBar_PercentComplete() As Double
+    IProgressBar_PercentComplete = PercentComplete
 End Property
 
 '@section Internal Helpers
@@ -330,20 +389,12 @@ Private Function ClampRatio(ByVal ratio As Double) As Double
 End Function
 
 '@label:render-progress
-'@sub-title Re-render the bar
+'@sub-title Re-render the bar and value text
 Private Sub RenderProgress()
     Dim ratio As Double
     ratio = ComputeRatio(this.value)
     PaintBar ratio
-End Sub
-
-'@label:settle
-'@sub-title Let the latest render paint before the caller goes on
-'@details
-'One DoEvents. The screen of the instance the bar lives in is on, so the
-'cell writes paint on their own once the message loop gets a turn.
-Private Sub Settle()
-    DoEvents
+    WriteValue
 End Sub
 
 '@label:render-status
@@ -355,7 +406,6 @@ Private Sub RenderStatus(ByVal statusMessage As String)
 
     If this.statusRange Is Nothing Then Exit Sub
 
-    this.statusRange.NumberFormat = TEXT_NUMBER_FORMAT
     this.statusRange.Value = this.statusText
 End Sub
 
@@ -383,10 +433,7 @@ Private Sub PaintBar(ByVal ratio As Double)
     totalCells = this.barRange.Cells.Count
     If totalCells = 0 Then Exit Sub
 
-    'The ratio is a Double, so a product that belongs on a whole number can
-    'come out just under it: 3 of 5 gives 2.9999999999999996 and Fix drops a
-    'cell. Rounding the product first settles it on the whole number.
-    filledCount = CLng(Fix(Round(ratio * totalCells, 9)))
+    filledCount = CLng(Fix(ratio * totalCells))
 
     If ratio > 0# And filledCount = 0 Then
         filledCount = 1
@@ -403,6 +450,21 @@ Private Sub PaintBar(ByVal ratio As Double)
             cell.Interior.Color = this.pendingColor
         End If
     Next cell
+End Sub
+
+'@label:write-value
+'@sub-title Write the formatted progress text to the first cell
+Private Sub WriteValue()
+    If this.barRange Is Nothing Then Exit Sub
+
+    Dim formattedValue As String
+    formattedValue = Format$(this.value, this.valueFormat) & " / " & Format$(this.maximum, this.valueFormat)
+
+    With this.barRange.Cells(1)
+        .Value = formattedValue
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+    End With
 End Sub
 
 '@label:resolve-maximum

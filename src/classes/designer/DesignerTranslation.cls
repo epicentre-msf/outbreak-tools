@@ -17,20 +17,22 @@ Attribute VB_Description = "Translation of the designer"
 
 Option Explicit
 
+Implements IDesignerTranslation
+
 '@class DesignerTranslation
 '@description
 'Manages translation of the designer workbook by reading translation
 'tables (shapes, ranges, messages, dropdowns) from a dedicated
 'translation worksheet. Provides factory creation with requirement
-'validation, returns cached TranslationObject instances scoped to
+'validation, returns cached ITranslationObject instances scoped to
 'each content type, and applies translations to an entire designer
 'worksheet by updating shape text, named range values, and dropdown
 'validations. The current language code is extracted from a language
 'string (e.g. "FRA - Francais") and persisted as a worksheet-level
 'HiddenName for cross-session persistence. All translation objects
 'and name lists are cached for fast repeated access.
-'Consumers interact through the DesignerTranslation interface.
-'@depends TranslationObject, TranslationObject, BetterArray, HiddenNames
+'Consumers interact through the IDesignerTranslation interface.
+'@depends TranslationObject, ITranslationObject, BetterArray, HiddenNames, IHiddenNames
 
 
 
@@ -40,16 +42,15 @@ Option Explicit
 Private Type TDesignerTranslation
     sh As Worksheet
     langCode As String
-    msgTrans As TranslationObject
-    shapeTrans As TranslationObject
-    rangeTrans As TranslationObject
-    dropTrans As TranslationObject
+    msgTrans As ITranslationObject
+    shapeTrans As ITranslationObject
+    rangeTrans As ITranslationObject
+    dropTrans As ITranslationObject
     shapeNames As BetterArray
     rangeNames As BetterArray
     dropNames As BetterArray
-    wkshNames As HiddenNames
+    wkshNames As IHiddenNames
     isCached As Boolean
-    sealed As Boolean
 End Type
 
 Private this As TDesignerTranslation
@@ -64,15 +65,6 @@ Private Const TABDROP As String = "T_tradDrop"
 Private Const CLASS_NAME As String = "DesignerTranslation"
 Private Const LANG_HIDDEN_NAME As String = "TAG_DES_LANG"
 
-'@section Enums
-'===============================================================================
-Public Enum DesignerTranslationScope
-    DesignerTranslationOfMessages = 0
-    DesignerTranslationOfShapes = 2
-    DesignerTranslationOfRanges = 5
-    DesignerTranslationOfDropdowns = 6
-End Enum
-
 '@section Factory
 '===============================================================================
 
@@ -81,32 +73,17 @@ End Enum
 '@details
 'Factory method that validates all required ListObjects on the supplied
 'worksheet, then constructs and returns a new instance through the
-'DesignerTranslation interface. Called on the predeclared instance.
+'IDesignerTranslation interface. Called on the predeclared instance.
 '@param sh Worksheet. The translation worksheet containing T_tradShape, T_tradRange, T_tradMsg, T_tradDrop.
-'@return DesignerTranslation. A fully initialised instance ready for use.
+'@return IDesignerTranslation. A fully initialised instance ready for use.
 '@export
-Public Function Create(ByVal sh As Worksheet) As DesignerTranslation
+Public Function Create(ByVal sh As Worksheet) As IDesignerTranslation
     CheckRequirements sh
     Dim instance As DesignerTranslation
     Set instance = New DesignerTranslation
     Set instance.Wksh = sh
-    instance.Seal
     Set Create = instance
 End Function
-
-'@label:seal
-'@sub-title Seal the instance against further setup writes
-Public Sub Seal()
-    this.sealed = True
-End Sub
-
-'@label:guard-not-sealed
-'@sub-title Guard a setup setter against post-seal mutation
-'@param propName String. The name of the property being guarded.
-Private Sub GuardNotSealed(ByVal propName As String)
-    If this.sealed Then _
-        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
-End Sub
 
 '@label:wksh
 '@prop-title Translation worksheet
@@ -119,7 +96,6 @@ End Property
 '@prop-title Assign the translation worksheet
 '@param sh Worksheet. The worksheet to store.
 Public Property Set Wksh(ByVal sh As Worksheet)
-    GuardNotSealed "Wksh"
     Set this.sh = sh
 End Property
 
@@ -139,7 +115,7 @@ Private Property Get DesignerLanguage() As String
         Exit Property
     End If
 
-    Dim names As HiddenNames
+    Dim names As IHiddenNames
     Set names = WkshNames()
 
     If names.HasName(LANG_HIDDEN_NAME) Then
@@ -152,13 +128,13 @@ End Property
 '@label:trans-object
 '@prop-title Translation object for a given content type
 '@details
-'Returns a cached TranslationObject for the requested translation
+'Returns a cached ITranslationObject for the requested translation
 'scope. Ensures caches are built using the current language code.
 'Returns Nothing when no language code is configured.
 '@param trans Optional Byte. TranslationType value selecting the content scope. Defaults to TranslationOfMessages.
-'@return TranslationObject. The translation object for the requested scope.
+'@return ITranslationObject. The translation object for the requested scope.
 '@export
-Public Property Get TransObject(Optional ByVal trans As Byte = DesignerTranslationOfMessages) As TranslationObject
+Public Property Get TransObject(Optional ByVal trans As Byte = DesignerTranslationOfMessages) As ITranslationObject
     Dim langCode As String
     langCode = DesignerLanguage()
 
@@ -193,7 +169,7 @@ End Property
 '@param mainsh Worksheet. The designer worksheet to translate.
 '@param language String. Language string in "CODE - Label" format. Pass vbNullString to use the stored language.
 '@export
-Public Sub TranslateDesigner(ByVal mainsh As Worksheet, ByVal language As String)
+Private Sub TranslateDesigner(ByVal mainsh As Worksheet, ByVal language As String)
     Dim langCode As String
 
     If LenB(language) > 0 Then
@@ -317,7 +293,7 @@ End Sub
 '@param msgCode String. The message code to translate.
 '@return String. The translated message text.
 '@export
-Public Function TranslatedValue(ByVal msgCode As String) As String
+Private Function TranslatedValue(ByVal msgCode As String) As String
     Dim langCode As String
     langCode = DesignerLanguage()
 
@@ -357,7 +333,7 @@ End Function
 'so the cache-invalidation check remains correct.
 '@param langCode String. The language code to persist.
 Private Sub UpdateLanguageCode(ByVal langCode As String)
-    Dim names As HiddenNames
+    Dim names As IHiddenNames
     Set names = WkshNames()
     names.EnsureName LANG_HIDDEN_NAME, langCode, HiddenNameTypeString
     names.SetValue LANG_HIDDEN_NAME, langCode
@@ -366,10 +342,10 @@ End Sub
 '@label:wksh-names
 '@prop-title Cached HiddenNames accessor for the translation worksheet
 '@details
-'Lazily creates and returns an HiddenNames instance scoped to the
+'Lazily creates and returns an IHiddenNames instance scoped to the
 'translation worksheet.
-'@return HiddenNames. The HiddenNames manager for the translation worksheet.
-Private Property Get WkshNames() As HiddenNames
+'@return IHiddenNames. The HiddenNames manager for the translation worksheet.
+Private Property Get WkshNames() As IHiddenNames
     If this.wkshNames Is Nothing Then
         Set this.wkshNames = HiddenNames.Create(this.sh)
     End If
@@ -462,9 +438,6 @@ Private Sub LoExists(sh As Worksheet, ByVal loNames As BetterArray)
     Dim lName As String
     For counter = loNames.LowerBound To loNames.UpperBound
         lName = loNames.Item(counter)
-        'A failed lookup under Resume Next leaves the previous table in Lo.
-        'Dropping the reference first lets every name in the list be checked.
-        Set Lo = Nothing
         On Error Resume Next
         Set Lo = sh.ListObjects(lName)
         On Error GoTo 0
@@ -472,3 +445,20 @@ Private Sub LoExists(sh As Worksheet, ByVal loNames As BetterArray)
             "Table " & lName & " does not exists in Worksheet " & sh.Name
     Next
 End Sub
+
+'@section Interface Implementation
+'===============================================================================
+'@description Delegated members satisfying the IDesignerTranslation contract.
+'See the corresponding members above for full documentation.
+
+Private Property Get IDesignerTranslation_TransObject(Optional ByVal trans As Byte = DesignerTranslationOfMessages) As ITranslationObject
+    Set IDesignerTranslation_TransObject = TransObject(trans)
+End Property
+
+Private Sub IDesignerTranslation_TranslateDesigner(ByVal mainsh As Worksheet, ByVal language As String)
+    TranslateDesigner mainsh, language
+End Sub
+
+Private Function IDesignerTranslation_TranslatedValue(ByVal msgCode As String) As String
+    IDesignerTranslation_TranslatedValue = TranslatedValue(msgCode)
+End Function

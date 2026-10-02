@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ILLSpatial - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ILLSpatial</h1>
+<p>Defines the public contract for the LLSpatial class, exposing methods
+for checking spatial variable existence, updating spatial analysis tables
+from filtered linelist data, sorting tables by formula or attack rate,
+and retrieving ranked geographic or health facility values for use in
+analyses and graphs.</p>
+<h2>Properties</h2>
+<h3>Exists</h3>
+<p><strong>Whether a variable has spatial tables</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Exists(ByVal varName As String) As Boolean: End Property
+</code></pre>
+<p>Searches the &quot;listofgeovars&quot; ListObject on the spatial sheet for a
+partial match of the supplied variable name. Returns True when the
+variable appears in the spatial variables list, indicating that spatial
+analysis tables exist for it.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. Variable name or partial name to look up.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the variable exists in the spatial variables list.</p>
+<hr />
+<h2>Update</h2>
+<h3>Update</h3>
+<p><strong>Update all spatial tables from filtered linelist data</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Update(): End Sub
+</code></pre>
+<p>Iterates all HList worksheets, locates their filtered companion sheet,
+finds columns controlled by geo1 and hf, extracts unique values from the
+filtered data, and populates the corresponding spatial ListObjects. After
+updating all tables, recalculates the spatial sheet so formula columns
+reflect the new data.</p>
+<hr />
+<h2>Ranking</h2>
+<h3>TopGeoValue</h3>
+<p><strong>Ranked value from a sorted spatial geo table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TopGeoValue(ByVal adminName As String, _
+                                ByVal orderValue As Long, _
+                                ByVal varName As String, _
+                                Optional ByVal tabId As String = vbNullString, _
+                                Optional ByVal concatValue As Byte = 1) As String
+</code></pre>
+<p>Returns the value at the requested rank position from a sorted spatial
+admin table. The concatValue parameter selects between the name column
+(1) and the concatenated column (other values). Returns an empty string
+when the rank exceeds the available rows or the table does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>adminName</code>: String. Admin level name (&quot;adm1&quot;, &quot;adm2&quot;, &quot;adm3&quot;, or &quot;adm4&quot;).</li>
+<li><code>orderValue</code>: Long. Rank position in the sorted table (1-based).</li>
+<li><code>varName</code>: String. Base variable name without admin prefix.</li>
+<li><code>tabId</code>: Optional String. Table identifier suffix. Defaults to vbNullString.</li>
+<li><code>concatValue</code>: Optional Byte. 1 for the name column, other values for the concat column. Defaults to 1.</li>
+</ul>
+<p><strong>Returns:</strong> String. The value at the requested rank, or empty string if not found.</p>
+<hr />
+<h3>TopHFValue</h3>
+<p><strong>Ranked value from a sorted spatial HF table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TopHFValue(ByVal orderValue As Long, _
+                               ByVal inputVarName As String, _
+                               Optional ByVal tabId As String = vbNullString) As String
+</code></pre>
+<p>Returns the value at the requested rank position from a sorted spatial
+health facility table. Returns an empty string when the rank exceeds the
+available rows or the table does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>orderValue</code>: Long. Rank position in the sorted table (1-based).</li>
+<li><code>inputVarName</code>: String. Base variable name.</li>
+<li><code>tabId</code>: Optional String. Table identifier suffix. Defaults to vbNullString.</li>
+</ul>
+<p><strong>Returns:</strong> String. The value at the requested rank, or empty string if not found.</p>
+<hr />
+<h2>Sort</h2>
+<h3>Sort</h3>
+<p><strong>Sort spatial tables by formula value or attack rate</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Sort(ByVal tabId As String, Optional ByVal onAR As Boolean = False): End Sub
+</code></pre>
+<p>Locates the spatial variable matching tabId in the &quot;listofgeovars&quot; list,
+then sorts the corresponding admin1 through admin4 ListObjects by either
+the formula column or the attack_rate column in descending order. Skips
+tables that do not exist or have no data.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tabId</code>: String. Table identifier used to locate the variable name.</li>
+<li><code>onAR</code>: Optional Boolean. True to sort by attack_rate column, False for formula column. Defaults to False.</li>
+</ul>
+<hr />
+
+  </main>
+</body>
+</html>
+

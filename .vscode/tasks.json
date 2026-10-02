@@ -1,448 +1,527 @@
 {
     // See https://go.microsoft.com/fwlink/?LinkId=733558
     // for the documentation about the tasks.json format
-    //
-    // All tasks are plain POSIX shell commands. On Windows they are routed
-    // through Git Bash (see the "windows" block below), so the same command
-    // line works on macOS, Linux and Windows without per-OS overrides.
     "version": "2.0.0",
-    "options": {
-        "cwd": "${workspaceFolder}"
-    },
-    "windows": {
-        "options": {
-            "shell": {
-                "executable": "C:\\Program Files\\Git\\bin\\bash.exe",
-                "args": [
-                    "-l",
-                    "-c"
-                ]
-            }
-        }
-    },
-    "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-    },
     "tasks": [
         {
             "label": "unix2dos src",
-            "type": "shell",
-            "command": "find src -type f \\( -name '*.cls' -o -name '*.bas' \\) -print0 | xargs -0 unix2dos",
+            "type": "process",
+            "command": "/bin/bash",
+            "args": [
+                "-lc",
+                "find src -type f \\( -name '*.cls' -o -name '*.bas' \\) -print0 | xargs -0 unix2dos"
+            ],
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    "Get-ChildItem -Path src -Recurse -Include *.cls,*.bas -File | ForEach-Object { $content = Get-Content -LiteralPath $_.FullName -Raw; $normalized = $content -replace \"`r?`n\", \"`r`n\"; [System.IO.File]::WriteAllText($_.FullName, $normalized) }"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "convert harness (perl)",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/harness_test_replacements.pl",
+                "${file}"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate/codes/harness_test_replacements.pl",
+                    "${file}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "add failure logging (perl)",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/add_failure_logging.pl",
+                "${file}"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate/codes/add_failure_logging.pl",
+                    "${file}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "find private properties missing end",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/find_private_properties_missing_end.pl",
+                "--root",
+                "${workspaceFolder}",
+                "--output",
+                "temp/private_properties_missing_end.txt"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate\\codes\\find_private_properties_missing_end.pl",
+                    "--root",
+                    "${workspaceFolder}",
+                    "--output",
+                    "temp\\private_properties_missing_end.txt"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "update unit test dev",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_unit_test('mock')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
             "problemMatcher": []
         },
         {
             "label": "update designer dev",
-            "type": "shell",
-            "command": "Rscript -e \"source('scripts/devtools/update-files.R'); update_designer('dev')\"",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_designer('dev')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
             "problemMatcher": []
         },
         {
             "label": "update designer main",
-            "type": "shell",
-            "command": "Rscript -e \"source('scripts/devtools/update-files.R'); update_designer('main')\"",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_designer('main')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
             "problemMatcher": []
         },
         {
             "label": "update setup dev",
-            "type": "shell",
-            "command": "Rscript -e \"source('scripts/devtools/update-files.R'); update_setup('mock')\"",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_setup('mock')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
             "problemMatcher": []
         },
         {
             "label": "update setup main",
-            "type": "shell",
-            "command": "Rscript -e \"source('scripts/devtools/update-files.R'); update_setup('main')\"",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_setup('main')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
             "problemMatcher": []
         },
         {
             "label": "update master setup dev",
-            "type": "shell",
-            "command": "Rscript -e \"source('scripts/devtools/update-files.R'); update_master_setup('mock')\"",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_master_setup('mock')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
             "problemMatcher": []
         },
         {
             "label": "update master setup main",
-            "type": "shell",
-            "command": "Rscript -e \"source('scripts/devtools/update-files.R'); update_master_setup('main')\"",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_master_setup('main')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
             "problemMatcher": []
         },
         {
-            "label": "update dev binaries",
-            "detail": "Copies the setup, master setup and designer mocks over their _dev twins in one R session",
-            "type": "shell",
-            "command": "Rscript -e \"source('scripts/devtools/update-files.R'); update_setup('mock'); update_master_setup('mock'); update_designer('dev')\"",
+            "label": "update unit test main",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_unit_test('main')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
             "problemMatcher": []
         },
         {
-            "label": "update unit test",
-            "type": "shell",
-            "command": "Rscript -e \"source('scripts/devtools/update-files.R'); update_unit_test()\"",
+            "label": "create vba class",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/create_vba_classes.R'); create_class('${input:className}')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "create vba module",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/create_vba_modules.R'); create_modules('${input:className}')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "remove const underscores (file)",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/remove_const_underscores.pl",
+                "${file}"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate\\codes\\remove_const_underscores.pl",
+                    "${file}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "remove const underscores (folder)",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/remove_const_underscores.pl",
+                "${input:constTargetFolder}"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate\\codes\\remove_const_underscores.pl",
+                    "${input:constTargetFolder}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "print vba to pdf (file)",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/print_vba_to_pdf.pl",
+                "--output",
+                "${input:printPdfOutputPath}",
+                "--title",
+                "${input:printPdfTitle}",
+                "${file}"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate\\codes\\print_vba_to_pdf.pl",
+                    "--output",
+                    "${input:printPdfOutputPath}",
+                    "--title",
+                    "${input:printPdfTitle}",
+                    "${file}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "print vba to pdf (folder)",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/print_vba_to_pdf.pl",
+                "--output",
+                "${input:printPdfFolderOutputPath}",
+                "--title",
+                "${input:printPdfTitle}",
+                "--recursive",
+                "${input:printPdfTargetFolder}"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate\\codes\\print_vba_to_pdf.pl",
+                    "--output",
+                    "${input:printPdfFolderOutputPath}",
+                    "--title",
+                    "${input:printPdfTitle}",
+                    "--recursive",
+                    "${input:printPdfTargetFolder}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
             "problemMatcher": []
         },
         {
             "label": "Docs: Build full site",
             "type": "shell",
-            "command": "bash scripts/docs/build-docs.sh",
+            "command": "bash",
+            "args": [
+                "automate/codes/build-docs.sh"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-Command",
+                    "Remove-Item -Recurse -Force src/docs -ErrorAction SilentlyContinue; Rscript automate/codes/create-docs.R --all; Rscript automate/codes/build-site.R"
+                ]
+            },
             "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
             "problemMatcher": []
         },
         {
             "label": "Docs: Generate class markdown",
             "type": "shell",
-            "command": "Rscript scripts/docs/create-docs.R class '${input:docClassName}'",
+            "command": "Rscript",
+            "args": [
+                "automate/codes/create-docs.R",
+                "class",
+                "${input:docClassName}"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Docs: Generate interface markdown",
+            "type": "shell",
+            "command": "Rscript",
+            "args": [
+                "automate/codes/create-docs.R",
+                "--interface",
+                "${input:docClassName}"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "metrics: count VBA lines",
+            "type": "shell",
+            "command": "Rscript",
+            "args": [
+                "automate/codes/number_lines.R"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
             "problemMatcher": []
         },
         {
             "label": "translations: merge designer",
             "type": "shell",
-            "command": "Rscript scripts/devtools/match-designertranslations.R",
-            "problemMatcher": []
-        },
-        {
-            "label": "translations: coverage report",
-            "type": "shell",
-            "command": "Rscript scripts/devtools/translation-coverage.R",
-            "problemMatcher": []
-        },
-        {
-            "label": "translations: add rows",
-            "type": "shell",
-            "command": "Rscript scripts/devtools/add-translation-rows.R --workbook '${input:tradWorkbook}' --rows '${input:tradRows}'",
-            "problemMatcher": []
-        },
-        {
-            "label": "tests: build manual tests workbook",
-            "type": "shell",
-            "command": "Rscript scripts/devtools/build-manual-tests.R",
-            "problemMatcher": []
-        },
-        {
-            "label": "tests: narrow registry",
-            "type": "shell",
-            "command": "Rscript scripts/devtools/narrow-registry.R '${input:registryFolders}'",
-            "problemMatcher": []
-        },
-        {
-            "label": "tests: probe folders",
-            "type": "shell",
-            "command": "bash scripts/devtools/probe-folders.sh ${input:probeFolders}",
-            "problemMatcher": []
-        },
-        {
-            "label": "scan: name shadowing",
-            "type": "shell",
-            "command": "Rscript scripts/devtools/name-shadowing-scan.R",
-            "problemMatcher": []
-        },
-        {
-            "label": "scan: call signatures",
-            "type": "shell",
-            "command": "Rscript scripts/devtools/call-signature-scan.R --tests",
-            "problemMatcher": []
-        },
-        {
-            "label": "scan: linelist components",
-            "type": "shell",
-            "command": "Rscript scripts/devtools/linelist-components-scan.R",
-            "problemMatcher": []
-        },
-        {
-            "label": "scan: transferred code",
-            "type": "shell",
-            "command": "Rscript scripts/devtools/transferred-code-scan.R",
-            "problemMatcher": []
-        },
-        {
-            "label": "scan: interface guard",
-            "type": "shell",
-            "command": "bash scripts/devtools/interface-guard.sh",
-            "problemMatcher": []
-        },
-        {
-            "label": "scan: mock import drift",
-            "type": "shell",
-            "command": "bash scripts/devtools/mock-import-drift.sh ${input:driftTarget}",
-            "problemMatcher": []
-        },
-        {
-            "label": "comments: harvest",
-            "type": "shell",
-            "command": "Rscript scripts/devtools/harvest-comments.R",
-            "problemMatcher": []
-        },
-        {
-            "label": "comments: update (dry run)",
-            "type": "shell",
-            "command": "Rscript scripts/devtools/update-comments.R --input all-comments.txt --dry-run",
-            "problemMatcher": []
-        },
-        {
-            "label": "comments: update",
-            "type": "shell",
-            "command": "Rscript scripts/devtools/update-comments.R --input all-comments.txt",
-            "problemMatcher": []
-        },
-        {
-            "label": "ribbon: doctor",
-            "type": "shell",
-            "command": "bash scripts/devtools/ribbon-doctor.sh '${input:ribbonWorkbook}'",
-            "problemMatcher": []
-        },
-        {
-            "label": "ribbon: extract",
-            "type": "shell",
-            "command": "bash scripts/devtools/ribbon-extract.sh '${input:ribbonWorkbook}'",
-            "problemMatcher": []
-        },
-        {
-            "label": "ribbon: pack",
-            "type": "shell",
-            "command": "bash scripts/devtools/ribbon-pack.sh '${input:ribbonDir}' --out '${input:ribbonOut}' --overwrite",
-            "problemMatcher": []
-        },
-        {
-            "label": "ribbon: pack all",
-            "type": "shell",
-            "command": "fail=0; for d in ribbons/*/; do d=${d%/}; [ -f \"$d/.source\" ] || { echo \"skip $d (no .source)\"; continue; }; out=$(sed -n 's/^workbook=//p' \"$d/.source\"); echo \"=== $d -> $out\"; bash scripts/devtools/ribbon-pack.sh \"$d\" --out \"$out\" --overwrite || fail=1; done; exit $fail",
-            "problemMatcher": []
-        },
-        {
-            "label": "ribbon: envelope (2007)",
-            "type": "shell",
-            "command": "bash scripts/devtools/ribbon-envelope.sh '${input:ribbonWorkbook}'",
-            "problemMatcher": []
-        },
-
-        {
-            "label": "ribbon: check sources against the workbooks",
-            "type": "shell",
-            "command": "bash scripts/release/sync-ribbons.sh --check",
-            "problemMatcher": []
-        },
-        {
-            "label": "ribbon: re-read sources from the workbooks",
-            "type": "shell",
-            "command": "bash scripts/release/sync-ribbons.sh",
-            "problemMatcher": []
-        },
-        {
-            "label": "inspect: linelist",
-            "type": "shell",
-            "command": "Rscript scripts/devtools/linelist-inspect.R '${input:linelistPath}'",
-            "problemMatcher": []
-        },
-        {
-            "label": "inspect: vba project",
-            "type": "shell",
-            "command": "Rscript scripts/devtools/vba-inspect.R '${input:vbaBinPath}' ${input:vbaMode} src",
-            "problemMatcher": []
-        },
-        {
-            "label": "names: show folder",
-            "type": "shell",
-            "command": "bash scripts/devtools/show-names.sh ${input:namesKind} ${input:namesArgs}",
-            "problemMatcher": []
-        },
-        {
-            "label": "tests: run suite (background)",
-            "type": "shell",
-            "command": "bash scripts/tests/run-tests-bg.sh --build",
-            "group": "test",
-            "problemMatcher": []
-        },
-        {
-            "label": "tests: run suite (background, with options)",
-            "type": "shell",
-            "command": "bash scripts/tests/run-tests-bg.sh ${input:testRunArgs}",
-            "problemMatcher": []
-        },
-        {
-            "label": "headless: build linelist",
-            "type": "shell",
-            "command": "bash scripts/headless/build-linelist.sh",
-            "group": "build",
-            "problemMatcher": []
-        },
-        {
-            "label": "headless: build linelist (with options)",
-            "type": "shell",
-            "command": "bash scripts/headless/build-linelist.sh ${input:headlessArgs}",
-            "problemMatcher": []
-        },
-        {
-            "label": "release: preflight (check only)",
-            "type": "shell",
-            "command": "bash scripts/release/preflight.sh --check",
-            "problemMatcher": []
-        },
-        {
-            "label": "release: push assets",
-            "type": "shell",
-            "command": "bash scripts/release/push-assets.sh",
-            "problemMatcher": []
-        },
-        {
-            "label": "release: push assets (no dev refresh)",
-            "type": "shell",
-            "command": "OBT_SKIP_DEV_REFRESH=1 bash scripts/release/push-assets.sh",
-            "problemMatcher": []
-        },
-        {
-            "label": "release: pull assets",
-            "type": "shell",
-            "command": "bash scripts/release/pull-assets.sh",
-            "problemMatcher": []
-        },
-        {
-            "label": "release: build zip",
-            "type": "shell",
-            "command": "bash scripts/release/build-release-zip.sh ${input:releaseBranch} '${input:releaseVersion}'",
-            "problemMatcher": []
-        },
-        {
-            "label": "release: build site releases page",
-            "type": "shell",
-            "command": "bash scripts/ci/build-releases.sh",
-            "problemMatcher": []
-        },
-        {
-            "label": "release: backfill legacy (dry run)",
-            "type": "shell",
-            "command": "DRY_RUN=yes bash scripts/release/backfill-legacy.sh",
-            "problemMatcher": []
-        },
-        {
-            "label": "release: backfill legacy",
-            "type": "shell",
-            "command": "bash scripts/release/backfill-legacy.sh",
+            "command": "Rscript",
+            "args": [
+                "automate/codes/match_designertranslations.R"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
             "problemMatcher": []
         }
     ],
     "inputs": [
         {
+            "id": "className",
+            "type": "promptString",
+            "description": "Name of the VBA class to generate",
+            "default": "NewClass"
+        },
+        {
             "id": "docClassName",
             "type": "promptString",
-            "description": "Class or interface name to document (without the .cls extension)"
+            "description": "Name of the VBA class to document (e.g. Buttons, LLExporter)",
+            "default": "Buttons"
         },
         {
-            "id": "tradWorkbook",
+            "id": "testModulePath",
             "type": "promptString",
-            "description": "Translations workbook to grow",
-            "default": "trads/designer_translations.xlsx"
+            "description": "Path to the VBA test module to migrate (e.g. src/tests/modules/general/TestChecking.bas)",
+            "default": "src/tests/modules/general/TestChecking.bas"
         },
         {
-            "id": "tradRows",
+            "id": "constTargetFolder",
             "type": "promptString",
-            "description": "CSV of rows to add (first column = table name, then the row starting with the message code)",
-            "default": "trads/new-rows.csv"
+            "description": "Folder to process when stripping underscores from constant names",
+            "default": "src"
         },
         {
-            "id": "registryFolders",
+            "id": "printPdfOutputPath",
             "type": "promptString",
-            "description": "Suite folder(s) to keep in the registry, comma separated (e.g. dataio,helpers)"
+            "description": "PDF output path when printing the active file",
+            "default": "printed_module.pdf"
         },
         {
-            "id": "probeFolders",
+            "id": "printPdfTargetFolder",
             "type": "promptString",
-            "description": "Folders to probe one at a time, space separated; empty walks every registry folder except helpers",
-            "default": ""
+            "description": "Folder to include when printing modules to PDF",
+            "default": "src"
         },
         {
-            "id": "driftTarget",
-            "type": "pickString",
-            "description": "Which mock workbook(s) to check against the source files",
-            "options": [
-                "all",
-                "setup",
-                "designer",
-                "unit_test",
-                "mastersetup"
-            ],
-            "default": "all"
-        },
-        {
-            "id": "ribbonWorkbook",
+            "id": "printPdfFolderOutputPath",
             "type": "promptString",
-            "description": "Workbook carrying the ribbon (e.g. .mock/setup_mock.xlsb)",
-            "default": ".mock/setup_mock.xlsb"
+            "description": "PDF output path when printing a folder",
+            "default": "printed_folder_modules.pdf"
         },
         {
-            "id": "ribbonDir",
+            "id": "printPdfTitle",
             "type": "promptString",
-            "description": "Ribbon folder produced by ribbon-extract.sh (e.g. ribbons/setup_mock)",
-            "default": "ribbons/setup_mock"
-        },
-        {
-            "id": "ribbonOut",
-            "type": "promptString",
-            "description": "Workbook to write the packed ribbon into (overwritten)",
-            "default": ".mock/setup_mock.xlsb"
-        },
-        {
-            "id": "linelistPath",
-            "type": "promptString",
-            "description": "Delivered linelist to inspect (.xlsb)"
-        },
-        {
-            "id": "vbaBinPath",
-            "type": "promptString",
-            "description": "Path to the vbaProject.bin to read"
-        },
-        {
-            "id": "vbaMode",
-            "type": "pickString",
-            "description": "list = name the components; content = also compare their source with src/",
-            "options": [
-                "list",
-                "content"
-            ],
-            "default": "list"
-        },
-        {
-            "id": "namesKind",
-            "type": "pickString",
-            "description": "Which source tree to list",
-            "options": [
-                "--classes",
-                "--modules",
-                "--tests"
-            ],
-            "default": "--classes"
-        },
-        {
-            "id": "namesArgs",
-            "type": "promptString",
-            "description": "Extra arguments: --folder=<name>, --folders, --ext, --paths; empty lists every name in the tree",
-            "default": "--folder=dataio"
-        },
-        {
-            "id": "testRunArgs",
-            "type": "promptString",
-            "description": "Flags for run-tests-bg.sh: --build (import the sources first), --wait (block until the run ends), --keep, --home=<dir>",
-            "default": "--build --wait"
-        },
-        {
-            "id": "headlessArgs",
-            "type": "promptString",
-            "description": "Overrides for build-linelist.sh, e.g. --setup=<file> --out=<dir> --name=<stem>; --help lists them all",
-            "default": "--help"
-        },
-        {
-            "id": "releaseBranch",
-            "type": "pickString",
-            "description": "Which stream to package: main ships the promoted binaries, dev the _dev ones",
-            "options": [
-                "main",
-                "dev"
-            ],
-            "default": "dev"
-        },
-        {
-            "id": "releaseVersion",
-            "type": "promptString",
-            "description": "Version stamped on the archive: a semantic version for main (e.g. 2.0.0), 'latest' for dev",
-            "default": "latest"
+            "description": "Title to display on the PDF output",
+            "default": "VBA Modules"
         }
     ]
 }

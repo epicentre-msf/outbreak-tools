@@ -2,7 +2,6 @@ Attribute VB_Name = "ImportForm"
 Attribute VB_Description = "Imports form logics"
 
 '@IgnoreModule UnrecognizedAnnotation, SheetAccessedUsingString
-'@depends SetupHelpers, EventsManager, Passwords
 Option Explicit
 Private NumberOfClicks As Long
 Private Const LimitOfClicks As Long = 5
@@ -45,9 +44,10 @@ Private Sub LabPath_Click()
 
     If NumberOfClicks < LimitOfClicks Then Exit Sub
 
-    Dim pass As Passwords
+    Dim pass As IPasswords
     Dim pwdUser As Variant
     Dim expectedPassword As String
+    Dim appState As IApplicationState
 
     Me.LabProgress.Caption = vbNullString
 
@@ -63,9 +63,10 @@ Private Sub LabPath_Click()
         'Wrap EnterDebugMode in BusyState to suppress screen flickering
         'while iterating through all worksheets to unprotect them
         On Error GoTo DebugCleanup
-        EventsManager.EnterBusyState
+        SetupEventsManager.EnterBusyState
+        Application.ScreenUpdating = False
         pass.EnterDebugMode
-        EventsManager.ExitBusyState
+        SetupEventsManager.ExitBusyState
         On Error GoTo 0
 
         Me.LabProgress.Caption = vbNullString
@@ -80,12 +81,9 @@ cleanExit:
     Exit Sub
 
 DebugCleanup:
-    'The manager owns the state, so it is the manager that puts it back. This
-    'used to test a local ApplicationState that was never assigned, so the busy
-    'state was left on after a failure.
     On Error Resume Next
-    EventsManager.ExitBusyState
-    EventsManager.RestPointer
+    If Not appState Is Nothing Then appState.Restore
+    Application.Cursor = xlDefault
     On Error GoTo 0
     Resume cleanExit
 End Sub

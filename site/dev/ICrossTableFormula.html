@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ICrossTableFormula - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ICrossTableFormula</h1>
+<p>Defines the public contract for the CrossTableFormula class. Exposes a
+validity check and a method to write all computed formulas into the
+cross-table cells on the analysis output worksheet.
+Formula scope for linelist vs analysis formulas</p>
+<h2>Methods</h2>
+<h3>AddFormulas</h3>
+<p><strong>Write all formulas to the cross-table on the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddFormulas(): End Sub
+</code></pre>
+<p>Iterates through the cross-table cells and writes the appropriate Excel
+formula into each data cell. Handles column formulas, row formulas,
+percentage formulas, and total formulas based on the table scope and
+specification flags. Skips writing when Valid returns False.</p>
+<hr />
+<h2>Properties</h2>
+<h3>Valid</h3>
+<p><strong>Whether the formula object is valid for the analysis context</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Valid() As Boolean: End Property
+</code></pre>
+<p>Returns True when the underlying formula definition and cross-table
+reference are both properly initialised. Callers should check this
+before calling AddFormulas to avoid writing incomplete output.</p>
+<p><strong>Returns:</strong> Boolean. True when the formula object is ready to write.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+
