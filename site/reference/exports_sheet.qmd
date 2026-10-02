@@ -122,6 +122,10 @@ Display in the **linelist file**:
 ![](../reference/images/im-098-example-password.png){fig-align="center"}
 
 
+## Admin levels
+
+
+
 ## Include personal identifiers
 
 This is a *yes/no* dropdown menu which controls whether *variables* that are tagged as [Personal identifier](#sec-personal-identifiers) in the *Dictionary* sheet should be included in the export.^[Remember, in the *Dictionary* sheet, any variable with *anything* written in the export columns will be exported in the corresponding exports (even if it is written "no").]
