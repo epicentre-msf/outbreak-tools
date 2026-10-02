@@ -11,37 +11,20 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>Buttons</h1>
-<p>Draws one command button of a linelist as a worksheet shape. Create binds an
-anchor cell, a shape name and a button scope. Add draws the rounded rectangle
-at the position that scope gives, names it, puts a label on it and points its
-OnAction at a macro. Format hands the shape to LLFormat under the format that
-matches the scope.</p>
-<details open class="doc-section" id="the-three-scopes">
-<summary>THE THREE SCOPES</summary>
-<div class="section-body">
-<p>ButtonScopeLarge, ButtonScopeSmall and ButtonScopeGeo. The scope decides the
-width and the height of the shape, the offset from the anchor cell, and the
-format Format asks for.</p>
-</div>
-</details>
-<details open class="doc-section" id="what-is-reported">
-<summary>WHAT IS REPORTED</summary>
-<div class="section-body">
-<p>Add on a name the sheet already carries files a warning and draws nothing.
-Entries leave through HasCheckings and CheckingValues.</p>
-<p><strong>Depends on:</strong> <a href="Checking.html">Checking</a>, <a href="LLFormat.html">LLFormat</a>, ProjectError</p>
+<p>Light wrapper around worksheet shapes for creating, positioning,
+and formatting linelist buttons. Supports large, small, and geo
+button scopes with automatic placement offset calculations.</p>
+<p><strong>Depends on:</strong> <a href="Checking.html">Checking</a>, <a href="ILLFormat.html">ILLFormat</a>, ProjectError</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
-</div>
-</details>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
 <h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
 <p><em>create</em></p>
-<p><strong>Factory returning an initialised Buttons instance</strong></p>
+<p><strong>Factory returning an initialised interface</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal outrng As Range, ByVal codeName As String, _
-                       ByVal scope As Byte) As Buttons
+                       ByVal scope As Byte) As IButtons
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -49,7 +32,7 @@ Entries leave through HasCheckings and CheckingValues.</p>
 <li><code>codeName</code>: String. Name assigned to the shape.</li>
 <li><code>scope</code>: Byte. ButtonScope controlling size and format.</li>
 </ul>
-<p><strong>Returns:</strong> Buttons. Ready to use.</p>
+<p><strong>Returns:</strong> IButtons. Ready to use.</p>
 <hr />
 </div>
 </details>
@@ -113,11 +96,11 @@ Entries leave through HasCheckings and CheckingValues.</p>
 <p><em>format</em></p>
 <p><strong>Apply the appropriate visual design to the button</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Format(ByVal design As LLFormat)
+<pre><code class="language-vb">Public Sub Format(ByVal design As ILLFormat)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>design</code>: LLFormat. Formatter responsible for styling the shape.</li>
+<li><code>design</code>: ILLFormat. Formatter responsible for styling the shape.</li>
 </ul>
 <hr />
 </div>
@@ -129,7 +112,7 @@ Entries leave through HasCheckings and CheckingValues.</p>
 <p><em>has-checkings</em></p>
 <p><strong>Whether diagnostic entries have been recorded</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
+<pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when at least one entry exists.</p>
 <hr />
@@ -137,7 +120,7 @@ Entries leave through HasCheckings and CheckingValues.</p>
 <p><em>checking-values</em></p>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get CheckingValues() As Object
+<pre><code class="language-vb">Private Property Get CheckingValues() As Object
 </code></pre>
 <p><strong>Returns:</strong> Object. The checking instance, or Nothing.</p>
 <hr />
@@ -146,6 +129,14 @@ Entries leave through HasCheckings and CheckingValues.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-properties">Properties</h2>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
+<p><strong>Self-reference as IButtons</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IButtons
+</code></pre>
+<p><strong>Returns:</strong> IButtons. Self-reference.</p>
+<hr />
 <h3 id="int-name">Name <a class="anchor-link" href="#int-name">#</a></h3>
 <p><em>name-set</em></p>
 <p><strong>Store the shape name assigned in the worksheet</strong></p>
@@ -212,24 +203,6 @@ Entries leave through HasCheckings and CheckingValues.</p>
 <li><code>errorMessage</code>: String. Descriptive error message.</li>
 </ul>
 <hr />
-<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
-<p><em>seal</em></p>
-<p><strong>Seal the instance so setup setters can no longer be written</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Seal()
-</code></pre>
-<hr />
-<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
-<p><em>guard-not-sealed</em></p>
-<p><strong>Guard a setup setter against writes after sealing</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>propName</code>: String. Name of the property being guarded.</li>
-</ul>
-<hr />
 <h2 id="int-helpers">Helpers</h2>
 <h3 id="int-targetrange">TargetRange <a class="anchor-link" href="#int-targetrange">#</a></h3>
 <p><em>target-range</em></p>
@@ -286,11 +259,13 @@ Entries leave through HasCheckings and CheckingValues.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (6 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
+<li><a href="Buttons.html">Buttons.cls</a></li>
+<li><a href="IButtons.html">IButtons.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
-<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
+<li><a href="ListBuilder.html">ListBuilder.cls</a></li>
 <li>TestButtons.bas</li>
 </ul>
 </details>

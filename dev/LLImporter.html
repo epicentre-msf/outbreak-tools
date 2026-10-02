@@ -11,26 +11,13 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>LLImporter</h1>
-<p>Imports the data of an external workbook into the linelist that holds this
-object. CheckImportFile reads the file and says whether it can be imported,
-HasSameLanguage compares the two interface languages, and CurrentLanguage
-answers the language of this linelist. ImportData brings the HList and VList
-data in, ImportCustomDropdown the custom dropdowns, ImportShowHide the
-show/hide choices, ImportEditableLabels the labels a user may edit,
-ImportSingleValues the single metadata values and ImportGeobase the geobase.
-ClearData empties the linelist first when the caller asks for it, and HasData
-says whether the linelist already carries rows.</p>
-<details open class="doc-section" id="the-report">
-<summary>THE REPORT</summary>
-<div class="section-body">
-<p>CompareWithImportFile records which sheets and which variables the two files
-have in common and which they have on their own. NeedReport says whether
-anything was recorded, FinalizeReport writes the entries into ImportReport,
-ReportSheets and ReportVariables read them back, and ClearReport empties them.
-Entries filed along the way leave through HasCheckings and CheckingValues.</p>
-<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="Passwords.html">Passwords</a>, <a href="CustomTable.html">CustomTable</a>, <a href="DataSheet.html">DataSheet</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLVariables.html">LLVariables</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="ShowHide.html">ShowHide</a>, <a href="ShowHideLayout.html">ShowHideLayout</a>, <a href="ShowHideStore.html">ShowHideStore</a>, <a href="ChoiceKeys.html">ChoiceKeys</a>, <a href="ImportMetadata.html">ImportMetadata</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, <a href="ImportReport.html">ImportReport</a></p>
-</div>
-</details>
+<p>Imports linelist data from external workbooks into the source linelist.
+Supports importing HList/VList data, custom dropdowns, show/hide state,
+editable labels, single metadata values, and geobase data. Tracks which
+sheets and variables were imported, and builds a report of items not
+imported or not touched. Consumers interact through the ILLImporter
+interface.</p>
+<p><strong>Depends on:</strong> <a href="ILLdictionary.html">ILLdictionary</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ICustomTable.html">ICustomTable</a>, <a href="IDataSheet.html">IDataSheet</a>, <a href="IShowHideManager.html">IShowHideManager</a>, <a href="ILLGeo.html">ILLGeo</a>, <a href="ILLChoices.html">ILLChoices</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="IHiddenNames.html">IHiddenNames</a></p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -38,42 +25,20 @@ Entries filed along the way leave through HasCheckings and CheckingValues.</p>
 <p><em>create</em></p>
 <p><strong>Create an importer from the source linelist workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook) As LLImporter
+<pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook) As ILLImporter
 </code></pre>
 <p>Factory method that validates the workbook is not Nothing, then constructs
-and returns a new LLImporter instance. Called on the predeclared instance.</p>
+and returns a new LLImporter instance through the ILLImporter interface.
+Called on the predeclared instance.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sourceWkb</code>: Workbook. The linelist workbook that will receive imported data.</li>
 </ul>
-<p><strong>Returns:</strong> LLImporter. A fully initialised instance ready for import operations.</p>
+<p><strong>Returns:</strong> ILLImporter. A fully initialised instance ready for import operations.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>vbObjectError When the workbook is Nothing.</li>
 </ul>
-<hr />
-</div>
-</details>
-<details open class="doc-section" id="diagnostics">
-<summary>Diagnostics</summary>
-<div class="section-body">
-<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
-<p><em>has-checkings</em></p>
-<p><strong>Whether the import filed anything worth reading</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
-</code></pre>
-<p>What the import found and what it decided to skip. Every entry is
-in English and the worksheet the caller writes them to is what the user reads.</p>
-<p><strong>Returns:</strong> Boolean. True when at least one entry was filed.</p>
-<hr />
-<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
-<p><em>checking-values</em></p>
-<p><strong>The entries the import filed</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get CheckingValues() As Checking
-</code></pre>
-<p><strong>Returns:</strong> Checking. The store, ready to hand to a CheckingOutput.</p>
 <hr />
 </div>
 </details>
@@ -86,69 +51,27 @@ in English and the worksheet the caller writes them to is what the user reads.</
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasData() As Boolean
 </code></pre>
-<p>Scans all HList sheets for rows carrying more filled cells than an untouched
-row does. LLDataEntry records that figure per sheet under the hidden name
-blank_row_count when it makes the table. Returns True as soon as a single row
+<p>Scans all HList sheets for non-empty rows beyond the blank count
+threshold stored in cell(1,6). Returns True as soon as a single row
 has user data. Used to warn the user before clearing or overwriting.</p>
 <p><strong>Returns:</strong> Boolean. True when at least one HList row has user data.</p>
 <hr />
-<h3 id="currentlanguage">CurrentLanguage <a class="anchor-link" href="#currentlanguage">#</a></h3>
-<p><em>current-language</em></p>
-<p><strong>The language this linelist was built in</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get CurrentLanguage() As String
-</code></pre>
-<p>The workbook-level RNG_DictionaryLanguage hidden name, which the build set to
-the dictionary language. The Metadata sheet of an export carries the same fact
-under <code>language</code>, so the two compare like with like.</p>
-<p><strong>Returns:</strong> String. The language code, empty when the workbook carries none.</p>
-<hr />
 <h3 id="hassamelanguage">HasSameLanguage <a class="anchor-link" href="#hassamelanguage">#</a></h3>
 <p><em>has-same-language</em></p>
-<p><strong>Check whether the file being imported is in this linelist's language</strong></p>
+<p><strong>Check whether the import workbook language matches</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function HasSameLanguage(ByVal meta As ImportMetadata) As Boolean
+<pre><code class="language-vb">Public Function HasSameLanguage(ByVal impwb As Workbook) As Boolean
 </code></pre>
-<p>Compares the <code>language</code> tag of the file with CurrentLanguage. A file naming no
-language answers False, which is also the answer for a file carrying no
-Metadata sheet at all. The caller tells those two apart through the metadata
-object and says which happened.</p>
-<p>The answer used to be kept on the class and read by the three metadata imports,
-so a caller that skipped this step got False by default and all three did
-nothing with no diagnostic. The three take the metadata object now and the
-caller decides whether to call them.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>meta</code>: ImportMetadata. The metadata of the file being imported.</li>
-</ul>
-<p><strong>Returns:</strong> Boolean. True when the languages match.</p>
-<hr />
-<h3 id="checkimportfile">CheckImportFile <a class="anchor-link" href="#checkimportfile">#</a></h3>
-<p><em>check-import-file</em></p>
-<p><strong>Read the file over before importing it, and file what is wrong</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function CheckImportFile(ByVal impwb As Workbook, _
-                                ByVal meta As ImportMetadata) As Boolean
-</code></pre>
-<p>Every worksheet an export is supposed to carry is looked for, and the export
-options are read. The dictionary and the choices are errors when they are
-absent, because the labels and the category lists cannot be compared without
-them; the other metadata sheets are warnings, because the data still lands.</p>
-</div>
-</details>
-<details open class="doc-section" id="one-thing-stops-an-import">
-<summary>ONE THING STOPS AN IMPORT</summary>
-<div class="section-body">
-<p>A custom export written with the labels as its header row carries no variable
-name anywhere, so no column of it can be matched to a column of this linelist.
-Every row of such a file used to land in &quot;not imported&quot; with nothing said. It
-is refused here, with the reason.</p>
+<p>Reads the language tag from the import workbook Metadata sheet and
+compares it with the source workbook dictionary language via
+LLTranslations. Stores the result internally so that ImportShowHide,
+ImportEditableLabels, and ImportSingleValues silently skip when
+languages differ. Returns False when the Metadata sheet is missing.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>impwb</code>: Workbook. The opened import workbook.</li>
-<li><code>meta</code>: ImportMetadata. What that workbook says about itself.</li>
 </ul>
-<p><strong>Returns:</strong> Boolean. True when the import may go on.</p>
+<p><strong>Returns:</strong> Boolean. True when languages match.</p>
 <hr />
 </div>
 </details>
@@ -161,39 +84,16 @@ is refused here, with the reason.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ClearData()
 </code></pre>
-<p>Walks every worksheet of the source workbook. An HList sheet has the constant
-cells of its table body cleared and its formula columns left standing; a VList
-sheet has the constant cells of its value column cleared the same way. Each
-sheet is unprotected and protected again through Passwords.</p>
-</div>
-</details>
-<details open class="doc-section" id="what-it-cost-before">
-<summary>WHAT IT COST BEFORE</summary>
-<div class="section-body">
-<p>An HList paid three crossings per column: one to resolve
-ListColumns(n).DataBodyRange, one to read HasFormula off its first cell and one
-to ClearContents. A VList paid three per ROW: the IsEmpty test on the label, an
-Offset onto the value cell and a HasFormula read on it, one row at a time down
-column D. A wide table and a long VList sheet both paid for every one of them.</p>
-<p>Now each sheet reads its formulas as one block and clears the runs of cells
-between them. A table of 200 columns with no formula in it goes from about 600
-crossings to two.</p>
-</div>
-</details>
-<details open class="doc-section" id="one-calculation-at-the-end">
-<summary>ONE CALCULATION, AT THE END</summary>
-<div class="section-body">
-<p>There was a <code>lo.Range.Calculate</code> per table and a <code>sh.UsedRange.Calculate</code> per
-VList sheet, so a workbook of ten data sheets recalculated ten times while it
-was being emptied. The clear is one walk and it recalculates once, after the
-last cell is cleared. RecalculateSheets is the same pass the import walk uses.</p>
+<p>Iterates over all worksheets in the source workbook. For HList sheets,
+clears non-formula column values from the ListObject data body. For
+VList sheets, clears non-formula named range values. Unprotects and
+re-protects each sheet via IPasswords.</p>
 <hr />
 <h3 id="importdata">ImportData <a class="anchor-link" href="#importdata">#</a></h3>
 <p><em>import-data</em></p>
 <p><strong>Import data from HList and VList worksheets</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean, _
-                      ByVal meta As ImportMetadata)
+<pre><code class="language-vb">Public Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
 </code></pre>
 <p>Iterates over the import workbook worksheets, matching them to source
 workbook sheets by name. For HList sheets, delegates to
@@ -204,9 +104,6 @@ entries for sheets and variables not found in the current workbook.</p>
 <ul>
 <li><code>impwb</code>: Workbook. The opened import workbook.</li>
 <li><code>pasteAtBottom</code>: Boolean. When True, appends data below existing rows.</li>
-<li><code>meta</code>: ImportMetadata. The metadata of that workbook. It says which row of
-a data sheet holds the variable names, which is row 2 for a file written with
-the labels above them.</li>
 </ul>
 <hr />
 <h3 id="importcustomdropdown">ImportCustomDropdown <a class="anchor-link" href="#importcustomdropdown">#</a></h3>
@@ -215,16 +112,11 @@ the labels above them.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportCustomDropdown(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
 </code></pre>
-<p>Walks the dropdown registry of the source workbook, reads the values the
-import workbook holds for each dropdown, and writes them back. Silently exits
-when the import workbook has no Choices sheet or the custom dropdown sheet does
-not exist.</p>
-<p>The walk goes through DropdownLists.AllDropdowns, so each name is the one the
-registry holds and the one Update takes. Reading the ListObject names off the
-worksheet instead is what used to break this: the generated name ends with the
-workbook counter, cutting the five characters of &quot;list_&quot; off the front left
-that counter attached, and the lookup missed for every dropdown ever created.
-ChoiceKeys builds the key both ends of the round trip use.</p>
+<p>Reads custom dropdown ListObjects from the source workbook custom
+dropdown sheet, matches them to choices in the import workbook Choices
+sheet, and updates each dropdown with the imported values. Silently
+exits when the import workbook has no Choices sheet or the custom
+dropdown sheet does not exist.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>impwb</code>: Workbook. The opened import workbook.</li>
@@ -238,119 +130,51 @@ ChoiceKeys builds the key both ends of the round trip use.</p>
 <div class="section-body">
 <h3 id="importshowhide">ImportShowHide <a class="anchor-link" href="#importshowhide">#</a></h3>
 <p><em>import-show-hide</em></p>
-<p><strong>Import show/hide choices from a migration workbook</strong></p>
+<p><strong>Import show/hide visibility state from a migration workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub ImportShowHide(ByVal impwb As Workbook, ByVal meta As ImportMetadata)
+<pre><code class="language-vb">Public Sub ImportShowHide(ByVal impwb As Workbook)
 </code></pre>
-<p>Reads the show/hide table of the import workbook and puts each data sheet of
-the running workbook in the state it describes: visibility, sizes and, on a
-printed sheet, the direction of each header. Every layer a sheet has is
-covered - HList and CRF for a data entry sheet, Printed for its companion,
-VList for an info sheet.</p>
-<p>Two faults used to sit here. The visibility read out of the file was written
-into memory and never reached a sheet, so nothing was ever hidden; and a blank
-width cell was read as a width of zero and written to the sheet, which is how
-Excel hides a column, so entries vanished for the opposite reason.</p>
-<p>Skips when The imported file has no show/hide sheet, and when its <code>show_hide</code> tag
-asks for no update.</p>
+<p>Reads the show_hide_migration ListObject from the import workbook and
+applies visibility and column/row sizes to each data sheet via
+ShowHideManager.ImportForMigration. Silently skips when HasSameLanguage
+returned False, when the import workbook lacks the required Metadata or
+show_hide__ sheets, or when the metadata tag is not set to &quot;update on
+import&quot;.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>impwb</code>: Workbook. The opened migration workbook.</li>
-<li><code>meta</code>: ImportMetadata. The metadata of that workbook.</li>
 </ul>
 <hr />
 <h3 id="importeditablelabels">ImportEditableLabels <a class="anchor-link" href="#importeditablelabels">#</a></h3>
 <p><em>import-editable-labels</em></p>
 <p><strong>Import editable label values from a migration workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub ImportEditableLabels(ByVal impwb As Workbook, ByVal meta As ImportMetadata)
+<pre><code class="language-vb">Public Sub ImportEditableLabels(ByVal impwb As Workbook)
 </code></pre>
 <p>Reads the import workbook dictionary for editable label values and
 updates both the worksheet cells and dictionary entries in the source
-workbook. Skips when The imported file has no Dictionary sheet, when that
-dictionary is not prepared, and when the <code>editable_labels</code> tag asks for no
-update.</p>
-</div>
-</details>
-<details open class="doc-section" id="one-hidden-names-store-per-sheet">
-<summary>ONE HIDDEN NAMES STORE PER SHEET</summary>
-<div class="section-body">
-<p>The walk reads one name, table_name, off the sheet a variable lives on.
-HiddenNames.Create walks every tracked name of that sheet and reads three
-properties off each, and a data entry sheet holds hundreds of names. Built
-inside the loop, a dictionary of 500 variables paid 500 of those walks for a
-handful of sheets. The stores are held in a Collection keyed by sheet name, so
-each sheet is walked once however many of its variables carry an editable
-label.
-QuickValue is not the answer here the way it is in SheetTagOf: this walk asks
-the same sheet again and again, which is the case the instance is for.</p>
-</div>
-</details>
-<details open class="doc-section" id="the-dictionary-columns-are-read-as-blocks">
-<summary>THE DICTIONARY COLUMNS ARE READ AS BLOCKS</summary>
-<div class="section-body">
-<p>The walk used to make four LLVariables.Value calls per variable, plus one cell
-read of the name column, and each of those calls costs two crossings. Both
-dictionaries are read as blocks now, once, and every question below is answered
-from memory. LLVariables stays for the WRITE alone.
-The current dictionary answers at the row the walk is standing on rather than
-through a name lookup. For a name that appears twice, LLVariables.Value would
-answer with the first row of the pair both times round; reading the row in hand
-is what the loop meant. LLdictionary.UniqueVarNames makes the names unique
-during preparation, so neither shape has anything to do in practice.</p>
+workbook. Silently skips when HasSameLanguage returned False, the import
+dictionary is not prepared, or the metadata tag is not set to &quot;update on
+import&quot;.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>impwb</code>: Workbook. The opened migration workbook.</li>
-<li><code>meta</code>: ImportMetadata. The metadata of that workbook.</li>
 </ul>
 <hr />
 <h3 id="importsinglevalues">ImportSingleValues <a class="anchor-link" href="#importsinglevalues">#</a></h3>
 <p><em>import-single-values</em></p>
 <p><strong>Import single metadata values from a migration workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub ImportSingleValues(ByVal meta As ImportMetadata)
+<pre><code class="language-vb">Public Sub ImportSingleValues(ByVal impwb As Workbook)
 </code></pre>
-<p>Takes the epiweek start value The imported file has and writes it into the
-RNG_EpiWeekStart hidden name of the source workbook, then recalculates every
-sheet that carries an epiweek formula. Skips when the file names no value.</p>
-</div>
-</details>
-<details open class="doc-section" id="the-name-has-no-range-behind-it">
-<summary>THE NAME HAS NO RANGE BEHIND IT</summary>
-<div class="section-body">
-<p>RNG_EpiWeekStart is a HiddenNames entry and HiddenNames writes a string as a
-quoted literal in the name definition. So the name exists, Names(...) finds it,
-and asking that name for a range raises 1004. The write used to go through
-Names(RNG_EpiWeekStart).RefersToRange.Value under a swallow, which means the
-value has never once landed. The store is what answers it, the same way
-FormLogicEpiWeek and CustomLinelistFunctions already read and write it.</p>
+<p>Reads the epiweek start value from the import workbook Metadata sheet
+and updates the RNG_EpiWeekStart named range in the source workbook.
+Silently skips when HasSameLanguage returned False or the Metadata
+sheet is missing.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>meta</code>: ImportMetadata. The metadata of the workbook being imported.</li>
+<li><code>impwb</code>: Workbook. The opened migration workbook.</li>
 </ul>
-<hr />
-<h3 id="recalculatesheets">RecalculateSheets <a class="anchor-link" href="#recalculatesheets">#</a></h3>
-<p><em>recalculate-sheets</em></p>
-<p><strong>Recompute every data and analysis sheet, once</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub RecalculateSheets()
-</code></pre>
-<p>THE ONE CALCULATION OF A WALK. ClearData calls it when it has emptied the last
-sheet, and LinelistRun.HandleImportData calls it after its last write and
-before the busy state goes back. It used to run per sheet inside ImportData,
-per table and per VList sheet inside ClearData, and once more from
-ImportSingleValues, so one import recalculated the workbook many times over.</p>
-</div>
-</details>
-<details open class="doc-section" id="why-the-list-of-tags-is-what-it-is">
-<summary>WHY THE LIST OF TAGS IS WHAT IT IS</summary>
-<div class="section-body">
-<p>Every epiweek formula reads RNG_EpiWeekStart, and the date and validation
-functions of CustomLinelistFunctions carry no Application.Volatile call on
-purpose -- the note at the head of that module says so, and says that this pass
-is what brings Excel back to them. So the tags here have to keep covering every
-sheet that can hold one of those formulas. FormLogicEpiWeek runs the same list
-after the user picks a day.</p>
 <hr />
 <h3 id="importgeobase">ImportGeobase <a class="anchor-link" href="#importgeobase">#</a></h3>
 <p><em>import-geobase</em></p>
@@ -359,54 +183,13 @@ after the user picks a day.</p>
 <pre><code class="language-vb">Public Sub ImportGeobase(ByVal impwb As Workbook, Optional ByVal histoOnly As Boolean = False)
 </code></pre>
 <p>Delegates to LLGeo.Import to load geobase data. When not histoOnly,
-also updates geobase headers in HList worksheets via geo.Update and
-dictionary geo labels via geo.UpdateDict.</p>
-</div>
-</details>
-<details open class="doc-section" id="the-show-hide-sheet-is-not-touched">
-<summary>THE SHOW/HIDE SHEET IS NOT TOUCHED</summary>
-<div class="section-body">
-<p>A third call used to write the geo labels into per-sheet tables on the
-show/hide worksheet. Those tables belonged to the first show/hide design and
-ShowHideStore deletes them on sight now, so the call read a sheet carrying
-only the store''s own table and raised 91 on every import. The label reaches
-the form on its own: ShowHide composes it from the dictionary main label that
-geo.UpdateDict has just rewritten, every time the form is built.</p>
+also updates geobase headers in HList worksheets via geo.Update,
+dictionary geo labels via geo.UpdateDict, and show/hide tables for geo
+variables via geo.UpdateShowHide.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>impwb</code>: Workbook. The opened geobase workbook.</li>
 <li><code>histoOnly</code>: Optional Boolean. When True, imports only historic geobase data. Defaults to False.</li>
-</ul>
-<hr />
-</div>
-</details>
-<details open class="doc-section" id="comparing-the-two-files">
-<summary>Comparing the two files</summary>
-<div class="section-body">
-<h3 id="comparewithimportfile">CompareWithImportFile <a class="anchor-link" href="#comparewithimportfile">#</a></h3>
-<p><em>compare-with-import-file</em></p>
-<p><strong>Compare the labels and the choice lists of the two files</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub CompareWithImportFile(ByVal impwb As Workbook)
-</code></pre>
-<p>Walks the dictionary of this linelist and, for every variable the file also
-carries, files a warning when the two disagree about the label or about the
-values a choice variable may take.</p>
-</div>
-</details>
-<details open class="doc-section" id="why-the-choice-lists-matter-more-than-the-labels">
-<summary>WHY THE CHOICE LISTS MATTER MORE THAN THE LABELS</summary>
-<div class="section-body">
-<p>A data validation dropdown does not block a programmatic write. CustomTable
-writes the imported column straight into the cells, so a value the receiving
-linelist does not offer lands in the cell and stays there: the cell shows
-something no dropdown can produce, the next hand edit of it is rejected, and
-every analysis grouping by that variable gains a category the setup never
-declared. None of that used to appear anywhere.</p>
-<p>Run this after ImportData, so the sheets that were touched are known.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>impwb</code>: Workbook. The opened import workbook.</li>
 </ul>
 <hr />
 </div>
@@ -471,15 +254,22 @@ entries exist for the scope.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ClearReport()
 </code></pre>
-<p>Clears all report tracking arrays, drops the diagnostics, and resets the
-needReport flag. Call before starting a new import session to ensure a clean
-report.</p>
+<p>Clears all report tracking arrays and resets the needReport flag. Call
+before starting a new import session to ensure a clean report.</p>
 <hr />
 </div>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-public-accessors">Public Accessors</h2>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ILLImporter
+</code></pre>
+<p><strong>Returns:</strong> ILLImporter. The current instance cast to the interface.</p>
+<hr />
 <h3 id="int-sourceworkbook">SourceWorkbook <a class="anchor-link" href="#int-sourceworkbook">#</a></h3>
 <p><em>source-workbook</em></p>
 <p><strong>Source linelist workbook</strong></p>
@@ -499,456 +289,30 @@ report.</p>
 <li><code>wb</code>: Workbook. The workbook to store.</li>
 </ul>
 <hr />
-<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
-<p><em>seal</em></p>
-<p><strong>Prevent further changes to setup-only properties</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Seal()
-</code></pre>
-<hr />
-<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
-<p><em>guard-not-sealed</em></p>
-<p><strong>Raise when a setup-only property is written after sealing</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>propName</code>: String. The name of the property being guarded.</li>
-</ul>
-<hr />
-<h2 id="int-diagnostics">Diagnostics</h2>
-<h3 id="int-importcheckings">ImportCheckings <a class="anchor-link" href="#int-importcheckings">#</a></h3>
-<p><em>import-checkings</em></p>
-<p><strong>The checking store, built on first use</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ImportCheckings() As Checking
-</code></pre>
-<p><strong>Returns:</strong> Checking. The store this import files into.</p>
-<hr />
-<h3 id="int-filechecking">FileChecking <a class="anchor-link" href="#int-filechecking">#</a></h3>
-<p><em>file-checking</em></p>
-<p><strong>File one entry, and never raise on a key already used</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub FileChecking(ByVal keyName As String, ByVal label As String, _
-                         ByVal scope As Byte)
-</code></pre>
-<p>Checking.Add raises on a key it already holds. An import walks a dictionary,
-so a key built from a variable name can repeat when the same variable is on two
-sheets. The counter suffix keeps every entry and keeps the key unique.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>keyName</code>: String. The key of the entry.</li>
-<li><code>label</code>: String. What to tell the user.</li>
-<li><code>scope</code>: Byte. A CheckingScope value.</li>
-</ul>
-<hr />
-<h2 id="int-data-operations">Data Operations</h2>
-<h3 id="int-clearconstantsacross">ClearConstantsAcross <a class="anchor-link" href="#int-clearconstantsacross">#</a></h3>
-<p><em>clear-constants-across</em></p>
-<p><strong>Clear the constant columns of a table body, formula columns kept</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ClearConstantsAcross(ByVal bodyRng As Range)
-</code></pre>
-<p>The first body row is read as one block, and a column whose first cell holds a
-formula is kept. That is the reading the per-column HasFormula read made too: a
-table column holds one formula all the way down or none at all.</p>
-<p>A column that LOOKS like a formula is confirmed with one HasFormula read before
-it is kept. Range.Formula answers the text of a cell that holds &quot;=abc&quot; behind a
-leading apostrophe as well, and a false reading there would leave a column of
-typed data standing after the user asked for it to be deleted. Formula columns
-are the few, so the confirmation costs a crossing for each of them and nothing
-for the rest.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>bodyRng</code>: Range. The data body of the table.</li>
-</ul>
-<hr />
-<h3 id="int-clearvlistvalues">ClearVListValues <a class="anchor-link" href="#int-clearvlistvalues">#</a></h3>
-<p><em>clear-vlist-values</em></p>
-<p><strong>Clear the value column of a VList sheet, formula cells kept</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ClearVListValues(ByVal sh As Worksheet)
-</code></pre>
-<p>The labels of column D are read as one block and walked to the first empty one,
-which is where the cell-at-a-time loop stopped as well. Reading to the end of
-the used range instead would empty cells below a gap that the loop never
-reached, so the block is walked the same way rather than to its end.</p>
-<p>The value column is then cleared in runs, the formula cells left standing. The
-audit asked for the column to be cleared in one call; it cannot be. A VList
-value cell holds a formula whenever its variable carries a formula, case_when
-or choice_formula control, and one call over the column would delete every one
-of them.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sh</code>: Worksheet. The VList data entry sheet.</li>
-</ul>
-<hr />
-<h3 id="int-clearconstantsdown">ClearConstantsDown <a class="anchor-link" href="#int-clearconstantsdown">#</a></h3>
-<p><em>clear-constants-down</em></p>
-<p><strong>Clear the constant cells of one column, formula cells kept</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ClearConstantsDown(ByVal colRng As Range)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>colRng</code>: Range. The single column to clear.</li>
-</ul>
-<hr />
-<h3 id="int-formulablockof">FormulaBlockOf <a class="anchor-link" href="#int-formulablockof">#</a></h3>
-<p><strong>The formulas of a single row or a single column, read in one go</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function FormulaBlockOf(ByVal rng As Range) As Variant
-</code></pre>
-<p>A range of one cell answers a scalar rather than an array, so that arm is read
-on its own. The answer is always a 1-based array whatever the range's own
-address is.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>rng</code>: Range. One row, or one column.</li>
-</ul>
-<p><strong>Returns:</strong> Variant. A 1-based array of formula text.</p>
-<hr />
-<h3 id="int-columnblockof">ColumnBlockOf <a class="anchor-link" href="#int-columnblockof">#</a></h3>
-<p><strong>The values of one column, read in one go</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ColumnBlockOf(ByVal rng As Range) As Variant
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>rng</code>: Range. The single column to read.</li>
-</ul>
-<p><strong>Returns:</strong> Variant. A 1-based array of the cell values.</p>
-<hr />
-<h3 id="int-readdictblocks">ReadDictBlocks <a class="anchor-link" href="#int-readdictblocks">#</a></h3>
-<p><em>read-dict-blocks</em></p>
-<p><strong>Read the columns the two comparison walks need, one crossing each</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ReadDictBlocks(ByVal dict As LLdictionary, ByRef blocks As TDictBlocks)
-</code></pre>
-<p>Every LLVariables.Value call pays TWO crossings: ResolveColumnIndex checks the
-header cell still reads as the column it cached, then the value cell is read.
-ImportEditableLabels made four of those per variable plus a cell read of the
-name column, and CompareWithImportFile made several per variable on BOTH
-files, so a dictionary of 500 variables paid thousands of crossings for eight
-columns.
-Eight crossings per dictionary now, and the walks answer from memory.
-A column the dictionary does not carry answers a block of empty strings, so a
-caller reads it like any other and an older file costs no special case.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>dict</code>: LLdictionary. The dictionary to read.</li>
-<li><code>blocks</code>: TDictBlocks. Filled with one array per column.</li>
-</ul>
-<hr />
-<h3 id="int-dictcolumnblock">DictColumnBlock <a class="anchor-link" href="#int-dictcolumnblock">#</a></h3>
-<p><em>dict-column-block</em></p>
-<p><strong>One dictionary column as a one based array of strings</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function DictColumnBlock(ByVal dict As LLdictionary, _
-                                 ByVal colName As String, _
-                                 ByVal expectedRows As Long, _
-                                 Optional ByRef rowsRead As Long) As Variant
-</code></pre>
-<p>The range answers a two dimensional array, or a single value when the
-dictionary holds one row, and both are flattened to the same shape.
-DataRange raises on a column the dictionary does not carry; that is caught here
-and answered with the empty block, because these walks skip a missing column
-rather than refuse the whole import.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>dict</code>: LLdictionary. The dictionary to read.</li>
-<li><code>colName</code>: String. The column to read.</li>
-<li><code>expectedRows</code>: Long. The height every block has to hold. 0 lets the column
-decide, which is how the first block sets the count.</li>
-<li><code>rowsRead</code>: Long. Set to the height the block holds.</li>
-</ul>
-<p><strong>Returns:</strong> Variant. A one based array of strings.</p>
-<hr />
-<h3 id="int-blockrowof">BlockRowOf <a class="anchor-link" href="#int-blockrowof">#</a></h3>
-<p><em>block-row-of</em></p>
-<p><strong>The row one variable sits on, answered from the name block</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function BlockRowOf(ByRef blocks As TDictBlocks, _
-                            ByVal varName As String) As Long
-</code></pre>
-<p>A straight walk with a binary compare, which is the rule LLVariables.RowIndex
-applies and the rule its callers depend on: LLdictionary.UniqueVarNames leaves
-the case the user typed, and Contains is case sensitive by default. A keyed
-Collection would be faster and would answer case blind, which is a different
-question from the one the walks used to ask.
-A duplicated name answers with the FIRST row that holds it, again as RowIndex
-does.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>blocks</code>: TDictBlocks. The blocks to search.</li>
-<li><code>varName</code>: String. The variable to look for.</li>
-</ul>
-<p><strong>Returns:</strong> Long. The row, one based, or 0 when the name is absent.</p>
-<hr />
-<h3 id="int-blocktext">BlockText <a class="anchor-link" href="#int-blocktext">#</a></h3>
-<p><em>block-text</em></p>
-<p><strong>One row of a block, empty when the block holds nothing there</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function BlockText(ByRef block As Variant, ByVal row As Long) As String
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>block</code>: Variant. A block DictColumnBlock built.</li>
-<li><code>row</code>: Long. The row wanted, one based.</li>
-</ul>
-<p><strong>Returns:</strong> String. The text at that row.</p>
-<hr />
-<h3 id="int-celltextof">CellTextOf <a class="anchor-link" href="#int-celltextof">#</a></h3>
-<p><em>cell-text-of</em></p>
-<p><strong>A cell value as text, with an error, a Null or an empty read as nothing</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function CellTextOf(ByVal cellValue As Variant) As String
-</code></pre>
-<p>A dictionary cell can hold an error value or a Null, and CStr raises on both.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>cellValue</code>: Variant. The raw cell value.</li>
-</ul>
-<p><strong>Returns:</strong> String. The text, or an empty string.</p>
-<hr />
-<h3 id="int-lookslikeformula">LooksLikeFormula <a class="anchor-link" href="#int-lookslikeformula">#</a></h3>
-<p><strong>Whether one entry of a formula block reads as a formula</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function LooksLikeFormula(ByVal formulaText As Variant, _
-                                  ByVal index As Long) As Boolean
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>formulaText</code>: Variant. A block answered by FormulaBlockOf.</li>
-<li><code>index</code>: Long. Which entry to test.</li>
-</ul>
-<p><strong>Returns:</strong> Boolean. True when the text begins with an equals sign.</p>
-<hr />
-<h2 id="int-migration-metadata">Migration Metadata</h2>
-<h3 id="int-applyoneshowhidelayer">ApplyOneShowHideLayer <a class="anchor-link" href="#int-applyoneshowhidelayer">#</a></h3>
-<p><em>apply-one-show-hide-layer</em></p>
-<p><strong>Put one layer of one sheet in the state the file describes</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyOneShowHideLayer(ByVal impStore As ShowHideStore, _
-                                  ByVal dict As LLdictionary, _
-                                  ByVal layer As Byte, _
-                                  ByVal sheetName As String, _
-                                  ByVal targetSh As Worksheet)
-</code></pre>
-<p>Load carries the sizes and the header directions onto the sheet, and Apply is
-what actually hides and shows. The choices are written into this workbook's own
-store as well, so they survive the next time it is opened.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>impStore</code>: ShowHideStore. The store of the import workbook.</li>
-<li><code>dict</code>: LLdictionary. The dictionary of the running workbook.</li>
-<li><code>layer</code>: Byte. A ShowHideWorksheetLayer value. Which layer to apply.</li>
-<li><code>sheetName</code>: String. The base sheet name.</li>
-<li><code>targetSh</code>: Worksheet. The sheet of that layer in the running workbook.</li>
-</ul>
-<hr />
-<h3 id="int-ownshowhidestore">OwnShowHideStore <a class="anchor-link" href="#int-ownshowhidestore">#</a></h3>
-<p><em>own-show-hide-store</em></p>
-<p><strong>The show/hide store of the workbook being written into</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function OwnShowHideStore() As ShowHideStore
-</code></pre>
-<p><strong>Returns:</strong> ShowHideStore. The store, or Nothing when the workbook has no
-__show_hide worksheet.</p>
-<hr />
-<h3 id="int-companionsheet">CompanionSheet <a class="anchor-link" href="#int-companionsheet">#</a></h3>
-<p><em>companion-sheet</em></p>
-<p><strong>Find a prefixed companion sheet of the running workbook</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function CompanionSheet(ByVal sheetName As String) As Worksheet
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sheetName</code>: String. The full sheet name, prefix included.</li>
-</ul>
-<p><strong>Returns:</strong> Worksheet. The sheet, or Nothing when the workbook has none.</p>
-<hr />
-<h3 id="int-basetablenameof">BaseTableNameOf <a class="anchor-link" href="#int-basetablenameof">#</a></h3>
-<p><em>base-table-name-of</em></p>
-<p><strong>The table name a sheet's PRINTSTART anchor is named after</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function BaseTableNameOf(ByVal sh As Worksheet) As String
-</code></pre>
-<p>A printed companion stores its table name with the print_ prefix in front and
-the anchor is named after the base one, so the prefix comes off here.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sh</code>: Worksheet. The sheet to read.</li>
-</ul>
-<p><strong>Returns:</strong> String. The table name with no print_ prefix.</p>
-<hr />
-<h2 id="int-comparing-the-two-files">Comparing the two files</h2>
-<h3 id="int-sheetwasimported">SheetWasImported <a class="anchor-link" href="#int-sheetwasimported">#</a></h3>
-<p><em>sheet-was-imported</em></p>
-<p><strong>Whether one sheet of this linelist took data from the file</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SheetWasImported(ByVal sheetName As String) As Boolean
-</code></pre>
-<p>A comparison run on its own, with no import before it, has no list of touched
-sheets and answers True for every sheet.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>sheetName</code>: String. The sheet to test.</li>
-</ul>
-<p><strong>Returns:</strong> Boolean. True when the sheet is worth comparing.</p>
-<hr />
-<h3 id="int-compareonelabel">CompareOneLabel <a class="anchor-link" href="#int-compareonelabel">#</a></h3>
-<p><em>compare-one-label</em></p>
-<p><strong>File a warning when the two files give a variable different labels</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub CompareOneLabel(ByVal varName As String, _
-                            ByVal currLabel As String, _
-                            ByVal impLabel As String)
-</code></pre>
-<p>Both labels are read out of the blocks by the caller, so this routine reaches
-no worksheet.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>varName</code>: String. The variable to compare.</li>
-<li><code>currLabel</code>: String. The label this linelist carries.</li>
-<li><code>impLabel</code>: String. The label The imported file has.</li>
-</ul>
-<hr />
-<h3 id="int-compareonechoicelist">CompareOneChoiceList <a class="anchor-link" href="#int-compareonechoicelist">#</a></h3>
-<p><em>compare-one-choice-list</em></p>
-<p><strong>File a warning when the two files offer a choice variable different values</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub CompareOneChoiceList(ByVal varName As String, _
-                                 ByVal controlText As String, _
-                                 ByVal currList As String, _
-                                 ByVal impList As String, _
-                                 ByVal currChoi As LLChoices, _
-                                 ByVal impChoi As LLChoices, _
-                                 ByVal drop As DropdownLists)
-</code></pre>
-<p><code>choice_formula</code> is left alone: its list name is computed from a formula and
-the routine that reads that formula lives in the setup, which a linelist does
-not carry.
-The control value and the two list names are read out of the blocks by the
-caller, so the only worksheets this routine reaches are the choice lists.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>varName</code>: String. The variable to compare.</li>
-<li><code>controlText</code>: String. The <code>control</code> cell of this linelist, as written.</li>
-<li><code>currList</code>: String. The <code>control details</code> of this linelist.</li>
-<li><code>impList</code>: String. The <code>control details</code> The imported file has.</li>
-<li><code>currChoi</code>: LLChoices. The Choices worksheet of this linelist.</li>
-<li><code>impChoi</code>: LLChoices. The Choices worksheet of the imported file.</li>
-<li><code>drop</code>: DropdownLists. The custom dropdowns of this linelist.</li>
-</ul>
-<hr />
-<h3 id="int-valuesmissingfrom">ValuesMissingFrom <a class="anchor-link" href="#int-valuesmissingfrom">#</a></h3>
-<p><em>values-missing-from</em></p>
-<p><strong>The values of one list that the other does not hold</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ValuesMissingFrom(ByVal source As BetterArray, _
-                                   ByVal other As BetterArray) As String
-</code></pre>
-<p>Values are matched exactly. Case counts, and so do the spaces around a value,
-because a cell holds them and a dropdown is built from them: a list carrying
-&quot;Yes &quot; turns down a hand edit that types &quot;Yes&quot;, and a linelist offering &quot;yes&quot;
-against a file offering &quot;Yes&quot; is a setup fault the user has to see. A value
-that is only spaces is skipped, because it names no category. Every value is
-shown inside quotes, so a space at either end shows in the message. The list
-is capped, because a user reads a handful and the count tells them the size.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>source</code>: BetterArray. The list to walk.</li>
-<li><code>other</code>: BetterArray. The list to look each value up in.</li>
-</ul>
-<p><strong>Returns:</strong> String. The missing values, joined, empty when there are none.</p>
-<hr />
-<h3 id="int-holdsvalue">HoldsValue <a class="anchor-link" href="#int-holdsvalue">#</a></h3>
-<p><em>holds-value</em></p>
-<p><strong>Whether a list holds one value, matched exactly</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function HoldsValue(ByVal listValues As BetterArray, _
-                            ByVal oneValue As String) As Boolean
-</code></pre>
-<p>Two values are the same when they carry the same letters, in the same case,
-with the same spaces around them.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>listValues</code>: BetterArray. The list to search.</li>
-<li><code>oneValue</code>: String. The value to look for.</li>
-</ul>
-<p><strong>Returns:</strong> Boolean. True when the list holds it.</p>
-<hr />
-<h3 id="int-choicesof">ChoicesOf <a class="anchor-link" href="#int-choicesof">#</a></h3>
-<p><em>choices-of</em></p>
-<p><strong>The Choices worksheet of one workbook</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ChoicesOf(ByVal wb As Workbook) As LLChoices
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>wb</code>: Workbook. The workbook to read.</li>
-</ul>
-<p><strong>Returns:</strong> LLChoices. The choices, or Nothing when the workbook carries none.</p>
-<hr />
-<h3 id="int-customdropdowns">CustomDropdowns <a class="anchor-link" href="#int-customdropdowns">#</a></h3>
-<p><em>custom-dropdowns</em></p>
-<p><strong>The custom dropdown manager of this linelist</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function CustomDropdowns() As DropdownLists
-</code></pre>
-<p><strong>Returns:</strong> DropdownLists. The manager, or Nothing when the workbook has no custom
-dropdown worksheet.</p>
-<hr />
-<h2 id="int-import-report">Import Report</h2>
-<h3 id="int-savereport">SaveReport <a class="anchor-link" href="#int-savereport">#</a></h3>
-<p><em>save-report</em></p>
-<p><strong>Keep the report where it survives the workbook closing</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub SaveReport()
-</code></pre>
-<p>The four lists used to live in memory alone and die with this object at the end
-of the import, while the four ListObjects they belong on sat on __import_rep
-with nothing writing to them. They are written now, so F_ImportRep can be
-opened again days later from the advanced form.</p>
-<p>A workbook that will not take the store - anything other than a generated
-linelist - leaves the lists in memory and says so.</p>
-<hr />
-<h3 id="int-filereportcheckings">FileReportCheckings <a class="anchor-link" href="#int-filereportcheckings">#</a></h3>
-<p><em>file-report-checkings</em></p>
-<p><strong>Put the four report lists where the user can read them</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub FileReportCheckings()
-</code></pre>
-<p>The four lists are the report the form shows. They are filed as checkings as
-well, so one worksheet carries everything the import found and the user can
-read it without opening a form.</p>
-<hr />
 <h2 id="int-private-source-object-accessors">Private - Source Object Accessors</h2>
 <h3 id="int-sourcedictionary">SourceDictionary <a class="anchor-link" href="#int-sourcedictionary">#</a></h3>
 <p><em>source-dictionary</em></p>
 <p><strong>Get the dictionary from the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SourceDictionary() As LLdictionary
+<pre><code class="language-vb">Private Function SourceDictionary() As ILLdictionary
 </code></pre>
-<p><strong>Returns:</strong> LLdictionary. Dictionary instance from the Dictionary sheet.</p>
+<p><strong>Returns:</strong> ILLdictionary. Dictionary instance from the Dictionary sheet.</p>
 <hr />
 <h3 id="int-passwordsobject">PasswordsObject <a class="anchor-link" href="#int-passwordsobject">#</a></h3>
 <p><em>passwords-object</em></p>
 <p><strong>Get passwords from the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function PasswordsObject() As Passwords
+<pre><code class="language-vb">Private Function PasswordsObject() As IPasswords
 </code></pre>
-<p><strong>Returns:</strong> Passwords. Passwords instance from the __pass sheet.</p>
+<p><strong>Returns:</strong> IPasswords. Passwords instance from the __pass sheet.</p>
 <hr />
 <h3 id="int-geoobject">GeoObject <a class="anchor-link" href="#int-geoobject">#</a></h3>
 <p><em>geo-object</em></p>
 <p><strong>Get the geo object from the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function GeoObject() As LLGeo
+<pre><code class="language-vb">Private Function GeoObject() As ILLGeo
 </code></pre>
-<p><strong>Returns:</strong> LLGeo. Geo instance from the Geo sheet.</p>
+<p><strong>Returns:</strong> ILLGeo. Geo instance from the Geo sheet.</p>
 <hr />
 <h2 id="int-private-import-helpers">Private - Import Helpers</h2>
 <h3 id="int-initializetracking">InitializeTracking <a class="anchor-link" href="#int-initializetracking">#</a></h3>
@@ -957,9 +321,6 @@ read it without opening a form.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InitializeTracking()
 </code></pre>
-<p>The two &quot;not touched&quot; lists are left alone because FinalizeReport replaces
-them, and the diagnostics are left alone because CheckImportFile runs before
-this and its entries belong to the same import.</p>
 <hr />
 <h3 id="int-isreservedsheet">IsReservedSheet <a class="anchor-link" href="#int-isreservedsheet">#</a></h3>
 <p><em>is-reserved-sheet</em></p>
@@ -973,44 +334,16 @@ this and its entries belong to the same import.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the name matches a reserved sheet.</p>
 <hr />
-<h3 id="int-showhidesheetof">ShowHideSheetOf <a class="anchor-link" href="#int-showhidesheetof">#</a></h3>
-<p><em>show-hide-sheet-of</em></p>
-<p><strong>The show/hide worksheet of a workbook, or Nothing</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ShowHideSheetOf(ByVal wb As Workbook) As Worksheet
-</code></pre>
-<p>A file written before the internal-sheet rename carries the old trailing
-name, so the new name is looked for first and the old one answers when it
-is absent.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>wb</code>: Workbook. The workbook to look through.</li>
-</ul>
-<p><strong>Returns:</strong> Worksheet. The show/hide worksheet, or Nothing when the workbook has none.</p>
-<hr />
 <h3 id="int-importvlistsheet">ImportVListSheet <a class="anchor-link" href="#int-importvlistsheet">#</a></h3>
 <p><em>import-vlist-sheet</em></p>
 <p><strong>Import VList data from a single import sheet to the current sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportVListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet)
 </code></pre>
-<p>Walks the rows of the import sheet, resolves each variable name to a named
-range on the current sheet and copies the value across when the target cell
-holds no formula. A name the sheet has no range for is filed as &quot;not imported&quot;.</p>
-<h2 id="int-the-file-is-read-in-one-block">THE FILE IS READ IN ONE BLOCK</h2>
-<p>It used to read usedRng.Cells(counter, 1).Value and usedRng.Cells(counter, 2)
-.Value off the worksheet a row at a time, so a VList of 300 variables paid 600
-crossings to read a file it could have read in one. The block is read once and
-the walk answers from the array; the writes stay one per variable, because each
-one lands on a named cell of its own somewhere on the sheet.</p>
-<p>The block is indexed the way usedRng.Cells was, relative to the top left of the
-used range rather than to A1, so a file whose used range does not start at A1
-is read exactly where it was read before.</p>
-<p>A file of one row carries its header and nothing else, and a file of one column
-carries names with no value column beside them. Range.Value answers a scalar
-for the first and the walk never starts; the second used to read the cell to
-the right of the used range, which is empty, so an absent value column reads as
-an empty value here too.</p>
+<p>Iterates over the import sheet used range rows, resolving each variable
+name to a named range on the current sheet. Copies the value when the
+target cell has no formula. Tracks variables not found as &quot;not imported&quot;
+report entries.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>currsh</code>: Worksheet. The current source VList worksheet.</li>
@@ -1022,7 +355,7 @@ an empty value here too.</p>
 <p><strong>Import HList data from a single import sheet to the current sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportHListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet, _
-                             ByVal pasteAtBottom As Boolean, ByVal headerRow As Long)
+                             ByVal pasteAtBottom As Boolean)
 </code></pre>
 <p>Creates a CustomTable from the current sheet ListObject and a DataSheet
 from the import sheet, then delegates to CustomTable.Import. Tracks
@@ -1032,53 +365,18 @@ columns not found in the current table as &quot;not imported&quot; report entrie
 <li><code>currsh</code>: Worksheet. The current source HList worksheet.</li>
 <li><code>impsh</code>: Worksheet. The import HList worksheet.</li>
 <li><code>pasteAtBottom</code>: Boolean. When True, appends data below existing rows.</li>
-<li><code>headerRow</code>: Long. The row of the import sheet that holds the variable
-names. It was read as row 1 always, so a file written with the labels above
-the names had its label row read as the header row, and every column of it
-landed in &quot;not imported&quot;.</li>
 </ul>
 <hr />
 <h3 id="int-sheettagof">SheetTagOf <a class="anchor-link" href="#int-sheettagof">#</a></h3>
 <p><strong>Get the sheet type tag from worksheet-level HiddenNames.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SheetTagOf(ByVal sh As Worksheet, _
-                            Optional ByVal nameKey As String = &quot;sheet_type&quot;) As String
+<pre><code class="language-vb">Private Function SheetTagOf(ByVal sh As Worksheet) As String
 </code></pre>
-<p>The read goes through HiddenNames.QuickValue: three COM crossings for the one
-name asked for, with no instance behind it. HiddenNames.Create walks every
-tracked name of the sheet first and reads three properties off each, and a data
-entry sheet holds hundreds of names. This routine runs once per sheet in
-ClearData, ImportData and RecalculateSheets, so the walk was paid three
-times over the workbook for one string each time.
-LLExporter.SheetTagOf reads the same two keys the same way.
-A sheet that carries no such name answers the empty string, which is what the
-instance read answered too.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The worksheet to query.</li>
-<li><code>nameKey</code>: Optional String. Which worksheet-level name to read.</li>
 </ul>
 <p><strong>Returns:</strong> String. The sheet type tag (HList, VList, etc.).</p>
-<hr />
-<h3 id="int-heldsheetnames">HeldSheetNames <a class="anchor-link" href="#int-heldsheetnames">#</a></h3>
-<p><em>held-sheet-names</em></p>
-<p><strong>The hidden names store of one worksheet, built once and kept</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function HeldSheetNames(ByVal store As Collection, _
-                                ByVal sh As Worksheet) As HiddenNames
-</code></pre>
-<p>A caller that reads the same sheet over and over hands in a Collection and
-gets the same HiddenNames back every time. The first sight of a sheet pays the
-name walk, every later one is a lookup. ImportEditableLabels is the caller
-that needs this: it runs once per variable over a handful of sheets.
-A Collection is what holds the stores because Mac Excel has no
-Scripting.Dictionary; LLFormat and UpdatedValues key their caches the same way.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>store</code>: Collection. The held stores, keyed by worksheet name.</li>
-<li><code>sh</code>: Worksheet. The worksheet whose names are wanted.</li>
-</ul>
-<p><strong>Returns:</strong> HiddenNames. The store of that worksheet.</p>
 <hr />
 <h2 id="int-private-helpers">Private - Helpers</h2>
 <h3 id="int-sheetexists">SheetExists <a class="anchor-link" href="#int-sheetexists">#</a></h3>
@@ -1112,27 +410,23 @@ to CLASS_NAME.</p>
 <li>vbObjectError Always raises the error.</li>
 </ul>
 <hr />
+<h2 id="int-interface-implementation">Interface Implementation</h2>
+<h3 id="int-illimporter-hasdata">ILLImporter_HasData <a class="anchor-link" href="#int-illimporter-hasdata">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get ILLImporter_HasData() As Boolean
+</code></pre>
+<p>Delegated members satisfying the ILLImporter contract.
+See the corresponding members above for full documentation.</p>
+<hr />
 </details>
 <details>
-<summary>Used in (17 file(s))</summary>
+<summary>Used in (5 file(s))</summary>
 <ul>
-<li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
-<li><a href="ChoiceKeys.html">ChoiceKeys.cls</a></li>
-<li><a href="ImportReport.html">ImportReport.cls</a></li>
-<li><a href="LLExporter.html">LLExporter.cls</a></li>
-<li><a href="CustomTable.html">CustomTable.cls</a></li>
+<li><a href="ILLImporter.html">ILLImporter.cls</a></li>
+<li><a href="LLImporter.html">LLImporter.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
-<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
-<li>CustomLinelistFunctions.bas</li>
-<li>EventsLinelistButtons.bas</li>
-<li>LinelistRun.bas</li>
 <li>FormLogicAdvanced.bas</li>
-<li>TestImportReport.bas</li>
-<li>TestLLExporter.bas</li>
 <li>TestLLImporter.bas</li>
-<li>TestLLImportTiming.bas</li>
-<li>TestLLDataEntry.bas</li>
-<li>TestShowHide.bas</li>
 </ul>
 </details>
   </main>

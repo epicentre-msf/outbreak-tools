@@ -170,24 +170,19 @@ ul.task-list li input[type="checkbox"] {
   <ul>
   <li><a href="#table-management" id="toc-table-management" class="nav-link active" data-scroll-target="#table-management">Table management</a>
   <ul>
-  <li><a href="#add-rows-to-tables" id="toc-add-rows-to-tables" class="nav-link" data-scroll-target="#add-rows-to-tables">Add rows to tables</a></li>
-  <li><a href="#resize-tables" id="toc-resize-tables" class="nav-link" data-scroll-target="#resize-tables">Resize tables</a></li>
-  <li><a href="#insert-row" id="toc-insert-row" class="nav-link" data-scroll-target="#insert-row">Insert row</a></li>
-  <li><a href="#delete-table-row" id="toc-delete-table-row" class="nav-link" data-scroll-target="#delete-table-row">Delete table row</a></li>
-  <li><a href="#delete-table-column" id="toc-delete-table-column" class="nav-link" data-scroll-target="#delete-table-column">Delete table column</a></li>
-  <li><a href="#sort-tables" id="toc-sort-tables" class="nav-link" data-scroll-target="#sort-tables">Sort tables</a></li>
-  <li><a href="#remove-all-filters" id="toc-remove-all-filters" class="nav-link" data-scroll-target="#remove-all-filters">Remove all filters</a></li>
+  <li><a href="#add-rows" id="toc-add-rows" class="nav-link" data-scroll-target="#add-rows">Add rows</a></li>
+  <li><a href="#resize-table-in-the-current-sheet" id="toc-resize-table-in-the-current-sheet" class="nav-link" data-scroll-target="#resize-table-in-the-current-sheet">Resize table in the current sheet</a></li>
+  <li><a href="#remove-filters" id="toc-remove-filters" class="nav-link" data-scroll-target="#remove-filters">Remove filters</a></li>
   </ul></li>
   <li><a href="#translation" id="toc-translation" class="nav-link" data-scroll-target="#translation">Translation</a>
   <ul>
   <li><a href="#add-language" id="toc-add-language" class="nav-link" data-scroll-target="#add-language">Add language</a></li>
   <li><a href="#update-translation-table" id="toc-update-translation-table" class="nav-link" data-scroll-target="#update-translation-table">Update translation table</a></li>
   </ul></li>
-  <li><a href="#import-export" id="toc-import-export" class="nav-link" data-scroll-target="#import-export">Import/ Export</a>
+  <li><a href="#import" id="toc-import" class="nav-link" data-scroll-target="#import">Import</a>
   <ul>
   <li><a href="#import-data-from-another-setup" id="toc-import-data-from-another-setup" class="nav-link" data-scroll-target="#import-data-from-another-setup">Import data from another setup</a></li>
-  <li><a href="#import-from-migration" id="toc-import-from-migration" class="nav-link" data-scroll-target="#import-from-migration">Import from migration</a></li>
-  <li><a href="#export-for-migration" id="toc-export-for-migration" class="nav-link" data-scroll-target="#export-for-migration">Export for migration</a></li>
+  <li><a href="#import-from-disease-in-developpment" id="toc-import-from-disease-in-developpment" class="nav-link" data-scroll-target="#import-from-disease-in-developpment">Import from disease (in developpment)</a></li>
   </ul></li>
   <li><a href="#sec-advanced" id="toc-sec-advanced" class="nav-link" data-scroll-target="#sec-advanced">Advanced</a>
   <ul>
@@ -233,7 +228,7 @@ ul.task-list li input[type="checkbox"] {
 <div id="fig-setup-ribbon" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-setup-ribbon-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<img src="../images/img-setup-ribbon.png" class="img-fluid quarto-figure quarto-figure-center figure-img">
+<img src="../images/img-003-ribbon-setup.png" class="img-fluid quarto-figure quarto-figure-center figure-img">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-setup-ribbon-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Figure&nbsp;1: OutbreakTools tab in the <strong>setup file</strong>
@@ -245,13 +240,13 @@ Figure&nbsp;1: OutbreakTools tab in the <strong>setup file</strong>
 <p>The buttons of this section provide action on tables within the setup: main table on the <em>Dictionary sheet</em>, table for choices, table for exports, tables for analyses etc.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="../images/img-table-management.png" class="img-fluid figure-img"></p>
+<p><img src="images/img-003-ribbon-setup-table.png" class="img-fluid figure-img"></p>
 <figcaption>Table management section</figcaption>
 </figure>
 </div>
-<section id="add-rows-to-tables" class="level3">
-<h3 class="anchored" data-anchor-id="add-rows-to-tables">Add rows to tables</h3>
-<p>This button inserts rows at the bottom of the table in the current sheet.</p>
+<section id="add-rows" class="level3">
+<h3 class="anchored" data-anchor-id="add-rows">Add rows</h3>
+<p>This button insert rows at the bottom of the table in the current sheet.</p>
 <p>When this functionality is used in the <em>Analyses</em> sheet, you can use the drop-down menu in <em>cell A1</em> to choose whether you want to add rows to all tables or just one in particular.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
@@ -260,8 +255,8 @@ Figure&nbsp;1: OutbreakTools tab in the <strong>setup file</strong>
 </figure>
 </div>
 </section>
-<section id="resize-tables" class="level3">
-<h3 class="anchored" data-anchor-id="resize-tables">Resize tables</h3>
+<section id="resize-table-in-the-current-sheet" class="level3">
+<h3 class="anchored" data-anchor-id="resize-table-in-the-current-sheet">Resize table in the current sheet</h3>
 <p>This button remove empty rows (whether at the end or in the middle).</p>
 <p>When this functionality is used in the <em>Analyses</em> sheet, you can use the drop-down menu in <em>cell A1</em> to choose whether you want to remove empty rows to all tables or just one in particular.</p>
 <div class="quarto-figure quarto-figure-center">
@@ -271,24 +266,8 @@ Figure&nbsp;1: OutbreakTools tab in the <strong>setup file</strong>
 </figure>
 </div>
 </section>
-<section id="insert-row" class="level3">
-<h3 class="anchored" data-anchor-id="insert-row">Insert row</h3>
-<p>This button inserts a row between existing rows in each of the setup’s worksheets.</p>
-</section>
-<section id="delete-table-row" class="level3">
-<h3 class="anchored" data-anchor-id="delete-table-row">Delete table row</h3>
-<p>This button deletes rows. To delete a row, select it and then click the button. Before the row is deleted, a warning message will appear to let you know that the operation cannot be undone.</p>
-</section>
-<section id="delete-table-column" class="level3">
-<h3 class="anchored" data-anchor-id="delete-table-column">Delete table column</h3>
-<p>This button deletes table columns, but only on the Translation sheet.</p>
-</section>
-<section id="sort-tables" class="level3">
-<h3 class="anchored" data-anchor-id="sort-tables">Sort tables</h3>
-<p>This button organises the Dictionary and the tables in the Choices, Analyses, and Export sheets. The sorting method depends on the sheet.</p>
-</section>
-<section id="remove-all-filters" class="level3">
-<h3 class="anchored" data-anchor-id="remove-all-filters">Remove all filters</h3>
+<section id="remove-filters" class="level3">
+<h3 class="anchored" data-anchor-id="remove-filters">Remove filters</h3>
 <p>This button clears filters. It is usefull if you have applied Excel filters in several columns, no need to track them all one by one, just clear them in one go.</p>
 </section>
 </section>
@@ -297,7 +276,7 @@ Figure&nbsp;1: OutbreakTools tab in the <strong>setup file</strong>
 <p>This section provides functionalities for the <a href="../reference/translations_sheet.html">Translation sheet</a>.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="../images/img-translation-setup.png" class="img-fluid figure-img"></p>
+<p><img src="images/img-003-ribbon-setup-translations.png" class="img-fluid figure-img"></p>
 <figcaption>Translation section</figcaption>
 </figure>
 </div>
@@ -324,18 +303,18 @@ Figure&nbsp;1: OutbreakTools tab in the <strong>setup file</strong>
 <p>Go to the <a href="../reference/translations_sheet.html">Translation sheet</a> for more information on translations.</p>
 </section>
 </section>
-<section id="import-export" class="level2">
-<h2 class="anchored" data-anchor-id="import-export">Import/ Export</h2>
-<p>These buttons allow to import data into an empty setup as well as exporting for migration.</p>
+<section id="import" class="level2">
+<h2 class="anchored" data-anchor-id="import">Import</h2>
+<p>These buttons allow to import data into an empty setup.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="../images/img-import-setup.png" class="img-fluid figure-img"></p>
+<p><img src="images/img-003-ribbon-setup-import.png" class="img-fluid figure-img"></p>
 <figcaption>Import section</figcaption>
 </figure>
 </div>
 <section id="import-data-from-another-setup" class="level3">
 <h3 class="anchored" data-anchor-id="import-data-from-another-setup">Import data from another setup</h3>
-<p>Use this button to import data from another <strong>setup file</strong> to an empty setup file<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
+<p>Use this button to migrate data from one <strong>setup file</strong> to another empty setup file<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
 <ol type="1">
 <li>Click on the button; it opens a popup window</li>
 <li>Click on the “Load another setup file” button. It will open a window to select the file to import data from.</li>
@@ -358,25 +337,21 @@ Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>If you are importing a setup to a new <strong>setup file</strong>, you should check all boxes to import everything.</p>
+<p>If you are migrating a setup to a new <strong>setup file</strong>, you should check all boxes to import everything.</p>
 <p>You can run the coherence checks now, or do it at a later stage with the <a href="#sec-check-setup">Check setup button</a></p>
 </div>
 </div>
 </section>
-<section id="import-from-migration" class="level3">
-<h3 class="anchored" data-anchor-id="import-from-migration">Import from migration</h3>
-<p>Use this button to import back the previously exported file from migration.</p>
-</section>
-<section id="export-for-migration" class="level3">
-<h3 class="anchored" data-anchor-id="export-for-migration">Export for migration</h3>
-<p>This button allows you to export the setup for migration.</p>
+<section id="import-from-disease-in-developpment" class="level3">
+<h3 class="anchored" data-anchor-id="import-from-disease-in-developpment">Import from disease (in developpment)</h3>
+<p>This button is used to import a “disease setup” from a disease <strong>Master file</strong>. This file is being piloted for Epinetwork discussions.</p>
 </section>
 </section>
 <section id="sec-advanced" class="level2">
 <h2 class="anchored" data-anchor-id="sec-advanced">Advanced</h2>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="../images/img-ribbon-advanced-setup.png" class="img-fluid figure-img"></p>
+<p><img src="images/img-003-ribbon-setup-advanced.png" class="img-fluid figure-img"></p>
 <figcaption>Advanced section</figcaption>
 </figure>
 </div>
@@ -427,7 +402,7 @@ Note
 <a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a><div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
 
 <ol>
-<li id="fn1"><p>An upgraded version, or an empty file for the same version in case the original file got corrupted.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn1"><p>An upgraded version, or an empty file fo the same version in case the original file got corrupted.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn2"><p>Note that the checkup does its best, but some formula errors can be missed and create problems in your formulas. Always test the calculated columns after compilation!<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section></div></main> <!-- /main -->

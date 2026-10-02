@@ -11,22 +11,16 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>FormulaData</h1>
-<p>Answers what the formula parser is allowed to accept. Create reads two
-ListObjects from a worksheet, T_XlsFonctions for the Excel function names and
-T_ascii for the separator characters, and holds each of them as one delimited
-string. ExcelFormulasIncludes says whether a token is a known Excel function,
-and SpecialCharacterIncludes whether a character is a known separator.</p>
-<details open class="doc-section" id="grouped-formulas">
-<summary>GROUPED FORMULAS</summary>
-<div class="section-body">
-<p>Seven tokens stand for an aggregation over rows that match a set of criteria,
-SUMIFS and MEANIFS among them. IsGroupFunction says whether a token is one of
-the seven, GroupAggregator names the Excel function it stands for, and
-GroupUsesNativeFunction says whether the output uses the matching Excel *IFS
-function directly.</p>
+<p>Provides cached, in-memory lookups for the Excel functions and special
+characters that the formula parser is allowed to accept. On creation it
+reads two ListObjects from a worksheet (T_XlsFonctions for functions,
+T_ascii for separator characters) and stores the values in BetterArray
+caches. It also maintains a registry of grouped formula mappings that
+translate custom tokens (e.g. SUMIFS, MEANIFS) into their canonical
+Excel aggregation functions. Consumers interact with this class
+exclusively through the IFormulaData interface.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
-</div>
-</details>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -34,22 +28,27 @@ function directly.</p>
 <p><em>create</em></p>
 <p><strong>Instantiate a FormulaData helper bound to a worksheet source</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal formWksh As Worksheet) As FormulaData
+<pre><code class="language-vb">Public Function Create(ByVal formWksh As Worksheet) As IFormulaData
 </code></pre>
 <p>Validates that the supplied worksheet contains the required ListObjects
 (T_XlsFonctions and T_ascii) with expected columns, then reads their
-data into memory. Each table is resolved once: the old code validated the
-two tables and then resolved both again to read them.</p>
+data into memory caches. The returned instance exposes its surface
+through the IFormulaData interface so consumers never depend on the
+concrete class.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>formWksh</code>: Worksheet. The worksheet hosting the lookup tables.</li>
 </ul>
-<p><strong>Returns:</strong> FormulaData. A fully initialised instance ready for use by the Formulas parser.</p>
+<p><strong>Returns:</strong> IFormulaData. A fully initialised instance ready for use by the Formulas parser.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When formWksh is Nothing.</li>
 <li>ProjectError.ElementNotFound When a required table or column is missing.</li>
 <li>ProjectError.ErrorUnexpectedState When a required column contains no data.</li>
+</ul>
+<p><strong>Depends on:</strong></p>
+<ul>
+<li>BetterArray</li>
 </ul>
 <hr />
 </div>
@@ -61,12 +60,12 @@ two tables and then resolved both again to read them.</p>
 <p><em>special-character-includes</em></p>
 <p><strong>Determine whether a special character is allowed</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function SpecialCharacterIncludes(ByVal specialChar As String) As Boolean
+<pre><code class="language-vb">Private Function SpecialCharacterIncludes(ByVal specialChar As String) As Boolean
 </code></pre>
-<p>Membership tests against the cached function and character lists.</p>
-<p>Checks the character index for the provided token. Returns False when the
-input is empty. The match is exact, including case: the T_ascii entries are
-stored as they are written on the worksheet.</p>
+<p>Membership tests against the cached function and character lists.
+Checks the in-memory character cache for the provided token. Returns
+False immediately when the input is empty. The cache is built lazily
+from the T_ascii table on first access.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>specialChar</code>: String. Single-character token to inspect.</li>
@@ -77,11 +76,11 @@ stored as they are written on the worksheet.</p>
 <p><em>excel-formulas-includes</em></p>
 <p><strong>Determine whether an Excel function is allowed</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
+<pre><code class="language-vb">Private Function ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
 </code></pre>
-<p>Normalises the input to uppercase and checks the function index. Returns
-False when the input is empty. Function names are stored uppercase, so the
-lookup is case-insensitive.</p>
+<p>Normalises the input to uppercase and checks the in-memory function
+cache. Returns False immediately when the input is empty. The cache
+is built lazily from the T_XlsFonctions table on first access.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>ExcelFormula</code>: String. Function name to inspect.</li>
@@ -93,16 +92,15 @@ lookup is case-insensitive.</p>
 <details open class="doc-section" id="groupfunctions">
 <summary>GroupFunctions</summary>
 <div class="section-body">
-<h3 id="isgroupfunction">IsGroupFunction <a class="anchor-link" href="#isgroupfunction">#</a></h3>
+<h3 id="groupfunctionincludes">GroupFunctionIncludes <a class="anchor-link" href="#groupfunctionincludes">#</a></h3>
 <p><em>group-function-includes</em></p>
 <p><strong>Determine whether a grouped function token is registered</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function IsGroupFunction(ByVal functionName As String) As Boolean
+<pre><code class="language-vb">Private Function GroupFunctionIncludes(ByVal functionName As String) As Boolean
 </code></pre>
-<p>The grouped formulas and the canonical Excel aggregation function
-each token maps to.</p>
-<p>Normalises the input and looks it up in the mapping. Returns False for an
-empty string and for a token that is not one of the seven.</p>
+<p>Normalises the input and scans the registry for a matching first
+element. Returns True on the first match. Returns False when the
+registry is empty or no match is found.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>functionName</code>: String. Grouped token to look up.</li>
@@ -113,25 +111,26 @@ empty string and for a token that is not one of the seven.</p>
 <p><em>group-aggregator</em></p>
 <p><strong>Retrieve the Excel aggregator linked to a grouped formula token</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function GroupAggregator(ByVal functionName As String) As String
+<pre><code class="language-vb">Private Function GroupAggregator(ByVal functionName As String) As String
 </code></pre>
-<p>Returns the canonical Excel aggregator function name for the token.
-Returns vbNullString when the token is not one of the seven.</p>
+<p>Scans the registry for the matching token and returns the second
+element of the mapping array, which is the canonical Excel aggregator
+function name. Returns vbNullString when the token is not found.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>functionName</code>: String. Grouped token to translate.</li>
 </ul>
 <p><strong>Returns:</strong> String. Aggregator name or vbNullString when unknown.</p>
 <hr />
-<h3 id="groupusesnativefunction">GroupUsesNativeFunction <a class="anchor-link" href="#groupusesnativefunction">#</a></h3>
+<h3 id="groupusesnative">GroupUsesNative <a class="anchor-link" href="#groupusesnative">#</a></h3>
 <p><em>group-uses-native</em></p>
 <p>*<em>Determine whether the grouped function should emit a native Excel <em>IFS aggregator</em></em></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function GroupUsesNativeFunction(ByVal functionName As String) As Boolean
+<pre><code class="language-vb">Private Function GroupUsesNative(ByVal functionName As String) As Boolean
 </code></pre>
-<p>When True, the Formulas class emits the native *IFS function (e.g. SUMIFS)
-instead of wrapping the aggregator in an IF block. Returns False when the
-token is not one of the seven.</p>
+<p>Looks up the third element of the mapping array for the given token.
+When True, the Formulas class emits the native *IFS function (e.g.
+SUMIFS) instead of wrapping the aggregator in an IF block.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>functionName</code>: String. Grouped token to inspect.</li>
@@ -142,39 +141,25 @@ token is not one of the seven.</p>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2 id="int-factory">Factory</h2>
-<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
-<p><em>seal</em></p>
-<p><strong>Prevent further changes to setup-only properties</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Seal()
-</code></pre>
-<p>Marks the instance as sealed so guarded setters raise when invoked after
-construction. Called by the factory before returning. It also closes the
-back door the class used to carry: a direct New followed by Initialise
-skipped nothing, but a later Wksh write rebuilt every lookup underneath a
-parser that was already reading them.</p>
-<hr />
-<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
-<p><em>guard-not-sealed</em></p>
-<p><strong>Reject writes to setup-only properties after sealing</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
-</code></pre>
-<p>Raises an error when a guarded setter is invoked on a sealed instance.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>propName</code>: String. Name of the property being guarded.</li>
-</ul>
-<hr />
 <h2 id="int-publicaccessors">PublicAccessors</h2>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IFormulaData
+</code></pre>
+<p>Properties that expose the internal state and worksheet ranges.
+Convenience accessor that returns the current instance cast to its
+interface. Used internally by the factory method to hand back an
+IFormulaData reference from the predeclared Create pattern.</p>
+<p><strong>Returns:</strong> IFormulaData. The current instance cast to the interface.</p>
+<hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><em>wksh</em></p>
 <p><strong>Worksheet hosting the lookup tables</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
 </code></pre>
-<p>Properties that expose the internal state.</p>
 <p>Returns the worksheet reference stored during creation. All cached
 lookups originate from ListObjects on this worksheet.</p>
 <p><strong>Returns:</strong> Worksheet. The worksheet reference stored at creation.</p>
@@ -185,47 +170,42 @@ lookups originate from ListObjects on this worksheet.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Wksh(ByVal formWksh As Worksheet)
 </code></pre>
-<p>Replaces the worksheet reference and rereads both lookups from it. The
-factory seals the instance, so this raises after construction.</p>
+<p>Replaces the worksheet reference and invalidates all cached lookups
+so they are rebuilt from the new worksheet on the next access.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>formWksh</code>: Worksheet. The worksheet providing formula metadata.</li>
 </ul>
+<hr />
+<h3 id="int-formularange">FormulaRange <a class="anchor-link" href="#int-formularange">#</a></h3>
+<p><em>formula-range</em></p>
+<p><strong>Data body range containing allowed formulas</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get FormulaRange() As Range
+</code></pre>
+<p>Resolves the ENG column of the T_XlsFonctions ListObject and returns
+its DataBodyRange. Callers can use this range to inspect the raw
+worksheet data backing the function whitelist.</p>
+<p><strong>Returns:</strong> Range. The data body range covering the ENG column of the formulas table.</p>
 <p><strong>Throws:</strong></p>
 <ul>
-<li>ProjectError.SomethingWentWrong When the instance is sealed.</li>
+<li>ProjectError.ElementNotFound When the table or column cannot be resolved.</li>
 </ul>
 <hr />
-<h2 id="int-groupfunctions">GroupFunctions</h2>
-<h3 id="int-groupmappingfound">GroupMappingFound <a class="anchor-link" href="#int-groupmappingfound">#</a></h3>
-<p><em>group-mapping-found</em></p>
-<p><strong>Resolve one grouped token to its aggregator and native flag</strong></p>
+<h3 id="int-specialcharactersrange">SpecialCharactersRange <a class="anchor-link" href="#int-specialcharactersrange">#</a></h3>
+<p><em>special-characters-range</em></p>
+<p><strong>Data body range containing allowed separator characters</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function GroupMappingFound(ByVal functionName As String, _
-                                   ByRef aggregator As String, _
-                                   ByRef usesNative As Boolean) As Boolean
+<pre><code class="language-vb">Public Property Get SpecialCharactersRange() As Range
 </code></pre>
-<p>The seven mappings are compiled in. The old class held them in a
-BetterArray registry with routines to add and remove entries, and nothing
-ever added one: the seven literals were the whole set. The three public
-answers above each walked that registry with the same twenty lines.</p>
-<p><strong>Parameters:</strong></p>
+<p>Resolves the TEXT column of the T_ascii ListObject and returns its
+DataBodyRange. Provides direct access to the characters that the
+tokeniser treats as delimiters.</p>
+<p><strong>Returns:</strong> Range. The data body range covering the TEXT column of the characters table.</p>
+<p><strong>Throws:</strong></p>
 <ul>
-<li><code>functionName</code>: String. Grouped token to look up.</li>
-<li><code>aggregator</code>: ByRef String. Filled with the Excel aggregator.</li>
-<li><code>usesNative</code>: ByRef Boolean. Filled with the native-function flag.</li>
+<li>ProjectError.ElementNotFound When the table or column cannot be resolved.</li>
 </ul>
-<p><strong>Returns:</strong> Boolean. True when the token is one of the seven.</p>
-<hr />
-<h3 id="int-registergrouptokens">RegisterGroupTokens <a class="anchor-link" href="#int-registergrouptokens">#</a></h3>
-<p><em>register-group-tokens</em></p>
-<p><strong>Put the grouped tokens and their aggregators in the function index</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RegisterGroupTokens()
-</code></pre>
-<p>The seven tokens and the four aggregators they name are accepted by the
-tokeniser whether or not the worksheet table lists them.
-Formulas.AppendToken depends on this and a test asserts it.</p>
 <hr />
 <h2 id="int-privatehelpers">PrivateHelpers</h2>
 <h3 id="int-initialise">Initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
@@ -234,31 +214,69 @@ Formulas.AppendToken depends on this and a test asserts it.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Initialise(ByVal formWksh As Worksheet)
 </code></pre>
-<p>Initialisation, validation, and index building.</p>
-<p>Stores the worksheet reference and reads both lookup columns into memory.
-It stays Public because the factory calls it on a second instance, and it
-is guarded: after the factory seals that instance, this raises.</p>
+<p>Initialisation, validation, and cache management utilities.
+Stores the worksheet reference, clears any stale caches, and eagerly
+builds both function and character lookups so the instance is ready
+for immediate use after creation.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>formWksh</code>: Worksheet. The worksheet providing lookup sources.</li>
 </ul>
+<hr />
+<h3 id="int-validateworksheet">ValidateWorksheet <a class="anchor-link" href="#int-validateworksheet">#</a></h3>
+<p><em>validate-worksheet</em></p>
+<p><strong>Ensure the worksheet contains the required list objects and columns</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateWorksheet(ByVal targetSheet As Worksheet)
+</code></pre>
+<p>Guards against Nothing references and delegates to ValidateListObject
+for each of the two required tables (formulas and characters). Raises
+an error at the first missing element encountered.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetSheet</code>: Worksheet. The worksheet to validate.</li>
+</ul>
 <p><strong>Throws:</strong></p>
 <ul>
+<li>ProjectError.ObjectNotInitialized When targetSheet is Nothing.</li>
 <li>ProjectError.ElementNotFound When a required table or column is missing.</li>
-<li>ProjectError.ErrorUnexpectedState When a required column contains no data.</li>
-<li>ProjectError.SomethingWentWrong When the instance is sealed.</li>
+<li>ProjectError.ErrorUnexpectedState When a column contains no data.</li>
 </ul>
 <hr />
-<h3 id="int-columnrange">ColumnRange <a class="anchor-link" href="#int-columnrange">#</a></h3>
-<p><em>column-range</em></p>
-<p><strong>Resolve the data body range of one lookup column</strong></p>
+<h3 id="int-validatelistobject">ValidateListObject <a class="anchor-link" href="#int-validatelistobject">#</a></h3>
+<p><em>validate-list-object</em></p>
+<p><strong>Confirm the presence of a specific ListObject and column</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ColumnRange(ByVal tableName As String, _
-                             ByVal columnName As String) As Range
+<pre><code class="language-vb">Private Sub ValidateListObject(ByVal hostSheet As Worksheet, _
+                               ByVal tableName As String, _
+                               ByVal columnName As String)
 </code></pre>
-<p>Locates the named ListObject and column on the stored worksheet and
-returns the DataBodyRange, raising the error that says which part is
-missing. This is the only place either table is resolved.</p>
+<p>Attempts to locate the named ListObject and column on the host
+worksheet using guarded On Error Resume Next blocks. Raises a
+ProjectError when any component is missing or the column has no data.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostSheet</code>: Worksheet. The worksheet containing the table.</li>
+<li><code>tableName</code>: String. Name of the ListObject to inspect.</li>
+<li><code>columnName</code>: String. Header expected within the table.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the table or column is absent.</li>
+<li>ProjectError.ErrorUnexpectedState When the column DataBodyRange is Nothing.</li>
+</ul>
+<hr />
+<h3 id="int-resolvecolumnrange">ResolveColumnRange <a class="anchor-link" href="#int-resolvecolumnrange">#</a></h3>
+<p><em>resolve-column-range</em></p>
+<p><strong>Resolve and return the data body range for a column</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveColumnRange(ByVal tableName As String, _
+                                    ByVal columnName As String) As Range
+</code></pre>
+<p>Looks up the named table and column on the stored worksheet and
+returns its DataBodyRange. Raises an error when the range cannot be
+resolved, which typically indicates the table structure was modified
+after the instance was created.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>tableName</code>: String. ListObject name.</li>
@@ -267,79 +285,136 @@ missing. This is the only place either table is resolved.</p>
 <p><strong>Returns:</strong> Range. The data body range containing the column data.</p>
 <p><strong>Throws:</strong></p>
 <ul>
-<li>ProjectError.ElementNotFound When the table or the column is absent.</li>
-<li>ProjectError.ErrorUnexpectedState When the column holds no data.</li>
+<li>ProjectError.ElementNotFound When the column cannot be resolved.</li>
 </ul>
 <hr />
-<h3 id="int-buildindex">BuildIndex <a class="anchor-link" href="#int-buildindex">#</a></h3>
-<p><em>build-index</em></p>
-<p><strong>Read one column and turn it into a delimited lookup string</strong></p>
+<h3 id="int-resetcaches">ResetCaches <a class="anchor-link" href="#int-resetcaches">#</a></h3>
+<p><em>reset-caches</em></p>
+<p><strong>Reset cached lookups so they reload on next use</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function BuildIndex(ByVal sourceRange As Range, _
-                            ByVal normaliseCase As Boolean) As String
+<pre><code class="language-vb">Private Sub ResetCaches()
 </code></pre>
-<p>Reads the whole column in one crossing, then walks the values in memory.
-The old code read one cell at a time and called BetterArray.Includes once
-per row against the very list it was filling, which copies the whole
-internal array on every call. Duplicates are skipped with one InStr over
-the string being built.</p>
+<p>Sets the three cache references (functions, characters, group
+functions) to Nothing. The next call to any lookup method will
+trigger a lazy rebuild from the worksheet.</p>
+<hr />
+<h3 id="int-buildcaches">BuildCaches <a class="anchor-link" href="#int-buildcaches">#</a></h3>
+<p><em>build-caches</em></p>
+<p><strong>Build in-memory caches from the worksheet tables</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub BuildCaches()
+</code></pre>
+<p>Reads the formula and character ranges into BetterArray instances
+and seeds the grouped-function registry with default mappings.
+Function names are uppercased for case-insensitive matching while
+character tokens are stored verbatim.</p>
+<hr />
+<h3 id="int-ensurefunctions">EnsureFunctions <a class="anchor-link" href="#int-ensurefunctions">#</a></h3>
+<p><em>ensure-functions</em></p>
+<p><strong>Ensure the function lookup is initialised and return it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureFunctions() As BetterArray
+</code></pre>
+<p>Lazily rebuilds all caches when the function BetterArray is Nothing,
+then returns the function lookup for immediate use.</p>
+<p><strong>Returns:</strong> BetterArray. Collection keyed by uppercase function names.</p>
+<hr />
+<h3 id="int-ensurecharacters">EnsureCharacters <a class="anchor-link" href="#int-ensurecharacters">#</a></h3>
+<p><em>ensure-characters</em></p>
+<p><strong>Ensure the character lookup is initialised and return it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureCharacters() As BetterArray
+</code></pre>
+<p>Lazily rebuilds all caches when the character BetterArray is Nothing,
+then returns the character lookup for immediate use.</p>
+<p><strong>Returns:</strong> BetterArray. Collection keyed by literal characters.</p>
+<hr />
+<h3 id="int-buildlookup">BuildLookup <a class="anchor-link" href="#int-buildlookup">#</a></h3>
+<p><em>build-lookup</em></p>
+<p><strong>Convert a column of cells into a lookup array</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildLookup(ByVal sourceRange As Range, _
+                             ByVal normaliseCase As Boolean) As BetterArray
+</code></pre>
+<p>Iterates over each cell in the source range, skips empty values,
+optionally uppercases the entry, and pushes only distinct values
+into the resulting BetterArray. The array uses a zero-based lower
+bound for consistent indexing across all caches.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>sourceRange</code>: Range. The cells containing the values to index.</li>
+<li><code>sourceRange</code>: Range. The cells containing the values to cache.</li>
 <li><code>normaliseCase</code>: Boolean. True to uppercase entries before storing.</li>
 </ul>
-<p><strong>Returns:</strong> String. The distinct values, each wrapped in INDEX_SEPARATOR.</p>
+<p><strong>Returns:</strong> BetterArray. Collection containing the distinct values.</p>
 <hr />
-<h3 id="int-columnvalues">ColumnValues <a class="anchor-link" href="#int-columnvalues">#</a></h3>
-<p><em>column-values</em></p>
-<p><strong>Read a one-column range into a string array</strong></p>
+<h2 id="int-groupfunctions">GroupFunctions</h2>
+<h3 id="int-initialisegroupfunctions">InitialiseGroupFunctions <a class="anchor-link" href="#int-initialisegroupfunctions">#</a></h3>
+<p><em>initialise-group-functions</em></p>
+<p><strong>Seed the grouped-formula registry with recognised mappings</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ColumnValues(ByVal sourceRange As Range) As Variant
+<pre><code class="language-vb">Private Sub InitialiseGroupFunctions()
 </code></pre>
-<p>A range of one cell answers with a scalar rather than an array, so that
-case is handled on its own.</p>
+<p>Maintains an in-memory registry of grouped formulas along with
+the canonical Excel aggregation function each token maps to.
+Ensures the registry exists and registers the seven built-in grouped
+formulas (SUMIFS, COUNTIFS, NIFS, MINIFS, MAXIFS, MEDIANIFS, MEANIFS)
+together with their corresponding Excel aggregators and native flags.</p>
+<hr />
+<h3 id="int-ensuregroupregistry">EnsureGroupRegistry <a class="anchor-link" href="#int-ensuregroupregistry">#</a></h3>
+<p><em>ensure-group-registry</em></p>
+<p><strong>Guarantee the grouped-formula registry exists and is seeded</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureGroupRegistry()
+</code></pre>
+<p>Creates a new zero-based BetterArray when the registry is Nothing.
+Called before any read or write operation on the grouped-function list
+to prevent Nothing-reference errors.</p>
+<hr />
+<h3 id="int-registergroupfunction">RegisterGroupFunction <a class="anchor-link" href="#int-registergroupfunction">#</a></h3>
+<p><em>register-group-function</em></p>
+<p><strong>Register a grouped formula token and its Excel aggregator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RegisterGroupFunction(ByVal functionName As String, _
+                                  ByVal aggregatorName As String, _
+                                  Optional ByVal useNative As Boolean = False)
+</code></pre>
+<p>Normalises both names to uppercase, removes any prior mapping for the
+same token, and stores a three-element array (token, aggregator,
+useNative flag). Also ensures that both the token and its aggregator
+appear in the main function cache so the tokeniser accepts them.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>sourceRange</code>: Range. The one-column range to read.</li>
+<li><code>functionName</code>: String. Grouped token as it appears in setup formulas.</li>
+<li><code>aggregatorName</code>: String. Canonical Excel aggregator to generate.</li>
+<li><code>useNative</code>: Optional Boolean. When True the output uses the native *IFS function directly. Defaults to False.</li>
 </ul>
-<p><strong>Returns:</strong> Variant. A one-based array of strings.</p>
 <hr />
-<h3 id="int-celltext">CellText <a class="anchor-link" href="#int-celltext">#</a></h3>
-<p><em>cell-text</em></p>
-<p><strong>Read one cell value as text</strong></p>
+<h3 id="int-ensurefunctiontoken">EnsureFunctionToken <a class="anchor-link" href="#int-ensurefunctiontoken">#</a></h3>
+<p><em>ensure-function-token</em></p>
+<p><strong>Insert a token into the Excel-function cache when absent</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function CellText(ByVal cellValue As Variant) As String
+<pre><code class="language-vb">Private Sub EnsureFunctionToken(ByVal functionToken As String)
 </code></pre>
-<p>A cell holding an error value raises a type mismatch on CStr, and a table
-the user is editing can hold one.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>cellValue</code>: Variant. The value read from the worksheet.</li>
-</ul>
-<p><strong>Returns:</strong> String. The text, or an empty string.</p>
-<hr />
-<h3 id="int-indexholds">IndexHolds <a class="anchor-link" href="#int-indexholds">#</a></h3>
-<p><em>index-holds</em></p>
-<p><strong>Test one entry against a delimited lookup string</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function IndexHolds(ByVal lookupIndex As String, ByVal entry As String) As Boolean
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>lookupIndex</code>: String. The delimited index to search.</li>
-<li><code>entry</code>: String. The entry to look for.</li>
-</ul>
-<p><strong>Returns:</strong> Boolean. True when the index holds the entry.</p>
-<hr />
-<h3 id="int-appendfunctiontoken">AppendFunctionToken <a class="anchor-link" href="#int-appendfunctiontoken">#</a></h3>
-<p><em>append-function-token</em></p>
-<p><strong>Add one token to the function index when it is not already there</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AppendFunctionToken(ByVal functionToken As String)
-</code></pre>
+<p>Normalises the token to uppercase, creates the function cache if
+needed, and appends the token only when it is not already present.
+This ensures grouped function names are accepted by the tokeniser.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>functionToken</code>: String. Token to guarantee in the lookup.</li>
+</ul>
+<hr />
+<h3 id="int-removegroupfunctionmapping">RemoveGroupFunctionMapping <a class="anchor-link" href="#int-removegroupfunctionmapping">#</a></h3>
+<p><em>remove-group-function-mapping</em></p>
+<p><strong>Remove any existing mapping for the provided grouped token</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveGroupFunctionMapping(ByVal functionName As String)
+</code></pre>
+<p>Iterates the registry in reverse order and removes entries whose
+first element matches the normalised function name. Reverse iteration
+prevents index shifting issues when removing from a BetterArray.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>functionName</code>: String. Grouped formula token to clear.</li>
 </ul>
 <hr />
 <h2 id="int-errorhandling">ErrorHandling</h2>
@@ -349,11 +424,9 @@ the user is editing can hold one.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
 </code></pre>
-<p>Centralised error-raising helper for consistent ProjectError usage.</p>
-<p>Wrapper around Err.Raise that standardises the source to &quot;FormulaData&quot;,
-providing a consistent stack trace across all methods in this class. The
-message goes through as written, the same as the other five classes in
-this folder.</p>
+<p>Centralised error-raising helper for consistent ProjectError usage.
+Wrapper around Err.Raise that standardises the source to &quot;FormulaData&quot;,
+providing a consistent stack trace across all methods in this class.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>errNumb</code>: Long. ProjectError code describing the failure.</li>
@@ -364,26 +437,35 @@ this folder.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
+<h2 id="int-interface">Interface</h2>
+<h3 id="int-iformuladata-specialcharacterincludes">IFormulaData_SpecialCharacterIncludes <a class="anchor-link" href="#int-iformuladata-specialcharacterincludes">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IFormulaData_SpecialCharacterIncludes(ByVal specialChar As String) As Boolean
+</code></pre>
+<p>Delegated members satisfying the IFormulaData contract.
+See the corresponding Private members above for full documentation.</p>
+<hr />
 </details>
 <details>
-<summary>Used in (16 file(s))</summary>
+<summary>Used in (17 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
+<li><a href="FormulaData.html">FormulaData.cls</a></li>
 <li><a href="Formulas.html">Formulas.cls</a></li>
+<li><a href="IFormulaData.html">IFormulaData.cls</a></li>
+<li><a href="ILinelistSpecs.html">ILinelistSpecs.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
+<li><a href="ISetupErrors.html">ISetupErrors.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
-<li>TestAnalysisOutput.bas</li>
 <li>TestCrossTableFormula.bas</li>
-<li>TestFormulaBuilder.bas</li>
-<li>TestSpatialTables.bas</li>
 <li>TestFormulaData.bas</li>
 <li>TestFormulas.bas</li>
-<li>TestEventLinelistSheets.bas</li>
-<li>TestLLDataEntry.bas</li>
-<li>TestSectionBuilder.bas</li>
-<li>TestVarWriter.bas</li>
+<li><a href="FormulaDataStub.html">FormulaDataStub.cls</a></li>
+<li><a href="LinelistSpecsWorkbookStub.html">LinelistSpecsWorkbookStub.cls</a></li>
+<li><a href="LLVarContextSpecsStub.html">LLVarContextSpecsStub.cls</a></li>
+<li><a href="TableSpecsLinelistStub.html">TableSpecsLinelistStub.cls</a></li>
 </ul>
 </details>
   </main>

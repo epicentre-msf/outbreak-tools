@@ -17,7 +17,13 @@
 <h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
 <p><strong>Create a configured master setup event manager.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As EventMasterSetup
+<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As IEventMasterSetup
+</code></pre>
+<hr />
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><strong>Self reference used by factories returning the interface.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IEventMasterSetup
 </code></pre>
 <hr />
 <h2 id="int-lifecycle">Lifecycle</h2>
@@ -28,24 +34,10 @@
 </code></pre>
 <hr />
 <h3 id="int-onworkbookopen">OnWorkbookOpen <a class="anchor-link" href="#int-onworkbookopen">#</a></h3>
-<p><strong>Handle the workbook open the way the setup does.</strong></p>
+<p><strong>Handle workbook open events by running preparation once.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub OnWorkbookOpen(Optional ByVal excelApplication As Application)
 </code></pre>
-<p>The managers are dropped and built from the sheets on the first read after
-the open. The preparation of the workbook is a dev-time step: it writes on
-the sheets, and the Initialize button of the Dev tab is its one door.</p>
-<p>Two things the open does write, the same two EventSetup.OnWorkbookOpen
-writes. Every flag of the __updated registry goes to yes, so the next
-Update Translations reads every watched column. And a workbook saved during
-a debug session reopens with the debug flag still set, and that flag is
-what Passwords.Protect reads before it does anything: while it is set every
-re-protect is ignored. LeaveDebugMode puts the matrix back and clears the
-flag, and returns untouched when the flag is off; the matrix is applied on
-its own after it because Excel drops UserInterfaceOnly when a file closes,
-and a sheet protected without it is closed to this code as much as to the
-user. Each step is skipped when its helper cannot be built. The application
-argument is kept for the callers that pass it.</p>
 <hr />
 <h3 id="int-onribbonload">OnRibbonLoad <a class="anchor-link" href="#int-onribbonload">#</a></h3>
 <p><strong>Store the ribbon reference for future invalidation support.</strong></p>
@@ -54,16 +46,10 @@ argument is kept for the callers that pass it.</p>
 </code></pre>
 <hr />
 <h3 id="int-refreshtranslations">RefreshTranslations <a class="anchor-link" href="#int-refreshtranslations">#</a></h3>
-<p><strong>Drop the choices helper and the variables manager after an edit.</strong></p>
+<p><strong>Refresh translation-backed caches after a language change.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RefreshTranslations()
 </code></pre>
-<p>The master setup holds its content in English, so the service
-carries no translation object of its own. A choices edit cascades through
-RefreshChoices into the Variables table, and a Variables table that grew
-rows through the ribbon needs a manager over the rows it has today, so
-both caches drop. The manager is cheap to rebuild: the column indexes come
-off the hidden names.</p>
 <hr />
 <h2 id="int-accessors">Accessors</h2>
 <h3 id="int-hostworkbook">HostWorkbook <a class="anchor-link" href="#int-hostworkbook">#</a></h3>
@@ -73,31 +59,34 @@ off the hidden names.</p>
 </code></pre>
 <hr />
 <h3 id="int-dropdowns">Dropdowns <a class="anchor-link" href="#int-dropdowns">#</a></h3>
-<p><strong>Provide the dropdown manager built over the __dropdowns sheet.</strong></p>
+<p><strong>Provide the dropdown manager, ensuring the preparation ran.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Dropdowns() As DropdownLists
+<pre><code class="language-vb">Public Property Get Dropdowns() As IDropdownLists
 </code></pre>
-<p>Nothing when the workbook has no __dropdowns sheet.</p>
 <hr />
 <h3 id="int-variables">Variables <a class="anchor-link" href="#int-variables">#</a></h3>
-<p><strong>Provide the master setup variables manager built over the Variables table.</strong></p>
+<p><strong>Provide the master setup variables manager.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Variables() As MasterSetupVariables
+<pre><code class="language-vb">Public Property Get Variables() As IMasterSetupVariables
 </code></pre>
-<p>Nothing when the Variables sheet is missing or carries no table.</p>
 <hr />
 <h3 id="int-choices">Choices <a class="anchor-link" href="#int-choices">#</a></h3>
 <p><strong>Provide the master setup choices helper.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Choices() As LLChoices
+<pre><code class="language-vb">Public Property Get Choices() As ILLChoices
 </code></pre>
 <hr />
-<h3 id="int-updater">Updater <a class="anchor-link" href="#int-updater">#</a></h3>
-<p><strong>The update watcher over the __updated registry, or Nothing.</strong></p>
+<h3 id="int-translations">Translations <a class="anchor-link" href="#int-translations">#</a></h3>
+<p><strong>Provide the workbook-wide translations object.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Updater() As UpdatedValues
+<pre><code class="language-vb">Public Property Get Translations() As ITranslationObject
 </code></pre>
-<p>Nothing when the workbook has no registry sheet.</p>
+<hr />
+<h3 id="int-ribbontranslations">RibbonTranslations <a class="anchor-link" href="#int-ribbontranslations">#</a></h3>
+<p><strong>Provide the ribbon translations object.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get RibbonTranslations() As ITranslationObject
+</code></pre>
 <hr />
 <h3 id="int-ribbon">Ribbon <a class="anchor-link" href="#int-ribbon">#</a></h3>
 <p><strong>Expose the cached ribbon interface.</strong></p>
@@ -105,75 +94,13 @@ off the hidden names.</p>
 <pre><code class="language-vb">Public Property Get Ribbon() As IRibbonUI
 </code></pre>
 <hr />
-<h3 id="int-userlog">UserLog <a class="anchor-link" href="#int-userlog">#</a></h3>
-<p><strong>The user log of the workbook, built once and held.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function UserLog() As MasterSetupLog
-</code></pre>
-<p>The dated record of the user actions, kept on the very hidden __log
-worksheet. The ribbon, the events manager and the exports module write
-their outcome lines through it. An old master setup grows the log sheet on
-the first logged event.</p>
-<p><strong>Returns:</strong> MasterSetupLog. The held log, or Nothing when the build failed.</p>
-<hr />
-<h2 id="int-internal-helpers">Internal helpers</h2>
-<h3 id="int-ensureupdater">EnsureUpdater <a class="anchor-link" href="#int-ensureupdater">#</a></h3>
-<p><strong>Build the update watcher over the __updated sheet, once.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureUpdater()
-</code></pre>
-<p>A workbook without the sheet answers Nothing. Create is guarded
-the way EventSetup guards its watcher.</p>
-<hr />
-<h3 id="int-ensurelog">EnsureLog <a class="anchor-link" href="#int-ensurelog">#</a></h3>
-<p><strong>Build the user log once, growing the __log sheet when it is missing.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureLog()
-</code></pre>
-<p>Adding a worksheet needs the workbook structure open, so a workbook without
-the log sheet is unprotected through its passwords for the build and
-protected again after it. A workbook with no usable password sheet is
-built bare. The tried flag keeps a failed build from repeating on every
-logged line, and a failed build leaves the log at Nothing so every caller
-stays quiet.</p>
-<hr />
-<h3 id="int-resolvepasswords">ResolvePasswords <a class="anchor-link" href="#int-resolvepasswords">#</a></h3>
-<p><strong>The password manager of the workbook, or Nothing.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolvePasswords() As Passwords
-</code></pre>
-<p>Passwords.Create raises on a sheet missing its tables or its names; a
-workbook without a usable password sheet answers Nothing.</p>
-<hr />
-<h3 id="int-ensuredropdownmanager">EnsureDropdownManager <a class="anchor-link" href="#int-ensuredropdownmanager">#</a></h3>
-<p><strong>Build the dropdown manager over the __dropdowns sheet, once.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function EnsureDropdownManager() As DropdownLists
-</code></pre>
-<p>The manager is built from the sheet as it stands, the way the worksheet
-functions build theirs. A workbook without the sheet answers Nothing.
-Create is guarded the way EventSetup guards its dictionary: a half-built
-sheet answers Nothing and the caller decides.</p>
-<hr />
-<h3 id="int-ensurevariablesmanager">EnsureVariablesManager <a class="anchor-link" href="#int-ensurevariablesmanager">#</a></h3>
-<p><strong>Build the variables manager over the Variables table, once.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function EnsureVariablesManager() As MasterSetupVariables
-</code></pre>
-<p>The manager reads the first table of the Variables sheet. A sheet that is
-missing or carries no table answers Nothing. Create is guarded the way
-EventSetup guards its dictionary: a half-built table answers Nothing and
-the caller decides.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (5 file(s))</summary>
+<summary>Used in (3 file(s))</summary>
 <ul>
-<li>EventsMasterSetupRibbon.bas</li>
-<li>MasterSetupEventsManager.bas</li>
-<li>MasterSetupExports.bas</li>
+<li><a href="EventMasterSetup.html">EventMasterSetup.cls</a></li>
+<li><a href="IEventMasterSetup.html">IEventMasterSetup.cls</a></li>
 <li>TestEventMasterSetup.bas</li>
-<li>TestMasterSetupLog.bas</li>
 </ul>
 </details>
   </main>

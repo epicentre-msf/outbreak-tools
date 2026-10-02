@@ -14,33 +14,8 @@
 <p>Cell-based visual progress indicator on a worksheet. Tints cells
 to reflect completion ratio and optionally writes status text to
 a companion cell.</p>
-<details open class="doc-section" id="the-bar-paints-in-the-instance-it-lives-in">
-<summary>THE BAR PAINTS IN THE INSTANCE IT LIVES IN</summary>
-<div class="section-body">
-<p>Every render writes the cells and calls DoEvents once, so the paint lands
-before the caller goes on. The bar leaves the screen switch alone. It is
-driven from an instance whose screen is on, where a cell write paints by
-itself, and a bar that switched the screen on and off would be the
-flicker the in-place build keeps out.</p>
-</div>
-</details>
-<details open class="doc-section" id="the-bar-cells-carry-colour-only">
-<summary>THE BAR CELLS CARRY COLOUR ONLY</summary>
-<div class="section-body">
-<p>The bar shows progress by tint. Attach clears its cells and they stay
-empty for the whole run, so one band of colour moving along the range is
-the whole display.</p>
-<p>The bar used to write the value pair into its first cell. It gave the
-user a second thing to read at every tick, and Excel parsed the pair a
-milestone count produces -- &quot;3 / 12&quot; -- as a date, so the cell showed
-12-Mar under a dd-mmm format while the band moved.</p>
-<p>Words go to the status cell. It is set to the text format at the point of
-write, since the driver's text can be anything, a setup file named for a
-date included.</p>
 <p><strong>Depends on:</strong> ProjectError</p>
-<p><strong>Version:</strong> 1.3 (2026-08-27)</p>
-</div>
-</details>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="lifecycle">
 <summary>Lifecycle</summary>
 <div class="section-body">
@@ -48,14 +23,14 @@ date included.</p>
 <p><em>create</em></p>
 <p><strong>Factory returning an initialised interface</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal barRange As Range, Optional ByVal maximum As Long = DEFAULT_MAXIMUM) As ProgressBar
+<pre><code class="language-vb">Public Function Create(ByVal barRange As Range, Optional ByVal maximum As Long = DEFAULT_MAXIMUM) As IProgressBar
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>barRange</code>: Range. Range that will host the indicator.</li>
 <li><code>maximum</code>: Long. Maximum value. Defaults to DEFAULT_MAXIMUM.</li>
 </ul>
-<p><strong>Returns:</strong> ProgressBar. Ready to use.</p>
+<p><strong>Returns:</strong> IProgressBar. Ready to use.</p>
 <hr />
 </div>
 </details>
@@ -86,6 +61,17 @@ date included.</p>
 <li><code>pendingColor</code>: Long. Colour applied to remaining cells.</li>
 </ul>
 <hr />
+<h3 id="configurevalueformat">ConfigureValueFormat <a class="anchor-link" href="#configurevalueformat">#</a></h3>
+<p><em>configure-value-format</em></p>
+<p><strong>Configure the number format for progress text</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ConfigureValueFormat(ByVal formatPattern As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formatPattern</code>: String. VBA format pattern.</li>
+</ul>
+<hr />
 <h3 id="attachstatuscell">AttachStatusCell <a class="anchor-link" href="#attachstatuscell">#</a></h3>
 <p><em>attach-status-cell</em></p>
 <p><strong>Bind a cell for textual status messages</strong></p>
@@ -101,8 +87,7 @@ date included.</p>
 <p><em>update</em></p>
 <p><strong>Update progress to a specific value</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Update(ByVal currentValue As Long, _
-                  Optional ByVal statusMessage As String = vbNullString)
+<pre><code class="language-vb">Public Sub Update(ByVal currentValue As Long, Optional ByVal statusMessage As String = vbNullString)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -114,8 +99,7 @@ date included.</p>
 <p><em>step-by</em></p>
 <p><strong>Increment progress by the provided step</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub StepBy(Optional ByVal stepValue As Long = 1, _
-                  Optional ByVal statusMessage As String = vbNullString)
+<pre><code class="language-vb">Public Sub StepBy(Optional ByVal stepValue As Long = 1, Optional ByVal statusMessage As String = vbNullString)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -208,10 +192,18 @@ date included.</p>
 <h2 id="int-lifecycle">Lifecycle</h2>
 <h3 id="int-class-initialize">Class_Initialize <a class="anchor-link" href="#int-class-initialize">#</a></h3>
 <p><em>class-initialize</em></p>
-<p><strong>Set default values for colours and maximum</strong></p>
+<p><strong>Set default values for colours, format, and maximum</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Class_Initialize()
 </code></pre>
+<hr />
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
+<p><strong>Self-reference as IProgressBar</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IProgressBar
+</code></pre>
+<p><strong>Returns:</strong> IProgressBar. Self-reference.</p>
 <hr />
 <h2 id="int-internal-helpers">Internal Helpers</h2>
 <h3 id="int-ensureinitialised">EnsureInitialised <a class="anchor-link" href="#int-ensureinitialised">#</a></h3>
@@ -261,19 +253,10 @@ date included.</p>
 <hr />
 <h3 id="int-renderprogress">RenderProgress <a class="anchor-link" href="#int-renderprogress">#</a></h3>
 <p><em>render-progress</em></p>
-<p><strong>Re-render the bar</strong></p>
+<p><strong>Re-render the bar and value text</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RenderProgress()
 </code></pre>
-<hr />
-<h3 id="int-settle">Settle <a class="anchor-link" href="#int-settle">#</a></h3>
-<p><em>settle</em></p>
-<p><strong>Let the latest render paint before the caller goes on</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Settle()
-</code></pre>
-<p>One DoEvents. The screen of the instance the bar lives in is on, so the
-cell writes paint on their own once the message loop gets a turn.</p>
 <hr />
 <h3 id="int-renderstatus">RenderStatus <a class="anchor-link" href="#int-renderstatus">#</a></h3>
 <p><em>render-status</em></p>
@@ -296,6 +279,13 @@ cell writes paint on their own once the message loop gets a turn.</p>
 <pre><code class="language-vb">Private Sub PaintBar(ByVal ratio As Double)
 </code></pre>
 <hr />
+<h3 id="int-writevalue">WriteValue <a class="anchor-link" href="#int-writevalue">#</a></h3>
+<p><em>write-value</em></p>
+<p><strong>Write the formatted progress text to the first cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteValue()
+</code></pre>
+<hr />
 <h3 id="int-resolvemaximum">ResolveMaximum <a class="anchor-link" href="#int-resolvemaximum">#</a></h3>
 <p><em>resolve-maximum</em></p>
 <p><strong>Validate and return a positive maximum</strong></p>
@@ -313,11 +303,10 @@ cell writes paint on their own once the message loop gets a turn.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (3 file(s))</summary>
 <ul>
-<li>EventsDesignerAdvanced.bas</li>
-<li>EventsDesignerMulti.bas</li>
-<li>TestDesignerMulti.bas</li>
+<li><a href="IProgressBar.html">IProgressBar.cls</a></li>
+<li><a href="ProgressBar.html">ProgressBar.cls</a></li>
 <li>TestProgressBar.bas</li>
 </ul>
 </details>

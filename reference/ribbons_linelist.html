@@ -171,8 +171,6 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#sec-data-table" id="toc-sec-data-table" class="nav-link active" data-scroll-target="#sec-data-table">Data table</a>
   <ul>
   <li><a href="#show-hide-variables" id="toc-show-hide-variables" class="nav-link" data-scroll-target="#show-hide-variables">Show / Hide variables</a></li>
-  <li><a href="#show-hide-sections" id="toc-show-hide-sections" class="nav-link" data-scroll-target="#show-hide-sections">Show / Hide Sections</a></li>
-  <li><a href="#layouts" id="toc-layouts" class="nav-link" data-scroll-target="#layouts">Layouts</a></li>
   <li><a href="#add-rows" id="toc-add-rows" class="nav-link" data-scroll-target="#add-rows">Add rows</a></li>
   <li><a href="#resize-table" id="toc-resize-table" class="nav-link" data-scroll-target="#resize-table">Resize table</a></li>
   <li><a href="#clear-all-filters" id="toc-clear-all-filters" class="nav-link" data-scroll-target="#clear-all-filters">Clear all filters</a></li>
@@ -196,7 +194,6 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#sec-linelist-advanced" id="toc-sec-linelist-advanced" class="nav-link" data-scroll-target="#sec-linelist-advanced">Advanced</a>
   <ul>
   <li><a href="#export-for-migration" id="toc-export-for-migration" class="nav-link" data-scroll-target="#export-for-migration">Export for migration</a></li>
-  <li><a href="#export-another-linelist" id="toc-export-another-linelist" class="nav-link" data-scroll-target="#export-another-linelist">Export another linelist</a></li>
   <li><a href="#import-geobase-history" id="toc-import-geobase-history" class="nav-link" data-scroll-target="#import-geobase-history">Import geobase history</a></li>
   <li><a href="#last-import-report" id="toc-last-import-report" class="nav-link" data-scroll-target="#last-import-report">Last Import Report</a></li>
   <li><a href="#delete-data-or-geobase-history" id="toc-delete-data-or-geobase-history" class="nav-link" data-scroll-target="#delete-data-or-geobase-history">Delete data or geobase history</a></li>
@@ -239,7 +236,7 @@ ul.task-list li input[type="checkbox"] {
 <p>Recent version of Excel have a top <a href="https://www.ablebits.com/office-addins-blog/excel-ribbon-guide/">ribbon/menu</a> that display most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="../images/img-001-ribbon-linelist.png" class="img-fluid figure-img"></p>
+<p><img src="../images/img-002-ribbon-linelist.png" class="img-fluid figure-img"></p>
 <figcaption>OutbreakTools menu in OBT linelists</figcaption>
 </figure>
 </div>
@@ -256,7 +253,7 @@ ul.task-list li input[type="checkbox"] {
 <p>Clicking on the “Show/hide variables” button opens a window listing all the variables in this linelist sheet.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="../images/img-show-hide-variables.png" class="img-fluid figure-img"></p>
+<p><img src="../reference/images/img-012-ll-show-hide.png" class="img-fluid figure-img"></p>
 <figcaption>Show hide button and pop-up window</figcaption>
 </figure>
 </div>
@@ -282,29 +279,10 @@ Tip
 </div>
 </div>
 </section>
-<section id="show-hide-sections" class="level3">
-<h3 class="anchored" data-anchor-id="show-hide-sections">Show / Hide Sections</h3>
-<p>Clicking the “Section button” within the “Show/Hide Variables” window opens the “Show/Hide Sections” pop-up, which displays a list of all sections in the line list.</p>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="../images/img-show-hide-sections.png" class="img-fluid figure-img"></p>
-<figcaption>Sections show hide pop up window</figcaption>
-</figure>
-</div>
-</section>
-<section id="layouts" class="level3">
-<h3 class="anchored" data-anchor-id="layouts">Layouts</h3>
-<p>Clicking on the “layout button” within the show/hide variables window opens “saved layouts” pop up where you can save all the shown/hidden variables under a name, and apply the layouts again whenever you need them. Furthermore, saved layouts can be renamed or removed, and they are preserved during migrations, ensuring that your customized layouts remain available after migration.</p>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="../images/img-004-saved-layouts.png" class="img-fluid figure-img"></p>
-<figcaption>Saved layout pop up window</figcaption>
-</figure>
-</div>
-</section>
 <section id="add-rows" class="level3">
 <h3 class="anchored" data-anchor-id="add-rows">Add rows</h3>
 <p>By default, the linelist has 200 empty lines. Click on the “Add Rows” button to add 200 new empty rows.</p>
+<p>In addition, five new rows automatically appear when you start entering data in the last row.</p>
 </section>
 <section id="resize-table" class="level3">
 <h3 class="anchored" data-anchor-id="resize-table">Resize table</h3>
@@ -494,7 +472,7 @@ Warning
 <p>You can print a register directly based on the linelist.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="../images/img-001-register.png" class="img-fluid figure-img"></p>
+<p><img src="../reference/images/img-010-ll-register.png" class="img-fluid figure-img"></p>
 <figcaption>Register and case report form section</figcaption>
 </figure>
 </div>
@@ -504,7 +482,7 @@ Warning
 <li><p>“Add rows” and “Resize table” work exactly the same (except that it adds 10 rows at once)</p></li>
 <li><p>“Show/Hide variables” works the same but looks a bit different. Instead of “Show” you can select “Print” and the orientation of the header. You can also import the parametrisation of hidden/shown columns from the regular linelist table, or change column width.</p></li>
 </ul>
-<p>You can rotate all the labels at once by clicking the “Rotate headers” button. You can define the height of the row by clicking directly on “Row height”, a pop-up opens where you can define the height.</p>
+<p>You can rotate all the labels at once by clicking the “Rotate headers” button. You can define the heigh of the row by clicking directly on “Row height”, a pop-up opens where you can define the heigh.</p>
 <p>All labels are editable.</p>
 <div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
@@ -525,10 +503,9 @@ Tip
 <section id="sec-linelist-advanced" class="level2">
 <h2 class="anchored" data-anchor-id="sec-linelist-advanced">Advanced</h2>
 <p>There is an “Advanced” button on the right of the ribbon, that opens a popup window with options that are used less often.</p>
-<p>Additionally, the “Export the Log” button allows users to export the log of operations performed in the line list. This is particularly useful when bugs or errors occur, as the log captures relevant details that can help identify and resolve the issues.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="../images/img-001-advanced.png" class="img-fluid figure-img"></p>
+<p><img src="../reference/images/img-011-ll-advanced.png" class="img-fluid figure-img"></p>
 <figcaption>Advanced button and pop-up window</figcaption>
 </figure>
 </div>
@@ -538,7 +515,7 @@ Tip
 <p>You can choose to export the patient data and/or the geobase and/or the history of the geobase (history list in the GeoHelper). There are also options to include metadata on the state of hidden/shown columns (to not have to redo the configuration in the new file), and the updated labels of the custom variables, if you used these variables.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="../images/img-export-for-migration.png" class="img-fluid figure-img"></p>
+<p><img src="../reference/images/img-013-ll-export-migration.png" class="img-fluid figure-img"></p>
 <figcaption>Export for migration</figcaption>
 </figure>
 </div>
@@ -548,16 +525,6 @@ Tip
 <li>a file containing the <strong>geobase</strong> that is currently in the linelist, <strong>as well as the history from the GeoHelper</strong></li>
 <li>a file containing *only the GeoHelper **history*<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a></li>
 </ul>
-</section>
-<section id="export-another-linelist" class="level3">
-<h3 class="anchored" data-anchor-id="export-another-linelist">Export another linelist</h3>
-<p>This is a button within the “export for migration” pop up window that allows you to export a linelist other than the one generated for migration. This makes it easier to migrate broken linelists in the field by allowing the data to be exported into a new empty linelist.</p>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="../images/img-export-linelist.png" class="img-fluid figure-img"></p>
-<figcaption>Export another linelist button</figcaption>
-</figure>
-</div>
 </section>
 <section id="import-geobase-history" class="level3">
 <h3 class="anchored" data-anchor-id="import-geobase-history">Import geobase history</h3>
@@ -591,7 +558,6 @@ Note
 <p>Hidden columns are not supposed to be shown, and the user can thus not modify their visibility state from the regular Show/Hide variables button, hence this button.</p>
 </div>
 </div>
-<pre><code></code></pre>
 
 
 </section>

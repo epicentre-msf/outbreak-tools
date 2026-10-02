@@ -16,9 +16,15 @@
 <h2 id="int-factory-helpers">Factory helpers</h2>
 <h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As MasterSetupPreparation
+<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As IMasterSetupPreparation
 </code></pre>
 <p>(&quot;Create a configured MasterSetupPreparation instance for the supplied workbook.&quot;)</p>
+<hr />
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IMasterSetupPreparation
+</code></pre>
+<p>(&quot;Return the current instance as an interface reference.&quot;)</p>
 <hr />
 <h2 id="int-public-api">Public API</h2>
 <h3 id="int-configure">Configure <a class="anchor-link" href="#int-configure">#</a></h3>
@@ -39,45 +45,21 @@
 </code></pre>
 <p>(&quot;Ensure the dropdown worksheet hosts all required dropdown lists.&quot;)</p>
 <hr />
-<h3 id="int-ensurereportsheet">EnsureReportSheet <a class="anchor-link" href="#int-ensurereportsheet">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub EnsureReportSheet()
-</code></pre>
-<p>(&quot;Grow the __compRep report sheet, very hidden, when the workbook lacks it.&quot;)
-An existing sheet keeps its visibility: the Compare button shows
-it and the user may be reading it. A workbook whose structure is protected
-refuses the add; that raise is scoped, so the preparation still finishes
-and the Compare button says the sheet is missing.</p>
-<hr />
 <h3 id="int-ensurevariables">EnsureVariables <a class="anchor-link" href="#int-ensurevariables">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub EnsureVariables()
 </code></pre>
 <p>(&quot;Ensure the variables worksheet exposes an initialised manager with validations applied.&quot;)</p>
 <hr />
-<h3 id="int-ensureupdatedregistry">EnsureUpdatedRegistry <a class="anchor-link" href="#int-ensureupdatedregistry">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub EnsureUpdatedRegistry()
-</code></pre>
-<p>(&quot;Rebuild the _<em>updated registry from the tagged columns of the Variables and Choices sheets.&quot;)
-The registry is dropped and built again, the way
-SetupPreparation.ResetUpdatedRegistry does it: every registry table goes,
-the watched sheets are read for the tags above their headers (watch for
-update, translate as text, translate as formula), one registry row and one
-RNG</em> workbook name are written per tagged column, and every flag is set
-back to yes. The Update Translations button reads those rows. A watched
-sheet the workbook lacks is skipped: a fresh file has its Variables table
-from EnsureVariables and may carry no Choices sheet yet.</p>
-<hr />
 <h3 id="int-dropdowns">Dropdowns <a class="anchor-link" href="#int-dropdowns">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Dropdowns() As DropdownLists
+<pre><code class="language-vb">Public Property Get Dropdowns() As IDropdownLists
 </code></pre>
 <p>(&quot;Expose the dropdown manager for callers needing direct access.&quot;)</p>
 <hr />
 <h3 id="int-variables">Variables <a class="anchor-link" href="#int-variables">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Variables() As MasterSetupVariables
+<pre><code class="language-vb">Public Property Get Variables() As IMasterSetupVariables
 </code></pre>
 <p>(&quot;Expose the variables manager associated with the master setup table.&quot;)</p>
 <hr />
@@ -94,23 +76,15 @@ from EnsureVariables and may carry no Choices sheet yet.</p>
 </code></pre>
 <p>(&quot;Reset cached dependencies after reconfiguration.&quot;)</p>
 <hr />
-<h3 id="int-ensureupdatedvalueswatcher">EnsureUpdatedValuesWatcher <a class="anchor-link" href="#int-ensureupdatedvalueswatcher">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function EnsureUpdatedValuesWatcher() As UpdatedValues
-</code></pre>
-<p>(&quot;Bind the updated values watcher to the registry sheet, growing the sheet hidden when it is missing.&quot;)
-An existing registry sheet keeps its visibility; Deploy makes it
-very hidden later.</p>
-<hr />
 <h3 id="int-ensuredropdownmanager">EnsureDropdownManager <a class="anchor-link" href="#int-ensuredropdownmanager">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function EnsureDropdownManager() As DropdownLists
+<pre><code class="language-vb">Private Function EnsureDropdownManager() As IDropdownLists
 </code></pre>
 <p>(&quot;Ensure the dropdown manager is initialised and cached.&quot;)</p>
 <hr />
 <h3 id="int-ensurevariablesmanager">EnsureVariablesManager <a class="anchor-link" href="#int-ensurevariablesmanager">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function EnsureVariablesManager() As MasterSetupVariables
+<pre><code class="language-vb">Private Function EnsureVariablesManager() As IMasterSetupVariables
 </code></pre>
 <p>(&quot;Ensure the variables manager is initialised over an existing listobject.&quot;)</p>
 <hr />
@@ -154,9 +128,7 @@ very hidden later.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyTableStyle(ByVal table As ListObject, ByVal tableStyle As String)
 </code></pre>
-<p>(&quot;Apply a table style while ignoring styling errors on unsupported versions.&quot;)
-Called on a freshly created table only: the style of a table the
-workbook already carries is the owner's to set.</p>
+<p>(&quot;Apply a table style while ignoring styling errors on unsupported versions.&quot;)</p>
 <hr />
 <h3 id="int-defaultvariableheaders">DefaultVariableHeaders <a class="anchor-link" href="#int-defaultvariableheaders">#</a></h3>
 <p><strong>Signature:</strong></p>
@@ -182,45 +154,9 @@ workbook already carries is the owner's to set.</p>
 </code></pre>
 <p>(&quot;Return the default configuration worksheets list.&quot;)</p>
 <hr />
-<h3 id="int-refreshchoicesdropdown">RefreshChoicesDropdown <a class="anchor-link" href="#int-refreshchoicesdropdown">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RefreshChoicesDropdown(ByVal drop As DropdownLists)
-</code></pre>
-<p>(&quot;Populate the choices dropdown from the list names of the Choices sheet.&quot;)</p>
-<hr />
-<h3 id="int-refreshdiseasesdropdown">RefreshDiseasesDropdown <a class="anchor-link" href="#int-refreshdiseasesdropdown">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RefreshDiseasesDropdown(ByVal drop As DropdownLists)
-</code></pre>
-<p>(&quot;Rebuild the diseases dropdown from the marker sheets of the workbook.&quot;)</p>
-<hr />
-<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
-</code></pre>
-<p>(&quot;Centralised error raising aligned with ProjectError codes.&quot;)</p>
-<hr />
-<h3 id="int-adoptlegacydiseasesheets">AdoptLegacyDiseaseSheets <a class="anchor-link" href="#int-adoptlegacydiseasesheets">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AdoptLegacyDiseaseSheets()
-</code></pre>
-<p>(&quot;Adopt legacy disease sheets: their cell tags move into hidden names.&quot;)</p>
-<hr />
-<h3 id="int-legacyindexof">LegacyIndexOf <a class="anchor-link" href="#int-legacyindexof">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function LegacyIndexOf(ByVal codeValue As String) As Long
-</code></pre>
-<p>(&quot;Parse the numeric index off a legacy disease code.&quot;)</p>
-<hr />
-<h3 id="int-sheetcarriesdiseasetag">SheetCarriesDiseaseTag <a class="anchor-link" href="#int-sheetcarriesdiseasetag">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SheetCarriesDiseaseTag(ByVal targetSheet As Worksheet) As Boolean
-</code></pre>
-<p>(&quot;Answer whether a worksheet carries the hidden disease tag.&quot;)</p>
-<hr />
 <h3 id="int-ensuredropdowndefinition">EnsureDropdownDefinition <a class="anchor-link" href="#int-ensuredropdowndefinition">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureDropdownDefinition(ByVal drop As DropdownLists, _
+<pre><code class="language-vb">Private Sub EnsureDropdownDefinition(ByVal drop As IDropdownLists, _
                                      ByVal listName As String, _
                                      ByVal items As Variant)
 </code></pre>
@@ -228,7 +164,7 @@ workbook already carries is the owner's to set.</p>
 <hr />
 <h3 id="int-refreshlanguagedropdowns">RefreshLanguageDropdowns <a class="anchor-link" href="#int-refreshlanguagedropdowns">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RefreshLanguageDropdowns(ByVal drop As DropdownLists)
+<pre><code class="language-vb">Private Sub RefreshLanguageDropdowns(ByVal drop As IDropdownLists)
 </code></pre>
 <p>(&quot;Populate the languages dropdowns using the translations sheet headers.&quot;)</p>
 <hr />
@@ -240,33 +176,15 @@ workbook already carries is the owner's to set.</p>
 <hr />
 <h3 id="int-ensuredropdownhasvalues">EnsureDropdownHasValues <a class="anchor-link" href="#int-ensuredropdownhasvalues">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureDropdownHasValues(ByVal drop As DropdownLists, _
+<pre><code class="language-vb">Private Sub EnsureDropdownHasValues(ByVal drop As IDropdownLists, _
                                     ByVal listName As String, _
                                     ByVal values As BetterArray)
 </code></pre>
 <p>(&quot;Ensure a dropdown either exists or is updated with the supplied values.&quot;)</p>
 <hr />
-<h3 id="int-ensureworkbookflags">EnsureWorkbookFlags <a class="anchor-link" href="#int-ensureworkbookflags">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureWorkbookFlags()
-</code></pre>
-<p>(&quot;Seed the workbook-level flags of the master setup.&quot;)</p>
-<p>Seeds the silence switch, <strong>OBT__SILENT_OPERATIONS</strong>, with &quot;No&quot;. &quot;No&quot; means
-the master setup shows every message box it has always shown, so a person
-pressing buttons sees no change at all. The name and both values are read off
-Messenger, which is the one place that string is written on the VBA side.</p>
-<p>EnsureName leaves a name that is already there alone, so a second Prepare on a
-master setup someone switched to &quot;Yes&quot; keeps that value.</p>
-<p>THE R PACKAGE DOES NOT DRIVE THIS WORKBOOK TODAY. The entry-point plan names
-three workbooks and seven operations, and none of them is on the master setup.
-The flag is seeded here anyway so the fourth workbook is not the one that was
-forgotten when an operation is added to it: the 48 message boxes of
-EventsMasterSetupRibbon and MasterSetupExports then have a switch to read, and
-no caller has to go and create it first.</p>
-<hr />
 <h3 id="int-ensurevariablenamecolumnname">EnsureVariableNameColumnName <a class="anchor-link" href="#int-ensurevariablenamecolumnname">#</a></h3>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureVariableNameColumnName(ByVal manager As MasterSetupVariables)
+<pre><code class="language-vb">Private Sub EnsureVariableNameColumnName(ByVal manager As IMasterSetupVariables)
 </code></pre>
 <p>(&quot;Publish the Variable Name column range as a hidden workbook name for downstream formulas.&quot;)</p>
 <hr />
@@ -292,13 +210,12 @@ no caller has to go and create it first.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (6 file(s))</summary>
+<summary>Used in (5 file(s))</summary>
 <ul>
-<li><a href="MasterSetupMigration.html">MasterSetupMigration.cls</a></li>
+<li><a href="EventMasterSetup.html">EventMasterSetup.cls</a></li>
+<li><a href="IMasterSetupPreparation.html">IMasterSetupPreparation.cls</a></li>
+<li><a href="MasterSetupPreparation.html">MasterSetupPreparation.cls</a></li>
 <li>EventsMasterSetupRibbon.bas</li>
-<li>MasterSetupHelpers.bas</li>
-<li>TestEventMasterSetup.bas</li>
-<li>TestMasterSetupEvents.bas</li>
 <li>TestMasterSetupPreparation.bas</li>
 </ul>
 </details>

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ISetupErrors - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ISetupErrors</h1>
+<p>Defines the public contract for the SetupErrors class, exposing methods
+to initialise a setup consistency checker, execute all validation checks
+(dictionary, choices, exports, translations), and retrieve the resulting
+collection of IChecking report objects.</p>
+<details open class="doc-section" id="lifecycle">
+<summary>Lifecycle</summary>
+<div class="section-body">
+<h3 id="initialise">Initialise <a class="anchor-link" href="#initialise">#</a></h3>
+<p><strong>Bind the setup checker to a workbook and optional collaborators</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Initialise(ByVal hostBook As Workbook, _
+                      Optional ByVal passwordService As IPasswords, _
+                      Optional ByVal dictionary As ILLdictionary, _
+                      Optional ByVal choices As ILLChoices, _
+                      Optional ByVal formulaStore As IFormulaData, _
+                      Optional ByVal transManager As ISetupTranslationsTable, _
+                      Optional ByVal stateScope As IApplicationState)
+</code></pre>
+<p>Stores the workbook reference and optional collaborators (password manager,
+dictionary, choices, formula store, application state). When optional
+parameters are omitted, the checker creates default instances internally
+during ConfigureDependencies.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The workbook containing setup tables and helper sheets.</li>
+<li><code>passwordService</code>: Optional IPasswords. Password manager handling sheet protection.</li>
+<li><code>dictionary</code>: Optional ILLdictionary. Dictionary wrapper providing data access.</li>
+<li><code>choices</code>: Optional ILLChoices. Choices wrapper exposing list names and categories.</li>
+<li><code>formulaStore</code>: Optional IFormulaData. Formula data handler used to validate expressions.</li>
+<li><code>transManager</code>: Optional ISetupTranslationsTable. Translations table accessor.</li>
+<li><code>stateScope</code>: Optional IApplicationState. Application state scope guarding Excel settings.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="execution">
+<summary>Execution</summary>
+<div class="section-body">
+<h3 id="run">Run <a class="anchor-link" href="#run">#</a></h3>
+<p><strong>Execute all setup consistency checks and publish the report</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Run()
+</code></pre>
+<p>Suspends Excel UI, resets the internal check container, then runs each
+checker in sequence (dictionary, choices, exports, translations). On
+completion, publishes all collected IChecking objects to the reporting
+worksheet. Restores Excel state even when an error occurs.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="results">
+<summary>Results</summary>
+<div class="section-body">
+<h3 id="checkings">Checkings <a class="anchor-link" href="#checkings">#</a></h3>
+<p><strong>Collection of generated checking objects</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Checkings() As BetterArray
+</code></pre>
+<p>Returns a BetterArray containing the IChecking instances produced by the
+most recent Run call. Each entry covers one validation domain (dictionary,
+choices, exports, translations).</p>
+<p><strong>Returns:</strong> BetterArray. The generated IChecking instances.</p>
+<hr />
+</div>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+
