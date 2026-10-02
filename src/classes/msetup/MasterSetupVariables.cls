@@ -1,0 +1,1089 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "MasterSetupVariables"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = False
+Attribute VB_Description = "Lightweight manager for the Master Setup Variables table"
+
+'@PredeclaredId
+'@Folder("Msetup")
+'@ModuleDescription("Lightweight manager for the Master Setup Variables table wrapping CustomTable interactions")
+'@depends CustomTable, HiddenNames, BetterArray, LLChoices, DropdownLists, DataSheet
+'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
+
+Option Explicit
+
+
+'@section State and constants
+'===============================================================================
+Private Type TMasterSetupVariables
+    table As ListObject              'Underlying variables table
+    wrapper As CustomTable          'Cached CustomTable wrapper for row management
+    nameStore As HiddenNames      'Worksheet-level hidden name manager
+    colOrder As Long                 'Cached column index for "Variable Order"
+    colSection As Long               'Cached column index for "Variable Section"
+    colName As Long                  'Cached column index for "Variable Name"
+    colLabel As Long                 'Cached column index for "Label"
+    colDefaultChoice As Long         'Cached column index for "Default Choice"
+    colChoices As Long               'Cached column index for "Choices Values"
+    colDefaultStatus As Long         'Cached column index for "Default Status"
+    colComments As Long              'Cached column index for "Comments"
+    initialised As Boolean           'Flag that tracks whether initialization logic executed
+End Type
+
+Private this As TMasterSetupVariables
+
+Private Const CLASS_NAME As String = "MasterSetupVariables"
+Private Const NAME_PREFIX As String = "__MSV__"
+Private Const NAME_INITIALISED As String = NAME_PREFIX & "Initialised"
+Private Const NAME_COL_ORDER As String = NAME_PREFIX & "ColOrder"
+Private Const NAME_COL_SECTION As String = NAME_PREFIX & "ColSection"
+Private Const NAME_COL_NAME As String = NAME_PREFIX & "ColName"
+Private Const NAME_COL_LABEL As String = NAME_PREFIX & "ColLabel"
+Private Const NAME_COL_DEFAULT_CHOICE As String = NAME_PREFIX & "ColDefaultChoice"
+Private Const NAME_COL_CHOICES As String = NAME_PREFIX & "ColChoices"
+Private Const NAME_COL_DEFAULT_STATUS As String = NAME_PREFIX & "ColDefaultStatus"
+Private Const NAME_COL_COMMENTS As String = NAME_PREFIX & "ColComments"
+Private Const NAME_SHEET_TAG As String = "sheetTag"
+
+Private Const HEADER_ORDER As String = "Variable Order"
+Private Const HEADER_SECTION As String = "Variable Section"
+Private Const HEADER_NAME As String = "Variable Name"
+Private Const HEADER_LABEL As String = "Label"
+Private Const HEADER_DEFAULT_CHOICE As String = "Default Choice"
+Private Const HEADER_CHOICES As String = "Choices Values"
+Private Const HEADER_DEFAULT_STATUS As String = "Default Status"
+Private Const HEADER_COMMENTS As String = "Comments"
+
+Private Const STATUS_DROPDOWN_NAME As String = "__var_status"
+Private Const CHOICES_DROPDOWN_NAME As String = "__lst_choices"
+Private Const STATUS_MANDATORY As String = "mandatory"
+Private Const STATUS_VISIBLE As String = "optional, visible"
+Private Const STATUS_HIDDEN As String = "optional, hidden"
+
+Private Const DUPLICATE_FILL_COLOR As Long = 12830708       'RGB(244, 199, 195)
+Private Const DUPLICATE_FONT_COLOR As Long = 393372         'RGB(156, 0, 6)
+Private Const VARIABLE_NAME_RANGE As String = "__Col__Variables"
+
+
+'@section Factory helpers
+'===============================================================================
+'@sub-title Create a configured variables table manager instance.
+'@param listTable ListObject representing the Master Setup Variables worksheet table.
+'@return MasterSetupVariables ready to manage the associated ListObject.
+Public Function Create(ByVal listTable As ListObject) As MasterSetupVariables
+
+    ValidateListObject listTable
+    EnsureRequiredColumns listTable
+
+    Dim instance As MasterSetupVariables
+    Set instance = New MasterSetupVariables
+    instance.AssignListObject listTable
+    Set Create = instance
+End Function
+
+
+'@section Public API
+'===============================================================================
+'@sub-title Initialise validation, hidden names, and duplicate detection.
+'@param dropdowns DropdownLists provider used to configure the Default Status validation.
+Public Sub Initialise(ByVal dropdowns As DropdownLists)
+    ValidateReady
+    ApplyDropdownValidation dropdowns
+    PersistColumnMetadata
+    PersistInitialisedFlag True
+    ApplyDuplicateFormatting
+End Sub
+
+'@sub-title Re-apply the duplicate rule of the Variable Name column.
+'@details Runs on every preparation, outside the Initialised guard, so a
+'         table prepared before the rule existed gets it, and a table that
+'         grew rows gets a rule over the rows it has today.
+Public Sub RefreshDuplicateFormatting()
+    ValidateReady
+    ApplyDuplicateFormatting
+End Sub
+
+'@sub-title Put the choices dropdown on the Default Choice column.
+'@details Runs on every preparation, outside the Initialised guard, so a
+'         table initialised while the Choices sheet was empty gets the
+'         dropdown once the list exists. A dropdown manager without the
+'         choices list leaves the column as it stands.
+'@param dropdowns DropdownLists provider carrying the choices list.
+Public Sub RefreshChoiceValidation(ByVal dropdowns As DropdownLists)
+    Dim choiceRange As Range
+
+    ValidateReady
+    If dropdowns Is Nothing Then
+        ThrowError ProjectError.InvalidArgument, "RefreshChoiceValidation requires a DropdownLists dependency."
+    End If
+
+    Set choiceRange = ColumnRange(HEADER_DEFAULT_CHOICE)
+    If choiceRange Is Nothing Then Exit Sub
+    If Not dropdowns.Exists(CHOICES_DROPDOWN_NAME) Then Exit Sub
+
+    dropdowns.SetValidation choiceRange, CHOICES_DROPDOWN_NAME, alertType:="info"
+End Sub
+
+'@sub-title Put the ChoiceValues formula on the Choices Values column.
+'@details Runs on every preparation, outside the Initialised guard, the way
+'         the disease sheets carry their line formulas: every line reads its
+'         own Default Choice cell through the ChoiceValues worksheet function.
+'         The master setup is in English, so the language is left out and the
+'         function answers the labels of the choice.
+'         The column is set to General first: a text cell stores a formula as
+'         its own text. A value a user typed in the column takes the formula.
+Public Sub WriteChoiceValuesFormula()
+    Dim valuesRange As Range
+    Dim choiceRange As Range
+
+    ValidateReady
+    Set valuesRange = ColumnRange(HEADER_CHOICES)
+    If valuesRange Is Nothing Then Exit Sub
+    Set choiceRange = ColumnRange(HEADER_DEFAULT_CHOICE)
+    If choiceRange Is Nothing Then Exit Sub
+
+    valuesRange.NumberFormat = "General"
+    'A formula written on a whole column keeps its row reference relative,
+    'so every line reads its own choice cell.
+    valuesRange.Formula = ChoiceValuesFormula(choiceRange.Cells(1, 1))
+
+    'Under manual calculation the old text would stand until something else
+    'recalculated the sheet.
+    valuesRange.Calculate
+End Sub
+
+'@sub-title Refresh the concatenated choices values for the supplied variable.
+'@param variableName String identifier of the variable row to update.
+'@param choices LLChoices providing category listings.
+Public Sub RefreshChoices(ByVal variableName As String, ByVal choices As LLChoices)
+    Dim rowIndex As Long
+    Dim concatenated As String
+    Dim choiceValue As String
+
+    ValidateReady
+    variableName = Trim$(variableName)
+    If LenB(variableName) = 0 Then Exit Sub
+
+    If choices Is Nothing Then
+        ThrowError ProjectError.InvalidArgument, "RefreshChoices requires an LLChoices instance."
+    End If
+
+    rowIndex = LocateVariableRow(variableName)
+    If rowIndex = 0 Then
+        ThrowError ProjectError.ElementNotFound, "Variable '" & variableName & "' does not exist in the variables table."
+    End If
+
+    concatenated = vbNullString
+    choiceValue = DefaultChoiceFor(variableName)
+    If choices.ChoiceExists(choiceValue) Then
+        concatenated = choices.ConcatenateCategories(choiceValue, " | ")
+    End If
+
+    WriteChoicesValue rowIndex, concatenated
+End Sub
+
+'@sub-title Whether the table carries a line for the variable.
+'@param variableName String identifier of the variable, matched without regard to case.
+Public Function HasVariable(ByVal variableName As String) As Boolean
+    ValidateReady
+    HasVariable = (LocateVariableRow(Trim$(variableName)) > 0)
+End Function
+
+'@sub-title Add a variable on the first free line of the table.
+'@details A free line is a line with no variable name, which is what Add
+'Rows leaves behind; with none a row is added to the table. The line takes
+'the next order number, so a sort keeps the new variable at the end. The
+'joined choices values stay empty: RefreshChoices fills them.
+'@param variableName String identifier of the new variable.
+'@param section Optional String written in the Variable Section column.
+'@param label Optional String written in the Label column.
+'@param defaultChoice Optional String written in the Default Choice column.
+'@param defaultStatus Optional String written in the Default Status column.
+Public Sub AddVariable(ByVal variableName As String, _
+                       Optional ByVal section As String = vbNullString, _
+                       Optional ByVal label As String = vbNullString, _
+                       Optional ByVal defaultChoice As String = vbNullString, _
+                       Optional ByVal defaultStatus As String = vbNullString)
+    Dim rowIndex As Long
+
+    ValidateReady
+    variableName = Trim$(variableName)
+    If LenB(variableName) = 0 Then
+        ThrowError ProjectError.InvalidArgument, "AddVariable requires a variable name."
+    End If
+    If LocateVariableRow(variableName) > 0 Then
+        ThrowError ProjectError.InvalidArgument, "Variable '" & variableName & "' already exists in the variables table."
+    End If
+
+    rowIndex = FirstFreeRow()
+    WriteCell rowIndex, HEADER_ORDER, NextOrderNumber()
+    WriteValue rowIndex, HEADER_SECTION, section
+    WriteValue rowIndex, HEADER_NAME, variableName
+    WriteValue rowIndex, HEADER_LABEL, label
+    WriteValue rowIndex, HEADER_DEFAULT_CHOICE, defaultChoice
+    WriteValue rowIndex, HEADER_DEFAULT_STATUS, defaultStatus
+End Sub
+
+'@sub-title Retrieve the label for the supplied variable.
+Public Function LabelFor(ByVal variableName As String) As String
+    ValidateReady
+    LabelFor = ValueFor(variableName, HEADER_LABEL)
+End Function
+
+'@sub-title Retrieve the default choice for the supplied variable.
+Public Function DefaultChoiceFor(ByVal variableName As String) As String
+    ValidateReady
+    DefaultChoiceFor = ValueFor(variableName, HEADER_DEFAULT_CHOICE)
+End Function
+
+'@sub-title Retrieve the concatenated choices values for the supplied variable.
+Public Function ChoicesFor(ByVal variableName As String) As String
+    ValidateReady
+    ChoicesFor = ValueFor(variableName, HEADER_CHOICES)
+End Function
+
+'@sub-title Retrieve the default status for the supplied variable.
+Public Function DefaultStatusFor(ByVal variableName As String) As String
+    ValidateReady
+    DefaultStatusFor = ValueFor(variableName, HEADER_DEFAULT_STATUS)
+End Function
+
+'@sub-title Retrieve the section label for the supplied variable.
+Public Function SectionFor(ByVal variableName As String) As String
+    ValidateReady
+    SectionFor = ValueFor(variableName, HEADER_SECTION)
+End Function
+
+'@sub-title Apply workbook-scoped validation for variable names onto the supplied range.
+Public Sub SetVariableValidation(ByVal targetRange As Range)
+    Dim workbookStore As HiddenNames
+
+    ValidateReady
+    If targetRange Is Nothing Then Exit Sub
+
+    Set workbookStore = WorkbookHiddenNameStore()
+    If workbookStore Is Nothing Then Exit Sub
+    If Not workbookStore.HasName(VARIABLE_NAME_RANGE) Then Exit Sub
+
+    ApplyVariableDropdownValidation targetRange, VARIABLE_NAME_RANGE
+End Sub
+
+'@sub-title Clone the managed table into another workbook.
+'@param targetWorkbook Workbook receiving the cloned table.
+'@param sheetName Optional sheet name; defaults to the source worksheet name.
+'@param startCell Optional starting cell; defaults to the source table anchor.
+'@return MasterSetupVariables bound to the cloned ListObject.
+Public Function CloneToWorkbook(ByVal targetWorkbook As Workbook, _
+                                Optional ByVal sheetName As String = vbNullString, _
+                                Optional ByVal startCell As Range = Nothing) As MasterSetupVariables
+
+    Dim targetSheet As Worksheet
+    Dim targetTable As ListObject
+
+    ValidateReady
+    If targetWorkbook Is Nothing Then
+        ThrowError ProjectError.InvalidArgument, "CloneToWorkbook requires a target workbook."
+    End If
+
+    If LenB(sheetName) = 0 Then
+        sheetName = HostSheet.Name
+    End If
+
+    Set targetSheet = ResolveOrCreateSheet(targetWorkbook, sheetName)
+    Set targetTable = CopyIntoSheet(targetSheet)
+
+    ExportMetadata targetSheet
+
+    Set CloneToWorkbook = MasterSetupVariables.Create(targetTable)
+End Function
+
+'@sub-title Restore current table contents from a peer instance.
+'@param source MasterSetupVariables providing data and metadata.
+Public Sub RestoreFrom(ByVal source As MasterSetupVariables)
+    ValidateReady
+    If source Is Nothing Then
+        ThrowError ProjectError.InvalidArgument, "RestoreFrom requires a source instance."
+    End If
+
+    source.CopyToListObject this.table
+    source.ExportMetadata HostSheet
+    ResetColumnCache
+    LoadColumnMetadata
+End Sub
+
+'@sub-title Export the managed table to a plain worksheet range.
+'@param targetSheet Worksheet receiving the exported values.
+Public Sub ExportToWorksheet(ByVal targetSheet As Worksheet)
+    ValidateReady
+    If targetSheet Is Nothing Then
+        ThrowError ProjectError.InvalidArgument, "ExportToWorksheet requires a target sheet."
+    End If
+
+    TableWrapper.Export targetSheet
+    ExportMetadata targetSheet
+End Sub
+
+'@sub-title Import table data from a plain worksheet range.
+'@param sourceSheet Worksheet containing headers and rows matching the variables schema.
+Public Sub ImportFromWorksheet(ByVal sourceSheet As Worksheet)
+    Dim usedRange As Range
+    Dim headerRow As Long
+    Dim headerColumn As Long
+    Dim sourceData As DataSheet
+
+    ValidateReady
+    If sourceSheet Is Nothing Then
+        ThrowError ProjectError.InvalidArgument, "ImportFromWorksheet requires a source sheet."
+    End If
+
+    On Error Resume Next
+        Set usedRange = sourceSheet.UsedRange
+    On Error GoTo 0
+
+    If usedRange Is Nothing Then Exit Sub
+
+    headerRow = usedRange.Row
+    headerColumn = usedRange.Column
+    If headerRow <= 0 Or headerColumn <= 0 Then Exit Sub
+
+    Set sourceData = DataSheet.Create(sourceSheet, headerRow, headerColumn)
+
+    TableWrapper.Import sourceData
+
+    EnsureRequiredColumns this.table
+    ResetColumnCache
+    PersistColumnMetadata
+End Sub
+
+'@sub-title Copy the managed table content into a supplied ListObject.
+'@param targetTable ListObject receiving headers, values, and formatting.
+Public Sub CopyToListObject(ByVal targetTable As ListObject)
+    Dim targetWrapper As CustomTable
+
+    ValidateReady
+    ValidateListObject targetTable
+
+    Set targetWrapper = CustomTable.Create(targetTable)
+    targetWrapper.Import TableWrapper, keepSourceHeaders:=True
+
+    On Error Resume Next
+        targetTable.Name = this.table.Name
+        targetTable.TableStyle = this.table.TableStyle
+    On Error GoTo 0
+
+    EnsureRequiredColumns targetTable
+End Sub
+
+'@sub-title Export the hidden metadata that records where each column sits.
+'@param targetSheet Worksheet receiving the hidden name definitions.
+Public Sub ExportMetadata(ByVal targetSheet As Worksheet)
+    Dim store As HiddenNames
+
+    ValidateReady
+    If targetSheet Is Nothing Then Exit Sub
+
+    Set store = HiddenNameStore()
+    If store Is Nothing Then Exit Sub
+
+    store.ExportNames targetSheet, NAME_PREFIX
+End Sub
+
+'@sub-title Expose the managed ListObject.
+Public Property Get Table() As ListObject
+    ValidateReady
+    Set Table = this.table
+End Property
+
+'@sub-title Indicates whether initialisation logic already executed.
+Public Property Get Initialised() As Boolean
+    Initialised = this.initialised
+End Property
+
+'@sub-title Return the range for the supplied column header, optionally including headers.
+Public Function DataRange(ByVal headerName As String, _
+                          Optional ByVal includeHeaders As Boolean = False) As Range
+    ValidateReady
+    Set DataRange = ColumnRange(headerName, includeHeaders)
+End Function
+
+
+'@section Internal helpers
+'===============================================================================
+Public Sub AssignListObject(ByVal listTable As ListObject)
+    Set this.table = listTable
+    Set this.wrapper = Nothing
+    Set this.nameStore = Nothing
+    this.initialised = False
+    ResetColumnCache
+    LoadColumnMetadata
+End Sub
+
+Private Sub LoadColumnMetadata()
+    Dim store As HiddenNames
+
+    Set store = HiddenNameStore()
+    If store Is Nothing Then Exit Sub
+
+    this.initialised = store.ValueAsBoolean(NAME_INITIALISED, False)
+    CacheColumnIndex HEADER_ORDER, store.ValueAsLong(NAME_COL_ORDER, 0)
+    CacheColumnIndex HEADER_SECTION, store.ValueAsLong(NAME_COL_SECTION, 0)
+    CacheColumnIndex HEADER_NAME, store.ValueAsLong(NAME_COL_NAME, 0)
+    CacheColumnIndex HEADER_LABEL, store.ValueAsLong(NAME_COL_LABEL, 0)
+    CacheColumnIndex HEADER_DEFAULT_CHOICE, store.ValueAsLong(NAME_COL_DEFAULT_CHOICE, 0)
+    CacheColumnIndex HEADER_CHOICES, store.ValueAsLong(NAME_COL_CHOICES, 0)
+    CacheColumnIndex HEADER_DEFAULT_STATUS, store.ValueAsLong(NAME_COL_DEFAULT_STATUS, 0)
+    CacheColumnIndex HEADER_COMMENTS, store.ValueAsLong(NAME_COL_COMMENTS, 0)
+End Sub
+
+Private Sub PersistColumnMetadata()
+    Dim store As HiddenNames
+
+    Set store = HiddenNameStore()
+    If store Is Nothing Then Exit Sub
+
+    PersistColumnIndex store, NAME_COL_ORDER, HEADER_ORDER
+    PersistColumnIndex store, NAME_COL_SECTION, HEADER_SECTION
+    PersistColumnIndex store, NAME_COL_NAME, HEADER_NAME
+    PersistColumnIndex store, NAME_COL_LABEL, HEADER_LABEL
+    PersistColumnIndex store, NAME_COL_DEFAULT_CHOICE, HEADER_DEFAULT_CHOICE
+    PersistColumnIndex store, NAME_COL_CHOICES, HEADER_CHOICES
+    PersistColumnIndex store, NAME_COL_DEFAULT_STATUS, HEADER_DEFAULT_STATUS
+    PersistColumnIndex store, NAME_COL_COMMENTS, HEADER_COMMENTS
+
+    store.EnsureName NAME_INITIALISED, True, HiddenNameTypeBoolean
+    store.SetValue NAME_INITIALISED, True
+    this.initialised = True
+End Sub
+
+Private Sub PersistColumnIndex(ByVal store As HiddenNames, _
+                               ByVal nameId As String, _
+                               ByVal headerName As String)
+    Dim colIndex As Long
+
+    colIndex = ColumnIndex(headerName)
+    If colIndex <= 0 Then Exit Sub
+
+    store.EnsureName nameId, colIndex, HiddenNameTypeLong
+    store.SetValue nameId, colIndex
+    CacheColumnIndex headerName, colIndex
+End Sub
+
+Private Function CopyIntoSheet(ByVal targetSheet As Worksheet) As ListObject
+    Dim tableName As String
+    Dim exportedTable As ListObject
+    Dim exportRange As Range
+
+    tableName = this.table.Name
+
+    targetSheet.Cells.Clear
+    TableWrapper.Export targetSheet
+
+    On Error Resume Next
+        Set exportRange = targetSheet.UsedRange
+    On Error GoTo 0
+    If exportRange Is Nothing Then Exit Function
+
+    Set exportedTable = targetSheet.ListObjects.Add(xlSrcRange, exportRange, XlListObjectHasHeaders:=xlYes)
+
+    On Error Resume Next
+        exportedTable.Name = tableName
+        exportedTable.TableStyle = this.table.TableStyle
+    On Error GoTo 0
+
+    EnsureRequiredColumns exportedTable
+
+    Set CopyIntoSheet = exportedTable
+End Function
+
+Private Function ResolveOrCreateSheet(ByVal wb As Workbook, ByVal sheetName As String) As Worksheet
+    On Error Resume Next
+        Set ResolveOrCreateSheet = wb.Worksheets(sheetName)
+    On Error GoTo 0
+
+    If ResolveOrCreateSheet Is Nothing Then
+        Set ResolveOrCreateSheet = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+        ResolveOrCreateSheet.Name = sheetName
+    End If
+End Function
+
+Private Sub ApplyDropdownValidation(ByVal dropdowns As DropdownLists)
+    Dim statusRange As Range
+    Dim values As BetterArray
+
+    If dropdowns Is Nothing Then
+        ThrowError ProjectError.InvalidArgument, "Initialise requires a DropdownLists dependency."
+    End If
+
+    Set statusRange = ColumnRange(HEADER_DEFAULT_STATUS)
+    If statusRange Is Nothing Then Exit Sub
+
+    If Not dropdowns.Exists(STATUS_DROPDOWN_NAME) Then
+        Set values = New BetterArray
+        values.LowerBound = 1
+        values.Push STATUS_MANDATORY, STATUS_VISIBLE, STATUS_HIDDEN
+        dropdowns.Add values, STATUS_DROPDOWN_NAME
+    End If
+
+    dropdowns.SetValidation statusRange, STATUS_DROPDOWN_NAME, alertType:="info"
+
+    'The Default Choice column takes the list of choices when the preparation
+    'has filled it from the Choices sheet.
+    RefreshChoiceValidation dropdowns
+End Sub
+
+'@sub-title Delete and re-add the one duplicate rule over the name column.
+'@details The column range is read fresh on every call, so the rule covers
+'         the table as it stands. Delete drops every rule of the column: the
+'         column carries this one rule, and the delete is what keeps the count
+'         at one across repeated preparations.
+Private Sub ApplyDuplicateFormatting()
+    Dim nameRange As Range
+
+    Set nameRange = ColumnRange(HEADER_NAME)
+    If nameRange Is Nothing Then Exit Sub
+
+    'A refused delete (a protected sheet) leaves the old rule standing, and a
+    'refused add leaves the count where it was, which the guard below reads.
+    On Error Resume Next
+        nameRange.FormatConditions.Delete
+        nameRange.FormatConditions.AddUniqueValues
+    On Error GoTo 0
+
+    If nameRange.FormatConditions.Count = 0 Then Exit Sub
+
+    'AddUniqueValues answers a UniqueValues, and DupeUnique belongs to that
+    'type rather than to FormatCondition. Holding the rule in a variable typed
+    'FormatCondition stops the project compiling on "Method or data member not
+    'found", so the rule is reached through the collection instead, the way
+    'VarWriter and SetupTranslationsTable both reach it.
+    With nameRange.FormatConditions(nameRange.FormatConditions.Count)
+        .DupeUnique = xlDuplicate
+        .Interior.Color = DUPLICATE_FILL_COLOR
+        .Font.Color = DUPLICATE_FONT_COLOR
+    End With
+End Sub
+
+Private Function ColumnRange(ByVal headerName As String, Optional ByVal includeHeaders As Boolean = False) As Range
+    Dim colIndex As Long
+    Dim listCol As ListColumn
+
+    colIndex = ColumnIndex(headerName)
+    If colIndex <= 0 Then Exit Function
+
+    Set listCol = this.table.ListColumns(colIndex)
+    If listCol Is Nothing Then Exit Function
+
+    If includeHeaders Then
+        Set ColumnRange = listCol.Range
+    Else
+        Set ColumnRange = listCol.DataBodyRange
+    End If
+End Function
+
+Private Sub ApplyVariableDropdownValidation(ByVal targetRange As Range, ByVal listName As String)
+    Dim formulaText As String
+
+    If targetRange Is Nothing Then Exit Sub
+    listName = Trim$(listName)
+    If LenB(listName) = 0 Then Exit Sub
+
+    formulaText = "=" & listName
+
+    On Error Resume Next
+        targetRange.Validation.Delete
+        targetRange.Validation.Add Type:=xlValidateList, _
+                                   AlertStyle:=xlValidAlertStop, _
+                                   Operator:=xlBetween, _
+                                   Formula1:=formulaText
+        targetRange.Validation.IgnoreBlank = True
+        targetRange.Validation.InCellDropdown = True
+    On Error GoTo 0
+End Sub
+
+Private Function ColumnIndex(ByVal headerName As String) As Long
+    Dim cached As Long
+    Dim store As HiddenNames
+    Dim nameId As String
+    Dim column As ListColumn
+
+    cached = CachedColumnIndex(headerName)
+    If cached > 0 Then
+        ColumnIndex = cached
+        Exit Function
+    End If
+
+    Set store = HiddenNameStore()
+    If Not store Is Nothing Then
+        nameId = ColumnHiddenName(headerName)
+        If LenB(nameId) > 0 Then
+            cached = store.ValueAsLong(nameId, 0)
+            'A stored index is trusted only while its header still sits there:
+            'a column moved or renamed since Initialise would otherwise be read
+            'as another one.
+            If cached > 0 And cached <= this.table.ListColumns.Count Then
+                If StrComp(Trim$(this.table.ListColumns(cached).Name), headerName, vbTextCompare) = 0 Then
+                    CacheColumnIndex headerName, cached
+                    ColumnIndex = cached
+                    Exit Function
+                End If
+            End If
+            cached = 0
+        End If
+    End If
+
+    For Each column In this.table.ListColumns
+        If StrComp(Trim$(column.Name), headerName, vbTextCompare) = 0 Then
+            cached = column.Index
+            Exit For
+        End If
+    Next column
+
+    If cached > 0 Then
+        CacheColumnIndex headerName, cached
+    End If
+
+    ColumnIndex = cached
+End Function
+
+Private Sub CacheColumnIndex(ByVal headerName As String, ByVal colInd As Long)
+    If colInd <= 0 Then Exit Sub
+
+    Select Case headerName
+        Case HEADER_ORDER
+            this.colOrder = colInd
+        Case HEADER_SECTION
+            this.colSection = colInd
+        Case HEADER_NAME
+            this.colName = colInd
+        Case HEADER_LABEL
+            this.colLabel = colInd
+        Case HEADER_DEFAULT_CHOICE
+            this.colDefaultChoice = colInd
+        Case HEADER_CHOICES
+            this.colChoices = colInd
+        Case HEADER_DEFAULT_STATUS
+            this.colDefaultStatus = colInd
+        Case HEADER_COMMENTS
+            this.colComments = colInd
+    End Select
+End Sub
+
+Private Function CachedColumnIndex(ByVal headerName As String) As Long
+    Select Case headerName
+        Case HEADER_ORDER
+            CachedColumnIndex = this.colOrder
+        Case HEADER_SECTION
+            CachedColumnIndex = this.colSection
+        Case HEADER_NAME
+            CachedColumnIndex = this.colName
+        Case HEADER_LABEL
+            CachedColumnIndex = this.colLabel
+        Case HEADER_DEFAULT_CHOICE
+            CachedColumnIndex = this.colDefaultChoice
+        Case HEADER_CHOICES
+            CachedColumnIndex = this.colChoices
+        Case HEADER_DEFAULT_STATUS
+            CachedColumnIndex = this.colDefaultStatus
+        Case HEADER_COMMENTS
+            CachedColumnIndex = this.colComments
+        Case Else
+            CachedColumnIndex = 0
+    End Select
+End Function
+
+Private Sub ResetColumnCache()
+    this.colOrder = 0
+    this.colSection = 0
+    this.colName = 0
+    this.colLabel = 0
+    this.colDefaultChoice = 0
+    this.colChoices = 0
+    this.colDefaultStatus = 0
+    this.colComments = 0
+End Sub
+
+Private Function ColumnHiddenName(ByVal headerName As String) As String
+    Select Case headerName
+        Case HEADER_ORDER
+            ColumnHiddenName = NAME_COL_ORDER
+        Case HEADER_SECTION
+            ColumnHiddenName = NAME_COL_SECTION
+        Case HEADER_NAME
+            ColumnHiddenName = NAME_COL_NAME
+        Case HEADER_LABEL
+            ColumnHiddenName = NAME_COL_LABEL
+        Case HEADER_DEFAULT_CHOICE
+            ColumnHiddenName = NAME_COL_DEFAULT_CHOICE
+        Case HEADER_CHOICES
+            ColumnHiddenName = NAME_COL_CHOICES
+        Case HEADER_DEFAULT_STATUS
+            ColumnHiddenName = NAME_COL_DEFAULT_STATUS
+        Case HEADER_COMMENTS
+            ColumnHiddenName = NAME_COL_COMMENTS
+        Case Else
+            ColumnHiddenName = vbNullString
+    End Select
+End Function
+
+Private Function HiddenNameStore() As HiddenNames
+    If this.table Is Nothing Then Exit Function
+
+    If this.nameStore Is Nothing Then
+        Set this.nameStore = HiddenNames.Create(HostSheet)
+    End If
+
+    Set HiddenNameStore = this.nameStore
+End Function
+
+Private Function WorkbookHiddenNameStore() As HiddenNames
+    Dim wb As Workbook
+
+    Set wb = HostWorkbook
+    If wb Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set WorkbookHiddenNameStore = HiddenNames.Create(wb)
+    On Error GoTo 0
+End Function
+
+Private Function TableWrapper() As CustomTable
+    If this.wrapper Is Nothing Then
+        Set this.wrapper = CustomTable.Create(this.table)
+    End If
+
+    Set TableWrapper = this.wrapper
+End Function
+
+Private Function HostSheet() As Worksheet
+    Set HostSheet = this.table.Parent
+End Function
+
+Private Function HostWorkbook() As Workbook
+    Dim sh As Worksheet
+
+    Set sh = HostSheet
+    If sh Is Nothing Then Exit Function
+
+    Set HostWorkbook = sh.Parent
+End Function
+
+Private Function TableRange(Optional ByVal includeHeaders As Boolean = False) As Range
+    Dim rng As Range
+
+    Set rng = this.table.DataBodyRange
+    If includeHeaders Then
+        Set rng = this.table.Range
+    End If
+
+    Set TableRange = rng
+End Function
+
+Private Function LocateVariableRow(ByVal variableName As String) As Long
+    Dim nameRange As Range
+    Dim block As Variant
+    Dim rowCounter As Long
+
+    Set nameRange = ColumnRange(HEADER_NAME)
+    If nameRange Is Nothing Then Exit Function
+
+    'One crossing; the scan runs in memory. Reading cell by cell cost one
+    'crossing per row, on every lookup the line fill and the worksheet
+    'functions make.
+    block = nameRange.Value
+    If Not IsArray(block) Then
+        If StrComp(CStr(block), variableName, vbTextCompare) = 0 Then LocateVariableRow = 1
+        Exit Function
+    End If
+
+    For rowCounter = 1 To UBound(block, 1)
+        If StrComp(CStr(block(rowCounter, 1)), variableName, vbTextCompare) = 0 Then
+            LocateVariableRow = rowCounter
+            Exit Function
+        End If
+    Next rowCounter
+End Function
+
+Private Function ValueFor(ByVal variableName As String, ByVal headerName As String) As String
+    Dim rowIndex As Long
+    Dim targetRange As Range
+
+    variableName = Trim$(variableName)
+    If LenB(variableName) = 0 Then Exit Function
+
+    rowIndex = LocateVariableRow(variableName)
+    If rowIndex = 0 Then Exit Function
+
+    Set targetRange = ColumnRange(headerName)
+    If targetRange Is Nothing Then Exit Function
+
+    ValueFor = CStr(targetRange.Cells(rowIndex, 1).Value)
+End Function
+
+Private Sub WriteValue(ByVal rowIndex As Long, ByVal headerName As String, ByVal newValue As String)
+    Dim targetRange As Range
+
+    Set targetRange = ColumnRange(headerName)
+    If targetRange Is Nothing Then Exit Sub
+    If rowIndex <= 0 Or rowIndex > targetRange.Rows.Count Then Exit Sub
+
+    targetRange.Cells(rowIndex, 1).Value = newValue
+End Sub
+
+'@sub-title Write the joined values of a line, or recalculate its formula.
+'@details A line carrying the ChoiceValues formula answers through the
+'         worksheet function; a write would replace the formula with text.
+Private Sub WriteChoicesValue(ByVal rowIndex As Long, ByVal newValue As String)
+    Dim targetRange As Range
+    Dim targetCell As Range
+
+    Set targetRange = ColumnRange(HEADER_CHOICES)
+    If targetRange Is Nothing Then Exit Sub
+    If rowIndex <= 0 Or rowIndex > targetRange.Rows.Count Then Exit Sub
+
+    Set targetCell = targetRange.Cells(rowIndex, 1)
+    If targetCell.HasFormula Then
+        targetCell.Calculate
+    Else
+        targetCell.Value = newValue
+    End If
+End Sub
+
+'@sub-title The choice values formula of a line: the worksheet function over the choice cell.
+Private Function ChoiceValuesFormula(ByVal choiceCell As Range) As String
+    ChoiceValuesFormula = "=ChoiceValues(" & choiceCell.Address(RowAbsolute:=False) & ")"
+End Function
+
+'@sub-title Write any value on the line of the given column.
+Private Sub WriteCell(ByVal rowIndex As Long, ByVal headerName As String, ByVal newValue As Variant)
+    Dim targetRange As Range
+
+    Set targetRange = ColumnRange(headerName)
+    If targetRange Is Nothing Then Exit Sub
+    If rowIndex <= 0 Or rowIndex > targetRange.Rows.Count Then Exit Sub
+
+    targetRange.Cells(rowIndex, 1).Value = newValue
+End Sub
+
+'@sub-title The first line with no variable name, or a new line at the end.
+Private Function FirstFreeRow() As Long
+    Dim nameRange As Range
+    Dim block As Variant
+    Dim rowCounter As Long
+
+    Set nameRange = ColumnRange(HEADER_NAME)
+    If Not nameRange Is Nothing Then
+        block = nameRange.Value
+        If Not IsArray(block) Then
+            If LenB(Trim$(CStr(block))) = 0 Then
+                FirstFreeRow = 1
+                Exit Function
+            End If
+        Else
+            For rowCounter = 1 To UBound(block, 1)
+                If LenB(Trim$(CStr(block(rowCounter, 1)))) = 0 Then
+                    FirstFreeRow = rowCounter
+                    Exit Function
+                End If
+            Next rowCounter
+        End If
+    End If
+
+    this.table.ListRows.Add
+    FirstFreeRow = this.table.ListRows.Count
+End Function
+
+'@sub-title One past the highest order number of the table.
+Private Function NextOrderNumber() As Long
+    Dim orderRange As Range
+    Dim block As Variant
+    Dim rowCounter As Long
+    Dim highest As Long
+
+    Set orderRange = ColumnRange(HEADER_ORDER)
+    If orderRange Is Nothing Then
+        NextOrderNumber = 1
+        Exit Function
+    End If
+
+    block = orderRange.Value
+    If Not IsArray(block) Then
+        highest = OrderOf(block)
+    Else
+        For rowCounter = 1 To UBound(block, 1)
+            If OrderOf(block(rowCounter, 1)) > highest Then highest = OrderOf(block(rowCounter, 1))
+        Next rowCounter
+    End If
+
+    NextOrderNumber = highest + 1
+End Function
+
+'@sub-title The order number a cell carries; anything else reads as 0.
+Private Function OrderOf(ByVal cellValue As Variant) As Long
+    If IsError(cellValue) Then Exit Function
+    If IsEmpty(cellValue) Then Exit Function
+    If Not IsNumeric(cellValue) Then Exit Function
+    OrderOf = CLng(cellValue)
+End Function
+
+Private Sub EnsureRequiredColumns(ByVal listTable As ListObject)
+    Dim required As Variant
+    Dim header As Variant
+    Dim store As HiddenNames
+
+    required = RequiredHeaders()
+
+    If listTable Is Nothing Then Exit Sub
+
+    If this.initialised Then
+        Set store = HiddenNameStore()
+    End If
+
+    If this.initialised And Not store Is Nothing Then
+        For Each header In required
+            EnsureColumnAtStoredIndex listTable, CStr(header), store
+        Next header
+    Else
+        EnsureColumnExistsSimple listTable
+    End If
+End Sub
+
+Private Function RequiredHeaders() As Variant
+    RequiredHeaders = Array(HEADER_ORDER, HEADER_SECTION, HEADER_NAME, HEADER_LABEL, _
+                            HEADER_DEFAULT_CHOICE, HEADER_CHOICES, HEADER_DEFAULT_STATUS, HEADER_COMMENTS)
+End Function
+
+
+Private Sub EnsureColumnExistsSimple(ByVal listTable As ListObject)
+    Dim required As Variant
+    Dim header As Variant
+    Dim idx As Long
+    Dim added As ListColumn
+
+    If listTable Is Nothing Then Exit Sub
+
+    required = RequiredHeaders()
+    If Not IsArray(required) Then Exit Sub
+
+    'Columns outside the schema go; the ones inside it stay where they are.
+    'Headers are never rewritten by position: a table whose columns sit in
+    'another order would otherwise get every header shifted onto the data of
+    'its neighbour, with nothing raised.
+    For idx = listTable.ListColumns.Count To 1 Step -1
+        If Not IsRequiredHeader(listTable.ListColumns(idx).Name, required) Then
+            listTable.ListColumns(idx).Delete
+        End If
+    Next idx
+
+    If Not listTable.ShowHeaders Then
+        listTable.ShowHeaders = True
+    End If
+
+    For Each header In required
+        If Not HasColumn(listTable, CStr(header)) Then
+            Set added = listTable.ListColumns.Add
+            added.Name = CStr(header)
+        End If
+    Next header
+End Sub
+
+Private Function HasColumn(ByVal listTable As ListObject, ByVal headerName As String) As Boolean
+    Dim column As ListColumn
+
+    For Each column In listTable.ListColumns
+        If StrComp(Trim$(column.Name), headerName, vbTextCompare) = 0 Then
+            HasColumn = True
+            Exit Function
+        End If
+    Next column
+End Function
+
+Private Function IsRequiredHeader(ByVal candidate As String, ByVal required As Variant) As Boolean
+    Dim header As Variant
+
+    candidate = Trim$(CStr(candidate))
+    For Each header In required
+        If StrComp(candidate, Trim$(CStr(header)), vbTextCompare) = 0 Then
+            IsRequiredHeader = True
+            Exit Function
+        End If
+    Next header
+End Function
+
+Private Sub EnsureColumnAtStoredIndex(ByVal listTable As ListObject, _
+                                      ByVal headerName As String, _
+                                      ByVal store As HiddenNames)
+    Dim targetIndex As Long
+    Dim hiddenName As String
+    Dim current As ListColumn
+    Dim column As ListColumn
+
+    hiddenName = ColumnHiddenName(headerName)
+    targetIndex = store.ValueAsLong(hiddenName, 0)
+
+    If targetIndex <= 0 Then
+        EnsureColumnExistsSimple listTable
+        Exit Sub
+    End If
+
+    If targetIndex > listTable.ListColumns.Count Then
+        Set current = listTable.ListColumns.Add(Position:=targetIndex)
+        current.Name = headerName
+        Exit Sub
+    End If
+
+    For Each column In listTable.ListColumns
+        If column.Index = targetIndex Then
+            Set current = column
+            Exit For
+        End If
+    Next column
+
+    If current Is Nothing Then
+        Set current = listTable.ListColumns.Add(Position:=targetIndex)
+    End If
+
+    If StrComp(Trim$(current.Name), headerName, vbTextCompare) = 0 Then Exit Sub
+    If IsRequiredHeader(current.Name, RequiredHeaders()) Then
+        'Another schema column sits at the stored index: the layout moved since
+        'the metadata was written, so the header scan takes over.
+        EnsureColumnExistsSimple listTable
+        Exit Sub
+    End If
+
+    current.Name = headerName
+End Sub
+
+Private Sub PersistInitialisedFlag(ByVal state As Boolean)
+    Dim store As HiddenNames
+
+    Set store = HiddenNameStore()
+    If store Is Nothing Then Exit Sub
+
+    store.EnsureName NAME_INITIALISED, state, HiddenNameTypeBoolean
+    store.SetValue NAME_INITIALISED, state
+    store.EnsureName NAME_SHEET_TAG, "variables", HiddenNameTypeString
+    store.SetValue NAME_SHEET_TAG, "variables"
+    this.initialised = state
+End Sub
+
+Private Sub ValidateReady()
+    If this.table Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, "MasterSetupVariables requires initialisation through Create."
+    End If
+End Sub
+
+Private Sub ValidateListObject(ByVal listTable As ListObject)
+    If listTable Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, "A valid ListObject reference is required."
+    End If
+End Sub
+
+Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
+    Err.Raise errNumber, CLASS_NAME, message
+End Sub
+

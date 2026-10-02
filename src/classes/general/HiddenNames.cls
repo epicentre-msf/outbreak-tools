@@ -16,7 +16,22 @@ Attribute VB_Description = "Manages hidden worksheet name/value storage with met
 
 Option Explicit
 
-Implements IHiddenNames
+
+'@section Enumerations
+'===============================================================================
+
+'@label:value-type
+'@sub-title Supported data types when persisting hidden name values
+'@details
+'The enumeration informs serialization when writing names and coercion
+'when retrieving values.
+Public Enum HiddenNameValueType
+    HiddenNameTypeVariant = 0
+    HiddenNameTypeString = 1
+    HiddenNameTypeBoolean = 2
+    HiddenNameTypeLong = 3
+End Enum
+
 
 '@class HiddenNames
 '@description
@@ -25,24 +40,43 @@ Implements IHiddenNames
 '(String/Boolean/Long/Variant) and a last-updated timestamp stored in
 'the Name.Comment field. Supports cross-scope import/export between
 'worksheets and workbooks.
-'@depends ProjectError, BetterArray
-'@version 1.0 (2026-02-09)
+'
+'WHAT CREATE COSTS
+'-------------------------------------------------------------------------------
+'Create walks the whole Names collection of the host and reads several COM
+'properties off every name it tracks. A data entry sheet holds hundreds of
+'names, so the walk is the largest cost this class has. An instance pays it
+'once and answers every later read out of memory, keyed by name.
+'
+'A caller that wants ONE value off a host it will not touch again calls
+'QuickValue instead, which skips the walk entirely.
+'@depends Checking, BetterArray
+'@version 1.1 (2026-08-27)
 
 
 Private Type THiddenNames
     hostSh As Worksheet
     hostWb As Workbook
     metadata As BetterArray
+    nameIndex As Collection
 End Type
 
 Private this As THiddenNames
 
 Private Const CLASSNAME As String = "HiddenNames"
+'Prefix taking the rest of an Excel-reserved identifier, see SanitizeNameId.
+Private Const RESERVED_REWRITE_PREFIX As String = "__obt_xl_"
 Private Const COMMENT_PREFIX As String = "HiddenNames:"
 Private Const COMMENT_SEPARATOR As String = ";"
 Private Const COMMENT_TYPE_PREFIX As String = "type="
 Private Const COMMENT_UPDATED_PREFIX As String = "updated="
 Private Const TIMESTAMP_FORMAT As String = "yyyy-mm-dd\THH:NN:SS"
+
+' What a Names collection raises for an identifier it does not hold. Excel
+' answers 1004 and the collection itself answers 9, so both are read as "the
+' container has no such name".
+Private Const NAME_NOT_DEFINED As Long = 1004
+Private Const NAME_OUT_OF_RANGE As Long = 9
 
 Private Const META_FIELD_NAME As String = "name"
 Private Const META_FIELD_TYPE As String = "type"
@@ -62,15 +96,39 @@ Private Enum MetadataFieldIndex
     MetaFieldDefinition = 3
 End Enum
 
-'@label:metadata-store
-'@sub-title Lazy-initialised BetterArray holding all metadata records
-'@return BetterArray. The metadata cache.
-Private Function MetadataStore() As BetterArray
+'@label:ensure-stores
+'@sub-title Build the record store and the name index
+'@details
+'The two are built together and thrown away together, so this is the one place
+'either of them comes into being. A host holding no hidden name still ends up
+'with an empty store, which is the state every reader here expects.
+Private Sub EnsureStores()
     If this.metadata Is Nothing Then
         Set this.metadata = New BetterArray
         this.metadata.LowerBound = 0
     End If
+
+    If this.nameIndex Is Nothing Then Set this.nameIndex = New Collection
+End Sub
+
+'@label:metadata-store
+'@sub-title Lazy-initialised BetterArray holding all metadata records
+'@return BetterArray. The metadata cache.
+Private Function MetadataStore() As BetterArray
+    EnsureStores
     Set MetadataStore = this.metadata
+End Function
+
+'@label:name-index
+'@sub-title Lazy-initialised keyed Collection holding each record's position
+'@details
+'The key is MetadataKey(nameId) and the item is the position of that record in
+'the store. Lookups are kept in a keyed Collection because Scripting.Dictionary
+'is missing on Mac Excel. LLFormat holds its three caches the same shape.
+'@return Collection. The name index.
+Private Function NameIndex() As Collection
+    EnsureStores
+    Set NameIndex = this.nameIndex
 End Function
 
 '@label:build-metadata-record
@@ -135,26 +193,55 @@ End Sub
 
 '@label:metadata-index
 '@sub-title Find the index of a metadata record by name
+'@details
+'The position is read straight out of the keyed index, so the cost of a lookup
+'no longer grows with the number of names the host holds. This used to walk
+'every record comparing strings, and a data entry sheet holds hundreds.
+'
+'A Collection has no "does this key exist" test, so the miss is read off Err.
+'Err is cleared first, because On Error Resume Next and On Error GoTo 0 both
+'leave it alone and a stale number from earlier code would read as a miss.
+'@param nameId String. The identifier to find.
 '@return Long. The index, or -1 when not found.
 Private Function MetadataIndex(ByVal nameId As String) As Long
-    Dim store As BetterArray
-    Dim idx As Long
-    Dim record As Variant
+    Dim position As Variant
 
     MetadataIndex = -1
     If this.metadata Is Nothing Then Exit Function
+    If this.nameIndex Is Nothing Then Exit Function
 
-    Set store = this.metadata
-    If store.Length = 0 Then Exit Function
-
-    For idx = store.LowerBound To store.UpperBound
-        record = store.Item(idx)
-        If StrComp(MetadataName(record), nameId, vbTextCompare) = 0 Then
-            MetadataIndex = idx
-            Exit Function
-        End If
-    Next idx
+    On Error Resume Next
+        Err.Clear
+        position = this.nameIndex.Item(MetadataKey(nameId))
+        If Err.Number = 0 Then MetadataIndex = CLng(position)
+        Err.Clear
+    On Error GoTo 0
 End Function
+
+'@label:push-metadata-record
+'@sub-title Append a record to the store and key its position in the index
+'@details
+'The first record to claim a key keeps it. Two tracked names can share an
+'identifier: on a worksheet host, ShouldTrack accepts a sheet-scoped name and
+'also a workbook-scoped name whose RefersTo points at that sheet. The walk this
+'index replaced answered the first of the two, and this keeps that answer.
+'Both records stay in the store, so ListNames and the two export routines still
+'see them.
+'@param nameId String. The identifier the record is keyed under.
+'@param record Variant. The metadata record to append.
+Private Sub PushMetadataRecord(ByVal nameId As String, ByRef record As Variant)
+    Dim store As BetterArray
+    Dim positions As Collection
+
+    Set store = MetadataStore()
+    store.Push record
+
+    Set positions = NameIndex()
+    'Add raises 457 for a key already taken, which is the duplicate above.
+    On Error Resume Next
+        positions.Add store.UpperBound, MetadataKey(nameId)
+    On Error GoTo 0
+End Sub
 
 '@label:store-metadata-record
 '@sub-title Insert or replace a metadata record in the cache
@@ -163,10 +250,10 @@ Private Sub StoreMetadataRecord(ByVal nameId As String, ByRef record As Variant)
     Dim idx As Long
 
     idx = MetadataIndex(nameId)
-    Set store = MetadataStore()
     If idx = -1 Then
-        store.Push record
+        PushMetadataRecord nameId, record
     Else
+        Set store = MetadataStore()
         store.Item(idx) = record
     End If
 End Sub
@@ -181,26 +268,19 @@ End Sub
 'Validates the input and creates a fully initialised manager bound to
 'the supplied worksheet or workbook.
 '@param targetObj Object. A Worksheet or Workbook hosting the hidden names.
-'@return IHiddenNames. The configured instance.
+'@return HiddenNames. The configured instance.
 '@throws ProjectError.ObjectNotInitialized When targetObj is Nothing.
 '@throws ProjectError.InvalidArgument When targetObj is not a Worksheet or Workbook.
 '@export
-Public Function Create(ByVal targetObj As Object) As IHiddenNames
+Public Function Create(ByVal targetObj As Object) As HiddenNames
     Dim manager As HiddenNames
 
     ValidateInput targetObj
 
     Set manager = New HiddenNames
     manager.Initialise targetObj
-    Set Create = manager.Self
+    Set Create = manager
 End Function
-
-'@label:self
-'@prop-title Self-reference returning the interface pointer
-'@return IHiddenNames. This instance.
-Public Property Get Self() As IHiddenNames
-    Set Self = Me
-End Property
 
 
 '@section Initialisation
@@ -220,33 +300,40 @@ Public Sub Initialise(ByVal targetObj As Object)
     End Select
 
     Set this.metadata = Nothing
+    Set this.nameIndex = Nothing
     LoadMetadataCache
 End Sub
 
 '@label:load-metadata-cache
 '@sub-title Scan existing hidden names and populate the metadata cache
+'@details
+'This walk is what Create costs. Every property it reads off a name is a COM
+'crossing, and it runs once per tracked name, so each read removed from the
+'body of the loop is worth hundreds on a data entry sheet.
 Private Sub LoadMetadataCache()
     Dim definition As Name
     Dim valueType As Byte
     Dim lastUpdated As Date
     Dim record As Variant
-    Dim store As BetterArray
     Dim nameId As String
+    Dim comment As String
 
     Dim container As Object
 
     Set container = NameOwner()
     If container Is Nothing Then Exit Sub
 
-    Set store = MetadataStore()
+    EnsureStores
 
     For Each definition In container.Names
         If ShouldTrack(definition) Then
             nameId = ExtractSimpleName(definition.Name)
-            valueType = NameTypeFromComment(definition.Comment)
-            lastUpdated = UpdatedFromComment(definition.Comment)
+            'One read of the comment feeds both parsers.
+            comment = definition.Comment
+            valueType = NameTypeFromComment(comment)
+            lastUpdated = UpdatedFromComment(comment)
             record = BuildMetadataRecord(nameId, valueType, lastUpdated, definition)
-            store.Push record
+            PushMetadataRecord nameId, record
         End If
     Next definition
 End Sub
@@ -272,8 +359,8 @@ End Sub
 '@label:sheet
 '@prop-title Worksheet backing this manager
 '@export
-Private Property Get SheetInternal() As Worksheet
-    Set SheetInternal = this.hostSh
+Public Property Get Sheet() As Worksheet
+    Set Sheet = this.hostSh
 End Property
 
 '@label:name-owner
@@ -342,12 +429,48 @@ Private Function SanitizeNameId(ByVal nameId As String) As String
         result = "_" & result
     End If
 
+    'Excel owns every "_xl" identifier. A worksheet-scoped Names.Add accepts
+    'one, the scan then refuses to track it, and a workbook-scoped Add takes
+    'a build down. The tag is stripped and the rest is kept under a prefix
+    'nothing else uses, so the caller's name still lands and reads back.
+    If IsExcelReservedName(result) Then
+        result = RESERVED_REWRITE_PREFIX & StripExcelTag(result)
+    End If
+
     SanitizeNameId = result
+End Function
+
+'@label:strip-excel-tag
+'@sub-title Drop the Excel tag from a reserved identifier
+'@details
+'"_xlfn.SINGLE" keeps "SINGLE": everything up to and including the first
+'period goes. An identifier with no period, "_xlws", keeps what follows the
+'"_xl" prefix. An empty rest answers "name" so the rewritten identifier is
+'still a legal one.
+'@param nameId String. A sanitized identifier that starts "_xl".
+'@return String. The part of the identifier that is the caller's.
+Private Function StripExcelTag(ByVal nameId As String) As String
+    Dim dotAt As Long
+    Dim rest As String
+
+    dotAt = InStr(1, nameId, ".")
+    If dotAt > 0 Then
+        rest = Mid$(nameId, dotAt + 1)
+    Else
+        rest = Mid$(nameId, 4)
+    End If
+
+    If LenB(rest) = 0 Then rest = "name"
+    StripExcelTag = rest
 End Function
 
 '@label:metadata-key
 '@sub-title Normalise a name identifier for case-insensitive lookup
-'@details Expects a pre-sanitized nameId (callers must call SanitizeNameId first).
+'@details
+'This is the key of the name index and of the two prefix comparisons in
+'ListNames and the export routines.
+'
+'Expects a pre-sanitized nameId (callers must call SanitizeNameId first).
 Private Function MetadataKey(ByVal nameId As String) As String
     MetadataKey = LCase$(nameId)
 End Function
@@ -363,6 +486,7 @@ Private Function EnsureMetadataRecord(ByVal nameId As String) As Long
     Dim definition As Name
     Dim valueType As Byte
     Dim lastUpdated As Date
+    Dim comment As String
 
     idx = MetadataIndex(nameId)
     Set store = MetadataStore()
@@ -374,10 +498,12 @@ Private Function EnsureMetadataRecord(ByVal nameId As String) As Long
             Exit Function
         End If
 
-        valueType = NameTypeFromComment(definition.Comment)
-        lastUpdated = UpdatedFromComment(definition.Comment)
+        'One read of the comment feeds both parsers.
+        comment = definition.Comment
+        valueType = NameTypeFromComment(comment)
+        lastUpdated = UpdatedFromComment(comment)
         record = BuildMetadataRecord(nameId, valueType, lastUpdated, definition)
-        store.Push record
+        PushMetadataRecord nameId, record
         EnsureMetadataRecord = store.UpperBound
         Exit Function
     End If
@@ -409,10 +535,16 @@ End Function
 
 '@label:remove-metadata-record
 '@sub-title Remove a metadata record from the cache
+'@details
+'Every record after the removed one moves down a place, so the index is rebuilt
+'in the same walk that builds the new store. Leaving the old index in place
+'would point every one of those keys at its neighbour.
 Private Sub RemoveMetadataRecord(ByVal nameId As String)
     Dim idx As Long
     Dim store As BetterArray
     Dim buffer As BetterArray
+    Dim positions As Collection
+    Dim record As Variant
     Dim i As Long
 
     idx = MetadataIndex(nameId)
@@ -421,14 +553,21 @@ Private Sub RemoveMetadataRecord(ByVal nameId As String)
     Set store = MetadataStore()
     Set buffer = New BetterArray
     buffer.LowerBound = store.LowerBound
+    Set positions = New Collection
 
     For i = store.LowerBound To store.UpperBound
         If i <> idx Then
-            buffer.Push store.Item(i)
+            record = store.Item(i)
+            buffer.Push record
+            'A key already taken is dropped here, as it is on the way in.
+            On Error Resume Next
+                positions.Add buffer.UpperBound, MetadataKey(MetadataName(record))
+            On Error GoTo 0
         End If
     Next i
 
     Set this.metadata = buffer
+    Set this.nameIndex = positions
 End Sub
 
 
@@ -444,6 +583,24 @@ Private Function ShouldTrack(ByVal definition As Name) As Boolean
     Dim parentType As String
 
     If definition Is Nothing Then Exit Function
+
+    'EXCEL'S OWN HIDDEN NAMES ARE NOT OURS TO CARRY
+    '---------------------------------------------------------------------------
+    'Excel writes hidden names of its own: _xlfn.* marks a function the file
+    'names that this build of Excel cannot resolve, _xleta.* and _xlpm.* are
+    'LAMBDA scaffolding. Their RefersTo reads "=#NAME?" and they are invisible
+    'in the Name Manager, so nobody finds or deletes one by hand.
+    '
+    'This test is the only thing standing between them and the export. READING
+    'one costs nothing, which is why it went unnoticed for so long; WRITING one
+    'is refused outright -- Names.Add answers "the syntax of this name isn't
+    'correct" -- so a setup that had picked one up took a whole linelist
+    'generation down inside ExportNamesToWorkbook, before a single sheet was
+    'built and with nothing in the log naming the culprit. A COM fill that
+    'writes formulas Excel cannot resolve at write time is enough to leave one
+    'behind, and the linelist template carries an _xleta.N of its own.
+    If IsExcelReservedName(ExtractSimpleName(definition.Name)) Then Exit Function
+
     If definition.Visible Then Exit Function
 
     Set container = NameOwner()
@@ -472,9 +629,23 @@ End Function
 '@label:find-definition
 '@sub-title Locate a Name definition by identifier
 '@details Expects a pre-sanitized nameId (callers must call SanitizeNameId first).
+'
+'WHY THE MISS RETURNS EARLY
+'-------------------------------------------------------------------------------
+'The direct lookup raises for a name that does not exist yet, and a name that
+'does not exist yet is the common case for every caller that creates names. So
+'every first write used to fall through to the scan below, which walks the whole
+'container. `VarWriter` writes three to five names per variable, and the
+'collection grows with them, so the cost was quadratic in the variable count of
+'a sheet. The scan is kept for the sheet-qualified case the comment below names,
+'and it is skipped only when the container itself says it holds no such
+'identifier. What that gives up: a hidden WORKBOOK-scoped name whose RefersTo
+'points at a worksheet container is no longer reached through that worksheet's
+'store. Nothing in the tree writes one.
 Private Function FindDefinition(ByVal nameId As String) As Name
     Dim definition As Name
     Dim container As Object
+    Dim lookupError As Long
 
     Set container = NameOwner()
     If container Is Nothing Then Exit Function
@@ -482,9 +653,15 @@ Private Function FindDefinition(ByVal nameId As String) As Name
     If LenB(nameId) = 0 Then Exit Function
 
     ' Direct O(1) lookup — avoids iterating all Names in the container
+    Err.Clear
     On Error Resume Next
     Set definition = container.Names(nameId)
+    lookupError = Err.Number
     On Error GoTo 0
+
+    If definition Is Nothing Then
+        If (lookupError = NAME_NOT_DEFINED) Or (lookupError = NAME_OUT_OF_RANGE) Then Exit Function
+    End If
 
     If Not definition Is Nothing Then
         If ShouldTrack(definition) Then
@@ -509,6 +686,22 @@ End Function
 '@sub-title Case-insensitive comparison of a Name definition to an expected identifier
 Private Function CompareName(ByVal definition As Name, ByVal expected As String) As Boolean
     CompareName = (StrComp(ExtractSimpleName(definition.Name), expected, vbTextCompare) = 0)
+End Function
+
+'@label:excel-reserved-name
+'@sub-title Whether an identifier belongs to Excel's own reserved namespace
+'@details
+'Everything Excel reserves for itself starts "_xl": _xlfn and _xlfnodbc for
+'future functions, _xleta and _xlpm for LAMBDA, _xludf, _xlws. The family grows
+'with each release, so the prefix is matched rather than the members listed --
+'a list would be one Excel version behind the first time it mattered.
+'
+'Nothing in this project names anything "_xl...". Its own hidden names carry
+'the "__" and "RNG_" shapes, so the prefix costs no real name.
+'@param nameId String. The simple (unqualified) identifier.
+'@return Boolean. True when the name is Excel's own.
+Private Function IsExcelReservedName(ByVal nameId As String) As Boolean
+    IsExcelReservedName = (Left$(LCase$(Trim$(nameId)), 3) = "_xl")
 End Function
 
 '@label:extract-simple-name
@@ -575,6 +768,34 @@ End Function
 '@sub-title Escape double-quotes for formula embedding
 Private Function EscapeString(ByVal value As String) As String
     EscapeString = Replace(value, """", """""")
+End Function
+
+'@label:parse-refers-to
+'@sub-title Read the stored value back out of a RefersTo string
+'@details
+'The inverse of SerializeValue. A string was written as ="value" with every
+'inner quote doubled, and every other type as =literal, so this strips the
+'leading equals sign and then the quote wrapper when one is there.
+'@param storedFormula String. The RefersTo string of a Name definition.
+'@return String. The value the formula holds.
+Private Function ParseRefersTo(ByVal storedFormula As String) As String
+    Dim body As String
+
+    If Left$(storedFormula, 1) <> "=" Then
+        ParseRefersTo = storedFormula
+        Exit Function
+    End If
+
+    body = Mid$(storedFormula, 2)
+
+    If Len(body) >= 2 Then
+        If (Left$(body, 1) = """") And (Right$(body, 1) = """") Then
+            body = Mid$(body, 2, Len(body) - 2)
+            body = Replace(body, """""", """")
+        End If
+    End If
+
+    ParseRefersTo = body
 End Function
 
 '@label:apply-comment
@@ -696,7 +917,7 @@ End Function
 '@sub-title Extract the stored value directly from a metadata record
 '@details
 'Reads the value from the record definition without going through the
-'public ValueOf method, avoiding redundant SanitizeNameId calls and
+'public Value method, avoiding redundant SanitizeNameId calls and
 'metadata index lookups when the record is already resolved.
 '@param record Variant. A metadata record array.
 '@return Variant. The coerced value, or Empty when the definition is Nothing.
@@ -828,17 +1049,69 @@ End Sub
 '@section Public API
 '===============================================================================
 
+'@label:quick-value
+'@sub-title Read one stored value off a host, with no instance behind it
+'@details
+'Three COM crossings and a Mid$: the name is resolved by identifier, its
+'RefersTo is read, and the wrapper is parsed here. The Names walk that Create
+'pays for is skipped, and so is every property read that walk does per name.
+'
+'WHEN TO REACH FOR THIS
+'-------------------------------------------------------------------------------
+'A caller that wants ONE value off a host it will not touch again. The linelist
+'event handlers read sheet_type and table_name this way. Both are written once
+'when the sheet is built and never change while the workbook is open, and the
+'sheets that carry them hold hundreds of names.
+'
+'A caller that reads several values off the same host, or writes any, calls
+'Create instead. That instance pays the walk once and answers every later read
+'out of memory.
+'
+'THE LIMITS OF THIS
+'-------------------------------------------------------------------------------
+'A visible name answers here. Create tracks hidden names alone.
+'
+'The answer is the stored string whatever the type annotation says, so a caller
+'wanting a Boolean or a Long coerces it. The typed readers are on the instance.
+'
+'A workbook-scoped name whose RefersTo points at a worksheet is reached through
+'the workbook alone. Create reaches it through either.
+'@param targetObj Object. A Worksheet or Workbook holding the name.
+'@param nameId String. The name identifier.
+'@param defaultValue String. The answer when the host holds no such name.
+'@return String. The stored value.
+'@export
+Public Function QuickValue(ByVal targetObj As Object, _
+                           ByVal nameId As String, _
+                           Optional ByVal defaultValue As String = vbNullString) As String
+    Dim storedFormula As String
+
+    QuickValue = defaultValue
+    If targetObj Is Nothing Then Exit Function
+    If LenB(nameId) = 0 Then Exit Function
+
+    'A Names collection raises for an identifier it does not hold, and an
+    'absent name is an ordinary answer here rather than a fault.
+    On Error Resume Next
+        storedFormula = targetObj.Names(nameId).RefersTo
+    On Error GoTo 0
+
+    If LenB(storedFormula) = 0 Then Exit Function
+
+    QuickValue = ParseRefersTo(storedFormula)
+End Function
+
 '@label:has-name
 '@sub-title Check whether a hidden name exists
 '@export
-Private Function HasName(ByVal nameId As String) As Boolean
+Public Function HasName(ByVal nameId As String) As Boolean
     HasName = (EnsureMetadataRecord(SanitizeNameId(nameId)) <> -1)
 End Function
 
 '@label:ensure-name
 '@sub-title Ensure a hidden name exists with the provided default
 '@export
-Private Function Ensure(ByVal nameId As String, _
+Public Function EnsureName(ByVal nameId As String, _
                         ByVal initialValue As Variant, _
                         Optional ByVal valueType As Byte = HiddenNameTypeVariant) As Name
     Dim sanitized As String
@@ -853,13 +1126,13 @@ Private Function Ensure(ByVal nameId As String, _
     record = BuildMetadataRecord(sanitized, valueType, lastUpdated, definition)
     StoreMetadataRecord sanitized, record
 
-    Set Ensure = definition
+    Set EnsureName = definition
 End Function
 
 '@label:value
 '@sub-title Retrieve a hidden value without coercion
 '@export
-Private Function ValueOf(ByVal nameId As String, _
+Public Function Value(ByVal nameId As String, _
                          Optional ByVal defaultValue As Variant) As Variant
     Dim sanitized As String
     Dim idx As Long
@@ -877,7 +1150,7 @@ Private Function ValueOf(ByVal nameId As String, _
             ThrowError ProjectError.ElementNotFound, _
                       "Hidden name '" & nameId & "' is not defined on " & ScopeLabel()
         Else
-            ValueOf = defaultValue
+            Value = defaultValue
         End If
         Exit Function
     End If
@@ -886,13 +1159,13 @@ Private Function ValueOf(ByVal nameId As String, _
     record = store.Item(idx)
     Set definition = MetadataDefinition(record)
     raw = DefinitionStoredValue(definition, MetadataType(record))
-    ValueOf = CoerceValue(raw, MetadataType(record))
+    Value = CoerceValue(raw, MetadataType(record))
 End Function
 
 '@label:set-value
 '@sub-title Update the stored value of an existing hidden name
 '@export
-Private Sub Update(ByVal nameId As String, ByVal value As Variant)
+Public Sub SetValue(ByVal nameId As String, ByVal value As Variant)
     Dim sanitized As String
     Dim idx As Long
     Dim store As BetterArray
@@ -925,40 +1198,40 @@ End Sub
 '@label:value-as-string
 '@sub-title Retrieve the hidden value coerced to String
 '@export
-Private Function ValueAsString(ByVal nameId As String, _
+Public Function ValueAsString(ByVal nameId As String, _
                                Optional ByVal defaultValue As String = vbNullString) As String
-    Dim value As Variant
+    Dim stored As Variant
 
-    value = ValueOf(nameId, defaultValue)
-    ValueAsString = CStr(value)
+    stored = Value(nameId, defaultValue)
+    ValueAsString = CStr(stored)
 End Function
 
 '@label:value-as-boolean
 '@sub-title Retrieve the hidden value coerced to Boolean
 '@export
-Private Function ValueAsBoolean(ByVal nameId As String, _
+Public Function ValueAsBoolean(ByVal nameId As String, _
                                 Optional ByVal defaultValue As Boolean = False) As Boolean
-    Dim value As Variant
+    Dim stored As Variant
 
-    value = ValueOf(nameId, defaultValue)
-    ValueAsBoolean = CBool(value)
+    stored = Value(nameId, defaultValue)
+    ValueAsBoolean = CBool(stored)
 End Function
 
 '@label:value-as-long
 '@sub-title Retrieve the hidden value coerced to Long
 '@export
-Private Function ValueAsLong(ByVal nameId As String, _
+Public Function ValueAsLong(ByVal nameId As String, _
                              Optional ByVal defaultValue As Long = 0) As Long
-    Dim value As Variant
+    Dim stored As Variant
 
-    value = ValueOf(nameId, defaultValue)
-    ValueAsLong = CLng(value)
+    stored = Value(nameId, defaultValue)
+    ValueAsLong = CLng(stored)
 End Function
 
 '@label:remove-name
 '@sub-title Remove a hidden name definition
 '@export
-Private Sub Remove(ByVal nameId As String)
+Public Sub RemoveName(ByVal nameId As String)
     Dim sanitized As String
 
     EnsureReady
@@ -970,7 +1243,7 @@ End Sub
 '@label:list-names
 '@sub-title Enumerate recorded hidden names filtered by optional prefix
 '@export
-Private Function Enumerate(Optional ByVal prefix As String = vbNullString) As BetterArray
+Public Function ListNames(Optional ByVal prefix As String = vbNullString) As BetterArray
     Dim result As BetterArray
     Dim store As BetterArray
     Dim idx As Long
@@ -987,13 +1260,13 @@ Private Function Enumerate(Optional ByVal prefix As String = vbNullString) As Be
     prefixKey = LCase$(SanitizeNameId(prefix))
 
     If this.metadata Is Nothing Then
-        Set Enumerate = result
+        Set ListNames = result
         Exit Function
     End If
 
     Set store = MetadataStore()
     If store.Length = 0 Then
-        Set Enumerate = result
+        Set ListNames = result
         Exit Function
     End If
 
@@ -1010,13 +1283,13 @@ Private Function Enumerate(Optional ByVal prefix As String = vbNullString) As Be
         End If
     Next idx
 
-    Set Enumerate = result
+    Set ListNames = result
 End Function
 
 '@label:export-names
 '@sub-title Export all tracked hidden names to another worksheet
 '@export
-Private Sub ExportAll(ByVal targetSh As Worksheet, _
+Public Sub ExportNames(ByVal targetSh As Worksheet, _
                       Optional ByVal prefix As String = vbNullString)
     Dim store As BetterArray
     Dim idx As Long
@@ -1054,7 +1327,7 @@ End Sub
 '@label:export-names-to-workbook
 '@sub-title Export tracked names to another workbook scope
 '@export
-Private Sub ExportAllToWorkbook(ByVal targetWb As Workbook, _
+Public Sub ExportNamesToWorkbook(ByVal targetWb As Workbook, _
                                 Optional ByVal prefix As String = vbNullString)
     Dim store As BetterArray
     Dim idx As Long
@@ -1064,7 +1337,7 @@ Private Sub ExportAllToWorkbook(ByVal targetWb As Workbook, _
     Dim nameId As String
     Dim valueType As Byte
     Dim value As Variant
-    Dim destination As IHiddenNames
+    Dim destination As HiddenNames
 
     EnsureReady
     If targetWb Is Nothing Then
@@ -1097,10 +1370,10 @@ End Sub
 '@label:import-names
 '@sub-title Import hidden names from another worksheet
 '@export
-Private Sub ImportAll(ByVal sourceSh As Worksheet, _
+Public Sub ImportNames(ByVal sourceSh As Worksheet, _
                       Optional ByVal prefix As String = vbNullString, _
                       Optional ByVal overwriteExisting As Boolean = True)
-    Dim sourceManager As IHiddenNames
+    Dim sourceManager As HiddenNames
     Dim names As BetterArray
     Dim idx As Long
     Dim record As Variant
@@ -1145,10 +1418,10 @@ End Sub
 '@label:import-names-from-workbook
 '@sub-title Import hidden names from another workbook scope
 '@export
-Private Sub ImportAllFromWorkbook(ByVal sourceWb As Workbook, _
+Public Sub ImportNamesFromWorkbook(ByVal sourceWb As Workbook, _
                                   Optional ByVal prefix As String = vbNullString, _
                                   Optional ByVal overwriteExisting As Boolean = True)
-    Dim sourceManager As IHiddenNames
+    Dim sourceManager As HiddenNames
     Dim names As BetterArray
     Dim idx As Long
     Dim record As Variant
@@ -1298,81 +1571,4 @@ End Sub
 '@sub-title Raise a ProjectError-based exception
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
     Err.Raise errNumber, CLASSNAME, message
-End Sub
-
-
-'@section Interface
-'===============================================================================
-Private Property Get IHiddenNames_Sheet() As Worksheet
-    Set IHiddenNames_Sheet = SheetInternal
-End Property
-
-Private Function IHiddenNames_HasName(ByVal nameId As String) As Boolean
-    IHiddenNames_HasName = HasName(nameId)
-End Function
-
-Private Function IHiddenNames_EnsureName(ByVal nameId As String, _
-                                         ByVal initialValue As Variant, _
-                                         Optional ByVal valueType As Byte = HiddenNameTypeVariant) As Name
-    Set IHiddenNames_EnsureName = Ensure(nameId, initialValue, valueType)
-End Function
-
-Private Function IHiddenNames_Value(ByVal nameId As String, _
-                                    Optional ByVal defaultValue As Variant) As Variant
-    IHiddenNames_Value = ValueOf(nameId, defaultValue)
-End Function
-
-Private Sub IHiddenNames_SetValue(ByVal nameId As String, ByVal value As Variant)
-    Update nameId, value
-End Sub
-
-Private Function IHiddenNames_ValueAsString(ByVal nameId As String, _
-                                            Optional ByVal defaultValue As String = vbNullString) As String
-    IHiddenNames_ValueAsString = ValueAsString(nameId, defaultValue)
-End Function
-
-Private Function IHiddenNames_ValueAsBoolean(ByVal nameId As String, _
-                                             Optional ByVal defaultValue As Boolean = False) As Boolean
-    IHiddenNames_ValueAsBoolean = ValueAsBoolean(nameId, defaultValue)
-End Function
-
-Private Function IHiddenNames_ValueAsLong(ByVal nameId As String, _
-                                          Optional ByVal defaultValue As Long = 0) As Long
-    IHiddenNames_ValueAsLong = ValueAsLong(nameId, defaultValue)
-End Function
-
-Private Sub IHiddenNames_RemoveName(ByVal nameId As String)
-    Remove nameId
-End Sub
-
-Private Function IHiddenNames_ListNames(Optional ByVal prefix As String = vbNullString) As BetterArray
-    Set IHiddenNames_ListNames = Enumerate(prefix)
-End Function
-
-Private Sub IHiddenNames_ExportNames(ByVal targetSh As Worksheet, _
-                                     Optional ByVal prefix As String = vbNullString)
-    ExportAll targetSh, prefix
-End Sub
-
-Private Sub IHiddenNames_ExportNamesToWorkbook(ByVal targetWb As Workbook, _
-                                               Optional ByVal prefix As String = vbNullString)
-    ExportAllToWorkbook targetWb, prefix
-End Sub
-
-Private Sub IHiddenNames_ImportNames(ByVal sourceSh As Worksheet, _
-                                     Optional ByVal prefix As String = vbNullString, _
-                                     Optional ByVal overwriteExisting As Boolean = True)
-    ImportAll sourceSh, prefix, overwriteExisting
-End Sub
-
-Private Sub IHiddenNames_ImportNamesFromWorkbook(ByVal sourceWb As Workbook, _
-                                                 Optional ByVal prefix As String = vbNullString, _
-                                                 Optional ByVal overwriteExisting As Boolean = True)
-    ImportAllFromWorkbook sourceWb, prefix, overwriteExisting
-End Sub
-
-Private Sub IHiddenNames_SetListObjectHeader(ByVal nameId As String, _
-                                             ByVal listObject As ListObject, _
-                                             ByVal headerName As String)
-    SetListObjectHeader nameId, listObject, headerName
 End Sub

@@ -1,0 +1,427 @@
+
+
+Attribute VB_Name = "AnalysisTestFixture"
+Attribute VB_Description = "Shared helpers for Analysis tests"
+
+Option Explicit
+
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@Folder("Tests")
+'@ModuleDescription("Shared helpers for Analysis tests")
+
+'@section Constants
+'===============================================================================
+
+Private Const ANALYSISTESTSHEET As String = "AnalysisFixture"
+Private Const ANALYSISTRANSLATIONSHEET As String = "AnalysisTranslation"
+Private Const ANALYSISTRANSLATIONTABLE As String = "tblTranslation"
+
+Private Const TAB_GLOBAL_SUMMARY As String = "Tab_Global_Summary"
+Private Const TAB_UNIVARIATE As String = "Tab_Univariate_Analysis"
+Private Const TAB_BIVARIATE As String = "Tab_Bivariate_Analysis"
+Private Const TAB_TIME_SERIES As String = "Tab_TimeSeries_Analysis"
+Private Const TAB_GRAPH_TIME_SERIES As String = "Tab_Graph_TimeSeries"
+Private Const TAB_GRAPH_TITLE As String = "Tab_Label_TSGraph"
+Private Const TAB_SPATIAL As String = "Tab_Spatial_Analysis"
+Private Const TAB_SPATIO_TEMPORAL As String = "Tab_SpatioTemporal_Analysis"
+Private Const TAB_SPATIO_TEMPORAL_SPECS As String = "Tab_SpatioTemporal_Specs"
+
+'@section Fixture Data
+'===============================================================================
+
+Public Function AnalysisHeaders() As Variant
+    AnalysisHeaders = Array("Section", "Table Title", "Summary function")
+End Function
+
+Public Function AnalysisRows(ByVal sectionValue As String) As Variant
+    AnalysisRows = Array(Array(sectionValue, "Goodbye", "Summary"))
+End Function
+
+Private Function TranslationHeaders() As Variant
+    TranslationHeaders = Array("tag", "English", "French")
+End Function
+
+Private Function TranslationRows() As Variant
+    TranslationRows = Array( _
+        Array("greeting", "Hello", "Bonjour"), _
+        Array("farewell", "Goodbye", "Au revoir"))
+End Function
+
+
+'@section Worksheet Builders
+'===============================================================================
+
+Public Sub ClearTestAnalysisSheets()
+    DeleteWorksheet ANALYSISTRANSLATIONSHEET
+    DeleteWorksheet ANALYSISTESTSHEET  
+End Sub
+
+Public Function BuildAnalysisTable(ByVal hostSheet As Worksheet, ByVal sectionValue As String) As ListObject
+    Dim headerMatrix As Variant
+    Dim dataMatrix As Variant
+    Dim tableRange As Range
+    Dim analysisTable As ListObject
+
+    headerMatrix = RowsToMatrix(Array(AnalysisHeaders()))
+    dataMatrix = RowsToMatrix(AnalysisRows(sectionValue))
+
+    WriteMatrix hostSheet.Cells(3, 1), headerMatrix
+    WriteMatrix hostSheet.Cells(4, 1), dataMatrix
+
+    Set tableRange = hostSheet.Range("A3").Resize( _
+                      UBound(dataMatrix, 1) + UBound(headerMatrix, 1), _
+                      UBound(headerMatrix, 2))
+
+    On Error Resume Next
+        hostSheet.ListObjects(TAB_GLOBAL_SUMMARY).Delete
+    On Error GoTo 0
+
+    Set analysisTable = hostSheet.ListObjects.Add(SourceType:=xlSrcRange, _
+                                                  Source:=tableRange, _
+                                                  XlListObjectHasHeaders:=xlYes)
+    analysisTable.Name = TAB_GLOBAL_SUMMARY
+
+    Set BuildAnalysisTable = analysisTable
+End Function
+
+'Build one global summary table under a caller-chosen name, so a test can
+'give the source sheet a different spelling of the name the host carries.
+'When extraColumn is supplied the table gains one column the host has no
+'home for, which is what an import has to report.
+Public Function BuildAnalysisTableNamed(ByVal hostSheet As Worksheet, _
+                                        ByVal tableName As String, _
+                                        ByVal sectionValue As String, _
+                                        Optional ByVal extraColumn As String = vbNullString) As ListObject
+    Dim headerRow As Variant
+    Dim dataRow As Variant
+    Dim headerMatrix As Variant
+    Dim dataMatrix As Variant
+    Dim tableRange As Range
+    Dim analysisTable As ListObject
+
+    If LenB(extraColumn) = 0 Then
+        headerRow = Array("Section", "Table Title", "Summary function")
+        dataRow = Array(sectionValue, "Imported Title", "Imported Summary")
+    Else
+        headerRow = Array("Section", "Table Title", "Summary function", extraColumn)
+        dataRow = Array(sectionValue, "Imported Title", "Imported Summary", "Extra Value")
+    End If
+
+    headerMatrix = RowsToMatrix(Array(headerRow))
+    dataMatrix = RowsToMatrix(Array(dataRow))
+
+    WriteMatrix hostSheet.Cells(3, 1), headerMatrix
+    WriteMatrix hostSheet.Cells(4, 1), dataMatrix
+
+    Set tableRange = hostSheet.Range("A3").Resize(2, UBound(headerMatrix, 2))
+
+    On Error Resume Next
+        hostSheet.ListObjects(tableName).Delete
+    On Error GoTo 0
+
+    Set analysisTable = hostSheet.ListObjects.Add(SourceType:=xlSrcRange, _
+                                                  Source:=tableRange, _
+                                                  XlListObjectHasHeaders:=xlYes)
+    analysisTable.Name = tableName
+
+    Set BuildAnalysisTableNamed = analysisTable
+End Function
+
+'Build a worksheet whose first table header sits on row 1. Export reads the
+'rows above each header, and there are none here.
+Public Function BuildTopEdgeAnalysisSheet(ByVal sheetName As String) As Worksheet
+    Dim hostSheet As Worksheet
+    Dim headerMatrix As Variant
+    Dim dataMatrix As Variant
+    Dim tableRange As Range
+    Dim analysisTable As ListObject
+
+    Set hostSheet = EnsureWorksheet(sheetName)
+    ClearWorksheet hostSheet
+
+    headerMatrix = RowsToMatrix(Array(AnalysisHeaders()))
+    dataMatrix = RowsToMatrix(AnalysisRows("Top Section"))
+
+    WriteMatrix hostSheet.Cells(1, 1), headerMatrix
+    WriteMatrix hostSheet.Cells(2, 1), dataMatrix
+
+    Set tableRange = hostSheet.Range("A1").Resize(2, UBound(headerMatrix, 2))
+
+    On Error Resume Next
+        hostSheet.ListObjects(TAB_GLOBAL_SUMMARY).Delete
+    On Error GoTo 0
+
+    Set analysisTable = hostSheet.ListObjects.Add(SourceType:=xlSrcRange, _
+                                                  Source:=tableRange, _
+                                                  XlListObjectHasHeaders:=xlYes)
+    analysisTable.Name = TAB_GLOBAL_SUMMARY
+
+    Set BuildTopEdgeAnalysisSheet = hostSheet
+End Function
+
+Public Function PrepareAnalysisSheet(Optional ByVal sectionValue As String = "Initial Section") As Worksheet
+    Dim hostSheet As Worksheet
+    Set hostSheet = EnsureWorksheet(ANALYSISTESTSHEET, clearSheet:=True, visibility:=xlSheetHidden)
+
+    hostSheet.Cells(1, 1).Value = "Add or remove rows of Global Summary"
+    BuildAnalysisTable hostSheet, sectionValue
+
+    Set PrepareAnalysisSheet = hostSheet
+End Function
+
+Public Function AnalysisTable(ByVal tag As String,  _
+                              Optional ByVal impSheet As Worksheet, _
+                              Optional ByVal headerInstruction As String = "Add or remove rows of Global Summary")  _ 
+                              As ListObject
+
+    Dim hostSheet As Worksheet
+    Dim loName As String
+
+    If impSheet Is Nothing Then
+        Set hostSheet = PrepareFullAnalysisWorksheet(headerInstruction)
+    Else
+        Set hostSheet = impSheet
+    End If
+
+    Select Case tag
+        Case "global summary": loName = TAB_GLOBAL_SUMMARY
+        Case "univariate analysis": loName = TAB_UNIVARIATE
+        Case "bivariate analysis": loName = TAB_BIVARIATE
+        Case "time series analysis": loName = TAB_TIME_SERIES
+        Case "labels for time series graphs": loName = TAB_GRAPH_TITLE
+        Case "graph on time series": loName = TAB_GRAPH_TIME_SERIES
+        Case "spatial analysis": loName = TAB_SPATIAL
+        Case "spatio-temporal specifications": loName = TAB_SPATIO_TEMPORAL_SPECS
+        Case "spatio-temporal analysis": loName = TAB_SPATIO_TEMPORAL
+        Case Else
+            loName = TAB_GLOBAL_SUMMARY
+    End Select
+
+    Set AnalysisTable = hostSheet.ListObjects(loName)
+End Function
+
+Public Function PrepareFullAnalysisWorksheet(Optional ByVal headerInstruction As String = "Add or remove rows of Global Summary") As Worksheet
+
+    Dim hostSheet As Worksheet
+    Dim nextRow As Long
+    Dim spatioTemporalRows As Variant
+
+    Set hostSheet = EnsureWorksheet(ANALYSISTESTSHEET)
+    ClearWorksheet hostSheet
+
+    hostSheet.Cells(1, 1).Value = headerInstruction
+
+    nextRow = 3
+    nextRow = AddAnalysisTable(hostSheet, nextRow, TAB_GLOBAL_SUMMARY, _
+                               AnalysisHeaders(), _
+                               Array(Array("Initial Section", "Goodbye", "Summary"), _
+                                     Array("Initial Section", "Hello", "Count"), _
+                                     Array("Second Section", "World", "Percentage")))
+    nextRow = AddAnalysisTable(hostSheet, nextRow, TAB_UNIVARIATE, _
+                               AnalysisHeaders(), Array(Array("Univariate Section", "Univariate Title", "Summary Uni")))
+    nextRow = AddAnalysisTable(hostSheet, nextRow, TAB_BIVARIATE, _
+                               AnalysisHeaders(), Array(Array("Bivariate Section", "Bivariate Title", "Summary Bi")))
+    nextRow = AddAnalysisTable(hostSheet, nextRow, TAB_TIME_SERIES, _
+                               Array("Series ID", "Table order", "Label"), _
+                               Array(Array("Series 1", 2, "Alpha")))
+    nextRow = AddAnalysisTable(hostSheet, nextRow, TAB_GRAPH_TIME_SERIES, _
+                               Array("Graph ID", "Section", "Table Title", "Summary label", "Choices"), _
+                               Array(Array("Graph 5", "Section B", "Title B", "Summary B", "Choice B"), _
+                                     Array("Graph 2", "Section A", "Title A", "Summary A", "Choice A"), _ 
+                                     Array("Graph 3", "Section B", "Title C", "Summary C", "Choice C")))
+    nextRow = AddAnalysisTable(hostSheet, nextRow, TAB_GRAPH_TITLE, _
+                               Array("Graph ID", "Graph Title"), _
+                               Array(Array("Graph 5", "Graph Title B")))
+    nextRow = AddAnalysisTable(hostSheet, nextRow, TAB_SPATIAL, _
+                               Array("Section", "Label", "Summary label", "Choices"), _
+                               Array(Array("Spatial Section", "Spatial Label", "Spatial Summary", "Spatial Choice")))
+
+    spatioTemporalRows = Array( _
+        Array("Region A", "Label A", "Choice A", "Graph Title A"), _
+        Array("Region B", "Label B", "Choice B", "Graph Title B"), _
+        Array("Region C", "Label C", "Choice C", "Graph Title C"), _
+        Array("Region A", "Label D", "Choice D", "Graph title D"), _
+        Array(Empty, Empty, Empty, Empty))
+
+    nextRow = AddAnalysisTable(hostSheet, nextRow, TAB_SPATIO_TEMPORAL, _
+                               Array("Section", "Label", "Choices", "Graph Title"), _
+                               spatioTemporalRows)
+    Call AddAnalysisTable(hostSheet, nextRow, TAB_SPATIO_TEMPORAL_SPECS, _
+                          Array("Section", "Label", "Summary label"), _
+                          Array(Array("Specs Section", "Specs Label", "Specs Summary")))
+
+    Set PreparefullAnalysisWorksheet = hostSheet
+End Function
+
+Public Function CreateAnalysisTranslator(Optional ByVal language As String = "French") As TranslationObject
+    Dim translationSheet As Worksheet
+    Dim headerMatrix As Variant
+    Dim dataMatrix As Variant
+    Dim translationTable As ListObject
+
+    Set translationSheet = EnsureWorksheet(ANALYSISTRANSLATIONSHEET)
+    ClearWorksheet translationSheet
+
+    headerMatrix = RowsToMatrix(Array(TranslationHeaders()))
+    dataMatrix = RowsToMatrix(TranslationRows())
+
+    WriteMatrix translationSheet.Cells(1, 1), headerMatrix
+    WriteMatrix translationSheet.Cells(2, 1), dataMatrix
+
+    Set translationTable = translationSheet.ListObjects.Add(SourceType:=xlSrcRange, _
+                                                            Source:=translationSheet.Range("A1").CurrentRegion, _
+                                                            XlListObjectHasHeaders:=xlYes)
+    translationTable.Name = ANALYSISTRANSLATIONTABLE
+
+    Set CreateAnalysisTranslator = TranslationObject.Create(translationTable, language)
+End Function
+
+'@section Internal Helpers
+'===============================================================================
+
+Private Function AddAnalysisTable(ByVal hostSheet As Worksheet, _
+                                  ByVal startRow As Long, _
+                                  ByVal tableName As String, _
+                                   headers As Variant, _
+                                  Optional  dataRows As Variant) As Long
+
+    Dim headerMatrix As Variant
+    Dim dataMatrix As Variant
+    Dim columnCount As Long
+    Dim bottomRow As Long
+    Dim tableRange As Range
+    Dim listTable As ListObject
+    Dim hasData As Boolean
+
+    headerMatrix = RowsToMatrix(Array(headers))
+    WriteMatrix hostSheet.Cells(startRow, 1), headerMatrix
+
+    columnCount = UBound(headerMatrix, 2)
+    bottomRow = startRow
+
+    hasData = IsArray(dataRows)
+    If hasData Then
+        On Error Resume Next
+            hasData = (UBound(dataRows) >= LBound(dataRows))
+        On Error GoTo 0
+    End If
+
+    If hasData Then
+        dataMatrix = RowsToMatrix(dataRows)
+        WriteMatrix hostSheet.Cells(startRow + 1, 1), dataMatrix
+        bottomRow = startRow + UBound(dataMatrix, 1)
+    End If
+
+    Set tableRange = hostSheet.Range(hostSheet.Cells(startRow, 1), _
+                                     hostSheet.Cells(bottomRow, columnCount))
+
+    On Error Resume Next
+        hostSheet.ListObjects(tableName).Delete
+    On Error GoTo 0
+
+    Set listTable = hostSheet.ListObjects.Add(SourceType:=xlSrcRange, _
+                                               Source:=tableRange, _
+                                               XlListObjectHasHeaders:=xlYes)
+    listTable.Name = tableName
+
+    AddAnalysisTable = bottomRow + 8
+End Function
+
+'@section Export coverage
+'===============================================================================
+'@description
+'The analysis export carries values through the named ranges of a sheet and
+'nothing else, so a cell a table writes outside every name arrives blank in the
+'exported workbook. These two helpers measure that, and the coverage tests of
+'TestCrossTable and TestCrossTableFormula assert over them scope by scope.
+
+'@sub-title The written cells of a sheet that no named range covers.
+'@details
+'The names are collected the way AnaTabIds.BuildNameBuckets collects them --
+'walk the workbook name collection and keep the ones whose RefersToRange sits
+'on this sheet -- so this measures exactly what TransferNames would carry and
+'not some other reading of "named". A cell holding an error value counts as
+'written: a formula that cannot resolve in the test workbook is still a cell the
+'export has to carry.
+'@param sh Worksheet. The sheet to measure.
+'@return String. The uncovered cell addresses, comma separated, empty when the
+'   names cover every written cell.
+Public Function CellsOutsideEveryName(ByVal sh As Worksheet) As String
+    Dim nm As Name
+    Dim target As Range
+    Dim covered As Range
+    Dim cellRng As Range
+    Dim answer As String
+    Dim shown As Long
+
+    Const MAX_SHOWN As Long = 12
+
+    For Each nm In sh.Parent.Names
+        Set target = Nothing
+        'A name holding a value has no range behind it and raises, which is how
+        'BuildNameBuckets tells the two apart.
+        On Error Resume Next
+        Set target = nm.RefersToRange
+        On Error GoTo 0
+
+        If Not target Is Nothing Then
+            If target.Worksheet.Name = sh.Name Then
+                If covered Is Nothing Then
+                    Set covered = target
+                Else
+                    Set covered = Application.Union(covered, target)
+                End If
+            End If
+        End If
+    Next nm
+
+    If sh.UsedRange Is Nothing Then Exit Function
+
+    For Each cellRng In sh.UsedRange
+        If CellIsWritten(cellRng) Then
+            If IsCellOutside(covered, cellRng) Then
+                shown = shown + 1
+                If shown <= MAX_SHOWN Then
+                    If LenB(answer) > 0 Then answer = answer & ", "
+                    answer = answer & cellRng.Address(False, False) & _
+                             " [" & Left$(cellRng.Text, 20) & "]"
+                End If
+            End If
+        End If
+    Next cellRng
+
+    If shown > MAX_SHOWN Then _
+        answer = answer & " and " & CStr(shown - MAX_SHOWN) & " more"
+
+    CellsOutsideEveryName = answer
+End Function
+
+'@sub-title Whether a cell holds anything the export would have to carry.
+'@param cellRng Range. The single cell to test.
+'@return Boolean. True for a value, a formula result or an error value.
+Public Function CellIsWritten(ByVal cellRng As Range) As Boolean
+    Dim cellValue As Variant
+
+    cellValue = cellRng.Value
+    If IsError(cellValue) Then
+        CellIsWritten = True
+        Exit Function
+    End If
+    If IsEmpty(cellValue) Then Exit Function
+    CellIsWritten = (LenB(CStr(cellValue)) > 0)
+End Function
+
+'@sub-title Whether one cell falls outside a union of ranges.
+'@param covered Range. The union, or Nothing when the sheet carries no name.
+'@param cellRng Range. The single cell to test.
+'@return Boolean. True when nothing covers the cell.
+Public Function IsCellOutside(ByVal covered As Range, _
+                              ByVal cellRng As Range) As Boolean
+    If covered Is Nothing Then
+        IsCellOutside = True
+        Exit Function
+    End If
+
+    IsCellOutside = (Application.Intersect(covered, cellRng) Is Nothing)
+End Function
+

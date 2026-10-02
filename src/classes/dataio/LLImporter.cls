@@ -15,18 +15,40 @@ Attribute VB_Description = "Linelist data import operations"
 '@ModuleDescription("Linelist data import operations")
 
 Option Explicit
-Implements ILLImporter
 
 '@class LLImporter
 '@description
-'Imports linelist data from external workbooks into the source linelist.
-'Supports importing HList/VList data, custom dropdowns, show/hide state,
-'editable labels, single metadata values, and geobase data. Tracks which
-'sheets and variables were imported, and builds a report of items not
-'imported or not touched. Consumers interact through the ILLImporter
-'interface.
-'@depends ILLdictionary, IPasswords, ICustomTable, IDataSheet
-'@depends IShowHideManager, ILLGeo, ILLChoices, ILLVariables, IDropdownLists, IHiddenNames
+'Imports the data of an external workbook into the linelist that holds this
+'object. CheckImportFile reads the file and says whether it can be imported,
+'HasSameLanguage compares the two interface languages, and CurrentLanguage
+'answers the language of this linelist. ImportData brings the HList and VList
+'data in, ImportCustomDropdown the custom dropdowns, ImportShowHide the
+'show/hide choices, ImportEditableLabels the labels a user may edit,
+'ImportSingleValues the single metadata values and ImportGeobase the geobase.
+'ClearData empties the linelist first when the caller asks for it, and HasData
+'says whether the linelist already carries rows.
+'
+'THE REPORT
+'-------------------------------------------------------------------------------
+'CompareWithImportFile records which sheets and which variables the two files
+'have in common and which they have on their own. NeedReport says whether
+'anything was recorded, FinalizeReport writes the entries into ImportReport,
+'ReportSheets and ReportVariables read them back, and ClearReport empties them.
+'Entries filed along the way leave through HasCheckings and CheckingValues.
+'@depends LLdictionary, Passwords, CustomTable, DataSheet
+'@depends LLGeo, LLChoices, LLVariables, DropdownLists, HiddenNames
+'@depends ShowHide, ShowHideLayout, ShowHideStore, ChoiceKeys, ImportMetadata
+'@depends Checking, BetterArray, ImportReport
+
+
+'@section Enumerations
+'===============================================================================
+'@description Scopes for import report entries, used to query which items were missed.
+
+Public Enum ImportReportScope
+    ImportReportNotImported = 1
+    ImportReportNotTouched = 2
+End Enum
 
 
 '@section Constants
@@ -41,9 +63,22 @@ Private Const DICTTRANSLATIONSHEET As String = "Translations"
 Private Const LINELISTTRANSLATIONSHEET As String = "LinelistTranslation"
 Private Const METADATASHEET As String = "Metadata"
 Private Const PASSWORDSHEET As String = "__pass"
-Private Const SHOWHIDESHEET As String = "show_hide__"
+Private Const SHOWHIDESHEET As String = "__show_hide"
+'The name a linelist generated before the internal-sheet rename gave that sheet
+Private Const SHOWHIDESHEET_OLD As String = "show_hide__"
 Private Const GEOSHEET As String = "Geo"
+
+' Prefixes of the two companion sheets a data entry sheet can have
+Private Const PRINTPREFIX As String = "print_"
+Private Const CRFPREFIX As String = "crf_"
 Private Const RNGEPIWEEKSTART As String = "RNG_EpiWeekStart"
+
+'Where a VList data entry sheet keeps its pairs: the label in column D and the
+'cell that holds the value beside it, from row 4 down. ClearData walked those
+'three numbers by hand.
+Private Const VLIST_FIRST_ROW As Long = 4
+Private Const VLIST_LABEL_COLUMN As Long = 4
+Private Const VLIST_VALUE_COLUMN As Long = 5
 
 
 '@section State
@@ -51,7 +86,6 @@ Private Const RNGEPIWEEKSTART As String = "RNG_EpiWeekStart"
 
 Private Type TLLImporter
     sourceWkb As Workbook
-    hasSameLanguage As Boolean
     needReport As Boolean
     ' Report data
     sheetsNotImported As BetterArray
@@ -61,6 +95,31 @@ Private Type TLLImporter
     ' Tracking
     importedSheets As BetterArray
     importedVars As BetterArray
+    ' Diagnostics
+    checks As Checking
+    sealed As Boolean
+End Type
+
+'What the two comparison walks read out of one dictionary, one column per
+'field, every array one based and all of them the same height.
+'
+'THE BLOCKS LIVE HERE, NOT IN LLVariables
+'-------------------------------------------------------------------------------
+'Owner direction of 2026-08-19, measured: a column cache inside LLVariables made
+'the build 25% SLOWER, because the write path creates a fresh LLVariables per
+'variable and every one of them paid the block read again. The two walks below
+'each hold one reader for their whole run, which is the long-lived shape that
+'pays for a block read.
+Private Type TDictBlocks
+    rowCount As Long
+    names As Variant
+    mainLabels As Variant
+    sheetNames As Variant
+    sheetTypes As Variant
+    editableLabels As Variant
+    columnIndexes As Variant
+    controls As Variant
+    controlDetails As Variant
 End Type
 
 Private this As TLLImporter
@@ -73,34 +132,27 @@ Private this As TLLImporter
 '@sub-title Create an importer from the source linelist workbook
 '@details
 'Factory method that validates the workbook is not Nothing, then constructs
-'and returns a new LLImporter instance through the ILLImporter interface.
-'Called on the predeclared instance.
+'and returns a new LLImporter instance. Called on the predeclared instance.
 '@param sourceWkb Workbook. The linelist workbook that will receive imported data.
-'@return ILLImporter. A fully initialised instance ready for import operations.
+'@return LLImporter. A fully initialised instance ready for import operations.
 '@throws vbObjectError When the workbook is Nothing.
 '@export
-Public Function Create(ByVal sourceWkb As Workbook) As ILLImporter
+Public Function Create(ByVal sourceWkb As Workbook) As LLImporter
 
     If sourceWkb Is Nothing Then
         ThrowError "LLImporter requires a source workbook"
     End If
 
-    With New LLImporter
-        Set .SourceWorkbook = sourceWkb
-        Set Create = .Self
-    End With
+    Dim newImporter As LLImporter
+    Set newImporter = New LLImporter
+    Set newImporter.SourceWorkbook = sourceWkb
+    newImporter.Seal
+    Set Create = newImporter
 End Function
 
 
 '@section Public Accessors
 '===============================================================================
-
-'@label:self
-'@prop-title Current object instance
-'@return ILLImporter. The current instance cast to the interface.
-Public Property Get Self() As ILLImporter
-    Set Self = Me
-End Property
 
 '@label:source-workbook
 '@prop-title Source linelist workbook
@@ -113,8 +165,79 @@ End Property
 '@prop-title Assign the source linelist workbook
 '@param wb Workbook. The workbook to store.
 Public Property Set SourceWorkbook(ByVal wb As Workbook)
+    GuardNotSealed "SourceWorkbook"
     Set this.sourceWkb = wb
 End Property
+
+'@label:seal
+'@prop-title Prevent further changes to setup-only properties
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Raise when a setup-only property is written after sealing
+'@param propName String. The name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError propName & " is set at creation only"
+End Sub
+
+
+'@section Diagnostics
+'===============================================================================
+'@description What the import found and what it decided to skip. Every entry is
+'in English and the worksheet the caller writes them to is what the user reads.
+
+'@label:has-checkings
+'@prop-title Whether the import filed anything worth reading
+'@return Boolean. True when at least one entry was filed.
+'@export
+Public Property Get HasCheckings() As Boolean
+    If this.checks Is Nothing Then Exit Property
+    HasCheckings = (this.checks.Length > 0)
+End Property
+
+'@label:checking-values
+'@prop-title The entries the import filed
+'@return Checking. The store, ready to hand to a CheckingOutput.
+'@export
+Public Property Get CheckingValues() As Checking
+    Set CheckingValues = ImportCheckings()
+End Property
+
+'@label:import-checkings
+'@sub-title The checking store, built on first use
+'@return Checking. The store this import files into.
+Private Function ImportCheckings() As Checking
+    If this.checks Is Nothing Then _
+        Set this.checks = Checking.Create("Import report", "What the import found")
+    Set ImportCheckings = this.checks
+End Function
+
+'@label:file-checking
+'@sub-title File one entry, and never raise on a key already used
+'@details
+'Checking.Add raises on a key it already holds. An import walks a dictionary,
+'so a key built from a variable name can repeat when the same variable is on two
+'sheets. The counter suffix keeps every entry and keeps the key unique.
+'@param keyName String. The key of the entry.
+'@param label String. What to tell the user.
+'@param scope Byte. A CheckingScope value.
+Private Sub FileChecking(ByVal keyName As String, ByVal label As String, _
+                         ByVal scope As Byte)
+
+    Dim uniqueKey As String
+    Dim counter As Long
+
+    uniqueKey = keyName
+    Do While ImportCheckings().KeyExists(uniqueKey)
+        counter = counter + 1
+        uniqueKey = keyName & " (" & CStr(counter) & ")"
+    Loop
+
+    ImportCheckings().Add uniqueKey, label, scope
+End Sub
 
 
 '@section Data Checks
@@ -123,8 +246,9 @@ End Property
 '@label:has-data
 '@prop-title Whether the workbook contains user-entered data
 '@details
-'Scans all HList sheets for non-empty rows beyond the blank count
-'threshold stored in cell(1,6). Returns True as soon as a single row
+'Scans all HList sheets for rows carrying more filled cells than an untouched
+'row does. LLDataEntry records that figure per sheet under the hidden name
+'blank_row_count when it makes the table. Returns True as soon as a single row
 'has user data. Used to warn the user before clearing or overwriting.
 '@return Boolean. True when at least one HList row has user data.
 '@export
@@ -134,12 +258,12 @@ Public Property Get HasData() As Boolean
     Dim lo As ListObject
     Dim nbBlanks As Long
     Dim counter As Long
-    Dim shHnData As IHiddenNames
+    Dim shHnData As HiddenNames
 
     For Each sh In this.sourceWkb.Worksheets
         If SheetTagOf(sh) = "HList" Then
             Set shHnData = HiddenNames.Create(sh)
-            nbBlanks = shHnData.ValueAsLong("row_count")
+            nbBlanks = shHnData.ValueAsLong("blank_row_count")
             Set lo = sh.ListObjects(1)
 
             If Not lo.DataBodyRange Is Nothing Then
@@ -155,55 +279,118 @@ Public Property Get HasData() As Boolean
     Next sh
 End Property
 
-'@label:has-same-language
-'@sub-title Check whether the import workbook language matches
+'@label:current-language
+'@prop-title The language this linelist was built in
 '@details
-'Reads the language tag from the import workbook Metadata sheet and
-'compares it with the source workbook dictionary language via
-'LLTranslations. Stores the result internally so that ImportShowHide,
-'ImportEditableLabels, and ImportSingleValues silently skip when
-'languages differ. Returns False when the Metadata sheet is missing.
-'@param impwb Workbook. The opened import workbook.
-'@return Boolean. True when languages match.
+'The workbook-level RNG_DictionaryLanguage hidden name, which the build set to
+'the dictionary language. The Metadata sheet of an export carries the same fact
+'under `language`, so the two compare like with like.
+'@return String. The language code, empty when the workbook carries none.
 '@export
-Public Function HasSameLanguage(ByVal impwb As Workbook) As Boolean
-
-    Dim metaTab As IDataSheet
-    Dim varRng As Range
-    Dim cellRng As Range
-    Dim impLang As String
-    Dim currLang As String
-    Dim wkbNames As IHiddenNames
-
-    this.hasSameLanguage = False
-
-    ' Metadata sheet must exist
-    If Not SheetExists(impwb, METADATASHEET) Then
-        HasSameLanguage = False
-        Exit Function
-    End If
-
-    ' Read import language from metadata
-    Set metaTab = DataSheet.Create(impwb.Worksheets(METADATASHEET), 1, 1)
-    Set varRng = metaTab.DataRange("variable")
-    impLang = vbNullString
-
-    On Error Resume Next
-    Set cellRng = varRng.Find(What:="language", lookAt:=xlWhole, MatchCase:=False)
-    impLang = CStr(cellRng.Offset(, 1).Value)
-    On Error GoTo 0
-
-    If LenB(impLang) = 0 Then
-        HasSameLanguage = False
-        Exit Function
-    End If
-
-    ' Compare with current language
+Public Property Get CurrentLanguage() As String
+    Dim wkbNames As HiddenNames
     Set wkbNames = HiddenNames.Create(this.sourceWkb)
-    currLang = wkbNames.ValueAsString("RNG_DictionaryLanguage")
+    CurrentLanguage = wkbNames.ValueAsString("RNG_DictionaryLanguage")
+End Property
 
-    this.hasSameLanguage = (impLang = currLang)
-    HasSameLanguage = this.hasSameLanguage
+'@label:has-same-language
+'@sub-title Check whether the file being imported is in this linelist's language
+'@details
+'Compares the `language` tag of the file with CurrentLanguage. A file naming no
+'language answers False, which is also the answer for a file carrying no
+'Metadata sheet at all. The caller tells those two apart through the metadata
+'object and says which happened.
+'
+'The answer used to be kept on the class and read by the three metadata imports,
+'so a caller that skipped this step got False by default and all three did
+'nothing with no diagnostic. The three take the metadata object now and the
+'caller decides whether to call them.
+'@param meta ImportMetadata. The metadata of the file being imported.
+'@return Boolean. True when the languages match.
+'@export
+Public Function HasSameLanguage(ByVal meta As ImportMetadata) As Boolean
+
+    Dim impLang As String
+
+    If meta Is Nothing Then Exit Function
+
+    impLang = meta.Language
+    If LenB(impLang) = 0 Then Exit Function
+
+    HasSameLanguage = (StrComp(impLang, CurrentLanguage, vbTextCompare) = 0)
+End Function
+
+
+'@label:check-import-file
+'@sub-title Read the file over before importing it, and file what is wrong
+'@details
+'Every worksheet an export is supposed to carry is looked for, and the export
+'options are read. The dictionary and the choices are errors when they are
+'absent, because the labels and the category lists cannot be compared without
+'them; the other metadata sheets are warnings, because the data still lands.
+'
+'ONE THING STOPS AN IMPORT
+'-------------------------------------------------------------------------------
+'A custom export written with the labels as its header row carries no variable
+'name anywhere, so no column of it can be matched to a column of this linelist.
+'Every row of such a file used to land in "not imported" with nothing said. It
+'is refused here, with the reason.
+'@param impwb Workbook. The opened import workbook.
+'@param meta ImportMetadata. What that workbook says about itself.
+'@return Boolean. True when the import may go on.
+'@export
+Public Function CheckImportFile(ByVal impwb As Workbook, _
+                                ByVal meta As ImportMetadata) As Boolean
+
+    CheckImportFile = True
+
+    If Not meta.Exists Then
+        FileChecking "metadata sheet", _
+                     "The imported file has no Metadata worksheet. " & _
+                     "It is read as a file " & _
+                     "with the variable names on the first row.", _
+                     checkingWarning
+    End If
+
+    If Not SheetExists(impwb, DICTIONARYSHEET) Then
+        FileChecking "dictionary sheet", _
+                     "The imported file has no Dictionary worksheet. The labels and " & _
+                     "the choice lists of this linelist cannot be compared with " & _
+                     "the ones of the imported file.", _
+                     checkingError
+    End If
+
+    If Not SheetExists(impwb, CHOICESSHEET) Then
+        FileChecking "choices sheet", _
+                     "The imported file has no Choices worksheet. The custom " & _
+                     "dropdowns are left as they are and the choices categories " & _
+                     "cannot be compared.", _
+                     checkingError
+    End If
+
+    If ShowHideSheetOf(impwb) Is Nothing Then
+        FileChecking "show hide sheet", _
+                     "The imported file has no show/hide worksheet, so the " & _
+                     "hidden and shown state of this linelist is left as it is.", _
+                     checkingWarning
+    End If
+
+    If Not SheetExists(impwb, DICTTRANSLATIONSHEET) Then
+        FileChecking "dictionary translation sheet", _
+                     "The imported file has no Translations worksheet.", _
+                     checkingWarning
+    End If
+
+    If Not meta.CarriesVariableNames Then
+        FileChecking "header row", _
+                     "The imported file was exported with the variable labels as its " & _
+                     "header row (" & meta.ExportType & "), so it carries no " & _
+                     "variable name at all and no column of it can be matched " & _
+                     "to a column of this linelist. Export it again with a " & _
+                     "header format that keeps the variable names.", _
+                     checkingError
+        CheckImportFile = False
+    End If
 End Function
 
 
@@ -213,19 +400,35 @@ End Function
 '@label:clear-data
 '@sub-title Clear all user-entered data from HList and VList sheets
 '@details
-'Iterates over all worksheets in the source workbook. For HList sheets,
-'clears non-formula column values from the ListObject data body. For
-'VList sheets, clears non-formula named range values. Unprotects and
-'re-protects each sheet via IPasswords.
+'Walks every worksheet of the source workbook. An HList sheet has the constant
+'cells of its table body cleared and its formula columns left standing; a VList
+'sheet has the constant cells of its value column cleared the same way. Each
+'sheet is unprotected and protected again through Passwords.
+'
+'WHAT IT COST BEFORE
+'-------------------------------------------------------------------------------
+'An HList paid three crossings per column: one to resolve
+'ListColumns(n).DataBodyRange, one to read HasFormula off its first cell and one
+'to ClearContents. A VList paid three per ROW: the IsEmpty test on the label, an
+'Offset onto the value cell and a HasFormula read on it, one row at a time down
+'column D. A wide table and a long VList sheet both paid for every one of them.
+'
+'Now each sheet reads its formulas as one block and clears the runs of cells
+'between them. A table of 200 columns with no formula in it goes from about 600
+'crossings to two.
+'
+'ONE CALCULATION, AT THE END
+'-------------------------------------------------------------------------------
+'There was a `lo.Range.Calculate` per table and a `sh.UsedRange.Calculate` per
+'VList sheet, so a workbook of ten data sheets recalculated ten times while it
+'was being emptied. The clear is one walk and it recalculates once, after the
+'last cell is cleared. RecalculateSheets is the same pass the import walk uses.
 '@export
 Public Sub ClearData()
 
     Dim sh As Worksheet
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Dim lo As ListObject
-    Dim valueRng As Range
-    Dim labelRng As Range
-    Dim counter As Long
     Dim actsh As Worksheet
 
     Set pass = PasswordsObject()
@@ -238,37 +441,343 @@ Public Sub ClearData()
         Case "HList"
             pass.UnProtect sh.Name
             Set lo = sh.ListObjects(1)
-
-            If Not lo.DataBodyRange Is Nothing Then
-                For counter = 1 To lo.DataBodyRange.Columns.Count
-                    Set valueRng = lo.ListColumns(counter).DataBodyRange
-                    If Not valueRng.Cells(1, 1).HasFormula Then
-                        valueRng.ClearContents
-                    End If
-                Next counter
-                lo.Range.Calculate
-            End If
-
+            If Not lo.DataBodyRange Is Nothing Then _
+                ClearConstantsAcross lo.DataBodyRange
             pass.Protect sh.Name
 
         Case "VList"
             pass.UnProtect sh.Name
-            Set labelRng = sh.Cells(4, 4)
-
-            Do While Not IsEmpty(labelRng)
-                Set valueRng = labelRng.Offset(, 1)
-                If Not valueRng.HasFormula Then valueRng.ClearContents
-                Set labelRng = labelRng.Offset(1)
-            Loop
-
-            sh.UsedRange.Calculate
+            ClearVListValues sh
             pass.Protect sh.Name
 
         End Select
     Next sh
 
+    RecalculateSheets
     actsh.Activate
 End Sub
+
+'@label:clear-constants-across
+'@sub-title Clear the constant columns of a table body, formula columns kept
+'@details
+'The first body row is read as one block, and a column whose first cell holds a
+'formula is kept. That is the reading the per-column HasFormula read made too: a
+'table column holds one formula all the way down or none at all.
+'
+'A column that LOOKS like a formula is confirmed with one HasFormula read before
+'it is kept. Range.Formula answers the text of a cell that holds "=abc" behind a
+'leading apostrophe as well, and a false reading there would leave a column of
+'typed data standing after the user asked for it to be deleted. Formula columns
+'are the few, so the confirmation costs a crossing for each of them and nothing
+'for the rest.
+'@param bodyRng Range. The data body of the table.
+Private Sub ClearConstantsAcross(ByVal bodyRng As Range)
+
+    Dim formulaText As Variant
+    Dim columnCount As Long
+    Dim runStart As Long
+    Dim counter As Long
+
+    columnCount = bodyRng.Columns.count
+    formulaText = FormulaBlockOf(bodyRng.Rows(1))
+
+    runStart = 0
+    For counter = 1 To columnCount
+        If LooksLikeFormula(formulaText, counter) And _
+           bodyRng.Cells(1, counter).HasFormula Then
+            If runStart > 0 Then
+                bodyRng.Columns(runStart).Resize(, counter - runStart).ClearContents
+                runStart = 0
+            End If
+        ElseIf runStart = 0 Then
+            runStart = counter
+        End If
+    Next counter
+
+    If runStart > 0 Then _
+        bodyRng.Columns(runStart).Resize(, columnCount - runStart + 1).ClearContents
+End Sub
+
+'@label:clear-vlist-values
+'@sub-title Clear the value column of a VList sheet, formula cells kept
+'@details
+'The labels of column D are read as one block and walked to the first empty one,
+'which is where the cell-at-a-time loop stopped as well. Reading to the end of
+'the used range instead would empty cells below a gap that the loop never
+'reached, so the block is walked the same way rather than to its end.
+'
+'The value column is then cleared in runs, the formula cells left standing. The
+'audit asked for the column to be cleared in one call; it cannot be. A VList
+'value cell holds a formula whenever its variable carries a formula, case_when
+'or choice_formula control, and one call over the column would delete every one
+'of them.
+'@param sh Worksheet. The VList data entry sheet.
+Private Sub ClearVListValues(ByVal sh As Worksheet)
+
+    Dim labels As Variant
+    Dim lastRow As Long
+    Dim stopRow As Long
+    Dim counter As Long
+
+    lastRow = sh.UsedRange.Row + sh.UsedRange.Rows.count - 1
+    If lastRow < VLIST_FIRST_ROW Then Exit Sub
+
+    labels = ColumnBlockOf(sh.Range(sh.Cells(VLIST_FIRST_ROW, VLIST_LABEL_COLUMN), _
+                                    sh.Cells(lastRow, VLIST_LABEL_COLUMN)))
+
+    stopRow = VLIST_FIRST_ROW - 1
+    For counter = LBound(labels) To UBound(labels)
+        If IsEmpty(labels(counter)) Then Exit For
+        stopRow = VLIST_FIRST_ROW + counter - 1
+    Next counter
+
+    If stopRow < VLIST_FIRST_ROW Then Exit Sub
+
+    ClearConstantsDown sh.Range(sh.Cells(VLIST_FIRST_ROW, VLIST_VALUE_COLUMN), _
+                                sh.Cells(stopRow, VLIST_VALUE_COLUMN))
+End Sub
+
+'@label:clear-constants-down
+'@sub-title Clear the constant cells of one column, formula cells kept
+'@param colRng Range. The single column to clear.
+Private Sub ClearConstantsDown(ByVal colRng As Range)
+
+    Dim formulaText As Variant
+    Dim rowCount As Long
+    Dim runStart As Long
+    Dim counter As Long
+
+    rowCount = colRng.Rows.count
+    formulaText = FormulaBlockOf(colRng)
+
+    runStart = 0
+    For counter = 1 To rowCount
+        If LooksLikeFormula(formulaText, counter) And _
+           colRng.Cells(counter, 1).HasFormula Then
+            If runStart > 0 Then
+                colRng.Cells(runStart, 1).Resize(counter - runStart, 1).ClearContents
+                runStart = 0
+            End If
+        ElseIf runStart = 0 Then
+            runStart = counter
+        End If
+    Next counter
+
+    If runStart > 0 Then _
+        colRng.Cells(runStart, 1).Resize(rowCount - runStart + 1, 1).ClearContents
+End Sub
+
+'@fun-title The formulas of a single row or a single column, read in one go
+'@details
+'A range of one cell answers a scalar rather than an array, so that arm is read
+'on its own. The answer is always a 1-based array whatever the range's own
+'address is.
+'@param rng Range. One row, or one column.
+'@return Variant. A 1-based array of formula text.
+Private Function FormulaBlockOf(ByVal rng As Range) As Variant
+
+    Dim block As Variant
+    Dim values() As Variant
+    Dim itemCount As Long
+    Dim counter As Long
+    Dim goingDown As Boolean
+
+    goingDown = (rng.Rows.count > 1)
+    itemCount = IIf(goingDown, rng.Rows.count, rng.Columns.count)
+    ReDim values(1 To itemCount)
+
+    If itemCount = 1 Then
+        values(1) = rng.Cells(1, 1).Formula
+    Else
+        block = rng.Formula
+        For counter = 1 To itemCount
+            If goingDown Then
+                values(counter) = block(counter, 1)
+            Else
+                values(counter) = block(1, counter)
+            End If
+        Next counter
+    End If
+
+    FormulaBlockOf = values
+End Function
+
+'@fun-title The values of one column, read in one go
+'@param rng Range. The single column to read.
+'@return Variant. A 1-based array of the cell values.
+Private Function ColumnBlockOf(ByVal rng As Range) As Variant
+
+    Dim block As Variant
+    Dim values() As Variant
+    Dim rowCount As Long
+    Dim counter As Long
+
+    rowCount = rng.Rows.count
+    ReDim values(1 To rowCount)
+
+    If rowCount = 1 Then
+        values(1) = rng.Cells(1, 1).Value
+    Else
+        block = rng.Value
+        For counter = 1 To rowCount
+            values(counter) = block(counter, 1)
+        Next counter
+    End If
+
+    ColumnBlockOf = values
+End Function
+
+'@label:read-dict-blocks
+'@sub-title Read the columns the two comparison walks need, one crossing each
+'@details
+'Every LLVariables.Value call pays TWO crossings: ResolveColumnIndex checks the
+'header cell still reads as the column it cached, then the value cell is read.
+'ImportEditableLabels made four of those per variable plus a cell read of the
+'name column, and CompareWithImportFile made several per variable on BOTH
+'files, so a dictionary of 500 variables paid thousands of crossings for eight
+'columns.
+'Eight crossings per dictionary now, and the walks answer from memory.
+'A column the dictionary does not carry answers a block of empty strings, so a
+'caller reads it like any other and an older file costs no special case.
+'@param dict LLdictionary. The dictionary to read.
+'@param blocks TDictBlocks. Filled with one array per column.
+Private Sub ReadDictBlocks(ByVal dict As LLdictionary, ByRef blocks As TDictBlocks)
+
+    blocks.rowCount = 0
+    blocks.names = DictColumnBlock(dict, "variable name", 0, blocks.rowCount)
+    If blocks.rowCount = 0 Then Exit Sub
+
+    blocks.mainLabels = DictColumnBlock(dict, "main label", blocks.rowCount)
+    blocks.sheetNames = DictColumnBlock(dict, "sheet name", blocks.rowCount)
+    blocks.sheetTypes = DictColumnBlock(dict, "sheet type", blocks.rowCount)
+    blocks.editableLabels = DictColumnBlock(dict, "editable label", blocks.rowCount)
+    blocks.columnIndexes = DictColumnBlock(dict, "column index", blocks.rowCount)
+    blocks.controls = DictColumnBlock(dict, "control", blocks.rowCount)
+    blocks.controlDetails = DictColumnBlock(dict, "control details", blocks.rowCount)
+End Sub
+
+'@label:dict-column-block
+'@sub-title One dictionary column as a one based array of strings
+'@details
+'The range answers a two dimensional array, or a single value when the
+'dictionary holds one row, and both are flattened to the same shape.
+'DataRange raises on a column the dictionary does not carry; that is caught here
+'and answered with the empty block, because these walks skip a missing column
+'rather than refuse the whole import.
+'@param dict LLdictionary. The dictionary to read.
+'@param colName String. The column to read.
+'@param expectedRows Long. The height every block has to hold. 0 lets the column
+'   decide, which is how the first block sets the count.
+'@param rowsRead Long. Set to the height the block holds.
+'@return Variant. A one based array of strings.
+Private Function DictColumnBlock(ByVal dict As LLdictionary, _
+                                 ByVal colName As String, _
+                                 ByVal expectedRows As Long, _
+                                 Optional ByRef rowsRead As Long) As Variant
+
+    Dim source As Range
+    Dim raw As Variant
+    Dim block() As String
+    Dim nbRows As Long
+    Dim counter As Long
+
+    On Error Resume Next
+    Set source = dict.DataRange(colName)
+    On Error GoTo 0
+
+    If source Is Nothing Then
+        nbRows = expectedRows
+    Else
+        nbRows = source.Rows.count
+        If expectedRows > 0 Then nbRows = expectedRows
+    End If
+
+    rowsRead = nbRows
+    If nbRows < 1 Then
+        DictColumnBlock = Array()
+        Exit Function
+    End If
+
+    ReDim block(1 To nbRows)
+    If source Is Nothing Then
+        DictColumnBlock = block
+        Exit Function
+    End If
+
+    If source.Rows.count = 1 Then
+        block(1) = CellTextOf(source.Cells(1, 1).Value)
+    Else
+        raw = source.Columns(1).Value
+        For counter = 1 To nbRows
+            If counter <= UBound(raw, 1) Then block(counter) = CellTextOf(raw(counter, 1))
+        Next counter
+    End If
+
+    DictColumnBlock = block
+End Function
+
+'@label:block-row-of
+'@sub-title The row one variable sits on, answered from the name block
+'@details
+'A straight walk with a binary compare, which is the rule LLVariables.RowIndex
+'applies and the rule its callers depend on: LLdictionary.UniqueVarNames leaves
+'the case the user typed, and Contains is case sensitive by default. A keyed
+'Collection would be faster and would answer case blind, which is a different
+'question from the one the walks used to ask.
+'A duplicated name answers with the FIRST row that holds it, again as RowIndex
+'does.
+'@param blocks TDictBlocks. The blocks to search.
+'@param varName String. The variable to look for.
+'@return Long. The row, one based, or 0 when the name is absent.
+Private Function BlockRowOf(ByRef blocks As TDictBlocks, _
+                            ByVal varName As String) As Long
+
+    Dim counter As Long
+
+    If LenB(varName) = 0 Then Exit Function
+    If Not IsArray(blocks.names) Then Exit Function
+
+    For counter = 1 To blocks.rowCount
+        If StrComp(blocks.names(counter), varName, vbBinaryCompare) = 0 Then
+            BlockRowOf = counter
+            Exit Function
+        End If
+    Next counter
+End Function
+
+'@label:block-text
+'@sub-title One row of a block, empty when the block holds nothing there
+'@param block Variant. A block DictColumnBlock built.
+'@param row Long. The row wanted, one based.
+'@return String. The text at that row.
+Private Function BlockText(ByRef block As Variant, ByVal row As Long) As String
+    If Not IsArray(block) Then Exit Function
+    On Error Resume Next
+    BlockText = block(row)
+    On Error GoTo 0
+End Function
+
+'@label:cell-text-of
+'@sub-title A cell value as text, with an error, a Null or an empty read as nothing
+'@details
+'A dictionary cell can hold an error value or a Null, and CStr raises on both.
+'@param cellValue Variant. The raw cell value.
+'@return String. The text, or an empty string.
+Private Function CellTextOf(ByVal cellValue As Variant) As String
+    If IsError(cellValue) Then Exit Function
+    If IsNull(cellValue) Then Exit Function
+    If IsEmpty(cellValue) Then Exit Function
+    CellTextOf = CStr(cellValue)
+End Function
+
+'@fun-title Whether one entry of a formula block reads as a formula
+'@param formulaText Variant. A block answered by FormulaBlockOf.
+'@param index Long. Which entry to test.
+'@return Boolean. True when the text begins with an equals sign.
+Private Function LooksLikeFormula(ByVal formulaText As Variant, _
+                                  ByVal index As Long) As Boolean
+    LooksLikeFormula = (Left$(CStr(formulaText(index)), 1) = "=")
+End Function
 
 '@label:import-data
 '@sub-title Import data from HList and VList worksheets
@@ -280,14 +789,22 @@ End Sub
 'entries for sheets and variables not found in the current workbook.
 '@param impwb Workbook. The opened import workbook.
 '@param pasteAtBottom Boolean. When True, appends data below existing rows.
+'@param meta ImportMetadata. The metadata of that workbook. It says which row of
+'  a data sheet holds the variable names, which is row 2 for a file written with
+'  the labels above them.
 '@export
-Public Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
+Public Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean, _
+                      ByVal meta As ImportMetadata)
 
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim sheetsList As BetterArray
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Dim impsh As Worksheet
     Dim currsh As Worksheet
+    Dim headerRow As Long
+
+    headerRow = 1
+    If Not meta Is Nothing Then headerRow = meta.HeaderRow
 
     Set dict = SourceDictionary()
     Set sheetsList = dict.UniqueValues("sheet name")
@@ -315,15 +832,16 @@ Public Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
 
             Case "HList"
                 pass.UnProtect currsh.Name
-                ImportHListSheet currsh, impsh, pasteAtBottom
+                ImportHListSheet currsh, impsh, pasteAtBottom, headerRow
                 pass.Protect currsh.Name
 
             End Select
 
-            ' Recalculate after import
-            On Error Resume Next
-            currsh.UsedRange.Calculate
-            On Error GoTo 0
+            'NO CALCULATION HERE. It used to run currsh.UsedRange.Calculate per
+            'sheet, so a file carrying ten data sheets recalculated ten times
+            'while it was still being written to, and the save at the end paid
+            'another full pass on top. The walk calls RecalculateSheets once,
+            'after its last write. LinelistRun.HandleImportData is where.
 
         ElseIf Not IsReservedSheet(impsh.Name) Then
             ' Sheet from import not found in current workbook
@@ -337,54 +855,55 @@ End Sub
 '@label:import-custom-dropdown
 '@sub-title Import custom dropdown choices from the import workbook
 '@details
-'Reads custom dropdown ListObjects from the source workbook custom
-'dropdown sheet, matches them to choices in the import workbook Choices
-'sheet, and updates each dropdown with the imported values. Silently
-'exits when the import workbook has no Choices sheet or the custom
-'dropdown sheet does not exist.
+'Walks the dropdown registry of the source workbook, reads the values the
+'import workbook holds for each dropdown, and writes them back. Silently exits
+'when the import workbook has no Choices sheet or the custom dropdown sheet does
+'not exist.
+'
+'The walk goes through DropdownLists.AllDropdowns, so each name is the one the
+'registry holds and the one Update takes. Reading the ListObject names off the
+'worksheet instead is what used to break this: the generated name ends with the
+'workbook counter, cutting the five characters of "list_" off the front left
+'that counter attached, and the lookup missed for every dropdown ever created.
+'ChoiceKeys builds the key both ends of the round trip use.
 '@param impwb Workbook. The opened import workbook.
 '@param pasteAtBottom Boolean. When True, appends choices below existing entries.
 '@export
 Public Sub ImportCustomDropdown(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
 
-    Dim wkbNames As IHiddenNames
-    Dim choi As ILLChoices
-    Dim lo As ListObject
-    Dim drop As IDropdownLists
-    Dim dropsh As Worksheet
-    Dim listName As String
-    Dim choiceName As String
+    Dim choi As LLChoices
+    Dim drop As DropdownLists
+    Dim keys As ChoiceKeys
+    Dim dropNames As BetterArray
     Dim updateData As BetterArray
+    Dim listName As String
+    Dim counter As Long
 
-    If Not SheetExists(impwb, CHOICESSHEET) Then Exit Sub
+    If Not SheetExists(impwb, CHOICESSHEET) Then
+        FileChecking "custom dropdowns", _
+                     "The imported file has no Choices worksheet, so the custom " & _
+                     "dropdowns of this linelist are left as they are.", _
+                     checkingWarning
+        Exit Sub
+    End If
 
-    Set wkbNames = HiddenNames.Create(this.sourceWkb)
-
-    On Error Resume Next
-    Set dropsh = this.sourceWkb.Worksheets(wkbNames.ValueAsString("RNG_CustomDrop"))
-    On Error GoTo 0
-    If dropsh Is Nothing Then Exit Sub
+    Set drop = CustomDropdowns()
+    If drop Is Nothing Then Exit Sub
 
     Set choi = LLChoices.Create(impwb.Worksheets(CHOICESSHEET), 1, 1)
-    Set drop = DropdownLists.Create(dropsh, vbNullString)
-    Set updateData = New BetterArray
+    Set keys = ChoiceKeys.Create()
+    Set dropNames = drop.AllDropdowns
 
-    For Each lo In dropsh.ListObjects
+    For counter = dropNames.LowerBound To dropNames.UpperBound
 
-        updateData.Clear
-        listName = lo.Name
-        listName = Right$(listName, Len(listName) - 5)
-        choiceName = "__choice_custom_" & listName
-
-        On Error Resume Next
-        Set updateData = choi.Categories(choiceName)
-        On Error GoTo 0
+        listName = CStr(dropNames.Item(counter))
+        Set updateData = choi.Categories(keys.CustomChoiceName(listName))
 
         If updateData.Length > 0 Then
             drop.Update updateData, listName, pasteAtBottom
         End If
 
-    Next lo
+    Next counter
 End Sub
 
 
@@ -392,60 +911,52 @@ End Sub
 '===============================================================================
 
 '@label:import-show-hide
-'@sub-title Import show/hide visibility state from a migration workbook
+'@sub-title Import show/hide choices from a migration workbook
 '@details
-'Reads the show_hide_migration ListObject from the import workbook and
-'applies visibility and column/row sizes to each data sheet via
-'ShowHideManager.ImportForMigration. Silently skips when HasSameLanguage
-'returned False, when the import workbook lacks the required Metadata or
-'show_hide__ sheets, or when the metadata tag is not set to "update on
-'import".
+'Reads the show/hide table of the import workbook and puts each data sheet of
+'the running workbook in the state it describes: visibility, sizes and, on a
+'printed sheet, the direction of each header. Every layer a sheet has is
+'covered - HList and CRF for a data entry sheet, Printed for its companion,
+'VList for an info sheet.
+'
+'Two faults used to sit here. The visibility read out of the file was written
+'into memory and never reached a sheet, so nothing was ever hidden; and a blank
+'width cell was read as a width of zero and written to the sheet, which is how
+'Excel hides a column, so entries vanished for the opposite reason.
+'
+'Skips when The imported file has no show/hide sheet, and when its `show_hide` tag
+'asks for no update.
 '@param impwb Workbook. The opened migration workbook.
+'@param meta ImportMetadata. The metadata of that workbook.
 '@export
-Public Sub ImportShowHide(ByVal impwb As Workbook)
+Public Sub ImportShowHide(ByVal impwb As Workbook, ByVal meta As ImportMetadata)
 
-    Dim metaTab As IDataSheet
-    Dim varRng As Range
-    Dim cellRng As Range
-    Dim updateShowHide As Boolean
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim sheetNames As BetterArray
     Dim sheetName As String
     Dim sheetType As String
     Dim sh As Worksheet
     Dim printSh As Worksheet
-    Dim lo As ListObject
-    Dim shm As IShowHideManager
+    Dim crfSh As Worksheet
     Dim impsh As Worksheet
+    Dim impStore As ShowHideStore
+    Dim localStore As ShowHideStore
+    Dim skippedNames As BetterArray
     Dim counter As Long
 
     ' Prerequisites
-    If Not this.hasSameLanguage Then Exit Sub
-    If Not SheetExists(impwb, METADATASHEET) Then Exit Sub
-    If Not SheetExists(impwb, SHOWHIDESHEET) Then Exit Sub
+    If meta Is Nothing Then Exit Sub
+    If Not meta.UpdatesOnImport("show_hide") Then Exit Sub
 
-    ' Check metadata tag
-    Set metaTab = DataSheet.Create(impwb.Worksheets(METADATASHEET), 1, 1)
-    Set varRng = metaTab.DataRange("variable")
-    updateShowHide = False
+    ' The show/hide table of the file being imported
+    Set impsh = ShowHideSheetOf(impwb)
+    If impsh Is Nothing Then Exit Sub
+    Set impStore = ShowHideStore.CreateForRead(impsh)
+    If Not impStore.HasTable Then Exit Sub
 
-    On Error Resume Next
-    Set cellRng = varRng.Find(What:="show_hide", lookAt:=xlWhole, MatchCase:=False)
-    updateShowHide = (CStr(cellRng.Offset(, 1).Value) = "update on import")
-    On Error GoTo 0
-
-    If Not updateShowHide Then Exit Sub
-
-    ' Get show/hide ListObject from import workbook
-    Set impsh = impwb.Worksheets(SHOWHIDESHEET)
-    If impsh.ListObjects.Count = 0 Then Exit Sub
-    Set lo = impsh.ListObjects(1)
-
-    ' Build dictionary for ShowHideManager creation
     Set dict = SourceDictionary()
     Set sheetNames = dict.UniqueValues("sheet name")
 
-    ' For each data sheet, apply imported visibility
     For counter = sheetNames.LowerBound To sheetNames.UpperBound
         sheetName = sheetNames.Item(counter)
 
@@ -458,108 +969,219 @@ Public Sub ImportShowHide(ByVal impwb As Workbook)
         sheetType = SheetTagOf(sh)
 
         If sheetType = "HList" Then
-            ' HList layer
-            Set shm = ShowHideManager.Create(dict, ShowHideLayerHList, sheetName)
-            shm.ImportForMigration lo, sh
+            ApplyOneShowHideLayer impStore, dict, ShowHideLayerHList, sheetName, sh
 
-            ' Printed layer (companion print sheet)
-            Set printSh = Nothing
-            On Error Resume Next
-            Set printSh = this.sourceWkb.Worksheets("print_" & sheetName)
-            On Error GoTo 0
-
+            Set printSh = CompanionSheet(PRINTPREFIX & sheetName)
             If Not printSh Is Nothing Then
-                Set shm = ShowHideManager.Create(dict, ShowHideLayerPrinted, sheetName)
-                shm.ImportForMigration lo, printSh
+                ApplyOneShowHideLayer impStore, dict, ShowHideLayerPrinted, sheetName, printSh
+            End If
+
+            Set crfSh = CompanionSheet(CRFPREFIX & sheetName)
+            If Not crfSh Is Nothing Then
+                ApplyOneShowHideLayer impStore, dict, ShowHideLayerCRF, sheetName, crfSh
             End If
 
         ElseIf sheetType = "VList" Then
-            ' VList layer
-            Set shm = ShowHideManager.Create(dict, ShowHideLayerVList, sheetName)
-            shm.ImportForMigration lo, sh
+            ApplyOneShowHideLayer impStore, dict, ShowHideLayerVList, sheetName, sh
         End If
 
 NextShowHideSheet:
     Next counter
+
+    'The file's saved layouts come across too. A name both stores hold is
+    'taken from the file; a new name past the cap is skipped and reported.
+    On Error Resume Next
+    Set localStore = ShowHideStore.Create(this.sourceWkb)
+    On Error GoTo 0
+
+    If Not localStore Is Nothing Then
+        Set skippedNames = localStore.MergeLayoutsFrom(impStore)
+
+        If skippedNames.Length = 0 Then Exit Sub
+        For counter = skippedNames.LowerBound To skippedNames.UpperBound
+            FileChecking "show hide layout " & CStr(skippedNames.Item(counter)), _
+                         "The imported file has a saved layout named '" & _
+                         CStr(skippedNames.Item(counter)) & "', and this " & _
+                         "linelist already holds " & _
+                         CStr(localStore.MaxSavedLayouts) & " saved layouts, " & _
+                         "so it was left out. Delete a saved layout and " & _
+                         "import again to bring it in.", _
+                         checkingWarning
+        Next counter
+    End If
 End Sub
+
+'@label:apply-one-show-hide-layer
+'@sub-title Put one layer of one sheet in the state the file describes
+'@details
+'Load carries the sizes and the header directions onto the sheet, and Apply is
+'what actually hides and shows. The choices are written into this workbook's own
+'store as well, so they survive the next time it is opened.
+'@param impStore ShowHideStore. The store of the import workbook.
+'@param dict LLdictionary. The dictionary of the running workbook.
+'@param layer Byte. A ShowHideWorksheetLayer value. Which layer to apply.
+'@param sheetName String. The base sheet name.
+'@param targetSh Worksheet. The sheet of that layer in the running workbook.
+Private Sub ApplyOneShowHideLayer(ByVal impStore As ShowHideStore, _
+                                  ByVal dict As LLdictionary, _
+                                  ByVal layer As Byte, _
+                                  ByVal sheetName As String, _
+                                  ByVal targetSh As Worksheet)
+
+    Dim entries As ShowHide
+    Dim layout As ShowHideLayout
+    Dim ownStore As ShowHideStore
+    Dim tableName As String
+
+    Set entries = ShowHide.Create(dict, layer, sheetName)
+    If entries.EntryCount = 0 Then Exit Sub
+
+    tableName = BaseTableNameOf(targetSh)
+    Set layout = ShowHideLayout.Create(targetSh, layer, PasswordsObject(), tableName)
+
+    'The sizes come from the import file, and the sheet's state is unknown to
+    'the fresh list: write every size and every position.
+    impStore.Load entries, layout, writeSizes:=True
+    entries.Apply layout, force:=True
+
+    Set ownStore = OwnShowHideStore()
+    If Not ownStore Is Nothing Then ownStore.Save entries
+End Sub
+
+'@label:own-show-hide-store
+'@sub-title The show/hide store of the workbook being written into
+'@return ShowHideStore. The store, or Nothing when the workbook has no
+'  __show_hide worksheet.
+Private Function OwnShowHideStore() As ShowHideStore
+    On Error Resume Next
+    Set OwnShowHideStore = ShowHideStore.Create(this.sourceWkb)
+    On Error GoTo 0
+End Function
+
+'@label:companion-sheet
+'@sub-title Find a prefixed companion sheet of the running workbook
+'@param sheetName String. The full sheet name, prefix included.
+'@return Worksheet. The sheet, or Nothing when the workbook has none.
+Private Function CompanionSheet(ByVal sheetName As String) As Worksheet
+    On Error Resume Next
+    Set CompanionSheet = this.sourceWkb.Worksheets(sheetName)
+    On Error GoTo 0
+End Function
+
+'@label:base-table-name-of
+'@sub-title The table name a sheet's PRINTSTART anchor is named after
+'@details
+'A printed companion stores its table name with the print_ prefix in front and
+'the anchor is named after the base one, so the prefix comes off here.
+'@param sh Worksheet. The sheet to read.
+'@return String. The table name with no print_ prefix.
+Private Function BaseTableNameOf(ByVal sh As Worksheet) As String
+    Dim tableName As String
+
+    tableName = SheetTagOf(sh, "table_name")
+    If InStr(1, tableName, PRINTPREFIX, vbTextCompare) = 1 Then
+        tableName = Mid$(tableName, Len(PRINTPREFIX) + 1)
+    End If
+
+    BaseTableNameOf = tableName
+End Function
 
 '@label:import-editable-labels
 '@sub-title Import editable label values from a migration workbook
 '@details
 'Reads the import workbook dictionary for editable label values and
 'updates both the worksheet cells and dictionary entries in the source
-'workbook. Silently skips when HasSameLanguage returned False, the import
-'dictionary is not prepared, or the metadata tag is not set to "update on
-'import".
+'workbook. Skips when The imported file has no Dictionary sheet, when that
+'dictionary is not prepared, and when the `editable_labels` tag asks for no
+'update.
+'
+'ONE HIDDEN NAMES STORE PER SHEET
+'-------------------------------------------------------------------------------
+'The walk reads one name, table_name, off the sheet a variable lives on.
+'HiddenNames.Create walks every tracked name of that sheet and reads three
+'properties off each, and a data entry sheet holds hundreds of names. Built
+'inside the loop, a dictionary of 500 variables paid 500 of those walks for a
+'handful of sheets. The stores are held in a Collection keyed by sheet name, so
+'each sheet is walked once however many of its variables carry an editable
+'label.
+'QuickValue is not the answer here the way it is in SheetTagOf: this walk asks
+'the same sheet again and again, which is the case the instance is for.
+'
+'THE DICTIONARY COLUMNS ARE READ AS BLOCKS
+'-------------------------------------------------------------------------------
+'The walk used to make four LLVariables.Value calls per variable, plus one cell
+'read of the name column, and each of those calls costs two crossings. Both
+'dictionaries are read as blocks now, once, and every question below is answered
+'from memory. LLVariables stays for the WRITE alone.
+'The current dictionary answers at the row the walk is standing on rather than
+'through a name lookup. For a name that appears twice, LLVariables.Value would
+'answer with the first row of the pair both times round; reading the row in hand
+'is what the loop meant. LLdictionary.UniqueVarNames makes the names unique
+'during preparation, so neither shape has anything to do in practice.
 '@param impwb Workbook. The opened migration workbook.
+'@param meta ImportMetadata. The metadata of that workbook.
 '@export
-Public Sub ImportEditableLabels(ByVal impwb As Workbook)
+Public Sub ImportEditableLabels(ByVal impwb As Workbook, ByVal meta As ImportMetadata)
 
-    Dim metaTab As IDataSheet
-    Dim varRng As Range
     Dim cellRng As Range
-    Dim updateLabels As Boolean
-    Dim dict As ILLdictionary
-    Dim inpDict As ILLdictionary
-    Dim currVars As ILLVariables
-    Dim inpVars As ILLVariables
+    Dim dict As LLdictionary
+    Dim inpDict As LLdictionary
+    Dim currVars As LLVariables
+    Dim currBlocks As TDictBlocks
+    Dim inpBlocks As TDictBlocks
     Dim counter As Long
+    Dim inpRow As Long
     Dim varName As String
     Dim newLabel As String
     Dim sheetName As String
     Dim sheetInfo As String
     Dim sh As Worksheet
     Dim colIndex As Long
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
+    Dim heldNames As Collection
 
     ' Prerequisites
-    If Not this.hasSameLanguage Then Exit Sub
-    If Not SheetExists(impwb, METADATASHEET) Then Exit Sub
+    If meta Is Nothing Then Exit Sub
+    If Not meta.UpdatesOnImport("editable_labels") Then Exit Sub
     If Not SheetExists(impwb, DICTIONARYSHEET) Then Exit Sub
 
     ' Check imported dictionary is prepared
     Set inpDict = LLdictionary.Create(impwb.Worksheets(DICTIONARYSHEET), 1, 1)
     If Not inpDict.Prepared Then Exit Sub
 
-    ' Check metadata tag
-    Set metaTab = DataSheet.Create(impwb.Worksheets(METADATASHEET), 1, 1)
-    Set varRng = metaTab.DataRange("variable")
-    updateLabels = False
-
-    On Error Resume Next
-    Set cellRng = varRng.Find(What:="editable_labels", lookAt:=xlWhole, MatchCase:=False)
-    updateLabels = (CStr(cellRng.Offset(, 1).Value) = "update on import")
-    On Error GoTo 0
-
-    If Not updateLabels Then Exit Sub
-
-    ' Build variables objects
+    ' The reader for the write, and the blocks for every read
     Set dict = SourceDictionary()
     Set currVars = LLVariables.Create(dict)
-    Set inpVars = LLVariables.Create(inpDict)
-    Set varRng = dict.DataRange("variable name")
 
-    For counter = 1 To varRng.Rows.Count
-        varName = CStr(varRng.Cells(counter, 1).Value)
+    ReadDictBlocks dict, currBlocks
+    If currBlocks.rowCount = 0 Then Exit Sub
+    ReadDictBlocks inpDict, inpBlocks
+
+    Set heldNames = New Collection
+
+    For counter = 1 To currBlocks.rowCount
+        varName = BlockText(currBlocks.names, counter)
+        If LenB(varName) = 0 Then GoTo NextLabel
 
         ' Skip variables not in import dictionary
-        If Not inpVars.Contains(varName) Then GoTo NextLabel
+        inpRow = BlockRowOf(inpBlocks, varName)
+        If inpRow = 0 Then GoTo NextLabel
         ' Skip non-editable labels
-        If currVars.Value(varName:=varName, colName:="editable label") <> "yes" Then GoTo NextLabel
+        If BlockText(currBlocks.editableLabels, counter) <> "yes" Then GoTo NextLabel
 
         ' Get the new label from import
-        newLabel = inpVars.Value(varName:=varName, colName:="main label")
+        newLabel = BlockText(inpBlocks.mainLabels, inpRow)
 
         ' Get column/row index
         colIndex = 0
         On Error Resume Next
-        colIndex = CLng(currVars.Value(varName:=varName, colName:="column index"))
+        colIndex = CLng(BlockText(currBlocks.columnIndexes, counter))
         On Error GoTo 0
         If colIndex = 0 Then GoTo NextLabel
 
         ' Get sheet and type
-        sheetName = currVars.SheetName(varName)
-        sheetInfo = currVars.Value(varName:=varName, colName:="sheet type")
+        sheetName = BlockText(currBlocks.sheetNames, counter)
+        sheetInfo = BlockText(currBlocks.sheetTypes, counter)
 
         Set sh = Nothing
         On Error Resume Next
@@ -568,7 +1190,7 @@ Public Sub ImportEditableLabels(ByVal impwb As Workbook)
         If sh Is Nothing Then GoTo NextLabel
 
         ' Update label in worksheet
-        Set shHn = HiddenNames.Create(sh)
+        Set shHn = HeldSheetNames(heldNames, sh)
         Set cellRng = Nothing
         On Error Resume Next
         Set cellRng = sh.Range(shHn.ValueAsString("table_name") & "_START")
@@ -591,55 +1213,102 @@ End Sub
 '@label:import-single-values
 '@sub-title Import single metadata values from a migration workbook
 '@details
-'Reads the epiweek start value from the import workbook Metadata sheet
-'and updates the RNG_EpiWeekStart named range in the source workbook.
-'Silently skips when HasSameLanguage returned False or the Metadata
-'sheet is missing.
-'@param impwb Workbook. The opened migration workbook.
+'Takes the epiweek start value The imported file has and writes it into the
+'RNG_EpiWeekStart hidden name of the source workbook, then recalculates every
+'sheet that carries an epiweek formula. Skips when the file names no value.
+'
+'THE NAME HAS NO RANGE BEHIND IT
+'-------------------------------------------------------------------------------
+'RNG_EpiWeekStart is a HiddenNames entry and HiddenNames writes a string as a
+'quoted literal in the name definition. So the name exists, Names(...) finds it,
+'and asking that name for a range raises 1004. The write used to go through
+'Names(RNG_EpiWeekStart).RefersToRange.Value under a swallow, which means the
+'value has never once landed. The store is what answers it, the same way
+'FormLogicEpiWeek and CustomLinelistFunctions already read and write it.
+'@param meta ImportMetadata. The metadata of the workbook being imported.
 '@export
-Public Sub ImportSingleValues(ByVal impwb As Workbook)
+Public Sub ImportSingleValues(ByVal meta As ImportMetadata)
 
-    Dim metaTab As IDataSheet
-    Dim varRng As Range
-    Dim cellRng As Range
+    Dim wkbNames As HiddenNames
     Dim varValue As String
 
-    If Not this.hasSameLanguage Then Exit Sub
-    If Not SheetExists(impwb, METADATASHEET) Then Exit Sub
+    If meta Is Nothing Then Exit Sub
 
-    Set metaTab = DataSheet.Create(impwb.Worksheets(METADATASHEET), 1, 1)
-    Set varRng = metaTab.DataRange("variable")
+    varValue = meta.EpiWeekStart
+    If LenB(varValue) = 0 Then Exit Sub
 
-    ' Retrieve and update epiweek start
-    varValue = vbNullString
-    On Error Resume Next
-    Set cellRng = varRng.Find(What:="epiweekstart", lookAt:=xlWhole, MatchCase:=False)
-    varValue = CStr(cellRng.Offset(, 1).Value)
-    On Error GoTo 0
+    Set wkbNames = HiddenNames.Create(this.sourceWkb)
+    wkbNames.SetValue RNGEPIWEEKSTART, varValue
 
-    If LenB(varValue) > 0 Then
-        On Error Resume Next
-        this.sourceWkb.Names(RNGEPIWEEKSTART).RefersToRange.Value = varValue
-        On Error GoTo 0
-    End If
+    'NO CALCULATION HERE EITHER, and this one has a reader to warn. The epiweek
+    'and date functions of CustomLinelistFunctions are deliberately not
+    'volatile: they read RNG_EpiWeekStart, and what used to bring Excel back to
+    'them after this write was the RecalculateEpiWeekSheets call that stood on
+    'this line. The walk runs the same pass once at its end instead, so the
+    'guarantee is unchanged and the note in CustomLinelistFunctions names the
+    'new caller. A future caller of ImportSingleValues that is NOT the import
+    'walk has to call RecalculateSheets itself.
+End Sub
+
+'@label:recalculate-sheets
+'@sub-title Recompute every data and analysis sheet, once
+'@details
+'THE ONE CALCULATION OF A WALK. ClearData calls it when it has emptied the last
+'sheet, and LinelistRun.HandleImportData calls it after its last write and
+'before the busy state goes back. It used to run per sheet inside ImportData,
+'per table and per VList sheet inside ClearData, and once more from
+'ImportSingleValues, so one import recalculated the workbook many times over.
+'
+'WHY THE LIST OF TAGS IS WHAT IT IS
+'-------------------------------------------------------------------------------
+'Every epiweek formula reads RNG_EpiWeekStart, and the date and validation
+'functions of CustomLinelistFunctions carry no Application.Volatile call on
+'purpose -- the note at the head of that module says so, and says that this pass
+'is what brings Excel back to them. So the tags here have to keep covering every
+'sheet that can hold one of those formulas. FormLogicEpiWeek runs the same list
+'after the user picks a day.
+'@export
+Public Sub RecalculateSheets()
+
+    Dim sh As Worksheet
+    Dim tagValues As BetterArray
+
+    Set tagValues = New BetterArray
+    tagValues.Push "HList", "VList", "TS-Analysis", "SP-Analysis", _
+                   "Uni-Bi-Analysis", "SPT-Analysis"
+
+    For Each sh In this.sourceWkb.Worksheets
+        If tagValues.Includes(SheetTagOf(sh)) Then
+            On Error Resume Next
+            sh.UsedRange.Calculate
+            On Error GoTo 0
+        End If
+    Next sh
 End Sub
 
 '@label:import-geobase
 '@sub-title Import geobase data from a workbook
 '@details
 'Delegates to LLGeo.Import to load geobase data. When not histoOnly,
-'also updates geobase headers in HList worksheets via geo.Update,
-'dictionary geo labels via geo.UpdateDict, and show/hide tables for geo
-'variables via geo.UpdateShowHide.
+'also updates geobase headers in HList worksheets via geo.Update and
+'dictionary geo labels via geo.UpdateDict.
+'
+'THE SHOW/HIDE SHEET IS NOT TOUCHED
+'-------------------------------------------------------------------------------
+'A third call used to write the geo labels into per-sheet tables on the
+'show/hide worksheet. Those tables belonged to the first show/hide design and
+'ShowHideStore deletes them on sight now, so the call read a sheet carrying
+'only the store''s own table and raised 91 on every import. The label reaches
+'the form on its own: ShowHide composes it from the dictionary main label that
+'geo.UpdateDict has just rewritten, every time the form is built.
 '@param impwb Workbook. The opened geobase workbook.
 '@param histoOnly Optional Boolean. When True, imports only historic geobase data. Defaults to False.
 '@export
 Public Sub ImportGeobase(ByVal impwb As Workbook, Optional ByVal histoOnly As Boolean = False)
 
-    Dim geo As ILLGeo
-    Dim dict As ILLdictionary
-    Dim pass As IPasswords
-    Dim showHideSh As Worksheet
+    Dim geo As LLGeo
+    Dim dict As LLdictionary
+    Dim pass As Passwords
 
     Set geo = GeoObject()
     geo.Import impwb, histoOnly
@@ -652,18 +1321,311 @@ Public Sub ImportGeobase(ByVal impwb As Workbook, Optional ByVal histoOnly As Bo
         geo.Update pass
         ' Update dictionary geo variable labels
         geo.UpdateDict dict
-
-        ' Update show/hide geo variables
-        Set showHideSh = Nothing
-        On Error Resume Next
-        Set showHideSh = this.sourceWkb.Worksheets(SHOWHIDESHEET)
-        On Error GoTo 0
-
-        If Not showHideSh Is Nothing Then
-            geo.UpdateShowHide showHideSh, dict
-        End If
     End If
 End Sub
+
+
+'@section Comparing the two files
+'===============================================================================
+
+'@label:compare-with-import-file
+'@sub-title Compare the labels and the choice lists of the two files
+'@details
+'Walks the dictionary of this linelist and, for every variable the file also
+'carries, files a warning when the two disagree about the label or about the
+'values a choice variable may take.
+'
+'WHY THE CHOICE LISTS MATTER MORE THAN THE LABELS
+'-------------------------------------------------------------------------------
+'A data validation dropdown does not block a programmatic write. CustomTable
+'writes the imported column straight into the cells, so a value the receiving
+'linelist does not offer lands in the cell and stays there: the cell shows
+'something no dropdown can produce, the next hand edit of it is rejected, and
+'every analysis grouping by that variable gains a category the setup never
+'declared. None of that used to appear anywhere.
+'
+'Run this after ImportData, so the sheets that were touched are known.
+'@param impwb Workbook. The opened import workbook.
+'@export
+Public Sub CompareWithImportFile(ByVal impwb As Workbook)
+
+    Dim inpDict As LLdictionary
+    Dim currBlocks As TDictBlocks
+    Dim inpBlocks As TDictBlocks
+    Dim currChoi As LLChoices
+    Dim impChoi As LLChoices
+    Dim drop As DropdownLists
+    Dim varName As String
+    Dim counter As Long
+    Dim inpRow As Long
+
+    If Not SheetExists(impwb, DICTIONARYSHEET) Then Exit Sub
+
+    Set inpDict = LLdictionary.Create(impwb.Worksheets(DICTIONARYSHEET), 1, 1)
+    If Not inpDict.Prepared Then
+        FileChecking "import dictionary", _
+                     "The Dictionary worksheet of the file has never been " & _
+                     "prepared, so the labels and the choice lists of the two " & _
+                     "files cannot be compared.", _
+                     checkingWarning
+        Exit Sub
+    End If
+
+    'Both dictionaries as blocks, eight crossings each. The walk used to ask
+    'LLVariables for the sheet name, the label, the control and the control
+    'details of every variable on both files, and every one of those answers
+    'cost a header check and a cell read.
+    ReadDictBlocks SourceDictionary(), currBlocks
+    If currBlocks.rowCount = 0 Then Exit Sub
+    ReadDictBlocks inpDict, inpBlocks
+
+    Set currChoi = ChoicesOf(this.sourceWkb)
+    Set impChoi = ChoicesOf(impwb)
+    Set drop = CustomDropdowns()
+
+    For counter = 1 To currBlocks.rowCount
+        'A blank name is not a variable. LLVariables.VariableNames left those
+        'rows out of the list this loop used to walk.
+        varName = BlockText(currBlocks.names, counter)
+
+        If LenB(varName) > 0 Then
+            inpRow = BlockRowOf(inpBlocks, varName)
+
+            If inpRow > 0 Then
+                If SheetWasImported(BlockText(currBlocks.sheetNames, counter)) Then
+                    CompareOneLabel varName, _
+                                    BlockText(currBlocks.mainLabels, counter), _
+                                    BlockText(inpBlocks.mainLabels, inpRow)
+                    CompareOneChoiceList varName, _
+                                         BlockText(currBlocks.controls, counter), _
+                                         BlockText(currBlocks.controlDetails, counter), _
+                                         BlockText(inpBlocks.controlDetails, inpRow), _
+                                         currChoi, impChoi, drop
+                End If
+            End If
+        End If
+    Next counter
+End Sub
+
+'@label:sheet-was-imported
+'@sub-title Whether one sheet of this linelist took data from the file
+'@details
+'A comparison run on its own, with no import before it, has no list of touched
+'sheets and answers True for every sheet.
+'@param sheetName String. The sheet to test.
+'@return Boolean. True when the sheet is worth comparing.
+Private Function SheetWasImported(ByVal sheetName As String) As Boolean
+    If this.importedSheets Is Nothing Then
+        SheetWasImported = True
+        Exit Function
+    End If
+    If this.importedSheets.Length = 0 Then
+        SheetWasImported = True
+        Exit Function
+    End If
+
+    SheetWasImported = this.importedSheets.Includes(sheetName)
+End Function
+
+'@label:compare-one-label
+'@sub-title File a warning when the two files give a variable different labels
+'@details
+'Both labels are read out of the blocks by the caller, so this routine reaches
+'no worksheet.
+'@param varName String. The variable to compare.
+'@param currLabel String. The label this linelist carries.
+'@param impLabel String. The label The imported file has.
+Private Sub CompareOneLabel(ByVal varName As String, _
+                            ByVal currLabel As String, _
+                            ByVal impLabel As String)
+
+    If LenB(impLabel) = 0 Then Exit Sub
+    If StrComp(Trim$(currLabel), Trim$(impLabel), vbBinaryCompare) = 0 Then Exit Sub
+
+    FileChecking "label of " & varName, _
+                 "The label of " & varName & " differs. This linelist reads " & _
+                 Chr$(34) & currLabel & Chr$(34) & " and the file was written " & _
+                 "with " & Chr$(34) & impLabel & Chr$(34) & ".", _
+                 checkingWarning
+End Sub
+
+'@label:compare-one-choice-list
+'@sub-title File a warning when the two files offer a choice variable different values
+'@details
+'`choice_formula` is left alone: its list name is computed from a formula and
+'the routine that reads that formula lives in the setup, which a linelist does
+'not carry.
+'The control value and the two list names are read out of the blocks by the
+'caller, so the only worksheets this routine reaches are the choice lists.
+'@param varName String. The variable to compare.
+'@param controlText String. The `control` cell of this linelist, as written.
+'@param currList String. The `control details` of this linelist.
+'@param impList String. The `control details` The imported file has.
+'@param currChoi LLChoices. The Choices worksheet of this linelist.
+'@param impChoi LLChoices. The Choices worksheet of the imported file.
+'@param drop DropdownLists. The custom dropdowns of this linelist.
+Private Sub CompareOneChoiceList(ByVal varName As String, _
+                                 ByVal controlText As String, _
+                                 ByVal currList As String, _
+                                 ByVal impList As String, _
+                                 ByVal currChoi As LLChoices, _
+                                 ByVal impChoi As LLChoices, _
+                                 ByVal drop As DropdownLists)
+
+    Dim controlValue As String
+    Dim currCats As BetterArray
+    Dim impCats As BetterArray
+    Dim keys As ChoiceKeys
+    Dim onlyImport As String
+    Dim onlyCurrent As String
+
+    If impChoi Is Nothing Then Exit Sub
+
+    controlValue = LCase$(Trim$(controlText))
+    If controlValue <> "choice_manual" Then
+        If controlValue <> "choice_multiple" Then
+            If controlValue <> "choice_custom" Then Exit Sub
+        End If
+    End If
+
+    If LenB(currList) = 0 Then Exit Sub
+    If LenB(impList) = 0 Then Exit Sub
+
+    Set keys = ChoiceKeys.Create()
+
+    If controlValue = "choice_custom" Then
+        ' The values of a custom dropdown live on the dropdown worksheet in this
+        ' linelist and on the Choices worksheet in the file.
+        If drop Is Nothing Then Exit Sub
+        Set currCats = drop.Values(currList)
+        Set impCats = impChoi.Categories(keys.CustomChoiceName(impList))
+    Else
+        If currChoi Is Nothing Then Exit Sub
+        Set currCats = currChoi.Categories(currList)
+        Set impCats = impChoi.Categories(impList)
+    End If
+
+    If currCats.Length = 0 Then Exit Sub
+    If impCats.Length = 0 Then Exit Sub
+
+    onlyImport = ValuesMissingFrom(impCats, currCats)
+    onlyCurrent = ValuesMissingFrom(currCats, impCats)
+
+    If LenB(onlyImport) > 0 Then
+        FileChecking "choices of " & varName, _
+                     "The imported file has dropdown values for " & varName & " that the current " & _
+                     "linelist does not: " & onlyImport & ". Imported rows will " & _
+                     "carry them, but they are not in any dropdown of this linelist.", _
+                     checkingWarning
+    End If
+
+    If LenB(onlyCurrent) > 0 Then
+        FileChecking "choices of " & varName & " are missing from the imported file", _
+                     "This linelist has dropdown values for " & varName & " that the " & _
+                     "imported file does not have: " & onlyCurrent & ".", _
+                     checkingWarning
+    End If
+End Sub
+
+'@label:values-missing-from
+'@sub-title The values of one list that the other does not hold
+'@details
+'Values are matched exactly. Case counts, and so do the spaces around a value,
+'because a cell holds them and a dropdown is built from them: a list carrying
+'"Yes " turns down a hand edit that types "Yes", and a linelist offering "yes"
+'against a file offering "Yes" is a setup fault the user has to see. A value
+'that is only spaces is skipped, because it names no category. Every value is
+'shown inside quotes, so a space at either end shows in the message. The list
+'is capped, because a user reads a handful and the count tells them the size.
+'@param source BetterArray. The list to walk.
+'@param other BetterArray. The list to look each value up in.
+'@return String. The missing values, joined, empty when there are none.
+Private Function ValuesMissingFrom(ByVal source As BetterArray, _
+                                   ByVal other As BetterArray) As String
+
+    Const MAX_SHOWN As Long = 10
+
+    Dim missing As BetterArray
+    Dim oneValue As String
+    Dim counter As Long
+    Dim shown As Long
+    Dim answer As String
+
+    Set missing = New BetterArray
+    missing.LowerBound = 1
+
+    For counter = source.LowerBound To source.UpperBound
+        oneValue = CStr(source.Item(counter))
+        If LenB(Trim$(oneValue)) > 0 Then
+            If Not HoldsValue(other, oneValue) Then missing.Push oneValue
+        End If
+    Next counter
+
+    If missing.Length = 0 Then Exit Function
+
+    shown = missing.Length
+    If shown > MAX_SHOWN Then shown = MAX_SHOWN
+
+    For counter = missing.LowerBound To missing.LowerBound + shown - 1
+        If LenB(answer) > 0 Then answer = answer & ", "
+        answer = answer & Chr$(34) & CStr(missing.Item(counter)) & Chr$(34)
+    Next counter
+
+    If missing.Length > shown Then
+        answer = answer & " and " & CStr(missing.Length - shown) & " more"
+    End If
+
+    ValuesMissingFrom = answer
+End Function
+
+'@label:holds-value
+'@sub-title Whether a list holds one value, matched exactly
+'@details
+'Two values are the same when they carry the same letters, in the same case,
+'with the same spaces around them.
+'@param listValues BetterArray. The list to search.
+'@param oneValue String. The value to look for.
+'@return Boolean. True when the list holds it.
+Private Function HoldsValue(ByVal listValues As BetterArray, _
+                            ByVal oneValue As String) As Boolean
+
+    Dim counter As Long
+
+    For counter = listValues.LowerBound To listValues.UpperBound
+        If StrComp(CStr(listValues.Item(counter)), oneValue, vbBinaryCompare) = 0 Then
+            HoldsValue = True
+            Exit Function
+        End If
+    Next counter
+End Function
+
+'@label:choices-of
+'@sub-title The Choices worksheet of one workbook
+'@param wb Workbook. The workbook to read.
+'@return LLChoices. The choices, or Nothing when the workbook carries none.
+Private Function ChoicesOf(ByVal wb As Workbook) As LLChoices
+    If Not SheetExists(wb, CHOICESSHEET) Then Exit Function
+    Set ChoicesOf = LLChoices.Create(wb.Worksheets(CHOICESSHEET), 1, 1)
+End Function
+
+'@label:custom-dropdowns
+'@sub-title The custom dropdown manager of this linelist
+'@return DropdownLists. The manager, or Nothing when the workbook has no custom
+'  dropdown worksheet.
+Private Function CustomDropdowns() As DropdownLists
+
+    Dim wkbNames As HiddenNames
+    Dim dropsh As Worksheet
+
+    Set wkbNames = HiddenNames.Create(this.sourceWkb)
+
+    On Error Resume Next
+    Set dropsh = this.sourceWkb.Worksheets(wkbNames.ValueAsString("RNG_CustomDrop"))
+    On Error GoTo 0
+    If dropsh Is Nothing Then Exit Function
+
+    Set CustomDropdowns = DropdownLists.Create(dropsh, vbNullString)
+End Function
 
 
 '@section Import Report
@@ -690,8 +1652,8 @@ End Property
 '@export
 Public Sub FinalizeReport()
 
-    Dim dict As ILLdictionary
-    Dim vars As ILLVariables
+    Dim dict As LLdictionary
+    Dim vars As LLVariables
     Dim sheetsList As BetterArray
     Dim currVarsList As BetterArray
     Dim sheetName As String
@@ -723,7 +1685,12 @@ Public Sub FinalizeReport()
         ' Only check variables on sheets that were touched
         If this.sheetsNotTouched.Includes(sheetName) Then GoTo NextReportSheet
 
-        Set currVarsList = dict.Data.FilterData("sheet name", sheetName, "variable name")
+        'matchCase defaults to True on FilterData, and a dictionary whose
+        'headers carry the setup file's own capitals then raises
+        'ElementNotFound out of a column that is plainly there. A header name
+        'is a contract resolved by name; its case decides nothing.
+        Set currVarsList = dict.Data.FilterData("sheet name", sheetName, _
+                                                "variable name", matchCase:=False)
 
         For varCounter = currVarsList.LowerBound To currVarsList.UpperBound
             varName = CStr(currVarsList.Item(varCounter))
@@ -740,6 +1707,106 @@ Public Sub FinalizeReport()
         Next varCounter
 
 NextReportSheet:
+    Next counter
+
+    FileReportCheckings
+    SaveReport
+End Sub
+
+'@label:save-report
+'@sub-title Keep the report where it survives the workbook closing
+'@details
+'The four lists used to live in memory alone and die with this object at the end
+'of the import, while the four ListObjects they belong on sat on __import_rep
+'with nothing writing to them. They are written now, so F_ImportRep can be
+'opened again days later from the advanced form.
+'
+'A workbook that will not take the store - anything other than a generated
+'linelist - leaves the lists in memory and says so.
+Private Sub SaveReport()
+
+    Dim store As ImportReport
+    Dim errNumber As Long
+    Dim errMessage As String
+
+    Set store = Nothing
+
+    'Keeping the report is best effort from end to end. A workbook that will
+    'not take the store, a worksheet that will not take a ListObject, a table
+    'that will not resize - none of them is a reason to fail an import whose
+    'data has already landed. What went wrong is filed for the user instead.
+    On Error Resume Next
+        Set store = ImportReport.Create(this.sourceWkb)
+
+        If Not store Is Nothing Then
+            store.SaveSheets ImportReportNotImported, this.sheetsNotImported
+            store.SaveSheets ImportReportNotTouched, this.sheetsNotTouched
+            store.SaveVariables ImportReportNotImported, this.varsNotImported
+            store.SaveVariables ImportReportNotTouched, this.varsNotTouched
+        End If
+
+        errNumber = Err.Number
+        errMessage = Err.Description
+    On Error GoTo 0
+
+    If store Is Nothing Or errNumber <> 0 Then
+        FileChecking "import report store", _
+                     "The report of this import could not be kept in the " & _
+                     "workbook, so it is gone once this workbook closes. " & _
+                     errMessage, _
+                     checkingWarning
+    End If
+End Sub
+
+'@label:file-report-checkings
+'@sub-title Put the four report lists where the user can read them
+'@details
+'The four lists are the report the form shows. They are filed as checkings as
+'well, so one worksheet carries everything the import found and the user can
+'read it without opening a form.
+Private Sub FileReportCheckings()
+
+    Dim counter As Long
+    Dim entry As Variant
+
+    If this.sheetsNotImported Is Nothing Then Set this.sheetsNotImported = New BetterArray
+    If this.sheetsNotTouched Is Nothing Then Set this.sheetsNotTouched = New BetterArray
+    If this.varsNotImported Is Nothing Then Set this.varsNotImported = New BetterArray
+    If this.varsNotTouched Is Nothing Then Set this.varsNotTouched = New BetterArray
+
+    For counter = this.sheetsNotImported.LowerBound To this.sheetsNotImported.UpperBound
+        FileChecking "sheet not imported: " & CStr(this.sheetsNotImported.Item(counter)), _
+                     "The imported file has a worksheet named " & _
+                     CStr(this.sheetsNotImported.Item(counter)) & _
+                     " and this linelist has none, so none of its data was read.", _
+                     checkingWarning
+    Next counter
+
+    For counter = this.sheetsNotTouched.LowerBound To this.sheetsNotTouched.UpperBound
+        FileChecking "sheet not touched: " & CStr(this.sheetsNotTouched.Item(counter)), _
+                     "The worksheet " & CStr(this.sheetsNotTouched.Item(counter)) & _
+                     " of this linelist took no data, because The imported file has " & _
+                     "no worksheet of that name.", _
+                     checkingWarning
+    Next counter
+
+    For counter = this.varsNotImported.LowerBound To this.varsNotImported.UpperBound
+        entry = this.varsNotImported.Item(counter)
+        FileChecking "variable not imported: " & CStr(entry(LBound(entry))), _
+                     "The imported file has a variable named " & _
+                     CStr(entry(LBound(entry))) & " on " & _
+                     CStr(entry(LBound(entry) + 1)) & " and this linelist has " & _
+                     "none, so its values were dropped.", _
+                     checkingWarning
+    Next counter
+
+    For counter = this.varsNotTouched.LowerBound To this.varsNotTouched.UpperBound
+        entry = this.varsNotTouched.Item(counter)
+        FileChecking "variable not touched: " & CStr(entry(LBound(entry))), _
+                     "The variable " & CStr(entry(LBound(entry))) & " on " & _
+                     CStr(entry(LBound(entry) + 1)) & " took no data, because " & _
+                     "The imported file has no variable of that name.", _
+                     checkingWarning
     Next counter
 End Sub
 
@@ -812,8 +1879,9 @@ End Function
 '@label:clear-report
 '@sub-title Reset report state
 '@details
-'Clears all report tracking arrays and resets the needReport flag. Call
-'before starting a new import session to ensure a clean report.
+'Clears all report tracking arrays, drops the diagnostics, and resets the
+'needReport flag. Call before starting a new import session to ensure a clean
+'report.
 '@export
 Public Sub ClearReport()
     this.needReport = False
@@ -823,6 +1891,7 @@ Public Sub ClearReport()
     Set this.varsNotTouched = New BetterArray
     Set this.importedSheets = New BetterArray
     Set this.importedVars = New BetterArray
+    Set this.checks = Nothing
 End Sub
 
 
@@ -831,23 +1900,23 @@ End Sub
 
 '@label:source-dictionary
 '@sub-title Get the dictionary from the source workbook
-'@return ILLdictionary. Dictionary instance from the Dictionary sheet.
-Private Function SourceDictionary() As ILLdictionary
+'@return LLdictionary. Dictionary instance from the Dictionary sheet.
+Private Function SourceDictionary() As LLdictionary
     Set SourceDictionary = LLdictionary.Create( _
         this.sourceWkb.Worksheets(DICTIONARYSHEET), 1, 1)
 End Function
 
 '@label:passwords-object
 '@sub-title Get passwords from the source workbook
-'@return IPasswords. Passwords instance from the __pass sheet.
-Private Function PasswordsObject() As IPasswords
+'@return Passwords. Passwords instance from the __pass sheet.
+Private Function PasswordsObject() As Passwords
     Set PasswordsObject = Passwords.Create(this.sourceWkb.Worksheets(PASSWORDSHEET))
 End Function
 
 '@label:geo-object
 '@sub-title Get the geo object from the source workbook
-'@return ILLGeo. Geo instance from the Geo sheet.
-Private Function GeoObject() As ILLGeo
+'@return LLGeo. Geo instance from the Geo sheet.
+Private Function GeoObject() As LLGeo
     Set GeoObject = LLGeo.Create(this.sourceWkb.Worksheets(GEOSHEET))
 End Function
 
@@ -857,6 +1926,10 @@ End Function
 
 '@label:initialize-tracking
 '@sub-title Initialize tracking state for a new import session
+'@details
+'The two "not touched" lists are left alone because FinalizeReport replaces
+'them, and the diagnostics are left alone because CheckImportFile runs before
+'this and its entries belong to the same import.
 Private Sub InitializeTracking()
     this.needReport = False
     Set this.sheetsNotImported = New BetterArray
@@ -875,29 +1948,75 @@ Private Function IsReservedSheet(ByVal sheetName As String) As Boolean
                       (sheetName = LINELISTTRANSLATIONSHEET) Or _
                       (sheetName = CHOICESSHEET) Or _
                       (sheetName = METADATASHEET) Or _
-                      (sheetName = SHOWHIDESHEET)
+                      (sheetName = SHOWHIDESHEET) Or _
+                      (sheetName = SHOWHIDESHEET_OLD)
+End Function
+
+'@label:show-hide-sheet-of
+'@sub-title The show/hide worksheet of a workbook, or Nothing
+'@details
+'A file written before the internal-sheet rename carries the old trailing
+'name, so the new name is looked for first and the old one answers when it
+'is absent.
+'@param wb Workbook. The workbook to look through.
+'@return Worksheet. The show/hide worksheet, or Nothing when the workbook has none.
+Private Function ShowHideSheetOf(ByVal wb As Workbook) As Worksheet
+    Dim sh As Worksheet
+
+    'A missing sheet raises on the read, and Nothing is the answer read back.
+    On Error Resume Next
+    Set sh = wb.Worksheets(SHOWHIDESHEET)
+    If sh Is Nothing Then Set sh = wb.Worksheets(SHOWHIDESHEET_OLD)
+    On Error GoTo 0
+
+    Set ShowHideSheetOf = sh
 End Function
 
 '@label:import-vlist-sheet
 '@sub-title Import VList data from a single import sheet to the current sheet
 '@details
-'Iterates over the import sheet used range rows, resolving each variable
-'name to a named range on the current sheet. Copies the value when the
-'target cell has no formula. Tracks variables not found as "not imported"
-'report entries.
+'Walks the rows of the import sheet, resolves each variable name to a named
+'range on the current sheet and copies the value across when the target cell
+'holds no formula. A name the sheet has no range for is filed as "not imported".
+'
+'THE FILE IS READ IN ONE BLOCK
+'-------------------------------------------------------------------------------
+'It used to read usedRng.Cells(counter, 1).Value and usedRng.Cells(counter, 2)
+'.Value off the worksheet a row at a time, so a VList of 300 variables paid 600
+'crossings to read a file it could have read in one. The block is read once and
+'the walk answers from the array; the writes stay one per variable, because each
+'one lands on a named cell of its own somewhere on the sheet.
+'
+'The block is indexed the way usedRng.Cells was, relative to the top left of the
+'used range rather than to A1, so a file whose used range does not start at A1
+'is read exactly where it was read before.
+'
+'A file of one row carries its header and nothing else, and a file of one column
+'carries names with no value column beside them. Range.Value answers a scalar
+'for the first and the walk never starts; the second used to read the cell to
+'the right of the used range, which is empty, so an absent value column reads as
+'an empty value here too.
 '@param currsh Worksheet. The current source VList worksheet.
 '@param impsh Worksheet. The import VList worksheet.
 Private Sub ImportVListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet)
 
     Dim usedRng As Range
     Dim vlistRng As Range
+    Dim block As Variant
     Dim varName As String
+    Dim rowCount As Long
+    Dim hasValueColumn As Boolean
     Dim counter As Long
 
     Set usedRng = impsh.UsedRange
+    rowCount = usedRng.Rows.count
+    If rowCount < 2 Then Exit Sub
 
-    For counter = 2 To usedRng.Rows.Count
-        varName = CStr(usedRng.Cells(counter, 1).Value)
+    block = usedRng.Value
+    hasValueColumn = (usedRng.Columns.count > 1)
+
+    For counter = 2 To rowCount
+        varName = CStr(block(counter, 1))
 
         Set vlistRng = Nothing
         On Error Resume Next
@@ -908,9 +2027,11 @@ Private Sub ImportVListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet
             ' Variable from import not found in current sheet
             this.varsNotImported.Push Array(varName, impsh.Name)
             this.needReport = True
-        Else
-            If Not vlistRng.HasFormula Then
-                vlistRng.Value = usedRng.Cells(counter, 2).Value
+        ElseIf Not vlistRng.HasFormula Then
+            If hasValueColumn Then
+                vlistRng.Value = block(counter, 2)
+            Else
+                vlistRng.Value = vbNullString
             End If
         End If
 
@@ -927,19 +2048,25 @@ End Sub
 '@param currsh Worksheet. The current source HList worksheet.
 '@param impsh Worksheet. The import HList worksheet.
 '@param pasteAtBottom Boolean. When True, appends data below existing rows.
+'@param headerRow Long. The row of the import sheet that holds the variable
+'  names. It was read as row 1 always, so a file written with the labels above
+'  the names had its label row read as the header row, and every column of it
+'  landed in "not imported".
 Private Sub ImportHListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet, _
-                             ByVal pasteAtBottom As Boolean)
+                             ByVal pasteAtBottom As Boolean, ByVal headerRow As Long)
 
-    Dim currTab As ICustomTable
-    Dim impTab As IDataSheet
+    Dim currTab As CustomTable
+    Dim impTab As DataSheet
     Dim varsNotImpList As BetterArray
     Dim impHeaders As BetterArray
     Dim counter As Long
 
     Set currTab = CustomTable.Create(currsh.ListObjects(1))
-    Set impTab = DataSheet.Create(impsh, 1, 1, True)
+    Set impTab = DataSheet.Create(impsh, headerRow, 1, True)
 
-    currTab.Import impTab, pasteAtBottom, True, False
+    'No calculation inside the import: RecalculateSheets runs once over every
+    'data sheet after the walk's last write, and this table sits on one of them.
+    currTab.Import impTab, pasteAtBottom, True, False, calculateAfter:=False
 
     ' Track variables not imported (columns not found in current table)
     If currTab.HasColumnsNotImported Then
@@ -958,12 +2085,58 @@ End Sub
 
 
 '@sub-title Get the sheet type tag from worksheet-level HiddenNames.
+'@details
+'The read goes through HiddenNames.QuickValue: three COM crossings for the one
+'name asked for, with no instance behind it. HiddenNames.Create walks every
+'tracked name of the sheet first and reads three properties off each, and a data
+'entry sheet holds hundreds of names. This routine runs once per sheet in
+'ClearData, ImportData and RecalculateSheets, so the walk was paid three
+'times over the workbook for one string each time.
+'LLExporter.SheetTagOf reads the same two keys the same way.
+'A sheet that carries no such name answers the empty string, which is what the
+'instance read answered too.
 '@param sh Worksheet. The worksheet to query.
+'@param nameKey Optional String. Which worksheet-level name to read.
 '@return String. The sheet type tag (HList, VList, etc.).
-Private Function SheetTagOf(ByVal sh As Worksheet) As String
-    Dim shHn As IHiddenNames
-    Set shHn = HiddenNames.Create(sh)
-    SheetTagOf = shHn.ValueAsString("sheet_type")
+Private Function SheetTagOf(ByVal sh As Worksheet, _
+                            Optional ByVal nameKey As String = "sheet_type") As String
+    SheetTagOf = HiddenNames.QuickValue(sh, nameKey)
+End Function
+
+'@label:held-sheet-names
+'@sub-title The hidden names store of one worksheet, built once and kept
+'@details
+'A caller that reads the same sheet over and over hands in a Collection and
+'gets the same HiddenNames back every time. The first sight of a sheet pays the
+'name walk, every later one is a lookup. ImportEditableLabels is the caller
+'that needs this: it runs once per variable over a handful of sheets.
+'A Collection is what holds the stores because Mac Excel has no
+'Scripting.Dictionary; LLFormat and UpdatedValues key their caches the same way.
+'@param store Collection. The held stores, keyed by worksheet name.
+'@param sh Worksheet. The worksheet whose names are wanted.
+'@return HiddenNames. The store of that worksheet.
+Private Function HeldSheetNames(ByVal store As Collection, _
+                                ByVal sh As Worksheet) As HiddenNames
+
+    Dim held As HiddenNames
+
+    If store Is Nothing Or sh Is Nothing Then
+        Set HeldSheetNames = HiddenNames.Create(sh)
+        Exit Function
+    End If
+
+    'A Collection has no "does this key exist" test and raises 5 for a key it
+    'does not hold. An unseen sheet is the ordinary answer on the first turn.
+    On Error Resume Next
+        Set held = store.Item(sh.Name)
+    On Error GoTo 0
+
+    If held Is Nothing Then
+        Set held = HiddenNames.Create(sh)
+        store.Add held, sh.Name
+    End If
+
+    Set HeldSheetNames = held
 End Function
 
 '@section Private - Helpers
@@ -995,66 +2168,4 @@ End Function
 '@throws vbObjectError Always raises the error.
 Private Sub ThrowError(ByVal message As String)
     Err.Raise VBA.vbObjectError + 516, CLASS_NAME, message
-End Sub
-
-
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members satisfying the ILLImporter contract.
-'See the corresponding members above for full documentation.
-
-Private Property Get ILLImporter_HasData() As Boolean
-    ILLImporter_HasData = HasData
-End Property
-
-Private Function ILLImporter_HasSameLanguage(ByVal impwb As Workbook) As Boolean
-    ILLImporter_HasSameLanguage = HasSameLanguage(impwb)
-End Function
-
-Private Sub ILLImporter_ClearData()
-    ClearData
-End Sub
-
-Private Sub ILLImporter_ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
-    ImportData impwb, pasteAtBottom
-End Sub
-
-Private Sub ILLImporter_ImportCustomDropdown(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
-    ImportCustomDropdown impwb, pasteAtBottom
-End Sub
-
-Private Sub ILLImporter_FinalizeReport()
-    FinalizeReport
-End Sub
-
-Private Sub ILLImporter_ImportShowHide(ByVal impwb As Workbook)
-    ImportShowHide impwb
-End Sub
-
-Private Sub ILLImporter_ImportEditableLabels(ByVal impwb As Workbook)
-    ImportEditableLabels impwb
-End Sub
-
-Private Sub ILLImporter_ImportSingleValues(ByVal impwb As Workbook)
-    ImportSingleValues impwb
-End Sub
-
-Private Sub ILLImporter_ImportGeobase(ByVal impwb As Workbook, Optional ByVal histoOnly As Boolean = False)
-    ImportGeobase impwb, histoOnly
-End Sub
-
-Private Property Get ILLImporter_NeedReport() As Boolean
-    ILLImporter_NeedReport = NeedReport
-End Property
-
-Private Function ILLImporter_ReportSheets(ByVal scope As Byte) As BetterArray
-    Set ILLImporter_ReportSheets = ReportSheets(scope)
-End Function
-
-Private Function ILLImporter_ReportVariables(ByVal scope As Byte) As BetterArray
-    Set ILLImporter_ReportVariables = ReportVariables(scope)
-End Function
-
-Private Sub ILLImporter_ClearReport()
-    ClearReport
 End Sub

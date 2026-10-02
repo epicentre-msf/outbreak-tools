@@ -1,0 +1,384 @@
+# OutbreakTools -- Manual test list
+# =============================================================================
+# The tests a person runs by hand, in the order a person runs them. This file
+# is the source; the workbook is built from it:
+#
+#     Rscript scripts/devtools/build-manual-tests.R
+#         src/tests/manual-tests.yml  ->  src/tests/.input/manual_tests_list.xlsx
+#
+# EDIT THIS FILE, NEVER THE WORKBOOK. The build overwrites the .xlsx whole, so
+# a line typed into Excel is gone at the next run. The Response column is the
+# one thing the workbook holds that this file does not -- see below.
+#
+# ---------------------------------------------------------------------------
+# THE HIERARCHY
+#
+#     workbook   setups | designer | linelist       -> one worksheet each
+#       kind     functionalities | features         -> one table each
+#         area   Dictionary, Choices, Exports, ...  -> the first column
+#           test one line, one thing to check       -> one row
+#
+# `functionalities` are the old behaviour we keep. A red row there is a
+# regression: something that used to work stopped working.
+#
+# `features` are what this development version added. A red row there is a new
+# thing that is not finished.
+#
+# `area` groups the tests of one kind and fixes their order. It is written into
+# the first column of the table, so the autofilter can cut the list down to one
+# area.
+#
+# ---------------------------------------------------------------------------
+# A TEST LINE
+#
+# Usually the sentence on its own:
+#
+#     - You can add rows to Dictionary
+#
+# With a note, which becomes a cell comment on the test in the workbook:
+#
+#     - test: Resizing the Export removes added columns to the Dictionary
+#       note: Check that the correct columns were removed, not just the last ones.
+#
+# WRAP A SENTENCE HOLDING A COLON IN DOUBLE QUOTES. A colon and a space make
+# YAML read the line as a key, and the whole tail of the sentence is lost:
+#
+#     - Type in a data entry cell: the change handlers feel quick       WRONG
+#     - "Type in a data entry cell: the change handlers feel quick"     right
+#
+# The build stops and names the line when this happens, so a missed one costs
+# a run rather than a silent hole in the list.
+#
+# ---------------------------------------------------------------------------
+# THE RESPONSE COLUMN
+#
+# Left empty by the build. The person running the tests picks from the dropdown:
+#
+#     (empty)   not run yet   no colour
+#     Yes       passed        green
+#     No        FAILED        red
+#
+# So red is always a real failure, never a test nobody has reached yet. Fill in
+# a copy of the workbook; the next build starts from empty again.
+# =============================================================================
+
+response:
+  values: ["Yes", "No"]
+  pass: "Yes"
+  fail: "No"
+
+workbooks:
+
+  # ===========================================================================
+  # SETUPS -- the configuration workbook
+  # ===========================================================================
+  - sheet: setups
+    functionalities:
+
+      - area: Tables
+        tests:
+          - New empty lines appear at the bottom when you start typing on the last line
+
+      - area: Dictionary
+        tests:
+          - You can add rows to Dictionary
+          - You can resize the Dictionary (it should delete empty rows at the bottom and middle)
+
+      - area: Choices
+        tests:
+          - You can add rows to Choices
+          - You can resize the Choices
+
+      - area: Exports
+        tests:
+          - You can add rows to Exports
+          - You can resize the Exports
+          - The number of exports in Exports worksheet is equal to the number of "Export columns" in Dictionary
+          - test: Adding rows to Export adds new columns to Dictionary
+            note: A reason why we repeat "adding rows to export" ?
+          - test: Resizing the Export removes added columns to the Dictionary
+            note: Check that the correct columns were removed, not just the last ones.
+
+      - area: Analysis
+        tests:
+          - You can add rows to all the tables of Analysis
+          - You can add rows to only Global Summary
+          - You can add rows to only Time Series
+          - You can resize all the tables of Analysis
+          - You can resize only Time Series Analysis
+          - You can add rows to Bivariate Analysis
+          - You can delete one row of table Bivariate Analysis
+          - You can delete mutiple rows of table Bivariate Analysis
+          - You can insert rows to any table of Analysis
+          - Dropdown of "Group by variable" of Bivariate Analysis has values
+          - When selecting a series and a graph on Graph on Time Series, values are updated on the same line
+          - You can insert rows in Spatial Analysis table
+          - You can fill one row of Spatial Analysis table after insertion
+
+      - area: Import
+        tests:
+          - You can import a previous setup using "import from setup" in the ribbon
+          - After import, all the worksheets are protected
+          - You can sort Dictionary after import
+          - You can sort Choices after import
+          - You can sort the Choices after import
+          - You can sort the Exports after import
+          - You can add rows to Exports after an import
+          - You can add rows to all the tables of Analysis after an import
+          - Analysis are re-calculated after imports
+          - You can update the translation table after imports
+
+      - area: Translations
+        tests:
+          - You can update the translation table after import
+          - You can add multiple languages to translations separated by a ";"
+
+      - area: Checking
+        tests:
+          - You can check the current setup for errors
+          - On the _CheckRep worksheet, selecting status/title filters the worksheet
+
+    features:
+
+      - area: Migration
+        tests:
+          - You can export the current setup for migration
+          - You can import back the previously exported file into the setup
+
+      - area: Clear data
+        tests:
+          - You can clean all the data in the current setup
+
+      - area: Debugging
+        tests:
+          - By clicking a certain amount of times on the Import form, you are prompted for a debugging password
+          - Adding Debugging password 1234 unprotects all the worksheets
+          - You can close the setup after all the worksheets are unprotected
+          - When reopening the setup, all the worksheets are protected
+
+      - area: Translations
+        tests:
+          - You can update translations table after import
+          - You can translate the setup to a new language
+          - You can't translate the setup to a new language if there are missing translations in the language you picked (error message)
+          - You can't translate the setup to a new language if there are duplicated translations in the language you pick (error message)
+
+  # ===========================================================================
+  # DESIGNER -- the workbook that builds a linelist
+  # ===========================================================================
+  #  Drawn from `.obt/plans/designer-mock-manual-todos.md` Part D, "The checks
+  #  owed by eye". Everything here is done standing in the designer workbook.
+  - sheet: designer
+    functionalities:
+
+      - area: Setup file
+        tests:
+          - "Load a new version setup (setup with the current version of the designer)"
+          - "Load an old version of the setup (old versions of the setup)"
+          - "Generate a linelist with the new version of the setup"
+          - "Can generate with old version of the setup"
+          - "Generate a linelist with setup language empty"
+          - "Generate a linelist with a xlsx measles setup file"
+          - "Generate a linelist with a xlsb measles setup file"
+          - "Generate a linelist with a xlsx ocv setup file"
+          - "Generate a linelist with a xlsb ocv setup file"
+          - "Generate a linelist with a generic test setup file"
+
+      - area: Styles
+        tests:
+          - "Import a style: Press the import styles, then select a different style file (provided in the test package)."
+          - "Generate a linelist with a new setup and the new imported style in. The linelist should have the setup style)"
+          - "Import a style into a setup (new version)"
+          - "Generate a linelist with the setup imported style (the setup style should be used)"
+
+      - area: Geobase
+        tests:
+          - You can clear the Geobase
+          - You can Import a Geobase into a the designer
+          - You can generate with an empty geobase
+          - You can generate with an imported geobase
+          - Changing the designer language changes the geobase admin names in the generated linelist
+
+      - area: Generation
+        tests:
+          - At the end of each generation you can see a log
+
+    features:
+
+      - area: Ribbon
+        tests:
+          - The two checkboxes keep their state across a close and reopen
+          - The OutbreakTools tab is there on open/close of the designer
+          - A Language of the designer change re-labels the ribbon
+
+      - area: Entry checks
+        tests:
+          - You can not generate with empty setup
+          - You can not generate with empty output folder
+          - You can not generate with empty linelist name
+          - You can generage without a password
+          - Every generation end with the __check worksheet showing the errors
+          - Generate a linelist when the Translations worksheet is deleted from the xlsx setup
+
+      - area: Multi table
+        tests:
+          - "Place the cursor on the setups header and press the folder button: select multiple setup files from different extensions. xlsx, xlsb"
+          - "Duplicate a filled row: the new row carries the values and the next free ID"
+          - "Load two geobase files at once"
+          - "Press add rows, then resize: the surviving rows keep their IDs"
+
+      - area: Multi generation
+        tests:
+          - "Fill two rows and press generate-multi: one report on __check with all the setups OK and the written path on each row, both files on disk, and the passwords of each row on its own file"
+          - "Give one row a bad setup path: its result says refused, the report names the fault, and the other row still builds"
+          - "Press the button again on the built table. It should overwrite existing files"
+
+      - area: Run log
+        tests:
+          - "A generation ends with __check shown and <linelist name>-generation.txt beside the output workbook"
+          - The severity and title filters work on the __check sheet
+          - The text file carries the per-variable lines
+          - The closing reports shows the sheet and variable counts of the run, and a multi run counts every row of the batch
+
+      - area: Generation report
+        tests:
+          - "Generate a linelist with a sheet carrying two or more subsections and read the report: it completes."
+          - "Generate a linelist with a time series graph and a spatio-temporal graph and read the report."
+
+  # ===========================================================================
+  # LINELIST -- the generated workbook
+  # ===========================================================================
+  #  Drawn from the "checks owed by eye" list at the end of each gotcha file:
+  #  linelist-events, geomodule, geo-folder (B), graphs-folder,
+  #  sections-folder (P), showhide-folder (N) and dataio-folder (H, H2), plus
+  #  the 2026-08-12 lists in `.obt/tracking.md`. Everything here is done
+  #  standing in a generated linelist.
+  - sheet: linelist
+    functionalities:
+
+      - area: Navigation
+        tests:
+          - "Switch between sheets"
+          - "Open a data entry sheet and read A1: the go-to-section dropdown is there and readable"
+          - "Pick a section in the go-to dropdown of each worksheet: navigation moves to the selected section"
+
+      - area: Data entry
+        tests:
+          - "Type in a data entry cell: the change handlers feel quick"
+          - "Edit a list-auto column on an HList sheet and leave it. Values are updated"
+          - "Select multiple entries in a multiple-choice column:"
+          - "Press add-rows on a sheet that is not data entry: You have a warning message"
+          - "Data validation are respected"
+          - "Formulas are calculated and updated"
+          - "Geo dropdowns are updated on selection"
+          - "Custom dropdown can be updated, and the top of the tables link to variables"
+
+      - area: Ribbon
+        tests:
+          - "Read the OutbreakTools tab: all 25 labels translated"
+          - "Open the variable-label form"
+          - "Open the Advanced form"
+          - "Open the show/hide form"
+          - "Show/hide some section when clicking on the show/hide sections"
+          - "Open print and crf worksheets"
+          - "Show/hide works on print and crf worksheets"
+
+      - area: Geo form
+        tests:
+          - "Double-click a spatial analysis sheet: both geo pickers open"
+          - "Click through all four levels in both scopes: captions, cascade fills and the Validate write read exactly as before"
+          - "Validate at the level the sheet already stands on: formulas untouched, run quick"
+          - "Clear the neighbour cell of the admin selector and validate: a message names the broken level"
+          - "Type in each search box against a real geobase: the third character fills the list at once, 200 hits at most, sorted"
+          - "Clear the geobase, then reopen the form: every list is empty"
+          - "Click an admin1 with no children: the cursor comes back to default"
+          - "Rename the Geo worksheet and open the form: a message and an unfrozen screen, ending with the error description"
+          - "Open the geo form on a workbook with many analysis sheets: it comes up as fast as before"
+
+      - area: Spatial sheets
+        tests:
+          - "Go to the spatial analysis sheet: the admin-unit dropdown lists the four translated level names"
+          - "Change the admin level of a spatial sheet whose section holds a named formula column beside an unnamed one: the named column moves, the neighbour's block stays"
+          - "Press the spatial-sheet refresh button: filtered and spatial tables update end to end, constant, shape and translated label"
+          - "Press Calculate on a spatial analysis sheet: the top-admin values still refresh"
+
+      - area: Analyses
+        tests:
+          - "Filter by hand, then press the analysis filter button: the filtered table holds the same rows it held before"
+          - "Press Calculate on a padded linelist: one recalculation pass per rebuild"
+
+      - area: Export
+        tests:
+          - "Export with password = yes: the box names the file and the key, and the file opens with that key"
+          - "Export with include p-codes = no, then open the linelist's own Dictionary sheet: the export column still claims the geo p-code and geo concat variables"
+          - "Open the exported file's Dictionary sheet: the geo p-code and geo concat rows are absent from it"
+          - "Open any export file's Metadata sheet: epiweekstart carries a value"
+          - "Export with specific geo variables (geo1 + geo2)"
+
+      - area: Compile
+        tests:
+          - "Run Debug > Compile in the generated workbook: it compiles"
+
+    features:
+
+      - area: Geo form
+        tests:
+          - test: "Open F_Geo, close it, import a geobase whose level names differ, then reopen F_Geo: the four level captions have the new names"
+            note: This is the reported bug. The headless pair measures the class half of it alone.
+          - "Change the admin level of a spatio-temporal section and press Validate: the formulas move, the level cell follows, and a second Validate on the same level changes nothing"
+          - test: "Validate a deep place on a freshly generated spatio-temporal section: the input cell wraps the joined value and the section recalculates once"
+            note: The wrap comes from the build now, so a section built before 2026-08-12 keeps unwrapped input cells and no click puts them right.
+
+      - area: Show/hide
+        tests:
+          - "Hide a few variables through the form, close the workbook and reopen it: the choices survive"
+          - "Do the same on a CRF sheet: entries appear in the form, and the third entry hides the third ROW"
+          - "Import a migration file carrying show/hide: the receiving sheets actually hide"
+          - "Change the Drag a column width of a shown column. Then export for migration"
+          - "Hide that column, import a migration file. The column width should be the same before export"
+          - "Turn a printed header vertical, then hide that column and show it again: the header still reads bottom to top"
+
+      - area: Saved layouts
+        tests:
+          - "Open show/hide on a data sheet: the Layout button opens the saved-layouts form, and every caption on it is translated"
+          - Add asks for a name and the name appears in the list
+          - "Double-click a saved layout: an input box opens preloaded with its name. You can change the name"
+          - Remove asks before dropping a layout, and an eleventh Add is refused with a message
+          - "Hide a column, save a layout, unhide it, then Apply: the column hides again."
+          - The saved layouts survive closing the workbook, and travel in a migration file
+
+      - area: Import
+        tests:
+          - "Export a file with custom dropdowns, import it back, then open the custom dropdown worksheet: the values arrived"
+          - "Import any file, then open the linelist's Metadata sheet: epiweekstart carries the value the file held, and the epiweek columns of the data sheets show the new week"
+          - "Import into a linelist that already holds rows: the box asks what to do with them, and answering No puts the imported rows under the ones already there"
+          - "Import a file made from a linelist in another language: the box names both languages"
+          - "Import an  export written with header format = variables labels: the import stops and __import_checking says why"
+          - "Import an export written with header format = variable names + variable labels: the data lands"
+          - "Open __import_checking after any import: one row per thing the import found, errors first"
+          - "Import a file that misses a sheet and answer Yes to the report box"
+
+      - area: Export another linelist
+        tests:
+          - "Tick the other-linelist box with a current box on: the fix message, and the box goes back off"
+          - "Tick it clean: file picker, then password box, both labels showing the answers; cancel the picker and the box goes back off"
+          - "Pick the current linelist as the other file: the conflict message"
+          - "Export another linelist end to end: the confirm box names the path, one folder ask, two files land, and the other linelist is closed after, unsaved"
+          - "Give the wrong password: the open-failure message, screen unfrozen"
+          - "Run the current walk with all three boxes: three files in one folder, one saved-paths box, the finished/close ask"
+
+      - area: Epiweek
+        tests:
+          - "Change the epiweek start from the ribbon: every epiweek cell moves"
+          - "Run an import: every epiweek cell moves the same way"
+
+      - area: Filter refresh
+        tests:
+          - "Break one HList sheet by renaming its filtered companion, then run the filter refresh: the message box names that sheet while the other sheets still refresh"
+          - "Read the __log sheet of that linelist: it holds one MSG_ErrUpdate block for the refresh"
+
+      - area: Charts
+        tests:
+          - "Generate a linelist with a time series graph and a spatio-temporal graph: a percentage total plots real values"
+          - "Generate a linelist with two with spatial tables. Both tables are updated. on refresh"
+          - "Generate a linelist with two time series tables. Both tables are updated on refresh"

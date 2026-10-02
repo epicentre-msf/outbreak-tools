@@ -17,14 +17,26 @@ Attribute VB_Description = "Buttons of the linelist"
 '@depends Checking
 
 Option Explicit
-Implements IButtons
 
 '@class Buttons
 '@description
-'Light wrapper around worksheet shapes for creating, positioning,
-'and formatting linelist buttons. Supports large, small, and geo
-'button scopes with automatic placement offset calculations.
-'@depends Checking, ILLFormat, ProjectError
+'Draws one command button of a linelist as a worksheet shape. Create binds an
+'anchor cell, a shape name and a button scope. Add draws the rounded rectangle
+'at the position that scope gives, names it, puts a label on it and points its
+'OnAction at a macro. Format hands the shape to LLFormat under the format that
+'matches the scope.
+'
+'THE THREE SCOPES
+'-------------------------------------------------------------------------------
+'ButtonScopeLarge, ButtonScopeSmall and ButtonScopeGeo. The scope decides the
+'width and the height of the shape, the offset from the anchor cell, and the
+'format Format asks for.
+'
+'WHAT IS REPORTED
+'-------------------------------------------------------------------------------
+'Add on a name the sheet already carries files a warning and draws nothing.
+'Entries leave through HasCheckings and CheckingValues.
+'@depends Checking, LLFormat, ProjectError
 '@version 1.0 (2026-02-09)
 
 
@@ -36,6 +48,7 @@ Private Type TButton
     shapeName As String
     scope As Byte
     hasChecks As Boolean
+    sealed As Boolean
 End Type
 
 Private Type TDimensions
@@ -58,21 +71,31 @@ Private Const BUTTON_PADDING As Long = 3
 Private Const LARGE_MULTIPLIER As Long = 2
 
 Private checkCounter As Long
-Private internalChecks As IChecking
+Private internalChecks As Checking
+
+'@section Enumerations
+'===============================================================================
+'@description Available button footprints.
+
+Public Enum ButtonScope
+    ButtonScopeLarge = 1
+    ButtonScopeSmall = 2
+    ButtonScopeGeo = 3
+End Enum
 
 '@section Factory
 '===============================================================================
 'Initialisation and self-reference.
 
 '@label:create
-'@sub-title Factory returning an initialised interface
+'@sub-title Factory returning an initialised Buttons instance
 '@param outrng Range. Anchor cell for the button.
 '@param codeName String. Name assigned to the shape.
 '@param scope Byte. ButtonScope controlling size and format.
-'@return IButtons. Ready to use.
+'@return Buttons. Ready to use.
 '@export
 Public Function Create(ByVal outrng As Range, ByVal codeName As String, _
-                       ByVal scope As Byte) As IButtons
+                       ByVal scope As Byte) As Buttons
 
     If outrng Is Nothing Then
         LogCheck "Missing output range while creating button", checkingError
@@ -80,24 +103,19 @@ Public Function Create(ByVal outrng As Range, ByVal codeName As String, _
                    "Unable to create button: no anchor range provided"
     End If
 
-    With New Buttons
-        Set .OutputRange = outrng
-        .Name = codeName
-        .ShapeScope = scope
-        Set Create = .Self
-    End With
+    Dim newButton As Buttons
+    Set newButton = New Buttons
+
+    Set newButton.OutputRange = outrng
+    newButton.Name = codeName
+    newButton.ShapeScope = scope
+    newButton.Seal
+    Set Create = newButton
 End Function
 
 '@section Properties
 '===============================================================================
 'State accessors.
-
-'@label:self
-'@prop-title Self-reference as IButtons
-'@return IButtons. Self-reference.
-Public Property Get Self() As IButtons
-    Set Self = Me
-End Property
 
 '@label:output-range
 '@prop-title Anchor range used for placement
@@ -112,6 +130,7 @@ End Property
 '@param rng Range. Providing the top-left anchor cell.
 '@export
 Public Property Set OutputRange(ByVal rng As Range)
+    GuardNotSealed "OutputRange"
     Set this.rng = rng
 End Property
 
@@ -127,6 +146,7 @@ End Property
 '@prop-title Store the shape name assigned in the worksheet
 '@param nm String. Identifier for the shape.
 Public Property Let Name(ByVal nm As String)
+    GuardNotSealed "Name"
     this.shapeName = nm
 End Property
 
@@ -146,6 +166,7 @@ End Property
 '@prop-title Store the formatting scope applied to the button
 '@param scope Byte. ButtonScope value.
 Public Property Let ShapeScope(ByVal scope As Byte)
+    GuardNotSealed "ShapeScope"
     Select Case scope
         Case ButtonScopeLarge, ButtonScopeSmall, ButtonScopeGeo
             this.scope = scope
@@ -242,9 +263,9 @@ End Sub
 
 '@label:format
 '@sub-title Apply the appropriate visual design to the button
-'@param design ILLFormat. Formatter responsible for styling the shape.
+'@param design LLFormat. Formatter responsible for styling the shape.
 '@export
-Public Sub Format(ByVal design As ILLFormat)
+Public Sub Format(ByVal design As LLFormat)
     Dim shp As Shape
     Dim formatToken As Variant
 
@@ -298,7 +319,7 @@ End Sub
 '@prop-title Whether diagnostic entries have been recorded
 '@return Boolean. True when at least one entry exists.
 '@export
-Private Property Get HasCheckings() As Boolean
+Public Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
@@ -306,7 +327,7 @@ End Property
 '@prop-title Retrieve the diagnostic log entries
 '@return Object. The checking instance, or Nothing.
 '@export
-Private Property Get CheckingValues() As Object
+Public Property Get CheckingValues() As Object
     If Not HasCheckings Then Exit Property
     Set CheckingValues = internalChecks
 End Property
@@ -320,6 +341,20 @@ End Property
 '@param errorMessage String. Descriptive error message.
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, CLASSNAME, "Error: " & errorMessage
+End Sub
+
+'@label:seal
+'@sub-title Seal the instance so setup setters can no longer be written
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against writes after sealing
+'@param propName String. Name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
 End Sub
 
 '@section Helpers
@@ -393,40 +428,3 @@ Private Function EffectiveLabel(ByVal providedLabel As String, ByVal fallbackNam
         EffectiveLabel = providedLabel
     End If
 End Function
-
-'@section Interface
-'===============================================================================
-'IButtons delegation wiring.
-
-Private Sub IButtons_Add(Optional ByVal actionCommand As String = vbNullString, _
-                         Optional ByVal shapeLabel As String = vbNullString)
-    Add actionCommand:=actionCommand, shapeLabel:=shapeLabel
-End Sub
-
-Private Sub IButtons_Format(design As ILLFormat)
-    Format design
-End Sub
-
-Private Property Get IButtons_OutputRange() As Range
-    Set IButtons_OutputRange = OutputRange
-End Property
-
-Private Property Get IButtons_Name() As String
-    IButtons_Name = Name()
-End Property
-
-Private Property Set IButtons_OutputRange(ByVal rng As Range)
-    Set OutputRange = rng
-End Property
-
-Private Property Get IButtons_HasCheckings() As Boolean
-    IButtons_HasCheckings = HasCheckings
-End Property
-
-Private Property Get IButtons_CheckingValues() As Object
-    Set IButtons_CheckingValues = CheckingValues
-End Property
-
-Private Property Get IButtons_ShapeScope() As Byte
-    IButtons_ShapeScope = ShapeScope()
-End Property

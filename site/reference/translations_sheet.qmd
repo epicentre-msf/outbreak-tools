@@ -14,15 +14,16 @@ The *Translation* sheet contains at least one column, with the default language,
 
 The columns headings can be modified. It is important to name the languages in the table headings, as they will be used to populate a dropdown menu in the **designer file** when the linelist is to be compiled.
 
-## Update the translation table
+### Update the translation table
 
 Click on the button *"Update translation table"* from the [Setup Options ribbon](../reference/ribbons_setup.qmd) to scrap the file and import all the fields to be translated into the table. They are listed in alphabetical order.
 
-## Add a new language
+
+### Add a new language
 
 To add a language to the table, use the *Setup Options* ribbon.
 
-![](../reference/images/im-103-translations-sheet.png){fig-align="center"}
+![](../images/img-add-language-setup.png){fig-align="center"}
 
 In the "Translation" tab, in the "Add language" field, enter the name of the language you want to add, then press the "Enter" key on your keyboard.
 
@@ -82,3 +83,19 @@ Trailing white spaces can sometimes cause problem, remove them from the setup.
 ::: {.callout-note}
 If, when the linelist is generated, certain fields of the chosen language are missing, these fields will appear in the default language (the first column). That being said, if a string of text contains special characters, this could cause a bug. In general, we advise to fill all cells in all languages.
 :::
+
+### Translate the setup
+
+Use this button to translate the setup. When you click it, a pop-up appears listing the available languages. Instead of typing the language name, simply enter the number assigned to your preferred language.
+
+![](../images/img-setup-translate.png){fig-align="center"}
+
+
+### Reset translation tags
+
+Clicking on this button will clear missing labels from the translation table.
+Additionally when When you import the translations table, the first update looks for labels that are  missing from the setup and asks whether you want to remove them.You can keep them and once you are done, clear them using this button.
+
+![](../images/img-translation-tags.png){fig-align="center"}
+
+

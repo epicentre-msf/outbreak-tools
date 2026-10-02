@@ -16,15 +16,26 @@ Attribute VB_Description = "Importing files from the operating system"
 
 
 Option Explicit
-Implements IOSFiles
 
 '@class OSFiles
 '@description
-'Cross-platform file and folder selection helper. Wraps Windows
-'FileDialog and macOS AppleScript pickers behind a unified API.
-'Supports single and multi-selection for both files and folders,
-'persists the last-used folder across sessions, and provides
-'iterator-style enumeration over multi-selections.
+'Picks files and folders through the dialog the host offers. On Windows the
+'class opens an Excel FileDialog. On macOS it runs an AppleScript picker.
+'LoadFile, LoadFiles, LoadFolder and LoadFolders each show one dialog and keep
+'what the user chose; File, Files, Folder and Folders answer it back. The four
+'HasValid members say whether the selection points at something that exists on
+'disk.
+'
+'READING A MULTI SELECTION
+'-------------------------------------------------------------------------------
+'HasNextFile and NextFile walk the selected files one at a time, and
+'ResetFilesIterator puts the cursor back to the first one. The folder members
+'work the same way.
+'
+'THE LAST FOLDER
+'-------------------------------------------------------------------------------
+'Each selection stores its folder in the workbook-level name
+'OSFiles_LastFolder, and the next dialog opens on that folder.
 '@version 1.0 (2026-02-09)
 
 
@@ -626,11 +637,110 @@ Private Function BuildAppleScriptList(ByVal entries As Variant) As String
     BuildAppleScriptList = "{" & builder & "}"
 End Function
 
+'@label:filter-extensions
+'@sub-title Split a filter string into its bare extensions
+'@details
+'Callers write the filter in whichever shape reads well at the call site:
+'"*.xlsx", "*.xlsb;*.xlsx", "*.xlsb, *.xlsx". They all mean the same thing, so
+'the separator is read as either a semicolon or a comma and the "*." is dropped.
+'
+'This used to be a Select Case over the whole string, which meant a filter had
+'to be spelled exactly as one of the listed literals or it fell to the Else
+'branch and answered xlsx alone. `clickLoadFileDic` asks for "*.xlsb;*.xlsx"
+'and the branch it needed was written "*.xlsb, *.xlsx", so loading a setup on
+'macOS offered xlsx files and hid every .xlsb.
+'@param filters String. The filter string as the caller wrote it.
+'@return Variant. Zero-based array of lower case extensions, without the dot.
+Private Function FilterExtensions(ByVal filters As String) As Variant
+    Dim normalised As String
+    Dim parts() As String
+    Dim results() As String
+    Dim count As Long
+    Dim idx As Long
+    Dim entry As String
+
+    normalised = Replace(filters, ";", ",")
+    parts = Split(normalised, ",")
+
+    ReDim results(0 To UBound(parts) - LBound(parts))
+
+    For idx = LBound(parts) To UBound(parts)
+        entry = LCase$(Trim$(parts(idx)))
+        If Left$(entry, 2) = "*." Then entry = Mid$(entry, 3)
+        If Left$(entry, 1) = "." Then entry = Mid$(entry, 2)
+        If LenB(entry) > 0 Then
+            results(count) = entry
+            count = count + 1
+        End If
+    Next idx
+
+    If count = 0 Then
+        FilterExtensions = Array()
+        Exit Function
+    End If
+
+    ReDim Preserve results(0 To count - 1)
+    FilterExtensions = results
+End Function
+
+'@label:uti-for-extension
+'@sub-title The macOS uniform type identifier of one Excel extension
+'@param extension String. Lower case extension without the dot.
+'@return String. The UTI, or an empty string when it is not one we handle.
+Private Function UtiForExtension(ByVal extension As String) As String
+    Select Case extension
+        Case "xls"
+            UtiForExtension = "com.microsoft.Excel.xls"
+        Case "xlsx"
+            UtiForExtension = "org.openxmlformats.spreadsheetml.sheet"
+        Case "xlsm"
+            UtiForExtension = "org.openxmlformats.spreadsheetml.sheet.macroenabled"
+        Case "xlsb"
+            UtiForExtension = "com.microsoft.Excel.sheet.binary.macroenabled"
+        Case "csv"
+            UtiForExtension = "public.comma-separated-values-text"
+    End Select
+End Function
+
+'@label:build-windows-filter
+'@sub-title Rewrite a filter string in the shape Excel's FileDialog documents
+'@details
+'FileDialogFilters.Add takes its extensions separated by a comma and a space.
+'A caller writing them with a semicolon is saying the same thing, so the string
+'is rebuilt here rather than passed on as typed.
+'@param filters String. The filter string as the caller wrote it.
+'@return String. "*.xlsb, *.xlsx", or the original when nothing could be read.
+Private Function BuildWindowsFilter(ByVal filters As String) As String
+    Dim extensions As Variant
+    Dim parts() As String
+    Dim idx As Long
+
+    extensions = FilterExtensions(filters)
+    If UBound(extensions) < LBound(extensions) Then
+        BuildWindowsFilter = filters
+        Exit Function
+    End If
+
+    ReDim parts(LBound(extensions) To UBound(extensions))
+    For idx = LBound(extensions) To UBound(extensions)
+        parts(idx) = "*." & extensions(idx)
+    Next idx
+
+    BuildWindowsFilter = Join(parts, ", ")
+End Function
+
 '@label:build-mac-filter-list
 '@sub-title Construct the UTI list for the AppleScript file picker
+'@param filters String. The filter string as the caller wrote it.
+'@param customMacFilter String. A UTI to use instead, when the caller has one.
+'@return String. An AppleScript list of UTIs.
 Private Function BuildMacFilterList(ByVal filters As String, _
                                     ByVal customMacFilter As String) As String
-    Dim filterEntries As Variant
+    Dim extensions As Variant
+    Dim entries() As String
+    Dim count As Long
+    Dim idx As Long
+    Dim uti As String
 
     'Construct the UTI list consumed by the AppleScript choose-file command.
     If customMacFilter <> vbNullString Then
@@ -638,21 +748,27 @@ Private Function BuildMacFilterList(ByVal filters As String, _
         Exit Function
     End If
 
-    Select Case filters
-        Case "*.xls"
-            filterEntries = Array("com.microsoft.Excel.xls")
-        Case "*.xlsx"
-            filterEntries = Array("org.openxmlformats.spreadsheetml.sheet")
-        Case "*.xlsb"
-            filterEntries = Array("com.microsoft.Excel.sheet.binary.macroenabled")
-        Case "*.xlsb, *.xlsx"
-            filterEntries = Array("org.openxmlformats.spreadsheetml.sheet", _
-                                  "com.microsoft.Excel.sheet.binary.macroenabled")
-        Case Else
-            filterEntries = Array("org.openxmlformats.spreadsheetml.sheet")
-    End Select
+    extensions = FilterExtensions(filters)
+    If UBound(extensions) >= LBound(extensions) Then
+        ReDim entries(LBound(extensions) To UBound(extensions))
+        For idx = LBound(extensions) To UBound(extensions)
+            uti = UtiForExtension(CStr(extensions(idx)))
+            If LenB(uti) > 0 Then
+                entries(count) = uti
+                count = count + 1
+            End If
+        Next idx
+    End If
 
-    BuildMacFilterList = BuildAppleScriptList(filterEntries)
+    'An unreadable or unknown filter still has to offer something, and the
+    'open format is the one every caller here can read.
+    If count = 0 Then
+        BuildMacFilterList = BuildAppleScriptList(Array("org.openxmlformats.spreadsheetml.sheet"))
+        Exit Function
+    End If
+
+    ReDim Preserve entries(0 To count - 1)
+    BuildMacFilterList = BuildAppleScriptList(entries)
 End Function
 
 '@label:parse-mac-selection-result
@@ -902,33 +1018,26 @@ End Function
 
 '@label:create
 '@sub-title Factory returning an initialised interface
-'@return IOSFiles. Ready to use.
+'@return OSFiles. Ready to use.
 '@export
-Public Function Create() As IOSFiles
+Public Function Create() As OSFiles
 
     'Will run on Mac or windows operating system
     Dim currentOS As String
     'OperatingSystem string differs per platform; we only need a simple flag.
     currentOS = IIf(Application.OperatingSystem Like "*Mac*", "Mac", "Windows")
   
-    With New OSFiles
-        'Store the detected OS before handing back the interface implementation.
-        .OS = currentOS
-        Set Create = .Self
-    End With
+    Dim newOSFiles As OSFiles
+    Set newOSFiles = New OSFiles
+
+    'Store the detected OS before handing back the interface implementation.
+    newOSFiles.OS = currentOS
+    Set Create = newOSFiles
 End Function
 
 '@section Elements
 '===============================================================================
 'File and folder path accessors.
-
-'@label:self
-'@prop-title Self-reference as IOSFiles
-'@return IOSFiles. Self-reference.
-Public Property Get Self() As IOSFiles
-    'Return the class instance as the interface the consumer expects.
-    Set Self = Me
-End Property
 
 '@label:os
 '@prop-title Current operating system flag
@@ -948,7 +1057,7 @@ End Property
 '@prop-title Current loaded file path
 '@return String. The first selected file path.
 '@export
-Private Property Get File() As String
+Public Property Get File() As String
     File = this.currentLoadedFile
 End Property
 
@@ -956,7 +1065,7 @@ End Property
 '@prop-title All loaded file paths from a multi-selection
 '@return Variant. Zero-based string array of file paths.
 '@export
-Private Property Get Files() As Variant
+Public Property Get Files() As Variant
     Files = CloneStringArray(this.currentLoadedFiles)
 End Property
 
@@ -964,7 +1073,7 @@ End Property
 '@prop-title Current loaded folder path
 '@return String. The first selected folder path.
 '@export
-Private Property Get Folder() As String
+Public Property Get Folder() As String
     Folder = this.currentLoadedFolder
 End Property
 
@@ -972,7 +1081,7 @@ End Property
 '@prop-title All loaded folder paths from a multi-selection
 '@return Variant. Zero-based string array of folder paths.
 '@export
-Private Property Get Folders() As Variant
+Public Property Get Folders() As Variant
     Folders = CloneStringArray(this.currentLoadedFolders)
 End Property
 
@@ -1046,7 +1155,7 @@ Private Function SelectFilesOnWindows(ByVal filters As String) As Variant
         .AllowMultiSelect = True
         .title = "Chose your files"              'MSG_ChooseFiles
         .filters.Clear
-        .filters.Add "Excel Sheet", filters
+        .filters.Add "Excel Sheet", BuildWindowsFilter(filters)
 
         If .Show = True Then
             On Error Resume Next
@@ -1104,7 +1213,7 @@ Private Function SelectFileOnWindows(ByVal filters As String) As String
         .AllowMultiSelect = False
         .title = "Chose your file"               'MSG_ChooseFile
         .filters.Clear
-        .filters.Add "Excel Sheet", filters      '"*.xlsx" ', *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile
+        .filters.Add "Excel Sheet", BuildWindowsFilter(filters)
 
         If .Show = True Then
             SelectFileOnWindows = .SelectedItems(1)
@@ -1120,7 +1229,7 @@ End Function
 '@label:load-folder
 '@sub-title Show a single-folder picker dialog
 '@export
-Private Sub LoadFolder()
+Public Sub LoadFolder()
     Dim selectedFolder As String
 
     'Delegate to the correct picker based on runtime OS and Excel version.
@@ -1145,7 +1254,7 @@ End Sub
 '@param filters String. File type filters (e.g. "*.xlsx").
 '@param customMacFilter String. Optional UTI override for macOS. Defaults to vbNullString.
 '@export
-Private Sub LoadFile(ByVal filters As String, _ 
+Public Sub LoadFile(ByVal filters As String, _ 
                      Optional ByVal customMacFilter As String = vbNullString)
     Dim selectedFile As String
 
@@ -1170,7 +1279,7 @@ End Sub
 '@param filters String. File type filters.
 '@param customMacFilter String. Optional UTI override for macOS. Defaults to vbNullString.
 '@export
-Private Sub LoadFiles(ByVal filters As String, _
+Public Sub LoadFiles(ByVal filters As String, _
                       Optional ByVal customMacFilter As String = vbNullString)
 
     Dim selection As Variant
@@ -1193,7 +1302,7 @@ End Sub
 '@label:load-folders
 '@sub-title Show a multi-folder picker dialog
 '@export
-Private Sub LoadFolders()
+Public Sub LoadFolders()
 
     Dim selection As Variant
     selection = EmptyStringArray()
@@ -1219,7 +1328,7 @@ End Sub
 '@label:reset-files-iterator
 '@sub-title Reset the file iteration cursor to the beginning
 '@export
-Private Sub ResetFilesCursor()
+Public Sub ResetFilesIterator()
     'Reset iteration so external callers can enumerate from the first file.
     this.currentFileIndex = 0
 End Sub
@@ -1227,7 +1336,7 @@ End Sub
 '@label:reset-folders-iterator
 '@sub-title Reset the folder iteration cursor to the beginning
 '@export
-Private Sub ResetFoldersCursor()
+Public Sub ResetFoldersIterator()
     'Reset iteration so external callers can enumerate from the first folder.
     this.currentFolderIndex = 0
 End Sub
@@ -1235,33 +1344,33 @@ End Sub
 '@label:has-next-file
 '@sub-title Check if another file is available in the iterator
 '@export
-Private Function HasNextFileValue() As Boolean
+Public Function HasNextFile() As Boolean
     'Expose whether the internal file iterator has another entry.
-    HasNextFileValue = HasNextArrayItem(this.currentLoadedFiles, this.currentFileIndex)
+    HasNextFile = HasNextArrayItem(this.currentLoadedFiles, this.currentFileIndex)
 End Function
 
 '@label:has-next-folder
 '@sub-title Check if another folder is available in the iterator
 '@export
-Private Function HasNextFolderValue() As Boolean
+Public Function HasNextFolder() As Boolean
     'Expose whether the internal folder iterator has another entry.
-    HasNextFolderValue = HasNextArrayItem(this.currentLoadedFolders, this.currentFolderIndex)
+    HasNextFolder = HasNextArrayItem(this.currentLoadedFolders, this.currentFolderIndex)
 End Function
 
 '@label:next-file
 '@sub-title Return the next file path and advance the cursor
 '@export
-Private Function NextFileValue() As String
+Public Function NextFile() As String
     'Return the next file path in sequence and advance the cursor.
-    NextFileValue = GetNextArrayItem(this.currentLoadedFiles, this.currentFileIndex)
+    NextFile = GetNextArrayItem(this.currentLoadedFiles, this.currentFileIndex)
 End Function
 
 '@label:next-folder
 '@sub-title Return the next folder path and advance the cursor
 '@export
-Private Function NextFolderValue() As String
+Public Function NextFolder() As String
     'Return the next folder path in sequence and advance the cursor.
-    NextFolderValue = GetNextArrayItem(this.currentLoadedFolders, this.currentFolderIndex)
+    NextFolder = GetNextArrayItem(this.currentLoadedFolders, this.currentFolderIndex)
 End Function
 
 '@section Test Support
@@ -1294,7 +1403,7 @@ End Sub
 '@sub-title Whether the loaded file path is valid
 '@return Boolean. True when a non-empty file path exists.
 '@export
-Private Function HasValidFile() As Boolean
+Public Function HasValidFile() As Boolean
     'A simple sanity check used by clients before acting on File().
     HasValidFile = (File() <> vbNullString)
 End Function
@@ -1303,7 +1412,7 @@ End Function
 '@sub-title Whether the loaded files array contains entries
 '@return Boolean. True when at least one file was selected.
 '@export
-Private Function HasValidFiles() As Boolean
+Public Function HasValidFiles() As Boolean
     'Report whether any file selections exist in the internal buffer.
     HasValidFiles = (CountArrayItems(this.currentLoadedFiles) > 0)
 End Function
@@ -1312,7 +1421,7 @@ End Function
 '@sub-title Whether the loaded folder path is valid
 '@return Boolean. True when a non-empty folder path exists.
 '@export
-Private Function HasValidFolder() As Boolean
+Public Function HasValidFolder() As Boolean
     'A simple sanity check used by clients before acting on Folder().
     HasValidFolder = (Folder() <> vbNullString)
 End Function
@@ -1321,89 +1430,8 @@ End Function
 '@sub-title Whether the loaded folders array contains entries
 '@return Boolean. True when at least one folder was selected.
 '@export
-Private Function HasValidFolders() As Boolean
+Public Function HasValidFolders() As Boolean
     'Report whether any folder selections exist in the internal buffer.
     HasValidFolders = (CountArrayItems(this.currentLoadedFolders) > 0)
-End Function
-
-
-'@section Interface
-'===============================================================================
-'IOSFiles delegation wiring.
-
-Private Property Get IOSFiles_File() As String
-    IOSFiles_File = File()
-End Property
-
-Private Property Get IOSFiles_Files() As Variant
-    IOSFiles_Files = Files()
-End Property
-
-Private Property Get IOSFiles_Folder() As String
-    IOSFiles_Folder = Folder()
-End Property
-
-Private Property Get IOSFiles_Folders() As Variant
-    IOSFiles_Folders = Folders()
-End Property
-
-Private Sub IOSFiles_LoadFolder()
-    LoadFolder
-End Sub
-
-Private Sub IOSFiles_LoadFolders()
-    LoadFolders
-End Sub
-
-Private Sub IOSFiles_ResetFilesIterator()
-    ResetFilesCursor
-End Sub
-
-Private Function IOSFiles_HasNextFile() As Boolean
-    IOSFiles_HasNextFile = HasNextFileValue()
-End Function
-
-Private Function IOSFiles_NextFile() As String
-    IOSFiles_NextFile = NextFileValue()
-End Function
-
-Private Sub IOSFiles_ResetFoldersIterator()
-    ResetFoldersCursor
-End Sub
-
-Private Function IOSFiles_HasNextFolder() As Boolean
-    IOSFiles_HasNextFolder = HasNextFolderValue()
-End Function
-
-Private Function IOSFiles_NextFolder() As String
-    IOSFiles_NextFolder = NextFolderValue()
-End Function
-
-Private Sub IOSFiles_LoadFile( _
-    ByVal filters As String, _
-    Optional ByVal customMacFilter As String = vbNullString)
-    LoadFile filters:=filters, customMacFilter:=customMacFilter
-End Sub
-
-Private Sub IOSFiles_LoadFiles( _
-    ByVal filters As String, _
-    Optional ByVal customMacFilter As String = vbNullString)
-    LoadFiles filters:=filters, customMacFilter:=customMacFilter
-End Sub
-
-Private Function IOSFiles_HasValidFile() As Boolean
-    IOSFiles_HasValidFile = HasValidFile()
-End Function
-
-Private Function IOSFiles_HasValidFiles() As Boolean
-    IOSFiles_HasValidFiles = HasValidFiles()
-End Function
-
-Private Function IOSFiles_HasValidFolder() As Boolean
-    IOSFiles_HasValidFolder = HasValidFolder()
-End Function
-
-Private Function IOSFiles_HasValidFolders() As Boolean
-    IOSFiles_HasValidFolders = HasValidFolders()
 End Function
 

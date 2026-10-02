@@ -12,21 +12,20 @@ Attribute VB_Description = "Coordinates clearing and translation behaviours for 
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Coordinates clearing and translation behaviours for designer entry sheets.")
-'@depends ProjectError, DesignerTranslation, IDesignerTranslation
+'@depends ProjectError, DesignerTranslation, Checking
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
-Implements IDesignerEntry
 
 '@class DesignerEntry
 '@description
-'Coordinates clearing, translation, and info read/write actions for a
-'designer entry worksheet. Lazily resolves an IDesignerTranslation
-'translator (for applying language translations and translating message
-'codes) from the host worksheet and its parent workbook. The translator
-'can be replaced via setter injection for testing.
-'Consumers interact through the IDesignerEntry interface.
-'@depends DesignerTranslation, IDesignerTranslation
+'Coordinates clearing, translation, validation, and info read/write
+'actions for a designer entry worksheet. Lazily resolves a
+'DesignerTranslation translator (for applying language translations and
+'translating message codes) from the host worksheet and its parent
+'workbook. A test injects its translator through UseTranslator before
+'the first resolve.
+'@depends DesignerTranslation, Checking
 
 
 '@section State
@@ -34,7 +33,8 @@ Implements IDesignerEntry
 
 Private Type TDesignerEntry
     hostSheet As Worksheet      'Worksheet hosting designer inputs
-    translator As IDesignerTranslation 'Translation handler for the designer workbook
+    translator As DesignerTranslation 'Translation handler for the designer workbook
+    sealed As Boolean           'True once the factory has finished setup
 End Type
 
 Private this As TDesignerEntry
@@ -54,7 +54,21 @@ Private Const RNG_LL_NAME As String = "RNG_LLName"
 Private Const RNG_LANG_SETUP As String = "RNG_LangSetup"
 Private Const RNG_TEMP_PATH As String = "RNG_LLTemp"
 Private Const RNG_LL_FORM As String = "RNG_LLForm"
+Private Const RNG_DESIGN_LL As String = "RNG_DesignLL"
 Private Const RNG_WARNING As String = "RNG_Warning"
+
+'The two password ranges and the epiweek range LinelistSpecs.Value reads
+'at generation. The multi driver writes each T_Multi row through these
+'keys, so the row's passwords and epiweek reach the build the same way
+'the typed entries do.
+Private Const RNG_PWD_OPEN As String = "RNG_LLPwdOpen"
+Private Const RNG_PWD_DEBUG As String = "RNG_LLPassword"
+Private Const RNG_EPIWEEK As String = "RNG_DefaultEpiWeek"
+
+'Leading shape of the internal tag columns of a setup file. A tag column
+'header can reach the setup language dropdown through the fallback read,
+'and Validate refuses it as a language.
+Private Const INTERNAL_TAG_LEAD As String = "__"
 
 
 '@section Factory
@@ -64,28 +78,37 @@ Private Const RNG_WARNING As String = "RNG_Warning"
 '@sub-title Create and configure a designer entry helper
 '@details
 'Factory method that creates a new DesignerEntry instance, binds it to
-'the supplied worksheet via Configure, and returns the result through
-'the IDesignerEntry interface. Called on the predeclared instance.
+'the supplied worksheet via Configure, and returns the result. Called
+'on the predeclared instance.
 '@param hostSheet Worksheet. The worksheet hosting designer inputs.
-'@return IDesignerEntry. A fully initialised instance ready for use.
+'@return DesignerEntry. A fully initialised instance ready for use.
 '@export
-Public Function Create(ByVal hostSheet As Worksheet) As IDesignerEntry
+Public Function Create(ByVal hostSheet As Worksheet) As DesignerEntry
     Dim instance As DesignerEntry
 
     Set instance = New DesignerEntry
     instance.Configure hostSheet
-    Set Create = instance.Self
+    instance.Seal
+    Set Create = instance
 End Function
 
-'@label:self
-'@prop-title Current object instance
-'@details
-'Convenience accessor so consuming code can fluently retrieve the
-'interface reference from the predeclared Create method.
-'@return IDesignerEntry. The current instance cast to the interface.
-Public Property Get Self() As IDesignerEntry
-    Set Self = Me
-End Property
+
+'@section Instance Sealing
+'===============================================================================
+
+'@label:seal
+'@sub-title Seal the instance against further setup writes
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup-only member against post-seal writes
+'@param memberName String. The member name for the error message.
+Private Sub GuardNotSealed(ByVal memberName As String)
+    If this.sealed Then _
+        RaiseError ProjectError.SomethingWentWrong, memberName & " is set at creation only"
+End Sub
 
 
 '@section Public API
@@ -94,13 +117,16 @@ End Property
 '@label:configure
 '@sub-title Bind the helper to the target worksheet
 '@details
-'Stores a reference to the host worksheet. Raises an error when the
-'worksheet is Nothing. Does not reset the translator so that a
-'previously injected test double is preserved.
+'Stores a reference to the host worksheet. Called once by the factory,
+'which then seals the instance; a later call raises. Raises an error
+'when the worksheet is Nothing.
 '@param hostSheet Worksheet. The worksheet hosting designer inputs.
 '@throws ProjectError.ObjectNotInitialized When the worksheet is Nothing.
+'@throws ProjectError.SomethingWentWrong When the instance is sealed.
 '@export
 Public Sub Configure(ByVal hostSheet As Worksheet)
+    GuardNotSealed "Configure"
+
     If hostSheet Is Nothing Then
         RaiseError ProjectError.ObjectNotInitialized, "Host sheet is required."
     End If
@@ -109,13 +135,26 @@ Public Sub Configure(ByVal hostSheet As Worksheet)
 End Sub
 
 '@label:use-translator
-'@sub-title Use a provided translations manager instead of creating one
+'@sub-title Inject the translations manager the entry will use
 '@details
-'Replaces the internally resolved IDesignerTranslation translator with the
-'supplied instance. Primarily used in tests to inject a stub or mock.
-'@param translator IDesignerTranslation. The translations provider to use.
+'Sets the DesignerTranslation translator the entry delegates to. A test
+'injects its own translator here right after Create. The setter guards
+'itself: it refuses Nothing, and it refuses to replace a translator that
+'is already held (injected earlier, or lazily resolved by a translate
+'call).
+'@param translator DesignerTranslation. The translations provider to use.
+'@throws ProjectError.ObjectNotInitialized When the translator is Nothing.
+'@throws ProjectError.SomethingWentWrong When a translator is already held.
 '@export
-Public Sub UseTranslator(ByVal translator As IDesignerTranslation)
+Public Sub UseTranslator(ByVal translator As DesignerTranslation)
+    If translator Is Nothing Then
+        RaiseError ProjectError.ObjectNotInitialized, "Translator is required."
+    End If
+
+    If Not this.translator Is Nothing Then
+        RaiseError ProjectError.SomethingWentWrong, "A translator is already held."
+    End If
+
     Set this.translator = translator
 End Sub
 
@@ -149,7 +188,7 @@ End Sub
 '@param language Optional String. Language string in "CODE - Label" format. Defaults to vbNullString.
 '@export
 Public Sub Translate(Optional ByVal language As String = vbNullString)
-    Dim translator As IDesignerTranslation
+    Dim translator As DesignerTranslation
     Set translator = ResolveTranslator()
     translator.TranslateDesigner HostSheet, language
 End Sub
@@ -193,6 +232,106 @@ Public Property Get ValueOf(ByVal infoName As String) As String
     On Error GoTo 0
 End Property
 
+'@label:validate
+'@sub-title Check the generation entries on the host worksheet
+'@details
+'Reads the generation entries from the Main named ranges and files one
+'entry per fault into a Checking, every entry with the error scope. The
+'checks: the setup path is set and on disk, the output folder is set
+'and on disk, the linelist name is set, the setup language is set and
+'is free of the internal double-underscore tag shape, the linelist
+'language is set, the design value is set, and the template and geobase
+'paths are on disk when they are set. An empty checking means every
+'entry passes. A named range missing from the worksheet reads as an
+'empty value and files the matching fault.
+'@return Checking. One entry per faulty generation entry.
+'@export
+Public Function Validate() As Checking
+    Dim checks As Checking
+    Dim entryValue As String
+
+    Set checks = Checking.Create("Generation entries", _
+                                 "Checks run on the Main entries before the build")
+
+    'Setup file: required, and the file has to be on disk
+    entryValue = ValueOf("setuppath")
+    If LenB(entryValue) = 0 Then
+        checks.Add "setup path", _
+                   "The setup file path is empty. Load a setup file first.", _
+                   checkingError
+    ElseIf LenB(Dir(entryValue)) = 0 Then
+        checks.Add "setup path", _
+                   "The setup file was not found: " & entryValue, _
+                   checkingError
+    End If
+
+    'Output folder: required, and the folder has to be on disk
+    entryValue = ValueOf("lldir")
+    If LenB(entryValue) = 0 Then
+        checks.Add "output folder", _
+                   "The output folder is empty. Pick where the linelist will be written.", _
+                   checkingError
+    ElseIf LenB(Dir(entryValue, vbDirectory)) = 0 Then
+        checks.Add "output folder", _
+                   "The output folder was not found: " & entryValue, _
+                   checkingError
+    End If
+
+    'Linelist name: required
+    If LenB(ValueOf("llname")) = 0 Then
+        checks.Add "linelist name", "The linelist name is empty.", checkingError
+    End If
+
+    'Setup language: required, and an internal tag column is refused
+    entryValue = ValueOf("setuplang")
+    If LenB(entryValue) = 0 Then
+        checks.Add "setup language", _
+                   "The setup language is empty. Load a setup file and pick a language.", _
+                   checkingError
+    ElseIf Left$(entryValue, Len(INTERNAL_TAG_LEAD)) = INTERNAL_TAG_LEAD Then
+        checks.Add "setup language", _
+                   "The setup language reads as an internal tag: " & entryValue & _
+                   ". Pick a language from the dropdown.", _
+                   checkingError
+    End If
+
+    'Linelist language: required
+    If LenB(ValueOf("lllang")) = 0 Then
+        checks.Add "linelist language", _
+                   "The linelist language is empty. Pick the language of the generated file.", _
+                   checkingError
+    End If
+
+    'Design value: required
+    If LenB(ValueOf("design")) = 0 Then
+        checks.Add "design", _
+                   "The design value is empty. Pick a design for the linelist.", _
+                   checkingError
+    End If
+
+    'Template file: optional, and the file has to be on disk when set
+    entryValue = ValueOf("temppath")
+    If LenB(entryValue) > 0 Then
+        If LenB(Dir(entryValue)) = 0 Then
+            checks.Add "template", _
+                       "The template file was not found: " & entryValue, _
+                       checkingError
+        End If
+    End If
+
+    'Geobase file: optional, and the file has to be on disk when set
+    entryValue = ValueOf("geopath")
+    If LenB(entryValue) > 0 Then
+        If LenB(Dir(entryValue)) = 0 Then
+            checks.Add "geobase", _
+                       "The geobase file was not found: " & entryValue, _
+                       checkingError
+        End If
+    End If
+
+    Set Validate = checks
+End Function
+
 '@label:translate-message
 '@sub-title Translate a message code using the designer translations
 '@details
@@ -203,7 +342,7 @@ End Property
 '@return String. The translated message text.
 '@export
 Public Function TranslateMessage(ByVal msgCode As String) As String
-    Dim translator As IDesignerTranslation
+    Dim translator As DesignerTranslation
     Dim result As String
 
     Set translator = ResolveTranslator()
@@ -303,8 +442,16 @@ Private Function ResolveInfoRange(ByVal infoName As String) As Range
         rngName = RNG_TEMP_PATH
     Case "lllang"
         rngName = RNG_LL_FORM
+    Case "design"
+        rngName = RNG_DESIGN_LL
     Case "warning"
         rngName = RNG_WARNING
+    Case "llpassword"
+        rngName = RNG_PWD_OPEN
+    Case "debugpassword"
+        rngName = RNG_PWD_DEBUG
+    Case "epiweekstart"
+        rngName = RNG_EPIWEEK
     Case Else
         Exit Function
     End Select
@@ -317,12 +464,12 @@ End Function
 '@label:resolve-translator
 '@sub-title Lazily resolve or return the translations provider
 '@details
-'Returns the cached IDesignerTranslation translator, or creates one via
+'Returns the cached DesignerTranslation translator, or creates one via
 'DesignerTranslation.Create with the DesignerTranslation worksheet on first
 'access. Raises an error when the translation sheet cannot be found.
-'@return IDesignerTranslation. The translations provider instance.
+'@return DesignerTranslation. The translations provider instance.
 '@throws ProjectError.ElementNotFound When the translation sheet is missing.
-Private Function ResolveTranslator() As IDesignerTranslation
+Private Function ResolveTranslator() As DesignerTranslation
     If this.translator Is Nothing Then
         On Error GoTo Handler
             Set this.translator = DesignerTranslation.Create(TranslationSheet())
@@ -369,41 +516,3 @@ End Function
 Private Sub RaiseError(ByVal errorCode As ProjectError, ByVal messageText As String)
     Err.Raise CLng(errorCode), CLASS_NAME, messageText
 End Sub
-
-
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members satisfying the IDesignerEntry contract.
-'See the corresponding members above for full documentation.
-
-Private Sub IDesignerEntry_AddInfo(ByVal value As String, ByVal infoName As String)
-    AddInfo value, infoName
-End Sub
-
-Private Sub IDesignerEntry_Clear()
-    Clear
-End Sub
-
-Private Sub IDesignerEntry_Configure(ByVal hostSheet As Worksheet)
-    Configure hostSheet
-End Sub
-
-Private Property Get IDesignerEntry_HostSheet() As Worksheet
-    Set IDesignerEntry_HostSheet = HostSheet
-End Property
-
-Private Sub IDesignerEntry_Translate(Optional ByVal language As String = vbNullString)
-    Translate language
-End Sub
-
-Private Function IDesignerEntry_TranslateMessage(ByVal msgCode As String) As String
-    IDesignerEntry_TranslateMessage = TranslateMessage(msgCode)
-End Function
-
-Private Sub IDesignerEntry_UseTranslator(ByVal translator As IDesignerTranslation)
-    UseTranslator translator
-End Sub
-
-Private Property Get IDesignerEntry_ValueOf(ByVal infoName As String) As String
-    IDesignerEntry_ValueOf = ValueOf(infoName)
-End Property

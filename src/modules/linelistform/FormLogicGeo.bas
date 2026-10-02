@@ -3,42 +3,81 @@ Attribute VB_Description = "Form callbacks for F_Geo — delegates to GeoModule"
 
 '@Folder("Linelist Forms")
 '@ModuleDescription("Form callbacks for F_Geo -- delegates to GeoModule")
+'@depends LinelistEventsManager, EventLinelist, LLGeo, GeoFormCache, LLTranslation, TranslationObject, HiddenNames, BetterArray
 '@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable, ImplicitActiveSheetReference, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
-Private Const GEOSHEET As String = "Geo"
-Private Const LLSHEET As String = "LinelistTranslation"
 Private Const SEP As String = " | "
 Private Const NACHAR As String = " | N/A"
 Private Const NACHARREV As String = "N/A | "
 
-Private tradform As ITranslationObject
-Private tradmess As ITranslationObject
-Private geo As ILLGeo
+' How many hits a search pushes into its list. A picker showing more wants a
+' narrower search, and the ListBox refill is the expensive part of a keystroke.
+Private Const MAX_SEARCH_HITS As Long = 200
+
+Private tradform As TranslationObject
+Private tradmess As TranslationObject
 Private hfOrGeo As Byte
 
-'Get the sheet type tag (HiddenNames first, cell fallback for legacy sheets).
+'The sheet type tag. QuickValue reads the one stored name off the worksheet.
+'The full store walks every name of the sheet, and an HList sheet holds
+'hundreds of them for a tag this handler reads once per click.
 Private Function SheetTag(ByVal sh As Worksheet) As String
-    Dim shHn As IHiddenNames
-    Set shHn = HiddenNames.Create(sh)
-    SheetTag = shHn.ValueAsString("sheet_type")
+    SheetTag = HiddenNames.QuickValue(sh, "sheet_type")
 End Function
 
 '@section Initialization
 '===============================================================================
 
-' @description Initialize translation objects and the LLGeo instance.
+' @description Initialize the two translation objects. Each object is built
+'              when it is missing and kept when it is there. The translation
+'              build walks its five tables, which is a price per open with no
+'              guard.
 Private Sub InitializeTrads()
-    Dim lltrads As ILLTranslation
-    Dim wb As Workbook
+    Dim linelistEvents As EventLinelist
+    Dim lltrads As LLTranslation
 
-    Set wb = ThisWorkbook
-    Set lltrads = LLTranslation.Create(wb.Worksheets(LLSHEET))
+    If Not (tradform Is Nothing Or tradmess Is Nothing) Then Exit Sub
+
+    ' The helper is the one EventLinelist holds, the way GeoOf below takes the
+    ' geobase manager from it. This module used to build its own, and
+    ' LLTranslation.Create validates all five translation tables per build.
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    If Not linelistEvents Is Nothing Then Set lltrads = linelistEvents.Translation()
+
+    If lltrads Is Nothing Then _
+        Err.Raise ProjectError.ObjectNotInitialized, "FormLogicGeo", _
+                  "This linelist carries no usable translation sheet"
+
     Set tradform = lltrads.TransObject(TranslationOfForms)
     Set tradmess = lltrads.TransObject()
-    Set geo = LLGeo.Create(wb.Worksheets(GEOSHEET))
 End Sub
+
+' @description The one geobase manager of the workbook. EventLinelist builds it
+'              once and drops it in ResetCaches, so a geobase import is followed
+'              by a fresh build and the level labels are read again. Each
+'              handler reads it into its own local: a module field here would
+'              hold a manager nothing invalidates.
+Private Function GeoOf() As LLGeo
+    Dim linelistEvents As EventLinelist
+
+    Set linelistEvents = LinelistEventsManager.EventLinelistService()
+    If linelistEvents Is Nothing Then Exit Function
+
+    Set GeoOf = linelistEvents.GeoManager()
+End Function
+
+' @description The message a geobase failure shows. The translator is Nothing
+'              exactly when building it is what failed, and the plain English
+'              line is what the user reads then.
+Private Function GeoFailureMessage() As String
+    If tradmess Is Nothing Then
+        GeoFailureMessage = "The value could not be written"
+    Else
+        GeoFailureMessage = tradmess.TranslatedValue("MSG_ErrWriteGeo")
+    End If
+End Function
 
 ' @description Determine the current scope (geo vs hf) from form visibility.
 Private Sub InitializeElements()
@@ -53,6 +92,9 @@ End Sub
 '===============================================================================
 
 ' @description Search values in concat/historic lists and filter the form list.
+'              The lists come off the cache GeoModule filled at LoadGeo, so a
+'              keystroke scans memory. The old shape read the range from the
+'              worksheet on every character typed.
 Private Sub SearchValue(ByVal searchedValue As String, _
                         Optional ByVal scope As Byte = 0, _
                         Optional ByVal onHistoric As Boolean = False)
@@ -61,43 +103,61 @@ Private Sub SearchValue(ByVal searchedValue As String, _
     Dim counter As Long
     Dim lstObj As Object
     Dim concatTab As BetterArray
-
-    Set resultTable = New BetterArray
-    Set concatTab = New BetterArray
+    Dim loweredSearch As String
 
     If scope = GeoScopeAdmin Then
         If onHistoric Then
             Set lstObj = Me.LST_Histo
-            concatTab.FromExcelRange Range("histo_geo")
         Else
             Set lstObj = Me.LST_ListeAgre
-            concatTab.FromExcelRange Range("adm4_concat")
         End If
     Else
         If onHistoric Then
             Set lstObj = Me.LST_HistoF
-            concatTab.FromExcelRange Range("histo_hf")
         Else
             Set lstObj = Me.LST_ListeAgreF
-            concatTab.FromExcelRange Range("hf_concat")
         End If
     End If
 
+    If onHistoric Then
+        Set concatTab = GeoFormCache.HistoricList(scope)
+    Else
+        Set concatTab = GeoFormCache.ConcatList(scope)
+    End If
+
     If Len(searchedValue) >= 3 Then
+        Set resultTable = New BetterArray
+        loweredSearch = LCase$(searchedValue)
+
         For counter = concatTab.LowerBound To concatTab.UpperBound
-            If InStr(1, LCase(concatTab.Item(counter)), LCase(searchedValue)) > 0 Then
+            If InStr(1, LCase$(concatTab.Item(counter)), loweredSearch) > 0 Then
                 resultTable.Push concatTab.Item(counter)
+                If resultTable.Length >= MAX_SEARCH_HITS Then Exit For
             End If
         Next
 
+        'The concat lists are sorted once at load, so their hits arrive in
+        'order. The sort here keeps the historic hits ordered too, and it
+        'runs over the capped hits alone.
         If resultTable.Length > 0 Then
             resultTable.Sort
             lstObj.List = resultTable.Items
         Else
             lstObj.Clear
         End If
+    ElseIf onHistoric Then
+        'The historic list is short and shows whole below the floor, which
+        'is how a backspace brings every entry back.
+        If concatTab.Length > 0 Then
+            lstObj.List = concatTab.Items
+        Else
+            lstObj.Clear
+        End If
     Else
-        lstObj.List = concatTab.Items
+        'The concat list holds hits alone. Pushing the whole geobase back
+        'ran on characters one and two of every search and was the worst
+        'refill of all.
+        lstObj.Clear
     End If
 End Sub
 
@@ -117,8 +177,13 @@ Private Sub CMD_Copier_Click()
     Dim cellName As String
     Dim selectedRng As Range
     Dim nbLines As Long
+    Dim geoObj As LLGeo
 
     On Error GoTo ErrGeo
+
+    'Module state dies on any unhandled error and the form outlives it, so
+    'the write below rebuilds what it reads when the state is gone.
+    If tradmess Is Nothing Then InitializeTrads
     InitializeElements
 
     selectedValue = Me.TXT_Msg.Value
@@ -138,6 +203,13 @@ Private Sub CMD_Copier_Click()
     Select Case shType
 
     Case "HList"
+        'The historic write below is the one geobase call of this handler.
+        'The manager answers Nothing when its build failed, where LLGeo.Create
+        'used to raise, so the raise is made here and ErrGeo shows the message.
+        Set geoObj = GeoOf()
+        If geoObj Is Nothing Then _
+            Err.Raise 5, "FormLogicGeo", "The geobase manager could not be built"
+
         Set hRng = sh.ListObjects(1).HeaderRowRange
         nbOffset = cellRng.Row - hRng.Row
         Set calcRng = hRng.Offset(nbOffset)
@@ -150,7 +222,7 @@ Private Sub CMD_Copier_Click()
             tempTable.Items = Split(selectedValue, SEP)
 
             If tempTable.Length > 0 Then
-                Application.EnableEvents = False
+                LinelistEventsManager.LLEnterQuietState
                 sh.Range(cellRng, cellRng.Offset(, 3)).ClearContents
 
                 If Not (selectedRng Is Nothing) Then
@@ -164,13 +236,13 @@ Private Sub CMD_Copier_Click()
                     tempTable.ToExcelRange Destination:=cellRng, TransposeValues:=True
                 End If
 
-                Application.EnableEvents = True
+                LinelistEventsManager.LLExitQuietState
             End If
 
-            geo.UpdateHistoric selectedValue, GeoScopeAdmin
+            geoObj.UpdateHistoric selectedValue, GeoScopeAdmin
 
         Case GeoScopeHF
-            Application.EnableEvents = False
+            LinelistEventsManager.LLEnterQuietState
 
             If Not (selectedRng Is Nothing) Then
                 nbLines = 1
@@ -182,8 +254,8 @@ Private Sub CMD_Copier_Click()
                 cellRng.Value = selectedValue
             End If
 
-            Application.EnableEvents = True
-            geo.UpdateHistoric selectedValue, GeoScopeHF
+            LinelistEventsManager.LLExitQuietState
+            geoObj.UpdateHistoric selectedValue, GeoScopeHF
         End Select
 
         calcRng.Calculate
@@ -194,9 +266,9 @@ Private Sub CMD_Copier_Click()
     Case "SPT-Analysis"
         Select Case hfOrGeo
         Case GeoScopeHF
-            Application.EnableEvents = False
+            LinelistEventsManager.LLEnterQuietState
             cellRng.Value = selectedValue
-            Application.EnableEvents = True
+            LinelistEventsManager.LLExitQuietState
 
         Case GeoScopeAdmin
             Set tempTable = New BetterArray
@@ -210,24 +282,42 @@ Private Sub CMD_Copier_Click()
                 OpeningDelimiter:=vbNullString, _
                 ClosingDelimiter:=vbNullString, QuoteStrings:=False)
 
-            Application.EnableEvents = False
+            LinelistEventsManager.LLEnterQuietState
             cellRng.Value = selectedValue
             On Error Resume Next
             cellName = cellRng.Name.Name
             On Error GoTo ErrGeo
             UpdateSpatioTemporalFormulas cellName, tempTable.Length
-            Application.EnableEvents = True
+            LinelistEventsManager.LLExitQuietState
         End Select
 
         Me.TXT_Msg.Value = vbNullString
         Me.Hide
+
+        'The one recalculation of a validated place. It covers the facility
+        'branch and the level-unchanged path as well, which is why
+        'LLSpatial.MigrateSection leaves the recalculation to here.
+        'The input cells carry their wrap from build time
+        '(CrossTable.AddSpatioTemporalGeoInputs), so nothing writes a format
+        'across the used range here any more.
         sh.UsedRange.Calculate
-        sh.UsedRange.WrapText = True
         Exit Sub
     End Select
 
 ErrGeo:
-    MsgBox tradmess.TranslatedValue("MSG_ErrWriteGeo"), vbCritical + vbOKOnly
+    'The write branches above ask the events manager for silence around the cell
+    'writes, so a raise between the two lines lands here with events off. Left
+    'that way, every worksheet event of the linelist stays dead for the session:
+    'the checkings, the dropdown cascades, the geo autofill.
+    '
+    'The exit counts, so this line is right whether the raise happened inside a
+    'quiet stretch or before one was ever opened -- with nothing open it does
+    'nothing at all.
+    LinelistEventsManager.LLExitQuietState
+
+    'A handler that raises loses the message it was there to show, which is why
+    'GeoFailureMessage carries the plain English fallback.
+    MsgBox GeoFailureMessage(), vbCritical + vbOKOnly
 End Sub
 
 '@section Historic
@@ -237,6 +327,16 @@ End Sub
 Private Sub ClearOneHistoricGeobase(Optional ByVal scope As Byte = 0)
     Dim confirm As Boolean
     Dim lstObj As Object
+    Dim geoObj As LLGeo
+
+    'The manager is read before the question, so a workbook whose geobase
+    'cannot be built says so rather than asking the user to confirm a clear
+    'that fails.
+    Set geoObj = GeoOf()
+    If geoObj Is Nothing Then
+        MsgBox GeoFailureMessage(), vbCritical + vbOKOnly
+        Exit Sub
+    End If
 
     confirm = (MsgBox( _
         tradmess.TranslatedValue("MSG_DeleteOneHistoric"), _
@@ -251,7 +351,7 @@ Private Sub ClearOneHistoricGeobase(Optional ByVal scope As Byte = 0)
         Set lstObj = Me.LST_HistoF
     End If
 
-    geo.ClearHistoric scope
+    geoObj.ClearHistoric scope
     lstObj.Clear
 
     MsgBox tradmess.TranslatedValue("MSG_Done"), _
@@ -260,6 +360,8 @@ Private Sub ClearOneHistoricGeobase(Optional ByVal scope As Byte = 0)
 End Sub
 
 Private Sub CMD_GeoClearHisto_Click()
+    'Module state dies on any unhandled error and the form outlives it.
+    If tradmess Is Nothing Then InitializeTrads
     InitializeElements
     ClearOneHistoricGeobase hfOrGeo
 End Sub
@@ -275,15 +377,15 @@ End Sub
 '===============================================================================
 
 Private Sub LST_Adm1_Click()
-    ShowAdmin2List Me.LST_Adm1.Value, GeoScopeAdmin
+    ShowAdminList 2, Me.LST_Adm1.Value, GeoScopeAdmin
 End Sub
 
 Private Sub LST_Adm2_Click()
-    ShowAdmin3List Me.LST_Adm2.Value, GeoScopeAdmin, SEP
+    ShowAdminList 3, Me.LST_Adm2.Value, GeoScopeAdmin, SEP
 End Sub
 
 Private Sub LST_Adm3_Click()
-    ShowAdmin4List Me.LST_Adm3.Value, GeoScopeAdmin, SEP
+    ShowAdminList 4, Me.LST_Adm3.Value, GeoScopeAdmin, SEP
 End Sub
 
 Private Sub LST_Adm4_Click()
@@ -293,16 +395,33 @@ Private Sub LST_Adm4_Click()
                         Me.LST_Adm4.Value
 End Sub
 
+'A double click on the list of level 2, 3 or 4 adds a name the geobase is
+'missing at that level, under the parents selected above it. The Click fires
+'first on an MSForms list, so the level below is already filled by the time
+'the double click arrives; AddAdminName empties it again. Admin 1 has no
+'parent and the facility lists carry a p-code, so neither gets this.
+Private Sub LST_Adm2_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
+    AddAdminName 2
+End Sub
+
+Private Sub LST_Adm3_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
+    AddAdminName 3
+End Sub
+
+Private Sub LST_Adm4_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
+    AddAdminName 4
+End Sub
+
 Private Sub LST_AdmF1_Click()
-    ShowAdmin2List Me.LST_AdmF1.Value, GeoScopeHF
+    ShowAdminList 2, Me.LST_AdmF1.Value, GeoScopeHF
 End Sub
 
 Private Sub LST_AdmF2_Click()
-    ShowAdmin3List Me.LST_AdmF2.Value, GeoScopeHF, SEP
+    ShowAdminList 3, Me.LST_AdmF2.Value, GeoScopeHF, SEP
 End Sub
 
 Private Sub LST_AdmF3_Click()
-    ShowAdmin4List Me.LST_AdmF3.Value, GeoScopeHF, SEP
+    ShowAdminList 4, Me.LST_AdmF3.Value, GeoScopeHF, SEP
 End Sub
 
 Private Sub LST_AdmF4_Click()

@@ -5,16 +5,28 @@ END
 Attribute VB_Name = "DiseaseWorksheetManager"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = False
+Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Provides safe worksheet removal utilities for disease setup workflows"
 
+'@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Provides safe worksheet removal utilities for disease setup workflows")
+'@depends ApplicationState
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IDiseaseWorksheetManager
+
+'Removes disease worksheets safely and tells whether one exists.
+
+'@section Factory
+'===============================================================================
+
+'@sub-title Build a fresh worksheet manager.
+'@return DiseaseWorksheetManager ready to use.
+Public Function Create() As DiseaseWorksheetManager
+    Set Create = New DiseaseWorksheetManager
+End Function
 
 '@section Commands
 '===============================================================================
@@ -23,20 +35,20 @@ Implements IDiseaseWorksheetManager
 '@param workbook Workbook hosting the worksheet collection.
 '@param sheetName String worksheet name to delete.
 '@return Boolean True when the worksheet existed and has been removed.
-Public Function RemoveWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
-    Dim guard As IDiseaseApplicationState
+Public Function RemoveWorksheet(ByVal targetBook As Workbook, ByVal sheetName As String) As Boolean
+    Dim guard As ApplicationState
     Dim targetSheet As Worksheet
     Dim errMessage As String
 
-    ValidateWorkbook workbook
+    ValidateWorkbook targetBook
     ValidateSheetName sheetName
 
-    Set targetSheet = FindWorksheet(workbook, sheetName)
+    Set targetSheet = FindWorksheet(targetBook, sheetName)
     If targetSheet Is Nothing Then Exit Function
 
     On Error GoTo Fail
 
-    Set guard = CreateGuard(workbook.Application)
+    Set guard = CreateGuard(targetBook.Application)
     targetSheet.Delete
     RemoveWorksheet = True
 
@@ -61,18 +73,18 @@ End Function
 '@param workbook Workbook hosting the worksheet collection.
 '@param sheetName String worksheet name to locate.
 '@return Boolean True when the worksheet exists.
-Public Function WorksheetExists(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
-    ValidateWorkbook workbook
+Public Function WorksheetExists(ByVal targetBook As Workbook, ByVal sheetName As String) As Boolean
+    ValidateWorkbook targetBook
     ValidateSheetName sheetName
-    WorksheetExists = Not FindWorksheet(workbook, sheetName) Is Nothing
+    WorksheetExists = Not FindWorksheet(targetBook, sheetName) Is Nothing
 End Function
 
 '@section Internal Helpers
 '===============================================================================
 
 '@sub-title Ensure the workbook reference is valid.
-Private Sub ValidateWorkbook(ByVal workbook As Workbook)
-    If workbook Is Nothing Then
+Private Sub ValidateWorkbook(ByVal targetBook As Workbook)
+    If targetBook Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Workbook reference cannot be Nothing"
     End If
 End Sub
@@ -85,10 +97,10 @@ Private Sub ValidateSheetName(ByVal sheetName As String)
 End Sub
 
 '@sub-title Locate the worksheet by name using case-insensitive comparison.
-Private Function FindWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Worksheet
+Private Function FindWorksheet(ByVal targetBook As Workbook, ByVal sheetName As String) As Worksheet
     Dim candidate As Worksheet
 
-    For Each candidate In workbook.Worksheets
+    For Each candidate In targetBook.Worksheets
         If StrComp(candidate.Name, sheetName, vbTextCompare) = 0 Then
             Set FindWorksheet = candidate
             Exit Function
@@ -97,11 +109,11 @@ Private Function FindWorksheet(ByVal workbook As Workbook, ByVal sheetName As St
 End Function
 
 '@sub-title Instantiate and activate an Application guard.
-Private Function CreateGuard(ByVal excelApp As Application) As IDiseaseApplicationState
-    Dim guard As IDiseaseApplicationState
+Private Function CreateGuard(ByVal excelApp As Application) As ApplicationState
+    Dim guard As ApplicationState
 
-    Set guard = New DiseaseApplicationState
-    guard.BeginGuard excelApp, False
+    Set guard = ApplicationState.Create(excelApp)
+    guard.ApplyBusyState suppressEvents:=True
     Set CreateGuard = guard
 End Function
 
@@ -112,14 +124,3 @@ End Function
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
     Err.Raise errNumber, "DiseaseWorksheetManager", errMessage
 End Sub
-
-'@section Interface
-'===============================================================================
-
-Private Function IDiseaseWorksheetManager_RemoveWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
-    IDiseaseWorksheetManager_RemoveWorksheet = RemoveWorksheet(workbook, sheetName)
-End Function
-
-Private Function IDiseaseWorksheetManager_WorksheetExists(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
-    IDiseaseWorksheetManager_WorksheetExists = WorksheetExists(workbook, sheetName)
-End Function

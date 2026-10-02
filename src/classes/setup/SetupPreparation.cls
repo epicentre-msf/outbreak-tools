@@ -10,23 +10,47 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Prepare dropdown lists and updated values registry for setup workbooks"
 
 Option Explicit
-Implements ISetupPreparation
 
 '@PredeclaredId
 '@Folder("Setup")
 '@ModuleDescription("Orchestrates dropdown registration and updated values initialisation for setup workbooks")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
-'@depends BetterArray, DropdownLists, UpdatedValues, CustomTable, ProjectError, IDevelopment
+'@depends BetterArray, DropdownLists, UpdatedValues, CustomTable, Checking, Development, HiddenNames, Messenger
 
 '@class SetupPreparation
 '@description
-'Orchestrates the preparation workflow for setup workbooks by registering
-'dropdown list objects, initialising the updated values registry, applying
-'data validations to setup tables (Dictionary, Exports, Analysis), and
-'configuring hidden and protected sheets. Consumed by the setup entry
-'point to prepare all worksheet assets before the workbook is ready for
-'use. Uses the predeclared factory pattern through the ISetupPreparation
-'interface.
+'Prepares a setup workbook for use. Configure binds the workbook and Prepare
+'runs the whole sequence: it registers the dropdown lists, rebuilds the update
+'registry, applies the data validations of the Dictionary, Exports and Analysis
+'tables, and hands Development the sheets to hide and to protect.
+'EnsureDropdowns and ResetUpdatedRegistry run those two steps on their own,
+'Dropdowns answers the dropdown manager and HostWorkbook the workbook.
+'
+'THE WORKBOOK-LEVEL STORE IS MADE HERE
+'-------------------------------------------------------------------------------
+'The setup kept its hidden names on a worksheet until now: EventSetup builds a
+'store over the registry worksheet for its translation counter, which is
+'worksheet scope. The silence switch is a fact about the whole file, so Prepare
+'makes a workbook-level store and seeds the switch on it. WorkbookStore answers
+'that store, and EventSetup reads the switch through Messenger.
+'
+'RUNNING PREPARE MORE THAN ONCE
+'-------------------------------------------------------------------------------
+'Prepare runs again on a workbook it has already prepared, and each step has
+'its own answer to a second run:
+'
+'- the 28 dropdowns are written again, so a new format or a new control value
+'  reaches an old workbook. Seven placeholder lists are left as they are; see
+'  RegisterAllDropdowns.
+'- the update registry is dropped and rebuilt in full; see
+'  ResetUpdatedRegistry.
+'- the 56 validations are applied again.
+'- a sheet that already exists keeps its visibility; see
+'  ResolveOrCreateWorksheet.
+'- the hidden and protected sheet lists are handed to Development, which skips
+'  a name it already holds.
+'- the workbook flags are ensured rather than written, so a setup that already
+'  carries the silence switch keeps the value it holds; see EnsureWorkbookFlags.
 
 
 '@section State
@@ -35,8 +59,9 @@ Private Type TSetupPreparation
     hostBook    As Workbook          'Workbook owning setup assets
     dropSheet   As Worksheet         'Worksheet hosting dropdown listobjects
     registrySheet As Worksheet       'Worksheet hosting updated values registry
-    dropdowns   As IDropdownLists    'Dropdown manager bound to drop sheet
-    updater     As IUpdatedValues    'Updated values watcher bound to registry sheet
+    dropdowns   As DropdownLists    'Dropdown manager bound to drop sheet
+    updater     As UpdatedValues    'Updated values watcher bound to registry sheet
+    wkbStore    As HiddenNames      'Workbook-level hidden names manager
 End Type
 
 Private this As TSetupPreparation
@@ -44,7 +69,6 @@ Private this As TSetupPreparation
 '@section Constants
 '===============================================================================
 Private Const SHEET_DROPDOWNS As String = "__variables"
-Private Const SHEET_FORMATTER As String = "__formatter"
 Private Const SHEET_UPDATED As String = "__updated"
 Private Const SHEET_FORMULA As String = "__formula"
 Private Const SHEET_DICTIONARY As String = "Dictionary"
@@ -53,9 +77,7 @@ Private Const SHEET_ANALYSIS As String = "Analysis"
 Private Const SHEET_EXPORTS As String = "Exports"
 Private Const SHEET_PASS As String = "__pass"
 Private Const SHEET_DEV As String = "Dev"
-Private Const SHEET_CHECKING As String = "__checkRep"
 Private Const DROPDOWN_PREFIX As String = "dropdown_"
-Private Const STATUS_DEFAULT As String = "no"
 Private Const SHEET_TRANSLATIONS As String = "Translations"
 
 Private Const TABLE_DICTIONARY As String = "Tab_Dictionary"
@@ -76,60 +98,18 @@ Private Const TABLE_ANALYSIS_SPATIOTEMP As String = "Tab_SpatioTemporal_Analysis
 '@sub-title Create an initialised SetupPreparation instance
 '@details
 'Factory method on the predeclared instance. Validates the workbook is
-'not Nothing via Configure, then returns the new instance through the
-'ISetupPreparation interface.
+'not Nothing via Configure, then returns the new instance.
 '@param hostBook Workbook. The workbook hosting setup worksheets.
-'@return ISetupPreparation. A fully initialised instance ready for use.
+'@return SetupPreparation. A fully initialised instance ready for use.
 '@throws ProjectError.ObjectNotInitialized When hostBook is Nothing.
 '@export
-Public Function Create(ByVal hostBook As Workbook) As ISetupPreparation
+Public Function Create(ByVal hostBook As Workbook) As SetupPreparation
     Dim instance As SetupPreparation
 
     Set instance = New SetupPreparation
     instance.Configure hostBook
-    Set Create = instance.Self
+    Set Create = instance
 End Function
-
-'@label:self
-'@prop-title Current object instance
-'@return ISetupPreparation. The current instance cast to the interface.
-Public Property Get Self() As ISetupPreparation
-    Set Self = Me
-End Property
-
-'@section ISetupPreparation implementation
-'===============================================================================
-'@description Delegated members satisfying the ISetupPreparation contract.
-'See the corresponding Public members above for full documentation.
-
-
-Private Sub ISetupPreparation_Configure(ByVal hostBook As Workbook)
-    Configure hostBook
-End Sub
-
-Private Sub ISetupPreparation_Prepare(ByRef manager As IDevelopment)
-    Prepare manager
-End Sub
-
-Private Sub ISetupPreparation_EnsureDropdowns()
-    EnsureDropdowns
-End Sub
-
-Private Sub ISetupPreparation_EnsureUpdatedRegistry()
-    EnsureUpdatedRegistry
-End Sub
-
-Private Property Get ISetupPreparation_Dropdowns() As IDropdownLists
-    Set ISetupPreparation_Dropdowns = Dropdowns
-End Property
-
-Private Property Get ISetupPreparation_UpdatedWatcher() As IUpdatedValues
-    Set ISetupPreparation_UpdatedWatcher = UpdatedWatcher
-End Property
-
-Private Property Get ISetupPreparation_HostWorkbook() As Workbook
-    Set ISetupPreparation_HostWorkbook = HostWorkbook
-End Property
 
 '@section Public API
 '===============================================================================
@@ -155,15 +135,26 @@ End Sub
 '@sub-title Execute the full preparation workflow
 '@details
 'Runs the complete preparation sequence: registers all dropdown list objects,
-'initialises the updated values registry, applies data validations to the
-'Dictionary, Exports, and Analysis tables, then registers hidden and
-'protected sheets via the supplied development manager.
-'@param manager IDevelopment. Development manager providing hidden/protected sheet registration.
+'rebuilds the updated values registry, applies data validations to the
+'Dictionary, Exports, and Analysis tables, seeds the workbook-level flags, then
+'registers hidden and protected sheets via the supplied development manager.
+'
+'The manager is tested first so a missing one stops the run before any
+'worksheet is written. RibbonDev.EnsureDevelopment answers Nothing on any
+'failure and its caller passes that straight through, so this is a case a
+'user reaches.
+'@param manager Development. Development manager providing hidden/protected sheet registration.
+'@throws ProjectError.ObjectNotInitialized When manager is Nothing.
 '@export
-Public Sub Prepare(ByRef manager As IDevelopment)
+Public Sub Prepare(ByRef manager As Development)
+    If manager Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, "Development manager reference is required"
+    End If
+
     EnsureDropdowns
-    EnsureUpdatedRegistry
+    ResetUpdatedRegistry
     ApplyValidationsAndUpdates
+    EnsureWorkbookFlags
     EnsureHiddenSheets manager
     EnsureProtectedSheets manager
 End Sub
@@ -173,53 +164,57 @@ End Sub
 '@details
 'Creates the dropdown manager if needed, then calls RegisterAllDropdowns to
 'populate every standard dropdown list on the dropdown worksheet. Safe to
-'call multiple times; the manager creation is a no-op when already
-'initialised.
+'call again: the manager is built once, and a list that is already on the
+'sheet is written with its current values.
 '@export
 Public Sub EnsureDropdowns()
     EnsureDropdownManager
     RegisterAllDropdowns
 End Sub
 
-'@label:ensure-updated-registry
-'@sub-title Initialise the updated values registry and register watched tables
+'@label:reset-updated-registry
+'@sub-title Drop every registry table and build it again from the watched sheets
 '@details
-'Creates the update watcher if needed, clears any existing registry data,
-'registers the watched setup sheets (Dictionary, Choices, Analysis, Exports),
-'and resets all status tags to "yes" (the default ready state).
+'This is a teardown. DeleteUp removes every registry ListObject on the
+'registry sheet, then the watched setup sheets (Dictionary, Choices,
+'Analysis, Exports) are registered again and every status tag is written
+'back as "yes". A registry that was already there is lost, so this is the
+'wrong call for topping one up. Two of the three callers press a ribbon
+'button that means "start again"; the third is Prepare.
 '@export
-Public Sub EnsureUpdatedRegistry()
+Public Sub ResetUpdatedRegistry()
     EnsureUpdatedValuesWatcher
-    ResetUpdatedRegistry
+    this.updater.DeleteUp
     RegisterWatchedSheets
     ResetRegistryStatuses
 End Sub
 
 
+'@label:workbook-store
+'@prop-title Workbook-level hidden names of the setup
+'@details
+'Returns the HiddenNames manager bound to the setup workbook itself, creating
+'it on first access. This is the store the silence switch sits in. EventSetup's
+'own store is bound to the registry worksheet and holds worksheet-scoped names,
+'so the two do not overlap.
+'@return HiddenNames. The workbook-level store.
+'@export
+Public Property Get WorkbookStore() As HiddenNames
+    EnsureWorkbookStore
+    Set WorkbookStore = this.wkbStore
+End Property
+
 '@label:dropdowns
 '@prop-title Dropdown manager for external callers
 '@details
-'Returns the IDropdownLists manager bound to the dropdown worksheet.
+'Returns the DropdownLists manager bound to the dropdown worksheet.
 'Lazily initialises the manager on first access if it was not already
 'created by EnsureDropdowns or Prepare.
-'@return IDropdownLists. The dropdown manager instance.
+'@return DropdownLists. The dropdown manager instance.
 '@export
-Public Property Get Dropdowns() As IDropdownLists
+Public Property Get Dropdowns() As DropdownLists
     EnsureDropdownManager
     Set Dropdowns = this.dropdowns
-End Property
-
-'@label:updated-watcher
-'@prop-title Updated values watcher for external callers
-'@details
-'Returns the IUpdatedValues watcher bound to the registry worksheet.
-'Lazily initialises the watcher on first access if it was not already
-'created by EnsureUpdatedRegistry or Prepare.
-'@return IUpdatedValues. The update watcher instance.
-'@export
-Public Property Get UpdatedWatcher() As IUpdatedValues
-    EnsureUpdatedValuesWatcher
-    Set UpdatedWatcher = this.updater
 End Property
 
 '@label:host-workbook
@@ -245,6 +240,34 @@ Private Sub ResetCaches()
     Set this.updater = Nothing
     Set this.dropSheet = Nothing
     Set this.registrySheet = Nothing
+    Set this.wkbStore = Nothing
+End Sub
+
+'@label:ensure-workbook-store
+'@sub-title Ensure the workbook-level hidden names store exists
+'@details
+'Creates the HiddenNames instance over the host workbook on first access.
+'HiddenNames.Create walks the whole Names collection, which its own header
+'calls the largest cost that class has, so the store is built once and kept.
+Private Sub EnsureWorkbookStore()
+    If this.wkbStore Is Nothing Then
+        Set this.wkbStore = HiddenNames.Create(EnsureWorkbook)
+    End If
+End Sub
+
+'@label:ensure-workbook-flags
+'@sub-title Seed the workbook-level flags of the setup
+'@details
+'Seeds the silence switch, __OBT__SILENT_OPERATIONS__, with "No". "No" means
+'the setup shows every message box it has always shown, so a person pressing
+'buttons sees no change at all. The name and both values are read off
+'Messenger, which is the one place that string is written on the VBA side.
+'
+'EnsureName leaves a name that is already there alone, so a second Prepare on a
+'setup someone switched to "Yes" keeps that value.
+Private Sub EnsureWorkbookFlags()
+    EnsureWorkbookStore
+    this.wkbStore.EnsureName Messenger.SwitchName, Messenger.SwitchOffValue, HiddenNameTypeString
 End Sub
 
 '@label:ensure-dropdown-manager
@@ -277,13 +300,6 @@ Private Sub EnsureUpdatedValuesWatcher()
     Set this.updater = UpdatedValues.Create(registry)
 End Sub
 
-'@label:reset-updated-registry
-'@sub-title Reset the updated values registry prior to registering watched tables
-Private Sub ResetUpdatedRegistry()
-    If this.updater Is Nothing Then Exit Sub
-    this.updater.DeleteUp
-End Sub
-
 '@label:apply-validations-and-updates
 '@sub-title Apply data validation rules to all setup tables
 '@details
@@ -291,7 +307,7 @@ End Sub
 'ApplyDictionaryValidations, ApplyExportsValidations, and
 'ApplyAnalysisValidations to wire each table column to its dropdown list.
 Private Sub ApplyValidationsAndUpdates()
-    Dim drop As IDropdownLists
+    Dim drop As DropdownLists
 
     EnsureDropdownManager
     Set drop = this.dropdowns
@@ -305,16 +321,20 @@ End Sub
 '@details
 'Calls manager.AddHiddenSheet for each internal worksheet constant
 '(updated, variables, formatter, pass, formula, dev).
-'@param manager IDevelopment. Development manager to register with.
+'
+'__checkRep is left off this list on purpose. SetupErrors publishes its
+'report there, so the sheet has to stay visible and writable.
+'EventSetup.ProtectSetupSheet returns early for it by name for the same
+'reason.
+'@param manager Development. Development manager to register with.
 '@throws ProjectError.ObjectNotInitialized When manager is Nothing.
-Private Sub EnsureHiddenSheets(ByRef manager As IDevelopment)
+Private Sub EnsureHiddenSheets(ByRef manager As Development)
     If manager Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Development manager reference is required"
     End If
 
     manager.AddHiddenSheet SHEET_UPDATED
     manager.AddHiddenSheet SHEET_DROPDOWNS
-    manager.AddHiddenSheet SHEET_FORMATTER
     manager.AddHiddenSheet SHEET_PASS
     manager.AddHiddenSheet SHEET_FORMULA
     manager.AddHiddenSheet SHEET_DEV
@@ -325,9 +345,9 @@ End Sub
 '@details
 'Calls manager.AddProtectedSheet for each user-facing worksheet, specifying
 'whether filtering and sorting are allowed on the protected sheet.
-'@param manager IDevelopment. Development manager to register with.
+'@param manager Development. Development manager to register with.
 '@throws ProjectError.ObjectNotInitialized When manager is Nothing.
-Private Sub EnsureProtectedSheets(ByRef manager As IDevelopment)
+Private Sub EnsureProtectedSheets(ByRef manager As Development)
 
     If manager Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Development manager reference is required"
@@ -349,6 +369,15 @@ End Sub
 'variable status/type/control, sheet type, export options, analysis
 'parameters, geo variables, chart types, etc.). The dropdown names use
 'the double-underscore prefix convention.
+'
+'PLACEHOLDER LISTS
+'-------------------------------------------------------------------------------
+'Seven lists are seeded here with two empty strings and filled later by
+'EventSetup.AddOrUpdateDrop from the workbook's own content: __geo_vars,
+'__hfonly_vars, __geoonly_vars, __choice_vars, __time_vars, __graphs_titles
+'and __series_titles. They pass allowRefresh:=False so a second Prepare
+'leaves what the user has in them. Every other list is owned by this
+'routine and is written again on each Prepare.
 Private Sub RegisterAllDropdowns()
     RegisterDropdown "__yesno", Array("yes", "no")
     RegisterDropdown "__formats", Array("integer", "round0", "round1", "round2", "round3", _
@@ -361,11 +390,11 @@ Private Sub RegisterAllDropdowns()
                                             "choice_multiple", "formula", "geo", "hf", "list_auto", "case_when")
     RegisterDropdown "__var_print", Array("print, horizontal header", "print, vertical header", "hidden")
     RegisterDropdown "__var_alert", Array("error", "warning", "info")
-    RegisterDropdown "__geo_vars", Array(vbNullString, vbNullString)
-    RegisterDropdown "__hfonly_vars", Array(vbNullString, vbNullString)
-    RegisterDropdown "__geoonly_vars", Array(vbNullString, vbNullString)
-    RegisterDropdown "__choice_vars", Array(vbNullString, vbNullString)
-    RegisterDropdown "__time_vars", Array(vbNullString, vbNullString)
+    RegisterDropdown "__geo_vars", Array(vbNullString, vbNullString), allowRefresh:=False
+    RegisterDropdown "__hfonly_vars", Array(vbNullString, vbNullString), allowRefresh:=False
+    RegisterDropdown "__geoonly_vars", Array(vbNullString, vbNullString), allowRefresh:=False
+    RegisterDropdown "__choice_vars", Array(vbNullString, vbNullString), allowRefresh:=False
+    RegisterDropdown "__time_vars", Array(vbNullString, vbNullString), allowRefresh:=False
     RegisterDropdown "__hf_or_geo", Array("hf", "geo")
     RegisterDropdown "__export_status", Array("active", "inactive")
     RegisterDropdown "__export_format", Array("xlsx", "xlsb")
@@ -376,7 +405,7 @@ Private Sub RegisterAllDropdowns()
     RegisterDropdown "__perc_val", Array("percentages", "values")
     RegisterDropdown "__chart_type", Array("bar", "line", "point")
     RegisterDropdown "__axis_pos", Array("left", "right")
-    RegisterDropdown "__swicth_tables", Array( _
+    RegisterDropdown "__switch_tables", Array( _
         "Add or remove rows of global summary", _
         "Add or remove rows of univariate analysis", _
         "Add or remove rows of bivariate analysis", _
@@ -387,21 +416,27 @@ Private Sub RegisterAllDropdowns()
         "Add or remove rows of spatio-temporal specifications", _
         "Add or remove rows of spatio-temporal analysis", _
         "Add or remove rows of all tables")
-    RegisterDropdown "__graphs_titles", Array(vbNullString, vbNullString)
-    RegisterDropdown "__series_titles", Array(vbNullString, vbNullString)
+    RegisterDropdown "__graphs_titles", Array(vbNullString, vbNullString), allowRefresh:=False
+    RegisterDropdown "__series_titles", Array(vbNullString, vbNullString), allowRefresh:=False
     RegisterDropdown "__checking_types", Array("all", "errors", "warnings", "info")
 End Sub
 
 '@label:register-dropdown
-'@sub-title Register a single dropdown by converting the values into a BetterArray
+'@sub-title Write one dropdown, adding it or refreshing what is already there
 '@details
 'Ensures the dropdown manager is initialised, converts the supplied Variant
-'array into a BetterArray (1-based), and adds it to the dropdown manager
-'under the given name.
+'array into a BetterArray (1-based), then writes it. DropdownLists.Add exits
+'when the name is already on the sheet, so a workbook prepared once would
+'keep its old lists for ever. A list this class owns is sent to Update
+'instead, which is what makes a second Prepare pick up a new format or a new
+'control value.
 '@param dropdownName String. The name to register the dropdown under.
 '@param values Variant. An array of values or a single value to populate the dropdown.
-Private Sub RegisterDropdown(ByVal dropdownName As String, ByVal values As Variant)
+'@param allowRefresh Optional Boolean. True lets an existing list be written again. Pass False for the seven lists EventSetup fills. Defaults to True.
+Private Sub RegisterDropdown(ByVal dropdownName As String, ByVal values As Variant, _
+                             Optional ByVal allowRefresh As Boolean = True)
     Dim listValues As BetterArray
+    Dim alreadyThere As Boolean
     Dim idx As Long
 
     EnsureDropdownManager
@@ -417,7 +452,13 @@ Private Sub RegisterDropdown(ByVal dropdownName As String, ByVal values As Varia
         listValues.Push values
     End If
 
-    this.dropdowns.Add listValues, dropdownName
+    alreadyThere = this.dropdowns.Exists(dropdownName)
+
+    If Not alreadyThere Then
+        this.dropdowns.Add listValues, dropdownName
+    ElseIf allowRefresh Then
+        this.dropdowns.Update listValues, dropdownName, removeDuplicates:=False
+    End If
 End Sub
 
 '@label:register-watched-sheets
@@ -494,7 +535,9 @@ Private Function EnsureRegistrySheet() As Worksheet
 
     Dim sh As Worksheet
 
-    Set sh = ResolveOrCreateWorksheet(SHEET_UPDATED, addVisibility:=False)
+    'A registry sheet the user never opens is created hidden. Deploy makes it
+    'very hidden later; before that it has no reason to be on screen.
+    Set sh = ResolveOrCreateWorksheet(SHEET_UPDATED, xlSheetHidden)
     Set this.registrySheet = sh
     Set EnsureRegistrySheet = sh
 End Function
@@ -531,15 +574,19 @@ End Function
 '@sub-title Resolve a worksheet if it exists, otherwise create one
 '@details
 'Looks up the worksheet by name in the host workbook. When not found,
-'appends a new worksheet at the end and assigns the given name. Optionally
-'applies the supplied visibility state.
+'appends a new worksheet at the end, assigns the given name and applies the
+'supplied visibility.
+'
+'The visibility is written on creation alone. A sheet that is already there
+'keeps whatever state the workbook left it in, so a prepared workbook whose
+'__variables sheet is hidden stays hidden after another Prepare. Nothing in
+'this class hides these sheets again, and Development.Deploy is what makes
+'them very hidden at deploy time.
 '@param sheetName String. The worksheet name to look up or create.
-'@param visibility Optional XlSheetVisibility. Visibility state to apply when addVisibility is True.
-'@param addVisibility Optional Boolean. When True, applies the visibility parameter. Defaults to True.
+'@param visibility Optional XlSheetVisibility. Visibility state for a newly created sheet. Defaults to xlSheetVisible.
 '@return Worksheet. The resolved or newly created worksheet.
 Private Function ResolveOrCreateWorksheet(ByVal sheetName As String, _
-                                          Optional ByVal visibility As XlSheetVisibility, _
-                                          Optional ByVal addVisibility As Boolean = True) As Worksheet
+                                          Optional ByVal visibility As XlSheetVisibility = xlSheetVisible) As Worksheet
     Dim sh As Worksheet
     Dim wb As Workbook
 
@@ -549,12 +596,15 @@ Private Function ResolveOrCreateWorksheet(ByVal sheetName As String, _
         Set sh = wb.Worksheets(sheetName)
     On Error GoTo 0
 
-    If sh Is Nothing Then
-        Set sh = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
-        sh.Name = sheetName
+    If Not sh Is Nothing Then
+        Set ResolveOrCreateWorksheet = sh
+        Exit Function
     End If
 
-    If addVisibility Then sh.Visible = visibility
+    Set sh = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+    sh.Name = sheetName
+    sh.Visible = visibility
+
     Set ResolveOrCreateWorksheet = sh
 End Function
 
@@ -564,10 +614,10 @@ End Function
 'Resolves the Dictionary worksheet and its Tab_Dictionary ListObject,
 'then wires each column (sheet type, status, variable type, format,
 'control, etc.) to its corresponding dropdown list via SetValidation.
-'@param drop IDropdownLists. The dropdown manager providing validation ranges.
-Private Sub ApplyDictionaryValidations(ByVal drop As IDropdownLists)
+'@param drop DropdownLists. The dropdown manager providing validation ranges.
+Private Sub ApplyDictionaryValidations(ByVal drop As DropdownLists)
     Dim sh As Worksheet
-    Dim table As ICustomTable
+    Dim table As CustomTable
 
     Set sh = RequireWorksheet(SHEET_DICTIONARY)
     Set table = RequireCustomTable(sh, TABLE_DICTIONARY)
@@ -590,10 +640,10 @@ End Sub
 '@details
 'Resolves the Exports worksheet and its Tab_Export ListObject, then wires
 'each column (status, file format, password, etc.) to its dropdown list.
-'@param drop IDropdownLists. The dropdown manager providing validation ranges.
-Private Sub ApplyExportsValidations(ByVal drop As IDropdownLists)
+'@param drop DropdownLists. The dropdown manager providing validation ranges.
+Private Sub ApplyExportsValidations(ByVal drop As DropdownLists)
     Dim sh As Worksheet
-    Dim table As ICustomTable
+    Dim table As CustomTable
 
     Set sh = RequireWorksheet(SHEET_EXPORTS)
     Set table = RequireCustomTable(sh, TABLE_EXPORTS)
@@ -616,17 +666,29 @@ End Sub
 '(global summary, univariate, bivariate, time series, graph, spatial,
 'spatio-temporal specs, spatio-temporal) to their respective dropdown
 'lists.
-'@param drop IDropdownLists. The dropdown manager providing validation ranges.
-Private Sub ApplyAnalysisValidations(ByVal drop As IDropdownLists)
+'
+'TWO GAPS ON THE SPATIO-TEMPORAL TABLE
+'-------------------------------------------------------------------------------
+'"flip coordinates" is wired here the way it is on the spatial table, and a
+'setup workbook whose Tab_SpatioTemporal_Analysis has no such column gets
+'nothing: CustomTable.SetValidation resolves the name through DataRange,
+'which answers Nothing, and the call ends without a word. The column belongs
+'in the workbook; the line stays so it works once the column is there.
+'
+'"Section (select)" and "Spatial type" on the same table are left alone.
+'Tab_SpatioTemporal_Specs owns the spatial type for the pair, and the section
+'is chosen from the specs table.
+'@param drop DropdownLists. The dropdown manager providing validation ranges.
+Private Sub ApplyAnalysisValidations(ByVal drop As DropdownLists)
     Dim sh As Worksheet
-    Dim table As ICustomTable
+    Dim table As CustomTable
     Dim targetRange As Range
 
     Set sh = RequireWorksheet(SHEET_ANALYSIS)
 
     Set targetRange = ResolveNamedRange(sh, "RNG_SelectTable")
     If Not targetRange Is Nothing Then
-        drop.SetValidation targetRange, "__swicth_tables", "error"
+        drop.SetValidation targetRange, "__switch_tables", "error"
     End If
 
     Set table = RequireCustomTable(sh, TABLE_ANALYSIS_GLOBAL)
@@ -722,8 +784,8 @@ End Function
 '@sub-title Return a CustomTable helper for the requested ListObject
 '@param sh Worksheet. The worksheet hosting the ListObject.
 '@param listName String. The ListObject name to wrap.
-'@return ICustomTable. A CustomTable wrapper for the ListObject.
-Private Function RequireCustomTable(ByVal sh As Worksheet, ByVal listName As String) As ICustomTable
+'@return CustomTable. A CustomTable wrapper for the ListObject.
+Private Function RequireCustomTable(ByVal sh As Worksheet, ByVal listName As String) As CustomTable
     Dim lo As ListObject
 
     Set lo = RequireListObject(sh, listName)
@@ -739,14 +801,6 @@ Private Function ResolveNamedRange(ByVal sh As Worksheet, ByVal rangeName As Str
     On Error Resume Next
         Set ResolveNamedRange = sh.Range(rangeName)
     On Error GoTo 0
-End Function
-
-'@label:normalize-text
-'@sub-title Normalise a string for case-insensitive comparisons
-'@param valueText String. The text to normalise.
-'@return String. The trimmed, lowercased text.
-Private Function NormalizeText(ByVal valueText As String) As String
-    NormalizeText = LCase$(Trim$(valueText))
 End Function
 
 '@section Error handling

@@ -15,19 +15,68 @@ Attribute VB_Description = "Spatial analysis table management"
 '@IgnoreModule UnrecognizedAnnotation, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements ILLSpatial
 
 '@class LLSpatial
 '@description
-'Manages the spatial analysis tables that aggregate filtered linelist data
-'by geographic admin level and health facility. The spatial sheet contains
-'a "listofgeovars" ListObject that lists which variables have spatial
-'tables, and one ListObject per admin level per variable (named
-'"spatial_adm1_varname" etc.) holding aggregated values, formula columns,
-'and attack rate columns. This class populates those tables from filtered
-'companion sheets, sorts them by formula or attack rate, and retrieves
-'ranked values for use in analyses and graphs.
-'@depends BetterArray
+'Fills the spatial analysis tables of a generated linelist, orders them, and
+'reads ranked values back out for the TopAdmin, TopPop and TopHF worksheet
+'functions. Exists says whether the registry table is there, Update fills the
+'tables from the data sheets, Sort orders them, and TopGeoValue and TopHFValue
+'answer one ranked value.
+'
+'This class also owns the formula rewriting of the spatial analysis events.
+'RewriteFormulas moves a token through every formula of a range while keeping
+'each formula's array state, ChangeAdminLevel moves one table to a new admin
+'level, PreviousSectionLevel and MigrateSection move the formula columns of a
+'spatio-temporal section the same way, ApplyPopulationFactor divides values by
+'the population or restores them, and FormatPopulationFactor shows or hides
+'the factor cells. The event dispatch stays with the callers: EventLinelist
+'and GeoModule read what the user changed and hand the work over here, so the
+'array-formula handling is written once.
+'
+'THE CONTRACT WITH SPATIALTABLES
+'-------------------------------------------------------------------------------
+'SpatialTables builds these tables at build time and this class fills them at
+'run time. The two never reference each other: the contract is a set of names
+'agreed by string convention across a workbook boundary, and both files hold
+'their own copy of the four constants and the two name builders. That is the
+'house rule, a class keeps every constant it needs inside itself. Change a name
+'here and change it in SpatialTables in the same commit.
+'
+'    listofgeovars              one row per spatial variable, "<var>_<tabId>"
+'    spatial_<level>_<var>      one ListObject per level
+'      column 1  tabl_<level>_<var>    the lookup key this class writes
+'      column 2  formula_<level>       the value this class sorts on
+'      column 3  population_<level>    administrative levels only
+'      column 4  attack_rate_<level>   administrative levels only
+'
+'The width of a table and the meaning of each column are SpatialTables to
+'decide. Every column is resolved by name here, so a table that grows a column
+'keeps working.
+'
+'WHERE THE VALUES COME FROM
+'-------------------------------------------------------------------------------
+'Update walks the HList sheets of the workbook. A column controlled by geo1 or
+'by hf names a variable, and the filtered companion sheet of that HList carries
+'the concatenated geo values of that variable, one column per administrative
+'level. The distinct values of that column are the rows of the spatial table.
+'The reading and the de-duplication happen in memory: one read of the column
+'and a delimited index of the values already kept.
+'
+'WHAT A MISSING REGISTRY MEANS
+'-------------------------------------------------------------------------------
+'Linelist creates the spatial worksheet on every linelist, and SpatialTables
+'creates the listofgeovars table when a spatial cross-table is defined. So a
+'linelist with geo variables and no spatial analysis has the sheet with no
+'table in it, and Update on such a sheet does nothing: Exists, the variable
+'lookup and Sort all answer empty when the table is absent.
+'
+'RNG_TESTINGFORMULA BELONGS TO SPATIALTABLES
+'-------------------------------------------------------------------------------
+'SpatialTables.Prepare creates it and SpatialTables.FailedFormula reads it.
+'This class leaves it alone.
+'@depends BetterArray, HiddenNames, Checking
+'@version 2026-08-12
 
 
 '@section State
@@ -35,14 +84,60 @@ Implements ILLSpatial
 
 Private Type TLLSpatial
     sh As Worksheet
+    sealed As Boolean
 End Type
 
 Private this As TLLSpatial
 Private Const CLASS_NAME As String = "LLSpatial"
-Private Const SPATIAL_SHEET As String = "spatial_tables__"
+Private Const SPATIAL_SHEET As String = "__spatial_tables"
 Private Const ADMIN As String = "adm"
 Private Const CONCAT As String = "concat_"
 Private Const HF As String = "hf"
+
+' The registry of spatial variables. SpatialTables.Prepare builds it.
+Private Const REGISTRY_TABLE As String = "listofgeovars"
+
+' How many tables a geographic variable carries.
+Private Const ADMIN_LEVELS As Long = 4
+
+' The hidden names an HList sheet carries, and the suffix VarWriter appends to a
+' variable name for its control value.
+Private Const SHEET_TAG As String = "sheet_type"
+Private Const FILTERED_SHEET As String = "filtered_sheet"
+Private Const TABLE_NAME As String = "table_name"
+Private Const CONTROL_SUFFIX As String = " -- control"
+
+' The separator of the de-duplication index. It sits on both sides of every
+' entry, so a short entry cannot match inside a longer one. A Const takes a
+' constant expression, which rules out a Chr$ or ChrW$ call.
+Private Const KEY_SEPARATOR As String = vbNullChar
+
+' What a rank property answers when it is called without a table identifier. It
+' goes into the cell of the worksheet function, so the reader sees why the cell
+' is not a value.
+Private Const NO_TABLE_ID As String = "#missing table id"
+
+' An empty string literal as a formula carries it: two doubled quotes. The
+' population wrap writes it as the IFERROR answer and the revert takes the
+' same text back off.
+Private Const EMPTY_TEXT As String = """"""
+
+' The named ranges of one spatial analysis table. CrossTable and AnalysisOutput
+' write them at build time, and the formula rewriting below resolves each of
+' them on the analysis sheet it is handed, suffixed with the table identifier.
+Private Const OUTER_VALUES As String = "OUTER_VALUES_"
+Private Const PREVIOUS_ADM As String = "PREVIOUS_ADM_"
+Private Const ROW_CATEGORIES As String = "ROW_CATEGORIES_"
+Private Const POP_FACTOR As String = "POPFACT_"
+Private Const POP_PREV_FACTOR As String = "POPPREVFACT_"
+Private Const POP_FACTOR_LABEL As String = "POPFACTLABEL_"
+
+' The named ranges of one spatio-temporal section. AnalysisOutput names the
+' header row of formula columns per table, and one LABEL cell per named column;
+' the VALUES block of a column derives from the name of its header cell.
+Private Const SPT_FORMULA_COLUMN As String = "SPT_FORMULA_COLUMN_"
+Private Const LABEL_TOKEN As String = "LABEL"
+Private Const VALUES_TOKEN As String = "VALUES"
 
 '@section Factory
 '===============================================================================
@@ -50,33 +145,44 @@ Private Const HF As String = "hf"
 '@label:create
 '@sub-title Create a new LLSpatial instance from the spatial tables worksheet
 '@details
-'Factory method that validates the supplied worksheet meets requirements
-'(must be named "spatial_tables__" and contain the "listofgeovars"
-'ListObject), then returns a new instance through the ILLSpatial
-'interface. Called on the predeclared instance.
+'Factory method that checks the supplied worksheet is given and is named
+'"__spatial_tables", then returns a new instance. Called on the predeclared
+'instance.
+'
+'The listofgeovars table is left out of the check on purpose: the worksheet and
+'the table have different lifecycles, and a linelist that carries the sheet with
+'no table still needs an instance for the two callers that build one on every
+'run. See the class description.
 '@param sh Worksheet. The spatial tables worksheet.
-'@return ILLSpatial. A fully initialised instance ready for use.
+'@return LLSpatial. A fully initialised instance ready for use.
 '@throws ProjectError.ObjectNotInitialized When the worksheet is Nothing.
-'@throws ProjectError.InvalidArgument When the worksheet name is not "spatial_tables__".
+'@throws ProjectError.InvalidArgument When the worksheet name is not "__spatial_tables".
 '@export
-Public Function Create(ByVal sh As Worksheet) As ILLSpatial
+Public Function Create(ByVal sh As Worksheet) As LLSpatial
     CheckRequirements sh
 
-    With New LLSpatial
-        Set .Wksh = sh
-        Set Create = .Self
-    End With
+    Dim instance As LLSpatial
+    Set instance = New LLSpatial
+    Set instance.Wksh = sh
+    instance.Seal
+    Set Create = instance
 End Function
 
-'@label:self
-'@prop-title Current object instance
+'@label:seal
+'@sub-title Seal the instance against further setup writes.
 '@details
-'Convenience accessor so consuming code can fluently retrieve the
-'interface reference from the predeclared Create method.
-'@return ILLSpatial. The current instance cast to the interface.
-Public Property Get Self() As ILLSpatial
-    Set Self = Me
-End Property
+'Marks the instance as sealed so setup-only setters raise if called again.
+'Called by the factory after the last setup write.
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@sub-title Guard a setup-only setter against post-seal writes.
+'@param propName String. The property name used in the error message.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@label:wksh
 '@prop-title Spatial tables worksheet
@@ -89,31 +195,20 @@ End Property
 '@prop-title Assign the spatial tables worksheet
 '@param sh Worksheet. The worksheet to store.
 Public Property Set Wksh(ByVal sh As Worksheet)
+    GuardNotSealed "Wksh"
     Set this.sh = sh
 End Property
 
 '@section Naming Conventions
 '===============================================================================
 
-'@label:current-header-name
-'@prop-title Named range name for a spatial table header
-'@details
-'Builds the conventional named range name used to locate the header row
-'of a spatial table. The pattern is "tabl_{adminName}_{varName}".
-'@param varName String. The variable name component.
-'@param adminName String. The admin level component (e.g. "adm1", "hf").
-'@return String. The constructed named range name.
-Private Property Get CurrentHeaderName(ByVal varName As String, _
-                                       ByVal adminName As String) As String
-    CurrentHeaderName = "tabl_" & adminName & "_" & varName
-End Property
-
 '@label:current-lo-name
 '@prop-title ListObject name for a spatial table
 '@details
-'Builds the conventional ListObject name for a spatial table. The pattern
-'is "spatial_{adminName}_{varName}".
-'@param varName String. The variable name component.
+'Builds the conventional ListObject name for a spatial table. The pattern is
+'"spatial_{adminName}_{varName}", for instance "spatial_adm1_cases_sp1".
+'SpatialTables builds the same string from the same pieces.
+'@param varName String. The variable name component, with its table identifier.
 '@param adminName String. The admin level component (e.g. "adm1", "hf").
 '@return String. The constructed ListObject name.
 Private Property Get CurrentLoName(ByVal varName As String, _
@@ -121,50 +216,190 @@ Private Property Get CurrentLoName(ByVal varName As String, _
     CurrentLoName = "spatial_" & adminName & "_" & varName
 End Property
 
-'@section Exists
+'@section Worksheet Lookups
 '===============================================================================
-'@sub-title Get the sheet type tag from worksheet-level HiddenNames.
-'@param sh Worksheet. The worksheet to query.
-'@return String. The sheet type tag (HList, VList, etc.).
-Private Function SheetTagOf(ByVal sh As Worksheet) As String
-    Dim shHn As IHiddenNames
-    Set shHn = HiddenNames.Create(sh)
-    SheetTagOf = shHn.ValueAsString("sheet_type")
-End Function
+'@description The guarded resolvers every other section reads through. Each one
+'declares its own local, so a failed lookup answers Nothing rather than the
+'answer of the call before it.
 
-'@label:exists
-'@sub-title Check if a variable name exists in the spatial variables list
-'@details
-'Searches the "listofgeovars" ListObject range for a partial match of the
-'supplied variable name using xlPart matching. Returns True when at least
-'one cell contains the variable name as a substring, indicating that
-'spatial analysis tables exist for this variable.
-'@param varName String. Variable name or partial name to look up.
-'@return Boolean. True when the variable is found in the list.
-'@export
-Private Function Exists(ByVal varName As String) As Boolean
-    Dim listVarsRng As Range
-    Set listVarsRng = Wksh().ListObjects("listofgeovars").Range
-    Exists = Not (listVarsRng.Find(What:=varName, lookAt:=xlPart, _
-                                   MatchCase:=True) Is Nothing)
-End Function
-
-'@label:lo-exists
-'@sub-title Check if a ListObject exists on the spatial sheet
-'@details
-'Attempts to retrieve the named ListObject from the spatial worksheet.
-'Returns True when the object is found, False otherwise. Uses error
-'trapping to handle the case where the name does not exist.
-'@param loName String. The ListObject name to check.
-'@return Boolean. True when the ListObject exists.
-Private Function LoExists(ByVal loName As String) As Boolean
+'@label:lo-or-nothing
+'@sub-title The named ListObject of the spatial sheet, or Nothing
+'@param loName String. The ListObject name to resolve.
+'@return ListObject. The table, or Nothing when the sheet carries no such name.
+Private Function LoOrNothing(ByVal loName As String) As ListObject
     Dim Lo As ListObject
 
     On Error Resume Next
     Set Lo = Wksh().ListObjects(loName)
     On Error GoTo 0
 
-    LoExists = Not (Lo Is Nothing)
+    Set LoOrNothing = Lo
+End Function
+
+'@label:column-body-or-nothing
+'@sub-title The data body of one named column of a table, or Nothing
+'@param Lo ListObject. The table to read.
+'@param colName String. The column name.
+'@return Range. The data body of that column, or Nothing.
+Private Function ColumnBodyOrNothing(ByVal Lo As ListObject, _
+                                     ByVal colName As String) As Range
+    Dim col As ListColumn
+
+    On Error Resume Next
+    Set col = Lo.ListColumns(colName)
+    On Error GoTo 0
+
+    If col Is Nothing Then Exit Function
+    Set ColumnBodyOrNothing = col.DataBodyRange
+End Function
+
+'@label:column-range-or-nothing
+'@sub-title One named column of a table with its header, or Nothing
+'@param Lo ListObject. The table to read.
+'@param colName String. The column name.
+'@return Range. The whole column including its header, or Nothing.
+Private Function ColumnRangeOrNothing(ByVal Lo As ListObject, _
+                                      ByVal colName As String) As Range
+    Dim col As ListColumn
+
+    On Error Resume Next
+    Set col = Lo.ListColumns(colName)
+    On Error GoTo 0
+
+    If col Is Nothing Then Exit Function
+    Set ColumnRangeOrNothing = col.Range
+End Function
+
+'@label:range-values
+'@sub-title Read a range into a two dimensional array in one crossing
+'@details
+'Range.Value hands back a scalar for a single cell and an array for anything
+'wider, so a one-cell range is wrapped to give every caller the same shape.
+'@param rng Range. The range to read.
+'@return Variant. A 1-based two dimensional array of the values.
+Private Function RangeValues(ByVal rng As Range) As Variant
+    Dim oneCell(1 To 1, 1 To 1) As Variant
+
+    If rng.Cells.Count = 1 Then
+        oneCell(1, 1) = rng.Value
+        RangeValues = oneCell
+    Else
+        RangeValues = rng.Value
+    End If
+End Function
+
+'@section The Registry Of Spatial Variables
+'===============================================================================
+
+'@label:registered-names
+'@sub-title Every name the listofgeovars table holds
+'@details
+'One crossing reads the whole column into memory, and every match in this class
+'is then a string test. Range.Find inherits LookIn, SearchOrder and
+'SearchDirection from the last search of the Excel session, including one the
+'user ran from the Find dialog, so a lookup built on it can miss for a reason
+'that has nothing to do with the workbook.
+'
+'The header cell is left out because the data body is read on its own. A search
+'over the whole table range answered True for "list" on an empty table, and a
+'header hit could become a variable name.
+'@return BetterArray. The registered names, empty when the table is absent.
+Private Function RegisteredNames() As BetterArray
+    Dim Lo As ListObject
+    Dim body As Range
+    Dim readValues As Variant
+    Dim counter As Long
+    Dim entry As String
+    Dim held As BetterArray
+
+    Set held = New BetterArray
+
+    Set Lo = LoOrNothing(REGISTRY_TABLE)
+
+    If Not Lo Is Nothing Then
+        Set body = Lo.ListColumns(1).DataBodyRange
+
+        If Not body Is Nothing Then
+            readValues = RangeValues(body)
+
+            For counter = LBound(readValues, 1) To UBound(readValues, 1)
+                If Not IsError(readValues(counter, 1)) Then
+                    entry = CStr(readValues(counter, 1))
+                    If LenB(entry) > 0 Then held.Push entry
+                End If
+            Next
+        End If
+    End If
+
+    Set RegisteredNames = held
+End Function
+
+'@label:list-of-existing-var-names
+'@sub-title The spatial names one variable carries
+'@details
+'A registered name is always "<variable>_<tableId>", and one variable can carry
+'several spatial tables, so the test is on the prefix and the underscore that
+'follows it. A bare substring test also caught every other variable whose name
+'contains this one: with "cases" and "new_cases" both registered, updating
+'"cases" rewrote the four "new_cases_sp1" tables from the "concat_adm1_cases"
+'column, and the values landed in the wrong tables looking plausible.
+'@param varName String. The bare variable name.
+'@return BetterArray. The matching registered names.
+Private Function ListOfExistingVarNames(ByVal varName As String) As BetterArray
+    Dim names As BetterArray
+    Dim held As BetterArray
+    Dim counter As Long
+    Dim entry As String
+    Dim prefix As String
+
+    Set names = RegisteredNames()
+    Set held = New BetterArray
+    prefix = varName & "_"
+
+    For counter = names.LowerBound To names.UpperBound
+        entry = names.Item(counter)
+        If Left$(entry, Len(prefix)) = prefix Then held.Push entry
+    Next
+
+    Set ListOfExistingVarNames = held
+End Function
+
+'@label:registered-name-for-table
+'@sub-title The variable a table identifier belongs to
+'@details
+'The test is on the suffix. A substring test matched "sp10" and "sp11" when it
+'was asked for "sp1", so it broke on the day a linelist carried ten spatial
+'cross-tables.
+'@param tabId String. The table identifier.
+'@return String. The registered name, empty when nothing carries that identifier.
+Private Function RegisteredNameForTable(ByVal tabId As String) As String
+    Dim names As BetterArray
+    Dim counter As Long
+    Dim entry As String
+    Dim suffix As String
+
+    Set names = RegisteredNames()
+    suffix = "_" & tabId
+
+    For counter = names.LowerBound To names.UpperBound
+        entry = names.Item(counter)
+        If Right$(entry, Len(suffix)) = suffix Then
+            RegisteredNameForTable = entry
+            Exit Function
+        End If
+    Next
+End Function
+
+'@label:exists
+'@sub-title Check if a variable has spatial tables
+'@details
+'Answers True when the listofgeovars table carries at least one name built on
+'this variable. A spatial sheet with no listofgeovars table answers False.
+'@param varName String. The bare variable name to look up.
+'@return Boolean. True when the variable is registered.
+'@export
+Public Function Exists(ByVal varName As String) As Boolean
+    Exists = (ListOfExistingVarNames(varName).Length > 0)
 End Function
 
 '@section Update
@@ -173,239 +408,346 @@ End Function
 '@label:update
 '@sub-title Update all spatial tables from HList filtered data
 '@details
-'Iterates all worksheets in the workbook looking for HList sheets. For
-'each HList sheet, locates its filtered companion sheet (from cell(1,5)),
-'then walks the variable columns looking for geo1 and hf control values.
-'When a geo1 column is found, extracts the concat column data from the
-'filtered companion and calls UpdateSpatialValue to populate the spatial
-'tables for all four admin levels. When an hf column is found, does the
-'same for the HF spatial table. After processing all sheets, recalculates
-'the spatial sheet so formula columns update.
+'Walks the worksheets of the workbook and works on the HList ones. For each of
+'them it resolves the filtered companion sheet, then walks the variable columns
+'of the table looking for a control value of geo1 or of hf. A geo1 column takes
+'the concat column of the companion and fills the four administrative tables of
+'the variable; an hf column fills the single facility table. The spatial sheet is
+'recalculated at the end so the formula columns answer for the rows just written.
+'
+'The control value of a variable is a hidden name of the sheet, written by
+'VarWriter as "<variable> -- control". This routine used to read it from a hidden
+'worksheet row that stopped being written on 2026-02-06, so it matched nothing
+'and every spatial table stayed at the one blank row the build gave it.
+'
+'HOW THE SHEET TAG IS READ
+'-------------------------------------------------------------------------------
+'The tag test runs through HiddenNames.QuickValue, which reads the one stored
+'name off the worksheet. The full store is built for the HList sheets alone,
+'because those are the sheets whose variable columns are read below. The walk
+'used to build a store per worksheet of the workbook, and every name of an
+'analysis sheet was walked to answer a tag that named it as no HList.
+'@throws Any error raised while walking a sheet, after the spatial sheet has been
+'recalculated. The caller is what puts Excel back the way it found it.
 '@export
-Private Sub Update()
+Public Sub Update()
     Dim actsh As Worksheet
     Dim sh As Worksheet
-    Dim filtsh As Worksheet
     Dim wb As Workbook
-    Dim rng As Range
-    Dim tableName As String
-    Dim varName As String
-    Dim cellRng As Range
-    Dim controlValue As String
-    Dim Lo As ListObject
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errMessage As String
 
     Set actsh = Wksh()
     Set wb = actsh.Parent
 
+    On Error GoTo UpdateFailed
+
     For Each sh In wb.Worksheets
-
-        If SheetTagOf(sh) <> "HList" Then GoTo ContinueSheet
-
-        Set shHn = HiddenNames.Create(sh)
-
-        On Error Resume Next
-        Set filtsh = wb.Worksheets(shHn.ValueAsString("filtered_sheet"))
-        On Error GoTo 0
-
-        If filtsh Is Nothing Then GoTo ContinueSheet
-
-        Set Lo = Nothing
-        On Error Resume Next
-        Set Lo = filtsh.ListObjects(1)
-        On Error GoTo 0
-
-        If Lo Is Nothing Then GoTo ContinueSheet
-        If Lo.DataBodyRange Is Nothing Then GoTo ContinueSheet
-
-        tableName = shHn.ValueAsString("table_name")
-        Set cellRng = sh.Range(tableName & "_START")
-
-        Do While Not IsEmpty(cellRng)
-            controlValue = cellRng.Offset(-4).Value
-
-            If controlValue = "geo1" Then
-                varName = Replace(cellRng.Value, ADMIN & "1_", vbNullString)
-
-                If Exists(varName) Then
-                    On Error Resume Next
-                    Set rng = Lo.ListColumns(CONCAT & ADMIN & "1_" & varName).DataBodyRange()
-                    On Error GoTo 0
-
-                    If Not rng Is Nothing Then
-                        UpdateSpatialValue rng, varName
-                    End If
-                End If
-
-                'Skip geo2-4, pcodes, and concat columns (4+4+3 = 11)
-                Set cellRng = cellRng.Offset(, 11)
-
-            ElseIf controlValue = "hf" Then
-                varName = Replace(cellRng.Value, HF & "_", vbNullString)
-
-                If Exists(varName) Then
-                    On Error Resume Next
-                    Set rng = Lo.ListColumns(HF & "_" & varName).DataBodyRange()
-                    On Error GoTo 0
-
-                    If Not rng Is Nothing Then
-                        UpdateSpatialValue rng, varName, isHF:=True
-                    End If
-                End If
-
-                'Skip HF pcode column
-                Set cellRng = cellRng.Offset(, 1)
-            End If
-
-            Set cellRng = cellRng.Offset(, 1)
-        Loop
-
-ContinueSheet:
-        Set filtsh = Nothing
+        If HiddenNames.QuickValue(sh, SHEET_TAG) = "HList" Then
+            Set shHn = HiddenNames.Create(sh)
+            UpdateOneHList sh, wb, shHn
+        End If
     Next
 
     actsh.UsedRange.Calculate
+    Exit Sub
+
+UpdateFailed:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errMessage = Err.Description
+
+    On Error Resume Next
+    actsh.UsedRange.Calculate
+    On Error GoTo 0
+
+    Err.Raise errNumber, errSource, errMessage
 End Sub
 
-'@section List of Variable Names
-'===============================================================================
-
-'@label:list-of-existing-var-names
-'@sub-title Build a list of all spatial variable names matching a base name
+'@label:update-one-hlist
+'@sub-title Fill the spatial tables of the variables of one HList sheet
 '@details
-'Searches the "listofgeovars" ListObject for all cells that partially
-'match the supplied variable name. Returns a BetterArray of the full
-'variable names found. The search progresses through the range by
-'narrowing it after each match to avoid finding the same cell again.
-'@param varName String. Base variable name to search for.
-'@return BetterArray. All matching spatial variable names.
-Private Function ListOfExistingVarNames(ByVal varName As String) As BetterArray
-    Dim listRng As Range
-    Dim cellRng As Range
-    Dim sh As Worksheet
-    Dim listTab As BetterArray
-
-    Set sh = Wksh()
-    Set listTab = New BetterArray
-    Set listRng = sh.ListObjects("listofgeovars").Range
-
-    Do While Not (listRng.Find(What:=varName, lookAt:=xlPart, _
-                               MatchCase:=True) Is Nothing)
-
-        Set cellRng = listRng.Find(What:=varName, lookAt:=xlPart, _
-                                   MatchCase:=True, _
-                                   After:=listRng.Cells(listRng.Rows.Count, 1))
-        listTab.Push cellRng.Value
-
-        If listRng.Rows.Count = 1 Then Exit Do
-        If cellRng.Cells(2, 1).Row > listRng.Cells(listRng.Rows.Count, 1).Row Then Exit Do
-
-        Set listRng = sh.Range(cellRng.Cells(2, 1), _
-                               listRng.Cells(listRng.Rows.Count, 1))
-    Loop
-
-    Set ListOfExistingVarNames = listTab.Clone()
-End Function
-
-'@section Update Spatial Values
-'===============================================================================
-
-'@label:update-spatial-value
-'@sub-title Populate spatial ListObjects from a filtered input range
-'@details
-'For each matching variable name returned by ListOfExistingVarNames,
-'iterates admin levels 1 through 4 (or just HF when isHF is True). For
-'each admin level, pastes the input range values to a scratch column
-'(RNG_PastingCol), removes duplicates, clears the existing spatial table
-'data, pastes the deduplicated values into the ListObject first column,
-'resizes the table to fit, and sorts by the formula column in descending
-'order. The input range is shifted one column right for each admin level
-'to cascade through the concat columns.
-'@param inputRng Range. The filtered data range to extract values from.
-'@param inputVarName String. Base variable name to look up in the spatial list.
-'@param isHF Optional Boolean. True to update HF tables only, False for admin1-4. Defaults to False.
-Private Sub UpdateSpatialValue(ByVal inputRng As Range, _
-                               ByVal inputVarName As String, _
-                               Optional ByVal isHF As Boolean = False)
-
-    Dim pasteRng As Range
-    Dim counter As Long
-    Dim adminCounter As Long
-    Dim sh As Worksheet
+'Walks every header cell of the variable row, from the _START anchor to the
+'last used column, one column at a time. A geo1 or an hf control names a
+'variable to update and every other header is passed over. The walk used to
+'jump the width one geo expansion is expected to take, and a sheet whose
+'columns sat closer than that landed the jump past the next geo variable, so
+'its spatial tables were never filled and FindTopAdmin answered nothing for
+'them. It also used to stop on the first empty header cell, and a variable the
+'writer skipped leaves exactly that gap. The header row is read in one
+'crossing.
+'
+'A sheet with no filtered companion, no table name or no first table is left
+'alone.
+'@param sh Worksheet. The HList worksheet.
+'@param wb Workbook. The workbook holding the sheet.
+'@param shHn HiddenNames. The hidden name store of that sheet.
+Private Sub UpdateOneHList(ByVal sh As Worksheet, ByVal wb As Workbook, _
+                           ByVal shHn As HiddenNames)
+    Dim filtsh As Worksheet
+    Dim Lo As ListObject
     Dim cellRng As Range
     Dim rng As Range
-    Dim Lo As ListObject
-    Dim loName As String
-    Dim adminName As String
-    Dim sortRng As Range
-    Dim nbRows As Long
-    Dim LoRng As Range
-    Dim listVars As BetterArray
+    Dim spatialNames As BetterArray
+    Dim tableName As String
     Dim varName As String
+    Dim controlValue As String
+    Dim headerTexts As Variant
+    Dim headerValue As String
+    Dim lastCol As Long
+    Dim colIdx As Long
+
+    On Error Resume Next
+    Set filtsh = wb.Worksheets(shHn.ValueAsString(FILTERED_SHEET))
+    On Error GoTo 0
+    If filtsh Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    Set Lo = filtsh.ListObjects(1)
+    On Error GoTo 0
+    If Lo Is Nothing Then Exit Sub
+    If Lo.DataBodyRange Is Nothing Then Exit Sub
+
+    tableName = shHn.ValueAsString(TABLE_NAME)
+    If LenB(tableName) = 0 Then Exit Sub
+
+    On Error Resume Next
+    Set cellRng = sh.Range(tableName & "_START")
+    On Error GoTo 0
+    If cellRng Is Nothing Then Exit Sub
+
+    lastCol = sh.Cells(cellRng.Row, sh.Columns.Count).End(xlToLeft).Column
+    If lastCol < cellRng.Column Then Exit Sub
+
+    headerTexts = RangeValues(sh.Range(cellRng, sh.Cells(cellRng.Row, lastCol)))
+
+    For colIdx = 1 To UBound(headerTexts, 2)
+        headerValue = vbNullString
+        If Not IsError(headerTexts(1, colIdx)) Then _
+            headerValue = CStr(headerTexts(1, colIdx))
+        If LenB(headerValue) = 0 Then GoTo NextColumn
+
+        controlValue = shHn.ValueAsString(headerValue & CONTROL_SUFFIX)
+
+        If controlValue = "geo1" Then
+            varName = NameWithoutPrefix(headerValue, ADMIN & "1_")
+            Set spatialNames = ListOfExistingVarNames(varName)
+
+            If spatialNames.Length > 0 Then
+                Set rng = ColumnBodyOrNothing(Lo, CONCAT & ADMIN & "1_" & varName)
+                If Not rng Is Nothing Then UpdateSpatialValue rng, spatialNames
+            End If
+
+        ElseIf controlValue = HF Then
+            varName = NameWithoutPrefix(headerValue, HF & "_")
+            Set spatialNames = ListOfExistingVarNames(varName)
+
+            If spatialNames.Length > 0 Then
+                Set rng = ColumnBodyOrNothing(Lo, HF & "_" & varName)
+                If Not rng Is Nothing Then UpdateSpatialValue rng, spatialNames, isHF:=True
+            End If
+        End If
+
+NextColumn:
+    Next colIdx
+End Sub
+
+'@label:name-without-prefix
+'@sub-title Cut a known prefix off the front of a name
+'@details
+'The header cell of a geo column always carries its prefix at the front. Replace
+'took the prefix out wherever it sat, so a variable named "adm1_site_adm1_ref"
+'came back as "sitref".
+'@param fullName String. The name as the header cell holds it.
+'@param prefix String. The prefix to cut.
+'@return String. The name with the leading prefix removed.
+Private Function NameWithoutPrefix(ByVal fullName As String, _
+                                   ByVal prefix As String) As String
+    If Left$(fullName, Len(prefix)) = prefix Then
+        NameWithoutPrefix = Mid$(fullName, Len(prefix) + 1)
+    Else
+        NameWithoutPrefix = fullName
+    End If
+End Function
+
+'@label:update-spatial-value
+'@sub-title Fill the spatial tables of one variable from a filtered column
+'@details
+'A geographic variable has one table per administrative level, and the columns
+'of the companion sheet hold concat_adm1 through concat_adm4 side by side, so the
+'input range walks one column right per level. A facility variable has one table
+'and one column.
+'@param inputRng Range. The filtered column the first level reads.
+'@param spatialNames BetterArray. The registered names of this variable.
+'@param isHF Optional Boolean. True for the facility table. Defaults to False.
+Private Sub UpdateSpatialValue(ByVal inputRng As Range, _
+                               ByVal spatialNames As BetterArray, _
+                               Optional ByVal isHF As Boolean = False)
+    Dim rng As Range
+    Dim Lo As ListObject
+    Dim counter As Long
+    Dim adminCounter As Long
     Dim endCounter As Long
+    Dim varName As String
+    Dim adminName As String
 
-    Set sh = Wksh()
-    Set listVars = ListOfExistingVarNames(inputVarName)
+    endCounter = IIf(isHF, 1, ADMIN_LEVELS)
 
-    endCounter = IIf(isHF, 1, 4)
-
-    For counter = listVars.LowerBound To listVars.UpperBound
-        varName = listVars.Item(counter)
+    For counter = spatialNames.LowerBound To spatialNames.UpperBound
+        varName = spatialNames.Item(counter)
         Set rng = inputRng
 
         For adminCounter = 1 To endCounter
-            nbRows = rng.Cells.Count
+            adminName = IIf(isHF, HF, ADMIN & adminCounter)
+            Set Lo = LoOrNothing(CurrentLoName(varName, adminName))
 
-            If isHF Then
-                loName = CurrentLoName(varName, HF)
-                adminName = HF
-            Else
-                loName = CurrentLoName(varName, ADMIN & adminCounter)
-                adminName = ADMIN & adminCounter
-            End If
+            If Not Lo Is Nothing Then FillOneTable Lo, adminName, DistinctValues(rng)
 
-            If Not LoExists(loName) Then GoTo ContinueAdmin
-
-            Set Lo = sh.ListObjects(loName)
-
-            'Paste values to the scratch column, remove duplicates
-            Set cellRng = sh.Range("RNG_PastingCol")
-            Set pasteRng = sh.Range(cellRng.Cells(1, 1), cellRng.Cells(nbRows, 1))
-            pasteRng.Value = rng.Value
-
-            On Error Resume Next
-            pasteRng.RemoveDuplicates Columns:=1, Header:=xlNo
-            On Error GoTo 0
-
-            'Resize after dedup
-            nbRows = sh.Cells(sh.Rows.Count, pasteRng.Column).End(xlUp).Row
-            Set pasteRng = sh.Range(cellRng.Cells(1, 1), cellRng.Cells(nbRows, 1))
-
-            'Clear existing data and paste into the ListObject
-            Set cellRng = Lo.Range.Cells(2, 1)
-
-            On Error Resume Next
-            Lo.ListColumns(1).DataBodyRange.Cells.Clear
-            On Error GoTo 0
-
-            Set LoRng = sh.Range(cellRng.Cells(1, 1), cellRng.Cells(nbRows, 1))
-            LoRng.Value = pasteRng.Value
-            pasteRng.Cells.Clear
-
-            'Resize the ListObject (including Attack Rate columns)
-            Set LoRng = sh.Range(cellRng.Cells(0, 1), cellRng.Cells(nbRows, 4))
-            Lo.Resize LoRng
-
-            'Sort by formula column
-            On Error Resume Next
-            Set sortRng = Lo.ListColumns("formula_" & adminName).DataBodyRange
-            sortRng.Calculate
-            Lo.ListColumns(1).DataBodyRange.Sort key1:=sortRng, Order1:=xlDescending
-            On Error GoTo 0
-
-ContinueAdmin:
             Set rng = rng.Offset(, 1)
         Next
+    Next
+End Sub
+
+'@label:distinct-values
+'@sub-title The distinct values of a range, read in one crossing
+'@details
+'The values used to go out to a scratch column, through RemoveDuplicates, and
+'back again — five worksheet round trips per level per variable per sheet, on a
+'range that can run to tens of thousands of rows. The index is a delimited
+'string, and the separator sits on both sides of every entry so a short entry
+'cannot match inside a longer one.
+'
+'Blanks are dropped here. EventLinelist.GeoConcat answers an empty string for a
+'record whose geo levels are not all filled, RemoveDuplicates collapsed those to
+'one blank, and that blank became a data row that could take rank 1 once the
+'tables were ordered.
+'
+'Two values that differ only in case are one value, which is what
+'RemoveDuplicates answered and what COUNTIFS answers over the same data.
+'@param rng Range. The column to read.
+'@return Variant. A 1-based two dimensional array of the distinct values, or
+'Empty when the range holds none.
+Private Function DistinctValues(ByVal rng As Range) As Variant
+    Dim readValues As Variant
+    Dim held() As String
+    Dim result() As Variant
+    Dim seen As String
+    Dim entry As String
+    Dim counter As Long
+    Dim total As Long
+
+    readValues = RangeValues(rng)
+    ReDim held(1 To UBound(readValues, 1))
+    seen = KEY_SEPARATOR
+
+    For counter = LBound(readValues, 1) To UBound(readValues, 1)
+        If Not IsError(readValues(counter, 1)) Then
+            entry = CStr(readValues(counter, 1))
+
+            If LenB(entry) > 0 Then
+                If InStr(1, seen, KEY_SEPARATOR & LCase$(entry) & KEY_SEPARATOR, _
+                         vbBinaryCompare) = 0 Then
+                    seen = seen & LCase$(entry) & KEY_SEPARATOR
+                    total = total + 1
+                    held(total) = entry
+                End If
+            End If
+        End If
+    Next
+
+    If total = 0 Then Exit Function
+
+    ReDim result(1 To total, 1 To 1)
+    For counter = 1 To total
+        result(counter, 1) = held(counter)
+    Next
+
+    DistinctValues = result
+End Function
+
+'@label:fill-one-table
+'@sub-title Write the values of one spatial table and order it
+'@details
+'The rows below the first are cleared before the resize, so a table that shrinks
+'leaves nothing of its old self standing under it. The first data row keeps the
+'formulas SpatialTables wrote, and they are copied down over the new rows.
+'
+'The table is calculated before it is ordered. Update recalculates the whole
+'sheet, and that happens once every sheet has been walked, so the sort would read
+'the values of the run before.
+'@param Lo ListObject. The spatial table to fill.
+'@param adminName String. The level identifier the sort column is named for.
+'@param values Variant. The values for the first column, or Empty for none.
+Private Sub FillOneTable(ByVal Lo As ListObject, ByVal adminName As String, _
+                         ByRef values As Variant)
+    Dim headerRng As Range
+    Dim nbRows As Long
+
+    ClearDataRowsBelowFirst Lo
+
+    If IsEmpty(values) Then
+        If Not Lo.DataBodyRange Is Nothing Then _
+            Lo.ListColumns(1).DataBodyRange.ClearContents
+        Exit Sub
+    End If
+
+    nbRows = UBound(values, 1)
+    Set headerRng = Lo.HeaderRowRange
+
+    Lo.Resize Wksh().Range(headerRng.Cells(1, 1), _
+                           headerRng.Cells(nbRows + 1, Lo.ListColumns.Count))
+
+    Lo.ListColumns(1).DataBodyRange.Value = values
+    FillFormulaColumns Lo
+    Lo.DataBodyRange.Calculate
+    SortOneTable Lo, adminName, onAR:=False
+End Sub
+
+'@label:clear-data-rows-below-first
+'@sub-title Empty every data row of a table but the first
+'@details
+'ClearContents leaves the number formats, the borders and the validation of the
+'column standing. Clear took those with the values, so the key column lost its
+'formatting on every update.
+'@param Lo ListObject. The table to clear.
+Private Sub ClearDataRowsBelowFirst(ByVal Lo As ListObject)
+    Dim body As Range
+
+    Set body = Lo.DataBodyRange
+    If body Is Nothing Then Exit Sub
+    If body.Rows.Count <= 1 Then Exit Sub
+
+    Wksh().Range(body.Cells(2, 1), _
+                 body.Cells(body.Rows.Count, body.Columns.Count)).ClearContents
+End Sub
+
+'@label:fill-formula-columns
+'@sub-title Copy the formulas of the first data row over every row
+'@details
+'The rows used to be left to the calculated-column autofill of the host, which
+'is an option a user can switch off, and Resize is a weaker trigger for it than
+'a row insert. SpatialTables writes the value column as an array formula, and an
+'array formula is the least likely of all to be filled that way, so only the
+'first row of a table held a number and the sort ranked it against blanks.
+'
+'AutoFill needs a destination taller than one cell and raises 1004 otherwise,
+'which a table of one row produces on the ordinary path.
+'@param Lo ListObject. The table whose formula columns are filled.
+Private Sub FillFormulaColumns(ByVal Lo As ListObject)
+    Dim colRng As Range
+    Dim counter As Long
+
+    If Lo.DataBodyRange Is Nothing Then Exit Sub
+    If Lo.ListRows.Count <= 1 Then Exit Sub
+
+    For counter = 2 To Lo.ListColumns.Count
+        Set colRng = Lo.ListColumns(counter).DataBodyRange
+
+        On Error Resume Next
+        colRng.Cells(1, 1).AutoFill Destination:=colRng, Type:=xlFillValues
+        On Error GoTo 0
     Next
 End Sub
 
@@ -413,136 +755,476 @@ End Sub
 '===============================================================================
 
 '@label:sort
-'@sub-title Sort spatial tables by formula value or attack rate for a given table id
+'@sub-title Order the spatial tables of one analysis table
 '@details
-'Locates the spatial variable whose name partially matches tabId in the
-'"listofgeovars" list, then iterates admin1 through admin4 and sorts each
-'corresponding ListObject by either the formula column or the attack_rate
-'column in descending order. Silently skips tables that do not exist, have
-'no data body, or whose first column is empty.
-'@param tabId String. Table identifier used to locate the variable name via partial match.
-'@param onAR Optional Boolean. True to sort by attack_rate column, False for formula column. Defaults to False.
+'Finds the variable the table identifier belongs to, then orders its tables on
+'the value column or on the attack rate column, highest first. A facility
+'variable carries one table and a geographic one carries four.
+'@param tabId String. The identifier of the analysis table.
+'@param onAR Optional Boolean. True to order on the attack rate. Defaults to False.
 '@export
-Private Sub Sort(ByVal tabId As String, Optional ByVal onAR As Boolean = False)
-    Dim sortRng As Range
+Public Sub Sort(ByVal tabId As String, Optional ByVal onAR As Boolean = False)
     Dim Lo As ListObject
-    Dim sh As Worksheet
-    Dim adminCounter As Long
-    Dim sortRngName As String
     Dim varName As String
-    Dim listRng As Range
-    Dim cellRng As Range
+    Dim adminCounter As Long
 
-    Set sh = Wksh()
-    Set listRng = sh.ListObjects("listofgeovars").Range
+    varName = RegisteredNameForTable(tabId)
+    If LenB(varName) = 0 Then Exit Sub
 
-    Set cellRng = listRng.Find(What:=tabId, lookAt:=xlPart, MatchCase:=True)
-    If cellRng Is Nothing Then Exit Sub
+    'A facility variable has a single table and no administrative one. The loop
+    'below built administrative names alone, so the attack rate toggle of a
+    'facility spatial sheet reordered nothing.
+    Set Lo = LoOrNothing(CurrentLoName(varName, HF))
 
-    varName = cellRng.Value
+    If Not Lo Is Nothing Then
+        SortOneTable Lo, HF, onAR
+        Exit Sub
+    End If
 
-    For adminCounter = 1 To 4
-        Set Lo = Nothing
-        On Error Resume Next
-        Set Lo = sh.ListObjects(CurrentLoName(varName, ADMIN & adminCounter))
-        On Error GoTo 0
-
-        If Lo Is Nothing Then GoTo ContinueSort
-        If Lo.DataBodyRange Is Nothing Then GoTo ContinueSort
-        If IsEmpty(Lo.ListColumns(1).DataBodyRange) Then GoTo ContinueSort
-
-        sortRngName = IIf(onAR, "attack_rate_", "formula_") & ADMIN & adminCounter
-
-        On Error Resume Next
-        Set sortRng = Lo.ListColumns(sortRngName).Range
-        Lo.ListColumns(1).Range.Sort key1:=sortRng, Order1:=xlDescending, Header:=xlYes
-        On Error GoTo 0
-
-ContinueSort:
+    For adminCounter = 1 To ADMIN_LEVELS
+        Set Lo = LoOrNothing(CurrentLoName(varName, ADMIN & adminCounter))
+        If Not Lo Is Nothing Then SortOneTable Lo, ADMIN & adminCounter, onAR
     Next
+End Sub
+
+'@label:sort-one-table
+'@sub-title Order one spatial table on one of its value columns
+'@details
+'Excel wants the sort key inside the range it sorts and raises 1004 when it sits
+'outside. Both sort sites of this class ordered the first column alone with a key
+'in the second or the fourth, under On Error Resume Next, so no spatial table has
+'ever been ordered and every "top N admin units" figure was in insertion order.
+'
+'Sorting the whole table is safe: SpatialTables writes the population and the
+'attack rate as relative references to the cells of their own row, so Excel moves
+'them with the row they belong to.
+'@param Lo ListObject. The table to order.
+'@param adminName String. The level identifier the value columns are named for.
+'@param onAR Boolean. True to order on the attack rate.
+Private Sub SortOneTable(ByVal Lo As ListObject, ByVal adminName As String, _
+                         ByVal onAR As Boolean)
+    Dim sortRng As Range
+    Dim sortColName As String
+
+    If Lo.ListRows.Count = 0 Then Exit Sub
+
+    sortColName = IIf(onAR, "attack_rate_", "formula_") & adminName
+    Set sortRng = ColumnRangeOrNothing(Lo, sortColName)
+    If sortRng Is Nothing Then Exit Sub
+
+    Lo.Range.Sort key1:=sortRng, Order1:=xlDescending, Header:=xlYes
+End Sub
+
+'@section Spatial Formula Rewriting
+'===============================================================================
+'@description The formula rewriting of the spatial analysis events. The caller
+'reads what the user changed and hands the sheet, the table identifier and the
+'admin code over; the loops that touch the formulas live here, so the
+'array-formula handling is written once for every caller.
+
+'@label:rewrite-formulas
+'@sub-title Replace a token in every formula of a range
+'@details
+'Walks the cells of the range and rewrites each formula that holds the old
+'text, with the new text in its place. A plain formula is written back through
+'Formula and an array formula through FormulaArray, decided by HasArray.
+'Range.FormulaArray answers the ordinary formula string for a cell outside an
+'array formula, so a read through it cannot tell the two apart: a reader built
+'on it pushed every write through FormulaArray, which turns a plain formula
+'into an array one and raises 1004 for any formula over 255 characters.
+'@param valuesRng Range. The block of cells to rewrite.
+'@param oldText String. The text to replace.
+'@param newText String. The replacement.
+'@export
+Public Sub RewriteFormulas(ByVal valuesRng As Range, ByVal oldText As String, _
+                           ByVal newText As String)
+    Dim cellRng As Range
+    Dim formulaText As String
+    Dim isArrayFormula As Boolean
+
+    If valuesRng Is Nothing Then Exit Sub
+
+    For Each cellRng In valuesRng
+        isArrayFormula = cellRng.HasArray
+        formulaText = FormulaTextOf(cellRng, isArrayFormula)
+
+        If InStr(1, formulaText, oldText) > 0 Then
+            WriteFormulaText cellRng, _
+                             Replace(formulaText, oldText, newText), _
+                             isArrayFormula
+        End If
+    Next
+End Sub
+
+'@label:change-admin-level
+'@sub-title Move the formulas of one spatial table to a new admin level
+'@details
+'Reads the level the table stands on from its PREVIOUS_ADM_ cell, rewrites
+'every formula of the OUTER_VALUES_ block from the old concat column to the
+'new one, writes the new level back, and recalculates the block. The caller
+'reads the dropdown and turns its label into an admin code, because that
+'answer needs the geo sheet and this class holds none.
+'
+'The rewrite reaches the FindTopAdmin and FindTopPop formulas of the block
+'too, and moves the level inside their quoted variable argument with the
+'rest. That is why EventLinelist.BareSpatialName strips the concat tag at any
+'level: it used to know the adm1 spelling alone, so the first level change
+'broke every ranked lookup of the table.
+'@param sh Worksheet. The spatial analysis sheet.
+'@param tabId String. The identifier of the analysis table.
+'@param newAdmin String. The admin code to move to, "adm1" to "adm4" or "hf".
+'@export
+Public Sub ChangeAdminLevel(ByVal sh As Worksheet, ByVal tabId As String, _
+                            ByVal newAdmin As String)
+    Dim rng As Range
+    Dim previousAdmin As String
+
+    previousAdmin = CStr(sh.Range(PREVIOUS_ADM & tabId).Value)
+    Set rng = sh.Range(OUTER_VALUES & tabId)
+
+    RewriteFormulas rng, CONCAT & previousAdmin, CONCAT & newAdmin
+
+    sh.Range(PREVIOUS_ADM & tabId).Value = newAdmin
+
+    'Column C carries the admin unit names and a new level can be wider.
+    sh.Columns("C").EntireColumn.AutoFit
+    rng.Calculate
+End Sub
+
+'@label:previous-section-level
+'@sub-title Read the admin level a spatio-temporal section stands on
+'@details
+'The cell right of the level selector records the level the section's formulas
+'read. A value outside 1 to 4 means the cell was cleared or overwritten: a
+'rewrite on it would migrate nothing while still recording the new level, and
+'the sheet would then be one level behind with no way back. GeoModule reads
+'this before it unprotects the sheet, so a raise here leaves a deliberately
+'open sheet open.
+'@param sh Worksheet. The spatio-temporal analysis sheet.
+'@param rngName String. The named range of the level selector.
+'@param tabId String. The identifier of the analysis table, for the message.
+'@return Long. The recorded level, 1 to 4.
+'@throws ProjectError.InvalidArgument When the cell reads outside 1 to 4.
+'@export
+Public Function PreviousSectionLevel(ByVal sh As Worksheet, _
+                                     ByVal rngName As String, _
+                                     ByVal tabId As String) As Long
+    Dim prevRaw As Variant
+    Dim prevAdm As Long
+
+    prevRaw = sh.Range(rngName).Offset(, 1).Value
+    If Not IsNumeric(prevRaw) Then _
+        ThrowError InvalidArgument, _
+                   "The previous admin level of " & tabId & " reads " & _
+                   Chr$(34) & prevRaw & Chr$(34)
+
+    prevAdm = CLng(prevRaw)
+    If prevAdm < 1 Or prevAdm > ADMIN_LEVELS Then _
+        ThrowError InvalidArgument, _
+                   "The previous admin level of " & tabId & " reads " & prevAdm
+
+    PreviousSectionLevel = prevAdm
+End Function
+
+'@label:migrate-section
+'@sub-title Move the formula columns of one spatio-temporal section to a new admin level
+'@details
+'Walks the SPT_FORMULA_COLUMN_ header row of the section. A header formula
+'naming the selector marks a formula column, the VALUES block of that column
+'derives from the name of its header cell, and a header cell with no name
+'leaves its column alone -- a cell has a name only when something named it.
+'The block is grown by two rows to reach the Total and Missing rows of its own
+'table, which RowsCategoriesRange trims by count at build time, and their
+'formulas move levels with the block. Every formula of the grown block moves
+'from the old concat column to the new one, and the new level is recorded beside
+'the selector.
+'
+'THE RECALCULATION IS THE CALLER'S
+'-------------------------------------------------------------------------------
+'The caller owns one recalculation of the sheet per validated place. It fires on
+'every validate and reaches here only when the level changed, so a recalculation
+'at the foot of this sub would leave the other paths dry and would run the same
+'used range twice on the path it does reach.
+'@param sh Worksheet. The spatio-temporal analysis sheet.
+'@param rngName String. The named range of the level selector.
+'@param tabId String. The identifier of the analysis table.
+'@param prevAdm Long. The level the section stands on.
+'@param actAdm Long. The level to move to.
+'@export
+Public Sub MigrateSection(ByVal sh As Worksheet, ByVal rngName As String, _
+                          ByVal tabId As String, ByVal prevAdm As Long, _
+                          ByVal actAdm As Long)
+    Dim headerRng As Range
+    Dim valuesRng As Range
+    Dim headerTexts As Variant
+    Dim headerCellName As String
+    Dim counter As Long
+
+    Set headerRng = sh.Range(SPT_FORMULA_COLUMN & tabId)
+
+    'One read of the whole header row; the match is a string test in memory.
+    headerTexts = HeaderFormulaTexts(headerRng)
+
+    For counter = 1 To headerRng.Columns.Count
+        If InStr(1, CStr(headerTexts(1, counter)), rngName) > 0 Then
+            Set valuesRng = Nothing
+            'headerCellName is a String, so without the reset it keeps the
+            'previous column's name when the read below raises, and the
+            'Replace would then resolve the previous column's VALUES block.
+            headerCellName = vbNullString
+
+            On Error Resume Next
+            headerCellName = headerRng.Cells(1, counter).Name.Name
+            If LenB(headerCellName) > 0 Then
+                Set valuesRng = sh.Range(Replace(headerCellName, _
+                                                 LABEL_TOKEN, VALUES_TOKEN))
+            End If
+            On Error GoTo 0
+
+            If Not valuesRng Is Nothing Then
+                Set valuesRng = sh.Range(valuesRng.Cells(1, 1), _
+                                         valuesRng.Cells(valuesRng.Rows.Count + 2, 1))
+
+                RewriteFormulas valuesRng, CONCAT & ADMIN & prevAdm, _
+                                CONCAT & ADMIN & actAdm
+            End If
+        End If
+    Next
+
+    sh.Range(rngName).Offset(, 1).Value = actAdm
+End Sub
+
+'@label:header-formula-texts
+'@sub-title Read the header row of formulas in one crossing
+'@details
+'A one-cell range answers a scalar through Formula, so it is wrapped to give
+'the caller one shape.
+'@param headerRng Range. The SPT_FORMULA_COLUMN_ row of one section.
+'@return Variant. A two-dimensional array of formula strings.
+Private Function HeaderFormulaTexts(ByVal headerRng As Range) As Variant
+    Dim oneCell(1 To 1, 1 To 1) As Variant
+
+    If headerRng.Cells.Count = 1 Then
+        oneCell(1, 1) = headerRng.Formula
+        HeaderFormulaTexts = oneCell
+    Else
+        HeaderFormulaTexts = headerRng.Formula
+    End If
+End Function
+
+'@label:apply-population-factor
+'@sub-title Divide the values of one spatial table by the population, or restore them
+'@details
+'Walks the OUTER_VALUES_ block and rewraps each formula that reads the concat
+'column of the given admin code. The first application wraps the formula as
+'"IFERROR(factor * formula / population cell, "")", so a row whose population
+'cell holds 0 or nothing shows an empty cell. The division used to be written
+'bare, and every such row showed #DIV/0!. A later application swaps the old
+'factor for the new, and revertBack unwraps the whole thing, the bare shape an
+'older linelist wrote included. The factor comes from the POPFACT_ cell and
+'falls back to 100 when that cell does not read as a number. The tables are
+'reordered on the attack rate while the division is on, and on the plain value
+'once it is off. The factor applied is written into the POPPREVFACT_ cell, so
+'the next call knows what to swap or unwrap.
+'@param sh Worksheet. The spatial analysis sheet.
+'@param tabId String. The identifier of the analysis table.
+'@param adminName String. The admin code the formulas read, "adm1" to "adm4" or "hf".
+'@param revertBack Optional Boolean. True restores the plain formulas. Defaults to False.
+'@export
+Public Sub ApplyPopulationFactor(ByVal sh As Worksheet, ByVal tabId As String, _
+                                 ByVal adminName As String, _
+                                 Optional ByVal revertBack As Boolean = False)
+    Dim rng As Range
+    Dim rowRng As Range
+    Dim cellRng As Range
+    Dim formulaText As String
+    Dim popAddress As String
+    Dim isArrayFormula As Boolean
+    Dim factorMult As Long
+    Dim prevFact As Long
+
+    prevFact = CLng(sh.Range(POP_PREV_FACTOR & tabId).Value)
+
+    'The factor cell is free text on the sheet.
+    factorMult = 100
+    On Error Resume Next
+    factorMult = CLng(Application.WorksheetFunction.Trim( _
+                          sh.Range(POP_FACTOR & tabId).Value))
+    On Error GoTo 0
+
+    Set rng = sh.Range(OUTER_VALUES & tabId)
+    Set rowRng = sh.Range(ROW_CATEGORIES & tabId)
+
+    Sort tabId:=tabId, onAR:=(Not revertBack)
+
+    For Each cellRng In rng
+        isArrayFormula = cellRng.HasArray
+        formulaText = FormulaTextOf(cellRng, isArrayFormula)
+
+        If (InStr(1, formulaText, CONCAT & adminName) > 0) And _
+           (cellRng.Column > rowRng.Column) Then
+
+            popAddress = sh.Cells(cellRng.Row, rowRng.Column - 1).Address
+
+            If (Not revertBack) And (prevFact = 0) Then
+                'Only the leading equal sign comes off. Replacing every "=" in
+                'the text also broke the comparisons a formula can carry.
+                formulaText = Trim$(formulaText)
+                If Left$(formulaText, 1) = "=" Then _
+                    formulaText = Trim$(Mid$(formulaText, 2))
+                formulaText = "=IFERROR(" & factorMult & "*" & formulaText & _
+                              "/" & popAddress & "," & EMPTY_TEXT & ")"
+            ElseIf (Not revertBack) And (prevFact <> 0) Then
+                'The star ties the match to the factor. A bare number also
+                'matched the digits of the population cell address.
+                formulaText = Replace(formulaText, CStr(prevFact) & "*", _
+                                      CStr(factorMult) & "*")
+            ElseIf prevFact <> 0 Then
+                'The IFERROR pieces come off first, and the bare "/ population
+                'cell" replace below still unwraps the shape an older linelist
+                'wrote.
+                formulaText = Replace(formulaText, "=IFERROR(", "=")
+                formulaText = Replace(formulaText, _
+                                      "/" & popAddress & "," & EMPTY_TEXT & ")", _
+                                      vbNullString)
+                formulaText = Replace(formulaText, CStr(prevFact) & "*", _
+                                      vbNullString)
+                formulaText = Replace(formulaText, "/" & popAddress, _
+                                      vbNullString)
+            End If
+
+            WriteFormulaText cellRng, formulaText, isArrayFormula
+        End If
+    Next
+
+    sh.Range(POP_PREV_FACTOR & tabId).Value = IIf(revertBack, 0, factorMult)
+    rng.Calculate
+End Sub
+
+'@label:format-population-factor
+'@sub-title Show or hide the population factor cells of one spatial table
+'@details
+'The factor cell and its label are white, locked and hidden while the division
+'is off, and black, editable and readable while it is on. The caller decides
+'which, from the dropdown the user changed.
+'@param sh Worksheet. The spatial analysis sheet.
+'@param tabId String. The identifier of the analysis table.
+'@param factorVisible Boolean. True shows the factor cells.
+'@export
+Public Sub FormatPopulationFactor(ByVal sh As Worksheet, ByVal tabId As String, _
+                                  ByVal factorVisible As Boolean)
+    Dim factorRng As Range
+    Dim labelRng As Range
+
+    Set factorRng = sh.Range(POP_FACTOR & tabId)
+    Set labelRng = sh.Range(POP_FACTOR_LABEL & tabId)
+
+    factorRng.Font.Color = IIf(factorVisible, vbBlack, vbWhite)
+    factorRng.Locked = Not factorVisible
+    factorRng.FormulaHidden = Not factorVisible
+    labelRng.Font.Color = IIf(factorVisible, vbBlack, vbWhite)
+    labelRng.Locked = Not factorVisible
+End Sub
+
+'@label:formula-text-of
+'@sub-title Read the formula of one cell through the property that owns it
+'@param cellRng Range. The cell to read.
+'@param isArrayFormula Boolean. What HasArray answered for the cell.
+'@return String. The formula string.
+Private Function FormulaTextOf(ByVal cellRng As Range, _
+                               ByVal isArrayFormula As Boolean) As String
+    If isArrayFormula Then
+        FormulaTextOf = cellRng.FormulaArray
+    Else
+        FormulaTextOf = cellRng.Formula
+    End If
+End Function
+
+'@label:write-formula-text
+'@sub-title Write the formula of one cell through the property that owns it
+'@param cellRng Range. The cell to write.
+'@param formulaText String. The formula string.
+'@param isArrayFormula Boolean. True writes through FormulaArray.
+Private Sub WriteFormulaText(ByVal cellRng As Range, _
+                             ByVal formulaText As String, _
+                             ByVal isArrayFormula As Boolean)
+    If isArrayFormula Then
+        cellRng.FormulaArray = formulaText
+    Else
+        cellRng.Formula = formulaText
+    End If
 End Sub
 
 '@section TopGeoValue / TopHFValue
 '===============================================================================
 
 '@label:top-geo-value
-'@prop-title Value at a given rank from a sorted spatial geo table
+'@prop-title Value at a given rank from an ordered spatial table
 '@details
-'Constructs the ListObject name from the admin name and variable name
-'(with tabId suffix), then retrieves the value at the requested rank
-'position. The concatValue parameter selects the column: 1 returns
-'the name column (first column), any other value returns the concat
-'column (third column). Returns an empty string when the table does
-'not exist, has no data, or the rank exceeds available rows.
-'@param adminName String. Admin level name ("adm1", "adm2", "adm3", or "adm4").
-'@param orderValue Long. Rank position in the sorted table (1-based).
-'@param inputVarName String. Base variable name.
-'@param tabId Optional String. Table identifier suffix appended to the variable name. Defaults to vbNullString.
-'@param concatValue Optional Byte. 1 for the name column, other values for the concat column. Defaults to 1.
-'@return String. The value at the requested rank, or empty string if not found.
+'Reads the table of one variable at one administrative level and answers the
+'value at the requested rank, either the admin unit itself or its population.
+'Answers an empty string when the table is absent, holds no data, or is shorter
+'than the rank asked for.
+'
+'A rank below 1 used to read the header cell or the cells above the table, and
+'the rank comes straight from the argument of a worksheet function, so
+'=FindTopAdmin(ADM_DROPDOWN_sp1, 0, ...) in a cell answered with the internal
+'table name. The level arrives here as the raw code; the worksheet function
+'takes the label of the level and EventLinelist resolves the two.
+'@param adminName String. Level identifier ("adm1" to "adm4", or "hf").
+'@param orderValue Long. Rank position in the ordered table, 1 for the top one.
+'@param inputVarName String. The bare variable name.
+'@param tabId Optional String. The identifier of the analysis table. Defaults to vbNullString.
+'@param columnChoice Optional Byte. 1 for the admin unit, anything else for its population. Defaults to 1.
+'@return String. The value at that rank, or an empty string.
 '@export
-Private Property Get TopGeoValue(ByVal adminName As String, _
+Public Property Get TopGeoValue(ByVal adminName As String, _
                                  ByVal orderValue As Long, _
                                  ByVal inputVarName As String, _
                                  Optional ByVal tabId As String = vbNullString, _
-                                 Optional ByVal concatValue As Byte = 1) As String
+                                 Optional ByVal columnChoice As Byte = 1) As String
     Dim Lo As ListObject
-    Dim loName As String
-    Dim varName As String
     Dim rng As Range
 
-    varName = inputVarName & "_" & tabId
-    loName = CurrentLoName(varName, adminName)
-
-    If Not LoExists(loName) Then Exit Property
-
-    Set Lo = Wksh().ListObjects(loName)
-    If Lo.DataBodyRange Is Nothing Then Exit Property
-
-    If concatValue = 1 Then
-        Set rng = Lo.ListColumns(1).DataBodyRange()
-    Else
-        Set rng = Lo.ListColumns(3).DataBodyRange()
+    'A spatial table name always carries the identifier of its analysis table, so
+    'an empty one builds a name nothing can match. It used to answer an empty
+    'string, which reads on the sheet like a table with no data in it.
+    If LenB(tabId) = 0 Then
+        TopGeoValue = NO_TABLE_ID
+        Exit Property
     End If
 
-    If orderValue > rng.Rows.Count Then Exit Property
+    Set Lo = LoOrNothing(CurrentLoName(inputVarName & "_" & tabId, adminName))
+    If Lo Is Nothing Then Exit Property
+    If Lo.DataBodyRange Is Nothing Then Exit Property
+
+    If columnChoice = 1 Then
+        Set rng = Lo.ListColumns(1).DataBodyRange
+    Else
+        Set rng = ColumnBodyOrNothing(Lo, "population_" & adminName)
+    End If
+
+    If rng Is Nothing Then Exit Property
+    If orderValue < 1 Or orderValue > rng.Rows.Count Then Exit Property
 
     TopGeoValue = CStr(rng.Cells(orderValue, 1).Value)
 End Property
 
 '@label:top-hf-value
-'@prop-title Value at a given rank from a sorted spatial HF table
+'@prop-title Value at a given rank from an ordered facility table
 '@details
-'Constructs the HF ListObject name from the variable name (with tabId
-'suffix), then retrieves the value at the requested rank position from
-'the first column. Returns an empty string when the table does not exist,
-'has no data, or the rank exceeds available rows.
-'@param orderValue Long. Rank position in the sorted table (1-based).
-'@param inputVarName String. Base variable name.
-'@param tabId Optional String. Table identifier suffix appended to the variable name. Defaults to vbNullString.
-'@return String. The value at the requested rank, or empty string if not found.
+'The facility table is the same shape as an administrative one under another
+'level name, so this is that read with the level fixed. The two used to be two
+'copies of one function, and every fix to one of them had to be made twice.
+'@param orderValue Long. Rank position in the ordered table, 1 for the top one.
+'@param inputVarName String. The bare variable name.
+'@param tabId Optional String. The identifier of the analysis table. Defaults to vbNullString.
+'@return String. The facility at that rank, or an empty string.
 '@export
-Private Property Get TopHFValue(ByVal orderValue As Long, _
+Public Property Get TopHFValue(ByVal orderValue As Long, _
                                 ByVal inputVarName As String, _
                                 Optional ByVal tabId As String = vbNullString) As String
-    Dim Lo As ListObject
-    Dim loName As String
-    Dim varName As String
-    Dim rng As Range
-
-    varName = inputVarName & "_" & tabId
-    loName = CurrentLoName(varName, HF)
-
-    If Not LoExists(loName) Then Exit Property
-
-    Set Lo = Wksh().ListObjects(loName)
-    If Lo.DataBodyRange Is Nothing Then Exit Property
-
-    Set rng = Lo.ListColumns(1).DataBodyRange()
-
-    If orderValue > rng.Rows.Count Then Exit Property
-
-    TopHFValue = CStr(rng.Cells(orderValue, 1).Value)
+    TopHFValue = TopGeoValue(HF, orderValue, inputVarName, tabId)
 End Property
 
 '@section Validation
@@ -551,12 +1233,11 @@ End Property
 '@label:check-requirements
 '@sub-title Validate that the worksheet is the spatial tables sheet
 '@details
-'Guards the factory Create method by ensuring the worksheet is not
-'Nothing and its name matches the expected "spatial_tables__" constant.
-'Raises an error when either condition fails.
+'Guards the factory by checking the worksheet is given and its name matches the
+'expected "__spatial_tables" constant.
 '@param sh Worksheet. The worksheet to validate.
 '@throws ProjectError.ObjectNotInitialized When the worksheet is Nothing.
-'@throws ProjectError.InvalidArgument When the worksheet name does not match "spatial_tables__".
+'@throws ProjectError.InvalidArgument When the worksheet name does not match "__spatial_tables".
 Private Sub CheckRequirements(ByVal sh As Worksheet)
     If sh Is Nothing Then
         ThrowError ObjectNotInitialized, "Worksheet not provided"
@@ -581,35 +1262,4 @@ End Sub
 '@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
-End Sub
-
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members satisfying the ILLSpatial contract.
-'See the corresponding members above for full documentation.
-
-Private Property Get ILLSpatial_Exists(ByVal varName As String) As Boolean
-    ILLSpatial_Exists = Exists(varName)
-End Property
-
-Private Sub ILLSpatial_Update()
-    Update
-End Sub
-
-Private Property Get ILLSpatial_TopGeoValue(ByVal adminName As String, _
-                                            ByVal orderValue As Long, _
-                                            ByVal varName As String, _
-                                            Optional ByVal tabId As String = vbNullString, _
-                                            Optional ByVal concatValue As Byte = 1) As String
-    ILLSpatial_TopGeoValue = TopGeoValue(adminName, orderValue, varName, tabId, concatValue)
-End Property
-
-Private Property Get ILLSpatial_TopHFValue(ByVal orderValue As Long, _
-                                           ByVal inputVarName As String, _
-                                           Optional ByVal tabId As String = vbNullString) As String
-    ILLSpatial_TopHFValue = TopHFValue(orderValue, inputVarName, tabId)
-End Property
-
-Private Sub ILLSpatial_Sort(ByVal tabId As String, Optional ByVal onAR As Boolean = False)
-    Sort tabId, onAR
 End Sub

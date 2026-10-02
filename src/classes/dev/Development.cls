@@ -15,7 +15,6 @@ Attribute VB_Description = "Workbook development helper orchestrating code table
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
-Implements IDevelopment
 
 '@class Development
 '@description
@@ -24,9 +23,9 @@ Implements IDevelopment
 'VBA classes, modules, forms, and tests), drives bulk import and export of
 'code artefacts between disk and the host workbook VBProject, and executes
 'deployment by protecting and hiding registered worksheets. Consumers
-'interact through the IDevelopment interface using the predeclared factory
+'interact with the Development class using the predeclared factory
 'pattern (Development.Create).
-'@depends BetterArray, IPasswords
+'@depends BetterArray, Passwords
 '@version 1.0 (2026-02-09)
 
 
@@ -48,6 +47,7 @@ Private Const CONFIRM_TITLE As String = "Development helper"
 Private Const MODULE_CODES_NAME As String = "ModulesCodes"
 Private Const CLASS_CODES_NAME As String = "ClassesImplementation"
 Private Const TEST_CODES_NAME As String = "TestsCodes"
+Private Const FORM_CODES_NAME As String = "FormsCodes"
 Private Const CODE_SHEET_NAMEDEF As String = "Development_CodeSheet"
 Private Const WORKBOOK_DEPLOYMENT_FLAG As String = "inDeployment"
 
@@ -55,15 +55,21 @@ Private Const COUNTER_CLASSES As String = "Development_ClassesCounter"
 Private Const COUNTER_MODULES As String = "Development_ModulesCounter"
 Private Const COUNTER_FORMS As String = "Development_FormsCounter"
 Private Const COUNTER_TESTS As String = "Development_TestsCounter"
+Private Const COUNTER_FORM_FILES As String = "Development_FormFilesCounter"
 
 Private Const PREFIX_CLASSES As String = "ClassesLo"
 Private Const PREFIX_MODULES As String = "ModulesLo"
 Private Const PREFIX_FORMS As String = "FormsLo"
 Private Const PREFIX_TESTS As String = "TestsLo"
+Private Const PREFIX_FORM_FILES As String = "FormFilesLo"
 
 Private Const TAG_CLASSES As String = "general classes"
 Private Const TAG_MODULES As String = "general modules"
 Private Const TAG_FORMS As String = "general form modules"
+'TAG_FORMS above drives the deployment job: it copies a standard module's code
+'into a UserForm already in the workbook. TAG_FORM_FILES below drives the import
+'job: it reads a .frm file from disk into the workbook. Two jobs, two tags.
+Private Const TAG_FORM_FILES As String = "general forms"
 Private Const TAG_TESTS As String = "tests modules"
 Private Const TAG_TEST_CLASSES As String = "tests classes"
 
@@ -74,6 +80,7 @@ Private Const DEFAULT_ANCHOR As String = "E5"
 Private Enum DevelopmentTransferScope
     transferModules = 1
     transferClasses = 2
+    transferForms = 3
 End Enum
 
 Private Enum DevelopmentTransferMode
@@ -85,6 +92,7 @@ Private Type TFolderSettings
     modulesPath As String
     classesPath As String
     testsPath As String
+    formsPath As String
 End Type
 
 
@@ -98,19 +106,19 @@ End Type
 'Factory method on the predeclared instance that allocates a new Development
 'object and binds it to the supplied Dev worksheet via Initialise. When a
 'codeSheet is provided, it is registered as the target for new development
-'tables. The returned object is cast to the IDevelopment interface so
-'consumers program against the contract rather than the concrete class.
+'tables. The returned object is a fully built Development instance ready
+'for consumers to use.
 '@param devSheet Worksheet. The worksheet hosting development named ranges
 'such as module and class folder paths.
 '@param codeSheet Optional Worksheet. A separate worksheet to host code
 'ListObjects. When omitted, tables are placed on devSheet.
-'@return IDevelopment. A fully initialised instance ready for use.
+'@return Development. A fully initialised instance ready for use.
 '@throws ProjectError.ObjectNotInitialized When devSheet is Nothing.
 '@throws ProjectError.ElementNotFound When required named ranges are missing
 'on the Dev worksheet.
 '@depends BetterArray
 '@export
-Public Function Create(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet) As IDevelopment
+Public Function Create(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet) As Development
     Dim instance As Development
 
     Set instance = New Development
@@ -279,6 +287,30 @@ Public Function AddFormsTable() As ListObject
                                          PREFIX_FORMS)
 End Function
 
+'@label:add-form-files-table
+'@sub-title Create a form files table on the code worksheet.
+'@details
+'Creates a new ListObject with a single "forms" column. Each entry names a
+'UserForm whose .frm file is read from the forms folder and imported into
+'the workbook. The .frx file beside it is picked up by the VBE on its own.
+'This table carries the tag "general forms". AddFormsTable carries
+'"general form modules" and does the deployment copy job.
+'A confirmation dialog is shown when prompts are enabled.
+'@return ListObject. The newly created table, or Nothing when the user
+'declines the confirmation prompt.
+'@throws ProjectError.ObjectNotInitialized When Initialise has not been called.
+'@Description("Create a form files table used to import .frm files from disk.")
+Public Function AddFormFilesTable() As ListObject
+    EnsureInitialised
+
+    If Not RequestConfirmation("add forms files table") Then Exit Function
+
+    Set AddFormFilesTable = CreateListObject(Array("forms"), _
+                                             TAG_FORM_FILES, _
+                                             COUNTER_FORM_FILES, _
+                                             PREFIX_FORM_FILES)
+End Function
+
 '@label:add-test-table
 '@sub-title Create a test modules table on the code worksheet.
 '@details
@@ -313,6 +345,11 @@ End Function
 'Appends the supplied worksheet name to the internal hiddenSheets
 'collection. During Deploy, every entry in this collection is set to
 'xlSheetVeryHidden. The worksheet must exist in the host workbook.
+'
+'A name already in the collection is left alone. RibbonDev keeps one
+'Development object for the whole VBA session, so pressing the dev
+'initialise button twice would otherwise push the same six sheets again and
+'Deploy would hide each of them twice.
 '@param sheetName String. Name of the worksheet to hide during deployment.
 '@throws ProjectError.ObjectNotInitialized When Initialise has not been called.
 '@throws ProjectError.InvalidArgument When sheetName is empty.
@@ -324,6 +361,8 @@ Public Sub AddHiddenSheet(ByVal sheetName As String)
 
     Dim sheet As Worksheet
     Set sheet = EnsureWorksheet(sheetName, "hidden")
+
+    If HasRegisteredSheet(this.hiddenSheets, sheet.Name) Then Exit Sub
 
     this.hiddenSheets.Push sheet.Name
 End Sub
@@ -437,12 +476,12 @@ End Sub
 'from the Dev sheet, then synchronises form modules without confirmation.
 'Every worksheet registered via AddHiddenSheet is set to xlSheetVeryHidden.
 'Every worksheet registered via AddProtectedSheet is protected using the
-'supplied IPasswords handler with the recorded permission flags. When
+'supplied Passwords handler with the recorded permission flags. When
 'lockWorkbook is True, the host workbook itself is locked. The code
 'worksheet (if distinct from the Dev sheet) is hidden. Finally, a debug
 'exit handler is installed and the workbook-level deployment flag is set
 'to "Yes".
-'@param pass IPasswords. The password handler used to apply protection to
+'@param pass Passwords. The password handler used to apply protection to
 'worksheets and optionally lock the workbook.
 '@param lockWorkbook Optional Boolean. When True, the host workbook
 'structure is locked after protecting sheets. Defaults to False.
@@ -450,7 +489,7 @@ End Sub
 'called or when pass is Nothing.
 '@throws ProjectError.ErrorUnexpectedState When a host sheet is protected.
 '@Description("Protect worksheets, hide Dev assets, copy forms code, and set deployment marker.")
-Public Sub Deploy(ByVal pass As IPasswords, Optional ByVal lockWorkbook As Boolean = False)
+Public Sub Deploy(ByVal pass As Passwords, Optional ByVal lockWorkbook As Boolean = False)
     EnsureInitialised
     EnsureHostSheetsUnlocked
 
@@ -820,8 +859,8 @@ End Sub
 '@details
 'Reads folder settings from the Dev sheet, then walks every ListObject on
 'each host worksheet. Each table is passed to ProcessListObject, which
-'interprets the tag above the table to decide scope (modules or classes),
-'target folder, and whether interfaces should be included.
+'interprets the tag above the table to decide scope (modules, classes or
+'form files), target folder, and whether interfaces should be included.
 '@param mode DevelopmentTransferMode. Whether to import or export.
 '@Description("Iterate every development table and process it for import/export.")
 Private Sub ProcessAllTables(ByVal mode As DevelopmentTransferMode)
@@ -847,6 +886,9 @@ Private Function ResolveFolderSettings() As TFolderSettings
     ResolveFolderSettings.modulesPath = ReadSheetValue(MODULE_CODES_NAME, required:=True)
     ResolveFolderSettings.classesPath = ReadSheetValue(CLASS_CODES_NAME, required:=True)
     ResolveFolderSettings.testsPath = ReadSheetValue(TEST_CODES_NAME, required:=False)
+    'A workbook whose OBTImport predates the forms range still imports
+    'everything else, so this read is optional.
+    ResolveFolderSettings.formsPath = ReadSheetValue(FORM_CODES_NAME, required:=False)
 End Function
 
 '@label:read-sheet-value
@@ -896,12 +938,12 @@ End Function
 '@sub-title Process a single ListObject for import or export.
 '@details
 'Reads the tag cell above the table to determine the scope (modules,
-'classes, tests, or forms) and the base folder. Reads the folder cell two
+'classes, tests, or form files) and the base folder. Reads the folder cell two
 'rows above the table to determine the subfolder. Combines both paths and
 'verifies the directory exists on disk. Delegates to TransferListEntries
-'for actual component-by-component processing. Forms-tagged tables are
-'skipped here (handled by SynchroniseFormsTables instead). Returns True
-'when at least one component was transferred.
+'for actual component-by-component processing. A table tagged
+'"general form modules" is skipped here; SynchroniseFormsTables owns it.
+'Returns True when at least one component was transferred.
 '@param lo ListObject. The development table to process.
 '@param mode DevelopmentTransferMode. Whether to import or export.
 '@param folders TFolderSettings. The resolved folder paths.
@@ -931,14 +973,27 @@ Private Function ProcessListObject(ByVal lo As ListObject, _
 
         Case TAG_TESTS
             If LenB(folders.testsPath) = 0 Then Exit Function
-            baseFolder = AppendPath(folders.testsPath, "modules")
+            'Test modules now sit directly under the tests base (src/tests/<folder>).
+            'The old tests/modules subfolder was retired; the tag still selects
+            'module scope so a .bas test imports as a standard module.
+            baseFolder = folders.testsPath
             scope = transferModules
 
         Case TAG_TEST_CLASSES
             If LenB(folders.testsPath) = 0 Then Exit Function
-            baseFolder = AppendPath(folders.testsPath, "classes")
+            'Fixture classes share the same per-suite folder as the test modules
+            '(src/tests/<folder>); the old tests/classes subfolder was retired. The
+            'tag still selects class scope so a .cls fixture imports as a class.
+            baseFolder = folders.testsPath
             scope = transferClasses
             includeInterface = True
+
+        Case TAG_FORM_FILES
+            If LenB(folders.formsPath) = 0 Then Exit Function
+            'Form files are read from the merged forms tree (forms/<folder>).
+            'The tag selects form scope so the entry imports as a .frm.
+            baseFolder = folders.formsPath
+            scope = transferForms
 
         Case TAG_FORMS
             Exit Function
@@ -953,8 +1008,18 @@ Private Function ProcessListObject(ByVal lo As ListObject, _
     Dim targetFolder As String
     targetFolder = AppendPath(baseFolder, subFolder)
 
-    If LenB(targetFolder) = 0 Then Exit Function
-    If Not DirectoryExists(targetFolder) Then Exit Function
+    If LenB(targetFolder) = 0 Then
+        AppendLogLine "Skipped table '" & lo.Name & "': no folder was resolved for it."
+        Exit Function
+    End If
+
+    'A missing folder used to end the table in silence, and ImportAll still
+    'reported "Import Done!". A half import is the worst outcome here, so it
+    'is written to the log.
+    If Not DirectoryExists(targetFolder) Then
+        AppendLogLine "Skipped table '" & lo.Name & "': folder not found: " & targetFolder
+        Exit Function
+    End If
 
     Dim processed As Boolean
     processed = TransferListEntries(lo, targetFolder, scope, mode, includeInterface)
@@ -1060,6 +1125,12 @@ End Function
 'entry the component is transferred via TransferComponent. When the flag
 'is "yes", the corresponding interface file (prefixed with "I") is also
 'transferred. Returns True when at least one component was processed.
+'
+'The flag is trusted in both directions. On export that means a table row
+'flagged "yes" writes I<name>.cls out of the VBProject, so a workbook still
+'holding an interface the repo deleted writes that file back. The guard for
+'that is the table itself: a class with no interface carries "no". Check
+'git status after an export.
 '@param lo ListObject. The development table containing component entries.
 '@param destinationFolder String. The disk folder for the transfer.
 '@param scope DevelopmentTransferScope. Whether entries are modules or classes.
@@ -1145,6 +1216,9 @@ Private Sub TransferComponent(ByVal componentName As String, _
             filePath = destinationFolder & sep & componentName & ".bas"
         Case transferClasses
             filePath = destinationFolder & sep & componentName & ".cls"
+        Case transferForms
+            'Only the .frm is named. The VBE reads the .frx sitting beside it.
+            filePath = destinationFolder & sep & componentName & ".frm"
         Case Else
             filePath = destinationFolder & sep & componentName
     End Select
@@ -1214,12 +1288,40 @@ End Sub
 '@label:append-information-log
 '@sub-title Append a timestamped entry describing the transfer action performed.
 '@param targetPath String. The folder path that was processed.
-'@param scope DevelopmentTransferScope. Whether modules or classes were transferred.
+'@param scope DevelopmentTransferScope. Which kind of component was transferred.
 '@param mode DevelopmentTransferMode. Whether an import or export was performed.
 '@Description("Append a timestamped entry describing the import/export action performed.")
 Private Sub AppendInformationLog(ByVal targetPath As String, _
                                  ByVal scope As DevelopmentTransferScope, _
                                  ByVal mode As DevelopmentTransferMode)
+
+    Dim actionLabel As String
+    Select Case mode
+        Case transferImport: actionLabel = "Imported "
+        Case transferExport: actionLabel = "Exported "
+        Case Else: actionLabel = "Processed "
+    End Select
+
+    Dim scopeLabel As String
+    Select Case scope
+        Case transferModules: scopeLabel = "Modules using path: "
+        Case transferClasses: scopeLabel = "Classes using path: "
+        Case transferForms: scopeLabel = "Forms using path: "
+        Case Else: scopeLabel = "Items using path: "
+    End Select
+
+    AppendLogLine actionLabel & scopeLabel & targetPath
+End Sub
+
+'@label:append-log-line
+'@sub-title Write one timestamped line under the Dev sheet Informations cell.
+'@details
+'Walks down from the first log row to the first empty cell and writes there.
+'Exits without a word when the Informations cell is missing or the sheet has
+'no room left.
+'@param messageText String. The text to write after the timestamp.
+'@Description("Append one timestamped line to the Dev sheet log block.")
+Private Sub AppendLogLine(ByVal messageText As String)
 
     Dim infoCell As Range
     Set infoCell = EnsureInformationCell()
@@ -1233,21 +1335,7 @@ Private Sub AppendInformationLog(ByVal targetPath As String, _
         If logCell.Row >= infoCell.Worksheet.Rows.Count Then Exit Sub
     Loop
 
-    Dim actionLabel As String
-    Select Case mode
-        Case transferImport: actionLabel = "Imported "
-        Case transferExport: actionLabel = "Exported "
-        Case Else: actionLabel = "Processed "
-    End Select
-
-    Dim scopeLabel As String
-    Select Case scope
-        Case transferModules: scopeLabel = "Modules using path: "
-        Case transferClasses: scopeLabel = "Classes using path: "
-        Case Else: scopeLabel = "Items using path: "
-    End Select
-
-    logCell.Value = Format$(Now(), "yyyy-mm-dd hh:mm:ss") & " - " & actionLabel & scopeLabel & targetPath
+    logCell.Value = Format$(Now(), "yyyy-mm-dd hh:mm:ss") & " - " & messageText
 End Sub
 
 '@label:write-information
@@ -1311,14 +1399,14 @@ End Sub
 '@sub-title Read and apply the default password from the Dev sheet.
 '@details
 'Checks for a named range "DefaultPassword" on the Dev sheet. When found
-'and non-empty, passes its value to the IPasswords handler via
+'and non-empty, passes its value to the Passwords handler via
 'NewDebugingPassword. Silently exits when no default password is configured.
-'@param passwords IPasswords. The password handler to configure.
-Private Sub ApplyDefaultPassword(ByVal passwords As IPasswords)
+'@param passwords Passwords. The password handler to configure.
+Private Sub ApplyDefaultPassword(ByVal passManager As Passwords)
     Dim defaultCell As Range
     Dim defaultValue As String
 
-    If passwords Is Nothing Then Exit Sub
+    If passManager Is Nothing Then Exit Sub
     If this.devSheet Is Nothing Then Exit Sub
 
     On Error Resume Next
@@ -1331,7 +1419,7 @@ Private Sub ApplyDefaultPassword(ByVal passwords As IPasswords)
     If LenB(defaultValue) = 0 Then Exit Sub
 
     On Error Resume Next
-        passwords.NewDebugingPassword defaultValue
+        passManager.NewDebugingPassword defaultValue
     On Error GoTo 0
 End Sub
 
@@ -1914,6 +2002,10 @@ Private Sub RegisterSheet(ByVal registry As BetterArray, ByVal sheetName As Stri
     trimmed = Trim$(sheetName)
     If LenB(trimmed) = 0 Then Exit Sub
 
+    'One triplet per sheet. A second registration keeps the first set of
+    'flags, so the caller that registers earliest decides what Deploy writes.
+    If HasRegisteredSheet(registry, sheetName) Then Exit Sub
+
     Set sheetInfo = New BetterArray
     sheetInfo.LowerBound = 1
     sheetInfo.Push sheetName, allowShape, allowDeletingRows
@@ -1922,6 +2014,48 @@ Private Sub RegisterSheet(ByVal registry As BetterArray, ByVal sheetName As Stri
     registry.Push sheetInfo
 
 End Sub
+
+'@label:has-registered-sheet
+'@sub-title Whether a deployment registry already holds a worksheet name
+'@details
+'hiddenSheets holds plain names and protectedSheets holds a triplet whose
+'first item is the name, so both shapes are read here. Deploy also accepts a
+'Worksheet in the hidden list, which is why that case is covered too. Names
+'are matched without regard to case, the way Excel itself treats them.
+'@param registry BetterArray. The collection to search.
+'@param sheetName String. The worksheet name to look for.
+'@return Boolean. True when the name is already registered.
+'@Description("Return True when the registry already holds the worksheet name.")
+Private Function HasRegisteredSheet(ByVal registry As BetterArray, ByVal sheetName As String) As Boolean
+
+    Dim idx As Long
+    Dim entry As Object
+    Dim storedName As String
+
+    If registry Is Nothing Then Exit Function
+    If registry.Length = 0 Then Exit Function
+
+    For idx = registry.LowerBound To registry.UpperBound
+        storedName = vbNullString
+
+        If IsObject(registry.Item(idx)) Then
+            Set entry = registry.Item(idx)
+            Select Case TypeName(entry)
+                Case "BetterArray"
+                    If entry.Length > 0 Then storedName = CStr(entry.Item(entry.LowerBound))
+                Case "Worksheet"
+                    storedName = entry.Name
+            End Select
+        Else
+            storedName = CStr(registry.Item(idx))
+        End If
+
+        If StrComp(storedName, sheetName, vbTextCompare) = 0 Then
+            HasRegisteredSheet = True
+            Exit Function
+        End If
+    Next idx
+End Function
 
 
 '@section Prompts
@@ -1963,81 +2097,3 @@ End Function
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
     Err.Raise errNumber, CLASSNAME, "Error: " & message
 End Sub
-
-
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members that satisfy the IDevelopment contract.
-'See the corresponding Public members above for full documentation.
-
-Private Sub IDevelopment_Initialise(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet)
-    Initialise devSheet, codeSheet
-End Sub
-
-Private Property Get IDevelopment_DevWorksheet() As Worksheet
-    Set IDevelopment_DevWorksheet = DevWorksheet
-End Property
-
-Private Property Get IDevelopment_CodeWorksheet() As Worksheet
-    Set IDevelopment_CodeWorksheet = CodeWorksheet
-End Property
-
-Private Property Get IDevelopment_DisplayPrompts() As Boolean
-    IDevelopment_DisplayPrompts = DisplayPrompts
-End Property
-
-Private Property Let IDevelopment_DisplayPrompts(ByVal value As Boolean)
-    DisplayPrompts = value
-End Property
-
-Private Function IDevelopment_AddCodeSheets(ByVal sheetName As String) As Worksheet
-    Set IDevelopment_AddCodeSheets = AddCodeSheets(sheetName)
-End Function
-
-Private Function IDevelopment_AddClassTable(Optional ByVal includeTests As Boolean = False) As ListObject
-    Set IDevelopment_AddClassTable = AddClassTable(includeTests)
-End Function
-
-Private Function IDevelopment_AddModuleTable(Optional ByVal includeTests As Boolean = False) As ListObject
-    Set IDevelopment_AddModuleTable = AddModuleTable(includeTests)
-End Function
-
-Private Function IDevelopment_AddFormsTable() As ListObject
-    Set IDevelopment_AddFormsTable = AddFormsTable()
-End Function
-
-Private Function IDevelopment_AddTestTable() As ListObject
-    Set IDevelopment_AddTestTable = AddTestTable()
-End Function
-
-Private Sub IDevelopment_AddHiddenSheet(ByVal sheetName As String)
-    AddHiddenSheet sheetName
-End Sub
-
-Private Sub IDevelopment_AddProtectedSheet(ByVal sheetName As String, _
-                                           Optional ByVal allowShapes As Boolean = True, _
-                                           Optional ByVal allowDeletingRows As Boolean = True)
-
-    AddProtectedSheet sheetName, allowShapes, allowDeletingRows
-
-End Sub
-
-Private Sub IDevelopment_ImportAll()
-    ImportAll
-End Sub
-
-Private Sub IDevelopment_ExportAll()
-    ExportAll
-End Sub
-
-Private Sub IDevelopment_AddFormsCodes()
-    AddFormsCodes
-End Sub
-
-Private Sub IDevelopment_Deploy(ByVal passwords As IPasswords, Optional ByVal lockWorkbook As Boolean = False)
-    Deploy passwords, lockWorkbook
-End Sub
-
-Private Function IDevelopment_InDeployment() As Boolean
-    IDevelopment_InDeployment = InDeployment
-End Function

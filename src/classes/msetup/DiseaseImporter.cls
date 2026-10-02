@@ -5,32 +5,57 @@ END
 Attribute VB_Name = "DiseaseImporter"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = False
+Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Coordinates disease worksheet imports with merge and reporting support"
 
+'@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Coordinates disease worksheet imports with merge and reporting support")
+'@depends DiseaseImportSummary, DiseaseLogger, DiseaseSheet, BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IDiseaseImporter
+
+'Merges a foreign disease table into an existing one, existing or foreign
+'values winning by priority, and answers a DiseaseImportSummary of the merge.
+
+'@section Enumerations
+'===============================================================================
+
+Public Enum DiseaseImportPriority
+    DiseaseImportPriority_Existing = 0
+    DiseaseImportPriority_Foreign = 1
+End Enum
+
+'The variable name keys every merge. DiseaseSheet builds it as column 2
+'of the disease table (Order, Name, Section, ...).
+Private Const VARIABLE_NAME_COLUMN As Long = 2
+
+'@section Factory
+'===============================================================================
+
+'@sub-title Build a fresh importer.
+'@return DiseaseImporter ready to merge disease tables.
+Public Function Create() As DiseaseImporter
+    Set Create = New DiseaseImporter
+End Function
 
 '@section Operations
 '===============================================================================
 
 '@sub-title Import disease data, merging when requested.
+'@param priority Byte holding a DiseaseImportPriority value. Defaults to foreign.
 Public Function MergeDisease(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, _
                              Optional ByVal mergeValues As Boolean = True, _
-                             Optional ByVal priority As DiseaseImportPriority = DiseaseImportPriority_Foreign, _
-                             Optional ByVal logger As IDiseaseLogger = Nothing) As IDiseaseImportSummary
+                             Optional ByVal priority As Byte = DiseaseImportPriority_Foreign, _
+                             Optional ByVal logger As DiseaseLogger = Nothing) As DiseaseImportSummary
     Dim summary As DiseaseImportSummary
 
     ValidateTable targetTable, "targetTable"
     ValidateTable sourceTable, "sourceTable"
 
-    Set summary = New DiseaseImportSummary
-    summary.Initialise
+    Set summary = DiseaseImportSummary.Create()
 
     If Not mergeValues Then
         ReplaceTable targetTable, sourceTable, summary, logger
@@ -38,14 +63,14 @@ Public Function MergeDisease(ByVal targetTable As ListObject, ByVal sourceTable 
         MergeTables targetTable, sourceTable, priority, summary, logger
     End If
 
-    Set MergeDisease = summary.Self
+    Set MergeDisease = summary
 End Function
 
 '@section Replacement
 '===============================================================================
 
 '@sub-title Replace the target table with the source content.
-Private Sub ReplaceTable(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, ByVal summary As DiseaseImportSummary, ByVal logger As IDiseaseLogger)
+Private Sub ReplaceTable(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, ByVal summary As DiseaseImportSummary, ByVal logger As DiseaseLogger)
     Dim sourceRows As Long
     Dim sourceData As Variant
     Dim columnCount As Long
@@ -67,7 +92,7 @@ Private Sub ReplaceTable(ByVal targetTable As ListObject, ByVal sourceTable As L
     targetTable.DataBodyRange.Value = sourceData
 
     For rowIndex = 1 To sourceRows
-        variableName = CStr(sourceData(rowIndex, 1))
+        variableName = CStr(sourceData(rowIndex, VARIABLE_NAME_COLUMN))
         If LenB(variableName) > 0 Then
             summary.RegisterAppended variableName
             Log logger, "ImportReplace", DiseaseLogInfo, "Appended variable during replace", BuildDetails("Variable", variableName)
@@ -79,7 +104,7 @@ End Sub
 '===============================================================================
 
 '@sub-title Merge the source data into the target according to the priority.
-Private Sub MergeTables(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, ByVal priority As DiseaseImportPriority, ByVal summary As DiseaseImportSummary, ByVal logger As IDiseaseLogger)
+Private Sub MergeTables(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, ByVal priority As Byte, ByVal summary As DiseaseImportSummary, ByVal logger As DiseaseLogger)
     Dim targetRows As Long
     Dim sourceRows As Long
     Dim columnCount As Long
@@ -103,7 +128,11 @@ Private Sub MergeTables(ByVal targetTable As ListObject, ByVal sourceTable As Li
 
     targetNames = BuildTargetIndex(targetData, targetRows, targetIndex)
     Set seenSource = New Collection
+    'The rows pushed here are 2D arrays based at 1, and Push re-bases any
+    'array whose bound disagrees with the container's. The container has to
+    'start at 1 too, or the readers index 1 into a row that starts at 0.
     Set appendedRows = New BetterArray
+    appendedRows.LowerBound = 1
 
     ApplyMerge targetData, sourceData, targetRows, sourceRows, columnCount, priority, targetIndex, seenSource, appendedRows, summary, logger
 
@@ -127,7 +156,7 @@ Private Function BuildTargetIndex(ByVal targetData As Variant, ByVal targetRows 
         ReDim names(1 To targetRows)
 
         For rowIndex = 1 To targetRows
-            key = Normalize(CStr(targetData(rowIndex, 1)))
+            key = Normalize(CStr(targetData(rowIndex, VARIABLE_NAME_COLUMN)))
             names(rowIndex) = key
             If LenB(key) > 0 Then
                 AddIfMissing targetIndex, key, rowIndex
@@ -140,8 +169,8 @@ End Function
 
 '@sub-title Perform the merge between target and source matrices.
 Private Sub ApplyMerge(ByRef targetData As Variant, ByRef sourceData As Variant, ByVal targetRows As Long, ByVal sourceRows As Long, _
-                       ByVal columnCount As Long, ByVal priority As DiseaseImportPriority, ByVal targetIndex As Collection, _
-                       ByVal seenSource As Collection, ByVal appendedRows As BetterArray, ByVal summary As DiseaseImportSummary, ByVal logger As IDiseaseLogger)
+                       ByVal columnCount As Long, ByVal priority As Byte, ByVal targetIndex As Collection, _
+                       ByVal seenSource As Collection, ByVal appendedRows As BetterArray, ByVal summary As DiseaseImportSummary, ByVal logger As DiseaseLogger)
 
     Dim rowIndex As Long
     Dim colIndex As Long
@@ -153,7 +182,7 @@ Private Sub ApplyMerge(ByRef targetData As Variant, ByRef sourceData As Variant,
     If sourceRows = 0 Then Exit Sub
 
     For rowIndex = 1 To sourceRows
-        variableName = CStr(sourceData(rowIndex, 1))
+        variableName = CStr(sourceData(rowIndex, VARIABLE_NAME_COLUMN))
         normalizedName = Normalize(variableName)
         If LenB(normalizedName) = 0 Then GoTo ContinueLoop
 
@@ -180,11 +209,12 @@ ContinueLoop:
 End Sub
 
 '@sub-title Append merged rows to the target ListObject.
-Private Sub AppendImportedRows(ByVal targetTable As ListObject, ByVal appendedRows As BetterArray, ByVal logger As IDiseaseLogger)
+Private Sub AppendImportedRows(ByVal targetTable As ListObject, ByVal appendedRows As BetterArray, ByVal logger As DiseaseLogger)
     Dim appendCount As Long
     Dim columnCount As Long
     Dim appendedMatrix As Variant
     Dim startRow As Long
+    Dim freeRows As Long
     Dim rowIndex As Long
     Dim rowValues As Variant
 
@@ -193,23 +223,27 @@ Private Sub AppendImportedRows(ByVal targetTable As ListObject, ByVal appendedRo
     If appendCount = 0 Then Exit Sub
 
     columnCount = targetTable.ListColumns.Count
-    AppendBlankRows targetTable, appendCount
+
+    'The rows land under the last named line. A built disease table carries
+    'blank lines, so those are filled before any row is added.
+    startRow = LastNamedRow(targetTable) + 1
+    freeRows = targetTable.ListRows.Count - startRow + 1
+    If freeRows < appendCount Then AppendBlankRows targetTable, appendCount - freeRows
 
     appendedMatrix = ConvertRowsToMatrix(appendedRows, appendCount, columnCount)
-    startRow = targetTable.ListRows.Count - appendCount + 1
 
     targetTable.DataBodyRange.Rows(startRow).Resize(appendCount, columnCount).Value = appendedMatrix
 
     If Not logger Is Nothing Then
         For rowIndex = appendedRows.LowerBound To appendedRows.UpperBound
             rowValues = appendedRows.Item(rowIndex)
-            Log logger, "ImportAppend", DiseaseLogInfo, "Appended new row from import", BuildDetails("Variable", CStr(rowValues(1, 1)))
+            Log logger, "ImportAppend", DiseaseLogInfo, "Appended new row from import", BuildDetails("Variable", CStr(rowValues(1, VARIABLE_NAME_COLUMN)))
         Next rowIndex
     End If
 End Sub
 
 '@sub-title Determine which existing variables were missing from the import.
-Private Sub RegisterMissingVariables(ByVal targetData As Variant, ByVal targetRows As Long, ByVal targetNames() As String, ByVal seenSource As Collection, ByVal summary As DiseaseImportSummary, ByVal logger As IDiseaseLogger)
+Private Sub RegisterMissingVariables(ByVal targetData As Variant, ByVal targetRows As Long, ByRef targetNames() As String, ByVal seenSource As Collection, ByVal summary As DiseaseImportSummary, ByVal logger As DiseaseLogger)
     Dim rowIndex As Long
     Dim normalizedName As String
 
@@ -223,8 +257,8 @@ Private Sub RegisterMissingVariables(ByVal targetData As Variant, ByVal targetRo
         If LenB(normalizedName) = 0 Then GoTo NextRow
 
         If Not CollectionContains(seenSource, normalizedName) Then
-            summary.RegisterMissing CStr(targetData(rowIndex, 1))
-            Log logger, "ImportMerge", DiseaseLogWarning, "Variable missing from import", BuildDetails("Variable", CStr(targetData(rowIndex, 1)))
+            summary.RegisterMissing CStr(targetData(rowIndex, VARIABLE_NAME_COLUMN))
+            Log logger, "ImportMerge", DiseaseLogWarning, "Variable missing from import", BuildDetails("Variable", CStr(targetData(rowIndex, VARIABLE_NAME_COLUMN)))
         End If
 
 NextRow:
@@ -241,13 +275,47 @@ Private Sub ClearTable(ByVal targetTable As ListObject)
     Loop
 End Sub
 
+'@sub-title The index of the last line carrying a variable name, 0 when none does.
+Private Function LastNamedRow(ByVal targetTable As ListObject) As Long
+    Dim names As Variant
+    Dim rowIndex As Long
+
+    If targetTable.DataBodyRange Is Nothing Then Exit Function
+
+    names = targetTable.DataBodyRange.Columns(VARIABLE_NAME_COLUMN).Value2
+    If Not IsArray(names) Then
+        If LenB(CleanName(names)) > 0 Then LastNamedRow = 1
+        Exit Function
+    End If
+
+    For rowIndex = UBound(names, 1) To 1 Step -1
+        If LenB(CleanName(names(rowIndex, 1))) > 0 Then
+            LastNamedRow = rowIndex
+            Exit Function
+        End If
+    Next rowIndex
+End Function
+
+'@sub-title A cell value as trimmed text; an error value reads as empty.
+Private Function CleanName(ByVal candidate As Variant) As String
+    If IsError(candidate) Then Exit Function
+    CleanName = Trim$(CStr(candidate))
+End Function
+
 '@sub-title Append blank rows to the target table.
+'@details A row added through ListRows.Add takes the vertical edges of the
+'row above and no horizontal edge, so the disease frame is painted again
+'over the grown table.
 Private Sub AppendBlankRows(ByVal targetTable As ListObject, ByVal rowCount As Long)
     Dim counter As Long
+
+    If rowCount <= 0 Then Exit Sub
 
     For counter = 1 To rowCount
         targetTable.ListRows.Add
     Next counter
+
+    DiseaseSheet.FrameTable targetTable
 End Sub
 
 '@sub-title Create a row array from the source matrix.
@@ -355,7 +423,7 @@ Private Function Normalize(ByVal value As String) As String
     Normalize = LCase$(Trim$(value))
 End Function
 
-Private Sub Log(ByVal logger As IDiseaseLogger, ByVal operation As String, ByVal severity As DiseaseLogSeverity, ByVal message As String, Optional ByVal details As BetterArray)
+Private Sub Log(ByVal logger As DiseaseLogger, ByVal operation As String, ByVal severity As Byte, ByVal message As String, Optional ByVal details As BetterArray)
     If logger Is Nothing Then Exit Sub
     logger.Record operation, severity, message, details
 End Sub
@@ -377,9 +445,3 @@ Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As Stri
     Err.Raise errNumber, "DiseaseImporter", errMessage
 End Sub
 
-'@section Interface
-'===============================================================================
-
-Private Function IDiseaseImporter_MergeDisease(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, Optional ByVal mergeValues As Boolean = True, Optional ByVal priority As DiseaseImportPriority = DiseaseImportPriority_Foreign, Optional ByVal logger As IDiseaseLogger = Nothing) As IDiseaseImportSummary
-    Set IDiseaseImporter_MergeDisease = MergeDisease(targetTable, sourceTable, mergeValues, priority, logger)
-End Function

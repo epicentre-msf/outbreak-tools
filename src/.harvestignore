@@ -1,0 +1,16 @@
+# Files/paths the comment harvest skips (read by
+# scripts/devtools/harvest-comments.R, and by update-comments.R when it decides
+# whether a block in the edited file is one it is allowed to write).
+#
+# Same three pattern forms as .docignore, one per line:
+#
+#   stale/            a trailing "/" means "any path containing this folder"
+#   Test*.bas         a pattern with * or ? is matched against the FILE NAME
+#   classes/geo/LLGeo.cls   anything else is matched as a substring of the path
+#
+# A line starting with "#" is a comment. Blank lines are ignored.
+# Pass --no-ignore to either script to read every file regardless of this list.
+
+# Dead code kept only until deletion. Its comments still describe interfaces
+# that no longer exist, so there is nothing here worth editing by hand.
+stale/

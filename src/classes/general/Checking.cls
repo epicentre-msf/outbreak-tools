@@ -15,7 +15,6 @@ Attribute VB_Description = "Save warnings, information and errors on objects"
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
-Implements IChecking
 
 '@class Checking
 '@description
@@ -29,6 +28,42 @@ Implements IChecking
 '@depends BetterArray
 '@version 1.0 (2026-02-09)
 
+
+'@section Enumerations
+'===============================================================================
+'@description
+'Project-wide enumerations for diagnostic scopes, value selectors, and
+'error codes. These lived in the removed IChecking interface; they are
+'re-homed on the Checking class so it is their single source of truth.
+'Depending on Checking is enough to resolve them everywhere.
+
+'Severity levels for diagnostic entries.
+Public Enum CheckingScope
+  checkingError = 1
+  checkingWarning = 2
+  checkingInfo = 3
+  checkingNote = 4
+  checkingSuccess = 5
+End Enum
+
+'Selectors for retrieving entry properties.
+Public Enum CheckingValue
+  checkingLabel = 1
+  checkingType = 2
+  checkingColor = 3
+End Enum
+
+'Application-wide error codes used with Err.Raise.
+Public Enum ProjectError
+  ErrorNone = 0
+  InvalidArgument = 1001
+  ObjectNotInitialized = 1002
+  ErrorUnexpectedState = 1004
+  ElementShouldExists = 1005
+  ElementShouldNotExists = 1006
+  ElementNotFound = 1007
+  SomethingWentWrong = 1008
+End Enum
 
 
 '@section State
@@ -44,6 +79,7 @@ Private Type TChecking
   labelsTable As BetterArray
   scopesTable As BetterArray
   nbElmts As Long
+  sealed As Boolean
 End Type
 
 Private this As TChecking
@@ -63,32 +99,24 @@ Private this As TChecking
 'when printing the messages to a worksheet via CheckingOutput.
 '@param titleName String. Title of the checkings topic.
 '@param subtitleName Optional String. Subtitle of the checkings. Defaults to vbNullString.
-'@return IChecking. A ready-to-use Checking instance.
+'@return Checking. A ready-to-use Checking instance.
 '@depends BetterArray
 '@export
 Public Function Create(ByVal titleName As String, _
                        Optional ByVal subtitleName As String = vbNullString) As _
-                      IChecking
-  With New Checking
-    .CheckingTitle = titleName
-    .CheckingSubTitle = subtitleName
-    Set Create = .Self()
-  End With
+                      Checking
+  Dim newChecking As Checking
+  Set newChecking = New Checking
+
+  newChecking.CheckingTitle = titleName
+  newChecking.CheckingSubTitle = subtitleName
+  newChecking.Seal
+  Set Create = newChecking
 End Function
 
 '@section PublicAccessors
 '===============================================================================
-'@description Properties that expose internal state and the interface pointer.
-
-'@label:self
-'@prop-title Current object instance
-'@details
-'Returns the current instance cast to its interface. Used internally
-'by the factory method to return an IChecking reference.
-'@return IChecking. Reference to the current object.
-Public Property Get Self() As IChecking
-  Set Self = Me
-End Property
+'@description Properties that expose internal state and the object pointer.
 
 '@label:checking-title
 '@prop-title Title of the checking topic
@@ -112,6 +140,7 @@ End Property
 '@prop-title Assign the checking title
 '@param titleName String. Title to assign.
 Public Property Let CheckingTitle(ByVal titleName As String)
+  GuardNotSealed "CheckingTitle"
   this.title = titleName
 End Property
 
@@ -119,12 +148,13 @@ End Property
 '@prop-title Assign the checking subtitle
 '@param subtitleName String. Subtitle to assign.
 Public Property Let CheckingSubTitle(ByVal subtitleName As String)
+  GuardNotSealed "CheckingSubTitle"
   this.subtitle = subtitleName
 End Property
 
 '@section Elements
 '===============================================================================
-'@description Read-only metadata properties exposed through the interface.
+'@description Read-only metadata properties.
 
 '@label:name
 '@prop-title Name of the checking object
@@ -133,7 +163,7 @@ End Property
 'in output and presentation contexts.
 '@return String. The checking title.
 '@export
-Private Property Get Name() As String
+Public Property Get Name() As String
   Name = CheckingTitle()
 End Property
 
@@ -145,7 +175,7 @@ End Property
 '@param subtitle Optional Boolean. When True, returns the subtitle. Defaults to False.
 '@return String. The title or subtitle.
 '@export
-Private Property Get Heading(Optional ByVal subtitle As Boolean = False) As String
+Public Property Get Heading(Optional ByVal subtitle As Boolean = False) As String
   If subtitle Then
     Heading = CheckingSubTitle()
     Exit Property
@@ -159,7 +189,7 @@ End Property
 'Returns the count of diagnostic messages stored in the parallel arrays.
 '@return Long. Number of entries.
 '@export
-Private Property Get Length() As Long
+Public Property Get Length() As Long
   Length = this.nbElmts
 End Property
 
@@ -174,7 +204,7 @@ End Property
 'is uninitialised, creates an empty BetterArray with LowerBound 1.
 '@return BetterArray. Clone of stored keys.
 '@export
-Private Property Get ListOfKeys() As BetterArray
+Public Property Get ListOfKeys() As BetterArray
 
   'If the keysTable is unitialised, initialize it
   If this.keysTable Is Nothing Then
@@ -189,19 +219,19 @@ End Property
 '@details
 'Searches the keys BetterArray for the specified key name. Returns
 'False immediately for empty strings.
+'
+'The stored table is read directly. `ListOfKeys` hands out a clone, and `Add`
+'asks this question on every call, so a build that files 500 entries used to
+'copy an array averaging 250 items 500 times before recording anything.
 '@param keyName String. Key to search for.
 '@return Boolean. True when the key is found.
 '@export
-Private Function KeyExists(ByVal keyName As String) As Boolean
-  Dim keyTabl As BetterArray
+Public Function KeyExists(ByVal keyName As String) As Boolean
 
-  If (keyName = vbNullString) Then
-    KeyExists = False
-    Exit Function
-  End If
+  If (keyName = vbNullString) Then Exit Function
+  If this.keysTable Is Nothing Then Exit Function
 
-  Set keyTabl = ListOfKeys()
-  KeyExists = keyTabl.Includes(keyName)
+  KeyExists = this.keysTable.Includes(keyName)
 End Function
 
 '@section InputOutput
@@ -256,7 +286,7 @@ End Sub
 '@return String. The requested property value.
 '@throws ProjectError.ElementShouldExists When the key is not found.
 '@export
- Private Property Get ValueOf(ByVal keyName As String, Optional ByVal retrievedValue As Byte = 1) As String
+ Public Property Get ValueOf(ByVal keyName As String, Optional ByVal retrievedValue As Byte = 1) As String
 
   Dim indexValue As Long
   Dim returnedValue As String
@@ -310,9 +340,9 @@ End Property
 'Creates a new Checking instance with the same title, subtitle, and
 'logged entries. Required so that flushing a checking into another
 'container does not keep a live reference to the current object.
-'@return IChecking. Independent clone.
+'@return Checking. Independent clone.
 '@export
-Private Function Clone() As IChecking
+Public Function Clone() As Checking
   Dim cloneInstance As Checking
   Dim idx As Long
   Dim lowerBound As Long
@@ -321,14 +351,15 @@ Private Function Clone() As IChecking
   Set cloneInstance = New Checking
   cloneInstance.CheckingTitle = this.title
   cloneInstance.CheckingSubTitle = this.subtitle
+  cloneInstance.Seal
 
   If this.nbElmts <= 0 Then
-    Set Clone = cloneInstance.Self
+    Set Clone = cloneInstance
     Exit Function
   End If
 
   If this.keysTable Is Nothing Then
-    Set Clone = cloneInstance.Self
+    Set Clone = cloneInstance
     Exit Function
   End If
 
@@ -341,18 +372,28 @@ Private Function Clone() As IChecking
                      CByte(this.scopesTable.Item(idx))
   Next
 
-  Set Clone = cloneInstance.Self()
+  Set Clone = cloneInstance
 End Function
 
 '@label:append
 '@sub-title Append entries from another checking to the current one
 '@details
-'Iterates through the supplied IChecking entries and adds each one
+'Iterates through the supplied Checking entries and adds each one
 'to the current checking. Silently exits when the supplied checking
 'is Nothing or empty.
-'@param checks IChecking. Source checking to merge from.
+'
+'WHAT HAPPENS TO A KEY BOTH SIDES HOLD
+'-------------------------------------------------------------------------------
+'It is numbered and the entry is kept. `Add` is the strict half of the contract
+'and still raises on a duplicate; this is the merge, and every caller in the
+'tree uses it as one. Two classes that both key their entries with a counter
+'from 0 -- `Formulas` and `FormulaCondition` do -- used to stop the caller dead
+'the second time their stores met.
+'
+'Owner decision, 2026-07-31.
+'@param checks Checking. Source checking to merge from.
 '@export
-Private Sub Append(ByVal checks As IChecking)
+Public Sub Append(ByVal checks As Checking)
   Dim idx As Long
   Dim keyTable As BetterArray
   Dim keyName As String
@@ -371,11 +412,31 @@ Private Sub Append(ByVal checks As IChecking)
     keyTypeLabel = checks.ValueOf(keyName, checkingType)
     keyScope = ScopeFromTypeLabel(keyTypeLabel)
 
-    Add keyName, _
+    Add FreeKey(keyName), _
       checks.ValueOf(keyName, checkingLabel), _
       keyScope
   Next idx
 End Sub
+
+'@label:free-key
+'@sub-title Answer a key this checking does not hold yet
+'@details
+'The root is numbered until it is free. Used by `Append` alone, so a direct
+'`Add` keeps raising on a duplicate.
+'@param keyRoot String. The key to start from.
+'@return String. A key that is free.
+Private Function FreeKey(ByVal keyRoot As String) As String
+  Dim candidate As String
+  Dim suffix As Long
+
+  candidate = keyRoot
+  Do While KeyExists(candidate)
+    suffix = suffix + 1
+    candidate = keyRoot & " #" & CStr(suffix)
+  Loop
+
+  FreeKey = candidate
+End Function
 
 '@section Helpers
 '===============================================================================
@@ -428,43 +489,16 @@ Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, CLASSNAME, "Error message : " & Chr(34) & errorMessage
 End Sub
 
-'@section Interface
-'===============================================================================
-'@description Delegated members satisfying the IChecking contract.
-
-Private Property Get IChecking_Name() As String
-  IChecking_Name = Name()
-End Property
-
-Private Property Get IChecking_Heading(Optional ByVal subtitle As Boolean = False) As String
-  IChecking_Heading = Heading(subtitle)
-End Property
-
-Private Property Get IChecking_Length() As Long
-  IChecking_Length = Length()
-End Property
-
-Private Property Get IChecking_ListOfKeys() As BetterArray
-  Set IChecking_ListOfKeys = ListOfKeys()
-End Property
-
-Private Property Get IChecking_KeyExists(ByVal keyName As String) As Boolean
-  IChecking_KeyExists = KeyExists(keyName)
-End Property
-
-Private Sub IChecking_Add(ByVal keyName As String, ByVal label As String, _
-                Optional ByVal scope As Byte = checkingNote)
-    Add keyName, label, scope
+'@label:seal
+'@sub-title Seal the instance so setup setters can no longer be written
+Public Sub Seal()
+  this.sealed = True
 End Sub
 
-Private Property Get IChecking_ValueOf(ByVal keyName As String, Optional ByVal retrievedValue As Byte = 1) As String
-  IChecking_ValueOf = ValueOf(keyName, retrievedValue)
-End Property
-
-Private Function IChecking_Clone() As IChecking
-  Set IChecking_Clone = Clone()
-End Function
-
-Private Sub IChecking_Append(ByVal checks As IChecking)
-  Append checks
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against writes after sealing
+'@param propName String. Name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+  If this.sealed Then _
+      ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
 End Sub

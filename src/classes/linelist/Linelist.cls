@@ -16,25 +16,51 @@ Attribute VB_Description = "Linelist workbook facade: creates, populates and sav
 
 Option Explicit
 
-Implements ILinelist
-
 '@class Linelist
 '@description
-'Facade for the output linelist workbook. This class orchestrates the full
-'lifecycle of creating, populating, saving, and error-managing the .xlsb
-'workbook that end-users receive. It lazily creates the output workbook
-'(or opens a template), adds temporary and permanent worksheets, exports
-'specifications, prepares hidden names and ListObjects, formats the admin
-'sheet, transfers all VBA code components, and finally saves the workbook
-'with password protection. The class uses VB_Creatable = True so that
-'factory consumers create instances via `New Linelist` rather than
-'`With New Linelist`.
-'@depends ILinelistSpecs, ILLdictionary, ITranslationObject,
-'  IPasswords, ILLFormat, ITemporaryRepos, ICodeTransfer, IHiddenNames,
-'  IButtons, IDropdownLists, ICustomPivotTable, DropdownLists,
-'  CustomPivotTable, TemporaryRepos, HiddenNames, Buttons, CodeTransfer,
-'  BetterArray
-'@version 1.0 (2026-02-09)
+'Facade for the output linelist workbook. Prepare adds every worksheet the
+'linelist needs, prepares the temporary sheets with their hidden names and
+'ListObjects, formats the admin sheet and transfers the VBA code, and SaveLL
+'writes the .xlsb the user receives. AddOutputSheet adds one sheet,
+'SheetExists and SheetNames answer what is there, Wksh, PrintWksh and CRFWksh
+'reach a data entry sheet and its two companions, and Dropdown and Pivots
+'answer the two managers the class builds on first use.
+'LinelistSpecs.Prepare has to have run first: it is what creates the output
+'workbook and points the domain managers at it.
+'
+'The class uses VB_Creatable = True, so callers build one with
+'`Set ll = Linelist.Create(specs)` over a `New Linelist`.
+'
+'SHEET NAMES AND THEIR SCOPE
+'-------------------------------------------------------------------------------
+'A data entry sheet can carry two companions, and each companion is the same
+'name under a prefix: `print_` for the printable copy, `crf_` for the case
+'report form. ScopedName is the one place that puts a prefix on a name and cuts
+'the result to what Excel accepts, and AddOutputSheet, ResolveWksh and the
+'SheetExists calls all go through it. A sheet created under a shortened name is
+'found again under the same shortened name.
+'
+'A name the cut actually shortens is filed as a report entry, once per name, so
+'the user learns which sheet came out under a different name.
+'
+'WHAT THIS CLASS REPORTS
+'-------------------------------------------------------------------------------
+'Prepare files its own entries and folds in the ones CodeTransfer filed, so
+'HasCheckings and CheckingValues answer over both. The build driver flushes
+'them into the generation report right after Prepare returns.
+'
+'A BUILD THAT STOPS KEEPS ITS FILE
+'-------------------------------------------------------------------------------
+'DiscardBuild is the one exit of a build that stops before SaveLL. It saves
+'the unfinished workbook as __temp.xlsb in the temporary repository, closes
+'it and answers the path, so the report can name what the user may open.
+'No question is asked: the build may run in an instance nobody sees.
+'@depends LinelistSpecs, LLdictionary, LLSheets, TranslationObject,
+'  LLFormat, DropdownLists, CustomPivotTable, TemporaryRepos,
+'  Buttons, CodeTransfer, Passwords, HiddenNames, AnaTabIds,
+'  ShowHideStore, AnalysisRanges, Checking, BetterArray, LLTranslation,
+'  Messenger, LLLog
+'@version 1.6 (2026-08-28)
 
 
 
@@ -45,16 +71,38 @@ Implements ILinelist
 Private Const CLASS_NAME As String = "Linelist"
 Private Const PRINT_PREFIX As String = "print_"
 Private Const CRF_PREFIX As String = "crf_"
-Private Const SHEET_NAME_MAX_LENGTH As Long = 30
+
+'Excel accepts 31 characters in a worksheet name. The constant read 30, and the
+'cut was applied when a sheet was created and skipped when one was looked up, so
+'a dictionary sheet name of 25 characters created `print_` + 30 characters and
+'PrintWksh then asked for the 31-character name and raised.
+Private Const SHEET_NAME_MAX_LENGTH As Long = 31
+
+'The name of the unfinished workbook a stopped build leaves in the
+'temporary repository. LinelistSpecs.Prepare saves a template copy under
+'the same name, so a template build is kept where it already stood.
+Private Const KEPT_FILE_NAME As String = "__temp.xlsb"
+
 Private Const WORKBOOK_MODULE_NAME As String = "EventLinelistWorkbook"
-Private Const SELECTION_MODULE_NAME As String = "EventLinelistSelection"
+Private Const SHEET_MODULE_NAME As String = "EventLinelistSheet"
 Private Const SHEET_GEO As String = "Geo"
+
+'The form that hides and shows whole sections. It travels only when the designer
+'carries it, so a designer built before it exists still generates.
+Private Const SECTIONS_FORM_NAME As String = "F_ShowHideSections"
 
 Private Type TLinelist
     outWkb As Workbook
-    specs As ILinelistSpecs
-    tempRepos As ITemporaryRepos
-    firstSheet As String
+    specs As LinelistSpecs
+    tempRepos As TemporaryRepos
+    codeMover As CodeTransfer
+    standardDropdowns As DropdownLists
+    customDropdowns As DropdownLists
+    pivotTables As CustomPivotTable
+    sheetNames As BetterArray
+    sheetInfo As LLSheets
+    checks As Checking
+    shortened As Collection
 End Type
 
 Private this As TLinelist
@@ -68,14 +116,14 @@ Private this As TLinelist
 '@details
 'Validates that the supplied specifications object is not Nothing, creates
 'a new Linelist instance via `New Linelist`, binds the specifications
-'through the Friend property, and returns an ILinelist interface reference.
-'@param specs ILinelistSpecs. The linelist specifications providing
+'through the Friend property, and returns an Linelist interface reference.
+'@param specs LinelistSpecs. The linelist specifications providing
 'dictionary, translations, design format, passwords, and all other setup
 'data required to build the output workbook.
-'@return ILinelist. A ready-to-use linelist facade.
+'@return Linelist. A ready-to-use linelist facade.
 '@throws ProjectError.ObjectNotInitialized When specs is Nothing.
 '@export
-Public Function Create(ByVal specs As ILinelistSpecs) As ILinelist
+Public Function Create(ByVal specs As LinelistSpecs) As Linelist
     If specs Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Linelist specifications are required"
     End If
@@ -94,28 +142,28 @@ End Function
 '@label:bin-specs
 '@prop-title Bind the linelist specifications to this instance
 '@details
-'Called by Create to inject the ILinelistSpecs dependency into the
+'Called by Create to inject the LinelistSpecs dependency into the
 'backing UDT. Exposed as Friend to prevent external callers from
 'resetting specifications after construction.
-'@param value ILinelistSpecs. The specifications to bind.
-Friend Property Set BinSpecs(ByVal value As ILinelistSpecs)
+'@param value LinelistSpecs. The specifications to bind.
+Friend Property Set BinSpecs(ByVal value As LinelistSpecs)
     Set this.specs = value
 End Property
 
 '@section Public properties
 '===============================================================================
 '@description Worksheet resolution and collaborator accessors exposed through
-'the ILinelist contract.
+'the Linelist contract.
 
 '@label:linelist-data
 '@prop-title Specifications backing this linelist
 '@details
-'Returns the ILinelistSpecs instance that was supplied during factory
+'Returns the LinelistSpecs instance that was supplied during factory
 'construction, providing access to dictionary, choices, translations,
 'and all other setup data.
-'@return ILinelistSpecs. The linelist specifications.
+'@return LinelistSpecs. The linelist specifications.
 '@export
-Public Property Get LinelistData() As ILinelistSpecs
+Public Property Get LinelistData() As LinelistSpecs
     Set LinelistData = this.specs
 End Property
 
@@ -124,10 +172,35 @@ End Property
 '@details
 'Convenience accessor that delegates to specs.Dictionary, avoiding
 'the extra indirection at call sites.
-'@return ILLdictionary. The linelist dictionary.
+'@return LLdictionary. The linelist dictionary.
 '@export
-Public Property Get Dictionary() As ILLdictionary
+Public Property Get Dictionary() As LLdictionary
     Set Dictionary = this.specs.Dictionary
+End Property
+
+'@label:sheet-names
+'@prop-title The dictionary's unique sheet names
+'@details
+'One walk of the dictionary's sheet name column, kept for the whole build.
+'Prepare, TransferAllCode and clickGenerate each derived this list on their own,
+'and every walk reads the whole column.
+'@return BetterArray. The unique sheet names of the dictionary.
+'@export
+Public Property Get SheetNames() As BetterArray
+    Set SheetNames = DictionarySheetNames()
+End Property
+
+'@label:sheet-info-manager
+'@prop-title The LLSheets over the dictionary, shared by the whole build
+'@details
+'One LLSheets instance over the specifications dictionary, built on first read
+'and kept for the whole build. TransferAllCode and the sheet-building loop of
+'clickGenerate each created their own over the same dictionary, so every row
+'resolution and every cache slot was computed twice.
+'@return LLSheets. The sheet information manager of the dictionary.
+'@export
+Public Property Get SheetInfoManager() As LLSheets
+    Set SheetInfoManager = DictionarySheetInfo()
 End Property
 
 '@label:wksh
@@ -175,55 +248,95 @@ End Property
 '@label:dropdown
 '@prop-title Dropdown lists manager for the output workbook
 '@details
-'Returns an IDropdownLists instance backed by the appropriate list sheet.
-'Scope 1 uses the temporary dropdown_lists__ sheet with "dropdown_" prefix;
-'scope 2 uses the custom choice sheet with no prefix.
+'Returns the DropdownLists instance backed by the appropriate list sheet.
+'Scope 1 uses the temporary __dropdown_lists sheet with the "dropdown_" header
+'prefix; scope 2 uses the custom choice sheet with no prefix.
+'
+'Each scope is built once and kept. DropdownLists accumulates its report entries
+'in instance state, and this property used to hand back a fresh object every
+'time, so every warning the data-entry build recorded went to a throwaway
+'instance and clickGenerate's phase 2b flush pushed nothing. Keeping the
+'instance also takes a worksheet lookup and an object construction out of the
+'per-sheet build loop, which asks for both scopes on every sheet.
 '@param scope Optional Byte. 1 = standard dropdowns, 2 = custom choice
 'dropdowns. Defaults to 1.
-'@return IDropdownLists. The dropdown lists manager.
+'@return DropdownLists. The dropdown lists manager.
+'@throws ProjectError.InvalidArgument When the scope is neither 1 nor 2.
 '@export
-Public Property Get Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
-    Dim sh As Worksheet
-    Dim listSheetName As String
-    Dim trans As ITranslationObject
-    Dim headerPrefix As String
-
-    Set trans = this.specs.TransObject
-
+Public Property Get Dropdown(Optional ByVal scope As Byte = 1) As DropdownLists
     Select Case scope
         Case 1
-            listSheetName = this.specs.TemporarySheetName(TempSheetList)
-            headerPrefix = "dropdown_"
-        Case 2
-            listSheetName = trans.TranslatedValue("LLSHEET_CustomChoice")
-            headerPrefix = vbNullString
-    End Select
+            If this.standardDropdowns Is Nothing Then
+                Set this.standardDropdowns = BuildDropdown(1)
+            End If
+            Set Dropdown = this.standardDropdowns
 
-    Set sh = Wksh(listSheetName)
-    Set Dropdown = DropdownLists.Create(sh, headerPrefix)
+        Case 2
+            If this.customDropdowns Is Nothing Then
+                Set this.customDropdowns = BuildDropdown(2)
+            End If
+            Set Dropdown = this.customDropdowns
+
+        Case Else
+            ThrowError ProjectError.InvalidArgument, _
+                       "There is no dropdown scope '" & CStr(scope) & "' in a linelist"
+    End Select
 End Property
 
 '@label:pivots
 '@prop-title Pivot tables manager for the output workbook
 '@details
-'Returns an ICustomPivotTable instance backed by the translated custom
-'pivot table sheet in the output workbook.
-'@return ICustomPivotTable. The pivot tables manager.
+'Returns the CustomPivotTable instance backed by the translated custom pivot
+'table sheet. It is built once and kept, for the reason the dropdown managers
+'are: the class holds the metadata of the blocks it has stacked, and a fresh
+'instance per call starts empty.
+'@return CustomPivotTable. The pivot tables manager.
 '@export
-Public Property Get Pivots() As ICustomPivotTable
+Public Property Get Pivots() As CustomPivotTable
+    Dim trans As TranslationObject
     Dim sh As Worksheet
-    Dim trans As ITranslationObject
 
-    Set trans = this.specs.TransObject
-    Set sh = Wksh(trans.TranslatedValue("LLSHEET_CustomPivotTable"))
-    Set Pivots = CustomPivotTable.Create(sh)
+    If this.pivotTables Is Nothing Then
+        Set trans = this.specs.TransObject
+        Set sh = Wksh(trans.TranslatedValue("LLSHEET_CustomPivotTable"))
+        Set this.pivotTables = CustomPivotTable.Create(sh)
+    End If
+
+    Set Pivots = this.pivotTables
+End Property
+
+'@label:has-checkings
+'@prop-title Whether this linelist has anything to report
+'@details
+'Answers True once an entry has been filed. Prepare files a warning for every
+'sheet name it had to shorten, and folds in the entries CodeTransfer filed for
+'the components it replaced in the output workbook.
+'@return Boolean. True when there is something to read.
+'@export
+Public Property Get HasCheckings() As Boolean
+    If this.checks Is Nothing Then Exit Property
+    HasCheckings = (this.checks.Length() > 0)
+End Property
+
+'@label:checking-values
+'@prop-title The report entries of this linelist
+'@details
+'Answers the Checking object holding the entries, and Nothing while none have
+'been filed. clickGenerate flushes it into the generation report right after
+'Prepare returns.
+'@return Checking. The entries, or Nothing.
+'@export
+Public Property Get CheckingValues() As Checking
+    If Not HasCheckings() Then Exit Property
+    Set CheckingValues = this.checks
 End Property
 
 '@label:sheet-exists
 '@sub-title Check whether a sheet exists in the output workbook
 '@details
 'Tests whether a worksheet with the given name exists in the output
-'workbook without raising an error. Uses On Error Resume Next internally.
+'workbook without raising an error. The name is taken as it stands: callers
+'that work with a scope pass the answer of ScopedName.
 '@param sheetName String. The worksheet name to test.
 '@return Boolean. True when the sheet exists, False otherwise.
 '@export
@@ -240,54 +353,38 @@ End Function
 '@label:add-output-sheet
 '@sub-title Add a worksheet to the output workbook
 '@details
-'Creates a new worksheet in the output workbook with the given name,
-'applying an optional scope prefix ("print_" or "crf_") and visibility
-'setting. The sheet name is truncated to 30 characters (Excel limit for
-'sheet names). When beforeSheet is supplied and that sheet exists in
-'the output workbook, the new sheet is inserted immediately before it;
-'otherwise the sheet is appended at the default position.
+'Creates a worksheet in the output workbook under the name ScopedName builds
+'from the base name and the scope. When beforeSheet is supplied the new sheet is
+'inserted immediately before it; otherwise the sheet is appended at the default
+'position.
+'
+'A sheet that is already there is left alone. Template workbooks ship with some
+'of these sheets already made, and rebuilding one would throw away what the
+'template author put in it.
 '@param sheetName String. The base name for the new worksheet.
 '@param Hide Optional Long. Excel visibility constant. Defaults to
 'xlSheetVeryHidden.
 '@param sheetScope Optional Byte. 1 = no prefix, 2 = print_ prefix,
 '3 = crf_ prefix. Defaults to 1.
-'@param beforeSheet Optional String. Name of an existing worksheet to
-'insert before. Defaults to vbNullString (append at default position).
+'@param beforeSheet Optional Worksheet. An existing worksheet of the output
+'workbook to insert before. Defaults to Nothing (append at default position).
 '@export
 Public Sub AddOutputSheet(ByVal sheetName As String, _
                           Optional ByVal Hide As Long = xlSheetVeryHidden, _
                           Optional ByVal sheetScope As Byte = 1, _
-                          Optional ByVal beforeSheet As String = vbNullString)
+                          Optional ByVal beforeSheet As Worksheet)
     Dim actSheetName As String
     Dim outWkb As Workbook
-    Dim anchorSh As Worksheet
 
-    Select Case sheetScope
-        Case 1
-            actSheetName = sheetName
-        Case 2
-            actSheetName = PRINT_PREFIX & sheetName
-        Case 3
-            actSheetName = CRF_PREFIX & sheetName
-    End Select
+    actSheetName = ScopedName(sheetName, sheetScope)
 
-    actSheetName = Left$(actSheetName, SHEET_NAME_MAX_LENGTH)
-
-    'Skip if the sheet already exists (template workbooks may contain pre-existing sheets)
     If SheetExists(actSheetName) Then Exit Sub
 
     Set outWkb = OutputWkb
 
-    'Resolve the anchor sheet if provided
-    If LenB(beforeSheet) > 0 Then
-        On Error Resume Next
-        Set anchorSh = outWkb.Worksheets(beforeSheet)
-        On Error GoTo 0
-    End If
-
     With outWkb
-        If Not anchorSh Is Nothing Then
-            .Worksheets.Add(Before:=anchorSh).Name = actSheetName
+        If Not beforeSheet Is Nothing Then
+            .Worksheets.Add(Before:=beforeSheet).Name = actSheetName
         Else
             .Worksheets.Add.Name = actSheetName
         End If
@@ -302,162 +399,181 @@ End Sub
 '@label:prepare
 '@sub-title Build the full linelist output workbook from specifications
 '@details
-'Orchestrates the complete linelist creation process:
-'1. Initialises the temporary repository for code transfer files.
-'2. Lazily creates the output workbook (or opens a template).
-'3. Optionally shows the instruction sheet for template workbooks.
-'4. Adds six temporary sheets (single, list, analysis, import, spatial,
-'   show/hide) and prepares them with hidden names and ListObjects.
-'5. Exports specifications to the workbook via ILinelistSpecs.Export.
-'6. Adds analysis and custom sheets in reversed dictionary order.
-'7. Adds data entry sheets from the dictionary's unique sheet names.
-'8. Repositions the instruction sheet.
+'Runs the whole build of the output workbook:
+'1. Takes the temporary repository the specifications created.
+'2. Resolves the Geo worksheet once. Every sheet this routine adds goes in
+'   before it, and the anchor is passed down as a worksheet.
+'3. Writes the two language hidden names and every translated message and sheet
+'   name onto the output workbook.
+'4. Adds one data-entry worksheet per dictionary sheet name.
+'5. Adds the six analysis and custom worksheets.
+'6. Adds the six temporary worksheets and prepares them with their hidden names
+'   and ListObjects.
+'7. Adds the user log worksheet, so the runtime never has to.
+'8. Moves the instruction sheet to the front (template workbooks only).
 '9. Adds and formats the admin sheet (non-template only).
-'10. Deletes the initial default sheet.
-'11. Transfers all VBA code via CodeTransfer (classes, modules, forms,
-'    workbook code).
+'10. Transfers the VBA components into the workbook.
+'11. Folds the code transfer's report entries into this instance's.
+'
+'The default worksheet Workbooks.Add made is dropped by LinelistSpecs.Prepare,
+'before any exporter writes to the workbook.
+'@throws ProjectError.ErrorUnexpectedState When the specifications have not been
+'prepared.
 '@export
 Public Sub Prepare()
-    Dim dict As ILLdictionary
-    Dim trans As ITranslationObject
-    Dim sheetsList As BetterArray
+    Dim trans As TranslationObject
+    Dim dictSheets As BetterArray
+    Dim extraSheets As BetterArray
     Dim counter As Long
-    Dim sheetName As String
-    Dim outWkb As Workbook
-    Dim prevAlert As Boolean
-    Dim codeTrans As ICodeTransfer
+    Dim anchorSheet As Worksheet
+    Dim codeTrans As CodeTransfer
+    Dim codeChecks As Checking
+    Dim ownChecks As Checking
+    Dim instrName As String
+    Dim instrSheet As Worksheet
 
     If Not (this.specs.Prepared) Then
-        ThrowError ProjectError.ErrorUnexpectedState, _ 
-         "Linelist specifications need to be prepared before Linelist creation"
+        ThrowError ProjectError.ErrorUnexpectedState, _
+                   "Linelist specifications need to be prepared before Linelist creation"
     End If
 
     Set this.tempRepos = this.specs.OutputTemporaryRepos
 
-    Set outWkb = OutputWkb
-    Set dict = this.specs.Dictionary
-    Set sheetsList = New BetterArray
+    'The local is NOT named after the function it calls. A local named
+    'geoAnchor made `Set geoAnchor = GeoAnchor()` read its own empty self --
+    'VBA resolves the name to the local, and the parentheses index it rather
+    'than calling the function -- so the statement raised 91 without the
+    'function ever being entered. It compiled, the scans passed it, and it sat
+    'on the first line of Prepare that a generation must cross.
+    Set anchorSheet = GeoAnchor()
 
     InitialiseWorkbookNames
     InitialiseTranslationNames
 
     Set trans = this.specs.TransObject
-    'Add data entry sheets from dictionary before Geo
-    sheetsList.Clear
-    Set sheetsList = dict.UniqueValues("sheet name")
 
-    For counter = sheetsList.LowerBound To sheetsList.UpperBound
-        sheetName = sheetsList.Item(counter)
-        AddOutputSheet sheetName, xlSheetVisible, beforeSheet:=SHEET_GEO
+    'Data entry sheets from the dictionary, before Geo
+    Set dictSheets = DictionarySheetNames()
+
+    For counter = dictSheets.LowerBound To dictSheets.UpperBound
+        AddOutputSheet CStr(dictSheets.Item(counter)), xlSheetVisible, _
+                       beforeSheet:=anchorSheet
     Next
 
-    'Add analysis/custom sheets before Geo (reversed order to maintain dictionary order)
-    sheetsList.Clear
-    sheetsList.Push trans.TranslatedValue("LLSHEET_Analysis"), _ 
-                    trans.TranslatedValue("LLSHEET_TemporalAnalysis"), _
-                    trans.TranslatedValue("LLSHEET_SpatialAnalysis"), _ 
-                    trans.TranslatedValue("LLSHEET_SpatioTemporalAnalysis"), _
-                    trans.TranslatedValue("LLSHEET_CustomChoice"), _ 
-                    trans.TranslatedValue("LLSHEET_CustomPivotTable")
+    'Analysis and custom sheets, before Geo. Each one is inserted immediately
+    'before the anchor, so the sheets land in the order they are listed here.
+    Set extraSheets = New BetterArray
+    extraSheets.Push trans.TranslatedValue("LLSHEET_Analysis"), _
+                     trans.TranslatedValue("LLSHEET_TemporalAnalysis"), _
+                     trans.TranslatedValue("LLSHEET_SpatialAnalysis"), _
+                     trans.TranslatedValue("LLSHEET_SpatioTemporalAnalysis"), _
+                     trans.TranslatedValue("LLSHEET_CustomChoice"), _
+                     trans.TranslatedValue("LLSHEET_CustomPivotTable")
 
-    For counter = sheetsList.LowerBound To sheetsList.UpperBound
-        sheetName = sheetsList.Item(counter)
-        AddOutputSheet sheetName, xlSheetVisible, beforeSheet:=SHEET_GEO
+    For counter = extraSheets.LowerBound To extraSheets.UpperBound
+        AddOutputSheet CStr(extraSheets.Item(counter)), xlSheetVisible, _
+                       beforeSheet:=anchorSheet
     Next
 
+    'The six temporary sheets, before Geo. The linelist runtime reads all six,
+    'so the list stays six.
+    extraSheets.Clear
+    extraSheets.Push this.specs.TemporarySheetName(TempSheetSingle), _
+                     this.specs.TemporarySheetName(TempSheetList), _
+                     this.specs.TemporarySheetName(TempSheetAnalysis), _
+                     this.specs.TemporarySheetName(TempSheetImport), _
+                     this.specs.TemporarySheetName(TempSheetSpatial), _
+                     this.specs.TemporarySheetName(TempSheetShowHide)
 
-    'Add temporary sheets before the Geo worksheet
-    sheetsList.Clear
-    '(6 sheets — TemporarySheetUpdates removed, flags are now workbook-level hidden names)
-    sheetsList.Push this.specs.TemporarySheetName(TempSheetSingle), _
-                    this.specs.TemporarySheetName(TempSheetList), _
-                    this.specs.TemporarySheetName(TempSheetAnalysis), _
-                    this.specs.TemporarySheetName(TempSheetImport), _
-                    this.specs.TemporarySheetName(TempSheetSpatial), _
-                    this.specs.TemporarySheetName(TempSheetShowHide)
-
-    For counter = sheetsList.LowerBound To sheetsList.UpperBound
-        sheetName = sheetsList.Item(counter)
-        AddOutputSheet sheetName, xlSheetVeryHidden, beforeSheet:=SHEET_GEO
+    For counter = extraSheets.LowerBound To extraSheets.UpperBound
+        AddOutputSheet CStr(extraSheets.Item(counter)), xlSheetVeryHidden, _
+                       beforeSheet:=anchorSheet
     Next
 
-    'Prepare temporary sheets with hidden names and ListObjects
+    'The user log, very hidden and before Geo like everything else this adds.
+    'LLLog builds the sheet itself when it is missing, and it appends it after
+    'the last worksheet -- Worksheets.Add activates what it adds, and hiding it
+    'again hands the activation to the visible sheet before it, which is Geo.
+    'So the first open of a new linelist wrote its "open" log line, and the
+    'landing sheet the save had chosen was replaced by Geo while the user was
+    'still reading it. A log sheet that is already there is never added again.
+    AddOutputSheet LLLog.SheetName, xlSheetVeryHidden, beforeSheet:=anchorSheet
+
     PrepareTemporarySheets
+    PrepareAnalysisLists
 
-    'Initialise language and translated HiddenNames on the output workbook
-
-    'Handle instruction sheet (template only)
+    'Instruction sheet (template only)
     If this.specs.HasTemplate() Then
-        Dim instrName As String
-        Dim instrSheet As Worksheet
-
         instrName = trans.TranslatedValue("INSTSHEETNAME")
 
         On Error Resume Next
-        Set instrSheet = outWkb.Worksheets(instrName)
+        Set instrSheet = OutputWkb.Worksheets(instrName)
         On Error GoTo 0
 
         If Not instrSheet Is Nothing Then
-            'Unhide before Move (hidden sheets cannot be moved)
+            'Unhide before Move, because a hidden sheet cannot be moved
             instrSheet.Visible = xlSheetVisible
-            'Move instruction sheet to first position
-            instrSheet.Move Before:=outWkb.Worksheets(1)
-            
-            'Re-hide if instruct flag is not "add"
+            instrSheet.Move Before:=OutputWkb.Worksheets(1)
+
             If this.specs.Value("instruct") = "No" Then
-               instrSheet.Visible = xlSheetVeryHidden
+                instrSheet.Visible = xlSheetVeryHidden
             End If
         End If
     End If
 
-    ' 'Add admin sheet if not using template
+    'Admin sheet (non-template only)
     If Not this.specs.HasTemplate() Then
         AddOutputSheet trans.TranslatedValue("LLSHEET_Admin"), xlSheetVisible, _
-                       beforeSheet:=SHEET_GEO
+                       beforeSheet:=anchorSheet
         PrepareAdmin
     End If
 
-    ' 'Delete the initial default sheet (non-template only)
-    If Not this.specs.HasTemplate() Then
-        prevAlert = Application.DisplayAlerts
-        Application.DisplayAlerts = False
-        outWkb.Worksheets(this.firstSheet).Delete
-        Application.DisplayAlerts = prevAlert
-    End If
+    'Transfer code. The instance is kept, because it files a report entry for
+    'every component it had to replace in the target.
+    Set codeTrans = CodeTransfer.Create(this.specs.DesWorkbook, OutputWkb, this.tempRepos)
+    Set this.codeMover = codeTrans
+    TransferAllCode codeTrans, dictSheets
 
-    'Transfer code via CodeTransfer
-    Set codeTrans = CodeTransfer.Create(this.specs.DesWorkbook, outWkb, this.tempRepos)
-    TransferAllCode codeTrans
+    If codeTrans.HasCheckings Then
+        Set ownChecks = Checks
+        Set codeChecks = codeTrans.CheckingValues
+        ownChecks.Append codeChecks
+    End If
 End Sub
 
 '@label:save-ll
 '@sub-title Save the output workbook as .xlsb with password protection
 '@details
 'Saves the output workbook in .xlsb format with the configured password,
-'protects the workbook structure via IPasswords.Protect, activates an
-'appropriate visible sheet (admin or instruction), closes the workbook,
-'and cleans up temporary files via ITemporaryRepos.Reset.
+'protects the workbook structure via Passwords.Protect, activates the sheet the
+'user should open the file on, closes the workbook and clears the working folder
+'via TemporaryRepos.Remove, which deletes the files and the folder itself. A
+'build that got this far keeps nothing, so nothing of OBTApp_ is left next to
+'the linelist.
+'
+'Both cached references to the workbook are dropped once it is closed. This
+'instance held one and LinelistSpecs held the other, and a read of either after
+'the close raised an automation error. The read that mattered was the discard
+'reached from a driver's cleanup, so the failure landed inside the error
+'handler and hid the error that got it there.
 '@export
 Public Sub SaveLL()
     Dim outWkb As Workbook
     Dim passwd As String
     Dim outPath As String
-    Dim passObj As IPasswords
-    Dim msgTrads As ITranslationObject
+    Dim passObj As Passwords
+    Dim msgTrads As TranslationObject
 
     Set outWkb = OutputWkb
     Set passObj = this.specs.Password
     Set msgTrads = this.specs.TransObject
 
     passwd = this.specs.Value("llpassword")
-    outPath = this.specs.Value("lldir") & Application.PathSeparator & _
+    outPath = this.specs.Value("lldir") & outWkb.Application.PathSeparator & _
               this.specs.Value("llname") & ".xlsb"
 
-    'Select an appropriate visible sheet before saving
-    On Error Resume Next
-    outWkb.Worksheets(msgTrads.TranslatedValue("LLSHEET_Admin")).Activate
-    outWkb.Worksheets(msgTrads.TranslatedValue("INSTSHEETNAME")).Activate
-    On Error GoTo 0
+    'Leave the workbook on the sheet the user should open it on.
+    ActivateLandingSheet outWkb, msgTrads
 
     'Protect the workbook structure, add debugging mechanism
     passObj.Protect outWkb
@@ -467,64 +583,333 @@ Public Sub SaveLL()
                    ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     outWkb.Close
 
-    If Not this.tempRepos Is Nothing Then this.tempRepos.Reset
+    Set this.outWkb = Nothing
+    this.specs.ReleaseLLWorkbook
+
+    If Not this.tempRepos Is Nothing Then this.tempRepos.Remove
 End Sub
 
-'@label:error-manage
-'@sub-title Display an error dialog for incomplete linelist operations
+'@label:activate-landing-sheet
+'@sub-title Leave the output workbook on the sheet its user should open it on
 '@details
-'Shows a message box with the error details and asks the user whether
-'they want to view the incomplete linelist workbook or close it without
-'saving. If the user chooses Yes the workbook's Application is made
-'visible; otherwise the workbook is closed without saving.
-'@param textMessage Optional String. Error description to display.
-'Defaults to vbNullString.
-'@export
-Public Sub ErrorManage(Optional ByVal textMessage As String = vbNullString)
-    Dim outWkb As Workbook
-    Dim answer As Long
+'The generation stops wherever its last step left it, which is the Geo sheet,
+'and a workbook is saved on the sheet that was active. So the sheet chosen here
+'is the sheet the user sees the first time they open the linelist. Choosing it
+'belongs to the build alone: EventLinelist used to choose again on every open,
+'and two places deciding one thing is how the rule drifted apart.
+'
+'THE INSTRUCTION SHEET, THEN THE FIRST SHEET OF THE SETUP
+'-------------------------------------------------------------------------------
+'The instruction sheet is the wanted one and it is not always there. It belongs
+'to template builds, and a specification that turns instructions off carries it
+'very hidden, so a visible one is what counts.
+'
+'A build without it lands on the first worksheet the SETUP declares -- the first
+'name in the dictionary's sheet list, which is the first data entry sheet the
+'user works in. That is not the same as the first visible worksheet of the
+'workbook: the transfer puts sheets of its own in front of the ones this build
+'adds, and a walk in tab order can answer one of those.
+'
+'The first visible worksheet closes the list, for a workbook that answers
+'neither. It is a guard rather than a choice -- without it the file would be
+'saved on Geo, which is where the generation stops.
+'@param outWkb Workbook. The generated workbook.
+'@param msgTrads TranslationObject. The message translations naming the sheets.
+Private Sub ActivateLandingSheet(ByVal outWkb As Workbook, _
+                                 ByVal msgTrads As TranslationObject)
+    Dim landingSheet As Worksheet
 
-    answer = MsgBox("An internal error occurred with specified information: " & Chr(10) & _
-                    textMessage & Chr(10) & _
-                    "Do you want to see the uncompleted linelist?", _
-                    vbExclamation + vbYesNo, "ERROR")
+    Set landingSheet = VisibleSheetOrNothing(outWkb, msgTrads.TranslatedValue("INSTSHEETNAME"))
 
-    Set outWkb = OutputWkb
-
-    If answer = vbYes Then
-        outWkb.Application.Visible = True
-    Else
-        outWkb.Close savechanges:=False
+    If landingSheet Is Nothing Then
+        Set landingSheet = FirstSetupSheet()
     End If
+
+    If landingSheet Is Nothing Then
+        Set landingSheet = FirstVisibleSheet(outWkb)
+    End If
+
+    If landingSheet Is Nothing Then Exit Sub
+
+    'A workbook that refuses the activation is still saved.
+    On Error Resume Next
+    outWkb.Activate
+    landingSheet.Activate
+    On Error GoTo 0
 End Sub
 
-'@section Private — Workbook management
+'@label:visible-sheet-or-nothing
+'@sub-title One named worksheet of a workbook, when it is there and visible
+'@param outWkb Workbook. The workbook to look in.
+'@param sheetName String. The name to look for.
+'@return Worksheet. The worksheet, or Nothing when it is missing or hidden.
+Private Function VisibleSheetOrNothing(ByVal outWkb As Workbook, _
+                                       ByVal sheetName As String) As Worksheet
+    Dim sh As Worksheet
+
+    If LenB(sheetName) = 0 Then Exit Function
+
+    'A name no sheet carries raises subscript out of range, and that is the
+    'ordinary answer here rather than a fault: the sheet asked for belongs to
+    'one kind of build and not the other.
+    On Error Resume Next
+    Set sh = outWkb.Worksheets(sheetName)
+    On Error GoTo 0
+
+    If sh Is Nothing Then Exit Function
+    If sh.Visible <> xlSheetVisible Then Exit Function
+
+    Set VisibleSheetOrNothing = sh
+End Function
+
+'@label:first-setup-sheet
+'@sub-title The worksheet of the first sheet name the setup declares
+'@details
+'DictionarySheetNames answers the dictionary's sheet names in the order the
+'setup lists them, and Prepare adds one data entry worksheet per name in that
+'same order. So the first name is the first worksheet of the setup.
+'
+'The lookup goes through Wksh rather than the workbook, because a dictionary
+'name longer than the 31 characters Excel takes was created under a shortened
+'one and only Wksh maps the two. Wksh raises when nothing answers, which on a
+'build that added no data entry sheet at all is the ordinary case and not a
+'fault, so the raise is swallowed and the caller moves on to its guard.
+'@return Worksheet. The first setup worksheet, or Nothing when there is none
+' to see.
+Private Function FirstSetupSheet() As Worksheet
+    Dim declaredNames As BetterArray
+    Dim sh As Worksheet
+
+    'The list is already held by the time SaveLL runs, because Prepare walked
+    'it. A read that has to go to the dictionary is guarded all the same: a
+    'landing sheet is never worth failing the save the caller is in.
+    On Error Resume Next
+    Set declaredNames = DictionarySheetNames()
+    On Error GoTo 0
+
+    If declaredNames Is Nothing Then Exit Function
+    If declaredNames.Length = 0 Then Exit Function
+
+    On Error Resume Next
+    Set sh = Wksh(CStr(declaredNames.Item(declaredNames.LowerBound)))
+    On Error GoTo 0
+
+    If sh Is Nothing Then Exit Function
+    If sh.Visible <> xlSheetVisible Then Exit Function
+
+    Set FirstSetupSheet = sh
+End Function
+
+'@label:first-visible-sheet
+'@sub-title The first worksheet of a workbook the user can see
+'@param outWkb Workbook. The workbook to walk.
+'@return Worksheet. The first visible worksheet, or Nothing when none is.
+Private Function FirstVisibleSheet(ByVal outWkb As Workbook) As Worksheet
+    Dim sh As Worksheet
+
+    For Each sh In outWkb.Worksheets
+        If sh.Visible = xlSheetVisible Then
+            Set FirstVisibleSheet = sh
+            Exit Function
+        End If
+    Next
+End Function
+
+'@label:discard-build
+'@sub-title Keep the unfinished output workbook on disk and close it
+'@details
+'A build that stopped before SaveLL leaves its output workbook open. This
+'saves it as __temp.xlsb in the temporary repository, closes it and drops
+'both cached references to it: the one this instance holds and the one
+'LinelistSpecs holds. The file is marked to survive the drop of the
+'repository, so the user can open what the build managed to write, and
+'the path is answered so the caller can name it in the report.
+'
+'The repository is the one Prepare took from the specifications. Before
+'Prepare it is built over the output folder entry; with no folder known
+'the workbook is closed with its changes thrown away and the answer is
+'empty. With no output workbook at all the call exits quietly.
+'
+'A save that fails raises nothing here: this runs from failure paths, and
+'the fault that got the caller here is the one to report. The workbook is
+'closed either way and the answer is then empty.
+'@return String. The full path of the kept file, or empty when nothing was kept.
+'@export
+Public Function DiscardBuild() As String
+    Dim outWkb As Workbook
+    Dim repos As TemporaryRepos
+    Dim keptPath As String
+    Dim hostApp As Application
+    Dim prevAlerts As Boolean
+
+    Set outWkb = this.outWkb
+    If outWkb Is Nothing Then Set outWkb = this.specs.LLWorkbook
+    If outWkb Is Nothing Then Exit Function
+
+    Set repos = ResolveTemporaryRepos()
+
+    If Not repos Is Nothing Then
+        keptPath = repos.CreateFilePath(KEPT_FILE_NAME)
+        Set hostApp = outWkb.Application
+        prevAlerts = hostApp.DisplayAlerts
+
+        'Silently: the file of an earlier failed run is overwritten, and the
+        'confirmation box Excel would open has nobody to answer it on a
+        'hidden instance. A refused save leaves nothing kept.
+        On Error Resume Next
+        hostApp.DisplayAlerts = False
+        outWkb.SaveAs fileName:=keptPath, fileFormat:=xlExcel12, _
+                      ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+        If Err.Number <> 0 Then
+            Debug.Print CLASS_NAME & ".DiscardBuild: "; Err.Number; Err.Description
+            keptPath = vbNullString
+        End If
+        hostApp.DisplayAlerts = prevAlerts
+        On Error GoTo 0
+
+        If LenB(keptPath) > 0 Then repos.KeepFile KEPT_FILE_NAME
+    End If
+
+    outWkb.Close savechanges:=False
+    Set this.outWkb = Nothing
+    this.specs.ReleaseLLWorkbook
+
+    DiscardBuild = keptPath
+End Function
+
+'@label:resolve-temporary-repos
+'@sub-title The temporary repository of the build, found or built over the output folder
+'@details
+'Prepare takes the repository from the specifications. A build that stops
+'before Prepare has none yet, so one is built over the output folder entry
+'when that entry is filled. An empty entry answers Nothing, and the read of
+'it is shielded: this is called from failure paths.
+'@return TemporaryRepos. The repository, or Nothing when no folder is known.
+Private Function ResolveTemporaryRepos() As TemporaryRepos
+    Dim folderPath As String
+
+    If this.tempRepos Is Nothing Then Set this.tempRepos = this.specs.OutputTemporaryRepos
+
+    If this.tempRepos Is Nothing Then
+        On Error Resume Next
+        folderPath = Trim$(this.specs.Value("lldir"))
+        On Error GoTo 0
+        If LenB(folderPath) > 0 Then Set this.tempRepos = TemporaryRepos.Create(folderPath)
+    End If
+
+    Set ResolveTemporaryRepos = this.tempRepos
+End Function
+
+'@section Private - Workbook management
 '===============================================================================
-'@description Internal helpers for lazily creating and managing the output
-'workbook and suppressing UI updates during batch operations.
+'@description Internal helpers for reaching the output workbook and for turning
+'a base sheet name plus a scope into the name Excel actually carries.
 
 '@label:output-wkb
 '@prop-title Return the output workbook from LinelistSpecs
 '@details
 'On first access, retrieves the output workbook that LinelistSpecs.Prepare
-'created and caches it locally. Also records the name of the initial
-'default sheet so Prepare can delete it later.
+'created and caches it locally.
+'
+'The class used to record Worksheets(1).Name here so Prepare could delete it
+'later. First access is well after every exporter has written to the workbook,
+'and LLGeo inserts its two sheets near the front, so the name recorded was a
+'real, populated sheet. LinelistSpecs.Prepare drops the default worksheet now,
+'holding the reference it took before the first exporter ran.
 '@return Workbook. The output workbook.
+'@throws ProjectError.ErrorUnexpectedState When there is no output workbook.
 Private Property Get OutputWkb() As Workbook
     If this.outWkb Is Nothing Then
         Set this.outWkb = this.specs.LLWorkbook
-        this.firstSheet = this.outWkb.Worksheets(1).Name
+    End If
+
+    If this.outWkb Is Nothing Then
+        ThrowError ProjectError.ErrorUnexpectedState, _
+                   "There is no output workbook to work on: either Prepare has " & _
+                   "not created it, or SaveLL has already closed it"
     End If
 
     Set OutputWkb = this.outWkb
 End Property
 
+'@label:scoped-name
+'@sub-title The worksheet name a base name carries under a scope
+'@details
+'Puts the scope's prefix on the base name and cuts the result to the 31
+'characters Excel accepts. Every caller that creates a sheet and every caller
+'that looks one up goes through here, which is what keeps the two sides
+'agreeing.
+'
+'A cut that shortens the name is filed as a report entry, once per resulting
+'name, so a build finishes and the user reads which sheets came out shorter.
+'@param sheetName String. The base sheet name.
+'@param sheetScope Byte. 1 = no prefix, 2 = print_ prefix, 3 = crf_ prefix.
+'@return String. The worksheet name to create or to look up.
+Private Function ScopedName(ByVal sheetName As String, ByVal sheetScope As Byte) As String
+    Dim fullName As String
+    Dim shortName As String
+
+    Select Case sheetScope
+        Case 2
+            fullName = PRINT_PREFIX & sheetName
+        Case 3
+            fullName = CRF_PREFIX & sheetName
+        Case Else
+            fullName = sheetName
+    End Select
+
+    If Len(fullName) <= SHEET_NAME_MAX_LENGTH Then
+        ScopedName = fullName
+        Exit Function
+    End If
+
+    shortName = Left$(fullName, SHEET_NAME_MAX_LENGTH)
+    ReportShortName fullName, shortName
+    ScopedName = shortName
+End Function
+
+'@label:report-short-name
+'@sub-title File one report entry for a name that had to be shortened
+'@details
+'The same name is scoped many times during a build, so the entry is filed once
+'and the names already filed are kept in a keyed Collection.
+'@param fullName String. The name the prefix and the base name make.
+'@param shortName String. The name the worksheet actually carries.
+Private Sub ReportShortName(ByVal fullName As String, ByVal shortName As String)
+    If this.shortened Is Nothing Then Set this.shortened = New Collection
+    If AlreadyReported(shortName) Then Exit Sub
+
+    this.shortened.Add shortName, shortName
+
+    LogCheck shortName, _
+             "The worksheet name " & fullName & " is longer than the " & _
+             CStr(SHEET_NAME_MAX_LENGTH) & " characters Excel allows, so the " & _
+             "sheet was created as " & shortName & ". Shorten the sheet name in " & _
+             "the dictionary to choose the name yourself.", _
+             checkingWarning
+End Sub
+
+'@label:already-reported
+'@sub-title Whether a shortened name has been filed already
+'@details
+'A Collection raises on a key it does not hold, which is how a miss is read.
+'@param shortName String. The shortened worksheet name.
+'@return Boolean. True when the name has been filed.
+Private Function AlreadyReported(ByVal shortName As String) As Boolean
+    Dim marker As Variant
+
+    On Error Resume Next
+        marker = this.shortened.Item(shortName)
+    On Error GoTo 0
+
+    AlreadyReported = Not IsEmpty(marker)
+End Function
+
 '@label:resolve-wksh
 '@sub-title Resolve a worksheet from the output workbook with scope prefix
 '@details
-'Builds the actual sheet name by prepending the appropriate prefix based
-'on sheetScope (1 = none, 2 = "print_", 3 = "crf_"), verifies the sheet
-'exists, and returns a reference through the ByRef result parameter.
+'Builds the worksheet name through ScopedName, verifies the sheet exists, and
+'returns a reference through the ByRef result parameter.
 '@param sheetName String. The base sheet name.
 '@param sheetScope Byte. 1 = no prefix, 2 = print_ prefix, 3 = crf_ prefix.
 '@param result Worksheet. ByRef output parameter receiving the resolved sheet.
@@ -532,25 +917,95 @@ End Property
 Private Sub ResolveWksh(ByVal sheetName As String, ByVal sheetScope As Byte, _
                         ByRef result As Worksheet)
     Dim actSheetName As String
+    Dim outWkb As Workbook
 
-    Select Case sheetScope
-        Case 1
-            actSheetName = sheetName
-        Case 2
-            actSheetName = PRINT_PREFIX & sheetName
-        Case 3
-            actSheetName = CRF_PREFIX & sheetName
-    End Select
+    actSheetName = ScopedName(sheetName, sheetScope)
+    Set outWkb = OutputWkb
 
     If Not SheetExists(actSheetName) Then
         ThrowError ProjectError.InvalidArgument, _
                    "The sheet " & actSheetName & " does not exist in the output workbook"
     End If
 
-    Set result = OutputWkb.Worksheets(actSheetName)
+    Set result = outWkb.Worksheets(actSheetName)
 End Sub
 
-'@section Private — Prepare helpers
+'@label:geo-anchor
+'@sub-title The Geo worksheet every added sheet goes in before
+'@details
+'Prepare used to pass the name "Geo" down to more than twenty AddOutputSheet
+'calls, and each one resolved it again. A missing anchor made AddOutputSheet
+'fall back to a bare Worksheets.Add, which inserts before whatever sheet is
+'active and gives a different final sheet order on every run. The anchor is
+'resolved once here and a missing one stops the build.
+'@return Worksheet. The Geo worksheet of the output workbook.
+'@throws ProjectError.ElementNotFound When the Geo worksheet is missing.
+Private Function GeoAnchor() As Worksheet
+    Dim anchor As Worksheet
+    Dim outWkb As Workbook
+
+    Set outWkb = OutputWkb
+
+    On Error Resume Next
+        Set anchor = outWkb.Worksheets(SHEET_GEO)
+    On Error GoTo 0
+
+    If anchor Is Nothing Then
+        ThrowError ProjectError.ElementNotFound, _
+                   "The " & SHEET_GEO & " worksheet is missing from the output " & _
+                   "workbook, so there is no place to put the new worksheets"
+    End If
+
+    Set GeoAnchor = anchor
+End Function
+
+'@label:dictionary-sheet-names
+'@sub-title The dictionary's sheet names, walked once per build
+'@details
+'Prepare and TransferAllCode both need this list and each used to derive it,
+'which walks the whole dictionary.
+'@return BetterArray. The unique sheet names of the dictionary.
+Private Function DictionarySheetNames() As BetterArray
+    If this.sheetNames Is Nothing Then
+        Set this.sheetNames = this.specs.Dictionary.UniqueValues("sheet name")
+    End If
+    Set DictionarySheetNames = this.sheetNames
+End Function
+
+'@label:dictionary-sheet-info
+'@sub-title The dictionary's sheet manager, built on first read
+'@details
+'The dictionary is meaningful once specs.Prepare has run, and a build on first
+'read keeps an early ask safe.
+'@return LLSheets. The sheet information manager of the dictionary.
+Private Function DictionarySheetInfo() As LLSheets
+    If this.sheetInfo Is Nothing Then
+        Set this.sheetInfo = LLSheets.Create(this.specs.Dictionary)
+    End If
+    Set DictionarySheetInfo = this.sheetInfo
+End Function
+
+'@label:build-dropdown
+'@sub-title Build the dropdown manager of one scope
+'@param scope Byte. 1 = standard dropdowns, 2 = custom choice dropdowns.
+'@return DropdownLists. The manager over the sheet that scope reads.
+Private Function BuildDropdown(ByVal scope As Byte) As DropdownLists
+    Dim listSheetName As String
+    Dim headerPrefix As String
+    Dim trans As TranslationObject
+
+    If scope = 2 Then
+        Set trans = this.specs.TransObject
+        listSheetName = trans.TranslatedValue("LLSHEET_CustomChoice")
+    Else
+        listSheetName = this.specs.TemporarySheetName(TempSheetList)
+        headerPrefix = "dropdown_"
+    End If
+
+    Set BuildDropdown = DropdownLists.Create(Wksh(listSheetName), headerPrefix)
+End Function
+
+'@section Private - Prepare helpers
 '===============================================================================
 '@description Internal routines called by Prepare to set up temporary sheets,
 'the admin sheet, and code transfer.
@@ -559,36 +1014,27 @@ End Sub
 '@sub-title Set up hidden names and ListObjects on temporary sheets
 '@details
 'Performs three setup tasks on the output workbook:
-'1. Creates workbook-level hidden names for global flags (update list auto,
-'   import done, geo update manual, show all optionals, export init, number
-'   of exports, epi week start) — replaces the removed TemporarySheetUpdates.
+'1. Creates workbook-level hidden names for the global flags: update list auto,
+'   import done, geo update manual, show all optionals, export init, number of
+'   exports, epi week start and the silence switch.
 '2. Creates four ListObjects on the import report sheet for tracking sheets
 '   and variables not imported/found.
-'3. Creates twelve ListObjects on the analysis sheet (tab_ids, graph_ids,
-'   graph_formats for each of the four analysis scopes: uba, ts, sp,
-'   sptemp) plus four worksheet-level hidden names storing the translated
-'   analysis sheet names.
+'3. Asks AnaTabIds to build its registry table on the analysis sheet. That
+'   class reads the columns, so it writes the headers.
 Private Sub PrepareTemporarySheets()
     Dim outWkb As Workbook
     Dim sh As Worksheet
     Dim rng As Range
-    Dim cellRng As Range
-    Dim trads As ITranslationObject
     Dim sheetName As String
-    Dim counter As Long
-    Dim namesArray As BetterArray
-    Dim actName As String
-    Dim wkbNames As IHiddenNames
-    Dim shNames As IHiddenNames
+    Dim wkbNames As HiddenNames
 
     Set outWkb = OutputWkb
-    Set trads = this.specs.TransObject
-    Set namesArray = New BetterArray
 
-    'Workbook-level hidden names for global flags (replaces TemporarySheetUpdates)
+    'Workbook-level hidden names for the global flags. The automatic lists have
+    'no name here: which sheet needs rebuilding is a fact about a sheet, so the
+    'flag lives in the hidden names of each HList sheet and EventLinelist
+    'raises it there.
     Set wkbNames = HiddenNames.Create(outWkb)
-    wkbNames.EnsureName "RNG_UpdateListAuto", vbNullString, HiddenNameTypeString
-    wkbNames.SetValue "RNG_UpdateListAuto", vbNullString
     wkbNames.EnsureName "RNG_ImportDone", vbNullString, HiddenNameTypeString
     wkbNames.SetValue "RNG_ImportDone", vbNullString
     wkbNames.EnsureName "RNG_GeoUpdateManual", vbNullString, HiddenNameTypeString
@@ -602,7 +1048,17 @@ Private Sub PrepareTemporarySheets()
     wkbNames.EnsureName "RNG_EpiWeekStart", this.specs.Value("epiweekstart"), HiddenNameTypeString
     wkbNames.SetValue "RNG_EpiWeekStart", this.specs.Value("epiweekstart")
 
-    'Import report sheet — create ListObjects
+    'The silence switch, seeded "No". "No" means the linelist shows every
+    'message box it has always shown, so a person opening the file sees no
+    'change at all. Every linelist built from here carries the name from its
+    'first opening; one built before this change holds no such name, and
+    'Messenger.ReadStoredSwitch answers False for a name that is not there, so
+    'nothing about it changes. The name and both values are read off Messenger,
+    'the one place that string is written on the VBA side.
+    wkbNames.EnsureName Messenger.SwitchName, Messenger.SwitchOffValue, HiddenNameTypeString
+    wkbNames.SetValue Messenger.SwitchName, Messenger.SwitchOffValue
+
+    'Import report sheet - create ListObjects
     sheetName = this.specs.TemporarySheetName(TempSheetImport)
     Set sh = outWkb.Worksheets(sheetName)
 
@@ -627,94 +1083,81 @@ Private Sub PrepareTemporarySheets()
         .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "reptab_varsNotTouch"
     End With
 
-    'Analysis table IDs sheet — create ListObjects + worksheet-level hidden names
+    'Analysis sheet - one registry table, built by the class that reads it.
+    'The analysis sheet names used to live here as worksheet-level hidden names
+    'as well. The export passes the sheet it copies from, and the workbook-level
+    'set LLTranslation writes is the one every other reader uses.
     sheetName = this.specs.TemporarySheetName(TempSheetAnalysis)
     Set sh = outWkb.Worksheets(sheetName)
-    Set cellRng = sh.Cells(1, 1)
+    AnaTabIds.PrepareSheet sh
 
-    namesArray.Clear
-    namesArray.Push "uba", "ts", "sp", "sptemp"
+    'Show/hide sheet - the table the user's visibility choices are kept in.
+    'The sheet used to be provisioned empty and the only code that ever built a
+    'table on it wrote into the export workbook, so every choice a user made was
+    'thrown away when the workbook closed.
+    sheetName = this.specs.TemporarySheetName(TempSheetShowHide)
+    Set sh = outWkb.Worksheets(sheetName)
+    ShowHideStore.CreateOnSheet sh
+End Sub
 
-    For counter = namesArray.LowerBound To namesArray.UpperBound
-        actName = namesArray.Item(counter)
+'@label:prepare-analysis-lists
+'@sub-title Add the choice lists every analysis sheet shares
+'@details
+'ONE LIST FOR THE WHOLE WORKBOOK
+'-------------------------------------------------------------------------------
+'The time units a temporal table can group by are one workbook-level dropdown on
+'the list sheet. Every temporal table binds its own time unit cell to it, and
+'GetAgg in CustomLinelistFunctions reads the same list to turn the chosen label
+'back into a time unit.
+'
+'Each analysis sheet used to build a copy of its own, which is why there were
+'two spellings of the same five words. A reader that named one of them answered
+'wrongly on the sheet carrying the other, and answered nothing at all in a
+'workbook that carried neither.
+'
+'The words come from the message translations, so the list is written in the
+'language of the linelist. The dropdown is added once; DropdownLists refuses a
+'second one under the same name and files the reason.
+Private Sub PrepareAnalysisLists()
+    Dim listValues As BetterArray
+    Dim trans As TranslationObject
+    Dim drop As DropdownLists
 
-        'Table IDs ListObject
-        cellRng.Value = "tabId"
-        cellRng.Cells(1, 2).Value = "tabRange"
-        cellRng.Cells(1, 3).Value = "exportTable"
+    Set trans = this.specs.TransObject
+    Set drop = Dropdown(1)
 
-        Set rng = sh.Range(cellRng, cellRng.Cells(2, 3))
-        sh.ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "tab_ids_" & actName
+    Set listValues = New BetterArray
+    listValues.LowerBound = 1
+    listValues.Push trans.TranslatedValue("MSG_Day"), _
+                    trans.TranslatedValue("MSG_Week"), _
+                    trans.TranslatedValue("MSG_Month"), _
+                    trans.TranslatedValue("MSG_Quarter"), _
+                    trans.TranslatedValue("MSG_Year")
 
-        'Graph IDs ListObject
-        Set cellRng = cellRng.Cells(1, 5)
-        cellRng.Value = "tabId"
-        cellRng.Cells(1, 2).Value = "graphId"
-        cellRng.Cells(1, 3).Value = "SeriesName"
-        cellRng.Cells(1, 4).Value = "SeriesType"
-        cellRng.Cells(1, 5).Value = "SeriesPos"
-        cellRng.Cells(1, 6).Value = "SeriesLabel"
-        cellRng.Cells(1, 7).Value = "SeriesColumnLabel"
-        cellRng.Cells(1, 8).Value = "hardCodeLabels"
-        cellRng.Cells(1, 9).Value = "outRangeAddress"
-        cellRng.Cells(1, 10).Value = "prefix"
-        cellRng.Cells(1, 11).Value = "prefixOnly"
-
-        Set rng = sh.Range(cellRng, cellRng.Cells(2, 11))
-        sh.ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "graph_ids_" & actName
-
-        'Graph formats ListObject
-        Set cellRng = cellRng.Cells(1, 13)
-        cellRng.Value = "tabId"
-        cellRng.Cells(1, 2).Value = "graphId"
-        cellRng.Cells(1, 3).Value = "catTitle"
-        cellRng.Cells(1, 4).Value = "valuesTitle"
-        cellRng.Cells(1, 5).Value = "hardCodeLabels"
-        cellRng.Cells(1, 6).Value = "heightFactor"
-        cellRng.Cells(1, 7).Value = "plotTitle"
-
-        Set rng = sh.Range(cellRng, cellRng.Cells(2, 7))
-        sh.ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "graph_formats_" & actName
-
-        Set cellRng = cellRng.Cells(1, 10)
-    Next
-
-    'Worksheet-level hidden names for analysis sheet name references
-    Set shNames = HiddenNames.Create(sh)
-    shNames.EnsureName "RNG_SheetUAName", _
-                       trads.TranslatedValue("LLSHEET_Analysis"), HiddenNameTypeString
-    shNames.SetValue "RNG_SheetUAName", trads.TranslatedValue("LLSHEET_Analysis")
-    shNames.EnsureName "RNG_SheetTSName", _
-                       trads.TranslatedValue("LLSHEET_TemporalAnalysis"), HiddenNameTypeString
-    shNames.SetValue "RNG_SheetTSName", trads.TranslatedValue("LLSHEET_TemporalAnalysis")
-    shNames.EnsureName "RNG_SheetSPName", _
-                       trads.TranslatedValue("LLSHEET_SpatialAnalysis"), HiddenNameTypeString
-    shNames.SetValue "RNG_SheetSPName", trads.TranslatedValue("LLSHEET_SpatialAnalysis")
-    shNames.EnsureName "RNG_SheetSPTempName", _
-                       trads.TranslatedValue("LLSHEET_SpatioTemporalAnalysis"), HiddenNameTypeString
-    shNames.SetValue "RNG_SheetSPTempName", trads.TranslatedValue("LLSHEET_SpatioTemporalAnalysis")
+    drop.Add listValues, AnalysisRanges.TimeUnitListName
 End Sub
 
 '@label:initialise-workbook-names
-'@sub-title Set language HiddenNames on the output workbook
+'@sub-title Check the two language selections before the build starts
 '@details
-'Creates workbook-level HiddenNames for the dictionary language
-'(RNG_DictionaryLanguage) and interface language (RNG_LLLanguageCode)
-'on the output workbook. These are required by LLTranslation.TransObject
-'to resolve the correct language code for translation lookups.
+'The two language codes reach the output workbook through
+'InitTransfer.SyncDesignerLanguageNames and ExportDesignerHiddenNames, during
+'specs.Prepare. This routine used to write them a second time, deriving the
+'interface code with a bare Split on "-" where the transfer guards the
+'split with InStr. Both answer the same string for every input, including an
+'empty one, so the second write added nothing.
+'
+'What it does add is the check: an empty language selection is a mistake the
+'user can fix, and the build service says nothing about it. That check is what
+'is left here.
+'@throws ProjectError.ObjectNotInitialized When either language is empty.
 Private Sub InitialiseWorkbookNames()
-    Dim outWkb As Workbook
-    Dim wkbNames As IHiddenNames
     Dim dictLang As String
     Dim llLang As String
-
-    Set outWkb = OutputWkb
-    Set wkbNames = HiddenNames.Create(outWkb)
 
     dictLang = this.specs.Value("setuplang")
     llLang = Split(this.specs.Value("lllang"), "-")(0)
 
-    'Fail early when language selections are empty
     If LenB(dictLang) = 0 Then
         ThrowError ProjectError.ObjectNotInitialized, _
                    "Dictionary language (RNG_LangSetup) is empty on the Main sheet. " & _
@@ -726,30 +1169,21 @@ Private Sub InitialiseWorkbookNames()
                    "Interface language (RNG_LLForm) is empty on the Main sheet. " & _
                    "Please select an interface language before generating."
     End If
-
-    wkbNames.EnsureName "RNG_DictionaryLanguage", dictLang, HiddenNameTypeString
-    wkbNames.SetValue "RNG_DictionaryLanguage", dictLang
-    wkbNames.EnsureName "RNG_LLLanguageCode", llLang, HiddenNameTypeString
-    wkbNames.SetValue "RNG_LLLanguageCode", llLang
 End Sub
 
 '@label:initialise-translation-names
-'@sub-title Propagate language HiddenNames to the translation worksheet and create translated names
+'@sub-title Create the translated message and sheet names on the output workbook
 '@details
-'Calls InitialiseSheetNames on the LLTranslation instance to store
-'dictionary and interface language codes as worksheet-level HiddenNames
-'on the translation sheet. Then calls InitialiseHiddenNames to create
-'all RNG_* translated message/sheet names on the output workbook.
+'Calls InitialiseHiddenNames to create all RNG_* translated message and sheet
+'names on the output workbook.
+'
+'A second copy of the two language codes used to be written onto the translation
+'worksheet here. LLTranslation reads its languages from the workbook store, so
+'that copy was written and never read.
 Private Sub InitialiseTranslationNames()
-    Dim transObj As ILLTranslation
-    Dim dictLang As String
-    Dim llLang As String
-
-    dictLang = this.specs.Value("setuplang")
-    llLang = Split(this.specs.Value("lllang"), "-")(0)
+    Dim transObj As LLTranslation
 
     Set transObj = this.specs.Translations
-    transObj.InitialiseSheetNames dictLang, llLang
     transObj.InitialiseHiddenNames OutputWkb
 End Sub
 
@@ -760,7 +1194,7 @@ End Sub
 'Applies the linelist design format to the admin sheet, then creates two
 'large-scope buttons (Advanced and Export) with translated labels. After
 'placing the buttons, re-suppresses UI updates and activates the admin
-'sheet. Finally protects the active sheet via IPasswords.Protect with
+'sheet. Finally protects the active sheet via Passwords.Protect with
 'the "_active" scope marker.
 '@remarks
 'The trads object is switched to TranslationOfShapes scope to fetch
@@ -772,10 +1206,10 @@ Private Sub PrepareAdmin()
     Const SHP_EXPORT As String = "SHP_Export"
 
     Dim sh As Worksheet
-    Dim trads As ITranslationObject
-    Dim design As ILLFormat
-    Dim pass As IPasswords
-    Dim but As IButtons
+    Dim trads As TranslationObject
+    Dim design As LLFormat
+    Dim pass As Passwords
+    Dim but As Buttons
     Dim rng As Range
 
     Set design = this.specs.DesignFormat
@@ -808,110 +1242,174 @@ End Sub
 '@label:transfer-all-code
 '@sub-title Transfer all VBA code components to the output workbook
 '@details
-'Uses the supplied ICodeTransfer to copy VBA components from the setup
-'workbook to the output workbook in five phases:
-'1. Transfers 49 class modules (interface+implementation pairs for
-'   DataSheet, LLExport, LLChoices, LLdictionary, LLGeo, Passwords,
-'   LLSheets, LLTranslation, OSFiles, TranslationObject, LLVariables,
-'   LLSpatial, DropdownLists, ShowHideManager, CustomTable, LLExporter,
-'   LLImporter, Graphs, AnaTabIds, ExportButton, HiddenNames,
-'   EventLinelist, ApplicationState, plus BetterArray and Checking).
-'2. Transfers 7 standard modules (CustomLinelistFunctions, GeoModule,
-'   LinelistEventsManager, EventsLinelistButtons, FormLogicAdvanced,
-'   FormLogicExportMig, FormLogicExport). For template workbooks,
-'   copies the ribbon module text (EventsLinelistRibbon); otherwise
-'   transfers it as a new module.
-'3. Transfers 9 user forms (F_Advanced, F_Export, F_ExportMig, F_Geo,
-'   F_ImportRep, F_ShowHideLL, F_ShowHidePrint, F_ShowVarLabels,
-'   F_EpiWeek).
-'4. Transfers the workbook code module (EventLinelistWorkbook).
-'@param codeTransfer ICodeTransfer. The code transfer engine.
-Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer)
+'Moves the VBA the generated linelist runs on, in five steps:
+'1. 36 class modules. ChoiceKeys, ImportMetadata, ImportReport and
+'   CheckingOutput joined the list with the import work: LLExporter types
+'   ChoiceKeys, LLImporter types the first three, ImportChecking types
+'   CheckingOutput and F_ImportRep reads ImportReport, so a linelist without
+'   them fails project compilation. LLLog joined with the user log:
+'   EventLinelist holds one and the button and form modules write their
+'   outcome lines through it. SectionMap, GeoFormCache and AnalysisRanges
+'   joined last: EventsLinelistButtons types SectionMap, GeoModule and the
+'   F_Geo code-behind call GeoFormCache statically, and GeoModule names
+'   AnalysisRanges. None of the three is reached by a bare procedure call, so
+'   the call scan reported the set closed while a generated linelist could not
+'   compile.
+'2. 5 standard modules, carrying the linelist toolbar and its helpers.
+'   NO FormLogic MODULE IS TRANSFERRED. Every one of them uses Me and declares
+'   control event handlers, which only compile inside a form, and the merged
+'   .frm files already carry that code in the code module where it belongs.
+'   The two calls into it are written qualified -- F_Export.SetupExportForm and
+'   F_ExportMig.HandleAnalysisExport -- so they run the form's copy and need no
+'   standard module at all. Transferring the four of them was what cost a
+'   delivered linelist its compile.
+'3. The ribbon module. A template workbook already carries EventsLinelistRibbon,
+'   so its code text is overwritten; otherwise the module is imported.
+'4. 10 user forms.
+'5. The workbook code module, then EventLinelistSheet into the code module of
+'   every hlist2D data-entry worksheet.
+'
+'Two free scans check the three lists below, and they read different things.
+'scripts/devtools/transferred-code-scan.R reads CALLS: a transferred module
+'invoking a Public procedure defined outside the set.
+'scripts/devtools/linelist-components-scan.R reads NAMES: a type, a predeclared
+'class or an enum the set mentions and does not carry. Run both after any
+'change here.
+'@param codeTransfer CodeTransfer. The code transfer engine.
+'@param sheetNames BetterArray. The dictionary's unique sheet names, walked once
+'by Prepare and passed down.
+Private Sub TransferAllCode(ByVal transfer As CodeTransfer, _
+                            ByVal sheetNames As BetterArray)
     Dim codesList As BetterArray
     Dim counter As Long
     Dim codeName As String
+    Dim llshs As LLSheets
 
     Set codesList = New BetterArray
 
-    'Transfer classes (49 classes)
-    codesList.Push "BetterArray", "DataSheet", "IDataSheet", "LLExport", _
-                   "ILLExport", "LLChoices", "ILLChoices", _
-                   "LLdictionary", "ILLdictionary", "LLGeo", _
-                   "ILLGeo", "Passwords", "IPasswords", _
-                   "IChecking", "Checking", _
-                   "LLSheets", "ILLSheets", "LLTranslation", _
-                   "ILLTranslation", "OSFiles", "IOSFiles", _
-                   "TranslationObject", "ITranslationObject", "LLVariables", _
-                   "ILLVariables", "ILLSpatial", "LLSpatial", _
-                   "DropdownLists", "IDropdownLists", "ShowHideManager", _
-                   "IShowHideManager", "CustomTable", "ICustomTable", _
-                   "LLExporter", "ILLExporter", _
-                    "LLImporter", "ILLImporter", _
-                   "IGraphs", "Graphs", "AnaTabIds", _
-                   "IAnaTabIds", "ExportButton", "IExportButton", _
-                   "HiddenNames", "IHiddenNames", _
-                   "EventLinelist", "IEventLinelist", _
-                   "ApplicationState", "IApplicationState"
+    'Transfer classes (37 classes).
+    '
+    'TWO Push CALLS, AND IT HAS TO STAY THAT WAY
+    'A VBA logical line takes at most 25 line-continuation characters, and one
+    'Push per class was already at 23. Push APPENDS, so splitting the list costs
+    'nothing and buys the room a single statement had almost run out of. Add to
+    'whichever call has space; start a third before either reaches twenty.
+    codesList.Push "BetterArray", "DataSheet", "LLExport", "LLChoices", _
+                   "LLdictionary", "LLGeo", "LLSpatial", "LLSheets", _
+                   "LLVariables", "LLTranslation", "LLExporter", "LLImporter", _
+                   "LLLog", _
+                   "Passwords", "Checking", "CheckingOutput", "OSFiles", _
+                   "TranslationObject", "HiddenNames", "ApplicationState", _ 
+                   "SectionShowHide"
+
+    codesList.Push "DropdownLists", "CustomTable", _
+                   "ShowHide", "ShowHideLayout", "ShowHideStore", "SectionMap", _
+                   "ChoiceKeys", "ImportMetadata", "ImportReport", _
+                   "Graphs", "AnaTabIds", "AnalysisRanges", _
+                   "ExportButton", "FilteredData", _
+                   "GeoFormCache", "EventLinelist", "Messenger"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
-        codeTransfer.TransferClass codeName
+        transfer.TransferClass codeName
     Next
 
-    'Transfer modules (7 modules + conditional ribbon)
+    'Transfer modules (6 modules, plus the ribbon just below)
     codesList.Clear
     codesList.Push "CustomLinelistFunctions", _
                    "GeoModule", "LinelistEventsManager", _
-                   "EventsLinelistButtons"
+                   "EventsLinelistButtons", "ImportChecking", _
+                   "LinelistRun"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
-        codeTransfer.TransferModule codeName
+        transfer.TransferModule codeName
     Next
 
     'Transfer or copy ribbon module depending on template status
     If this.specs.HasTemplate() Then
         'Template already contains EventsLinelistRibbon; overwrite its code
-        codeTransfer.CopyModuleText "EventsLinelistRibbon"
+        transfer.CopyModuleText "EventsLinelistRibbon"
     Else
         'Non-template: import EventsLinelistRibbon as a new module
-        codeTransfer.TransferModule "EventsLinelistRibbon"
+        transfer.TransferModule "EventsLinelistRibbon"
     End If
 
-    'Transfer forms (9 forms)
+    'Transfer forms (10 forms)
     codesList.Clear
     codesList.Push "F_Advanced", "F_Export", "F_ExportMig", _
                    "F_Geo", "F_ImportRep", _
-                   "F_ShowHideLL", "F_ShowHidePrint", "F_ShowVarLabels", _
-                   "F_EpiWeek"
+                   "F_ShowHideLL", "F_ShowHidePrint", "F_ShowHideSave", _
+                   "F_ShowVarLabels", "F_EpiWeek"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
-        codeTransfer.TransferForm codeName
+        transfer.TransferForm codeName
     Next
 
+    'The sections form travels only when the designer carries it. It is new, and
+    'a designer built before it exists still has to generate a working linelist,
+    'so its absence is a note rather than a failure. EventsLinelistButtons
+    'reaches the form by name at click time and says so when it is missing.
+    If transfer.HasSourceComponent(SECTIONS_FORM_NAME) Then
+        transfer.TransferForm SECTIONS_FORM_NAME
+    Else
+        LogCheck "sections-form", _
+                 "The designer carries no " & SECTIONS_FORM_NAME & " form, so the " & _
+                 "linelist is built without it. The sections button of the " & _
+                 "show/hide form will say the form is missing.", _
+                 checkingWarning
+    End If
+
     'Transfer workbook code
-    codeTransfer.TransferWorkbookCode WORKBOOK_MODULE_NAME
+    transfer.TransferWorkbookCode WORKBOOK_MODULE_NAME
 
-    'Inject Worksheet_SelectionChange into each HList worksheet's code module.
-    'The dictionary identifies HList sheets by type "hlist2D". The source template
-    'module (EventLinelistSelection) is read from the designer workbook and its
-    'code is written into each HList worksheet's CodeModule in the output workbook.
-    Dim llshs As ILLSheets
-    Dim hlistSheets As BetterArray
+    'Inject the worksheet event handlers into each HList worksheet's code
+    'module. The dictionary identifies HList sheets by type "hlist2D". The
+    'source template module (EventLinelistSheet) is read from the designer
+    'workbook and its code is written into each HList worksheet's CodeModule in
+    'the output workbook.
+    Set llshs = SheetInfoManager
 
-    Set llshs = LLSheets.Create(this.specs.Dictionary)
-    Set hlistSheets = this.specs.Dictionary.UniqueValues("sheet name")
-
-    For counter = hlistSheets.LowerBound To hlistSheets.UpperBound
-        codeName = hlistSheets.Item(counter)
+    For counter = sheetNames.LowerBound To sheetNames.UpperBound
+        codeName = CStr(sheetNames.Item(counter))
         If llshs.SheetInfo(codeName) = "hlist2D" Then
-            codeTransfer.TransferWorksheetCode SELECTION_MODULE_NAME, codeName
+            transfer.TransferWorksheetCode SHEET_MODULE_NAME, codeName
         End If
     Next
 End Sub
 
-'@section Private — Error handling
+
+'@section Checkings
+'===============================================================================
+'@description What this class reports into the generation report. clickGenerate
+'reads HasCheckings right after Prepare and flushes CheckingValues.
+
+'@label:checks
+'@prop-title The report entries of this instance
+'@return Checking. The entries, created on first use.
+Private Property Get Checks() As Checking
+    If this.checks Is Nothing Then Set this.checks = Checking.Create(CLASS_NAME)
+    Set Checks = this.checks
+End Property
+
+'@label:log-check
+'@sub-title File one report entry
+'@details
+'Checking.Add raises on a duplicate key, and one report carries the entries of
+'several classes, so the key names this class and the thing the entry is about.
+'@param checkKey String. What the entry is about, used to build the key.
+'@param message String. The message text.
+'@param scope Optional Byte. The checking scope. Defaults to checkingNote.
+Private Sub LogCheck(ByVal checkKey As String, ByVal message As String, _
+                     Optional ByVal scope As Byte = checkingNote)
+    Dim entries As Checking
+
+    Set entries = Checks
+    entries.Add CLASS_NAME & "-" & checkKey, message, scope
+End Sub
+
+'@section Private - Error handling
 '===============================================================================
 '@description Centralised error-raising helper.
 
@@ -924,60 +1422,4 @@ End Sub
 '@param errorMessage String. Descriptive message for the error.
 Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
     Err.Raise errNumber, CLASS_NAME, errorMessage
-End Sub
-
-'@section ILinelist implementation
-'===============================================================================
-'@description Delegated members satisfying the ILinelist contract.
-'All members forward to their Public counterparts above.
-
-Private Property Get ILinelist_Wksh(ByVal sheetName As String) As Worksheet
-    Set ILinelist_Wksh = Wksh(sheetName)
-End Property
-
-Private Property Get ILinelist_PrintWksh(ByVal sheetName As String) As Worksheet
-    Set ILinelist_PrintWksh = PrintWksh(sheetName)
-End Property
-
-Private Property Get ILinelist_CRFWksh(ByVal sheetName As String) As Worksheet
-    Set ILinelist_CRFWksh = CRFWksh(sheetName)
-End Property
-
-Private Property Get ILinelist_Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
-    Set ILinelist_Dropdown = Dropdown(scope)
-End Property
-
-Private Property Get ILinelist_Pivots() As ICustomPivotTable
-    Set ILinelist_Pivots = Pivots
-End Property
-
-Private Property Get ILinelist_LinelistData() As ILinelistSpecs
-    Set ILinelist_LinelistData = LinelistData
-End Property
-
-Private Property Get ILinelist_Dictionary() As ILLdictionary
-    Set ILinelist_Dictionary = Dictionary
-End Property
-
-Private Sub ILinelist_Prepare()
-    Prepare
-End Sub
-
-Private Function ILinelist_SheetExists(ByVal sheetName As String) As Boolean
-    ILinelist_SheetExists = SheetExists(sheetName)
-End Function
-
-Private Sub ILinelist_AddOutputSheet(ByVal sheetName As String, _
-                                     Optional ByVal Hide As Long = xlSheetVeryHidden, _
-                                     Optional ByVal sheetScope As Byte = 1, _
-                                     Optional ByVal beforeSheet As String = vbNullString)
-    AddOutputSheet sheetName, Hide, sheetScope, beforeSheet
-End Sub
-
-Private Sub ILinelist_SaveLL()
-    SaveLL
-End Sub
-
-Private Sub ILinelist_ErrorManage(Optional ByVal textMessage As String = vbNullString)
-    ErrorManage textMessage
 End Sub
