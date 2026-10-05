@@ -6,7 +6,7 @@ categories:
   - OBT menu
 ---
 
-Recent version of Excel have a top [ribbon/menu](https://www.ablebits.com/office-addins-blog/excel-ribbon-guide/) that display most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities.
+Recent version of Excel have a top [ribbon/menu](https://www.ablebits.com/office-addins-blog/excel-ribbon-guide/) that displays most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities.
 
 ![OutbreakTools tab in the designer](../reference/images/img-005-designer-ribbon.png){fig-align="center"}
 
@@ -14,7 +14,7 @@ Recent version of Excel have a top [ribbon/menu](https://www.ablebits.com/office
 
 ### Clear entries
 
-Remove all user entered data from fields.
+Clear all fields from user-entered data.
 
 ### Language of the designer
 
@@ -28,7 +28,7 @@ If the user wishes to modify the linelist interface translations, it is possible
 
 ### Import passwords
 
-The designer is loaded with a password table, with private and public keys to protect export if the user want a password-protected export. However, the designer is on Github, in a public repo, so if you compile a linelist that needs a password protection, it is best to ask for the config file to EpiDS/Yves Amevoin and import it using the "Import button".
+The designer is loaded with a password table, with private and public keys to protect exports (when some exports are configured to be password protected). However, the designer is on Github, in a public repo, so if you compile a linelist that needs a password protection, it is best to ask for the config file to EpiDS/Yves Amevoin and import it using the "Import button".
 
 ### Import styles {#sec-setup-styles}
 
@@ -36,15 +36,16 @@ The designer comes with two default styles for linelist themes. It is possible t
 
 ### Open a linelist
 
-This button is used as a short cut to opening a linelist.
+This button is used as a shortcut to opening a linelist.
 
 ### Open the generation report
 
-Users can click this button to access the generation report once linelist generation is complete.
+Click on this button to access the generation report once linelist generation is complete.
 
 ## Generate Multiple 
 
-You can  generate multiple linelists, from different setups and different geobases, in one go from the "GenerateMultiple worksheet".
+The worksheet "Generate Multiple" provides an interface for generating multiple linelists in one go, from different setups and different geobases.
+
 The buttons within the "Multiple Linelist" section of the ribbon are visible across the Designer, but they are only functional when the user is on the "Generate Multiple" sheet.
 
 
@@ -53,7 +54,7 @@ The buttons within the "Multiple Linelist" section of the ribbon are visible acr
 
 ### Load multiple file/folders
 
-This is used to load files into the setups,geobases and output columns. Before clicking the button,ensure the cursor is inside the data table area or else you will get an error message.
+This is used to load files into the setups, geobases and output columns. Before clicking the button, ensure the cursor is inside the data table area or else you will get an error message.
 
 ### Duplicate
 
@@ -69,7 +70,7 @@ Click on the “Resize" button to remove any empty rows at the end or in the mid
 
 ### Import
 
-You can also import the  exported multi generated linelists back into the designer
+You can also import the exported multi generated linelists back into the designer
 
 ### Export
 
@@ -77,7 +78,7 @@ Use this button to export all the files in the multi generation sheet.
 
 ### Ribbon
 
-This is used to  attach a ribbon template. 
+This is used to load a **ribbon template file** in the designer. That file is necessary to generate a linelist with its own OBT menu, and is part of the `.zip` archive that you can dowload from Github if you want to build an OBT linelist.
 
 ### Generate
 Once you have populated the sheet with all the required information, click the "Generate" button to start the generation process.
