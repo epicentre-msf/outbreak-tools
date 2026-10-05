@@ -8,7 +8,7 @@ categories:
 
 Recent version of Excel have a top [ribbon/menu](https://www.ablebits.com/office-addins-blog/excel-ribbon-guide/) that display most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities.
 
-![OutbreakTools tab in the designer](../images/img-005-designer-ribbon.png){fig-align="center"}
+![OutbreakTools tab in the designer](../reference/images/img-005-designer-ribbon.png){fig-align="center"}
 
 ## Manage the designer
 
@@ -48,7 +48,7 @@ You can  generate multiple linelists, from different setups and different geobas
 The buttons within the "Multiple Linelist" section of the ribbon are visible across the Designer, but they are only functional when the user is on the "Generate Multiple" sheet.
 
 
-![Generate multiple interface](../images/img-001-gen-mult-sheets.png){fig-align="center"}
+![Generate multiple interface](../reference/images/img-001-gen-mult-sheets.png){fig-align="center"}
 
 
 ### Load multiple file/folders
