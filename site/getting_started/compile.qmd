@@ -52,14 +52,14 @@ If no geobase is imported during compilation, the linelist user can [import one]
 
 ### Add passwords
 
-It is highly recommended to add passwords, both to forbid user capacity to modify the content (and break the file) and to limit outside parties from opening the file. 
+It is highly recommended to add passwords, both to prevent users from unwantignly break the file and to limit outside parties from opening the file. 
 
 To do that, just fill the passwords in the little blue boxes before compiling.
 
 
 ## Advanced customisations
 
-There are a couple more customisations available through the [OutbreakTools option ribbon](../reference/ribbons_designer.qmd).
+There are a couple more customisations available through the [OutbreakTools menu](../reference/ribbons_designer.qmd).
 
 ![OutbreakTools tab in the designer file](../images/img-003-ribbon-designer.png){fig-align="center"}
 
@@ -79,7 +79,7 @@ The linelist compilation relies on Excel VBA and can be a bit *finicky.* Here is
 
 - If it fails, start with a new designer file, in case the previous one got corrupted when compilation failed.
 
-- Excel VBA sometimes interact with other Office applications. If all goes well, no problem. But in case of unexpected failures, try avoiding using Office applications while compiling.
+- Excel VBA sometimes interacts with other Office applications. If all goes well, no problem. But in case of unexpected failures, try avoiding using Office applications while compiling.
 
 
 ::: {.callout-tip}
