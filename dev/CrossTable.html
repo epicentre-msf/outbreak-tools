@@ -987,17 +987,39 @@ Non-temporal table scopes never set this property.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FindLabelCell(ByVal rng As Range, ByVal searchValue As String) As Range
 </code></pre>
-<p>Exact, case-sensitive, whole-cell match through Excel's Range.Find, so
-&quot;total&quot; will NOT match &quot;Total&quot;; translated labels carry their own
-capitalization. RowRange and ColumnRange read the row or the column off the
-answer. Each used to ask twice, once to know the label was there and once for
-where, and every Find is a host search over the category band.</p>
+<p>Exact, case-sensitive, whole-cell match, so &quot;total&quot; will NOT match &quot;Total&quot;;
+translated labels carry their own capitalization. RowRange and ColumnRange
+read the row or the column off the answer.</p>
+<h2 id="int-the-band-is-read-as-values-in-one-crossing">THE BAND IS READ AS VALUES, IN ONE CROSSING</h2>
+<p>This used to be a Range.Find with no LookIn. Find keeps the LookIn of the last
+search made anywhere in the session, and LLdictionary.VariableExists searches
+values on every table, so the band was searched as values -- and a values
+search skips hidden rows. The anchor of a spatio-temporal section hides its
+Total row in Format, so the second table of the section found no Total label,
+TOTAL_ROW_VALUES_ was never named for it, and the formula writer died on a
+bare &quot;Method 'Range' of object '_Worksheet' failed&quot;. Reading the values off
+the band sees a hidden cell like any other and depends on no search state.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>rng</code>: Range. The Range to search within, typically RowsCategoriesRange or HeaderRange.</li>
 <li><code>searchValue</code>: String. The exact string to look for.</li>
 </ul>
 <p><strong>Returns:</strong> Range. The first cell holding exactly searchValue, or Nothing.</p>
+<hr />
+<h3 id="int-labelmatches">LabelMatches <a class="anchor-link" href="#int-labelmatches">#</a></h3>
+<p><em>label-matches</em></p>
+<p><strong>Whether one cell value is exactly a label</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LabelMatches(ByVal cellValue As Variant, ByVal searchValue As String) As Boolean
+</code></pre>
+<p>A label is text, so a number, a date, an error or an empty cell never
+matches, whatever it would read as when spelled out.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellValue</code>: Variant. The value read off the cell.</li>
+<li><code>searchValue</code>: String. The label looked for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True on an exact, case-sensitive match.</p>
 <hr />
 <h2 id="int-addrows">AddRows</h2>
 <h3 id="int-writetemporalrowgrid">WriteTemporalRowGrid <a class="anchor-link" href="#int-writetemporalrowgrid">#</a></h3>

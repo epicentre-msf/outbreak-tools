@@ -252,7 +252,8 @@ rebuilding it. Four sites across two classes wrote &quot;adm1_&quot; and &quot;h
 their own copy of the geo-against-facility test, which is how the tag that
 names the spatial input cells came to disagree with the tag the formulas
 referenced.</p>
-<p><strong>Returns:</strong> String. &quot;hf_&quot;, &quot;adm1_&quot;, or an empty string when neither prefix matched.</p>
+<p><strong>Returns:</strong> String. &quot;hf_&quot;, &quot;adm1_&quot;, or an empty string when neither prefix matched
+or when the facility variable is named as it stands.</p>
 <hr />
 <h3 id="spatialvariablename">SpatialVariableName <a class="anchor-link" href="#spatialvariablename">#</a></h3>
 <p><em>spatial-variable-name</em></p>
@@ -266,7 +267,8 @@ above joined to a variable read off this specification row.</p>
 <ul>
 <li><code>baseVar</code>: String. The unprefixed variable name from the spec row.</li>
 </ul>
-<p><strong>Returns:</strong> String. For example &quot;adm1_zone&quot;, or an empty string when this table
+<p><strong>Returns:</strong> String. For example &quot;adm1_zone&quot; or &quot;hf_center&quot;, the name itself for
+a facility variable named as it stands, or an empty string when this table
 has no spatial type.</p>
 <hr />
 <h3 id="spatialconcatvariablename">SpatialConcatVariableName <a class="anchor-link" href="#spatialconcatvariablename">#</a></h3>
@@ -706,6 +708,47 @@ the class to build its own reader on first use.</p>
 <ul>
 <li><code>vars</code>: LLVariables. The variable reader over the same dictionary.</li>
 </ul>
+<hr />
+<h2 id="int-core-properties">Core Properties</h2>
+<h3 id="int-spatialbasevariable">SpatialBaseVariable <a class="anchor-link" href="#int-spatialbasevariable">#</a></h3>
+<p><em>spatial-base-variable</em></p>
+<p><strong>The variable the spatial probes read off this row</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SpatialBaseVariable() As String
+</code></pre>
+<p>A spatio-temporal table keeps its spatial variable in the column field and
+every other scope in the row field.</p>
+<p><strong>Returns:</strong> String. The variable name as the row wrote it.</p>
+<hr />
+<h3 id="int-isfacilitycontrol">IsFacilityControl <a class="anchor-link" href="#int-isfacilitycontrol">#</a></h3>
+<p><em>is-facility-control</em></p>
+<p><strong>Whether a variable is itself the health facility control</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsFacilityControl(ByVal varName As String) As Boolean
+</code></pre>
+<p>LLdictionary.Prepare leaves a health facility row under the name the setup
+gave it and adds a p-code row beside it, so the dictionary holds no hf_ copy
+of a variable that already carries the prefix. A row that names an hf
+control as it stands is a facility table.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The variable the row names.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the dictionary holds varName under the hf control.</p>
+<hr />
+<h3 id="int-facilityvariablename">FacilityVariableName <a class="anchor-link" href="#int-facilityvariablename">#</a></h3>
+<p><em>facility-variable-name</em></p>
+<p><strong>The dictionary name of the facility variable a row names</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FacilityVariableName(ByVal baseVar As String) As String
+</code></pre>
+<p>The hf_ copy when the dictionary holds one, else the name as the row wrote
+it, which is the name the dictionary keeps for an hf control.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>baseVar</code>: String. The variable name as the row wrote it.</li>
+</ul>
+<p><strong>Returns:</strong> String. The name the dictionary holds the facility under.</p>
 <hr />
 <h2 id="int-helpers">Helpers</h2>
 <h3 id="int-celltext">CellText <a class="anchor-link" href="#int-celltext">#</a></h3>
