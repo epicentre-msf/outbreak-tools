@@ -292,6 +292,33 @@ TestFail:
     CustomTestLogFailure Assert, "SyncCopiesTheTableToTheCompanion", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Sync writes a source table that holds one row.
+'@details
+'Deleting the companion body leaves Excel's blank insert row under the header,
+'and a resize to one kept row asks for that very shape, so DataBodyRange stays
+'Nothing over a table that still spans two rows. The sync used to report the
+'table as one it could not grow and wrote nothing.
+'@TestMethod("FilteredData")
+Public Sub SyncKeepsASingleRow()
+    CustomTestSetTitles Assert, "FilteredData", "SyncKeepsASingleRow"
+    On Error GoTo TestFail
+
+    BuildCompanionSheet
+    BuildSourceSheet 1
+
+    Dim syncedCount As Long
+    syncedCount = FixtureSync().Sync()
+
+    Assert.AreEqual 1&, syncedCount, "One sheet should be synced"
+    Assert.AreEqual "1", CompanionIds(), "The companion should hold the one row"
+    Assert.IsFalse LogMentions("could not be grown"), _
+                   "A one-row table should not be reported as a failed resize"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "SyncKeepsASingleRow", Err.Number, Err.Description
+End Sub
+
 '@sub-title Verify Sync leaves a sheet with an empty table as it is.
 '@TestMethod("FilteredData")
 Public Sub SyncSkipsASheetWithoutData()

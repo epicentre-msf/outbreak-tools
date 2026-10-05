@@ -867,7 +867,7 @@ Private Function PlatformTag() As String
         bits = "32"
     #End If
 
-    this.platformTag = osName & "-" & bits & " excel-" & Application.Version
+    this.platformTag = osName & "-" & bits & " excel-" & Application.Version & "." & Application.Build
     PlatformTag = this.platformTag
 End Function
 
