@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DiseaseComparisonReport - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>DiseaseComparisonReport</h1>
+<p>Takes the five Checking bundles a DiseaseComparison answers and renders them
+on the __compRep worksheet through CheckingOutput. The class holds the
+workbook and the sheet name; the sheet itself is resolved on every render.</p>
+<details open class="doc-section" id="one-report-at-a-time">
+<summary>ONE REPORT AT A TIME</summary>
+<div class="section-body">
+<p>The sheet is cleared before anything is written, so an old report never
+survives a new run. The clear takes the row marker CheckingOutput keeps in
+the sheet names with it, so the next render initialises the sheet again:
+the font, the header formatting and the hidden column widths come back with
+the first output row, and the sheet ends up carrying the last comparison
+alone.</p>
+</div>
+</details>
+<details open class="doc-section" id="protection-and-visibility">
+<summary>PROTECTION AND VISIBILITY</summary>
+<div class="section-body">
+<p>__compRep sits outside the protection matrix of the master setup. The deploy
+step protects Variables, Choices and the translations sheet alone
+(EventsMasterSetupRibbon), so the clear needs no unprotect. That same step
+hides __compRep, so the sheet is made visible again before the render starts.</p>
+</div>
+</details>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
+<p><strong>Build a writer bound to a workbook.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook, _
+                       Optional ByVal reportSheetName As String = REPORT_SHEET_NAME) As DiseaseComparisonReport
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The master setup workbook carrying the report sheet.</li>
+<li><code>reportSheetName</code>: Optional String. Report worksheet. Defaults to &quot;__compRep&quot;.</li>
+</ul>
+<p><strong>Returns:</strong> DiseaseComparisonReport ready to render.</p>
+<hr />
+<h2 id="int-accessors">Accessors</h2>
+<h3 id="int-sheetname">SheetName <a class="anchor-link" href="#int-sheetname">#</a></h3>
+<p><strong>Name of the worksheet the report is written on.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SheetName() As String
+</code></pre>
+<hr />
+<h3 id="int-reportsheet">ReportSheet <a class="anchor-link" href="#int-reportsheet">#</a></h3>
+<p><strong>The report worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ReportSheet() As Worksheet
+</code></pre>
+<p>Raises ElementNotFound when the workbook carries no such sheet.</p>
+<hr />
+<h2 id="int-output">Output</h2>
+<h3 id="int-printreport">PrintReport <a class="anchor-link" href="#int-printreport">#</a></h3>
+<p><strong>Render a comparison on the report worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub PrintReport(ByVal comparison As DiseaseComparison)
+</code></pre>
+<p>Clears the sheet, prints the five bundles the comparison answers, installs the
+worksheet change handler that drives the filter, and activates the sheet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>comparison</code>: DiseaseComparison. The comparison to render.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When comparison is Nothing.</li>
+<li>ProjectError.ElementNotFound When the workbook has no report sheet.</li>
+</ul>
+<hr />
+<h3 id="int-printcomparison">PrintComparison <a class="anchor-link" href="#int-printcomparison">#</a></h3>
+<p><strong>Build the comparison over two tables and render it in one call.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function PrintComparison(ByVal firstTable As ListObject, ByVal secondTable As ListObject, _
+                                Optional ByVal firstName As String = &quot;Disease 1&quot;, _
+                                Optional ByVal secondName As String = &quot;Disease 2&quot;) As DiseaseComparison
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>firstTable</code>: ListObject. The disease table of the first disease.</li>
+<li><code>secondTable</code>: ListObject. The disease table of the second disease.</li>
+<li><code>firstName</code>: Optional String. Name shown for the first disease.</li>
+<li><code>secondName</code>: Optional String. Name shown for the second disease.</li>
+</ul>
+<p><strong>Returns:</strong> DiseaseComparison. The comparison that reached the sheet.</p>
+<hr />
+<h2 id="int-worksheet-helpers">Worksheet Helpers</h2>
+<h3 id="int-showreport">ShowReport <a class="anchor-link" href="#int-showreport">#</a></h3>
+<p><strong>Make the report visible.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ShowReport(ByVal targetSheet As Worksheet)
+</code></pre>
+<p>The deploy step hides __compRep. A hidden worksheet refuses the column autofit
+the render does and refuses to be activated, and the user pressed the button to
+read the report, so the sheet is shown before the render starts.</p>
+<hr />
+<h3 id="int-clearreport">ClearReport <a class="anchor-link" href="#int-clearreport">#</a></h3>
+<p><strong>Clear the report sheet and the row marker of the last render.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ClearReport(ByVal targetSheet As Worksheet)
+</code></pre>
+<p>CheckingOutput formats the sheet on its first render and marks the start
+row in a hidden name. The name survives a Cells.Clear, and a render that
+finds it re-applies none of the formatting, so the marker goes with the
+cells, the way MasterSetupLog.RotateWhenPastCap does it.</p>
+<hr />
+<h3 id="int-resolveworksheet">ResolveWorksheet <a class="anchor-link" href="#int-resolveworksheet">#</a></h3>
+<p><strong>Find a worksheet of the host workbook by name.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveWorksheet(ByVal lookupName As String) As Worksheet
+</code></pre>
+<hr />
+</details>
+<details>
+<summary>Used in (2 file(s))</summary>
+<ul>
+<li>MasterSetupExports.bas</li>
+<li>TestDiseaseComparisonReport.bas</li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

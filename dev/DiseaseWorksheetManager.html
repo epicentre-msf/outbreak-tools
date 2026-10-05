@@ -13,11 +13,19 @@
 <h1>DiseaseWorksheetManager</h1>
 <details>
 <summary>Internal members (not exported)</summary>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
+<p><strong>Build a fresh worksheet manager.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create() As DiseaseWorksheetManager
+</code></pre>
+<p><strong>Returns:</strong> DiseaseWorksheetManager ready to use.</p>
+<hr />
 <h2 id="int-commands">Commands</h2>
 <h3 id="int-removeworksheet">RemoveWorksheet <a class="anchor-link" href="#int-removeworksheet">#</a></h3>
 <p><strong>Remove the specified worksheet using guarded Application settings.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function RemoveWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
+<pre><code class="language-vb">Public Function RemoveWorksheet(ByVal targetBook As Workbook, ByVal sheetName As String) As Boolean
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -30,7 +38,7 @@
 <h3 id="int-worksheetexists">WorksheetExists <a class="anchor-link" href="#int-worksheetexists">#</a></h3>
 <p><strong>Test whether a worksheet exists within the workbook.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function WorksheetExists(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
+<pre><code class="language-vb">Public Function WorksheetExists(ByVal targetBook As Workbook, ByVal sheetName As String) As Boolean
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -43,7 +51,7 @@
 <h3 id="int-validateworkbook">ValidateWorkbook <a class="anchor-link" href="#int-validateworkbook">#</a></h3>
 <p><strong>Ensure the workbook reference is valid.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ValidateWorkbook(ByVal workbook As Workbook)
+<pre><code class="language-vb">Private Sub ValidateWorkbook(ByVal targetBook As Workbook)
 </code></pre>
 <hr />
 <h3 id="int-validatesheetname">ValidateSheetName <a class="anchor-link" href="#int-validatesheetname">#</a></h3>
@@ -55,13 +63,13 @@
 <h3 id="int-findworksheet">FindWorksheet <a class="anchor-link" href="#int-findworksheet">#</a></h3>
 <p><strong>Locate the worksheet by name using case-insensitive comparison.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function FindWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Worksheet
+<pre><code class="language-vb">Private Function FindWorksheet(ByVal targetBook As Workbook, ByVal sheetName As String) As Worksheet
 </code></pre>
 <hr />
 <h3 id="int-createguard">CreateGuard <a class="anchor-link" href="#int-createguard">#</a></h3>
 <p><strong>Instantiate and activate an Application guard.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function CreateGuard(ByVal excelApp As Application) As IDiseaseApplicationState
+<pre><code class="language-vb">Private Function CreateGuard(ByVal excelApp As Application) As ApplicationState
 </code></pre>
 <hr />
 <h2 id="int-errorhandling">ErrorHandling</h2>
@@ -73,12 +81,15 @@
 <hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (7 file(s))</summary>
 <ul>
-<li><a href="DiseaseWorksheetManager.html">DiseaseWorksheetManager.cls</a></li>
-<li><a href="IDiseaseWorksheetManager.html">IDiseaseWorksheetManager.cls</a></li>
+<li><a href="MasterSetupImportService.html">MasterSetupImportService.cls</a></li>
+<li><a href="MasterSetupMigration.html">MasterSetupMigration.cls</a></li>
 <li>TestDiseaseIntegration.bas</li>
 <li>TestDiseaseWorksheetManager.bas</li>
+<li>TestMasterSetupExports.bas</li>
+<li>TestMasterSetupImportService.bas</li>
+<li>TestMasterSetupMigration.bas</li>
 </ul>
 </details>
   </main>

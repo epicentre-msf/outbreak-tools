@@ -17,40 +17,102 @@
 <h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
 <p><strong>Create a configured variables table manager instance.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal listObject As ListObject) As IMasterSetupVariables
+<pre><code class="language-vb">Public Function Create(ByVal listTable As ListObject) As MasterSetupVariables
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>listObject</code>: ListObject representing the Master Setup Variables worksheet table.</li>
+<li><code>listTable</code>: ListObject representing the Master Setup Variables worksheet table.</li>
 </ul>
-<p><strong>Returns:</strong> IMasterSetupVariables ready to manage the associated ListObject.</p>
-<hr />
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><strong>Self reference used by factories returning interface instances.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IMasterSetupVariables
-</code></pre>
+<p><strong>Returns:</strong> MasterSetupVariables ready to manage the associated ListObject.</p>
 <hr />
 <h2 id="int-public-api">Public API</h2>
 <h3 id="int-initialise">Initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
 <p><strong>Initialise validation, hidden names, and duplicate detection.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Initialise(ByVal dropdowns As IDropdownLists)
+<pre><code class="language-vb">Public Sub Initialise(ByVal dropdowns As DropdownLists)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dropdowns</code>: IDropdownLists provider used to configure the Default Status validation.</li>
+<li><code>dropdowns</code>: DropdownLists provider used to configure the Default Status validation.</li>
 </ul>
+<hr />
+<h3 id="int-refreshduplicateformatting">RefreshDuplicateFormatting <a class="anchor-link" href="#int-refreshduplicateformatting">#</a></h3>
+<p><strong>Re-apply the duplicate rule of the Variable Name column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RefreshDuplicateFormatting()
+</code></pre>
+<p>Runs on every preparation, outside the Initialised guard, so a
+table prepared before the rule existed gets it, and a table that
+grew rows gets a rule over the rows it has today.</p>
+<hr />
+<h3 id="int-refreshchoicevalidation">RefreshChoiceValidation <a class="anchor-link" href="#int-refreshchoicevalidation">#</a></h3>
+<p><strong>Put the choices dropdown on the Default Choice column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RefreshChoiceValidation(ByVal dropdowns As DropdownLists)
+</code></pre>
+<p>Runs on every preparation, outside the Initialised guard, so a
+table initialised while the Choices sheet was empty gets the
+dropdown once the list exists. A dropdown manager without the
+choices list leaves the column as it stands.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dropdowns</code>: DropdownLists provider carrying the choices list.</li>
+</ul>
+<hr />
+<h3 id="int-writechoicevaluesformula">WriteChoiceValuesFormula <a class="anchor-link" href="#int-writechoicevaluesformula">#</a></h3>
+<p><strong>Put the ChoiceValues formula on the Choices Values column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub WriteChoiceValuesFormula()
+</code></pre>
+<p>Runs on every preparation, outside the Initialised guard, the way
+the disease sheets carry their line formulas: every line reads its
+own Default Choice cell through the ChoiceValues worksheet function.
+The master setup is in English, so the language is left out and the
+function answers the labels of the choice.
+The column is set to General first: a text cell stores a formula as
+its own text. A value a user typed in the column takes the formula.</p>
 <hr />
 <h3 id="int-refreshchoices">RefreshChoices <a class="anchor-link" href="#int-refreshchoices">#</a></h3>
 <p><strong>Refresh the concatenated choices values for the supplied variable.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub RefreshChoices(ByVal variableName As String, ByVal choices As ILLChoices)
+<pre><code class="language-vb">Public Sub RefreshChoices(ByVal variableName As String, ByVal choices As LLChoices)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>variableName</code>: String identifier of the variable row to update.</li>
-<li><code>choices</code>: ILLChoices providing category listings.</li>
+<li><code>choices</code>: LLChoices providing category listings.</li>
+</ul>
+<hr />
+<h3 id="int-hasvariable">HasVariable <a class="anchor-link" href="#int-hasvariable">#</a></h3>
+<p><strong>Whether the table carries a line for the variable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function HasVariable(ByVal variableName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>variableName</code>: String identifier of the variable, matched without regard to case.</li>
+</ul>
+<hr />
+<h3 id="int-addvariable">AddVariable <a class="anchor-link" href="#int-addvariable">#</a></h3>
+<p><strong>Add a variable on the first free line of the table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddVariable(ByVal variableName As String, _
+                       Optional ByVal section As String = vbNullString, _
+                       Optional ByVal label As String = vbNullString, _
+                       Optional ByVal defaultChoice As String = vbNullString, _
+                       Optional ByVal defaultStatus As String = vbNullString)
+</code></pre>
+<p>A free line is a line with no variable name, which is what Add
+Rows leaves behind; with none a row is added to the table. The line takes
+the next order number, so a sort keeps the new variable at the end. The
+joined choices values stay empty: RefreshChoices fills them.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>variableName</code>: String identifier of the new variable.</li>
+<li><code>section</code>: Optional String written in the Variable Section column.</li>
+<li><code>label</code>: Optional String written in the Label column.</li>
+<li><code>defaultChoice</code>: Optional String written in the Default Choice column.</li>
+<li><code>defaultStatus</code>: Optional String written in the Default Status column.</li>
 </ul>
 <hr />
 <h3 id="int-labelfor">LabelFor <a class="anchor-link" href="#int-labelfor">#</a></h3>
@@ -83,40 +145,10 @@
 <pre><code class="language-vb">Public Function SectionFor(ByVal variableName As String) As String
 </code></pre>
 <hr />
-<h3 id="int-addrows">AddRows <a class="anchor-link" href="#int-addrows">#</a></h3>
-<p><strong>Append rows to the underlying table.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub AddRows(Optional ByVal rowCount As Long = 20)
-</code></pre>
-<hr />
-<h3 id="int-removerows">RemoveRows <a class="anchor-link" href="#int-removerows">#</a></h3>
-<p><strong>Remove rows from the underlying table.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub RemoveRows(Optional ByVal rowCount As Long = 1)
-</code></pre>
-<hr />
-<h3 id="int-translateheaders">TranslateHeaders <a class="anchor-link" href="#int-translateheaders">#</a></h3>
-<p><strong>Translate the header row with the supplied translations object.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub TranslateHeaders(ByVal trads As ITranslationObject)
-</code></pre>
-<hr />
-<h3 id="int-translatecontent">TranslateContent <a class="anchor-link" href="#int-translatecontent">#</a></h3>
-<p><strong>Translate the key content columns without affecting headers.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub TranslateContent(ByVal trads As ITranslationObject)
-</code></pre>
-<hr />
-<h3 id="int-translateall">TranslateAll <a class="anchor-link" href="#int-translateall">#</a></h3>
-<p><strong>Translate both headers and content using the supplied translation object.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub TranslateAll(ByVal contentsTrads As ITranslationObject, Optional ByVal ribbonTrads As ITranslationObject)
-</code></pre>
-<hr />
 <h3 id="int-setvariablevalidation">SetVariableValidation <a class="anchor-link" href="#int-setvariablevalidation">#</a></h3>
 <p><strong>Apply workbook-scoped validation for variable names onto the supplied range.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub SetVariableValidation(ByVal targetRange As Range)
+<pre><code class="language-vb">Public Sub SetVariableValidation(ByVal targetRange As Range)
 </code></pre>
 <hr />
 <h3 id="int-clonetoworkbook">CloneToWorkbook <a class="anchor-link" href="#int-clonetoworkbook">#</a></h3>
@@ -124,7 +156,7 @@
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function CloneToWorkbook(ByVal targetWorkbook As Workbook, _
                                 Optional ByVal sheetName As String = vbNullString, _
-                                Optional ByVal startCell As Range = Nothing) As IMasterSetupVariables
+                                Optional ByVal startCell As Range = Nothing) As MasterSetupVariables
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -132,16 +164,16 @@
 <li><code>sheetName</code>: Optional sheet name; defaults to the source worksheet name.</li>
 <li><code>startCell</code>: Optional starting cell; defaults to the source table anchor.</li>
 </ul>
-<p><strong>Returns:</strong> IMasterSetupVariables bound to the cloned ListObject.</p>
+<p><strong>Returns:</strong> MasterSetupVariables bound to the cloned ListObject.</p>
 <hr />
 <h3 id="int-restorefrom">RestoreFrom <a class="anchor-link" href="#int-restorefrom">#</a></h3>
 <p><strong>Restore current table contents from a peer instance.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub RestoreFrom(ByVal source As IMasterSetupVariables)
+<pre><code class="language-vb">Public Sub RestoreFrom(ByVal source As MasterSetupVariables)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>source</code>: IMasterSetupVariables providing data and metadata.</li>
+<li><code>source</code>: MasterSetupVariables providing data and metadata.</li>
 </ul>
 <hr />
 <h3 id="int-exporttoworksheet">ExportToWorksheet <a class="anchor-link" href="#int-exporttoworksheet">#</a></h3>
@@ -175,7 +207,7 @@
 </ul>
 <hr />
 <h3 id="int-exportmetadata">ExportMetadata <a class="anchor-link" href="#int-exportmetadata">#</a></h3>
-<p><strong>Export the hidden metadata required to resolve translated columns.</strong></p>
+<p><strong>Export the hidden metadata that records where each column sits.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ExportMetadata(ByVal targetSheet As Worksheet)
 </code></pre>
@@ -199,31 +231,79 @@
 <h3 id="int-datarange">DataRange <a class="anchor-link" href="#int-datarange">#</a></h3>
 <p><strong>Return the range for the supplied column header, optionally including headers.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function DataRange(ByVal headerName As String, _
+<pre><code class="language-vb">Public Function DataRange(ByVal headerName As String, _
                           Optional ByVal includeHeaders As Boolean = False) As Range
 </code></pre>
 <hr />
-<h2 id="int-interface-implementation">Interface implementation</h2>
-<h3 id="int-imastersetupvariables-setvariablevalidation">IMasterSetupVariables_SetVariableValidation <a class="anchor-link" href="#int-imastersetupvariables-setvariablevalidation">#</a></h3>
-<p><strong>Apply workbook-scoped variable dropdown validation to a target range.</strong></p>
+<h2 id="int-internal-helpers">Internal helpers</h2>
+<h3 id="int-applyduplicateformatting">ApplyDuplicateFormatting <a class="anchor-link" href="#int-applyduplicateformatting">#</a></h3>
+<p><strong>Delete and re-add the one duplicate rule over the name column.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IMasterSetupVariables_SetVariableValidation(ByVal targetRange As Range)
+<pre><code class="language-vb">Private Sub ApplyDuplicateFormatting()
+</code></pre>
+<p>The column range is read fresh on every call, so the rule covers
+the table as it stands. Delete drops every rule of the column: the
+column carries this one rule, and the delete is what keeps the count
+at one across repeated preparations.</p>
+<hr />
+<h3 id="int-writechoicesvalue">WriteChoicesValue <a class="anchor-link" href="#int-writechoicesvalue">#</a></h3>
+<p><strong>Write the joined values of a line, or recalculate its formula.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteChoicesValue(ByVal rowIndex As Long, ByVal newValue As String)
+</code></pre>
+<p>A line carrying the ChoiceValues formula answers through the
+worksheet function; a write would replace the formula with text.</p>
+<hr />
+<h3 id="int-choicevaluesformula">ChoiceValuesFormula <a class="anchor-link" href="#int-choicevaluesformula">#</a></h3>
+<p><strong>The choice values formula of a line: the worksheet function over the choice cell.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ChoiceValuesFormula(ByVal choiceCell As Range) As String
+</code></pre>
+<hr />
+<h3 id="int-writecell">WriteCell <a class="anchor-link" href="#int-writecell">#</a></h3>
+<p><strong>Write any value on the line of the given column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteCell(ByVal rowIndex As Long, ByVal headerName As String, ByVal newValue As Variant)
+</code></pre>
+<hr />
+<h3 id="int-firstfreerow">FirstFreeRow <a class="anchor-link" href="#int-firstfreerow">#</a></h3>
+<p><strong>The first line with no variable name, or a new line at the end.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FirstFreeRow() As Long
+</code></pre>
+<hr />
+<h3 id="int-nextordernumber">NextOrderNumber <a class="anchor-link" href="#int-nextordernumber">#</a></h3>
+<p><strong>One past the highest order number of the table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NextOrderNumber() As Long
+</code></pre>
+<hr />
+<h3 id="int-orderof">OrderOf <a class="anchor-link" href="#int-orderof">#</a></h3>
+<p><strong>The order number a cell carries; anything else reads as 0.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function OrderOf(ByVal cellValue As Variant) As Long
 </code></pre>
 <hr />
 </details>
 <details>
-<summary>Used in (12 file(s))</summary>
+<summary>Used in (18 file(s))</summary>
 <ul>
 <li><a href="DiseaseSheet.html">DiseaseSheet.cls</a></li>
 <li><a href="EventMasterSetup.html">EventMasterSetup.cls</a></li>
-<li><a href="IDiseaseSheet.html">IDiseaseSheet.cls</a></li>
-<li><a href="IEventMasterSetup.html">IEventMasterSetup.cls</a></li>
-<li><a href="IMasterSetupPreparation.html">IMasterSetupPreparation.cls</a></li>
-<li><a href="IMasterSetupVariables.html">IMasterSetupVariables.cls</a></li>
+<li><a href="MasterSetupImportService.html">MasterSetupImportService.cls</a></li>
+<li><a href="MasterSetupMigration.html">MasterSetupMigration.cls</a></li>
 <li><a href="MasterSetupPreparation.html">MasterSetupPreparation.cls</a></li>
-<li><a href="MasterSetupVariables.html">MasterSetupVariables.cls</a></li>
+<li>CustomMasterSetupFunctions.bas</li>
+<li>MasterSetupEventsManager.bas</li>
+<li>MasterSetupExports.bas</li>
+<li>MasterSetupHelpers.bas</li>
+<li>TestDiseaseIntegration.bas</li>
 <li>TestDiseaseSheet.bas</li>
 <li>TestEventMasterSetup.bas</li>
+<li>TestMasterSetupEvents.bas</li>
+<li>TestMasterSetupExports.bas</li>
+<li>TestMasterSetupImportService.bas</li>
+<li>TestMasterSetupMigration.bas</li>
 <li>TestMasterSetupPreparation.bas</li>
 <li>TestMasterSetupVariables.bas</li>
 </ul>

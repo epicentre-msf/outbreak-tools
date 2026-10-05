@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DiseaseComparison - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>DiseaseComparison</h1>
+<p>Reads two disease ListObjects and answers five Checking bundles: the
+variables only in the first disease, the variables only in the second, the
+shared variables whose choice sets differ, the shared variables whose choice
+sets match, and the counts over the two tables.</p>
+<details open class="doc-section" id="what-is-compared">
+<summary>WHAT IS COMPARED</summary>
+<div class="section-body">
+<p>A disease table carries Variable Order, Variable Name, Variable Section,
+Main Label, Choice, Choice Values and Status. The name column keys the
+comparison. Names are matched without regard to case and surrounding spaces.
+The Choice Values cell is split on &quot; | &quot; and the pieces are compared as a
+set, without regard to case. A variable whose Choice cell is empty carries
+no choices, so two such variables are equivalent.</p>
+</div>
+</details>
+<details open class="doc-section" id="lookups">
+<summary>LOOKUPS</summary>
+<div class="section-body">
+<p>The name index of each table is a keyed Collection. Dictionary is missing on
+Mac Excel. The lists are BetterArray based at 1.</p>
+</div>
+</details>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
+<p><strong>Build a comparison over two disease tables.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal firstTable As ListObject, ByVal secondTable As ListObject, _
+                       Optional ByVal firstName As String = &quot;Disease 1&quot;, _
+                       Optional ByVal secondName As String = &quot;Disease 2&quot;) As DiseaseComparison
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>firstTable</code>: ListObject. The disease table of the first disease.</li>
+<li><code>secondTable</code>: ListObject. The disease table of the second disease.</li>
+<li><code>firstName</code>: Optional String. Name shown for the first disease. Defaults to &quot;Disease 1&quot;.</li>
+<li><code>secondName</code>: Optional String. Name shown for the second disease. Defaults to &quot;Disease 2&quot;.</li>
+</ul>
+<p><strong>Returns:</strong> DiseaseComparison ready to compare.</p>
+<hr />
+<h2 id="int-comparison">Comparison</h2>
+<h3 id="int-compare">Compare <a class="anchor-link" href="#int-compare">#</a></h3>
+<p><strong>Read both tables and build the five bundles.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Compare()
+</code></pre>
+<p>Runs once. Every accessor calls it, so a caller can read the bundles
+straight after Create.</p>
+<hr />
+<h2 id="int-bundles">Bundles</h2>
+<h3 id="int-onlyinfirst">OnlyInFirst <a class="anchor-link" href="#int-onlyinfirst">#</a></h3>
+<p><strong>Variables of the first disease the second has no row for.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get OnlyInFirst() As Checking
+</code></pre>
+<hr />
+<h3 id="int-onlyinsecond">OnlyInSecond <a class="anchor-link" href="#int-onlyinsecond">#</a></h3>
+<p><strong>Variables of the second disease the first has no row for.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get OnlyInSecond() As Checking
+</code></pre>
+<hr />
+<h3 id="int-differingchoices">DifferingChoices <a class="anchor-link" href="#int-differingchoices">#</a></h3>
+<p><strong>Shared variables whose choice sets differ, with the values each side lacks.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DifferingChoices() As Checking
+</code></pre>
+<hr />
+<h3 id="int-equivalentvariables">EquivalentVariables <a class="anchor-link" href="#int-equivalentvariables">#</a></h3>
+<p><strong>Shared variables whose choice sets match.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get EquivalentVariables() As Checking
+</code></pre>
+<hr />
+<h3 id="int-statistics">Statistics <a class="anchor-link" href="#int-statistics">#</a></h3>
+<p><strong>The counts over the two tables.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Statistics() As Checking
+</code></pre>
+<hr />
+<h3 id="int-reports">Reports <a class="anchor-link" href="#int-reports">#</a></h3>
+<p><strong>The five bundles in report order, based at 1.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Reports() As BetterArray
+</code></pre>
+<p>Only in 1, only in 2, differing choices, equivalent, statistics.</p>
+<hr />
+<h2 id="int-counts">Counts</h2>
+<h3 id="int-firstcount">FirstCount <a class="anchor-link" href="#int-firstcount">#</a></h3>
+<p><strong>Number of variables in the first disease.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get FirstCount() As Long
+</code></pre>
+<hr />
+<h3 id="int-secondcount">SecondCount <a class="anchor-link" href="#int-secondcount">#</a></h3>
+<p><strong>Number of variables in the second disease.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SecondCount() As Long
+</code></pre>
+<hr />
+<h3 id="int-sharedcount">SharedCount <a class="anchor-link" href="#int-sharedcount">#</a></h3>
+<p><strong>Number of variable names both diseases carry.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SharedCount() As Long
+</code></pre>
+<hr />
+<h3 id="int-onlyinfirstcount">OnlyInFirstCount <a class="anchor-link" href="#int-onlyinfirstcount">#</a></h3>
+<p><strong>Number of variables only the first disease carries.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get OnlyInFirstCount() As Long
+</code></pre>
+<hr />
+<h3 id="int-onlyinsecondcount">OnlyInSecondCount <a class="anchor-link" href="#int-onlyinsecondcount">#</a></h3>
+<p><strong>Number of variables only the second disease carries.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get OnlyInSecondCount() As Long
+</code></pre>
+<hr />
+<h3 id="int-matchingcount">MatchingCount <a class="anchor-link" href="#int-matchingcount">#</a></h3>
+<p><strong>Number of shared variables whose choice sets match.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get MatchingCount() As Long
+</code></pre>
+<hr />
+<h3 id="int-differingcount">DifferingCount <a class="anchor-link" href="#int-differingcount">#</a></h3>
+<p><strong>Number of shared variables whose choice sets differ.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DifferingCount() As Long
+</code></pre>
+<hr />
+<h3 id="int-equivalentshare">EquivalentShare <a class="anchor-link" href="#int-equivalentshare">#</a></h3>
+<p><strong>Share of the shared variables that are equivalent, between 0 and 1.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get EquivalentShare() As Double
+</code></pre>
+<p>Answers 0 when the two diseases share no variable.</p>
+<hr />
+<h2 id="int-reading">Reading</h2>
+<h3 id="int-readtable">ReadTable <a class="anchor-link" href="#int-readtable">#</a></h3>
+<p><strong>Read the columns a comparison needs into memory.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ReadTable(ByVal table As ListObject, ByRef data As TDiseaseData)
+</code></pre>
+<hr />
+<h3 id="int-columnvalues">ColumnValues <a class="anchor-link" href="#int-columnvalues">#</a></h3>
+<p><strong>Read one column of the table as a 2D array based at 1.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnValues(ByVal table As ListObject, ByVal header As String, ByVal rowTotal As Long) As Variant
+</code></pre>
+<hr />
+<h3 id="int-findcolumn">FindColumn <a class="anchor-link" href="#int-findcolumn">#</a></h3>
+<p><strong>Find a column by header without regard to case.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindColumn(ByVal table As ListObject, ByVal header As String) As ListColumn
+</code></pre>
+<hr />
+<h3 id="int-splitchoices">SplitChoices <a class="anchor-link" href="#int-splitchoices">#</a></h3>
+<p><strong>Split a Choice Values cell into a list of trimmed values.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SplitChoices(ByVal choiceName As String, ByVal choiceList As String) As BetterArray
+</code></pre>
+<p>A variable whose Choice cell is empty carries no choices, whatever the
+values cell holds. Empty pieces are dropped. The list is based at 1.</p>
+<hr />
+<h2 id="int-collecting">Collecting</h2>
+<h3 id="int-collectmissing">CollectMissing <a class="anchor-link" href="#int-collectmissing">#</a></h3>
+<p><strong>Add every variable of one disease the other has no row for.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CollectMissing(ByRef owner As TDiseaseData, ByRef other As TDiseaseData, _
+                           ByVal bundle As Checking, ByVal keyPrefix As String)
+</code></pre>
+<hr />
+<h3 id="int-collectshared">CollectShared <a class="anchor-link" href="#int-collectshared">#</a></h3>
+<p><strong>Walk the shared names and sort each into differing or equivalent.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CollectShared()
+</code></pre>
+<hr />
+<h3 id="int-adddifference">AddDifference <a class="anchor-link" href="#int-adddifference">#</a></h3>
+<p><strong>Add the entries of one differing variable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddDifference(ByVal rowIndex As Long, ByVal differingCounter As Long, _
+                          ByVal missingFromSecond As BetterArray, ByVal missingFromFirst As BetterArray)
+</code></pre>
+<p>One entry names the variable, then one entry per value in the first disease
+and missing from the second, then one per value in the second and missing
+from the first.</p>
+<hr />
+<h3 id="int-collectstatistics">CollectStatistics <a class="anchor-link" href="#int-collectstatistics">#</a></h3>
+<p><strong>Write the counts as one bundle.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CollectStatistics()
+</code></pre>
+<p>The counts are read from the state here. The public count properties call
+Compare, and Compare is still running when this sub is called.</p>
+<hr />
+<h2 id="int-set-helpers">Set Helpers</h2>
+<h3 id="int-valuesmissing">ValuesMissing <a class="anchor-link" href="#int-valuesmissing">#</a></h3>
+<p><strong>Values of the first list the second list lacks, without regard to case.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ValuesMissing(ByVal source As BetterArray, ByVal other As BetterArray) As BetterArray
+</code></pre>
+<hr />
+<h3 id="int-variablewhere">VariableWhere <a class="anchor-link" href="#int-variablewhere">#</a></h3>
+<p><strong>The &quot;Where?&quot; text of a variable: its name and its section.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function VariableWhere(ByRef data As TDiseaseData, ByVal rowIndex As Long) As String
+</code></pre>
+<hr />
+<h2 id="int-collection-helpers">Collection Helpers</h2>
+<h3 id="int-addkeyifmissing">AddKeyIfMissing <a class="anchor-link" href="#int-addkeyifmissing">#</a></h3>
+<p><strong>Add a key to a collection when it is missing.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddKeyIfMissing(ByVal index As Collection, ByVal key As String)
+</code></pre>
+<hr />
+<h3 id="int-indexhas">IndexHas <a class="anchor-link" href="#int-indexhas">#</a></h3>
+<p><strong>Test whether a collection carries a key.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IndexHas(ByVal index As Collection, ByVal key As String) As Boolean
+</code></pre>
+<hr />
+<h3 id="int-indexrow">IndexRow <a class="anchor-link" href="#int-indexrow">#</a></h3>
+<p><strong>Read the row stored under a key, 0 when the key is missing.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IndexRow(ByVal index As Collection, ByVal key As String) As Long
+</code></pre>
+<hr />
+<h3 id="int-newlist">NewList <a class="anchor-link" href="#int-newlist">#</a></h3>
+<p><strong>A BetterArray based at 1.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NewList() As BetterArray
+</code></pre>
+<p>Every list here takes pushed values, so it is based at 1 first.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (3 file(s))</summary>
+<ul>
+<li><a href="DiseaseComparisonReport.html">DiseaseComparisonReport.cls</a></li>
+<li>TestDiseaseComparison.bas</li>
+<li>TestDiseaseComparisonReport.bas</li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

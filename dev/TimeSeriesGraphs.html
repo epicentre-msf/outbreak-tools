@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TimeSeriesGraphs - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>TimeSeriesGraphs</h1>
+<p>The chart definitions of every time series graph, read from the three graph
+setup tables. One entry per graph identifier, each holding its series and its
+display title. Count answers how many graphs there are, Series gives the
+SeriesBuffer of one graph and Title its title. AnalysisOutput walks the
+entries, draws one chart each and puts the title in the cell above it.</p>
+<details open class="doc-section" id="the-three-setup-tables-are-identified-by-name">
+<summary>THE THREE SETUP TABLES ARE IDENTIFIED BY NAME</summary>
+<div class="section-body">
+<p>The three names are byte-identical in the six workbooks measured on
+2026-07-31, so this class compares names. An earlier version read a caption a
+fixed number of rows above each header row. That gap is four rows in
+.mock/setup_mock.xlsb, src/bin/setup/setup.xlsb and setup_dev.xlsb, and two
+rows in every file under releases/.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-graphs-are-built-on-the-first-read">
+<summary>THE GRAPHS ARE BUILT ON THE FIRST READ</summary>
+<div class="section-body">
+<p>Count builds the entries the first time it is asked and holds the answer, and
+so do Series and Title. A Count of 0 says nothing could be drawn, and the
+reasons are in the report. HasCheckings is read after Count.</p>
+</div>
+</details>
+<details open class="doc-section" id="every-skip-is-reported">
+<summary>EVERY SKIP IS REPORTED</summary>
+<div class="section-body">
+<p>This class builds fewer series than the setup asked for in eight cases: a
+setup table with a column missing, a graph with no series row, a series row
+naming no series, a series identifier absent from the time series table, a
+series matching the header row, a choice value with no column on the output
+sheet, a column carrying no named range, and a graph identifier with no title
+row. A graph that ends with no series is left out and named.</p>
+<p><strong>Depends on:</strong> <a href="SeriesBuffer.html">SeriesBuffer</a>, <a href="TableSpecs.html">TableSpecs</a>, <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Version:</strong> 1.0 (2026-07-31)</p>
+</div>
+</details>
+<details open class="doc-section" id="instantiation">
+<summary>Instantiation</summary>
+<div class="section-body">
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
+<p><strong>Create the time series graph builder from the three setup tables</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal loTable As BetterArray, _
+                       ByVal outputSh As Worksheet, _
+                       ByVal lData As LinelistSpecs) As TimeSeriesGraphs
+</code></pre>
+<p>The three ListObjects come in the order the validation checks: the graph setup
+table, which says which series belong to each graph identifier; the time series
+table, which maps a series identifier to its table specification row; and the
+titles table, which gives a display title per graph identifier.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>loTable</code>: BetterArray. Exactly 3 ListObject entries in order:
+[Tab_Graph_TimeSeries, Tab_TimeSeries_Analysis, Tab_Label_TSGraph]. Each must
+carry at least one data row.</li>
+<li><code>outputSh</code>: Worksheet. The worksheet the time series charts are drawn on,
+which is also where the column category ranges are read from.</li>
+<li><code>lData</code>: LinelistSpecs. The linelist specifications, read for the
+dictionary that TableSpecs needs.</li>
+</ul>
+<p><strong>Returns:</strong> TimeSeriesGraphs. A builder ready for Count.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When loTable fails validation, lData is
+Nothing, or outputSh is Nothing.</li>
+<li>ProjectError.ErrorUnexpectedState When the ListObjects are in the wrong
+order.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="reading">
+<summary>Reading</summary>
+<div class="section-body">
+<h3 id="count">Count <a class="anchor-link" href="#count">#</a></h3>
+<p><em>count</em></p>
+<p><strong>How many charts the setup tables ask for</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Count() As Long
+</code></pre>
+<p>Builds on the first read and keeps the answer. A graph that ended with no
+series is left out, so this counts the charts that can actually be drawn.</p>
+<p><strong>Returns:</strong> Long. The number of graphs.</p>
+<hr />
+<h3 id="series">Series <a class="anchor-link" href="#series">#</a></h3>
+<p><em>series</em></p>
+<p><strong>The series of one graph</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Series(ByVal index As Long) As SeriesBuffer
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. 1-based position, from 1 to Count.</li>
+</ul>
+<p><strong>Returns:</strong> SeriesBuffer. One entry per series, in plot order.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When index is outside the collection.</li>
+</ul>
+<hr />
+<h3 id="title">Title <a class="anchor-link" href="#title">#</a></h3>
+<p><em>title</em></p>
+<p><strong>The display title of one graph</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Title(ByVal index As Long) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. 1-based position, from 1 to Count.</li>
+</ul>
+<p><strong>Returns:</strong> String. The title, or an empty string when the graph has no title row.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When index is outside the collection.</li>
+</ul>
+<hr />
+<h3 id="wksh">Wksh <a class="anchor-link" href="#wksh">#</a></h3>
+<p><em>wksh</em></p>
+<p><strong>The worksheet the charts are drawn on</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet
+</code></pre>
+<p><strong>Returns:</strong> Worksheet. The output worksheet.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="checking">
+<summary>Checking</summary>
+<div class="section-body">
+<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
+<p><em>has-checkings</em></p>
+<p><strong>Whether anything was reported while the graphs were built</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when at least one entry was filed.</p>
+<hr />
+<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
+<p><em>checking-values</em></p>
+<p><strong>The report of this build</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CheckingValues() As Checking
+</code></pre>
+<p><strong>Returns:</strong> Checking. The store, or Nothing when nothing was filed.</p>
+<hr />
+</div>
+</details>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-instantiation">Instantiation</h2>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance against further setup writes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<p>Called by the factory after the last setup write. Once sealed, the
+creation-only setters raise through ThrowError.</p>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup setter against post-creation writes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The property name reported in the error message.</li>
+</ul>
+<hr />
+<h3 id="int-lolist">LoList <a class="anchor-link" href="#int-lolist">#</a></h3>
+<p><em>lo-list-set</em></p>
+<p><strong>Assign the three setup tables</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set LoList(ByVal loTable As BetterArray)
+</code></pre>
+<p>Resolves the three tables into fields of their own. They are read inside loops,
+and each read used to go through the array again.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>loTable</code>: BetterArray. The 3-element ListObject array.</li>
+</ul>
+<hr />
+<h3 id="int-outputsheet">OutputSheet <a class="anchor-link" href="#int-outputsheet">#</a></h3>
+<p><em>output-sheet-set</em></p>
+<p><strong>Assign the output worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set OutputSheet(ByVal sh As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to store.</li>
+</ul>
+<hr />
+<h3 id="int-linelistspecifications">LinelistSpecifications <a class="anchor-link" href="#int-linelistspecifications">#</a></h3>
+<p><em>linelist-specifications-set</em></p>
+<p><strong>Assign the linelist specifications</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set LinelistSpecifications(ByVal lData As LinelistSpecs)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lData</code>: LinelistSpecs. The linelist specifications to store.</li>
+</ul>
+<hr />
+<h2 id="int-building">Building</h2>
+<h3 id="int-buildgraphs">BuildGraphs <a class="anchor-link" href="#int-buildgraphs">#</a></h3>
+<p><em>build-graphs</em></p>
+<p><strong>Build one entry per graph identifier</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub BuildGraphs()
+</code></pre>
+<p>Walks the graph identifiers of the setup table in the order they first appear.
+A graph that ends with no series is reported and left out, because a chart with
+no series has no axes and Graphs.Format used to raise 1004 on one.</p>
+<hr />
+<h3 id="int-pushgraph">PushGraph <a class="anchor-link" href="#int-pushgraph">#</a></h3>
+<p><em>push-graph</em></p>
+<p><strong>Append one finished graph to the collection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub PushGraph(ByVal buffer As SeriesBuffer, ByVal graphTitle As String)
+</code></pre>
+<p>The buffer and the title are appended together, in this one routine, so the two
+lists cannot come apart.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>buffer</code>: SeriesBuffer. The series of the graph.</li>
+<li><code>graphTitle</code>: String. Its display title.</li>
+</ul>
+<hr />
+<h3 id="int-definegraph">DefineGraph <a class="anchor-link" href="#int-definegraph">#</a></h3>
+<p><em>define-graph</em></p>
+<p><strong>Build the series of one graph identifier</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DefineGraph(ByVal graphId As String) As SeriesBuffer
+</code></pre>
+<p>Reads the six columns of the graph setup table for the rows carrying this
+identifier: the series identifiers, the axis sides, the percentage overrides,
+the chart types, the choice values and the display labels. Each series
+identifier is looked up in the time series table to get a TableSpecs, which
+gives the table identifier and its section. The choice value resolves to a
+column name through TimeSeriesColumnName, and that to a data range name through
+ResolveSeriesRangeName. A row asking for percentages takes the percentage twin
+of that range.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>graphId</code>: String. The graph identifier the rows are filtered by.</li>
+</ul>
+<p><strong>Returns:</strong> SeriesBuffer. The series of that graph, empty when none resolved.</p>
+<p><strong>Depends on:</strong></p>
+<ul>
+<li>TableSpecs</li>
+</ul>
+<hr />
+<h3 id="int-resolveseriesrangename">ResolveSeriesRangeName <a class="anchor-link" href="#int-resolveseriesrangename">#</a></h3>
+<p><em>resolve-series-range-name</em></p>
+<p><strong>Resolve a choice value and label name into the data range name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveSeriesRangeName(ByVal choiValue As String, _
+                                        ByVal tabId As String, _
+                                        ByVal labName As String) As String
+</code></pre>
+<p>Three rules. The total answers TOTAL_COL_VALUES_ and the table identifier. A
+label name carrying the COLUMN_CATEGORIES_ prefix answers INTERIOR_VALUES_ and
+the table identifier. Everything else replaces LABEL with VALUES in the label
+name, so &quot;LABEL_COL_2_xyz&quot; becomes &quot;VALUES_COL_2_xyz&quot;.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>choiValue</code>: String. The choice value from the graph setup table.</li>
+<li><code>tabId</code>: String. The table identifier every named range carries.</li>
+<li><code>labName</code>: String. The label range name TimeSeriesColumnName resolved.</li>
+</ul>
+<p><strong>Returns:</strong> String. The named range holding the data of the series.</p>
+<hr />
+<h3 id="int-timeseriescolumnname">TimeSeriesColumnName <a class="anchor-link" href="#int-timeseriescolumnname">#</a></h3>
+<p><em>time-series-column-name</em></p>
+<p><strong>Find the named range of a choice value inside a time series table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TimeSeriesColumnName(ByVal choiValue As String, _
+                                      ByVal tabId As String, _
+                                      ByVal graphId As String) As String
+</code></pre>
+<p>Looks the choice value up in the COLUMN_CATEGORIES_ range of the table on the
+output worksheet and answers the name of the cell that carries it. The total
+answers TOTAL_LABEL_COL_ and the table identifier directly. An empty answer
+means the series is skipped, and every route to one files an entry.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>choiValue</code>: String. The category value to look up.</li>
+<li><code>tabId</code>: String. The table identifier every named range carries.</li>
+<li><code>graphId</code>: String. The graph being built, named in the report entries.</li>
+</ul>
+<p><strong>Returns:</strong> String. The named range of the matching column, or an empty string.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>The COLUMN_CATEGORIES_ read is guarded. The table row it belongs to
+may have been skipped during the table pass, and then the name was never
+created; reading it raised 1004 and took every remaining time series chart of
+the sheet with it, because the loop above has no handler.</li>
+</ul>
+<hr />
+<h2 id="int-setuptables">SetupTables</h2>
+<h3 id="int-graphtitle">GraphTitle <a class="anchor-link" href="#int-graphtitle">#</a></h3>
+<p><em>graph-title</em></p>
+<p><strong>Look up the display title of a graph identifier</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function GraphTitle(ByVal graphId As String) As String
+</code></pre>
+<p>Reading the three graph setup ListObjects.</p>
+<p>Walks the identifier column of the titles table and answers the title cell of
+the matching row. Both columns are found by header name, and the identifier is
+matched without regard to case and outer spaces, because the two tables are
+typed by two hands and a case difference used to give a chart with an empty
+title and a navigation entry reading &quot;Go to graph: &quot;.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>graphId</code>: String. The graph identifier to look up.</li>
+</ul>
+<p><strong>Returns:</strong> String. The display title, or an empty string when there is no row.</p>
+<hr />
+<h3 id="int-buildgraphidslist">BuildGraphIdsList <a class="anchor-link" href="#int-buildgraphidslist">#</a></h3>
+<p><em>build-graph-ids-list</em></p>
+<p><strong>Read the graph identifiers of the setup table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildGraphIdsList() As BetterArray
+</code></pre>
+<p>Walks the identifier column, keeps every value it has not seen, and holds the
+order of first appearance.</p>
+<p><strong>Returns:</strong> BetterArray. The identifiers, LowerBound = 1. Empty when the table has
+no data row or no identifier column.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>The duplicate test uses BetterArray.Includes, which scans. The graph
+setup table carries fewer than a hundred rows.</li>
+</ul>
+<hr />
+<h3 id="int-graphvalues">GraphValues <a class="anchor-link" href="#int-graphvalues">#</a></h3>
+<p><em>graph-values</em></p>
+<p><strong>Read one column of the graph setup table, for one graph</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function GraphValues(ByVal colName As String, _
+                             ByVal graphId As String) As BetterArray
+</code></pre>
+<p>Answers the values of one column, for the rows whose graph identifier matches,
+in row order. The walk reads the identifier column and the wanted column of the
+same row, so the six lists DefineGraph reads always line up by index. An empty
+cell answers an empty string.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Header of the column to read.</li>
+<li><code>graphId</code>: String. The graph identifier the rows are filtered by.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The values, LowerBound = 1. Empty when the table has no
+data row, no identifier column, or no column of that name.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>This used to be driven by Range.Find with a search range narrowed on
+every iteration. Find wraps around by default, and none of the calls named
+LookIn, so the search inherited whatever the last search in the application
+used, the user's own Ctrl+F dialog included.</li>
+</ul>
+<hr />
+<h3 id="int-locolumnindex">LoColumnIndex <a class="anchor-link" href="#int-locolumnindex">#</a></h3>
+<p><em>lo-column-index</em></p>
+<p><strong>Look up a column index in a ListObject header by name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LoColumnIndex(ByVal lo As ListObject, _
+                               ByVal colName As String) As Long
+</code></pre>
+<p>Walks the header row once. A header equal to the search term wins outright; a
+header that contains it is the fallback, which is what lets &quot;axis&quot; find
+&quot;Y-Axis&quot; and &quot;type&quot; find &quot;Chart type&quot;. When more than one header carries the
+term the first is used and the ambiguity is reported, because a renamed or an
+added column would otherwise change what the chart plots with nothing said.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lo</code>: ListObject. The ListObject whose header row is searched.</li>
+<li><code>colName</code>: String. The header text to search for. Matched without regard to
+case or outer spaces.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The 1-based index relative to the ListObject, or -1 when no
+header carries the term.</p>
+<hr />
+<h2 id="int-validation">Validation</h2>
+<h3 id="int-validatelistobjects">ValidateListObjects <a class="anchor-link" href="#int-validatelistobjects">#</a></h3>
+<p><em>validate-list-objects</em></p>
+<p><strong>Validate the three ListObjects the factory is given</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateListObjects(ByVal loTable As BetterArray)
+</code></pre>
+<p>Three levels. The array holds exactly three entries. Each entry is a ListObject
+carrying at least one data row. And each one is the table its position expects,
+which is settled by comparing its name against Tab_Graph_TimeSeries,
+Tab_TimeSeries_Analysis and Tab_Label_TSGraph.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>loTable</code>: BetterArray. The ListObject collection to validate.</li>
+</ul>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>The order used to be read off a caption two rows above the header
+row. That gap is two rows in a release file and four rows in every development
+file, so the check passed for one family and refused the other.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When loTable is Nothing, holds the wrong
+number of entries, holds something that is not a ListObject, or holds an empty
+one.</li>
+<li>ProjectError.ErrorUnexpectedState When the ListObjects are in the wrong
+order.</li>
+</ul>
+<hr />
+<h3 id="int-validateindex">ValidateIndex <a class="anchor-link" href="#int-validateindex">#</a></h3>
+<p><em>validate-index</em></p>
+<p><strong>Refuse a graph position the collection does not hold</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateIndex(ByVal index As Long)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. The position to test.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When index is outside the collection.</li>
+</ul>
+<hr />
+<h2 id="int-checking">Checking</h2>
+<h3 id="int-specsid">SpecsId <a class="anchor-link" href="#int-specsid">#</a></h3>
+<p><em>specs-id</em></p>
+<p><strong>A name for this instance that no other instance shares</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SpecsId() As String
+</code></pre>
+<p>The report of everything this builder decided to leave out.</p>
+<p>AnalysisOutput merges the entries of every collaborator into one report, and
+Checking.Add raises on a duplicate key, so a key made of a bare counter
+collides as soon as two instances file an entry. One instance serves one output
+worksheet, so the sheet names it.</p>
+<p><strong>Returns:</strong> String. The identifier every key of this instance carries.</p>
+<hr />
+<h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
+<p><em>log-info</em></p>
+<p><strong>Record a diagnostic entry in the internal checking store</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _
+                    Optional ByVal scope As Byte = checkingNote)
+</code></pre>
+<p>Creates the Checking store on first use and appends the message under a key
+naming this class, this worksheet and a counter.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>label</code>: String. The message to record.</li>
+<li><code>scope</code>: Optional Byte. Severity from CheckingLogType. Defaults to checkingNote.</li>
+</ul>
+<hr />
+<h2 id="int-errorhandling">ErrorHandling</h2>
+<h3 id="int-celltext">CellText <a class="anchor-link" href="#int-celltext">#</a></h3>
+<p><em>cell-text</em></p>
+<p><strong>Read one cell value as text</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CellText(ByVal cellValue As Variant) As String
+</code></pre>
+<p>CStr on an Error variant raises runtime error 13, and the analysis setup sheet
+carries formula columns, so an ordinary edit can produce one. An error value, a
+Null and an empty cell all answer an empty string here.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellValue</code>: Variant. One value read out of a worksheet range.</li>
+</ul>
+<p><strong>Returns:</strong> String. The text of the cell, or an empty string.</p>
+<hr />
+<h3 id="int-istotalchoice">IsTotalChoice <a class="anchor-link" href="#int-istotalchoice">#</a></h3>
+<p><em>is-total-choice</em></p>
+<p><strong>Whether a choice value asks for the total column</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsTotalChoice(ByVal choiValue As String) As Boolean
+</code></pre>
+<p>The value comes out of a setup cell, so it is matched trimmed and without
+regard to case. It used to be compared against the literal &quot;Total&quot;, which a
+cell holding &quot; total &quot; failed.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>choiValue</code>: String. The choice value read from the graph setup table.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the value names the total.</p>
+<hr />
+<h3 id="int-ispercentagechoice">IsPercentageChoice <a class="anchor-link" href="#int-ispercentagechoice">#</a></h3>
+<p><em>is-percentage-choice</em></p>
+<p><strong>Whether a graph setup row asks for percentages</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsPercentageChoice(ByVal percValue As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>percValue</code>: String. The &quot;plot values or percentages&quot; cell of the row.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the row asks for percentages.</p>
+<hr />
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. The error code to raise.</li>
+<li><code>message</code>: String. Human-readable description of the failure.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (5 file(s))</summary>
+<ul>
+<li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
+<li><a href="GraphSeries.html">GraphSeries.cls</a></li>
+<li>TestGraphSeries.bas</li>
+<li>TestSeriesBuffer.bas</li>
+<li>TestTimeSeriesGraphs.bas</li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

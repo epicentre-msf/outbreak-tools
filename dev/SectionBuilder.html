@@ -11,14 +11,41 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>SectionBuilder</h1>
-<p>Builds all sections, subsections, and variables for a single linelist
-worksheet. Given a sheet name and dictionary start row, the builder
-scans the dictionary for matching rows, groups them by section and
-subsection, delegates variable writing to VarWriter, and applies
-merged-cell section and subsection header formatting. Supports both
-HList (horizontal) and VList (vertical) layouts via the layer byte.</p>
-<p><strong>Depends on:</strong> <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="VarWriter.html">VarWriter</a>, <a href="LLVariables.html">LLVariables</a>, Checking support, Row/column constants for section and subsection headers</p>
-<p><strong>Version:</strong> 1.0 (2026-02-10)</p>
+<p>Builds all the sections, subsections and variables of one linelist worksheet.
+Given a sheet name and a dictionary start row, Build scans the dictionary for
+the rows of that sheet, groups them by section and subsection, hands each
+variable to a VarWriter, and writes the merged section and subsection headers
+with their formatting. The layer byte picks the HList layout or the VList one.
+Entries filed along the way leave through HasCheckings and CheckingValues.</p>
+<details open class="doc-section" id="one-pass-over-the-dictionary">
+<summary>ONE PASS OVER THE DICTIONARY</summary>
+<div class="section-body">
+<p><code>Build</code> reads the five dictionary columns it groups on into arrays, in five
+crossings, and every boundary scan after that runs in memory.</p>
+</div>
+</details>
+<details open class="doc-section" id="one-writer-for-the-sheet">
+<summary>ONE WRITER FOR THE SHEET</summary>
+<div class="section-body">
+<p><code>Build</code> creates the <code>VarWriter</code> and hands it to every subsection. The writer
+holds a hidden name store, the dictionary block, the design format and the
+translated messages, and all four cover a whole sheet.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-boundaries-are-left-behind-on-the-sheet">
+<summary>THE BOUNDARIES ARE LEFT BEHIND ON THE SHEET</summary>
+<div class="section-body">
+<p>Every section <code>Build</code> lays out is also recorded in a <code>SectionMap</code>, so that a
+later session can act on a whole section without walking the dictionary again.
+The map is cleared at the head of the build and one block is added per section,
+holding the first and last position and the section title.</p>
+<p>The map is written on the main sheet alone. The printed companion carries the
+same columns and the CRF carries its own, and neither is offered a section
+action today.</p>
+<p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLFormat.html">LLFormat</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="VarWriter.html">VarWriter</a>, <a href="SectionMap.html">SectionMap</a>, <a href="Checking.html">Checking</a>, Checking support, Row/column constants for section and subsection headers, The CRF companion places a section four rows above the first variable of the, section and a subsection three rows above.</p>
+<p><strong>Version:</strong> 1.2 (2026-08-06)</p>
+</div>
+</details>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
 <div class="section-body">
@@ -27,32 +54,32 @@ HList (horizontal) and VList (vertical) layouts via the layer byte.</p>
 <p><strong>Create a new SectionBuilder instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal layer As Byte, _
-                       ByVal specs As ILinelistSpecs, _
+                       ByVal specs As LinelistSpecs, _
                        ByVal wksh As Worksheet, _
                        Optional ByVal printWksh As Worksheet = Nothing, _
                        Optional ByVal crfWksh As Worksheet = Nothing, _
-                       Optional ByVal dropdownObj As IDropdownLists = Nothing, _
-                       Optional ByVal customDropdownObj As IDropdownLists = Nothing) As ISectionBuilder
+                       Optional ByVal dropdownObj As DropdownLists = Nothing, _
+                       Optional ByVal customDropdownObj As DropdownLists = Nothing) As SectionBuilder
 </code></pre>
 <p>Factory method on the predeclared instance. Validates that specs and
-wksh are not Nothing, then initialises a new SectionBuilder with the
-given layer, specifications, and optional companion worksheets and
-dropdown managers. Returns the instance through the ISectionBuilder
-interface.</p>
+wksh are not Nothing and that the layer names a SectionBuilderMode member,
+then initialises a new SectionBuilder with the given layer, specifications,
+and optional companion worksheets and dropdown managers.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>layer</code>: Byte. SectionBuilderMode enum value (HList=1, VList=2).</li>
-<li><code>specs</code>: ILinelistSpecs. The linelist specifications object.</li>
+<li><code>specs</code>: LinelistSpecs. The linelist specifications object.</li>
 <li><code>wksh</code>: Worksheet. The target main worksheet.</li>
 <li><code>printWksh</code>: Optional Worksheet. Printed companion worksheet (HList only).</li>
 <li><code>crfWksh</code>: Optional Worksheet. CRF companion worksheet (HList only).</li>
-<li><code>dropdownObj</code>: Optional IDropdownLists. Dropdown lists manager.</li>
-<li><code>customDropdownObj</code>: Optional IDropdownLists. Custom dropdown lists manager.</li>
+<li><code>dropdownObj</code>: Optional DropdownLists. Dropdown lists manager.</li>
+<li><code>customDropdownObj</code>: Optional DropdownLists. Custom dropdown lists manager.</li>
 </ul>
-<p><strong>Returns:</strong> ISectionBuilder. A fully initialised instance ready for use.</p>
+<p><strong>Returns:</strong> SectionBuilder. A fully initialised instance ready for use.</p>
 <p><strong>Throws:</strong></p>
 <ul>
-<li>VbObjectError+516 When specs or wksh is Nothing.</li>
+<li>ProjectError.ObjectNotInitialized When specs or wksh is Nothing.</li>
+<li>ProjectError.InvalidArgument When layer names neither SectionBuilderMode member.</li>
 </ul>
 <hr />
 </div>
@@ -66,12 +93,15 @@ interface.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Build(ByVal sheetName As String, ByVal startRow As Long)
 </code></pre>
-<p>Scans the dictionary for rows matching sheetName starting from
-startRow. Groups consecutive rows by their &quot;main section&quot; column value,
-then delegates to BuildSubSections for subsection grouping and variable
-writing. After all variables in a section are written, applies
-merged-cell section header formatting via FormatSection. Stops when the
-sheet name changes or the dictionary ends.</p>
+<p>Reads the dictionary columns it groups on into memory, then scans them for
+rows matching sheetName starting from startRow. Groups consecutive rows by
+their &quot;main section&quot; value, delegates to BuildSubSections for subsection
+grouping and variable writing, and applies merged-cell section header
+formatting. Stops when the sheet name changes or the dictionary ends.</p>
+<p>Each section is also recorded in the sheet's SectionMap as it is laid out.
+The map is opened before the writer runs, because opening it reads every
+hidden name the sheet holds and the writer adds three to five of them per
+variable.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sheetName</code>: String. The sheet name as it appears in the dictionary &quot;sheet name&quot; column.</li>
@@ -80,18 +110,65 @@ sheet name changes or the dictionary ends.</p>
 <hr />
 </div>
 </details>
+<details open class="doc-section" id="checkings">
+<summary>Checkings</summary>
+<div class="section-body">
+<h3 id="hasmilestones">HasMilestones <a class="anchor-link" href="#hasmilestones">#</a></h3>
+<p><em>has-milestones</em></p>
+<p><strong>Whether the writer filed any per-variable milestone</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasMilestones() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True once a variable of this sheet was written.</p>
+<hr />
+<h3 id="milestonevalues">MilestoneValues <a class="anchor-link" href="#milestonevalues">#</a></h3>
+<p><em>milestone-values</em></p>
+<p><strong>The writer's per-variable record</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get MilestoneValues() As Checking
+</code></pre>
+<p>Handed on as the writer holds it. One writer serves the whole sheet, so
+no merge is owed here, and the store stays out of the __check worksheet.</p>
+<p><strong>Returns:</strong> Checking. The milestone entries, or Nothing.</p>
+<hr />
+<h3 id="variableswritten">VariablesWritten <a class="anchor-link" href="#variableswritten">#</a></h3>
+<p><em>variables-written</em></p>
+<p><strong>How many variables the writer put on the sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get VariablesWritten() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The number of variables written.</p>
+<hr />
+<h3 id="sectionsplaced">SectionsPlaced <a class="anchor-link" href="#sectionsplaced">#</a></h3>
+<p><em>sections-placed</em></p>
+<p><strong>How many sections were laid out on the sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SectionsPlaced() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The number of sections placed.</p>
+<hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2 id="int-instantiation">Instantiation</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
+<h2 id="int-instance-sealing">Instance Sealing</h2>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance against further setup writes</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ISectionBuilder
+<pre><code class="language-vb">Public Sub Seal()
 </code></pre>
-<p>Returns the current instance cast to the ISectionBuilder interface,
-used by the Create factory to return the newly built object.</p>
-<p><strong>Returns:</strong> ISectionBuilder. The current instance.</p>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup-only setter against post-seal writes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The property name for the error message.</li>
+</ul>
 <hr />
 <h2 id="int-internal-setters">Internal Setters</h2>
 <h3 id="int-internallayer">InternalLayer <a class="anchor-link" href="#int-internallayer">#</a></h3>
@@ -110,11 +187,11 @@ used by the Create factory to return the newly built object.</p>
 <p><em>internal-specs</em></p>
 <p><strong>Assign the linelist specifications</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set InternalSpecs(ByVal specs As ILinelistSpecs)
+<pre><code class="language-vb">Public Property Set InternalSpecs(ByVal specs As LinelistSpecs)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>specs</code>: ILinelistSpecs. The specifications object.</li>
+<li><code>specs</code>: LinelistSpecs. The specifications object.</li>
 </ul>
 <hr />
 <h3 id="int-internalwksh">InternalWksh <a class="anchor-link" href="#int-internalwksh">#</a></h3>
@@ -154,22 +231,22 @@ used by the Create factory to return the newly built object.</p>
 <p><em>internal-dropdown</em></p>
 <p><strong>Assign the dropdown lists manager</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set InternalDropdown(ByVal dropdownObj As IDropdownLists)
+<pre><code class="language-vb">Public Property Set InternalDropdown(ByVal dropdownObj As DropdownLists)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dropdownObj</code>: IDropdownLists. The dropdown manager.</li>
+<li><code>dropdownObj</code>: DropdownLists. The dropdown manager.</li>
 </ul>
 <hr />
 <h3 id="int-internalcustomdropdown">InternalCustomDropdown <a class="anchor-link" href="#int-internalcustomdropdown">#</a></h3>
 <p><em>internal-custom-dropdown</em></p>
 <p><strong>Assign the custom dropdown lists manager</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set InternalCustomDropdown(ByVal dropdownObj As IDropdownLists)
+<pre><code class="language-vb">Public Property Set InternalCustomDropdown(ByVal dropdownObj As DropdownLists)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dropdownObj</code>: IDropdownLists. The custom dropdown manager.</li>
+<li><code>dropdownObj</code>: DropdownLists. The custom dropdown manager.</li>
 </ul>
 <hr />
 <h2 id="int-cached-accessors">Cached Accessors</h2>
@@ -177,30 +254,77 @@ used by the Create factory to return the newly built object.</p>
 <p><em>dictionary</em></p>
 <p><strong>Lazy-loaded dictionary accessor</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Dictionary() As ILLdictionary
+<pre><code class="language-vb">Private Property Get Dictionary() As LLdictionary
 </code></pre>
-<p>Lazy-loaded accessors for frequently used dependency objects.
-Returns the cached ILLdictionary instance. On first access, retrieves
-it from the specifications object and caches it for subsequent calls.</p>
-<p><strong>Returns:</strong> ILLdictionary. The linelist dictionary.</p>
-<hr />
-<h3 id="int-variables">Variables <a class="anchor-link" href="#int-variables">#</a></h3>
-<p><em>variables</em></p>
-<p><strong>Lazy-loaded variables accessor</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Variables() As ILLVariables
-</code></pre>
-<p>Returns the cached ILLVariables instance. On first access, creates it
-from the dictionary via LLVariables.Create and caches it.</p>
-<p><strong>Returns:</strong> ILLVariables. The variables helper for dictionary lookups.</p>
+<p>Lazy-loaded accessors for frequently used dependency objects.</p>
+<p><strong>Returns:</strong> LLdictionary. The linelist dictionary.</p>
 <hr />
 <h3 id="int-designformat">DesignFormat <a class="anchor-link" href="#int-designformat">#</a></h3>
 <p><em>design-format</em></p>
 <p><strong>Design format accessor</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get DesignFormat() As ILLFormat
+<pre><code class="language-vb">Private Property Get DesignFormat() As LLFormat
 </code></pre>
-<p><strong>Returns:</strong> ILLFormat. The formatting object from the specifications.</p>
+<p>Held rather than resolved per call: every section and every subsection asks
+for it.</p>
+<p><strong>Returns:</strong> LLFormat. The formatting object from the specifications.</p>
+<hr />
+<h2 id="int-dictionary-reading">Dictionary Reading</h2>
+<h3 id="int-loaddictionarycolumns">LoadDictionaryColumns <a class="anchor-link" href="#int-loaddictionarycolumns">#</a></h3>
+<p><em>load-dictionary-columns</em></p>
+<p><strong>Read the columns the build groups on into memory</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LoadDictionaryColumns()
+</code></pre>
+<p>Five crossings for the whole build. <code>crf index</code> is read under a guard because
+a dictionary that has not been prepared does not carry it, and the CRF
+companion is optional anyway.</p>
+<hr />
+<h3 id="int-columnvalues">ColumnValues <a class="anchor-link" href="#int-columnvalues">#</a></h3>
+<p><em>column-values</em></p>
+<p><strong>Read a single-column Range as a 1-based list of values</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnValues(ByVal columnRng As Range) As Variant
+</code></pre>
+<p><code>Range.Value</code> hands back a plain value for one cell and a two-dimensional
+array otherwise. This flattens both cases so callers see one shape.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>columnRng</code>: Range. A single-column block.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. A 1-based one-dimensional array of cell values.</p>
+<hr />
+<h3 id="int-textat">TextAt <a class="anchor-link" href="#int-textat">#</a></h3>
+<p><em>text-at</em></p>
+<p><strong>Read one entry of a loaded column as text</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TextAt(ByVal values As Variant, ByVal rowNumber As Long) As String
+</code></pre>
+<p>A dictionary cell can hold an error value or a Null, and <code>CStr</code> raises on
+both.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>values</code>: Variant. A 1-based list read by ColumnValues.</li>
+<li><code>rowNumber</code>: Long. The dictionary data row.</li>
+</ul>
+<p><strong>Returns:</strong> String. The text, or an empty string.</p>
+<hr />
+<h3 id="int-numberat">NumberAt <a class="anchor-link" href="#int-numberat">#</a></h3>
+<p><em>number-at</em></p>
+<p><strong>Read one entry of a loaded column as a whole number</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NumberAt(ByVal values As Variant, ByVal rowNumber As Long) As Long
+</code></pre>
+<p>One rule for both index columns: a value that is empty or is not a number
+answers 0, and every caller tests for 0. <code>column index</code> and <code>crf index</code> used
+to be converted with a bare <code>CLng</code>, guarded at three of the eight sites that
+did it.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>values</code>: Variant. A 1-based list read by ColumnValues.</li>
+<li><code>rowNumber</code>: Long. The dictionary data row.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The stored number, or 0.</p>
 <hr />
 <h2 id="int-section-boundary-detection">Section Boundary Detection</h2>
 <h3 id="int-findsectionend">FindSectionEnd <a class="anchor-link" href="#int-findsectionend">#</a></h3>
@@ -209,25 +333,57 @@ from the dictionary via LLVariables.Create and caches it.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FindSectionEnd(ByVal startRow As Long, _
                                  ByVal sectionName As String, _
-                                 ByVal sheetName As String, _
-                                 ByVal sectionRng As Range, _
-                                 ByVal sheetRng As Range, _
-                                 ByVal dataEndRow As Long) As Long
+                                 ByVal sheetName As String) As Long
 </code></pre>
 <p>Starting from startRow, scans forward until the section name or sheet
 name changes, then returns the row just before the change. When the
-end of the data range is reached without a change, returns the last
-data row.</p>
+end of the data is reached without a change, returns the last data row.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>startRow</code>: Long. The row to start scanning from.</li>
 <li><code>sectionName</code>: String. The current section name to match.</li>
 <li><code>sheetName</code>: String. The current sheet name to match.</li>
-<li><code>sectionRng</code>: Range. The &quot;main section&quot; data column range.</li>
-<li><code>sheetRng</code>: Range. The &quot;sheet name&quot; data column range.</li>
-<li><code>dataEndRow</code>: Long. The last row of data in the dictionary.</li>
 </ul>
 <p><strong>Returns:</strong> Long. The 1-based row index of the last row in the section.</p>
+<hr />
+<h2 id="int-section-map">Section Map</h2>
+<h3 id="int-opensectionmap">OpenSectionMap <a class="anchor-link" href="#int-opensectionmap">#</a></h3>
+<p><em>open-section-map</em></p>
+<p><strong>Open the sheet's section map and empty it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub OpenSectionMap()
+</code></pre>
+<p>The boundaries of every section, left on the sheet for a later session. A
+section is a run of consecutive dictionary rows, and the map holds the first
+and last position of each run with the title alongside them. The reader of the
+map starts from a selected cell, so the position range is what it looks a
+section up by.</p>
+<p>Called at the head of the build, before the writer adds its own names, and the
+clear is what stops a sheet rebuilt with fewer sections than last time from
+keeping the tail of the old map.</p>
+<p><strong>Depends on:</strong></p>
+<ul>
+<li>SectionMap</li>
+</ul>
+<hr />
+<h3 id="int-recordsection">RecordSection <a class="anchor-link" href="#int-recordsection">#</a></h3>
+<p><em>record-section</em></p>
+<p><strong>Record the boundaries of one section in the map</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RecordSection(ByVal sectionName As String, _
+                           ByVal startRow As Long, _
+                           ByVal endRow As Long)
+</code></pre>
+<p>The positions are the same <code>column index</code> values the headers were laid out on:
+a column number on an HList sheet, a row number on a VList one. A section
+whose first or last row carries no position is skipped, for the same reason
+FormatSection leaves it alone.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sectionName</code>: String. The section title.</li>
+<li><code>startRow</code>: Long. The first dictionary row of the section.</li>
+<li><code>endRow</code>: Long. The last dictionary row of the section.</li>
+</ul>
 <hr />
 <h2 id="int-subsection-processing">Subsection Processing</h2>
 <h3 id="int-buildsubsections">BuildSubSections <a class="anchor-link" href="#int-buildsubsections">#</a></h3>
@@ -236,17 +392,21 @@ data row.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BuildSubSections(ByVal sectionStart As Long, _
                               ByVal sectionEnd As Long, _
-                              ByVal sheetName As String)
+                              ByVal sheetName As String, _
+                              ByVal sectionName As String, _
+                              ByVal writer As VarWriter)
 </code></pre>
 <p>Iterates through dictionary rows from sectionStart to sectionEnd,
-grouping consecutive rows by the &quot;sub section&quot; column value. For each
-subsection group, delegates variable writing to BuildVariables and then
-applies subsection header formatting via FormatSubSection.</p>
+grouping consecutive rows by the &quot;sub section&quot; value. For each subsection
+group, delegates variable writing to BuildVariables and then applies
+subsection header formatting via FormatSubSection.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sectionStart</code>: Long. The first row of the section.</li>
 <li><code>sectionEnd</code>: Long. The last row of the section.</li>
 <li><code>sheetName</code>: String. The current sheet name.</li>
+<li><code>sectionName</code>: String. The enclosing section name.</li>
+<li><code>writer</code>: VarWriter. The writer that serves the whole sheet.</li>
 </ul>
 <hr />
 <h3 id="int-findsubsectionend">FindSubSectionEnd <a class="anchor-link" href="#int-findsubsectionend">#</a></h3>
@@ -257,9 +417,6 @@ applies subsection header formatting via FormatSubSection.</p>
                                     ByVal subSectionName As String, _
                                     ByVal sectionName As String, _
                                     ByVal sheetName As String, _
-                                    ByVal subSectionRng As Range, _
-                                    ByVal sectionRng As Range, _
-                                    ByVal sheetRng As Range, _
                                     ByVal maxRow As Long) As Long
 </code></pre>
 <p>Starting from startRow, scans forward until the subsection name,
@@ -271,9 +428,6 @@ the change. Constrained by maxRow (the section boundary).</p>
 <li><code>subSectionName</code>: String. The current subsection name to match.</li>
 <li><code>sectionName</code>: String. The current section name to match.</li>
 <li><code>sheetName</code>: String. The current sheet name to match.</li>
-<li><code>subSectionRng</code>: Range. The &quot;sub section&quot; data column range.</li>
-<li><code>sectionRng</code>: Range. The &quot;main section&quot; data column range.</li>
-<li><code>sheetRng</code>: Range. The &quot;sheet name&quot; data column range.</li>
 <li><code>maxRow</code>: Long. The last row of the enclosing section.</li>
 </ul>
 <p><strong>Returns:</strong> Long. The 1-based row index of the last row in the subsection.</p>
@@ -283,17 +437,17 @@ the change. Constrained by maxRow (the section boundary).</p>
 <p><em>build-variables</em></p>
 <p><strong>Build all variables within a subsection range</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub BuildVariables(ByVal subSecStart As Long, ByVal subSecEnd As Long)
+<pre><code class="language-vb">Private Sub BuildVariables(ByVal subSecStart As Long, _
+                            ByVal subSecEnd As Long, _
+                            ByVal writer As VarWriter)
 </code></pre>
-<p>Creates a single VarWriter instance configured with the current layer,
-specifications, worksheets, and dropdown managers, then iterates from
-subSecStart to subSecEnd, calling WriteVariable for each variable name
-found in the dictionary. Reusing one VarWriter across the subsection
-avoids repeated factory overhead.</p>
+<p>Walks the subsection and hands each variable name to the writer <code>Build</code>
+created for the sheet.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>subSecStart</code>: Long. The first dictionary row of the subsection.</li>
 <li><code>subSecEnd</code>: Long. The last dictionary row of the subsection.</li>
+<li><code>writer</code>: VarWriter. The writer that serves the whole sheet.</li>
 </ul>
 <p><strong>Depends on:</strong></p>
 <ul>
@@ -307,18 +461,15 @@ avoids repeated factory overhead.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FormatSection(ByVal sectionName As String, _
                            ByVal startRow As Long, _
-                           ByVal endRow As Long, _
-                           ByVal sheetName As String)
+                           ByVal endRow As Long)
 </code></pre>
 <p>Dispatches to FormatHListSection or FormatVListSection based on the
-current layer. Resolves the first and last variable names for the
-section range to calculate column or row indices for the merged header.</p>
+current layer.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sectionName</code>: String. The section title to display.</li>
 <li><code>startRow</code>: Long. The first dictionary row of the section.</li>
 <li><code>endRow</code>: Long. The last dictionary row of the section.</li>
-<li><code>sheetName</code>: String. The current sheet name.</li>
 </ul>
 <hr />
 <h3 id="int-formathlistsection">FormatHListSection <a class="anchor-link" href="#int-formathlistsection">#</a></h3>
@@ -326,21 +477,21 @@ section range to calculate column or row indices for the merged header.</p>
 <p><strong>Format an HList section header</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FormatHListSection(ByVal sectionName As String, _
-                                ByVal firstVarName As String, _
-                                ByVal lastVarName As String, _
-                                ByVal sheetName As String)
+                                ByVal startRow As Long, _
+                                ByVal endRow As Long)
 </code></pre>
 <p>Merges cells horizontally across the column range at HLIST_SEC_ROW on
 the main sheet, writes the section name, and applies HListSection
 formatting. Repeats for the printed companion when available. Also
 writes a CRF section header when a CRF worksheet is present, using the
-first variable's &quot;crf index&quot; to calculate the CRF row offset.</p>
+first variable's &quot;crf index&quot; to calculate the CRF row offset. The CRF line
+is read inside the CRF guard, so a linelist with no CRF companion pays
+nothing for it.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sectionName</code>: String. The section title to display.</li>
-<li><code>firstVarName</code>: String. The first variable name in the section.</li>
-<li><code>lastVarName</code>: String. The last variable name in the section.</li>
-<li><code>sheetName</code>: String. The current sheet name.</li>
+<li><code>startRow</code>: Long. The first dictionary row of the section.</li>
+<li><code>endRow</code>: Long. The last dictionary row of the section.</li>
 </ul>
 <hr />
 <h3 id="int-formatvlistsection">FormatVListSection <a class="anchor-link" href="#int-formatvlistsection">#</a></h3>
@@ -348,9 +499,8 @@ first variable's &quot;crf index&quot; to calculate the CRF row offset.</p>
 <p><strong>Format a VList section header</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FormatVListSection(ByVal sectionName As String, _
-                                ByVal firstVarName As String, _
-                                ByVal lastVarName As String, _
-                                ByVal sheetName As String)
+                                ByVal startRow As Long, _
+                                ByVal endRow As Long)
 </code></pre>
 <p>Merges cells vertically across the row range at VLIST_SEC_COL on the
 main sheet, writes the section name, and applies VListSection
@@ -358,9 +508,8 @@ formatting. No companion sheets are involved for VList layers.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sectionName</code>: String. The section title to display.</li>
-<li><code>firstVarName</code>: String. The first variable name in the section.</li>
-<li><code>lastVarName</code>: String. The last variable name in the section.</li>
-<li><code>sheetName</code>: String. The current sheet name.</li>
+<li><code>startRow</code>: Long. The first dictionary row of the section.</li>
+<li><code>endRow</code>: Long. The last dictionary row of the section.</li>
 </ul>
 <hr />
 <h2 id="int-subsection-formatting">Subsection Formatting</h2>
@@ -370,8 +519,7 @@ formatting. No companion sheets are involved for VList layers.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FormatSubSection(ByVal subSectionName As String, _
                               ByVal startRow As Long, _
-                              ByVal endRow As Long, _
-                              ByVal sheetName As String)
+                              ByVal endRow As Long)
 </code></pre>
 <p>Dispatches to FormatHListSubSection or FormatVListSubSection based on
 the current layer.</p>
@@ -380,7 +528,6 @@ the current layer.</p>
 <li><code>subSectionName</code>: String. The subsection title to display.</li>
 <li><code>startRow</code>: Long. The first dictionary row of the subsection.</li>
 <li><code>endRow</code>: Long. The last dictionary row of the subsection.</li>
-<li><code>sheetName</code>: String. The current sheet name.</li>
 </ul>
 <hr />
 <h3 id="int-formathlistsubsection">FormatHListSubSection <a class="anchor-link" href="#int-formathlistsubsection">#</a></h3>
@@ -389,8 +536,7 @@ the current layer.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FormatHListSubSection(ByVal subSectionName As String, _
                                    ByVal startRow As Long, _
-                                   ByVal endRow As Long, _
-                                   ByVal sheetName As String)
+                                   ByVal endRow As Long)
 </code></pre>
 <p>Merges cells horizontally across the column range at HLIST_SUBSEC_ROW
 on the main sheet, writes the subsection name, and applies
@@ -402,7 +548,6 @@ is present.</p>
 <li><code>subSectionName</code>: String. The subsection title to display.</li>
 <li><code>startRow</code>: Long. The first dictionary row of the subsection.</li>
 <li><code>endRow</code>: Long. The last dictionary row of the subsection.</li>
-<li><code>sheetName</code>: String. The current sheet name.</li>
 </ul>
 <hr />
 <h3 id="int-formatvlistsubsection">FormatVListSubSection <a class="anchor-link" href="#int-formatvlistsubsection">#</a></h3>
@@ -411,8 +556,7 @@ is present.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FormatVListSubSection(ByVal subSectionName As String, _
                                    ByVal startRow As Long, _
-                                   ByVal endRow As Long, _
-                                   ByVal sheetName As String)
+                                   ByVal endRow As Long)
 </code></pre>
 <p>Merges cells vertically across the row range at VLIST_SUBSEC_COL on
 the main sheet, writes the subsection name, and applies
@@ -422,7 +566,6 @@ VListSubSection formatting.</p>
 <li><code>subSectionName</code>: String. The subsection title to display.</li>
 <li><code>startRow</code>: Long. The first dictionary row of the subsection.</li>
 <li><code>endRow</code>: Long. The last dictionary row of the subsection.</li>
-<li><code>sheetName</code>: String. The current sheet name.</li>
 </ul>
 <hr />
 <h2 id="int-error-handling">Error Handling</h2>
@@ -432,30 +575,59 @@ VListSubSection formatting.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
 </code></pre>
+<p>Raises the number it is given with the class name as the source. Every guard
+in this class names a <code>ProjectError</code> member.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
+<li><code>errNumber</code>: Long. The ProjectError value to raise.</li>
 <li><code>errorMessage</code>: String. Human-readable description of the failure.</li>
 </ul>
-<p><strong>Throws:</strong></p>
+<hr />
+<h2 id="int-checkings">Checkings</h2>
+<h3 id="int-harvestwritercheckings">HarvestWriterCheckings <a class="anchor-link" href="#int-harvestwritercheckings">#</a></h3>
+<p><em>harvest-writer-checkings</em></p>
+<p><strong>Take the writer's entries once the sheet is built</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub HarvestWriterCheckings(ByVal writer As VarWriter)
+</code></pre>
+<p>The writer files one entry per problem, keyed by worksheet and variable, and
+<code>Build</code> merges them once when the sheet is done. The merge used to run per
+subsection against a writer whose keys started at 0 in every instance, so the
+second subsection of a sheet re-added key &quot;0&quot; and <code>Checking.Add</code> stopped the
+build.</p>
+<p><strong>Parameters:</strong></p>
 <ul>
-<li>VbObjectError+516 Always raises the specified error.</li>
+<li><code>writer</code>: VarWriter. The writer that served the sheet.</li>
 </ul>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-isectionbuilder-build">ISectionBuilder_Build <a class="anchor-link" href="#int-isectionbuilder-build">#</a></h3>
+<h3 id="int-logsectionplaced">LogSectionPlaced <a class="anchor-link" href="#int-logsectionplaced">#</a></h3>
+<p><em>log-section-placed</em></p>
+<p><strong>File the milestone of one section laid out</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ISectionBuilder_Build(ByVal sheetName As String, ByVal startRow As Long)
+<pre><code class="language-vb">Private Sub LogSectionPlaced(ByVal sectionName As String, ByVal sheetName As String)
 </code></pre>
-<p>Delegated members satisfying the ISectionBuilder contract.</p>
+<p>A sheet holds a few sections, so these entries go to the worksheet with
+the problems. The per-variable entries are the ones held back, and they
+travel through <code>MilestoneValues</code>.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sectionName</code>: String. The section title.</li>
+<li><code>sheetName</code>: String. The dictionary sheet the section belongs to.</li>
+</ul>
 <hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (9 file(s))</summary>
 <ul>
-<li><a href="ListBuilder.html">ListBuilder.cls</a></li>
-<li><a href="ISectionBuilder.html">ISectionBuilder.cls</a></li>
-<li><a href="SectionBuilder.html">SectionBuilder.cls</a></li>
+<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
+<li><a href="SectionMap.html">SectionMap.cls</a></li>
+<li><a href="VarWriter.html">VarWriter.cls</a></li>
+<li><a href="SectionShowHide.html">SectionShowHide.cls</a></li>
+<li>EventsLinelistButtons.bas</li>
+<li>TestLLDataEntry.bas</li>
 <li>TestSectionBuilder.bas</li>
+<li>TestSectionMap.bas</li>
+<li>TestSectionShowHide.bas</li>
 </ul>
 </details>
   </main>
