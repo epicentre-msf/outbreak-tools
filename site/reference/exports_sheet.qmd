@@ -124,7 +124,7 @@ Display in the **linelist file**:
 
 ## Admin levels
 
-
+You can  export export specific admin levels forexample admin1 + admin 2
 
 ## Include personal identifiers
 
