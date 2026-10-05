@@ -494,28 +494,28 @@
     "href": "reference/ribbons_designer.html",
     "title": "Designer ribbon",
     "section": "",
-    "text": "Recent version of Excel have a top ribbon/menu that display most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities."
+    "text": "Recent version of Excel have a top ribbon/menu that displays most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities."
   },
   {
     "objectID": "reference/ribbons_designer.html#manage-the-designer",
     "href": "reference/ribbons_designer.html#manage-the-designer",
     "title": "Designer ribbon",
     "section": "Manage the designer",
-    "text": "Manage the designer\n\nClear entries\nRemove all user entered data from fields.\n\n\nLanguage of the designer\nUse the dropdown menu to change the language of the designer interface. Available languages: English, French, Arabic, Spanish and Portuguese."
+    "text": "Manage the designer\n\nClear entries\nClear all fields from user-entered data.\n\n\nLanguage of the designer\nUse the dropdown menu to change the language of the designer interface. Available languages: English, French, Arabic, Spanish and Portuguese."
   },
   {
     "objectID": "reference/ribbons_designer.html#imports",
     "href": "reference/ribbons_designer.html#imports",
     "title": "Designer ribbon",
     "section": "Imports",
-    "text": "Imports\n\nImport translations\nIf the user wishes to modify the linelist interface translations, it is possible to ask for the config file to EpiDS/Yves Amevoin, tweak it and import it with this button.\n\n\nImport passwords\nThe designer is loaded with a password table, with private and public keys to protect export if the user want a password-protected export. However, the designer is on Github, in a public repo, so if you compile a linelist that needs a password protection, it is best to ask for the config file to EpiDS/Yves Amevoin and import it using the “Import button”.\n\n\nImport styles\nThe designer comes with two default styles for linelist themes. It is possible to personalise it. To do that, ask for the config file to EpiDS/Yves Amevoin, tweak it and import it with this button.\n\n\nOpen a linelist\nThis button is used as a short cut to opening a linelist.\n\n\nOpen the generation report\nUsers can click this button to access the generation report once linelist generation is complete."
+    "text": "Imports\n\nImport translations\nIf the user wishes to modify the linelist interface translations, it is possible to ask for the config file to EpiDS/Yves Amevoin, tweak it and import it with this button.\n\n\nImport passwords\nThe designer is loaded with a password table, with private and public keys to protect exports (when some exports are configured to be password protected). However, the designer is on Github, in a public repo, so if you compile a linelist that needs a password protection, it is best to ask for the config file to EpiDS/Yves Amevoin and import it using the “Import button”.\n\n\nImport styles\nThe designer comes with two default styles for linelist themes. It is possible to personalise it. To do that, ask for the config file to EpiDS/Yves Amevoin, tweak it and import it with this button.\n\n\nOpen a linelist\nThis button is used as a shortcut to opening a linelist.\n\n\nOpen the generation report\nClick on this button to access the generation report once linelist generation is complete."
   },
   {
     "objectID": "reference/ribbons_designer.html#generate-multiple",
     "href": "reference/ribbons_designer.html#generate-multiple",
     "title": "Designer ribbon",
     "section": "Generate Multiple",
-    "text": "Generate Multiple\nYou can generate multiple linelists, from different setups and different geobases, in one go from the “GenerateMultiple worksheet”. The buttons within the “Multiple Linelist” section of the ribbon are visible across the Designer, but they are only functional when the user is on the “Generate Multiple” sheet.\n\n\n\nGenerate multiple interface\n\n\n\nLoad multiple file/folders\nThis is used to load files into the setups,geobases and output columns. Before clicking the button,ensure the cursor is inside the data table area or else you will get an error message.\n\n\nDuplicate\nYou can duplicate a filled row and modify it according to what your interests are.\n\n\nAdd Rows\nClicking this button will add more rows.\n\n\nResize\nClick on the “Resize” button to remove any empty rows at the end or in the middle of the worksheet.\n\n\nImport\nYou can also import the exported multi generated linelists back into the designer\n\n\nExport\nUse this button to export all the files in the multi generation sheet.\n\n\nRibbon\nThis is used to attach a ribbon template.\n\n\nGenerate\nOnce you have populated the sheet with all the required information, click the “Generate” button to start the generation process."
+    "text": "Generate Multiple\nThe worksheet “Generate Multiple” provides an interface for generating multiple linelists in one go, from different setups and different geobases.\nThe buttons within the “Multiple Linelist” section of the ribbon are visible across the Designer, but they are only functional when the user is on the “Generate Multiple” sheet.\n\n\n\nGenerate multiple interface\n\n\n\nLoad multiple file/folders\nThis is used to load files into the setups, geobases and output columns. Before clicking the button, ensure the cursor is inside the data table area or else you will get an error message.\n\n\nDuplicate\nYou can duplicate a filled row and modify it according to what your interests are.\n\n\nAdd Rows\nClicking this button will add more rows.\n\n\nResize\nClick on the “Resize” button to remove any empty rows at the end or in the middle of the worksheet.\n\n\nImport\nYou can also import the exported multi generated linelists back into the designer\n\n\nExport\nUse this button to export all the files in the multi generation sheet.\n\n\nRibbon\nThis is used to load a ribbon template file in the designer. That file is necessary to generate a linelist with its own OBT menu, and is part of the .zip archive that you can dowload from Github if you want to build an OBT linelist.\n\n\nGenerate\nOnce you have populated the sheet with all the required information, click the “Generate” button to start the generation process."
   },
   {
     "objectID": "releases.html",
@@ -844,7 +844,7 @@
     "href": "reference/ribbons_setup.html",
     "title": "Setup ribbon",
     "section": "",
-    "text": "Recent version of Excel have a top ribbon/menu that display most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities."
+    "text": "Recent version of Excel have a top ribbon/menu that displays most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities."
   },
   {
     "objectID": "reference/ribbons_setup.html#table-management",
@@ -893,7 +893,7 @@
     "href": "reference/ribbons_linelist.html",
     "title": "Linelist ribbon",
     "section": "",
-    "text": "Recent version of Excel have a top ribbon/menu that display most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities."
+    "text": "Recent version of Excel have a top ribbon/menu that displays most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities."
   },
   {
     "objectID": "reference/ribbons_linelist.html#sec-data-table",

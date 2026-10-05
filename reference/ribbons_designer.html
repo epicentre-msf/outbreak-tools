@@ -226,10 +226,10 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>Recent version of Excel have a top <a href="https://www.ablebits.com/office-addins-blog/excel-ribbon-guide/">ribbon/menu</a> that display most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities.</p>
+<p>Recent version of Excel have a top <a href="https://www.ablebits.com/office-addins-blog/excel-ribbon-guide/">ribbon/menu</a> that displays most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="../images/img-005-designer-ribbon.png" class="img-fluid figure-img"></p>
+<p><img src="../reference/images/img-005-designer-ribbon.png" class="img-fluid figure-img"></p>
 <figcaption>OutbreakTools tab in the designer</figcaption>
 </figure>
 </div>
@@ -237,7 +237,7 @@ ul.task-list li input[type="checkbox"] {
 <h2 class="anchored" data-anchor-id="manage-the-designer">Manage the designer</h2>
 <section id="clear-entries" class="level3">
 <h3 class="anchored" data-anchor-id="clear-entries">Clear entries</h3>
-<p>Remove all user entered data from fields.</p>
+<p>Clear all fields from user-entered data.</p>
 </section>
 <section id="language-of-the-designer" class="level3">
 <h3 class="anchored" data-anchor-id="language-of-the-designer">Language of the designer</h3>
@@ -252,7 +252,7 @@ ul.task-list li input[type="checkbox"] {
 </section>
 <section id="import-passwords" class="level3">
 <h3 class="anchored" data-anchor-id="import-passwords">Import passwords</h3>
-<p>The designer is loaded with a password table, with private and public keys to protect export if the user want a password-protected export. However, the designer is on Github, in a public repo, so if you compile a linelist that needs a password protection, it is best to ask for the config file to EpiDS/Yves Amevoin and import it using the “Import button”.</p>
+<p>The designer is loaded with a password table, with private and public keys to protect exports (when some exports are configured to be password protected). However, the designer is on Github, in a public repo, so if you compile a linelist that needs a password protection, it is best to ask for the config file to EpiDS/Yves Amevoin and import it using the “Import button”.</p>
 </section>
 <section id="sec-setup-styles" class="level3">
 <h3 class="anchored" data-anchor-id="sec-setup-styles">Import styles</h3>
@@ -260,25 +260,26 @@ ul.task-list li input[type="checkbox"] {
 </section>
 <section id="open-a-linelist" class="level3">
 <h3 class="anchored" data-anchor-id="open-a-linelist">Open a linelist</h3>
-<p>This button is used as a short cut to opening a linelist.</p>
+<p>This button is used as a shortcut to opening a linelist.</p>
 </section>
 <section id="open-the-generation-report" class="level3">
 <h3 class="anchored" data-anchor-id="open-the-generation-report">Open the generation report</h3>
-<p>Users can click this button to access the generation report once linelist generation is complete.</p>
+<p>Click on this button to access the generation report once linelist generation is complete.</p>
 </section>
 </section>
 <section id="generate-multiple" class="level2">
 <h2 class="anchored" data-anchor-id="generate-multiple">Generate Multiple</h2>
-<p>You can generate multiple linelists, from different setups and different geobases, in one go from the “GenerateMultiple worksheet”. The buttons within the “Multiple Linelist” section of the ribbon are visible across the Designer, but they are only functional when the user is on the “Generate Multiple” sheet.</p>
+<p>The worksheet “Generate Multiple” provides an interface for generating multiple linelists in one go, from different setups and different geobases.</p>
+<p>The buttons within the “Multiple Linelist” section of the ribbon are visible across the Designer, but they are only functional when the user is on the “Generate Multiple” sheet.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="../images/img-001-gen-mult-sheets.png" class="img-fluid figure-img"></p>
+<p><img src="../reference/images/img-001-gen-mult-sheets.png" class="img-fluid figure-img"></p>
 <figcaption>Generate multiple interface</figcaption>
 </figure>
 </div>
 <section id="load-multiple-filefolders" class="level3">
 <h3 class="anchored" data-anchor-id="load-multiple-filefolders">Load multiple file/folders</h3>
-<p>This is used to load files into the setups,geobases and output columns. Before clicking the button,ensure the cursor is inside the data table area or else you will get an error message.</p>
+<p>This is used to load files into the setups, geobases and output columns. Before clicking the button, ensure the cursor is inside the data table area or else you will get an error message.</p>
 </section>
 <section id="duplicate" class="level3">
 <h3 class="anchored" data-anchor-id="duplicate">Duplicate</h3>
@@ -302,7 +303,7 @@ ul.task-list li input[type="checkbox"] {
 </section>
 <section id="ribbon" class="level3">
 <h3 class="anchored" data-anchor-id="ribbon">Ribbon</h3>
-<p>This is used to attach a ribbon template.</p>
+<p>This is used to load a <strong>ribbon template file</strong> in the designer. That file is necessary to generate a linelist with its own OBT menu, and is part of the <code>.zip</code> archive that you can dowload from Github if you want to build an OBT linelist.</p>
 </section>
 <section id="generate" class="level3">
 <h3 class="anchored" data-anchor-id="generate">Generate</h3>
