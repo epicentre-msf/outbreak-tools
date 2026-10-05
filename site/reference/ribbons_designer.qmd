@@ -28,7 +28,7 @@ If the user wishes to modify the linelist interface translations, it is possible
 
 ### Import passwords
 
-The designer is loaded with a password table, with private and public keys to protect exports (when some exports are configured to be password protected). However, the designer is on Github, in a public repo, so if you compile a linelist that needs a password protection, it is best to ask for the config file to EpiDS/Yves Amevoin and import it using the "Import button".
+The designer is loaded with a password table, with private and public keys to protect exports (when some exports are configured to be password protected). However, the designer is on Github, in a public repo, so if you compile a linelist that needs a password protection, it is best to ask for the config file to EpiDS/Yves Amevoin and import it using the "Import password" button.
 
 ### Import styles {#sec-setup-styles}
 
