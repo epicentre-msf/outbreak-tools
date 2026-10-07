@@ -15,7 +15,7 @@ This sheet is used to define the **dropdown menus categories** to be used for ca
 - different lists are written one below the other  
 - you can define as many lists as needed
 
-![](images/im-134-choices_sheet.png)    
+![](../images/img-001-choices_sheet.png)    
 
 
 ## List Name
@@ -38,10 +38,19 @@ With the exception of lists used for "choice_custom" type variables, it is recom
 
 This is a free text field. Fill in integers to define the order in which the options are displayed in the dropdown menu.
 
+## Non Translated labels 
+
+This column consists of non-Translated labels which means that  translating  them would be pointless or wrong and examples include country names.
+
+## Translated labels
+
+This column contains labels that are translated and they imported into the translation table
 
 ## Label
 
-This is a free text field used to list the different values to be displayed in the dropdown menus.
+The Label column contains a formula that looks at the translated and non-translated columns and takes the non-empty value (the 
+
+translated column takes precedence).
 
 ::: {.callout-warning}
 Categories names should not begin with a "\<" or a "\>".
