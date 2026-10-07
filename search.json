@@ -473,14 +473,14 @@
     "href": "reference/choices_sheet.html#translated-labels",
     "title": "Choices sheet",
     "section": "Translated labels",
-    "text": "Translated labels\nThis column contains labels that are translated and they imported into the translation table"
+    "text": "Translated labels\nThis column contains labels that are translated and they imported into the translation table."
   },
   {
     "objectID": "reference/choices_sheet.html#label",
     "href": "reference/choices_sheet.html#label",
     "title": "Choices sheet",
     "section": "Label",
-    "text": "Label\nThe Label column contains a formula that looks at the translated and non-translated columns and takes the non-empty value (the\ntranslated column takes precedence).\n\n\n\n\n\n\nWarning\n\n\n\nCategories names should not begin with a “&lt;” or a “&gt;”."
+    "text": "Label\nThe Label column contains a formula that looks at the translated and non-translated columns and takes the non-empty value (the translated column takes precedence).\n\n\n\n\n\n\nWarning\n\n\n\nCategories names should not begin with a “&lt;” or a “&gt;”."
   },
   {
     "objectID": "reference/choices_sheet.html#short-label",
