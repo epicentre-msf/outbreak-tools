@@ -91,13 +91,22 @@ Go to the [Translation sheet](../reference/translations_sheet.qmd) for more info
 
 ## Import/ Export
 
-These buttons allow to import data into an empty setup as well as exporting for migration.
+These buttons allow users to import a setup file into an empty setup, as well as export it for migration.But first lets dissect
+
+into the import buttons.
+
+There are two ways to import a setup file:
+
+- Import from another setup.
+
+- Import from migration.
 
 ![Import section](../images/img-import-setup.png){fig-align="center"}
 
-### Import data from another setup
+### Import from another setup
 
 Use this button to import data from another **setup file** to an empty setup file^[An upgraded version, or an empty file for the same version in case the original file got corrupted.].
+It lets users either select all the boxes to import everything, or choose only the specific items they want to import.
 
 1. Click on the button; it opens a popup window
 2. Click on the "Load another setup file" button. It will open a window to select the file to import data from.
@@ -116,11 +125,15 @@ You can run the coherence checks now, or do it at a later stage with the [Check 
 
 ### Import from migration
 
-Use this button to import back the previously exported file from migration.
+This button allows users to import back the previously exported xlsx. 
 
 ### Export for migration
 
-This button allows you to export the setup for migration. 
+You can export the setup to xlsx and import it back, using the flat file as an intermediate format.
+
+Flat files are easy to modify,so you can update your dictionary or edit it from R.
+
+They're also easier to work with in the designer: they open and close faster, there's less juggling of the setup xlsb, and the setup is less likely to be corrupted during generation.  
 
 
 ## Advanced {#sec-advanced}
