@@ -40,17 +40,15 @@ This is a free text field. Fill in integers to define the order in which the opt
 
 ## Non Translated labels 
 
-This column consists of non-Translated labels which means that  translating  them would be pointless or wrong and examples include country names.
+This column consists of non-Translated labels which means that translating them would be pointless or wrong and examples include country names.
 
 ## Translated labels
 
-This column contains labels that are translated and they imported into the translation table
+This column contains labels that are translated and they imported into the translation table.
 
 ## Label
 
-The Label column contains a formula that looks at the translated and non-translated columns and takes the non-empty value (the 
-
-translated column takes precedence).
+The Label column contains a formula that looks at the translated and non-translated columns and takes the non-empty value (the translated column takes precedence).
 
 ::: {.callout-warning}
 Categories names should not begin with a "\<" or a "\>".
