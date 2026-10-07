@@ -333,7 +333,7 @@
     "href": "reference/exports_sheet.html#admin-levels",
     "title": "Exports sheet",
     "section": "Admin levels",
-    "text": "Admin levels\nYou can export export specific admin levels forexample admin1 + admin 2"
+    "text": "Admin levels\nYou can export specific admin levels using the Admin Levels column. Leave it blank to export all admin levels, or specify the ones needed, for example, Admin 1 and Admin 2, or just a single admin level."
   },
   {
     "objectID": "reference/exports_sheet.html#include-personal-identifiers",
@@ -362,13 +362,6 @@
     "title": "Exports sheet",
     "section": "Export Metadata Sheets",
     "text": "Export Metadata Sheets\nThis is a yes/no drop-down field. By selecting “yes”, you decide that in addition to the data to be exported, you will also export:\n\nThe “Dictionary” sheet\nThe “Choices” sheet\nA metadata sheet3"
-  },
-  {
-    "objectID": "reference/exports_sheet.html#export-translation",
-    "href": "reference/exports_sheet.html#export-translation",
-    "title": "Exports sheet",
-    "section": "Export Translation",
-    "text": "Export Translation\nThis is a yes/no drop-down field. Selecting “yes” means that, in addition to the data to be exported, we will also have the sheet containing the translations."
   },
   {
     "objectID": "reference/exports_sheet.html#export-analysis-sheet",
@@ -469,11 +462,25 @@
     "text": "Ordering list\nThis is a free text field. Fill in integers to define the order in which the options are displayed in the dropdown menu."
   },
   {
+    "objectID": "reference/choices_sheet.html#non-translated-labels",
+    "href": "reference/choices_sheet.html#non-translated-labels",
+    "title": "Choices sheet",
+    "section": "Non Translated labels",
+    "text": "Non Translated labels\nThis column consists of non-Translated labels which means that translating them would be pointless or wrong and examples include country names."
+  },
+  {
+    "objectID": "reference/choices_sheet.html#translated-labels",
+    "href": "reference/choices_sheet.html#translated-labels",
+    "title": "Choices sheet",
+    "section": "Translated labels",
+    "text": "Translated labels\nThis column contains labels that are translated and they imported into the translation table"
+  },
+  {
     "objectID": "reference/choices_sheet.html#label",
     "href": "reference/choices_sheet.html#label",
     "title": "Choices sheet",
     "section": "Label",
-    "text": "Label\nThis is a free text field used to list the different values to be displayed in the dropdown menus.\n\n\n\n\n\n\nWarning\n\n\n\nCategories names should not begin with a “&lt;” or a “&gt;”."
+    "text": "Label\nThe Label column contains a formula that looks at the translated and non-translated columns and takes the non-empty value (the\ntranslated column takes precedence).\n\n\n\n\n\n\nWarning\n\n\n\nCategories names should not begin with a “&lt;” or a “&gt;”."
   },
   {
     "objectID": "reference/choices_sheet.html#short-label",
@@ -865,7 +872,7 @@
     "href": "reference/ribbons_setup.html#import-export",
     "title": "Setup ribbon",
     "section": "Import/ Export",
-    "text": "Import/ Export\nThese buttons allow to import data into an empty setup as well as exporting for migration.\n\n\n\nImport section\n\n\n\nImport data from another setup\nUse this button to import data from another setup file to an empty setup file1.\n\nClick on the button; it opens a popup window\nClick on the “Load another setup file” button. It will open a window to select the file to import data from.\nSelect what to import from the original by ticking the boxes.\nDecide if you want to run a checkup of the setup file after import by ticking the box or not\nClick on the “Import” button and wait.\n\n\n\n\n\n\n\n\n\n\n\n\nNote\n\n\n\nIf you are importing a setup to a new setup file, you should check all boxes to import everything.\nYou can run the coherence checks now, or do it at a later stage with the Check setup button\n\n\n\n\nImport from migration\nUse this button to import back the previously exported file from migration.\n\n\nExport for migration\nThis button allows you to export the setup for migration."
+    "text": "Import/ Export\nThese buttons allow users to import a setup file into an empty setup, as well as export it for migration.But first lets dissect\ninto the import buttons.\nThere are two ways to import a setup file:\n\nImport from another setup.\nImport from migration.\n\n\n\n\nImport section\n\n\n\nImport from another setup\nUse this button to import data from another setup file to an empty setup file1. It lets users either select all the boxes to import everything, or choose only the specific items they want to import.\n\nClick on the button; it opens a popup window\nClick on the “Load another setup file” button. It will open a window to select the file to import data from.\nSelect what to import from the original by ticking the boxes.\nDecide if you want to run a checkup of the setup file after import by ticking the box or not\nClick on the “Import” button and wait.\n\n\n\n\n\n\n\n\n\n\n\n\nNote\n\n\n\nIf you are importing a setup to a new setup file, you should check all boxes to import everything.\nYou can run the coherence checks now, or do it at a later stage with the Check setup button\n\n\n\n\nImport from migration\nThis button allows users to import back the previously exported xlsx.\n\n\nExport for migration\nYou can export the setup to xlsx and import it back, using the flat file as an intermediate format.\nFlat files are easy to modify,so you can update your dictionary or edit it from R.\nThey’re also easier to work with in the designer: they open and close faster, there’s less juggling of the setup xlsb, and the setup is less likely to be corrupted during generation."
   },
   {
     "objectID": "reference/ribbons_setup.html#sec-advanced",

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.10.18">
+<meta name="generator" content="quarto-1.10.19">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -44,7 +44,7 @@ ul.task-list li input[type="checkbox"] {
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-bf27225e3a48a9273f3daa8f8e829971.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="../site_libs/bootstrap/bootstrap-7100700a5d4657facf49b32369185e6d.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
@@ -171,6 +171,8 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#rules" id="toc-rules" class="nav-link active" data-scroll-target="#rules">Rules</a></li>
   <li><a href="#list-name" id="toc-list-name" class="nav-link" data-scroll-target="#list-name">List Name</a></li>
   <li><a href="#ordering-list" id="toc-ordering-list" class="nav-link" data-scroll-target="#ordering-list">Ordering list</a></li>
+  <li><a href="#non-translated-labels" id="toc-non-translated-labels" class="nav-link" data-scroll-target="#non-translated-labels">Non Translated labels</a></li>
+  <li><a href="#translated-labels" id="toc-translated-labels" class="nav-link" data-scroll-target="#translated-labels">Translated labels</a></li>
   <li><a href="#label" id="toc-label" class="nav-link" data-scroll-target="#label">Label</a></li>
   <li><a href="#short-label" id="toc-short-label" class="nav-link" data-scroll-target="#short-label">Short label</a></li>
   <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
@@ -220,7 +222,7 @@ ul.task-list li input[type="checkbox"] {
 </li>
 <li>you can define as many lists as needed</li>
 </ul>
-<p><img src="images/im-134-choices_sheet.png" class="img-fluid"></p>
+<p><img src="../images/img-001-choices_sheet.png" class="img-fluid"></p>
 </section>
 <section id="list-name" class="level2">
 <h2 class="anchored" data-anchor-id="list-name">List Name</h2>
@@ -245,9 +247,18 @@ ul.task-list li input[type="checkbox"] {
 <h2 class="anchored" data-anchor-id="ordering-list">Ordering list</h2>
 <p>This is a free text field. Fill in integers to define the order in which the options are displayed in the dropdown menu.</p>
 </section>
+<section id="non-translated-labels" class="level2">
+<h2 class="anchored" data-anchor-id="non-translated-labels">Non Translated labels</h2>
+<p>This column consists of non-Translated labels which means that translating them would be pointless or wrong and examples include country names.</p>
+</section>
+<section id="translated-labels" class="level2">
+<h2 class="anchored" data-anchor-id="translated-labels">Translated labels</h2>
+<p>This column contains labels that are translated and they imported into the translation table</p>
+</section>
 <section id="label" class="level2">
 <h2 class="anchored" data-anchor-id="label">Label</h2>
-<p>This is a free text field used to list the different values to be displayed in the dropdown menus.</p>
+<p>The Label column contains a formula that looks at the translated and non-translated columns and takes the non-empty value (the</p>
+<p>translated column takes precedence).</p>
 <div class="callout callout-style-default callout-warning callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
