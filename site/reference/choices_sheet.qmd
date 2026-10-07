@@ -62,7 +62,7 @@ This is a free text field in which you can enter a shortened version of the labe
 
 In the **setup file**: 
 
-![](images/im-134-choices_sheet.png)    
+![](../images/img-001-choices_sheet.png)    
 
 In the linelist, for the age unit column:
 ![](images/im-134-choices_sheet_result.png)    
