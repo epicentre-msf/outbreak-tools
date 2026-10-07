@@ -11,6 +11,7 @@ Recent version of Excel have a top [ribbon/menu](https://www.ablebits.com/office
 ![OutbreakTools tab in the designer](../reference/images/img-005-designer-ribbon.png){fig-align="center"}
 
 ## Manage the designer
+![](../images/img_mng_designer_ribbon.png)
 
 ### Clear entries
 
@@ -21,6 +22,8 @@ Clear all fields from user-entered data.
 Use the dropdown menu to change the language of the designer interface. Available languages: English, French, Arabic, Spanish and Portuguese.
 
 ## Imports
+
+![](../images/img-imports-designer-ribbon.png)
 
 ### Import translations
 
@@ -34,13 +37,28 @@ The designer is loaded with a password table, with private and public keys to pr
 
 The designer comes with two default styles for linelist themes. It is possible to personalise it. To do that, ask for the config file to EpiDS/Yves Amevoin, tweak it and import it with this button.
 
+## Linelist generation
+
+![](../images/img-001-LL-gen-ribbon-designer.png)
+
 ### Open a linelist
 
 This button is used as a shortcut to opening a linelist.
 
 ### Open the generation report
 
-Click on this button to access the generation report once linelist generation is complete.
+The generation report is a log of the linelist generation.It lists the details of the generation run:
+
+- Run details: the date, time and the setup file used.
+- Build steps: each sheet that was built, with its sections.
+- Analysis output: Analysis tables and charts built.
+- Messages: Info, Note, success,warnings and errors.
+- Final Outcome: The number of sheets built , the number of variables written and the total time taken
+
+By clicking on this button, the user will be able to access the generation report  once the linelist has been generated. Alternatively it can also be found in the folder where the generated linelist has been saved.
+
+![](../images/img-LL-gen-designer-ribbon.png)
+
 
 ## Generate Multiple 
 
@@ -56,6 +74,10 @@ The buttons within the "Multiple Linelist" section of the ribbon are visible acr
 
 This is used to load files into the setups, geobases and output columns. Before clicking the button, ensure the cursor is inside the data table area or else you will get an error message.
 
+How this button works,place the cursor in a column (for example, Setup) and select your files. One line is filled for each file selected, starting from the cursor. To select several files at once, they must be in the same folder.If you select a single cell and choose only one file, only that cell is filled.
+
+Also note that loading multiple files replaces any lines that are already filled. To keep existing lines and add new ones, click the add line buttons first, then load your files.
+
 ### Duplicate
 
 You can duplicate a filled row and modify it according to what your interests are.
@@ -68,13 +90,14 @@ Clicking this button will add more rows.
 
 Click on the “Resize" button to remove any empty rows at the end or in the middle of the worksheet.
 
-### Import
+## Import/Export
 
-You can also import the exported multi generated linelists back into the designer
+These buttons provide a way to import/export the content of the table from one Designer to another, which avoids the effort of having to re-enter all the data.
 
-### Export
+To do this, use the Export button to export everything in the table, and the Import button to bring it into the other Designer.
 
-Use this button to export all the files in the multi generation sheet.
+![](../images/img-import-export-designer-ribbon.png)
+
 
 ### Ribbon
 
