@@ -60,7 +60,9 @@ By clicking on this button, the user will be able to access the generation repor
 
 ![](../images/img-LL-gen-designer-ribbon.png)
 
-## Generate Multiple
+
+## Generate Multiple {#sec-designer-generate-multiple}
+
 
 The worksheet "Generate Multiple" provides an interface for generating multiple linelists in one go, from different setups and different geobases.
 

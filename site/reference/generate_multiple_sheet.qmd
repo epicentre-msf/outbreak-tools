@@ -9,8 +9,7 @@ categories:
 Blablabla, creating ten linelists at once is pretty cool. It might break my computer but who cares.
 Fill the fancy table (Anne will explain how to do), and click on the 
 
- ["Generate" button](../reference/ribbon_designer.qmd).
-
+ ["Generate" button](../reference/ribbons_designer.qmd).
 
 
  "Generate" button from the [designer menu](../reference/ribbon_designer.qmd#sec-designer-generate-multiple).
