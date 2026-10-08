@@ -16,12 +16,18 @@
     ]
   },
   {
-    "listing": "/getting_started/home_obt.html",
+    "listing": "/reference/home_reference.html",
     "items": [
-      "/getting_started/download.html",
-      "/getting_started/workflow.html",
-      "/getting_started/create_dic.html",
-      "/getting_started/compile.html"
+      "/reference/ribbons_designer.html",
+      "/reference/ribbons_linelist.html",
+      "/reference/ribbons_setup.html",
+      "/reference/custom_formulas.html",
+      "/reference/analyses_sheet.html",
+      "/reference/choices_sheet.html",
+      "/reference/dictionary_sheet.html",
+      "/reference/exports_sheet.html",
+      "/reference/generate_multiple_sheet.html",
+      "/reference/translations_sheet.html"
     ]
   },
   {
@@ -33,17 +39,12 @@
     ]
   },
   {
-    "listing": "/reference/home_reference.html",
+    "listing": "/getting_started/home_obt.html",
     "items": [
-      "/reference/ribbons_designer.html",
-      "/reference/ribbons_linelist.html",
-      "/reference/ribbons_setup.html",
-      "/reference/custom_formulas.html",
-      "/reference/analyses_sheet.html",
-      "/reference/choices_sheet.html",
-      "/reference/dictionary_sheet.html",
-      "/reference/exports_sheet.html",
-      "/reference/translations_sheet.html"
+      "/getting_started/download.html",
+      "/getting_started/workflow.html",
+      "/getting_started/create_dic.html",
+      "/getting_started/compile.html"
     ]
   },
   {
