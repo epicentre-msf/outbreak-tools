@@ -282,7 +282,7 @@
   {
     "objectID": "reference/generate_multiple_sheet.html",
     "href": "reference/generate_multiple_sheet.html",
-    "title": "Analyses sheet",
+    "title": "Generate multiple sheet",
     "section": "",
     "text": "Blablabla, creating ten linelists at once is pretty cool. It might break my computer but who cares. Fill the fancy table (Anne will explain how to do), and click on the\n“Generate” button.\n“Generate” button from the designer menu.\n\n\n\n Back to top"
   },
@@ -396,7 +396,7 @@
     "href": "reference/home_reference.html",
     "title": "Reference",
     "section": "",
-    "text": "Designer ribbon\n\n\n\nDesigner\n\nOBT menu\n\n\n\nThe special OBT menu\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nLinelist ribbon\n\n\n\nLinelist\n\nOBT menu\n\n\n\nThe special OBT menu\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nSetup ribbon\n\n\n\nSetup\n\nOBT menu\n\n\n\nThe special OBT menu\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCustom formulas\n\n\n\nSetup\n\nOther\n\n\n\nList of formulas specific to OBT\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAnalyses sheet\n\n\n\nSetup\n\nSheet\n\n\n\nDefine basic analyses\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nChoices sheet\n\n\n\nSetup\n\nSheet\n\n\n\nDefine variable categories\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nDictionary sheet\n\n\n\nSetup\n\nSheet\n\n\n\nDefine linelist tables and their variables\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nExports sheet\n\n\n\nSetup\n\nSheet\n\n\n\nDefine export buttons and files\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAnalyses sheet\n\n\n\nSetup\n\nSheet\n\n\n\nDefine basic analyses\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nTranslation sheet\n\n\n\nSetup\n\nSheet\n\n\n\nGenerate a linelist in several languages\n\n\n\n\n\n\n\n\nNo matching items\n Back to top"
+    "text": "Designer ribbon\n\n\n\nDesigner\n\nOBT menu\n\n\n\nThe special OBT menu\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nLinelist ribbon\n\n\n\nLinelist\n\nOBT menu\n\n\n\nThe special OBT menu\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nSetup ribbon\n\n\n\nSetup\n\nOBT menu\n\n\n\nThe special OBT menu\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCustom formulas\n\n\n\nSetup\n\nOther\n\n\n\nList of formulas specific to OBT\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAnalyses sheet\n\n\n\nSetup\n\nSheet\n\n\n\nDefine basic analyses\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nChoices sheet\n\n\n\nSetup\n\nSheet\n\n\n\nDefine variable categories\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nDictionary sheet\n\n\n\nSetup\n\nSheet\n\n\n\nDefine linelist tables and their variables\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nExports sheet\n\n\n\nSetup\n\nSheet\n\n\n\nDefine export buttons and files\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGenerate multiple sheet\n\n\n\nSetup\n\nSheet\n\n\n\nDefine basic analyses\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nTranslation sheet\n\n\n\nSetup\n\nSheet\n\n\n\nGenerate a linelist in several languages\n\n\n\n\n\n\n\n\nNo matching items\n Back to top"
   },
   {
     "objectID": "index.html",
@@ -742,8 +742,8 @@
     "text": "Linelist generation\n\n\nOpen a linelist\nThis button is used as a shortcut to opening a linelist.\n\n\nOpen the generation report\nThe generation report is a log of the linelist generation.It lists the details of the generation run:\n\nRun details: the date, time and the setup file used.\nBuild steps: each sheet that was built, with its sections.\nAnalysis output: Analysis tables and charts built.\nMessages: Info, Note, success,warnings and errors.\nFinal Outcome: The number of sheets built , the number of variables written and the total time taken\n\nBy clicking on this button, the user will be able to access the generation report once the linelist has been generated. Alternatively it can also be found in the folder where the generated linelist has been saved."
   },
   {
-    "objectID": "reference/ribbons_designer.html#generate-multiple",
-    "href": "reference/ribbons_designer.html#generate-multiple",
+    "objectID": "reference/ribbons_designer.html#sec-designer-generate-multiple",
+    "href": "reference/ribbons_designer.html#sec-designer-generate-multiple",
     "title": "Designer ribbon",
     "section": "Generate Multiple",
     "text": "Generate Multiple\nThe worksheet “Generate Multiple” provides an interface for generating multiple linelists in one go, from different setups and different geobases.\nThe buttons within the “Multiple Linelist” section of the ribbon are visible across the Designer, but they are only functional when the user is on the “Generate Multiple” sheet.\n\n\n\nGenerate multiple interface\n\n\n\nLoad multiple file/folders\nThis is used to load files into the setups, geobases and output columns. Before clicking the button, ensure the cursor is inside the data table area or else you will get an error message.\nHow this button works,place the cursor in a column (for example, Setup) and select your files. One line is filled for each file selected, starting from the cursor. To select several files at once, they must be in the same folder.If you select a single cell and choose only one file, only that cell is filled.\nAlso note that loading multiple files replaces any lines that are already filled. To keep existing lines and add new ones, click the add line buttons first, then load your files.\n\n\nDuplicate\nYou can duplicate a filled row and modify it according to what your interests are.\n\n\nAdd Rows\nClicking this button will add more rows.\n\n\nResize\nClick on the “Resize” button to remove any empty rows at the end or in the middle of the worksheet."
