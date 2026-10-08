@@ -19,6 +19,7 @@
     "listing": "/reference/home_reference.html",
     "items": [
       "/reference/ribbons_designer.html",
+      "/reference/generate_multiple_sheet.html",
       "/reference/ribbons_linelist.html",
       "/reference/ribbons_setup.html",
       "/reference/custom_formulas.html",
@@ -26,7 +27,6 @@
       "/reference/choices_sheet.html",
       "/reference/dictionary_sheet.html",
       "/reference/exports_sheet.html",
-      "/reference/generate_multiple_sheet.html",
       "/reference/translations_sheet.html"
     ]
   },
