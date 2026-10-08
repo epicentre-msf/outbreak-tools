@@ -53,14 +53,19 @@ Furthermore, saved layouts can be renamed or removed, and they are preserved dur
 
 By default, the linelist has 200 empty lines. Click on the "Add Rows" button to add 200 new empty rows.
 
+![](../images/img-add-rows-linelist-ribbon.png){fig-align="center"}
 
 ### Resize table
 
 Click on the “Resize table" button to remove any empty rows at the end or in the middle of the linelist.
 
+![](../images/img-resize-table-linelist-ribbon.png){fig-align="center"}
+
 ### Clear all filters
 
 To remove all the filters at once, click on the "Clear all filters" button. This is useful if you applied several filters across the table and want to reverse to the full view without missing one.
+
+![](../images/img-clear-filters-linelist_ribbon.png){fig-align="center"}
 
 ### Sort a variable
 
