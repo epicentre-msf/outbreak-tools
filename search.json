@@ -928,7 +928,7 @@
     "href": "reference/ribbons_linelist.html#sec-refresh",
     "title": "Linelist ribbon",
     "section": "Refresh analyses",
-    "text": "Refresh analyses\n\n\n\nRefresh analyses button\n\n\nHit the “Refresh analyses” button to update analyses on all analyses sheets in one go. You should use it whenever you entered new data or when you applied filters to existing data and want to see the analyses on this subset of data.1\n\n\n\n\n\n\nNote\n\n\n\nIf the numbers in the analyses are striken, it is because of a new Excel functionality. The documentation is limited and we have not been able to modify the refresh button to take it into account yet. You have two options: use the F9 shortcut before hitting “Refresh analyses”, or un-tick the “Format Stale Values” option in the Calculation options of the Formula tab of Excel options.\n\n\n\nExcel Calculation options"
+    "text": "Refresh analyses\n\n\n\n\n\n\nRefresh analyses button\n\n\n\n\nHit the “Refresh analyses” button to update analyses on all analyses sheets in one go. You should use it whenever you entered new data or when you applied filters to existing data and want to see the analyses on this subset of data.1\n\n\n\n\n\n\n\n\n\nNote\n\n\n\nIf the numbers in the analyses are striken, it is because of a new Excel functionality. The documentation is limited and we have not been able to modify the refresh button to take it into account yet. You have two options: use the F9 shortcut before hitting “Refresh analyses”, or un-tick the “Format Stale Values” option in the Calculation options of the Formula tab of Excel options.\n\n\n\nExcel Calculation options"
   },
   {
     "objectID": "reference/ribbons_linelist.html#sec-import-data",
