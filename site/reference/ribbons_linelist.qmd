@@ -98,7 +98,7 @@ Once the location has been found, select it and click on “OK".
 
 ## Refresh analyses {#sec-refresh}
 
-:::: {layout="[ 20, 80 ]"}
+:::: {layout="[ 20, 80 ]" layout-valign="center"}
 
 ::: {#first-column}
 ![](../reference/images/img-007-ll-refresh-analyses.png){fig-align="center"}
