@@ -11,6 +11,7 @@ Recent version of Excel have a top [ribbon/menu](https://www.ablebits.com/office
 ![OutbreakTools tab in the designer](../reference/images/img-005-designer-ribbon.png){fig-align="center"}
 
 ## Manage the designer
+
 ![](../images/img_mng_designer_ribbon.png)
 
 ### Clear entries
@@ -55,20 +56,17 @@ The generation report is a log of the linelist generation.It lists the details o
 - Messages: Info, Note, success,warnings and errors.
 - Final Outcome: The number of sheets built , the number of variables written and the total time taken
 
-By clicking on this button, the user will be able to access the generation report  once the linelist has been generated. Alternatively it can also be found in the folder where the generated linelist has been saved.
+By clicking on this button, the user will be able to access the generation report once the linelist has been generated. Alternatively it can also be found in the folder where the generated linelist has been saved.
 
 ![](../images/img-LL-gen-designer-ribbon.png)
 
-
-## Generate Multiple 
+## Generate Multiple
 
 The worksheet "Generate Multiple" provides an interface for generating multiple linelists in one go, from different setups and different geobases.
 
 The buttons within the "Multiple Linelist" section of the ribbon are visible across the Designer, but they are only functional when the user is on the "Generate Multiple" sheet.
 
-
 ![Generate multiple interface](../reference/images/img-001-gen-mult-sheets.png){fig-align="center"}
-
 
 ### Load multiple file/folders
 
@@ -98,11 +96,10 @@ To do this, use the Export button to export everything in the table, and the Imp
 
 ![](../images/img-import-export-designer-ribbon.png)
 
-
 ### Ribbon
 
 This is used to load a **ribbon template file** in the designer. That file is necessary to generate a linelist with its own OBT menu, and is part of the `.zip` archive that you can dowload from Github if you want to build an OBT linelist.
 
 ### Generate
-Once you have populated the sheet with all the required information, click the "Generate" button to start the generation process.
 
+Once you have populated the sheet with all the required information, click the "Generate" button to start the generation process.
