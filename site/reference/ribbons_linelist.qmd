@@ -98,10 +98,10 @@ Once the location has been found, select it and click on “OK".
 
 ## Refresh analyses {#sec-refresh}
 
-:::: {layout="[ 40, 60 ]"}
+:::: {layout="[ 20, 80 ]"}
 
 ::: {#first-column}
-![Refresh analyses button](../reference/images/img-007-ll-refresh-analyses.png){fig-align="center"}
+![](../reference/images/img-007-ll-refresh-analyses.png){fig-align="center"}
 :::
 
 ::: {#second-column}
