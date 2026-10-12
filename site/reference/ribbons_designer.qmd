@@ -100,7 +100,7 @@ To do this, use the Export button to export everything in the table, and the Imp
 
 ### Ribbon
 
-This is used to load a **ribbon template file** in the designer. That file is necessary to generate a linelist with its own OBT menu, and is part of the `.zip` archive that you can dowload from Github if you want to build an OBT linelist.
+This is used to load a **ribbon template file** in the designer. That file is necessary to generate a linelist with its own OBT menu, and is part of the `.zip` archive that you can download from Github if you want to build an OBT linelist.
 
 ### Generate
 
