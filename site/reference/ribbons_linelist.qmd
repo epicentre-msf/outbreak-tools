@@ -51,38 +51,89 @@ Furthermore, saved layouts can be renamed or removed, and they are preserved dur
 
 ### Add rows
 
-By default, the linelist has 200 empty lines. Click on the "Add Rows" button to add 200 new empty rows.
+:::: {layout="[ 20, 80 ]" layout-valign="center"}
 
+::: {#first-column}
 ![](../images/img-add-rows-linelist-ribbon.png){fig-align="center"}
+:::
+
+::: {#second-column}
+By default, the linelist has 200 empty lines. Click on the "Add Rows" button to add 200 new empty rows.
+:::
+
+::::
 
 ### Resize table
 
-Click on the “Resize table" button to remove any empty rows at the end or in the middle of the linelist.
+:::: {layout="[ 20, 80 ]" layout-valign="center"}
 
+::: {#first-column}
 ![](../images/img-resize-table-linelist-ribbon.png){fig-align="center"}
+:::
+
+::: {#second-column}
+
+Click on the “Resize table" button to remove any empty rows at the end or in the middle of the linelist.
+:::
+::::
 
 ### Clear all filters
 
-To remove all the filters at once, click on the "Clear all filters" button. This is useful if you applied several filters across the table and want to reverse to the full view without missing one.
+:::: {layout="[ 20, 80 ]" layout-valign="center"}
+
+::: {#first-column}
 
 ![](../images/img-clear-filters-linelist_ribbon.png){fig-align="center"}
+:::
+
+::: {#second-column}
+To remove all the filters at once, click on the "Clear all filters" button. This is useful if you applied several filters across the table and want to reverse to the full view without missing one.
+:::
+::::
 
 ### Sort a variable
 
+:::: {layout="[ 20, 80 ]" layout-valign="center"}
+
+:::  {#first-column}
+
+![](../images/img-sort-variable-linelist-ribbon.png){fig-align="center"}
+:::
+
+::: {#second-column}
 If you need to visualise your data by sorting on a specific variable, you need to use the sorting function. Place the cursor in a cell of the column you want to sort (from line 9) and click on the button.
 
 The first time you click, you have a message to confirm the action, once you click *yes*, you cannot undo it. The first click sorts by ascending order, the second by descending order.
+:::
+::::
 
 ### Week start
+
+:::: {layout="[ 20, 80 ]" layout-valign="center"}
+
+:::  {#first-column}
+
+![](../images/img-week-start-linelist-ribbon.png){fig-align="center"}
+:::
+::: {#second-column}
 
 The “Week start" button controls the day that starts the week in the linelist. The selected value will be applied to the whole linelist (calculated epiweeks, as well as in the analyses).
 
 When you click on the button, a pop up window appears, where you can select the day of the week corresponding to your country.
-
+:::
+::::
 ### Autofit columns
 
-Use this button to improve column width so that the columns take less space. The fit takes into account the label, the length of categories of the variable (if any) and the name of the variable (hidden).
+:::: {layout="[ 20, 80 ]" layout-valign="center"}
 
+::: {#first-column}
+
+![](../images/img-auto-fit-columns-linelist-ribbon.png){fig-align="center"}
+:::
+::: {#second-column}
+Use this button to improve column width so that the columns take less space. The fit takes into account the label, the length of categories of the variable (if any) and the name of the variable (hidden).
+:::
+::::
 ::: callout-tip
 Additionaly, you can manually modify the width of columns in the linelist to adjust to content the way you would do in any Excel file. The width of the column is also migrated during migration.
 :::
@@ -110,14 +161,12 @@ Once the location has been found, select it and click on “OK".
 :::
 
 ::: {#second-column}
-Hit the "Refresh analyses" button to update analyses on all [analyses sheets]((../getting_started/use_analyses_sheets.qmd)) in one go. You should use it whenever you entered new data or when you applied filters to existing data and want to see the analyses on this subset of data.[^1]
+Hit the "Refresh analyses" button to update analyses on all [analyses sheets](../getting_started/use_analyses_sheets.qmd) in one go. You should use it whenever you entered new data or when you applied filters to existing data and want to see the analyses on this subset of data.[^1]
 
 [^1]: Do not forget to remove the filters and refresh the analyses at the end to not be confused by the numbers in a couple of days
 :::
 
 ::::
-
-
 
 ::: callout-note
 If the numbers in the analyses are striken, it is because of a [new Excel functionality](https://techcommunity.microsoft.com/blog/microsoft365insiderblog/stale-value-formatting-now-available-in-excel-for-windows/4281372). The documentation is limited and we have not been able to modify the refresh button to take it into account yet. You have two options: use the **F9** shortcut before hitting "Refresh analyses", or un-tick the "Format Stale Values" option in the Calculation options of the *Formula* tab of Excel options.
