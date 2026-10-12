@@ -61,14 +61,13 @@ By clicking on this button, the user will be able to access the generation repor
 ![](../images/img-LL-gen-designer-ribbon.png)
 
 
-## Generate Multiple {#sec-designer-generate-multiple}
+## Multiple linelists {#sec-designer-multiple-linelists}
 
+The Multiple linelists section in the Designer ribbon brings together the tools you need to generate several line lists in one go. 
+This section contains buttons that work on the table in the [Generate multiple sheet](../reference/generate_multiple_sheet.qmd), where each row corresponds to one linelist. 
+Also note that these buttons are visible across the Designer, but they are only functional when the user is on the *Generate Multiple* sheet.
 
-The worksheet "Generate Multiple" provides an interface for generating multiple linelists in one go, from different setups and different geobases.
-
-The buttons within the "Multiple Linelist" section of the ribbon are visible across the Designer, but they are only functional when the user is on the "Generate Multiple" sheet.
-
-![Generate multiple interface](../reference/images/img-001-gen-mult-sheets.png){fig-align="center"}
+![](../images/img-001-multiple-linelists-designer-ribbon.png){fig-align="center"}
 
 ### Load multiple file/folders
 
