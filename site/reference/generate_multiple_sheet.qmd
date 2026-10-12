@@ -6,11 +6,12 @@ categories:
   - Sheet
 ---
 
-Blablabla, creating ten linelists at once is pretty cool. It might break my computer but who cares.
-Fill the fancy table (Anne will explain how to do), and click on the 
+The designer workbook contains a Generate multiple sheet, which lets users set up and generate several linelists at once.
+The sheet is built around a table where each row corresponds to one line list, and each column holds a piece of information needed to generate it.
 
- ["Generate" button](../reference/ribbons_designer.qmd).
+![Generate multiple table](../images/img-001-generate-multiple-sheet.png){fig-align="center"}
 
 
- "Generate" button from the [designer menu](../reference/ribbon_designer.qmd#sec-designer-generate-multiple).
+To populate the table, the **designer ribbon** contains the buttons that aid in that. See [mutliple linelist](../reference/ribbons_designer.qmd#sec-designer-multiple-linelists)
+
 
