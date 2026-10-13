@@ -65,7 +65,7 @@ By clicking on this button, the user will be able to access the generation repor
 
 The Multiple linelists section in the Designer ribbon brings together the tools you need to generate several line lists in one go. 
 This section contains buttons that work on the table in the [Generate multiple sheet](../reference/generate_multiple_sheet.qmd), where each row corresponds to one linelist. 
-Also note that these buttons are visible across the Designer, but they are only functional when the user is on the *Generate Multiple* sheet.
+Note that these buttons are visible across the Designer, but they are only functional when the user is on the *Generate Multiple* sheet.
 
 ![](../images/img-001-multiple-linelists-designer-ribbon.png){fig-align="center"}
 
@@ -89,7 +89,7 @@ Clicking this button will add more rows.
 
 Click on the “Resize" button to remove any empty rows at the end or in the middle of the worksheet.
 
-## Import/Export
+### Import/Export
 
 These buttons provide a way to import/export the content of the table from one Designer to another, which avoids the effort of having to re-enter all the data.
 
