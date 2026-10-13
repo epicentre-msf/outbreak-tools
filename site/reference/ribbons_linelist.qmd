@@ -49,6 +49,13 @@ Furthermore, saved layouts can be renamed or removed, and they are preserved dur
 
 ![Saved layout pop up window](../images/img-004-saved-layouts.png){fig-align="center"}
 
+The buttons on the saved layouts interface are explained below.
+
+- Add:To add a layout, click the Add button. An input pop-up will appear where you can enter the name under which the layout will be saved.
+- Remove:Use this button to remove a saved layout you no longer need.
+- Apply: After selecting a layout, click this button to apply it.
+
+
 ### Add rows
 
 :::: {layout="[ 20, 80 ]" layout-valign="center"}
