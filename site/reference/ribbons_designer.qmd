@@ -60,6 +60,15 @@ By clicking on this button, the user will be able to access the generation repor
 
 ![](../images/img-LL-gen-designer-ribbon.png)
 
+### Linelist generation options.
+
+The designer ribbon also contains three check boxes that control how the generation runs:
+
+- **Ignore optional warnings:** Warnings may appear during generation to alert you to a possible problem. Some of them are not serious and do not affect the outcome. When this box is checked, these optional warnings are ignored.
+
+- **Include and instruction sheet:** This adds an instructions sheet and it is the first sheet of the generated linelist. It explains how to use the linelist: how to enter data, explore data, export data, send data to the dashboard, and download the geobases.
+
+- **Show progress bar:**This box  displays the progress of the generation as it happens. On the Main sheet of the designer workbook, the progress bar appears at the bottom. On the Generate multiple sheet, it appears at the top.
 
 ## Multiple linelists {#sec-designer-multiple-linelists}
 
@@ -67,7 +76,7 @@ The Multiple linelists section in the Designer ribbon brings together the tools 
 This section contains buttons that work on the table in the [Generate multiple sheet](../reference/generate_multiple_sheet.qmd), where each row corresponds to one linelist. 
 Note that these buttons are visible across the Designer, but they are only functional when the user is on the *Generate Multiple* sheet.
 
-![](../images/img-001-multiple-linelists-designer-ribbon.png){fig-align="center"}
+![](../images/img-001-multiple-linelists-designer-ribbon1.png){fig-align="center"}
 
 ### Load multiple file/folders
 
