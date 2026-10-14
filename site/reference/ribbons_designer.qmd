@@ -68,7 +68,7 @@ The designer ribbon also contains three check boxes that control how the generat
 
 - **Include and instruction sheet:** This adds an instructions sheet and it is the first sheet of the generated linelist. It explains how to use the linelist: how to enter data, explore data, export data, send data to the dashboard, and download the geobases.
 
-- **Show progress bar:**This box  displays the progress of the generation as it happens. On the Main sheet of the designer workbook, the progress bar appears at the bottom. On the Generate multiple sheet, it appears at the top.
+- **Show progress bar:** When this box is checked, a progress bar is displayed in the Designer to show how the generation is progressing. On the Main sheet of the Designer workbook, the progress bar appears at the bottom. On the Generate multiple sheet, it appears at the top.
 
 ## Multiple linelists {#sec-designer-multiple-linelists}
 
