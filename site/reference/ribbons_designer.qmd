@@ -48,15 +48,15 @@ This button is used as a shortcut to opening a linelist.
 
 ### Open the generation report
 
-The generation report is a log of the linelist generation.It lists the details of the generation run:
+The generation report is a log of the linelist generation. It lists the details of the generation run:
 
-- Run details: the date, time and the setup file used.
-- Build steps: each sheet that was built, with its sections.
-- Analysis output: Analysis tables and charts built.
-- Messages: Info, Note, success,warnings and errors.
-- Final Outcome: The number of sheets built , the number of variables written and the total time taken
+- Run details: the date, time and the setup file used
+- Build steps: each sheet that was built, with its sections
+- Analysis output: Analysis tables and charts built
+- Messages: Info, Note, success, warnings and errors
+- Final Outcome: The number of sheets built, the number of variables written and the total time taken
 
-By clicking on this button, the user will be able to access the generation report once the linelist has been generated. Alternatively it can also be found in the folder where the generated linelist has been saved.
+Click on this button to access the generation report once the linelist has been generated. Alternatively the report can also be found in the folder where the generated linelist has been saved.
 
 ![](../images/img-LL-gen-designer-ribbon.png)
 
@@ -72,7 +72,7 @@ The designer ribbon also contains three check boxes that control how the generat
 
 ## Multiple linelists {#sec-designer-multiple-linelists}
 
-The Multiple linelists section in the Designer ribbon brings together the tools you need to generate several line lists in one go. 
+The "Multiple linelists" section in the Designer ribbon brings together the tools you need to generate several linelists in one go. 
 This section contains buttons that work on the table in the [Generate multiple sheet](../reference/generate_multiple_sheet.qmd), where each row corresponds to one linelist. 
 Note that these buttons are visible across the Designer, but they are only functional when the user is on the *Generate Multiple* sheet.
 
@@ -80,9 +80,9 @@ Note that these buttons are visible across the Designer, but they are only funct
 
 ### Load multiple file/folders
 
-This is used to load files into the setups, geobases and output columns. Before clicking the button, ensure the cursor is inside the data table area or else you will get an error message.
+This is used to load files into the "setups", "geobases" and "output" columns. Before clicking the button, ensure the cursor is inside the data table area or else you will get an error message.
 
-How this button works,place the cursor in a column (for example, Setup) and select your files. One line is filled for each file selected, starting from the cursor. To select several files at once, they must be in the same folder.If you select a single cell and choose only one file, only that cell is filled.
+How this button works, place the cursor in a column (for example, "Setup") and select your files. One line is filled for each file selected, starting from the cursor. To select several files at once, they must be in the same folder. If you select a single cell and choose only one file, only that cell is filled.
 
 Also note that loading multiple files replaces any lines that are already filled. To keep existing lines and add new ones, click the add line buttons first, then load your files.
 
@@ -96,7 +96,7 @@ Clicking this button will add more rows.
 
 ### Resize
 
-Click on the “Resize" button to remove any empty rows at the end or in the middle of the worksheet.
+Click on the "Resize" button to remove any empty rows at the end or in the middle of the worksheet.
 
 ### Import/Export
 
