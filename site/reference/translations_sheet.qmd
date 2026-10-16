@@ -86,7 +86,9 @@ If, when the linelist is generated, certain fields of the chosen language are mi
 
 ### Translate the setup
 
-Use this button to translate the setup. When you click it, a pop-up appears listing the available languages. Instead of typing the language name, simply enter the number assigned to your preferred language.
+It is possible to translate the content of the **setup file**^[e.g. someone developped the dictionnary in French, but you would prefer to have the dictionnary in English].
+
+Use this button to translate the setup content into one of the other existing languages from the *Translation* sheet. When you click it, a pop-up appears listing the available languages. Instead of typing the language name, simply enter the number assigned to your preferred language.
 
 ![](../images/img-setup-translate.png){fig-align="center"}
 
@@ -94,7 +96,8 @@ Use this button to translate the setup. When you click it, a pop-up appears list
 ### Reset translation tags
 
 Clicking on this button will clear missing labels from the translation table.
-Additionally when When you import the translations table, the first update looks for labels that are  missing from the setup and asks whether you want to remove them.You can keep them and once you are done, clear them using this button.
+
+Additionally, When you import the translations table, the first update looks for labels that are  missing from the setup and asks whether you want to remove them. If in doubt, keep them and use the buttom later.
 
 ![](../images/img-translation-tags.png){fig-align="center"}
 
