@@ -183,7 +183,7 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#add-language" id="toc-add-language" class="nav-link" data-scroll-target="#add-language">Add language</a></li>
   <li><a href="#update-translation-table" id="toc-update-translation-table" class="nav-link" data-scroll-target="#update-translation-table">Update translation table</a></li>
   </ul></li>
-  <li><a href="#import-export" id="toc-import-export" class="nav-link" data-scroll-target="#import-export">Import/ Export</a>
+  <li><a href="#import-export" id="toc-import-export" class="nav-link" data-scroll-target="#import-export">Import / Export</a>
   <ul>
   <li><a href="#import-from-another-setup" id="toc-import-from-another-setup" class="nav-link" data-scroll-target="#import-from-another-setup">Import from another setup</a></li>
   <li><a href="#import-from-migration" id="toc-import-from-migration" class="nav-link" data-scroll-target="#import-from-migration">Import from migration</a></li>
@@ -273,19 +273,19 @@ Figure&nbsp;1: OutbreakTools tab in the <strong>setup file</strong>
 </section>
 <section id="insert-row" class="level3">
 <h3 class="anchored" data-anchor-id="insert-row">Insert row</h3>
-<p>This button inserts a row between existing rows in each of the setup’s worksheets.</p>
+<p>This button inserts a row between existing rows in each of the setup’s tables.</p>
 </section>
 <section id="delete-table-row" class="level3">
 <h3 class="anchored" data-anchor-id="delete-table-row">Delete table row</h3>
-<p>This button deletes rows. To delete a row, select it and then click the button. Before the row is deleted, a warning message will appear to let you know that the operation cannot be undone.</p>
+<p>This button deletes rows within the tables. To delete a row, select it and then click the button. Before the row is deleted, a warning message will appear to let you know that the operation cannot be undone.</p>
 </section>
 <section id="delete-table-column" class="level3">
 <h3 class="anchored" data-anchor-id="delete-table-column">Delete table column</h3>
-<p>This button deletes table columns, but only on the Translation sheet.</p>
+<p>This button deletes table columns, but only on the <em>Translation</em> sheet.</p>
 </section>
 <section id="sort-tables" class="level3">
 <h3 class="anchored" data-anchor-id="sort-tables">Sort tables</h3>
-<p>This button organises the Dictionary and the tables in the Choices, Analyses, and Export sheets. The sorting method depends on the sheet.</p>
+<p>This button organises the <em>Dictionary</em> and the tables in the <em>Choices</em>, <em>Analyses</em>, and <em>Export</em> sheets. The sorting method depends on the sheet.</p>
 </section>
 <section id="remove-all-filters" class="level3">
 <h3 class="anchored" data-anchor-id="remove-all-filters">Remove all filters</h3>
@@ -303,7 +303,7 @@ Figure&nbsp;1: OutbreakTools tab in the <strong>setup file</strong>
 </div>
 <section id="add-language" class="level3">
 <h3 class="anchored" data-anchor-id="add-language">Add language</h3>
-<p>This button adds a new column to translations sheet, to add a new linelist language.</p>
+<p>This button adds a new column to <em>Translations</em> sheet, to add a new linelist language.</p>
 <ol type="1">
 <li>Fill the name of the language in the box</li>
 <li>Click on the button: it will add a new empty column on the right of the columns already present.</li>
@@ -325,14 +325,13 @@ Figure&nbsp;1: OutbreakTools tab in the <strong>setup file</strong>
 </section>
 </section>
 <section id="import-export" class="level2">
-<h2 class="anchored" data-anchor-id="import-export">Import/ Export</h2>
-<p>These buttons allow users to import a setup file into an empty setup, as well as export it for migration.But first lets dissect</p>
-<p>into the import buttons.</p>
-<p>There are two ways to import a setup file:</p>
+<h2 class="anchored" data-anchor-id="import-export">Import / Export</h2>
+<p>It is possible to move setup data from one file to another empty setup file<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. There are two ways to do that:</p>
 <ul>
-<li><p>Import from another setup.</p></li>
-<li><p>Import from migration.</p></li>
+<li>Import from another setup directly.</li>
+<li>Import from an intermediate flat .xlsx file, in a similar fashion to linelist data migration.</li>
 </ul>
+<p>A couple of buttons allow us to perfomr these actions:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="../images/img-import-setup.png" class="img-fluid figure-img"></p>
@@ -341,12 +340,12 @@ Figure&nbsp;1: OutbreakTools tab in the <strong>setup file</strong>
 </div>
 <section id="import-from-another-setup" class="level3">
 <h3 class="anchored" data-anchor-id="import-from-another-setup">Import from another setup</h3>
-<p>Use this button to import data from another <strong>setup file</strong> to an empty setup file<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. It lets users either select all the boxes to import everything, or choose only the specific items they want to import.</p>
+<p>Use this button to import data directly from another <strong>setup file</strong> to an empty setup file. It lets users either select all the boxes to import everything, or choose only the specific items they want to import.</p>
 <ol type="1">
 <li>Click on the button; it opens a popup window</li>
 <li>Click on the “Load another setup file” button. It will open a window to select the file to import data from.</li>
 <li>Select what to import from the original by ticking the boxes.</li>
-<li>Decide if you want to run a checkup of the <strong>setup</strong> file after import by ticking the box or not</li>
+<li>Decide if you want to run a checkup of the <strong>setup file</strong> after import by ticking the box or not</li>
 <li>Click on the “Import” button and wait.</li>
 </ol>
 <div class="quarto-figure quarto-figure-center">
@@ -371,13 +370,25 @@ Note
 </section>
 <section id="import-from-migration" class="level3">
 <h3 class="anchored" data-anchor-id="import-from-migration">Import from migration</h3>
-<p>This button allows users to import back the previously exported xlsx.</p>
+<p>This button allows users to import an .xlsx flat file containing setup data.</p>
 </section>
 <section id="export-for-migration" class="level3">
 <h3 class="anchored" data-anchor-id="export-for-migration">Export for migration</h3>
-<p>You can export the setup to xlsx and import it back, using the flat file as an intermediate format.</p>
-<p>Flat files are easy to modify,so you can update your dictionary or edit it from R.</p>
-<p>They’re also easier to work with in the designer: they open and close faster, there’s less juggling of the setup xlsb, and the setup is less likely to be corrupted during generation.</p>
+<p>This button allows you to export the content of the <strong>setup file</strong> in a flat .xlsx file, that serves as an intermediate format.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Flat files are easy to modify from other tool, so you could edit your dictionary from R fro exemple.</p>
+<p>They’re also easier to work with in the <strong>Designer</strong>: they open and close faster, there’s less juggling of the setup .xlsb, and the setup is less likely to be corrupted during generation.</p>
+</div>
+</div>
 </section>
 </section>
 <section id="sec-advanced" class="level2">
