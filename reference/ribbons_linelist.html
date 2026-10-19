@@ -170,9 +170,12 @@ ul.task-list li input[type="checkbox"] {
   <ul>
   <li><a href="#sec-data-table" id="toc-sec-data-table" class="nav-link active" data-scroll-target="#sec-data-table">Data table</a>
   <ul>
-  <li><a href="#show-hide-variables" id="toc-show-hide-variables" class="nav-link" data-scroll-target="#show-hide-variables">Show / Hide variables</a></li>
+  <li><a href="#show-hide-variables" id="toc-show-hide-variables" class="nav-link" data-scroll-target="#show-hide-variables">Show / Hide variables</a>
+  <ul>
+  <li><a href="#show-or-hide-variables-individualy" id="toc-show-or-hide-variables-individualy" class="nav-link" data-scroll-target="#show-or-hide-variables-individualy">Show or hide variables individualy</a></li>
   <li><a href="#show-hide-sections" id="toc-show-hide-sections" class="nav-link" data-scroll-target="#show-hide-sections">Show / Hide Sections</a></li>
   <li><a href="#layouts" id="toc-layouts" class="nav-link" data-scroll-target="#layouts">Layouts</a></li>
+  </ul></li>
   <li><a href="#add-rows" id="toc-add-rows" class="nav-link" data-scroll-target="#add-rows">Add rows</a></li>
   <li><a href="#resize-table" id="toc-resize-table" class="nav-link" data-scroll-target="#resize-table">Resize table</a></li>
   <li><a href="#clear-all-filters" id="toc-clear-all-filters" class="nav-link" data-scroll-target="#clear-all-filters">Clear all filters</a></li>
@@ -253,13 +256,15 @@ ul.task-list li input[type="checkbox"] {
 </div>
 <section id="show-hide-variables" class="level3">
 <h3 class="anchored" data-anchor-id="show-hide-variables">Show / Hide variables</h3>
-<p>Clicking on the “Show/hide variables” button opens a window listing all the variables in this linelist sheet.</p>
+<p>Clicking on the “Show/hide variables” button opens a pop-up window listing all the variables in this linelist sheet, with a couple of toogles and buttons on the right.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="../images/img-show-hide-variables.png" class="img-fluid figure-img"></p>
 <figcaption>Show hide button and pop-up window</figcaption>
 </figure>
 </div>
+<section id="show-or-hide-variables-individualy" class="level4">
+<h4 class="anchored" data-anchor-id="show-or-hide-variables-individualy">Show or hide variables individualy</h4>
 <p>Variable can have three visibility status:</p>
 <ul>
 <li><p><strong>Mandatory</strong>: variables cannot be hidden with the Show/Hide</p></li>
@@ -276,15 +281,15 @@ Tip
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>You can hide all optional variables in one go by clicking on the “Hide all optional variables” button.</p>
+<p>You can hide all optional variables in one go by clicking on the “Show/Hide all non mandatory variables” button.</p>
 <p>This is useful if you want to create a minimal linelist because the provided linelist has a lot of variables shown by default.</p>
 <p>After use, the button will change to “Show all optional variables”, to allow the reverse action.</p>
 </div>
 </div>
 </section>
-<section id="show-hide-sections" class="level3">
-<h3 class="anchored" data-anchor-id="show-hide-sections">Show / Hide Sections</h3>
-<p>Clicking the “Section button” within the “Show/Hide Variables” window opens the “Show/Hide Sections” pop-up, which displays a list of all sections in the line list.</p>
+<section id="show-hide-sections" class="level4">
+<h4 class="anchored" data-anchor-id="show-hide-sections">Show / Hide Sections</h4>
+<p>Clicking the “Sections” button within the “Show/Hide Variables” window opens the “Show/Hide Sections” pop-up, which displays a list of all sections in the linelist.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="../images/img-show-hide-sections.png" class="img-fluid figure-img"></p>
@@ -292,21 +297,24 @@ Tip
 </figure>
 </div>
 </section>
-<section id="layouts" class="level3">
-<h3 class="anchored" data-anchor-id="layouts">Layouts</h3>
-<p>Clicking on the “layout button” within the show/hide variables window opens “saved layouts” pop up where you can save all the shown/hidden variables under a name, and apply the layouts again whenever you need them. Furthermore, saved layouts can be renamed or removed, and they are preserved during migrations, ensuring that your customized layouts remain available after migration.</p>
+<section id="layouts" class="level4">
+<h4 class="anchored" data-anchor-id="layouts">Layouts</h4>
+<p>You can <em>save</em> one or several arrangements of variables, which we call <em>layouts</em>. These layouts can be exported and imported into linelists, saving you the time to redo your variable layout, or allowing you to have two versions of a given linelist, with different arrangements (two countries not collecting the same level of variables? a projects wants to collect more than another? etc.</p>
+<p>Click on the “Layouts” button within the show/hide variables window to open a “Saved layouts” pop up. “Add” adds the current arrangement of variable visibility to the list.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="../images/img-004-saved-layouts.png" class="img-fluid figure-img"></p>
 <figcaption>Saved layout pop up window</figcaption>
 </figure>
 </div>
-<p>The buttons on the saved layouts interface are explained below.</p>
+<p>Buttons:</p>
 <ul>
-<li>Add:To add a layout, click the Add button. An input pop-up will appear where you can enter the name under which the layout will be saved.</li>
-<li>Remove:Use this button to remove a saved layout you no longer need.</li>
-<li>Apply: After selecting a layout, click this button to apply it.</li>
+<li>Add: to add a layout, click the “Add” button. An input pop-up will appear where you can enter the name under which the layout will be saved.</li>
+<li>Remove: use this button to remove a saved layout you no longer need.</li>
+<li>Apply: after selecting a layout, click this button to apply it.</li>
 </ul>
+<p>Saved layouts are preserved during migrations, ensuring that your customized layouts remain available after migration.</p>
+</section>
 </section>
 <section id="add-rows" class="level3">
 <h3 class="anchored" data-anchor-id="add-rows">Add rows</h3>
@@ -320,7 +328,7 @@ Tip
 </div>
 </div>
 <div id="second-column" class="quarto-layout-cell" style="flex-basis: 80.0%;justify-content: flex-start;">
-<p>By default, the linelist has 200 empty lines. Click on the “Add Rows” button to add 200 new empty rows.</p>
+<p>By default, the linelist has 200 empty lines. Click on the “Add Rows” button to add 200 new empty rows at the bottom.</p>
 </div>
 </div>
 </div>
@@ -372,7 +380,7 @@ Tip
 </div>
 <div id="second-column" class="quarto-layout-cell" style="flex-basis: 80.0%;justify-content: flex-start;">
 <p>If you need to visualise your data by sorting on a specific variable, you need to use the sorting function. Place the cursor in a cell of the column you want to sort (from line 9) and click on the button.</p>
-<p>The first time you click, you have a message to confirm the action, once you click <em>yes</em>, you cannot undo it. The first click sorts by ascending order, the second by descending order.</p>
+<p>The first time you click, you have a message to confirm the action, once you click <em>yes</em>, you cannot undo it. The first click sorts <em>the whole table</em> by ascending order, the second by descending order.</p>
 </div>
 </div>
 </div>
@@ -485,7 +493,7 @@ Note
 <section id="import-data" class="level3">
 <h3 class="anchored" data-anchor-id="import-data">Import data</h3>
 <p>The “Import Data” button allows you to import data in the linelist. This data must be in a special format typically produced by exporting data from another OutbreakTools linelist for the same disease<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>.</p>
-<p>Select the file to import using the navigating windows and click “Ok” to launch the import. At the end, a message informs you of the success and provide a little import report. Inspect it to see if there are any unexpected discrepancies (loosing variables unexpectedly is a red flag!).</p>
+<p>Select the file to import using the navigating window and click “Ok” to launch the import. At the end, a message informs you of the success and provide a little import report. Inspect it to see if there are any unexpected discrepancies (loosing variables unexpectedly is a red flag!).</p>
 <div class="callout callout-style-default callout-important callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -637,7 +645,7 @@ Tip
 <ul>
 <li>a file containing the <strong>data</strong> and <strong>metadata</strong></li>
 <li>a file containing the <strong>geobase</strong> that is currently in the linelist, <strong>as well as the history from the GeoHelper</strong></li>
-<li>a file containing *only the GeoHelper **history*<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a></li>
+<li>a file containing <em>only the GeoHelper history</em><a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a></li>
 </ul>
 </section>
 <section id="export-another-linelist" class="level3">
