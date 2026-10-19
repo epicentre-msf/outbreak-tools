@@ -42,6 +42,8 @@ Clicking the "Section button" within the "Show/Hide Variables" window opens the 
 
 ![Sections show hide pop up window](../images/img-show-hide-sections.png){fig-align="center"}
 
+A section is a group of linelist variables that share the same category and are predefined in the dictionary. The Show/Hide sections pop-up window lets users show or hide sections by clicking on them. Unlike Show/Hide variables, which has three visibility statuses, it has only one **Shown**.
+
 ### Layouts
 
 Clicking on the "layout button" within the show/hide variables window opens "saved layouts" pop up where you can save all the shown/hidden variables under a name, and apply the layouts again whenever you need them.
