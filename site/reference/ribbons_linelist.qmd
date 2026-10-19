@@ -16,9 +16,11 @@ Recent version of Excel have a top [ribbon/menu](https://www.ablebits.com/office
 
 ### Show / Hide variables
 
-Clicking on the "Show/hide variables" button opens a window listing all the variables in this linelist sheet.
+Clicking on the "Show/hide variables" button opens a pop-up window listing all the variables in this linelist sheet, with a couple of toogles and buttons on the right.
 
 ![Show hide button and pop-up window](../images/img-show-hide-variables.png){fig-align="center"}
+
+#### Show or hide variables individualy
 
 Variable can have three visibility status:
 
@@ -29,16 +31,16 @@ Variable can have three visibility status:
 - **Hide**: variables are currently hidden but can be made visible by ticking "Show" on the right
 
 ::: callout-tip
-You can hide all optional variables in one go by clicking on the “Hide all optional variables" button.
+You can hide all optional variables in one go by clicking on the “Show/Hide all non mandatory variables" button.
 
 This is useful if you want to create a minimal linelist because the provided linelist has a lot of variables shown by default.
 
 After use, the button will change to “Show all optional variables", to allow the reverse action.
 :::
 
-### Show / Hide Sections
+#### Show / Hide Sections
 
-Clicking the "Section button" within the "Show/Hide Variables" window opens the "Show/Hide Sections" pop-up, which displays a list of all sections in the line list.
+Clicking the "Sections" button within the "Show/Hide Variables" window opens the "Show/Hide Sections" pop-up, which displays a list of all sections in the linelist.
 
 ![Sections show hide pop up window](../images/img-show-hide-sections.png){fig-align="center"}
 
@@ -46,16 +48,20 @@ A section is a group of linelist variables that share the same category and are 
 
 ### Layouts
 
-Clicking on the "layout button" within the show/hide variables window opens "saved layouts" pop up where you can save all the shown/hidden variables under a name, and apply the layouts again whenever you need them.
-Furthermore, saved layouts can be renamed or removed, and they are preserved during migrations, ensuring that your customized layouts remain available after migration.
+You can *save* one or several arrangements of variables, which we call *layouts*. These layouts can be exported and imported into linelists, saving you the time to redo your variable layout, or allowing you to have two versions of a given linelist, with different arrangements (two countries not collecting the same level of variables? a projects wants to collect more than another? etc.
+
+Click on the "Layouts" button within the show/hide variables window to open a "Saved layouts" pop up. "Add" adds the current arrangement of variable visibility to the list. 
 
 ![Saved layout pop up window](../images/img-004-saved-layouts.png){fig-align="center"}
 
-The buttons on the saved layouts interface are explained below.
+Buttons: 
 
-- Add:To add a layout, click the Add button. An input pop-up will appear where you can enter the name under which the layout will be saved.
-- Remove:Use this button to remove a saved layout you no longer need.
-- Apply: After selecting a layout, click this button to apply it.
+- Add: to add a layout, click the "Add" button. An input pop-up will appear where you can enter the name under which the layout will be saved.
+- Remove: use this button to remove a saved layout you no longer need.
+- Apply: after selecting a layout, click this button to apply it.
+
+
+Saved layouts are preserved during migrations, ensuring that your customized layouts remain available after migration.
 
 
 ### Add rows
@@ -67,7 +73,7 @@ The buttons on the saved layouts interface are explained below.
 :::
 
 ::: {#second-column}
-By default, the linelist has 200 empty lines. Click on the "Add Rows" button to add 200 new empty rows.
+By default, the linelist has 200 empty lines. Click on the "Add Rows" button to add 200 new empty rows at the bottom.
 :::
 
 ::::
@@ -112,7 +118,7 @@ To remove all the filters at once, click on the "Clear all filters" button. This
 ::: {#second-column}
 If you need to visualise your data by sorting on a specific variable, you need to use the sorting function. Place the cursor in a cell of the column you want to sort (from line 9) and click on the button.
 
-The first time you click, you have a message to confirm the action, once you click *yes*, you cannot undo it. The first click sorts by ascending order, the second by descending order.
+The first time you click, you have a message to confirm the action, once you click *yes*, you cannot undo it. The first click sorts *the whole table* by ascending order, the second by descending order.
 :::
 ::::
 
@@ -193,7 +199,7 @@ The "Import Data" button allows you to import data in the linelist. This data mu
 
 [^2]: But a good R script can mimic the format too
 
-Select the file to import using the navigating windows and click "Ok" to launch the import. At the end, a message informs you of the success and provide a little import report. Inspect it to see if there are any unexpected discrepancies (loosing variables unexpectedly is a red flag!).
+Select the file to import using the navigating window and click "Ok" to launch the import. At the end, a message informs you of the success and provide a little import report. Inspect it to see if there are any unexpected discrepancies (loosing variables unexpectedly is a red flag!).
 
 ::: callout-important
 The same button is used whether the data was generated with the "Export data button" from the [Exports](#sec-export-data) section[^3] or the "Export for migration" button from the [Advanced](#sec-linelist-advanced) section of the ribbon[^4].
@@ -295,7 +301,7 @@ Select the options and click on “Export"; a window pops-up asking where to sav
 
 - a file containing the **data** and **metadata**
 - a file containing the **geobase** that is currently in the linelist, **as well as the history from the GeoHelper**
-- a file containing \*only the GeoHelper \*\*history\*[^6]
+- a file containing *only the GeoHelper history*[^6]
 
 [^6]: This option is useful if you want to upgrade to a new version of the geobase but wish to keep your GeoHelper history. You do not have to use it for general purpose migration.
 
