@@ -24,7 +24,7 @@ Both levels of translation are selected during the [compilation](../getting_star
 
 Go to the [OutbreakTools tab](../reference/ribbons_setup.qmd) of the setup top ribbon. One section contains buttons for translation:
 
-![Translation section in the OutbreakTools tab](../images/img-003-add-language-setup-ribbon.png){fig-align="center"}
+![Translation section in the OutbreakTools tab](../images/img-004-add-language-setup-ribbon.png){fig-align="center"}
 
 To add a new linelist language:
 
