@@ -47,7 +47,7 @@ ul.task-list li input[type="checkbox"] {
 <link href="../site_libs/quarto-html/quarto-syntax-highlighting-bf27225e3a48a9273f3daa8f8e829971.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-7100700a5d4657facf49b32369185e6d.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-07c082d391a006a1226407fa63306016.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <link href="../site_libs/quarto-contrib/fontawesome6-0.1.0/all.css" rel="stylesheet">
 <link href="../site_libs/quarto-contrib/fontawesome6-0.1.0/latex-fontsize.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
@@ -197,7 +197,7 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>The designer workbook contains a generate multiple sheet, which lets users set up and generate several linelists at once. The sheet is built around a table where each row corresponds to one line list, and each column holds a piece of information needed to generate it.</p>
+<p>The designer workbook contains a generate multiple sheet, which lets users set up and generate several linelists at once. The sheet is built around a table where each row corresponds to one linelist, and each column holds a piece of information needed to generate it.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="../images/img-generate-multiple-sheet.png" class="img-fluid figure-img"></p>
@@ -205,9 +205,9 @@ ul.task-list li input[type="checkbox"] {
 </figure>
 </div>
 <p>To populate the table, use the buttons in the <strong>designer ribbon</strong> To understand the purpose of each button, see <a href="../reference/ribbons_designer.html#sec-designer-multiple-linelists">mutliple linelist</a>.</p>
-<p>The columns of the Generate multiple table are explained below.</p>
+<p>The columns of the table are explained below.</p>
 <p><strong>ID:</strong> This column displays the ID of each linelist. You can enter your own ID, or leave the field empty and one will be generated automatically once you upload the setup.</p>
-<p><strong>Setups:</strong>This column lists the setups uploaded with the <strong>Load multiple files/folders</strong> button. A setup can be an .xlsx or .xlsb file. To load several setups at once, save them first in the same folder, then select them together.</p>
+<p><strong>Setups:</strong> This column lists the setups uploaded with the <strong>Load multiple files/folders</strong> button. A setup can be an <code>.xlsx</code> or <code>.xlsb</code> file. To load several setups at once, save them first in the same folder, then select them together.</p>
 <p><strong>Geobases:</strong> This column holds the geobase files. To load several geobases at once, save them in the same folder, hold Ctrl on your keyboard and select the files.</p>
 <div class="callout callout-style-default callout-important callout-titled">
 <div class="callout-header d-flex align-content-center">
@@ -222,13 +222,13 @@ Important
 <p>Geobases are not matched to the setups already loaded. They are filled in the order in which they are saved in the folder, so check that each geobase sits on the same line as its setup.</p>
 </div>
 </div>
-<p><strong>Output folders:</strong> Place the cursor in a cell under this column and click <strong>Load multiple files/folders</strong>. A pop-up will appear where you choose the path in which the linelist will be saved.Also note that paths are loaded one at a time.</p>
-<p><strong>Output files:</strong>This is a free text field where you enter the name of each linelist to be generated.</p>
-<p><strong>Output file password:</strong>This is a free text field where you enter the passwords for each linelist to be generated. Adding a password prevents outside parties from opening the file. Keep a record of the passwords you enter: if you close the Designer without saving, they are lost and the generation process will have to be repeated.</p>
-<p><strong>Output file debugging password:</strong>This is a free text field where you enter the password for the linelist’s debug mode. It helps prevent users from accidentally breaking the file.</p>
+<p><strong>Output folders:</strong> Place the cursor in a cell under this column and click <strong>Load multiple files/folders</strong>. A pop-up will appear where you choose the path in which the linelist will be saved. Also note that paths are loaded one at a time.</p>
+<p><strong>Output files:</strong> This is a free text field where you enter the name of each linelist to be generated.</p>
+<p><strong>Output file password:</strong> This is a free text field where you enter the passwords for each linelist to be generated. Adding a password prevents outside parties from opening the file. Keep a record of the passwords you enter: if you close the Designer without saving, they are lost and the generation process will have to be repeated.</p>
+<p><strong>Output file debugging password:</strong> This is a free text field where you enter the password for the linelist’s debug mode. It helps prevent users from accidentally breaking the file.</p>
 <p><strong>Language of the dictionary:</strong> Select the language of the dictionary from the drop-down menu. The built-in languages are English, Français, Arabic and Portuguese.</p>
-<p><strong>Language of the interface:</strong>Select the language in which the interface will appear from the drop-down menu. The built-in languages are English, Français, Arabic and Portuguese.</p>
-<p><strong>epiweek start:</strong>Use the drop-down menu in this column to define the epiweek.</p>
+<p><strong>Language of the interface:</strong> Select the language in which the interface will appear from the drop-down menu. The built-in languages are English, Français, Arabic and Portuguese.</p>
+<p><strong>Epiweek start:</strong>Use the drop-down menu in this column to define the epiweek start.</p>
 <p><strong>Design:</strong> The designer has a sheet called <em>formatter</em> with the columns design 1, design 2 and user defined. They show the available formats and how the linelist will look. Use the drop-down menu in this column to choose the look of the generated linelist.</p>
 <p><strong>Result:</strong> This column reports the outcome of each generation.</p>
 
