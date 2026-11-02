@@ -20,7 +20,7 @@ Clicking on the "Show/hide variables" button opens a pop-up window listing all t
 
 ![Show hide button and pop-up window](../images/img-show-hide-variables.png){fig-align="center"}
 
-#### Show or hide variables individualy
+#### Show or hide variables individually
 
 Variable can have three visibility status:
 
@@ -35,16 +35,17 @@ You can hide all optional variables in one go by clicking on the “Show/Hide al
 
 This is useful if you want to create a minimal linelist because the provided linelist has a lot of variables shown by default.
 
-After use, the button will change to “Show all optional variables", to allow the reverse action.
 :::
 
 #### Show / Hide Sections
 
+A section is a group of linelist variables that share the same category and are predefined in the dictionary.
 Clicking the "Sections" button within the "Show/Hide Variables" window opens the "Show/Hide Sections" pop-up, which displays a list of all sections in the linelist.
+
+The Show/Hide sections pop-up window lets users show or hide sections by clicking on them. Unlike Show/Hide variables, which has three visibility statuses, it has only one **Shown**.
 
 ![Sections show hide pop up window](../images/img-show-hide-sections.png){fig-align="center"}
 
-A section is a group of linelist variables that share the same category and are predefined in the dictionary. The Show/Hide sections pop-up window lets users show or hide sections by clicking on them. Unlike Show/Hide variables, which has three visibility statuses, it has only one **Shown**.
 
 ### Layouts
 
@@ -56,9 +57,9 @@ Click on the "Layouts" button within the show/hide variables window to open a "S
 
 Buttons: 
 
-- Add: to add a layout, click the "Add" button. An input pop-up will appear where you can enter the name under which the layout will be saved.
-- Remove: use this button to remove a saved layout you no longer need.
-- Apply: after selecting a layout, click this button to apply it.
+- Add: To add a layout, click the "Add" button. An input pop-up will appear where you can enter the name under which the layout will be saved.
+- Remove: Use this button to remove a saved layout you no longer need.
+- Apply: After selecting a layout, click this button to apply it.
 
 
 Saved layouts are preserved during migrations, ensuring that your customized layouts remain available after migration.
@@ -334,6 +335,18 @@ This button allows you to restore the state of hidden columns (i.e. hide them al
 ::: callout-note
 Hidden columns are not supposed to be shown, and the user can thus not modify their visibility state from the regular Show/Hide variables button, hence this button.
 :::
+
+### Log 
+
+
+
+
+
+
+
+
+
+
 
 ```         
 ```
