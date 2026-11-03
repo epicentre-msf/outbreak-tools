@@ -5,10 +5,41 @@
 # other, so a green count on one platform says nothing about the other.
 #
 # windows:
-#   when:        2026-09-08 22:30 (run assembled 20:14, about 136 minutes)
-#   where:       Windows 11, Excel 16.0.20326.20132 hidden (windows/run-tests.vbs), --build
-#   result:      total=6066 failures=0
-#   modulesRun:  114   testsFound: 2020   vbe: ok(248)
+#   when:        2026-11-03 11:50 (run assembled 09:58, about 112 minutes)
+#   where:       Windows 11, Excel 16.0.20527.20112 hidden (windows/run-tests.vbs), --build
+#   result:      total=6123 failures=0
+#   modulesRun:  114   testsFound: 2030   vbe: ok(248)
+#   before it:   total=6123 failures=0 modulesRun=114 testsFound=2030 (2026-11-02
+#                21:16, Windows 11, Excel 16.0.20430.20032, commit e730ab6c -- see
+#                ARCHIVED below)
+#   what moved:  nothing in the tree -- same commit `e730ab6c` as the run before
+#                it. Only the installed Excel changed, from the pinned repro
+#                build (16.0.20430.20032, Current Channel Preview) to a fresh,
+#                unpinned Current Channel Preview install (16.0.20527.20112):
+#                identical counts on both builds. Every hidden build instance
+#                the suite spun up (GenerationHost, DesignerMulti) stayed at
+#                21-23MB shared GPU memory on this build too.
+#   commit:      e730ab6c
+#
+# ARCHIVED (superseded by the run above, kept for the commit trail):
+#   2026-11-02 21:16 (run assembled 19:52, about 83 minutes), Excel 16.0.20430.20032
+#   total=6123 failures=0 modulesRun=114 testsFound=2030 vbe=ok(248), commit e730ab6c.
+#   before it:   total=6097 failures=0 modulesRun=114 testsFound=2026 (2026-10-01
+#                09:45, Windows 11, Excel 16.0.20430.20032 -- a real full run, never
+#                recorded in this header until it was)
+#   what moved:  the hidden build instance fix (commit e730ab6c), the only commit
+#                since the 2026-10-01 run: ScreenUpdating off for the whole hidden
+#                build instance, one paint driven from outside it so FreezePanes
+#                stops refusing, and a LastAnswer/BuildLastAnswer read-back for a
+#                dropped cross-process call. The four new TestGenerationHost
+#                methods carry testsFound from 2026 to 2030. Every hidden build
+#                instance the suite itself spun up (GenerationHost, DesignerMulti)
+#                stayed at 23-27MB shared GPU memory for the whole run, never the
+#                hundreds of MB the original bug needed to surface.
+#
+# ARCHIVED (superseded further back):
+#   2026-09-08 22:30 (run assembled 20:14, about 136 minutes), Excel 16.0.20326.20132
+#   total=6066 failures=0 modulesRun=114 testsFound=2020 vbe=ok(248), commit dcdbd4fa.
 #   before it:   total=6020 failures=0 modulesRun=114 testsFound=2010 (2026-09-02
 #                01:07, Windows 11)
 #   what moved:  the 23 commits since a0ffbf10. Case matching on the dictionary
