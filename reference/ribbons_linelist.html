@@ -206,6 +206,7 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#delete-data-or-geobase-history" id="toc-delete-data-or-geobase-history" class="nav-link" data-scroll-target="#delete-data-or-geobase-history">Delete data or geobase history</a></li>
   <li><a href="#restore-the-state-of-hidden-columns" id="toc-restore-the-state-of-hidden-columns" class="nav-link" data-scroll-target="#restore-the-state-of-hidden-columns">Restore the state of hidden columns</a></li>
   <li><a href="#log" id="toc-log" class="nav-link" data-scroll-target="#log">Log</a></li>
+  <li><a href="#export-the-log" id="toc-export-the-log" class="nav-link" data-scroll-target="#export-the-log">Export the log</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -695,6 +696,43 @@ Note
 </section>
 <section id="log" class="level3">
 <h3 class="anchored" data-anchor-id="log">Log</h3>
+<p>Click this button to access the log. It opens as a new sheet in the linelist workbook named *_log*.The log lists the actions that have been performed in the linelist since it was built.</p>
+<p>How it is organised; The top of the sheet shows the Status and Title being displayed (both set to All by default). Below, entries are grouped under these headings:</p>
+<ul>
+<li>open/close: opening of the linelist workbook.</li>
+</ul>
+<p>-linelist lifecycle: actions in the linelist for example showing or hiding variables, calculating the analysis sheets and opening the log and adding rows.</p>
+<p>-data input/output: data leaving the linelist, such as exporting the log.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="../images/img-ribbon-linelist_log.png" class="img-fluid quarto-figure quarto-figure-center figure-img"></p>
+</figure>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>If no action has been performed in the linelist, the log will contain very little information. It will only show that the linelist was opened, the date and time it was opened, and the Excel version used.</p>
+</div>
+</div>
+</section>
+<section id="export-the-log" class="level3">
+<h3 class="anchored" data-anchor-id="export-the-log">Export the log</h3>
+<p>This button saves the log as a text file, since the log opens inside the linelist workbook, it cannot be taken out of it directly, so this button lets users keep a copy, open it outside the workbook or share it.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="../images/img-ribbon-linelist-export-the-log.png" class="img-fluid quarto-figure quarto-figure-center figure-img"></p>
+</figure>
+</div>
+<p>In addition the exported file contains:</p>
+<p>-The date and time the file was written, the workbook name and the location where the exported file is saved.</p>
+<p>-The language, the linelist creation date and name, the setup and Designer used to create the linelist, and the Designer version.</p>
 <pre><code></code></pre>
 
 
