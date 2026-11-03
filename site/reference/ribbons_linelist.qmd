@@ -341,6 +341,7 @@ Hidden columns are not supposed to be shown, and the user can thus not modify th
 Click this button to access the log. It opens as a new sheet in the linelist workbook named *_log*.The log lists the actions that have been performed in the linelist since it was built.
 
 How it is organised;
+
 The top of the sheet shows the Status and Title being displayed (both set to All by default). Below, entries are grouped under these headings:
 
 - open/close: opening of the linelist workbook.
