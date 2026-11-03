@@ -31,51 +31,10 @@ EnableEvents False, AskToUpdateLinks False and AutomationSecurity Low. Low
 is the level the steps need: ForceDisable turns off every macro of the
 opened copy and Application.Run answers 1004. The events stay off through
 EnableEvents False, so the copy's Workbook_Open and ribbon load stay quiet.
-Calculation is set to manual once the copy is open, because the write
-raises 1004 on an instance holding no workbook.</p>
-</div>
-</details>
-<details open class="doc-section" id="screenupdating-is-off-in-the-hidden-instance">
-<summary>SCREENUPDATING IS OFF IN THE HIDDEN INSTANCE</summary>
-<div class="section-body">
-<p>An invisible Excel still repaints when ScreenUpdating is on, and Excel
-16.0.20430 keeps shared graphics memory on every one of those repaints:
-about 0.7 MB per cell write, measured on 2026-10-01. On a laptop that memory
-is system RAM. The Info sheet of the ebola setup, 7 variables, cost 168 MB
-and ran six times slower, and the Linelist sheet of 511 variables took
-219 seconds against 93 with ScreenUpdating off. So Acquire switches
-ScreenUpdating off there and Run writes it off again before every step.</p>
-</div>
-</details>
-<details open class="doc-section" id="the-output-workbook-is-painted-once-from-this-side">
-<summary>THE OUTPUT WORKBOOK IS PAINTED ONCE, FROM THIS SIDE</summary>
-<div class="section-body">
-<p>A window that was never painted refuses Window.FreezePanes with 1004, and
-with ScreenUpdating off for the whole build the window of the output
-workbook is never painted: every data entry sheet came out unfrozen.
-Nothing a macro of the instance does paints it. Switching ScreenUpdating
-on inside the step, with the sheet activated, the zoom written, a scroll,
-a cell rewritten, Application.Wait or DoEvents after it, was refused every
-time (tried 2026-10-01). What paints it is ScreenUpdating switched on from
-THIS side while the instance sits idle between two steps, and off again
-right after. PaintInstance does that. The driver calls it once the output
-workbook exists, after the linelist step, and every freeze of the build
-is accepted from then on: Info and the 511 variable Linelist sheet of the
-ebola setup both froze, the shared graphics memory of the instance stayed
-at 18 MB, and the sheet took the same time with and without it.</p>
-</div>
-</details>
-<details open class="doc-section" id="a-call-this-excel-stopped-waiting-for">
-<summary>A CALL THIS EXCEL STOPPED WAITING FOR</summary>
-<div class="section-body">
-<p>A step that runs long makes the visible Excel raise its box &quot;waiting for
-another application to complete an OLE action&quot;, and the pending call can
-end cancelled: Run then sees -2147418110 while the step carries on in the
-instance and finishes. Its answer is still there. BuildSteps keeps what its
-last step answered, and after a dropped call Run asks for it through
-LastAnswer, waiting for the instance to come free. The step named by
-LastAnswerStep is the one asked; RecoveredCalls counts the answers read
-back that way, for the driver to file in its report.</p>
+ScreenUpdating stays True there: the output workbook refused its freeze
+under ScreenUpdating False in an invisible instance, and nothing is painted
+in an invisible instance anyway. Calculation is set to manual once the copy
+is open, because the write raises 1004 on an instance holding no workbook.</p>
 </div>
 </details>
 <details open class="doc-section" id="the-copy-opens-read-write">
@@ -95,13 +54,11 @@ step reaches no handler here, on either path. In place it shows the
 runtime error box; across the processes the hidden instance shows the VBE
 box, un-hides itself, and the visible side blocks. Every step therefore
 keeps its own handler and answers a string, and Run passes that string
-through. A raise Run sees on the visible side is one of three things. The
-instance gone (462, RPC call failed, RPC server unavailable) is answered
+through. A raise Run sees on the visible side is either
+the instance gone (462, RPC call failed, RPC server unavailable), answered
 as &quot;the build instance stopped answering after <step>&quot; with the instance
-marked stopped so ReleaseInstance quits nothing. A call dropped on this
-side while the instance was at work is answered with what the step
-answered, read back from the copy. A plain fault, such as a step name the
-copy does not carry, is answered as &quot;ERROR <n> (<source>): <desc>&quot;.</p>
+marked stopped so ReleaseInstance quits nothing, or a plain fault such as a step
+name the copy does not carry, answered as &quot;ERROR <n> (<source>): <desc>&quot;.</p>
 </div>
 </details>
 <details open class="doc-section" id="release-runs-from-every-exit">
@@ -215,37 +172,6 @@ until Acquire.</p>
 </code></pre>
 <p><strong>Returns:</strong> String. &quot;OK&quot;, or &quot;ERROR <n> (<source>): <desc>&quot; naming the window handle. Empty before ReleaseInstance.</p>
 <hr />
-<h3 id="lastanswerstep">LastAnswerStep <a class="anchor-link" href="#lastanswerstep">#</a></h3>
-<p><em>last-answer-step</em></p>
-<p><strong>The step that answers what the last step answered</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get LastAnswerStep() As String
-</code></pre>
-<p>A public function of the workbook the steps run inside, answering
-&quot;<step>=<answer>&quot; for the last step that workbook ran. BuildSteps carries
-BuildLastAnswer, which is the default; a driver whose steps live in another
-module names its own.</p>
-<p><strong>Returns:</strong> String. The step name, with its module.</p>
-<hr />
-<h3 id="lastanswerstep">LastAnswerStep <a class="anchor-link" href="#lastanswerstep">#</a></h3>
-<p><em>last-answer-step-let</em></p>
-<p><strong>Name the step that answers what the last step answered</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Let LastAnswerStep(ByVal stepName As String)
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>stepName</code>: String. A public function of the copy. Empty puts the default back.</li>
-</ul>
-<hr />
-<h3 id="recoveredcalls">RecoveredCalls <a class="anchor-link" href="#recoveredcalls">#</a></h3>
-<p><em>recovered-calls</em></p>
-<p><strong>How many answers were read back after a dropped call</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get RecoveredCalls() As Long
-</code></pre>
-<p><strong>Returns:</strong> Long. Zero when every Run came back on its own call.</p>
-<hr />
 </div>
 </details>
 <details open class="doc-section" id="the-instance">
@@ -338,12 +264,6 @@ outcome string too: the instance gone is &quot;the build instance stopped
 answering after <step>&quot; and marks the instance stopped; any other fault
 is the plain error outcome. Once the instance is marked stopped every
 later Run answers the stopped outcome without a call.</p>
-<p>A call this Excel stopped waiting for (cancelled, rejected, or told to
-come back later) is answered from the copy: the step carries on over
-there, so Run waits for the instance to come free and reads back what
-the step answered, through LastAnswer. The driver then sees the answer
-of the step itself. On the instance path ScreenUpdating is written off
-before the step, whatever the step before it left.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>stepName</code>: String. The public function to run.</li>
@@ -354,49 +274,6 @@ before the step, whatever the step before it left.</p>
 <ul>
 <li>ProjectError.ErrorUnexpectedState When OpenDesignerCopy has not run.</li>
 <li>ProjectError.InvalidArgument When more than three arguments are handed over.</li>
-</ul>
-<hr />
-<h3 id="paintinstance">PaintInstance <a class="anchor-link" href="#paintinstance">#</a></h3>
-<p><em>paint-instance</em></p>
-<p><strong>Let the hidden instance paint its windows once</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function PaintInstance() As String
-</code></pre>
-<p>ScreenUpdating on, then off, as two calls from this side with the
-instance idle between them. That one paint is what makes the window of
-the output workbook take its freezes for the rest of the build; see the
-note at the top of this class. In place nothing is written: the designer's
-own Excel paints on its own and its windows take the freeze. The second
-write runs even when the first one raised, so the screen of the instance
-is off again on every exit.</p>
-<p><strong>Returns:</strong> String. &quot;OK&quot;, the stopped outcome when the instance is gone, or &quot;ERROR <n> (GenerationHost.PaintInstance): <desc>&quot;.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ErrorUnexpectedState When OpenDesignerCopy has not run.</li>
-</ul>
-<hr />
-<h3 id="lastanswer">LastAnswer <a class="anchor-link" href="#lastanswer">#</a></h3>
-<p><em>last-answer</em></p>
-<p><strong>Read back what the last step of the copy answered</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function LastAnswer(ByVal stepName As String, Optional ByVal argument As Variant) As String
-</code></pre>
-<p>Asks the step named by LastAnswerStep, which answers &quot;<step>=<answer>&quot;
-for the last step the copy ran, and answers the second part when the
-first names the step asked about. A step is filed under its own name
-with its module dropped, and under &quot;<name> <n>&quot; when it took one whole
-number, so &quot;BuildSteps.BuildSheet&quot; with 2 is read as &quot;BuildSheet 2&quot;.
-While the instance is still at work the question waits, up to thirty
-minutes. Run calls this after a dropped call; a driver may call it too.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>stepName</code>: String. The step whose answer is wanted, as Run was given it.</li>
-<li><code>argument</code>: Optional Variant. The one argument of that step, when it took one.</li>
-</ul>
-<p><strong>Returns:</strong> String. What the step answered, or an &quot;ERROR ...&quot; outcome when the answer could not be read back.</p>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>ProjectError.ErrorUnexpectedState When OpenDesignerCopy has not run.</li>
 </ul>
 <hr />
 </div>
@@ -562,112 +439,15 @@ Windows path may carry either.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FailureOutcome(ByVal errNumber As Long, _
                                 ByVal errSource As String, _
-                                ByVal errDesc As String, _
-                                ByVal stepLabel As String) As String
+                                ByVal errDesc As String) As String
 </code></pre>
-<p>Three cases. The instance gone answers the stopped outcome. A call
-dropped on this side while the instance was at work is answered with
-what the step answered over there, read back from the copy. Any other
-fault answers the plain error outcome.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>errNumber</code>: Long. The error number.</li>
 <li><code>errSource</code>: String. The error source. Empty takes this class.</li>
 <li><code>errDesc</code>: String. The description.</li>
-<li><code>stepLabel</code>: String. The label the copy files the step under.</li>
 </ul>
-<p><strong>Returns:</strong> String. The stopped outcome, the answer read back, or the plain error outcome.</p>
-<hr />
-<h3 id="int-answerofdroppedcall">AnswerOfDroppedCall <a class="anchor-link" href="#int-answerofdroppedcall">#</a></h3>
-<p><em>answer-of-dropped-call</em></p>
-<p><strong>Answer a Run whose call was dropped while the instance was at work</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function AnswerOfDroppedCall(ByVal errNumber As Long, _
-                                     ByVal stepLabel As String) As String
-</code></pre>
-<p>The step is still running over there, or has finished. Its answer is read
-back once the instance comes free and counted on RecoveredCalls. An
-instance that went away meanwhile answers the stopped outcome. An answer
-that cannot be read back answers an error outcome carrying the number of
-the dropped call and the reason.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>errNumber</code>: Long. The number the dropped call raised.</li>
-<li><code>stepLabel</code>: String. The label the copy files the step under.</li>
-</ul>
-<p><strong>Returns:</strong> String. What the step answered, or an &quot;ERROR ...&quot; outcome.</p>
-<hr />
-<h3 id="int-awaitlastanswer">AwaitLastAnswer <a class="anchor-link" href="#int-awaitlastanswer">#</a></h3>
-<p><em>await-last-answer</em></p>
-<p><strong>Ask the copy for its last answer until the instance answers</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function AwaitLastAnswer(ByVal stepLabel As String, ByRef answer As String) As Byte
-</code></pre>
-<p>One call on the step named by LastAnswerStep. While the instance is still
-inside the step, that call waits its turn and may be dropped like the
-first one, so it is asked again after a short pause, for thirty minutes
-at most. An instance gone ends the wait; so does any other fault, a copy
-that carries no such step being the common one.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>stepLabel</code>: String. The label the answer has to be filed under.</li>
-<li><code>answer</code>: String. Answers what the step answered, or why it could not be read.</li>
-</ul>
-<p><strong>Returns:</strong> Byte. AWAIT_ANSWERED, AWAIT_INSTANCE_GONE or AWAIT_UNREADABLE.</p>
-<hr />
-<h3 id="int-readfiledanswer">ReadFiledAnswer <a class="anchor-link" href="#int-readfiledanswer">#</a></h3>
-<p><em>read-filed-answer</em></p>
-<p><strong>Take the answer out of &quot;<step>=<answer>&quot; when the step is the one asked about</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ReadFiledAnswer(ByVal filed As Variant, _
-                                 ByVal stepLabel As String, _
-                                 ByRef answer As String) As Byte
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>filed</code>: Variant. What the last-answer step answered.</li>
-<li><code>stepLabel</code>: String. The label the answer has to be filed under.</li>
-<li><code>answer</code>: String. Answers what the step answered, or why it could not be read.</li>
-</ul>
-<p><strong>Returns:</strong> Byte. AWAIT_ANSWERED or AWAIT_UNREADABLE.</p>
-<hr />
-<h3 id="int-steplabelof">StepLabelOf <a class="anchor-link" href="#int-steplabelof">#</a></h3>
-<p><em>step-label-of</em></p>
-<p><strong>The label the copy files a step under</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function StepLabelOf(ByVal stepName As String, Optional ByVal argument As Variant) As String
-</code></pre>
-<p>The name of the step with its module dropped, and the argument after a
-space when the step took one whole number: &quot;BuildSheet 2&quot;.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>stepName</code>: String. The step, with or without its module.</li>
-<li><code>argument</code>: Optional Variant. The one argument of the step, when it took one.</li>
-</ul>
-<p><strong>Returns:</strong> String. The label.</p>
-<hr />
-<h3 id="int-isdroppedcallerror">IsDroppedCallError <a class="anchor-link" href="#int-isdroppedcallerror">#</a></h3>
-<p><em>is-dropped-call-error</em></p>
-<p><strong>Whether an error number says this side dropped the call</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function IsDroppedCallError(ByVal errNumber As Long) As Boolean
-</code></pre>
-<p>Cancelled by the message filter of this Excel, which is what a long step
-ends on once the &quot;waiting for another application&quot; box has been up;
-rejected by the instance; or told to come back later. In all three the
-instance is alive.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>errNumber</code>: Long.</li>
-</ul>
-<p><strong>Returns:</strong> Boolean.</p>
-<hr />
-<h3 id="int-pausethisexcel">PauseThisExcel <a class="anchor-link" href="#int-pausethisexcel">#</a></h3>
-<p><em>pause-this-excel</em></p>
-<p><strong>Hold the visible Excel for the pause between two tries</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub PauseThisExcel()
-</code></pre>
+<p><strong>Returns:</strong> String. The stopped outcome for the instance gone, the plain error outcome otherwise.</p>
 <hr />
 <h3 id="int-isinstancegoneerror">IsInstanceGoneError <a class="anchor-link" href="#int-isinstancegoneerror">#</a></h3>
 <p><em>is-instance-gone-error</em></p>
@@ -744,9 +524,8 @@ ReleaseInstance, and the hidden instance would live on with nobody to quit it.</
 <hr />
 </details>
 <details>
-<summary>Used in (9 file(s))</summary>
+<summary>Used in (8 file(s))</summary>
 <ul>
-<li>BuildSteps.bas</li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>EventsDesignerCore.bas</li>
 <li>EventsDesignerMulti.bas</li>
