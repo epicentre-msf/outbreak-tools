@@ -178,6 +178,7 @@ ul.task-list li input[type="checkbox"] {
   </ul></li>
   <li><a href="#advanced-customisations" id="toc-advanced-customisations" class="nav-link" data-scroll-target="#advanced-customisations">Advanced customisations</a></li>
   <li><a href="#compilation-advice" id="toc-compilation-advice" class="nav-link" data-scroll-target="#compilation-advice">Compilation advice</a></li>
+  <li><a href="#multiple-linelists-generation-steps" id="toc-multiple-linelists-generation-steps" class="nav-link" data-scroll-target="#multiple-linelists-generation-steps">Multiple linelists generation steps</a></li>
   </ul>
 </nav>
     </div>
@@ -278,7 +279,7 @@ Note
 </section>
 <section id="add-passwords" class="level3">
 <h3 class="anchored" data-anchor-id="add-passwords">Add passwords</h3>
-<p>It is highly recommended to add passwords, both to prevent users from unwantignly break the file and to limit outside parties from opening the file.</p>
+<p>It is highly recommended to add passwords, both to prevent users from unwillingly break the file and to limit outside parties from opening the file.</p>
 <p>To do that, just fill the passwords in the little blue boxes before compiling.</p>
 </section>
 </section>
@@ -287,7 +288,7 @@ Note
 <p>There are a couple more customisations available through the <a href="../reference/ribbons_designer.html">OutbreakTools menu</a>.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="../images/img-003-ribbon-designer.png" class="img-fluid figure-img"></p>
+<p><img src="../reference/images/img-005-designer-ribbon.png" class="img-fluid figure-img"></p>
 <figcaption>OutbreakTools tab in the designer file</figcaption>
 </figure>
 </div>
@@ -316,6 +317,52 @@ Tip
 <div class="callout-body-container callout-body">
 <p>I prepare the <strong>setup file</strong>, the <strong>designer file</strong>, and then copy both of them and use the copies to compile. If a compilation fails, I delete both copies and start from fresh, just in case the failure to compile corrupted any of the file.</p>
 </div>
+</div>
+</section>
+<section id="multiple-linelists-generation-steps" class="level2">
+<h2 class="anchored" data-anchor-id="multiple-linelists-generation-steps">Multiple linelists generation steps</h2>
+<p>Within the designer, there is a sheet named <em>GenerateMultiple</em> that allows users to generate as many linelists as they need at once. To do this, use the tools in the Multiple Linelists section of the designer ribbon to populate the GenerateMultiple table. .See <a href="../reference/ribbons_designer.html#sec-designer-multiple-linelists">mutliple linelist</a>.</p>
+<ol start="0" type="1">
+<li><p>Open the designer file</p></li>
+<li><p>The ID is generated automatically as soon as you upload the setups. Note that the ID can also be edited manually, so steps 1 and 2 can be performed in either order.</p></li>
+<li><p>Select “Setups”, then click Load Multiple Files/Folders in the designer ribbon to choose the setups you want to upload.</p></li>
+</ol>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The load multiple files/folders step will be repeated until the <em>geobases and output folders</em> cells are filled.</p>
+</div>
+</div>
+<ol start="3" type="1">
+<li><p>Select “geobases” to upload geobase files.</p></li>
+<li><p>Select “output folders” to choose where the linelists will be saved.</p></li>
+<li><p>Enter the names of the linelists you want to generate in the “Output files”.</p></li>
+<li><p>Enter passwords to be used while opening the linelists in the “output file password”</p></li>
+<li><p>Enter debugging passwords in the “output file debugging password” column. This is key because it prevents the users from accidentally or deliberately breaking the linelist files.</p></li>
+<li><p>Use the drop-down menu “Language of the dictionary” to select a language present in the setup files for the linelist content</p></li>
+<li><p>Use the drop-down menu “Language of the interface” to select the language in which the linelist’s labels, headings, and other text will be displayed.</p></li>
+<li><p>Define the epiweek using the drop-down menu in the “epiweekstart”</p></li>
+<li><p>Use the drop-down menu in “design” to choose how the generated linelists will look.</p></li>
+<li><p>Click on the “ribbon file” in the designer ribbon to attach a template file.</p></li>
+<li><p>Click the “Generate” button to start the generation process.</p></li>
+<li><p>Once the generation is complete, a report of each generation will appear in the <em>Result</em> column.</p></li>
+</ol>
+<div id="fig-setup-ribbon" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-setup-ribbon-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../images/img-getting_started_generatemultiple.png" class="img-fluid quarto-figure quarto-figure-center figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-setup-ribbon-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4: Multiple linelist compilation
+</figcaption>
+</figure>
 </div>
 
 
