@@ -123,5 +123,5 @@ The load multiple files/folders step will be repeated until the  *geobases and o
 
 14.  Once the generation is complete, a report of each generation will appear in the *Result* column.
 
-![Multiple linelist compilation](../images/img-getting_started_generatemultiple.png){#fig-setup-ribbon fig-align="center"}
+![Multiple linelist compilation](../images/img-getting-started_generatemultiple.png){#fig-setup-ribbon fig-align="center"}
 
