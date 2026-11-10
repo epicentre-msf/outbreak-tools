@@ -218,6 +218,20 @@ Private Function SpatioTemporalRows(ByVal colVar As String, _
               spatialType, "", "Cases", "", "no"))
 End Function
 
+'@sub-title Two spatio-temporal rows in one section.
+'@details
+'Row 1 opens section S1 and row 2 continues it, so row 2 is the non-new-section
+'spatio-temporal table that sits to the right of row 1 and shares its rows.
+Private Function SpatioTemporalTwoRows(ByVal colVar As String, _
+                                       ByVal geoMax As String, _
+                                       ByVal spatialType As String) As Variant
+    SpatioTemporalTwoRows = Array( _
+        Array("S1", DATE_VARIABLE, colVar, geoMax, "First table", _
+              spatialType, "", "Cases", "", "no"), _
+        Array("S1", DATE_VARIABLE, colVar, geoMax, "Second table", _
+              spatialType, "", "Deaths", "", "no"))
+End Function
+
 '@section Fixture helpers
 '===============================================================================
 
@@ -1794,6 +1808,122 @@ Public Sub TestSpatioTemporalNamesOneInputPerGeoUnit()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestSpatioTemporalNamesOneInputPerGeoUnit", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify a facility table named as it stands builds and tags its inputs.
+'@details
+'The dictionary keeps an hf control under the name the setup gave it, and the
+'setup dropdown offers that name. hf_h2 is such a row in the fixture: no
+'hf_hf_h2 exists, and the build used to stop on an unknown spatial type.
+'@TestMethod("CrossTable")
+Public Sub TestFacilityTableNamedAsItStandsBuilds()
+    CustomTestSetTitles Assert, "CrossTable", "TestFacilityTableNamedAsItStandsBuilds"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim tabl As CrossTable
+    Dim tabId As String
+    Dim header As String
+
+    BuildFixture TABLE_SPATIOTEMPORAL, SpatioTemporalHeader(), _
+                 SpatioTemporalRows("hf_h2", "2", "hf")
+    Set sh = OutputSheet()
+    Set tabl = BuildTable(sh, 1)
+    tabId = tabl.Specifications.TableId
+    header = tabl.TimeSeriesHeader
+
+    Assert.AreEqual "hf", tabl.Specifications.SpatialTableScopes, _
+                    "A row naming the hf control by its own name is a facility table"
+    Assert.IsTrue RangeExistsOnSheet(sh, "INPUTSPTHF_1_" & tabId), _
+                  "The first facility input cell should carry the facility tag"
+    Assert.IsTrue (InStr(1, header, DictLabel("hf_h2", "main label"), vbBinaryCompare) > 0), _
+                  "The header names the facility by its main label. It reads " & header
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestFacilityTableNamedAsItStandsBuilds", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify the second spatio-temporal table of a section builds beside the first.
+'@details
+'The generic build lost the second table of a spatio-temporal section to a
+'bare "Method 'Range' of object '_Worksheet' failed". The anchor hides the
+'section's Total row in Format, because no spatio-temporal table asks for a
+'total, and the second table then looked for the Total label through a
+'Range.Find that had inherited a values search from the dictionary, which
+'skips hidden rows. TOTAL_ROW_VALUES_ was never named and the formula writer
+'raised on it. The search state is forced here the way a build leaves it, the
+'stages run one at a time so a raise names the stage it came from, and Format
+'runs over both tables in the order the analysis builder uses.
+'@TestMethod("CrossTable")
+Public Sub TestSecondSpatioTemporalTableSharesTheSectionRows()
+    CustomTestSetTitles Assert, "CrossTable", "TestSecondSpatioTemporalTableSharesTheSectionRows"
+    On Error GoTo TestFail
+
+    Dim firstTable As CrossTable
+    Dim secondTable As CrossTable
+    Dim sh As Worksheet
+    Dim designFormat As LLFormat
+    Dim stage As String
+    Dim firstTabId As String
+    Dim secondTabId As String
+
+    BuildFixture TABLE_SPATIOTEMPORAL, SpatioTemporalHeader(), _
+                 SpatioTemporalTwoRows(GEO_VARIABLE, "3", "geo")
+    Set sh = OutputSheet()
+    Set designFormat = LLFormat.Create(PrepareLLFormatFixture(FORMAT_SHEET))
+    Set firstTable = BuildTable(sh, 1)
+    Set secondTable = NewTable(sh, 2)
+    firstTabId = firstTable.Specifications.TableId
+    secondTabId = secondTable.Specifications.TableId
+
+    On Error GoTo StageFail
+    stage = "Format of the first table"
+    firstTable.Format designFormat
+
+    Assert.IsTrue sh.Range("TOTAL_ROW_" & firstTabId).EntireRow.Hidden, _
+                  "The anchor hides the Total row no table of the section asked for"
+
+    'Find keeps the LookIn of the last search made in the session. A build
+    'leaves it on values, through LLdictionary.VariableExists, and a values
+    'search does not see a hidden row.
+    sh.Range("A1:A2").Find What:="no such label", LookIn:=xlValues, _
+                            LookAt:=xlWhole, MatchCase:=True
+
+    stage = "AddHeader"
+    secondTable.AddHeader
+    stage = "AddRows"
+    secondTable.AddRows
+    stage = "AddColumns"
+    secondTable.AddColumns
+    stage = "NameRanges"
+    secondTable.NameRanges
+    stage = "Format of the second table"
+    secondTable.Format designFormat
+    On Error GoTo TestFail
+
+    Assert.IsTrue Not secondTable.Specifications.IsNewSection(), _
+                  "The second row of one section is no new section"
+    Assert.AreEqual firstTable.StartRow, secondTable.StartRow, _
+                    "The second spatio-temporal table should inherit the start row"
+    Assert.IsTrue secondTable.EndColumn > firstTable.EndColumn, _
+                  "The second spatio-temporal table should sit to the right of the first"
+    Assert.IsTrue RangeExistsOnSheet(sh, "VALUES_COL_1_" & secondTabId), _
+                  "The second table names its first value column"
+    Assert.IsTrue RangeExistsOnSheet(sh, "TOTAL_ROW_VALUES_" & secondTabId), _
+                  "The second table names the hidden Total row of its section"
+    Assert.IsTrue RangeExistsOnSheet(sh, "MISSING_ROW_VALUES_" & secondTabId), _
+                  "The second table names the Missing row of its section"
+
+    Exit Sub
+StageFail:
+    CustomTestLogFailure Assert, "TestSecondSpatioTemporalTableSharesTheSectionRows", _
+                         Err.Number, stage & " raised: " & Err.Description
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSecondSpatioTemporalTableSharesTheSectionRows", _
+                         Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify a logged check files its message in the label.

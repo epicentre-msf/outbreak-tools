@@ -48,6 +48,16 @@ Option Explicit
 '"tag=value" per line, and the steps read ThisWorkbook, which is the
 'designer copy they run inside. The copy's Main takes the entries first.
 '
+'THE LAST ANSWER IS KEPT
+'-------------------------------------------------------------------------------
+'Every public function files what it answers, under its own name, before
+'it answers: "BuildLinelist", and "BuildSheet 2" for the sheet step, which
+'carries its position. BuildLastAnswer hands the last one back as
+'"<step>=<answer>". A driver in another Excel instance can lose the answer
+'of a call it stopped waiting for while the step carried on here, and this
+'is where GenerationHost reads that answer back. BuildLastAnswer files
+'nothing itself, so asking twice answers the same step.
+'
 'EVERY PUBLIC FUNCTION TRAPS ITS OWN RAISE
 '-------------------------------------------------------------------------------
 'Application.Run opens a fresh call stack, so a raise that escapes a
@@ -81,6 +91,9 @@ Private Const ENTRY_EQUALS As String = "="
 'The separator of the two totals BuildCounts answers
 Private Const COUNTS_SEP As String = "|"
 
+'The mark between the step and its answer in what BuildLastAnswer hands back
+Private Const LAST_ANSWER_MARK As String = "="
+
 'The title of the bundle this module files on its own
 Private Const TITLE_EARLIER_FILE As String = "build start"
 
@@ -106,6 +119,10 @@ Private builtVariables As Long
 
 'The path of the kept file, set by the abort
 Private keptPath As String
+
+'The last step that answered and what it answered, for BuildLastAnswer
+Private lastStepLabel As String
+Private lastStepAnswer As String
 
 
 '@section The steps
@@ -147,11 +164,12 @@ Public Function BuildBegin(Optional ByVal targetDesigner As Workbook = Nothing, 
     QueueBundles GenerationLog.SpecificationBundles(specs)
     If InitTransfer.HasCheckings() Then QueueBundle InitTransfer.CheckingValues()
 
-    BuildBegin = OUTCOME_OK
+    BuildBegin = Answered("BuildBegin", OUTCOME_OK)
     Exit Function
 
 Failed:
-    BuildBegin = FailureOutcome(Err.Number, Err.Source, Err.Description, "BuildBegin")
+    BuildBegin = Answered("BuildBegin", _
+                          FailureOutcome(Err.Number, Err.Source, Err.Description, "BuildBegin"))
 End Function
 
 '@Description("BuildBegin for a driver in another instance: the entries arrive as text, the designer is the copy.")
@@ -165,7 +183,7 @@ End Function
 '@param entriesText String. The entries to write on Main first. Empty writes nothing.
 '@return String. "OK" or "ERROR <number> (<source>): <description>".
 Public Function BuildBeginEntries(ByVal entriesText As String) As String
-    BuildBeginEntries = BuildBegin(Nothing, entriesText)
+    BuildBeginEntries = Answered("BuildBeginEntries", BuildBegin(Nothing, entriesText))
 End Function
 
 '@Description("Build the output workbook: sheets, temporary sheets, admin sheet, code transfer.")
@@ -190,11 +208,12 @@ Public Function BuildLinelist() As String
     Set sheetLists = ll.SheetNames
     Set sheetInfo = ll.SheetInfoManager
 
-    BuildLinelist = OUTCOME_OK
+    BuildLinelist = Answered("BuildLinelist", OUTCOME_OK)
     Exit Function
 
 Failed:
-    BuildLinelist = FailureOutcome(Err.Number, Err.Source, Err.Description, "BuildLinelist")
+    BuildLinelist = Answered("BuildLinelist", _
+                             FailureOutcome(Err.Number, Err.Source, Err.Description, "BuildLinelist"))
 End Function
 
 '@Description("The number of data entry sheets the build will make.")
@@ -205,11 +224,12 @@ Public Function BuildSheetCount() As String
     On Error GoTo Failed
     RequireLinelist "BuildSheetCount"
 
-    BuildSheetCount = CStr(sheetLists.Length)
+    BuildSheetCount = Answered("BuildSheetCount", CStr(sheetLists.Length))
     Exit Function
 
 Failed:
-    BuildSheetCount = FailureOutcome(Err.Number, Err.Source, Err.Description, "BuildSheetCount")
+    BuildSheetCount = Answered("BuildSheetCount", _
+                               FailureOutcome(Err.Number, Err.Source, Err.Description, "BuildSheetCount"))
 End Function
 
 '@Description("Build one data entry sheet by its position in the sheet list.")
@@ -242,7 +262,7 @@ Public Function BuildSheet(ByVal position As Long) As String
     ElseIf sheetType = "hlist2D" Then
         layer = LLDataEntryLayerHList
     Else
-        BuildSheet = OUTCOME_OK
+        BuildSheet = Answered(SheetStepLabel(position), OUTCOME_OK)
         Exit Function
     End If
 
@@ -255,11 +275,12 @@ Public Function BuildSheet(ByVal position As Long) As String
     builtSheets = builtSheets + 1
     builtVariables = builtVariables + listBld.VariablesWritten
 
-    BuildSheet = OUTCOME_OK
+    BuildSheet = Answered(SheetStepLabel(position), OUTCOME_OK)
     Exit Function
 
 Failed:
-    BuildSheet = FailureOutcome(Err.Number, Err.Source, Err.Description, "BuildSheet")
+    BuildSheet = Answered(SheetStepLabel(position), _
+                          FailureOutcome(Err.Number, Err.Source, Err.Description, "BuildSheet"))
 End Function
 
 '@Description("Flush the two dropdown stores of the output workbook.")
@@ -279,11 +300,12 @@ Public Function BuildDropdowns() As String
     Set store = ll.Dropdown(2)
     If store.HasCheckings Then QueueBundle store.CheckingValues
 
-    BuildDropdowns = OUTCOME_OK
+    BuildDropdowns = Answered("BuildDropdowns", OUTCOME_OK)
     Exit Function
 
 Failed:
-    BuildDropdowns = FailureOutcome(Err.Number, Err.Source, Err.Description, "BuildDropdowns")
+    BuildDropdowns = Answered("BuildDropdowns", _
+                              FailureOutcome(Err.Number, Err.Source, Err.Description, "BuildDropdowns"))
 End Function
 
 '@Description("Write the four analysis sheets.")
@@ -307,7 +329,7 @@ Public Function BuildAnalyses() As String
 
     QueueAnalysisBundle anaOut
 
-    BuildAnalyses = OUTCOME_OK
+    BuildAnalyses = Answered("BuildAnalyses", OUTCOME_OK)
     Exit Function
 
 Failed:
@@ -318,7 +340,8 @@ Failed:
     errDesc = Err.Description
 
     QueueAnalysisBundle anaOut
-    BuildAnalyses = FailureOutcome(errNumber, errSource, errDesc, "BuildAnalyses")
+    BuildAnalyses = Answered("BuildAnalyses", _
+                             FailureOutcome(errNumber, errSource, errDesc, "BuildAnalyses"))
 End Function
 
 '@Description("Save the linelist as .xlsb with its password and close it.")
@@ -334,11 +357,12 @@ Public Function BuildSave() As String
     ll.SaveLL
 
     DropBuildObjects
-    BuildSave = OUTCOME_OK
+    BuildSave = Answered("BuildSave", OUTCOME_OK)
     Exit Function
 
 Failed:
-    BuildSave = FailureOutcome(Err.Number, Err.Source, Err.Description, "BuildSave")
+    BuildSave = Answered("BuildSave", _
+                         FailureOutcome(Err.Number, Err.Source, Err.Description, "BuildSave"))
 End Function
 
 '@Description("Answer the bundles queued since the last call, and empty the queue.")
@@ -348,12 +372,13 @@ End Function
 '@return String. The queued bundle texts, or "ERROR <number> (<source>): <description>".
 Public Function BuildCheckings() As String
     On Error GoTo Failed
-    BuildCheckings = pendingText
+    BuildCheckings = Answered("BuildCheckings", pendingText)
     pendingText = vbNullString
     Exit Function
 
 Failed:
-    BuildCheckings = ErrorText(Err.Number, Err.Source, Err.Description, "BuildCheckings")
+    BuildCheckings = Answered("BuildCheckings", _
+                              ErrorText(Err.Number, Err.Source, Err.Description, "BuildCheckings"))
 End Function
 
 '@Description("Answer the sheets built and the variables written by the current build.")
@@ -364,11 +389,12 @@ End Function
 '@return String. "<sheets>|<variables>", or "ERROR <number> (<source>): <description>".
 Public Function BuildCounts() As String
     On Error GoTo Failed
-    BuildCounts = CStr(builtSheets) & COUNTS_SEP & CStr(builtVariables)
+    BuildCounts = Answered("BuildCounts", CStr(builtSheets) & COUNTS_SEP & CStr(builtVariables))
     Exit Function
 
 Failed:
-    BuildCounts = ErrorText(Err.Number, Err.Source, Err.Description, "BuildCounts")
+    BuildCounts = Answered("BuildCounts", _
+                           ErrorText(Err.Number, Err.Source, Err.Description, "BuildCounts"))
 End Function
 
 '@Description("Stop the build: keep the unfinished workbook as __temp.xlsb, close it, drop the state.")
@@ -386,10 +412,53 @@ Public Function BuildAbort() As String
 
     BuildAbort = OUTCOME_OK
     If LenB(kept) > 0 Then BuildAbort = BuildAbort & KEPT_MARK & kept
+    BuildAbort = Answered("BuildAbort", BuildAbort)
     Exit Function
 
 Failed:
-    BuildAbort = ErrorText(Err.Number, Err.Source, Err.Description, "BuildAbort")
+    BuildAbort = Answered("BuildAbort", _
+                          ErrorText(Err.Number, Err.Source, Err.Description, "BuildAbort"))
+End Function
+
+'@Description("Answer the last step that answered and what it answered.")
+'@details
+'"<step>=<answer>": the name the step filed itself under, the mark, and its
+'answer whole. Empty on both sides before the first step. A driver in
+'another instance reads this after a call it stopped waiting for, since
+'the step carried on here and its answer is this one. Nothing is filed by
+'the reading, so a second call answers the same step.
+'@return String. "<step>=<answer>", or "ERROR <number> (<source>): <description>".
+Public Function BuildLastAnswer() As String
+    On Error GoTo Failed
+    BuildLastAnswer = lastStepLabel & LAST_ANSWER_MARK & lastStepAnswer
+    Exit Function
+
+Failed:
+    BuildLastAnswer = ErrorText(Err.Number, Err.Source, Err.Description, "BuildLastAnswer")
+End Function
+
+
+'@section The last answer
+'===============================================================================
+
+'@Description("File what a step answers, and hand the answer back.")
+'@details
+'Every public function answers through this, on its success exit and on
+'its failure exit, so BuildLastAnswer always holds the last step whole.
+'@param stepLabel String. The name the step is filed under.
+'@param answer String. What the step answers.
+'@return String. The answer it was given.
+Private Function Answered(ByVal stepLabel As String, ByVal answer As String) As String
+    lastStepLabel = stepLabel
+    lastStepAnswer = answer
+    Answered = answer
+End Function
+
+'@Description("The name the sheet step is filed under: BuildSheet and its position.")
+'@param position Long. The position the step was asked for.
+'@return String. "BuildSheet <position>".
+Private Function SheetStepLabel(ByVal position As Long) As String
+    SheetStepLabel = "BuildSheet " & CStr(position)
 End Function
 
 

@@ -1027,16 +1027,59 @@ End Property
 '@label:find-label-cell
 '@sub-title Find the cell holding a label in a given range.
 '@details
-'Exact, case-sensitive, whole-cell match through Excel's Range.Find, so
-'"total" will NOT match "Total"; translated labels carry their own
-'capitalization. RowRange and ColumnRange read the row or the column off the
-'answer. Each used to ask twice, once to know the label was there and once for
-'where, and every Find is a host search over the category band.
+'Exact, case-sensitive, whole-cell match, so "total" will NOT match "Total";
+'translated labels carry their own capitalization. RowRange and ColumnRange
+'read the row or the column off the answer.
+'
+'THE BAND IS READ AS VALUES, IN ONE CROSSING
+'-------------------------------------------------------------------------------
+'This used to be a Range.Find with no LookIn. Find keeps the LookIn of the last
+'search made anywhere in the session, and LLdictionary.VariableExists searches
+'values on every table, so the band was searched as values -- and a values
+'search skips hidden rows. The anchor of a spatio-temporal section hides its
+'Total row in Format, so the second table of the section found no Total label,
+'TOTAL_ROW_VALUES_ was never named for it, and the formula writer died on a
+'bare "Method 'Range' of object '_Worksheet' failed". Reading the values off
+'the band sees a hidden cell like any other and depends on no search state.
 '@param rng Range. The Range to search within, typically RowsCategoriesRange or HeaderRange.
 '@param searchValue String. The exact string to look for.
 '@return Range. The first cell holding exactly searchValue, or Nothing.
 Private Function FindLabelCell(ByVal rng As Range, ByVal searchValue As String) As Range
-    Set FindLabelCell = rng.Find(What:=searchValue, LookAt:=xlWhole, MatchCase:=True)
+    Dim cellValues As Variant
+    Dim rowIdx As Long
+    Dim colIdx As Long
+
+    If rng Is Nothing Then Exit Function
+
+    If rng.Cells.Count = 1 Then
+        If LabelMatches(rng.Value2, searchValue) Then Set FindLabelCell = rng
+        Exit Function
+    End If
+
+    cellValues = rng.Value2
+
+    For rowIdx = LBound(cellValues, 1) To UBound(cellValues, 1)
+        For colIdx = LBound(cellValues, 2) To UBound(cellValues, 2)
+            If LabelMatches(cellValues(rowIdx, colIdx), searchValue) Then
+                Set FindLabelCell = rng.Cells(rowIdx - LBound(cellValues, 1) + 1, _
+                                              colIdx - LBound(cellValues, 2) + 1)
+                Exit Function
+            End If
+        Next colIdx
+    Next rowIdx
+End Function
+
+'@label:label-matches
+'@sub-title Whether one cell value is exactly a label
+'@details
+'A label is text, so a number, a date, an error or an empty cell never
+'matches, whatever it would read as when spelled out.
+'@param cellValue Variant. The value read off the cell.
+'@param searchValue String. The label looked for.
+'@return Boolean. True on an exact, case-sensitive match.
+Private Function LabelMatches(ByVal cellValue As Variant, ByVal searchValue As String) As Boolean
+    If VarType(cellValue) <> vbString Then Exit Function
+    LabelMatches = (StrComp(cellValue, searchValue, vbBinaryCompare) = 0)
 End Function
 
 '@label:row-range
@@ -1237,10 +1280,12 @@ Public Sub AddRows()
             rowVar = ValueOf("row")
             spatType = SpatialType()
 
-            If spatType = "geo" Then
-                rowsData.Push vars.Value(colName:="sub section", varName:="adm1_" & rowVar)
-            ElseIf spatType = "hf" Then
-                rowsData.Push vars.Value(colName:="main label", varName:="hf_" & rowVar)
+            ' TableSpecs owns the name and the label column: an administrative
+            ' table reads adm1_<var> from the sub section, a facility table
+            ' reads hf_<var>, or the variable as it stands, from the main label.
+            If LenB(spatType) > 0 Then
+                rowsData.Push vars.Value(colName:=specs.SpatialLabelColumn, _
+                                         varName:=specs.SpatialVariableName(rowVar))
             End If
 
             ' GeoCount carries the clamp and the default, so an empty
@@ -1501,12 +1546,13 @@ Public Sub AddColumns()
 
             spType = SpatialType()
 
+            ' The spatial name and its label column come from TableSpecs, which
+            ' also reads a facility variable named as it stands.
             If tablType = ScopeTimeSeries Then
                 colVarLab = vars.Value(colName:="main label", varName:=ValueOf("column"))
-            ElseIf spType = "geo" Then
-                colVarLab = vars.Value(colName:="sub section", varName:="adm1_" & ValueOf("column"))
-            ElseIf spType = "hf" Then
-                colVarLab = vars.Value(colName:="main label", varName:="hf_" & ValueOf("column"))
+            ElseIf LenB(spType) > 0 Then
+                colVarLab = vars.Value(colName:=specs.SpatialLabelColumn, _
+                                       varName:=specs.SpatialVariableName(ValueOf("column")))
             End If
 
             timeVarLab = vars.Value(colName:="main label", varName:=ValueOf("time"))

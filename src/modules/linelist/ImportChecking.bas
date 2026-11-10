@@ -166,6 +166,7 @@ Private Function ResolveCheckingSheet(ByVal wb As Workbook) As Worksheet
 
     Dim sh As Worksheet
     Dim pass As Passwords
+    Dim activeBefore As Object
 
     Set sh = ExistingCheckingSheet(wb)
     If Not sh Is Nothing Then
@@ -176,7 +177,11 @@ Private Function ResolveCheckingSheet(ByVal wb As Workbook) As Worksheet
     Set pass = PasswordManagerOf()
     If Not pass Is Nothing Then pass.UnProtect wb
 
+    'Worksheets.Add puts the new sheet on screen, and hiding it again hands
+    'the screen to whichever neighbour Excel picks, which was the Geo sheet.
+    'The sheet that was on screen before the add is put back.
     On Error Resume Next
+    Set activeBefore = wb.ActiveSheet
     Set sh = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
     If Not sh Is Nothing Then
         sh.Name = SHEET_IMPORT_CHECKING
@@ -184,6 +189,7 @@ Private Function ResolveCheckingSheet(ByVal wb As Workbook) As Worksheet
         'appear in the tab bar of a user who never asked for it.
         sh.Visible = xlSheetVeryHidden
     End If
+    If Not activeBefore Is Nothing Then activeBefore.Activate
     On Error GoTo 0
 
     If Not pass Is Nothing Then pass.Protect wb

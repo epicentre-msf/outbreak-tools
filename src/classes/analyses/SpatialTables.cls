@@ -488,8 +488,10 @@ Public Sub Add(ByVal formObject As Formulas)
             adminName = LevelName(spatType, counter)
             loName = CurrentLoName(varName, adminName)
 
+            'TableSpecs answers the hf_ copy, or the variable as it stands when
+            'the row named the hf control by its own name.
             If spatType = HF Then
-                rowVarName = HF & "_" & inputVarName
+                rowVarName = specs.SpatialConcatVariableName(inputVarName)
             Else
                 rowVarName = CONCAT & adminName & "_" & inputVarName
             End If

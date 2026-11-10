@@ -40,10 +40,45 @@ Option Explicit
 'is the level the steps need: ForceDisable turns off every macro of the
 'opened copy and Application.Run answers 1004. The events stay off through
 'EnableEvents False, so the copy's Workbook_Open and ribbon load stay quiet.
-'ScreenUpdating stays True there: the output workbook refused its freeze
-'under ScreenUpdating False in an invisible instance, and nothing is painted
-'in an invisible instance anyway. Calculation is set to manual once the copy
-'is open, because the write raises 1004 on an instance holding no workbook.
+'Calculation is set to manual once the copy is open, because the write
+'raises 1004 on an instance holding no workbook.
+'
+'SCREENUPDATING IS OFF IN THE HIDDEN INSTANCE
+'-------------------------------------------------------------------------------
+'An invisible Excel still repaints when ScreenUpdating is on, and Excel
+'16.0.20430 keeps shared graphics memory on every one of those repaints:
+'about 0.7 MB per cell write, measured on 2026-10-01. On a laptop that memory
+'is system RAM. The Info sheet of the ebola setup, 7 variables, cost 168 MB
+'and ran six times slower, and the Linelist sheet of 511 variables took
+'219 seconds against 93 with ScreenUpdating off. So Acquire switches
+'ScreenUpdating off there and Run writes it off again before every step.
+'
+'THE OUTPUT WORKBOOK IS PAINTED ONCE, FROM THIS SIDE
+'-------------------------------------------------------------------------------
+'A window that was never painted refuses Window.FreezePanes with 1004, and
+'with ScreenUpdating off for the whole build the window of the output
+'workbook is never painted: every data entry sheet came out unfrozen.
+'Nothing a macro of the instance does paints it. Switching ScreenUpdating
+'on inside the step, with the sheet activated, the zoom written, a scroll,
+'a cell rewritten, Application.Wait or DoEvents after it, was refused every
+'time (tried 2026-10-01). What paints it is ScreenUpdating switched on from
+'THIS side while the instance sits idle between two steps, and off again
+'right after. PaintInstance does that. The driver calls it once the output
+'workbook exists, after the linelist step, and every freeze of the build
+'is accepted from then on: Info and the 511 variable Linelist sheet of the
+'ebola setup both froze, the shared graphics memory of the instance stayed
+'at 18 MB, and the sheet took the same time with and without it.
+'
+'A CALL THIS EXCEL STOPPED WAITING FOR
+'-------------------------------------------------------------------------------
+'A step that runs long makes the visible Excel raise its box "waiting for
+'another application to complete an OLE action", and the pending call can
+'end cancelled: Run then sees -2147418110 while the step carries on in the
+'instance and finishes. Its answer is still there. BuildSteps keeps what its
+'last step answered, and after a dropped call Run asks for it through
+'LastAnswer, waiting for the instance to come free. The step named by
+'LastAnswerStep is the one asked; RecoveredCalls counts the answers read
+'back that way, for the driver to file in its report.
 '
 'THE COPY OPENS READ-WRITE
 '-------------------------------------------------------------------------------
@@ -59,11 +94,13 @@ Option Explicit
 'runtime error box; across the processes the hidden instance shows the VBE
 'box, un-hides itself, and the visible side blocks. Every step therefore
 'keeps its own handler and answers a string, and Run passes that string
-'through. A raise Run sees on the visible side is either
-'the instance gone (462, RPC call failed, RPC server unavailable), answered
+'through. A raise Run sees on the visible side is one of three things. The
+'instance gone (462, RPC call failed, RPC server unavailable) is answered
 'as "the build instance stopped answering after <step>" with the instance
-'marked stopped so ReleaseInstance quits nothing, or a plain fault such as a step
-'name the copy does not carry, answered as "ERROR <n> (<source>): <desc>".
+'marked stopped so ReleaseInstance quits nothing. A call dropped on this
+'side while the instance was at work is answered with what the step
+'answered, read back from the copy. A plain fault, such as a step name the
+'copy does not carry, is answered as "ERROR <n> (<source>): <desc>".
 '
 'RELEASE RUNS FROM EVERY EXIT
 '-------------------------------------------------------------------------------
@@ -102,6 +139,8 @@ Private Type TGenerationHost
     instanceStopped As Boolean     'True once a Run saw the instance gone
     lastStep As String             'The step the last Run was asked for
     releaseOutcome As String       'What the last ReleaseInstance answered
+    lastAnswerStep As String       'The step that answers what the last step answered
+    recoveredCalls As Long         'The answers read back after a dropped call
 End Type
 
 Private this As TGenerationHost
@@ -127,6 +166,28 @@ Private Const ERR_REMOTE_SERVER_GONE As Long = 462
 Private Const ERR_RPC_CALL_FAILED As Long = -2147023170
 Private Const ERR_RPC_SERVER_UNAVAILABLE As Long = -2147023174
 Private Const ERR_RPC_DISCONNECTED As Long = -2147417848
+
+'The errors a Run sees when the call was dropped on this side while the
+'instance was at work: cancelled by the message filter of this Excel,
+'rejected by the instance, or told to come back later.
+Private Const ERR_RPC_CALL_CANCELED As Long = -2147418110
+Private Const ERR_RPC_CALL_REJECTED As Long = -2147418111
+Private Const ERR_RPC_RETRY_LATER As Long = -2147417846
+
+'The step that answers "<step>=<answer>" for the last step the copy ran,
+'and the mark between the two parts
+Private Const DEFAULT_LAST_ANSWER_STEP As String = "BuildSteps.BuildLastAnswer"
+Private Const LAST_ANSWER_MARK As String = "="
+
+'How long the answer of a dropped call is waited for, and the pause
+'between two tries, in seconds
+Private Const RECOVERY_SECONDS As Long = 1800
+Private Const RECOVERY_PAUSE_SECONDS As Long = 2
+
+'What the wait for a last answer ended on
+Private Const AWAIT_ANSWERED As Byte = 1
+Private Const AWAIT_INSTANCE_GONE As Byte = 2
+Private Const AWAIT_UNREADABLE As Byte = 3
 
 'The most arguments Run forwards to a step
 Private Const MAX_RUN_ARGUMENTS As Long = 3
@@ -168,6 +229,8 @@ Friend Sub Initialise(ByVal designerBook As Workbook, ByVal pathChoice As Byte)
 
     this.inPlace = ResolveInPlace(pathChoice)
     this.releaseOutcome = vbNullString
+    this.lastAnswerStep = DEFAULT_LAST_ANSWER_STEP
+    this.recoveredCalls = 0
 End Sub
 
 '@label:resolve-in-place
@@ -272,6 +335,39 @@ Public Property Get ReleaseOutcome() As String
     ReleaseOutcome = this.releaseOutcome
 End Property
 
+'@label:last-answer-step
+'@prop-title The step that answers what the last step answered
+'@details
+'A public function of the workbook the steps run inside, answering
+'"<step>=<answer>" for the last step that workbook ran. BuildSteps carries
+'BuildLastAnswer, which is the default; a driver whose steps live in another
+'module names its own.
+'@return String. The step name, with its module.
+'@export
+Public Property Get LastAnswerStep() As String
+    LastAnswerStep = this.lastAnswerStep
+End Property
+
+'@label:last-answer-step-let
+'@prop-title Name the step that answers what the last step answered
+'@param stepName String. A public function of the copy. Empty puts the default back.
+'@export
+Public Property Let LastAnswerStep(ByVal stepName As String)
+    If LenB(Trim$(stepName)) = 0 Then
+        this.lastAnswerStep = DEFAULT_LAST_ANSWER_STEP
+    Else
+        this.lastAnswerStep = Trim$(stepName)
+    End If
+End Property
+
+'@label:recovered-calls
+'@prop-title How many answers were read back after a dropped call
+'@return Long. Zero when every Run came back on its own call.
+'@export
+Public Property Get RecoveredCalls() As Long
+    RecoveredCalls = this.recoveredCalls
+End Property
+
 
 '@section The instance
 '===============================================================================
@@ -328,6 +424,9 @@ Private Sub StartHiddenInstance()
             .EnableEvents = False
             .AskToUpdateLinks = False
             .AutomationSecurity = msoAutomationSecurityLow
+            'Off for the whole build: an invisible instance that repaints
+            'keeps shared graphics memory on every repaint.
+            .ScreenUpdating = False
             this.windowHandle = .Hwnd
         End With
         On Error GoTo 0
@@ -591,6 +690,13 @@ End Sub
 'answering after <step>" and marks the instance stopped; any other fault
 'is the plain error outcome. Once the instance is marked stopped every
 'later Run answers the stopped outcome without a call.
+'
+'A call this Excel stopped waiting for (cancelled, rejected, or told to
+'come back later) is answered from the copy: the step carries on over
+'there, so Run waits for the instance to come free and reads back what
+'the step answered, through LastAnswer. The driver then sees the answer
+'of the step itself. On the instance path ScreenUpdating is written off
+'before the step, whatever the step before it left.
 '@param stepName String. The public function to run.
 '@param arguments ParamArray. Up to three arguments for the step.
 '@return String. What the step answered, or an "ERROR ..." outcome.
@@ -601,6 +707,7 @@ Public Function Run(ByVal stepName As String, ParamArray arguments() As Variant)
     Dim macroName As String
     Dim answer As Variant
     Dim argumentCount As Long
+    Dim stepLabel As String
 
     RequireCopy "Run"
     this.lastStep = stepName
@@ -616,11 +723,23 @@ Public Function Run(ByVal stepName As String, ParamArray arguments() As Variant)
                    "Run forwards at most " & CStr(MAX_RUN_ARGUMENTS) & " arguments to a step"
     End If
 
+    'The label the copy files this step under, for the read back of a
+    'dropped call
+    If argumentCount = 1 Then
+        stepLabel = StepLabelOf(stepName, arguments(LBound(arguments)))
+    Else
+        stepLabel = StepLabelOf(stepName)
+    End If
+
     'The handler is armed before the first call on the copy: reading its
     'name is already a call across the processes, and on an instance gone
     'it is the call that raises.
     On Error GoTo RunFail
     macroName = "'" & this.designerCopy.Name & "'!" & stepName
+
+    'An invisible instance that repaints keeps graphics memory on every
+    'repaint, so the screen is off before every step.
+    If Not this.inPlace Then this.hostApp.ScreenUpdating = False
 
     Select Case argumentCount
         Case 0
@@ -646,18 +765,112 @@ Public Function Run(ByVal stepName As String, ParamArray arguments() As Variant)
     Exit Function
 
 RunFail:
-    Run = FailureOutcome(Err.Number, Err.Source, Err.Description)
+    Run = FailureOutcome(Err.Number, Err.Source, Err.Description, stepLabel)
+End Function
+
+'@label:paint-instance
+'@sub-title Let the hidden instance paint its windows once
+'@details
+'ScreenUpdating on, then off, as two calls from this side with the
+'instance idle between them. That one paint is what makes the window of
+'the output workbook take its freezes for the rest of the build; see the
+'note at the top of this class. In place nothing is written: the designer's
+'own Excel paints on its own and its windows take the freeze. The second
+'write runs even when the first one raised, so the screen of the instance
+'is off again on every exit.
+'@return String. "OK", the stopped outcome when the instance is gone, or "ERROR <n> (GenerationHost.PaintInstance): <desc>".
+'@throws ProjectError.ErrorUnexpectedState When OpenDesignerCopy has not run.
+'@export
+Public Function PaintInstance() As String
+    Dim failNumber As Long
+    Dim failDesc As String
+
+    RequireCopy "PaintInstance"
+
+    If this.inPlace Then
+        PaintInstance = OUTCOME_OK
+        Exit Function
+    End If
+
+    If this.instanceStopped Then
+        PaintInstance = StoppedOutcome(ERR_REMOTE_SERVER_GONE)
+        Exit Function
+    End If
+
+    On Error Resume Next
+        Err.Clear
+        this.hostApp.ScreenUpdating = True
+        failNumber = Err.Number
+        failDesc = Err.Description
+        Err.Clear
+        this.hostApp.ScreenUpdating = False
+        If failNumber = 0 Then
+            failNumber = Err.Number
+            failDesc = Err.Description
+        End If
+        Err.Clear
+    On Error GoTo 0
+
+    If failNumber = 0 Then
+        PaintInstance = OUTCOME_OK
+    ElseIf IsInstanceGoneError(failNumber) Then
+        this.instanceStopped = True
+        PaintInstance = StoppedOutcome(failNumber)
+    Else
+        PaintInstance = OUTCOME_ERROR_LEAD & CStr(failNumber) & " (" & CLASS_NAME & _
+                        ".PaintInstance): " & failDesc
+    End If
+End Function
+
+'@label:last-answer
+'@sub-title Read back what the last step of the copy answered
+'@details
+'Asks the step named by LastAnswerStep, which answers "<step>=<answer>"
+'for the last step the copy ran, and answers the second part when the
+'first names the step asked about. A step is filed under its own name
+'with its module dropped, and under "<name> <n>" when it took one whole
+'number, so "BuildSteps.BuildSheet" with 2 is read as "BuildSheet 2".
+'While the instance is still at work the question waits, up to thirty
+'minutes. Run calls this after a dropped call; a driver may call it too.
+'@param stepName String. The step whose answer is wanted, as Run was given it.
+'@param argument Optional Variant. The one argument of that step, when it took one.
+'@return String. What the step answered, or an "ERROR ..." outcome when the answer could not be read back.
+'@throws ProjectError.ErrorUnexpectedState When OpenDesignerCopy has not run.
+'@export
+Public Function LastAnswer(ByVal stepName As String, Optional ByVal argument As Variant) As String
+    Dim answer As String
+
+    RequireCopy "LastAnswer"
+
+    Select Case AwaitLastAnswer(StepLabelOf(stepName, argument), answer)
+        Case AWAIT_ANSWERED
+            LastAnswer = answer
+        Case AWAIT_INSTANCE_GONE
+            this.instanceStopped = True
+            LastAnswer = StoppedOutcome(ERR_REMOTE_SERVER_GONE)
+        Case Else
+            LastAnswer = OUTCOME_ERROR_LEAD & CStr(ProjectError.ErrorUnexpectedState) & " (" & _
+                         CLASS_NAME & ".LastAnswer): the answer of " & stepName & _
+                         " could not be read back: " & answer
+    End Select
 End Function
 
 '@label:failure-outcome
 '@sub-title Shape the outcome of a Run that raised on the visible side
+'@details
+'Three cases. The instance gone answers the stopped outcome. A call
+'dropped on this side while the instance was at work is answered with
+'what the step answered over there, read back from the copy. Any other
+'fault answers the plain error outcome.
 '@param errNumber Long. The error number.
 '@param errSource String. The error source. Empty takes this class.
 '@param errDesc String. The description.
-'@return String. The stopped outcome for the instance gone, the plain error outcome otherwise.
+'@param stepLabel String. The label the copy files the step under.
+'@return String. The stopped outcome, the answer read back, or the plain error outcome.
 Private Function FailureOutcome(ByVal errNumber As Long, _
                                 ByVal errSource As String, _
-                                ByVal errDesc As String) As String
+                                ByVal errDesc As String, _
+                                ByVal stepLabel As String) As String
     Dim sourceText As String
 
     If IsInstanceGoneError(errNumber) Then
@@ -666,11 +879,182 @@ Private Function FailureOutcome(ByVal errNumber As Long, _
         Exit Function
     End If
 
+    If IsDroppedCallError(errNumber) And Not this.inPlace Then
+        FailureOutcome = AnswerOfDroppedCall(errNumber, stepLabel)
+        Exit Function
+    End If
+
     sourceText = errSource
     If LenB(sourceText) = 0 Then sourceText = CLASS_NAME & ".Run"
 
     FailureOutcome = OUTCOME_ERROR_LEAD & CStr(errNumber) & " (" & sourceText & "): " & errDesc
 End Function
+
+'@label:answer-of-dropped-call
+'@sub-title Answer a Run whose call was dropped while the instance was at work
+'@details
+'The step is still running over there, or has finished. Its answer is read
+'back once the instance comes free and counted on RecoveredCalls. An
+'instance that went away meanwhile answers the stopped outcome. An answer
+'that cannot be read back answers an error outcome carrying the number of
+'the dropped call and the reason.
+'@param errNumber Long. The number the dropped call raised.
+'@param stepLabel String. The label the copy files the step under.
+'@return String. What the step answered, or an "ERROR ..." outcome.
+Private Function AnswerOfDroppedCall(ByVal errNumber As Long, _
+                                     ByVal stepLabel As String) As String
+    Dim answer As String
+
+    Select Case AwaitLastAnswer(stepLabel, answer)
+        Case AWAIT_ANSWERED
+            this.recoveredCalls = this.recoveredCalls + 1
+            AnswerOfDroppedCall = answer
+        Case AWAIT_INSTANCE_GONE
+            this.instanceStopped = True
+            AnswerOfDroppedCall = StoppedOutcome(errNumber)
+        Case Else
+            AnswerOfDroppedCall = OUTCOME_ERROR_LEAD & CStr(errNumber) & " (" & CLASS_NAME & _
+                                  ".Run): this Excel stopped waiting for " & this.lastStep & _
+                                  " and its answer could not be read back: " & answer
+    End Select
+End Function
+
+'@label:await-last-answer
+'@sub-title Ask the copy for its last answer until the instance answers
+'@details
+'One call on the step named by LastAnswerStep. While the instance is still
+'inside the step, that call waits its turn and may be dropped like the
+'first one, so it is asked again after a short pause, for thirty minutes
+'at most. An instance gone ends the wait; so does any other fault, a copy
+'that carries no such step being the common one.
+'@param stepLabel String. The label the answer has to be filed under.
+'@param answer String. Answers what the step answered, or why it could not be read.
+'@return Byte. AWAIT_ANSWERED, AWAIT_INSTANCE_GONE or AWAIT_UNREADABLE.
+Private Function AwaitLastAnswer(ByVal stepLabel As String, ByRef answer As String) As Byte
+    Dim startedAt As Date
+    Dim macroName As String
+    Dim filed As Variant
+    Dim callNumber As Long
+    Dim callDesc As String
+
+    startedAt = Now
+    Do
+        filed = Empty
+
+        On Error Resume Next
+            Err.Clear
+            macroName = "'" & this.designerCopy.Name & "'!" & this.lastAnswerStep
+            filed = this.hostApp.Run(macroName)
+            callNumber = Err.Number
+            callDesc = Err.Description
+            Err.Clear
+        On Error GoTo 0
+
+        If callNumber = 0 Then
+            AwaitLastAnswer = ReadFiledAnswer(filed, stepLabel, answer)
+            Exit Function
+        End If
+
+        If IsInstanceGoneError(callNumber) Then
+            AwaitLastAnswer = AWAIT_INSTANCE_GONE
+            Exit Function
+        End If
+
+        If Not IsDroppedCallError(callNumber) Then
+            answer = CStr(callNumber) & " " & callDesc
+            AwaitLastAnswer = AWAIT_UNREADABLE
+            Exit Function
+        End If
+
+        PauseThisExcel
+    Loop While DateDiff("s", startedAt, Now) < RECOVERY_SECONDS
+
+    answer = "the build instance stayed busy for " & CStr(RECOVERY_SECONDS) & " seconds"
+    AwaitLastAnswer = AWAIT_UNREADABLE
+End Function
+
+'@label:read-filed-answer
+'@sub-title Take the answer out of "<step>=<answer>" when the step is the one asked about
+'@param filed Variant. What the last-answer step answered.
+'@param stepLabel String. The label the answer has to be filed under.
+'@param answer String. Answers what the step answered, or why it could not be read.
+'@return Byte. AWAIT_ANSWERED or AWAIT_UNREADABLE.
+Private Function ReadFiledAnswer(ByVal filed As Variant, _
+                                 ByVal stepLabel As String, _
+                                 ByRef answer As String) As Byte
+    Dim filedText As String
+    Dim markAt As Long
+    Dim filedLabel As String
+
+    If Not (IsEmpty(filed) Or IsNull(filed)) Then filedText = CStr(filed)
+
+    markAt = InStr(filedText, LAST_ANSWER_MARK)
+    If markAt = 0 Then
+        answer = "the copy filed no step"
+        ReadFiledAnswer = AWAIT_UNREADABLE
+        Exit Function
+    End If
+
+    filedLabel = Left$(filedText, markAt - 1)
+    If StrComp(filedLabel, stepLabel, vbTextCompare) <> 0 Then
+        If LenB(filedLabel) = 0 Then filedLabel = "(none)"
+        answer = "the last step the copy ran is " & filedLabel
+        ReadFiledAnswer = AWAIT_UNREADABLE
+        Exit Function
+    End If
+
+    answer = Mid$(filedText, markAt + Len(LAST_ANSWER_MARK))
+    ReadFiledAnswer = AWAIT_ANSWERED
+End Function
+
+'@label:step-label-of
+'@sub-title The label the copy files a step under
+'@details
+'The name of the step with its module dropped, and the argument after a
+'space when the step took one whole number: "BuildSheet 2".
+'@param stepName String. The step, with or without its module.
+'@param argument Optional Variant. The one argument of the step, when it took one.
+'@return String. The label.
+Private Function StepLabelOf(ByVal stepName As String, Optional ByVal argument As Variant) As String
+    Dim label As String
+
+    label = Mid$(stepName, InStrRev(stepName, ".") + 1)
+
+    If Not IsMissing(argument) Then
+        Select Case VarType(argument)
+            Case vbByte, vbInteger, vbLong
+                label = label & " " & CStr(argument)
+        End Select
+    End If
+
+    StepLabelOf = label
+End Function
+
+'@label:is-dropped-call-error
+'@sub-title Whether an error number says this side dropped the call
+'@details
+'Cancelled by the message filter of this Excel, which is what a long step
+'ends on once the "waiting for another application" box has been up;
+'rejected by the instance; or told to come back later. In all three the
+'instance is alive.
+'@param errNumber Long.
+'@return Boolean.
+Private Function IsDroppedCallError(ByVal errNumber As Long) As Boolean
+    Select Case errNumber
+        Case ERR_RPC_CALL_CANCELED, ERR_RPC_CALL_REJECTED, ERR_RPC_RETRY_LATER
+            IsDroppedCallError = True
+        Case Else
+            IsDroppedCallError = False
+    End Select
+End Function
+
+'@label:pause-this-excel
+'@sub-title Hold the visible Excel for the pause between two tries
+Private Sub PauseThisExcel()
+    On Error Resume Next
+    this.designerBook.Application.Wait Now + TimeSerial(0, 0, RECOVERY_PAUSE_SECONDS)
+    On Error GoTo 0
+End Sub
 
 '@label:is-instance-gone-error
 '@sub-title Whether an error number says the instance is gone

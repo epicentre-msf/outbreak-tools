@@ -1138,6 +1138,51 @@ TestFail:
     CustomTestLogFailure Assert, "TestSpatialNamesFollowTheColumnForSpatioTemporal", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify a facility variable named as it stands reads as a facility table.
+'@details
+'The dictionary keeps an hf control under the name the setup gave it, and the
+'setup dropdown offers that name, so a row carries hf_h2 and no hf_hf_h2
+'exists to find. Such a row used to answer an empty scope, and the build then
+'stopped on an unknown spatial type. The scope, the two names, the label
+'column and the validity all follow the control.
+'@TestMethod("TableSpecs")
+Public Sub TestSpatialNamesReadAFacilityVariableAsItStands()
+    CustomTestSetTitles Assert, "TableSpecs", "TestSpatialNamesReadAFacilityVariableAsItStands"
+    On Error GoTo TestFail
+
+    Dim specs As TableSpecs
+
+    BuildFixture TABLE_SPATIOTEMPORAL, SpatioTemporalHeader(), _
+                 SpatioTemporalRow("date_v1", "hf_h2", "5", "no")
+    Set specs = CreateSpecs(1)
+
+    Assert.AreEqual "hf", specs.SpatialTableScopes, _
+                    "A row naming the hf control by its own name reads as a facility table"
+    Assert.AreEqual vbNullString, specs.SpatialPrefix, _
+                    "No prefix is added to a name the dictionary already holds"
+    Assert.AreEqual "hf_h2", specs.SpatialVariableName("hf_h2"), _
+                    "The variable name is the name as it stands"
+    Assert.AreEqual "hf_h2", specs.SpatialConcatVariableName("hf_h2"), _
+                    "The formula variable is the same name"
+    Assert.AreEqual "main label", specs.SpatialLabelColumn, _
+                    "A health facility is labelled from its main label"
+    Assert.IsTrue specs.ValidTable, _
+                  "A spatio-temporal row naming the hf control as it stands is valid"
+
+    BuildFixture TABLE_SPATIAL, SpatialHeader(), _
+                 SpatialRow("hf_h2", "", "5", "no", "no", "no")
+    Set specs = CreateSpecs(1)
+
+    Assert.AreEqual "hf", specs.SpatialTableScopes, _
+                    "A spatial row reads the same variable off its row field"
+    Assert.IsTrue specs.ValidTable, _
+                  "A spatial row naming the hf control as it stands is valid"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSpatialNamesReadAFacilityVariableAsItStands", Err.Number, Err.Description
+End Sub
+
 '@section ValidTable tests
 '===============================================================================
 

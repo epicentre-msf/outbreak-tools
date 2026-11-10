@@ -521,22 +521,72 @@ Public Property Get SpatialTableScopes() As String
     End If
 
     Set cachedDict = Dictionary()
+    rowVar = SpatialBaseVariable()
 
-    ' For spatio-temporal, the spatial variable is in the "column" field
-    If TableScope = ScopeSpatioTemporal Then
-        rowVar = Value(COLUMN_COLUMN)
-    Else
-        rowVar = Value(COLUMN_ROW)
-    End If
-
+    ' A facility variable is read as it stands as well. The dictionary keeps
+    ' an hf control under the name the setup gave it, and the setup dropdown
+    ' offers that name, so a row carries "hf_h2" and no "hf_hf_h2" exists to
+    ' find. Such a row used to answer an empty scope and the build stopped on
+    ' an unknown spatial type.
     this.cachedSpatialScope = Switch( _
         cachedDict.VariableExists(PREFIX_HEALTH_FACILITY & rowVar), "hf", _
+        IsFacilityControl(rowVar), "hf", _
         cachedDict.VariableExists(PREFIX_ADMIN & rowVar), "geo", _
         True, vbNullString)
     this.spatialScopeCached = True
 
     SpatialTableScopes = this.cachedSpatialScope
 End Property
+
+'@label:spatial-base-variable
+'@sub-title The variable the spatial probes read off this row
+'@details
+'A spatio-temporal table keeps its spatial variable in the column field and
+'every other scope in the row field.
+'@return String. The variable name as the row wrote it.
+Private Function SpatialBaseVariable() As String
+    If TableScope = ScopeSpatioTemporal Then
+        SpatialBaseVariable = Value(COLUMN_COLUMN)
+    Else
+        SpatialBaseVariable = Value(COLUMN_ROW)
+    End If
+End Function
+
+'@label:is-facility-control
+'@sub-title Whether a variable is itself the health facility control
+'@details
+'LLdictionary.Prepare leaves a health facility row under the name the setup
+'gave it and adds a p-code row beside it, so the dictionary holds no hf_ copy
+'of a variable that already carries the prefix. A row that names an hf
+'control as it stands is a facility table.
+'@param varName String. The variable the row names.
+'@return Boolean. True when the dictionary holds varName under the hf control.
+Private Function IsFacilityControl(ByVal varName As String) As Boolean
+    Dim vars As LLVariables
+
+    If LenB(varName) = 0 Then Exit Function
+    If Not Dictionary().VariableExists(varName) Then Exit Function
+
+    Set vars = VariablesObject()
+    If vars Is Nothing Then Exit Function
+
+    IsFacilityControl = (LCase$(vars.Value(colName:=VARIABLE_CONTROL, varName:=varName)) = "hf")
+End Function
+
+'@label:facility-variable-name
+'@sub-title The dictionary name of the facility variable a row names
+'@details
+'The hf_ copy when the dictionary holds one, else the name as the row wrote
+'it, which is the name the dictionary keeps for an hf control.
+'@param baseVar String. The variable name as the row wrote it.
+'@return String. The name the dictionary holds the facility under.
+Private Function FacilityVariableName(ByVal baseVar As String) As String
+    If Dictionary().VariableExists(PREFIX_HEALTH_FACILITY & baseVar) Then
+        FacilityVariableName = PREFIX_HEALTH_FACILITY & baseVar
+    Else
+        FacilityVariableName = baseVar
+    End If
+End Function
 
 '@label:spatial-prefix
 '@prop-title Dictionary prefix for this table's spatial variable
@@ -546,12 +596,14 @@ End Property
 'their own copy of the geo-against-facility test, which is how the tag that
 'names the spatial input cells came to disagree with the tag the formulas
 'referenced.
-'@return String. "hf_", "adm1_", or an empty string when neither prefix matched.
+'@return String. "hf_", "adm1_", or an empty string when neither prefix matched
+'or when the facility variable is named as it stands.
 '@export
 Public Property Get SpatialPrefix() As String
     Select Case SpatialTableScopes()
     Case "hf"
-        SpatialPrefix = PREFIX_HEALTH_FACILITY
+        If Dictionary().VariableExists(PREFIX_HEALTH_FACILITY & SpatialBaseVariable()) Then _
+            SpatialPrefix = PREFIX_HEALTH_FACILITY
     Case "geo"
         SpatialPrefix = PREFIX_ADMIN
     End Select
@@ -563,16 +615,17 @@ End Property
 'The prefixed variable name the dictionary answers for, which is the prefix
 'above joined to a variable read off this specification row.
 '@param baseVar String. The unprefixed variable name from the spec row.
-'@return String. For example "adm1_zone", or an empty string when this table
+'@return String. For example "adm1_zone" or "hf_center", the name itself for
+'a facility variable named as it stands, or an empty string when this table
 'has no spatial type.
 '@export
 Public Property Get SpatialVariableName(ByVal baseVar As String) As String
-    Dim prefix As String
-
-    prefix = SpatialPrefix()
-    If LenB(prefix) = 0 Then Exit Property
-
-    SpatialVariableName = prefix & baseVar
+    Select Case SpatialTableScopes()
+    Case "hf"
+        SpatialVariableName = FacilityVariableName(baseVar)
+    Case "geo"
+        SpatialVariableName = PREFIX_ADMIN & baseVar
+    End Select
 End Property
 
 '@label:spatial-concat-variable-name
@@ -589,7 +642,7 @@ End Property
 Public Property Get SpatialConcatVariableName(ByVal baseVar As String) As String
     Select Case SpatialTableScopes()
     Case "hf"
-        SpatialConcatVariableName = PREFIX_HEALTH_FACILITY & baseVar
+        SpatialConcatVariableName = FacilityVariableName(baseVar)
     Case "geo"
         SpatialConcatVariableName = PREFIX_CONCAT & PREFIX_ADMIN & baseVar
     End Select
@@ -1323,16 +1376,18 @@ Private Function ComputeValidTable() As Boolean
         ' The prefixed names only exist once LLdictionary.Prepare has run, and
         ' the setup workbook checks its own rows before that. There the row
         ' variable is the one the setup dropdown offered, still carrying the
-        ' control "geo" or "hf" it was written with. The control is read on an
-        ' unprepared dictionary ONLY: past Prepare the prefixed name is what
-        ' the analysis build goes on to look for, and a row that has no
-        ' prefixed name is a row that build cannot draw.
+        ' control "geo" or "hf" it was written with. Prepare rewrites a geo
+        ' control to geo1..geo4, so "geo" is read on an unprepared dictionary
+        ' only: past Prepare the adm1_ name is what the build looks for. An
+        ' hf control keeps its name and its control through Prepare, so a row
+        ' naming it as it stands is valid on both sides, the way the
+        ' spatio-temporal arm below already reads it.
         rowControl = vars.Value(colName:=VARIABLE_CONTROL, varName:=rowVar)
         colControl = vars.Value(colName:=VARIABLE_CONTROL, varName:=colVar)
         isValid = (cachedDict.VariableExists(PREFIX_ADMIN & rowVar) Or _
                    cachedDict.VariableExists(PREFIX_HEALTH_FACILITY & rowVar) Or _
-                   ((Not cachedDict.Prepared) And _
-                    ((rowControl = "geo") Or (rowControl = "hf")))) And _
+                   (rowControl = "hf") Or _
+                   ((Not cachedDict.Prepared) And (rowControl = "geo"))) And _
                   (colVar = vbNullString Or _
                    colControl = "choice_manual" Or _
                    colControl = "choice_formula")

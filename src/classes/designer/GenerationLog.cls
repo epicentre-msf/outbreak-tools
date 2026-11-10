@@ -294,7 +294,7 @@ Private Function PlatformTag() As String
         bits = "32"
     #End If
 
-    PlatformTag = osName & "-" & bits & " excel-" & Application.Version
+    PlatformTag = osName & "-" & bits & " excel-" & Application.Version & "." & Application.Build
 End Function
 
 '@label:open-section

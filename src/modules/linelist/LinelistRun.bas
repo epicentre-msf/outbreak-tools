@@ -353,6 +353,18 @@ Public Function HandleImportData(ByVal sourceWkb As Workbook, _
     ' The one line that answers True, and it sits after the data is written.
     HandleImportData = True
 
+    ' The import log goes on screen and the walk stops there. It used to ask
+    ' whether to open the report form, whose own button showed this same
+    ' sheet, and the screen moved once more after the form. The owner asked
+    ' for the sheet straight away and for nothing to move after it. The
+    ' report form still reads the same store from the advanced form.
+    ' A scripted run shows nothing: nobody is there to read a worksheet, so
+    ' it keeps the boxes below and their silent answers. A file that produced
+    ' no log line has no sheet to show and reaches the boxes too.
+    If Not Messenger.Armed Then
+        If ImportChecking.ShowReportSheet(sourceWkb) Then Exit Function
+    End If
+
     ' Show result. MSG_FinishImportRep asks whether the user wants to see a
     ' report, and it used to be asked with an OK button, so there was no way to
     ' answer and nothing behind it either.

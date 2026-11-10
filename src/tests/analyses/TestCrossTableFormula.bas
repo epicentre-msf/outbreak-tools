@@ -255,6 +255,23 @@ Private Function SpatioTemporalRows(ByVal colVar As String, _
               "", summaryFunction, "Cases", "integer", "no"))
 End Function
 
+'@sub-title Two spatio-temporal rows in one section.
+'@details
+'Row 1 opens section S1 and row 2 continues it, so row 2 is the table that
+'reads the section's input cells and period cells without owning them.
+'@param colVar String. The unprefixed geo or facility variable.
+'@param geoMax String. The "N geo max" cell.
+'@param summaryFunction String. The summary function.
+Private Function SpatioTemporalTwoRows(ByVal colVar As String, _
+                                       ByVal geoMax As String, _
+                                       ByVal summaryFunction As String) As Variant
+    SpatioTemporalTwoRows = Array( _
+        Array("S1", DATE_VARIABLE, colVar, geoMax, "First table", _
+              "", summaryFunction, "Cases", "integer", "no"), _
+        Array("S1", DATE_VARIABLE, colVar, geoMax, "Second table", _
+              "", summaryFunction, "Deaths", "integer", "no"))
+End Function
+
 '@section Fixture helpers
 '===============================================================================
 
@@ -1945,6 +1962,55 @@ Public Sub TestSpatioTemporalFacilityLabelsUseTheFacilityTag()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestSpatioTemporalFacilityLabelsUseTheFacilityTag", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify the second spatio-temporal table of a section writes its formulas.
+'@details
+'The second table owns no input cells and no period cells: it reads the ones
+'the section anchor wrote. The generic build lost such a table to a bare
+'"Method 'Range' of object '_Worksheet' failed", so this pins the walk.
+'@TestMethod("CrossTableFormula")
+Public Sub TestSecondSpatioTemporalTableWritesItsFormulas()
+    CustomTestSetTitles Assert, "CrossTableFormula", "TestSecondSpatioTemporalTableWritesItsFormulas"
+    On Error GoTo TestFail
+
+    BuildFixture TABLE_SPATIOTEMPORAL, SpatioTemporalHeader(), _
+                 SpatioTemporalTwoRows(GEO_VARIABLE, "2", COUNT_CALL_FUNCTION)
+
+    Dim sh As Worksheet
+    Dim tabId As String
+    Dim secId As String
+    Dim secondTabId As String
+    Dim firstWriter As CrossTableFormula
+    Dim secondWriter As CrossTableFormula
+    Dim secondTable As CrossTable
+    Dim secondLabel As String
+
+    Set firstWriter = WriteTable(1, sh, tabId, secId)
+
+    Set secondTable = CrossTable.Create(CreateSpecs(2), sh, lData)
+    secondTable.Build
+    secondTabId = secondTable.Specifications.TableId
+    Set secondWriter = CrossTableFormula.Create(secondTable, fData)
+    secondWriter.AddFormulas
+    secondLabel = NamedFormula(sh, "LABEL_COL_1_" & secondTabId)
+
+    Assert.AreEqual CLng(0), ErrorCheckCount(firstWriter), _
+                    "The first table should report no error, and it reported " & _
+                    CheckMessages(firstWriter)
+    Assert.AreEqual CLng(0), ErrorCheckCount(secondWriter), _
+                    "The second table should report no error, and it reported " & _
+                    CheckMessages(secondWriter)
+    Assert.IsTrue (InStr(1, secondLabel, "INPUTSPTGEO_1_" & secId) > 0), _
+                  "The second table's first header reads the section's first input cell, " & _
+                  "and it holds [" & secondLabel & "]"
+    Assert.IsTrue (InStr(1, NamedFormula(sh, "VALUES_COL_1_" & secondTabId), _
+                         GEO_CONCAT_VARIABLE) > 0), _
+                  "The second table is summarised over the concatenated column"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSecondSpatioTemporalTableWritesItsFormulas", Err.Number, Err.Description
 End Sub
 
 '@section Spatial
