@@ -49,19 +49,18 @@ If no geobase is imported during compilation, the linelist user can [import one]
 :::
 
 
-
 ### Add passwords
 
-It is highly recommended to add passwords, both to forbid user capacity to modify the content (and break the file) and to limit outside parties from opening the file. 
+It is highly recommended to add passwords, both to prevent users from unwillingly break the file and to limit outside parties from opening the file. 
 
 To do that, just fill the passwords in the little blue boxes before compiling.
 
 
 ## Advanced customisations
 
-There are a couple more customisations available through the [OutbreakTools option ribbon](../reference/ribbons_designer.qmd).
+There are a couple more customisations available through the [OutbreakTools menu](../reference/ribbons_designer.qmd).
 
-![OutbreakTools tab in the designer file](../images/img-003-ribbon-designer.png){fig-align="center"}
+![OutbreakTools tab in the designer file](../reference/images/img-005-designer-ribbon.png){fig-align="center"}
 
 ## Compilation advice
 
@@ -79,9 +78,50 @@ The linelist compilation relies on Excel VBA and can be a bit *finicky.* Here is
 
 - If it fails, start with a new designer file, in case the previous one got corrupted when compilation failed.
 
-- Excel VBA sometimes interact with other Office applications. If all goes well, no problem. But in case of unexpected failures, try avoiding using Office applications while compiling.
-
+- Excel VBA sometimes interacts with other Office applications. If all goes well, no problem. But in case of unexpected failures, try avoiding using Office applications while compiling.
 
 ::: {.callout-tip}
 I prepare the **setup file**, the **designer file**, and then copy both of them and use the copies to compile. If a compilation fails, I delete both copies and start from fresh, just in case the failure to compile corrupted any of the file.
 :::
+
+## Multiple linelists generation steps
+
+Within the designer, there is a sheet named *GenerateMultiple* that allows users to generate as many linelists as they need at once. To do this, use the tools in the Multiple Linelists section of the designer ribbon to populate the GenerateMultiple table. .See [mutliple linelist](../reference/ribbons_designer.qmd#sec-designer-multiple-linelists).
+
+0. Open the designer file
+
+1. The ID is generated automatically as soon as you upload the setups. Note that the ID can also be edited manually, so steps 1 and 2 can be performed in either order.
+
+2. Select "Setups", then click Load Multiple Files/Folders in the designer ribbon to choose the setups you want to upload.
+
+::: {.callout-note}
+
+The load multiple files/folders step will be repeated until the  *geobases and output folders* cells  are filled.
+:::
+
+3. Select "geobases" to upload geobase files.
+
+4. Select "output folders" to choose where the linelists will be saved.
+
+5. Enter the names of the linelists you want to generate in the "Output files".
+
+6. Enter passwords to be used while opening the linelists in the "output file password"  
+
+7. Enter debugging passwords in the "output file debugging password" column. This is key because it prevents the users from accidentally or deliberately breaking the linelist files.
+
+8. Use the drop-down menu "Language of the dictionary" to select a language present in the setup files for the linelist content
+
+9. Use the drop-down menu "Language of the interface" to select the language in which the linelist’s labels, headings, and other text will be displayed.
+
+10. Define  the epiweek using the drop-down menu in the "epiweekstart"
+
+11. Use the drop-down menu in "design" to choose how the generated linelists will look. 
+
+12. Click on the "ribbon file" in the designer ribbon to attach a template file.
+
+13. Click the "Generate" button to start the generation process.
+
+14.  Once the generation is complete, a report of each generation will appear in the *Result* column.
+
+![Multiple linelist compilation](../images/img-getting-started_generatemultiple.png){#fig-setup-ribbon fig-align="center"}
+

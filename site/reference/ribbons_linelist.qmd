@@ -6,7 +6,7 @@ categories:
   - OBT menu
 ---
 
-Recent version of Excel have a top [ribbon/menu](https://www.ablebits.com/office-addins-blog/excel-ribbon-guide/) that display most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities.
+Recent version of Excel have a top [ribbon/menu](https://www.ablebits.com/office-addins-blog/excel-ribbon-guide/) that displays most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities.
 
 ![OutbreakTools menu in OBT linelists](../images/img-001-ribbon-linelist.png){fig-align="center"}
 
@@ -16,9 +16,11 @@ Recent version of Excel have a top [ribbon/menu](https://www.ablebits.com/office
 
 ### Show / Hide variables
 
-Clicking on the "Show/hide variables" button opens a window listing all the variables in this linelist sheet.
+Clicking on the "Show/hide variables" button opens a pop-up window listing all the variables in this linelist sheet, with a couple of toogles and buttons on the right.
 
 ![Show hide button and pop-up window](../images/img-show-hide-variables.png){fig-align="center"}
+
+#### Show or hide variables individually
 
 Variable can have three visibility status:
 
@@ -29,55 +31,125 @@ Variable can have three visibility status:
 - **Hide**: variables are currently hidden but can be made visible by ticking "Show" on the right
 
 ::: callout-tip
-You can hide all optional variables in one go by clicking on the “Hide all optional variables" button.
+You can hide all optional variables in one go by clicking on the “Show/Hide all non mandatory variables" button.
 
 This is useful if you want to create a minimal linelist because the provided linelist has a lot of variables shown by default.
 
-After use, the button will change to “Show all optional variables", to allow the reverse action.
 :::
 
-### Show / Hide Sections
+#### Show / Hide Sections
 
-Clicking the "Section button" within the "Show/Hide Variables" window opens the "Show/Hide Sections" pop-up, which displays a list of all sections in the line list.
+A section is a group of linelist variables that share the same category and are predefined in the dictionary.
+Clicking the "Sections" button within the "Show/Hide Variables" window opens the "Show/Hide Sections" pop-up, which displays a list of all sections in the linelist.
+
+The Show/Hide sections pop-up window lets users show or hide sections by clicking on them. Unlike Show/Hide variables, which has three visibility statuses, it has only one **Shown**.
 
 ![Sections show hide pop up window](../images/img-show-hide-sections.png){fig-align="center"}
 
+
 ### Layouts
 
-Clicking on the "layout button" within the show/hide variables window opens "saved layouts" pop up where you can save all the shown/hidden variables under a name, and apply the layouts again whenever you need them.
-Furthermore, saved layouts can be renamed or removed, and they are preserved during migrations, ensuring that your customized layouts remain available after migration.
+You can *save* one or several arrangements of variables, which we call *layouts*. These layouts can be exported and imported into linelists, saving you the time to redo your variable layout, or allowing you to have two versions of a given linelist, with different arrangements (two countries not collecting the same level of variables? a projects wants to collect more than another? etc.
+
+Click on the "Layouts" button within the show/hide variables window to open a "Saved layouts" pop up. "Add" adds the current arrangement of variable visibility to the list. 
 
 ![Saved layout pop up window](../images/img-004-saved-layouts.png){fig-align="center"}
 
+Buttons: 
+
+- Add: To add a layout, click the "Add" button. An input pop-up will appear where you can enter the name under which the layout will be saved.
+- Remove: Use this button to remove a saved layout you no longer need.
+- Apply: After selecting a layout, click this button to apply it.
+
+
+Saved layouts are preserved during migrations, ensuring that your customized layouts remain available after migration.
+
+
 ### Add rows
 
-By default, the linelist has 200 empty lines. Click on the "Add Rows" button to add 200 new empty rows.
+:::: {layout="[ 20, 80 ]" layout-valign="center"}
 
+::: {#first-column}
+![](../images/img-add-rows-linelist-ribbon.png){fig-align="center"}
+:::
+
+::: {#second-column}
+By default, the linelist has 200 empty lines. Click on the "Add Rows" button to add 200 new empty rows at the bottom.
+:::
+
+::::
 
 ### Resize table
 
+:::: {layout="[ 20, 80 ]" layout-valign="center"}
+
+::: {#first-column}
+![](../images/img-resize-table-linelist-ribbon.png){fig-align="center"}
+:::
+
+::: {#second-column}
+
 Click on the “Resize table" button to remove any empty rows at the end or in the middle of the linelist.
+:::
+::::
 
 ### Clear all filters
 
+:::: {layout="[ 20, 80 ]" layout-valign="center"}
+
+::: {#first-column}
+
+![](../images/img-clear-filters-linelist_ribbon.png){fig-align="center"}
+:::
+
+::: {#second-column}
 To remove all the filters at once, click on the "Clear all filters" button. This is useful if you applied several filters across the table and want to reverse to the full view without missing one.
+:::
+::::
 
 ### Sort a variable
 
+:::: {layout="[ 20, 80 ]" layout-valign="center"}
+
+:::  {#first-column}
+
+![](../images/img-sort-variable-linelist-ribbon.png){fig-align="center"}
+:::
+
+::: {#second-column}
 If you need to visualise your data by sorting on a specific variable, you need to use the sorting function. Place the cursor in a cell of the column you want to sort (from line 9) and click on the button.
 
-The first time you click, you have a message to confirm the action, once you click *yes*, you cannot undo it. The first click sorts by ascending order, the second by descending order.
+The first time you click, you have a message to confirm the action, once you click *yes*, you cannot undo it. The first click sorts *the whole table* by ascending order, the second by descending order.
+:::
+::::
 
 ### Week start
+
+:::: {layout="[ 20, 80 ]" layout-valign="center"}
+
+:::  {#first-column}
+
+![](../images/img-week-start-linelist-ribbon.png){fig-align="center"}
+:::
+::: {#second-column}
 
 The “Week start" button controls the day that starts the week in the linelist. The selected value will be applied to the whole linelist (calculated epiweeks, as well as in the analyses).
 
 When you click on the button, a pop up window appears, where you can select the day of the week corresponding to your country.
-
+:::
+::::
 ### Autofit columns
 
-Use this button to improve column width so that the columns take less space. The fit takes into account the label, the length of categories of the variable (if any) and the name of the variable (hidden).
+:::: {layout="[ 20, 80 ]" layout-valign="center"}
 
+::: {#first-column}
+
+![](../images/img-auto-fit-columns-linelist-ribbon.png){fig-align="center"}
+:::
+::: {#second-column}
+Use this button to improve column width so that the columns take less space. The fit takes into account the label, the length of categories of the variable (if any) and the name of the variable (hidden).
+:::
+::::
 ::: callout-tip
 Additionaly, you can manually modify the width of columns in the linelist to adjust to content the way you would do in any Excel file. The width of the column is also migrated during migration.
 :::
@@ -96,13 +168,21 @@ If you are in a "geo" section, you will have three tabs that you can use to sele
 
 Once the location has been found, select it and click on “OK".
 
-## Refresh analyses {sec-refresh}
+## Refresh analyses {#sec-refresh}
 
-![Refresh analyses button](../reference/images/img-007-ll-refresh-analyses.png){fig-align="center"}
+:::: {layout="[ 20, 80 ]" layout-valign="center"}
 
-Hit the "Refresh analyses" button to update analyses on all [analyses sheets]((../getting_started/use_analyses_sheets.qmd)) in one go. You should use it whenever you entered new data or when you applied filters to existing data and want to see the analyses on this subset of data.[^1]
+::: {#first-column}
+![](../reference/images/img-007-ll-refresh-analyses.png){fig-align="center"}
+:::
+
+::: {#second-column}
+Hit the "Refresh analyses" button to update analyses on all [analyses sheets](../getting_started/use_analyses_sheets.qmd) in one go. You should use it whenever you entered new data or when you applied filters to existing data and want to see the analyses on this subset of data.[^1]
 
 [^1]: Do not forget to remove the filters and refresh the analyses at the end to not be confused by the numbers in a couple of days
+:::
+
+::::
 
 ::: callout-note
 If the numbers in the analyses are striken, it is because of a [new Excel functionality](https://techcommunity.microsoft.com/blog/microsoft365insiderblog/stale-value-formatting-now-available-in-excel-for-windows/4281372). The documentation is limited and we have not been able to modify the refresh button to take it into account yet. You have two options: use the **F9** shortcut before hitting "Refresh analyses", or un-tick the "Format Stale Values" option in the Calculation options of the *Formula* tab of Excel options.
@@ -120,7 +200,7 @@ The "Import Data" button allows you to import data in the linelist. This data mu
 
 [^2]: But a good R script can mimic the format too
 
-Select the file to import using the navigating windows and click "Ok" to launch the import. At the end, a message informs you of the success and provide a little import report. Inspect it to see if there are any unexpected discrepancies (loosing variables unexpectedly is a red flag!).
+Select the file to import using the navigating window and click "Ok" to launch the import. At the end, a message informs you of the success and provide a little import report. Inspect it to see if there are any unexpected discrepancies (loosing variables unexpectedly is a red flag!).
 
 ::: callout-important
 The same button is used whether the data was generated with the "Export data button" from the [Exports](#sec-export-data) section[^3] or the "Export for migration" button from the [Advanced](#sec-linelist-advanced) section of the ribbon[^4].
@@ -222,7 +302,7 @@ Select the options and click on “Export"; a window pops-up asking where to sav
 
 - a file containing the **data** and **metadata**
 - a file containing the **geobase** that is currently in the linelist, **as well as the history from the GeoHelper**
-- a file containing \*only the GeoHelper \*\*history\*[^6]
+- a file containing *only the GeoHelper history*[^6]
 
 [^6]: This option is useful if you want to upgrade to a new version of the geobase but wish to keep your GeoHelper history. You do not have to use it for general purpose migration.
 
@@ -255,6 +335,41 @@ This button allows you to restore the state of hidden columns (i.e. hide them al
 ::: callout-note
 Hidden columns are not supposed to be shown, and the user can thus not modify their visibility state from the regular Show/Hide variables button, hence this button.
 :::
+
+### Log 
+
+Click this button to access the log. It opens as a new sheet in the linelist workbook named *_log*.The log lists the actions that have been performed in the linelist since it was built.
+
+How it is organised;
+
+The top of the sheet shows the Status and Title being displayed (both set to All by default). Below, entries are grouped under these headings:
+
+- open/close: opening of the linelist workbook.
+
+- linelist lifecycle: actions in the linelist for example  showing or hiding variables, calculating the analysis sheets and opening the log and  adding rows.
+
+- data input/output: data leaving the linelist, such as exporting the log.
+
+![](../images/img-ribbon-linelist_log.png){fig-align="center"}
+
+
+::: callout-note
+If no action has been performed in the linelist, the log will contain very little information. It will only show
+that the linelist was opened, the date and time it was opened, and the Excel version used.
+:::
+
+### Export the log
+
+This button saves the log as a text file, since  the log opens inside the linelist workbook, it cannot be taken out of it directly, so this button lets users keep a copy, open it outside the workbook or share it.
+
+![](../images/img-ribbon-linelist-export-the-log.png){fig-align="center"}
+
+In addition the exported file contains:
+
+  - The date and time the file was written, the workbook name and the location where the exported file is saved.
+  
+  - The language, the linelist creation date and name, the setup and Designer used to create the linelist, and the Designer version.
+  
 
 ```         
 ```

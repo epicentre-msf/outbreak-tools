@@ -7,7 +7,7 @@ categories:
 ---
 
 
-Recent version of Excel have a top [ribbon/menu](https://www.ablebits.com/office-addins-blog/excel-ribbon-guide/) that display most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities.
+Recent version of Excel have a top [ribbon/menu](https://www.ablebits.com/office-addins-blog/excel-ribbon-guide/) that displays most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities.
 
 
 ![OutbreakTools tab in the **setup file**](../images/img-setup-ribbon.png){#fig-setup-ribbon fig-align="center"}
@@ -40,19 +40,19 @@ When this functionality is used in the *Analyses* sheet, you can use the drop-do
 
 ### Insert row
 
-This button inserts a row between existing rows in each of the setup's worksheets.
+This button inserts a row between existing rows in each of the setup's tables.
 
 ### Delete table row
 
-This button deletes rows. To delete a row, select it and then click the button. Before the row is deleted, a warning message will appear to let you know that the operation cannot be undone.
+This button deletes rows within the tables. To delete a row, select it and then click the button. Before the row is deleted, a warning message will appear to let you know that the operation cannot be undone.
 
 ### Delete table column
 
-This button deletes table columns, but only on the Translation sheet.
+This button deletes table columns, but only on the *Translation* sheet.
 
 ### Sort tables
 
-This button organises the Dictionary and the tables in the Choices, Analyses, and Export sheets. The sorting method depends on the sheet.
+This button organises the *Dictionary* and the tables in the *Choices*, *Analyses*, and *Export* sheets. The sorting method depends on the sheet.
 
 ### Remove all filters
 
@@ -69,7 +69,7 @@ This section provides functionalities for the [Translation sheet](../reference/t
 
 ### Add language
 
-This button adds a new column to translations sheet, to add a new linelist language.
+This button adds a new column to *Translations* sheet, to add a new linelist language.
 
 1. Fill the name of the language in the box
 2. Click on the button: it will add a new empty column on the right of the columns already present.
@@ -89,20 +89,25 @@ At the end, it will open a popup window with information on the update of the tr
 Go to the [Translation sheet](../reference/translations_sheet.qmd) for more information on translations.
 
 
-## Import/ Export
+## Import / Export
 
-These buttons allow to import data into an empty setup as well as exporting for migration.
+It is possible to move setup data from one file to another empty setup file^[An upgraded version, or an empty file for the same version in case the original file got corrupted.]. There are two ways to do that:
+
+- Import from another setup directly.
+- Import from an intermediate flat .xlsx file, in a similar fashion to linelist data migration.
+
+A couple of buttons allow us to perfomr these actions: 
 
 ![Import section](../images/img-import-setup.png){fig-align="center"}
 
-### Import data from another setup
+### Import from another setup
 
-Use this button to import data from another **setup file** to an empty setup file^[An upgraded version, or an empty file for the same version in case the original file got corrupted.].
+Use this button to import data directly from another **setup file** to an empty setup file. It lets users either select all the boxes to import everything, or choose only the specific items they want to import.
 
 1. Click on the button; it opens a popup window
 2. Click on the "Load another setup file" button. It will open a window to select the file to import data from.
 3. Select what to import from the original by ticking the boxes.
-4. Decide if you want to run a checkup of the **setup** file after import by ticking the box or not
+4. Decide if you want to run a checkup of the **setup file** after import by ticking the box or not
 5. Click on the "Import" button and wait.
 
 ![](images/img-004-import-setup.png){fig-align="center"}
@@ -116,12 +121,17 @@ You can run the coherence checks now, or do it at a later stage with the [Check 
 
 ### Import from migration
 
-Use this button to import back the previously exported file from migration.
+This button allows users to import an .xlsx flat file containing setup data.
 
 ### Export for migration
 
-This button allows you to export the setup for migration. 
+This button allows you to export the content of the **setup file** in a flat .xlsx file, that serves as an intermediate format. 
 
+::: {.callout-tip}
+Flat files are easy to modify from other tool, so you could edit your dictionary from R fro exemple.
+
+They're also easier to work with in the **Designer**: they open and close faster, there's less juggling of the setup .xlsb, and the setup is less likely to be corrupted during generation.  
+:::
 
 ## Advanced {#sec-advanced}
 

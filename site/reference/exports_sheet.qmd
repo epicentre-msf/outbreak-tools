@@ -124,7 +124,9 @@ Display in the **linelist file**:
 
 ## Admin levels
 
-You can  export export specific admin levels forexample admin1 + admin 2
+You can export specific admin levels using the Admin Levels column. Leave it blank to export all admin levels, or specify the ones needed, for example, Admin 1 and Admin 2, or just a single admin level.
+
+![](../images/img-export-admin-levels.png){fig-align="center"}
 
 ## Include personal identifiers
 
@@ -175,11 +177,6 @@ This is a *yes/no* drop-down field. By selecting "*yes*", you decide that in add
 -   The "*Dictionary*" sheet
 -   The "*Choices*" sheet
 -   A metadata sheet^[we are not speaking of the sheet usually created for linelists that contains variables to collect metadata about the project (MSF section, disease, facility name...), but of hidden linelist metadata (when the file was compiled, language, version etc.)]
-
-
-## Export Translation
-
-This is a *yes/no* drop-down field. Selecting "*yes*" means that, in addition to the data to be exported, we will also have the sheet containing the translations.
 
 
 ## Export Analysis Sheet
