@@ -72,4 +72,4 @@ jobs:
           gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$id" -f name="" >/dev/null
 
       - name: Refresh the releases page
-        run: gh workflow run publish.yml --ref dev
+        run: gh workflow run publish.yml --ref documentation

@@ -80,4 +80,4 @@ jobs:
 
       - name: Refresh the releases page after the release exists
         if: steps.ex.outputs.exists == 'false'
-        run: gh workflow run publish.yml --ref dev
+        run: gh workflow run publish.yml --ref documentation
