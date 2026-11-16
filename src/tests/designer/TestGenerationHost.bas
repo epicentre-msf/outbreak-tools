@@ -14,8 +14,10 @@ Option Explicit
 'instance path that workbook is a copy of this driver, so the three probe
 'steps below travel with it: HostProbeOk answers "OK", HostProbeEcho
 'answers its argument, HostProbeFails traps its own raise and answers the
-'error outcome, the way every BuildSteps step does. They carry no test
-'annotation, so the runner leaves them alone.
+'error outcome, the way every BuildSteps step does. HostProbeOk and
+'HostProbeEcho file what they answer, and HostProbeLastAnswer hands the
+'last one back as "<step>=<answer>", the shape BuildSteps.BuildLastAnswer
+'answers. They carry no test annotation, so the runner leaves them alone.
 '
 'No probe step raises. Application.Run opens a fresh call stack, so an
 'untrapped raise inside a step reaches no handler of the caller on either
@@ -29,13 +31,17 @@ Option Explicit
 'after, through WMI, so a leaked instance fails the test. Another Excel
 'starting or stopping on the machine during one of these tests moves the
 'count and fails it too; run them again when that happens.
-'@depends GenerationHost, DesignerPreparation, CustomTest, TestHelpersLite
+'@depends GenerationHost, BuildSteps, DesignerPreparation, CustomTest, TestHelpersLite
 
 Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
 
 'The host of the running test, released by TestCleanup whatever the exit
 Private heldHost As GenerationHost
+
+'What the last probe step answered, as "<step>=<answer>". It lives in the
+'workbook the step ran in, so on the instance path it lives in the copy.
+Private probeFiled As String
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
@@ -51,6 +57,11 @@ Private Const STEP_OK As String = "TestGenerationHost.HostProbeOk"
 Private Const STEP_ECHO As String = "TestGenerationHost.HostProbeEcho"
 Private Const STEP_FAILS As String = "TestGenerationHost.HostProbeFails"
 Private Const STEP_MISSING As String = "TestGenerationHost.HostProbeNowhere"
+Private Const STEP_LAST As String = "TestGenerationHost.HostProbeLastAnswer"
+
+'The step the host asks by default, and a value step of BuildSteps
+Private Const STEP_DEFAULT_LAST As String = "BuildSteps.BuildLastAnswer"
+Private Const STEP_COUNTS As String = "BuildSteps.BuildCounts"
 
 Private Const PROBE_RAISE_TEXT As String = "the probe step raised on purpose"
 
@@ -126,12 +137,19 @@ End Sub
 '@Description("A step that answers OK.")
 Public Function HostProbeOk() As String
     HostProbeOk = "OK"
+    probeFiled = "HostProbeOk=OK"
 End Function
 
 '@Description("A step that answers its argument.")
 '@param text String. What to answer.
 Public Function HostProbeEcho(ByVal text As String) As String
     HostProbeEcho = "echo:" & text
+    probeFiled = "HostProbeEcho=echo:" & text
+End Function
+
+'@Description("The step that answers what the last probe step answered.")
+Public Function HostProbeLastAnswer() As String
+    HostProbeLastAnswer = probeFiled
 End Function
 
 '@Description("A step that fails the way a build step fails: it traps its own raise and answers the error outcome.")
@@ -561,8 +579,8 @@ Public Sub TestAcquireStartsAHiddenInstanceAndReleaseQuitsIt()
     Assert.IsFalse heldHost.HostApplication.AskToUpdateLinks, "The instance should ask about no link."
     Assert.AreEqual CLng(msoAutomationSecurityLow), CLng(heldHost.HostApplication.AutomationSecurity), _
                     "The instance should run the macros of the copy."
-    Assert.IsTrue heldHost.HostApplication.ScreenUpdating, _
-                  "ScreenUpdating stays on in the instance, or the output workbook refuses its freeze."
+    Assert.IsFalse heldHost.HostApplication.ScreenUpdating, _
+                   "ScreenUpdating should be off in the instance: an invisible Excel that repaints keeps graphics memory."
 
     'Act: ReleaseInstance quits it
     Dim recordedHandle As Long
@@ -718,6 +736,161 @@ Public Sub TestRunInTheInstanceAnswersTheStep()
     Exit Sub
 Fail:
     CustomTestLogFailure Assert, "TestRunInTheInstanceAnswersTheStep", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("GenerationHost.LastAnswer")
+Public Sub TestLastAnswerStepDefaultsToBuildSteps()
+    CustomTestSetTitles Assert, "GenerationHost", "TestLastAnswerStepDefaultsToBuildSteps"
+    On Error GoTo Fail
+
+    'Arrange and act
+    Set heldHost = GenerationHost.Create(ThisWorkbook, HostPathInPlace)
+
+    'Assert: the default, a step of its own, and the default again on an empty name
+    Assert.AreEqual STEP_DEFAULT_LAST, heldHost.LastAnswerStep, _
+                    "The host should ask BuildSteps for the last answer by default."
+    Assert.AreEqual CLng(0), heldHost.RecoveredCalls, "A new host has read no answer back."
+
+    heldHost.LastAnswerStep = STEP_LAST
+    Assert.AreEqual STEP_LAST, heldHost.LastAnswerStep, "The host should keep the step it is given."
+
+    heldHost.LastAnswerStep = vbNullString
+    Assert.AreEqual STEP_DEFAULT_LAST, heldHost.LastAnswerStep, _
+                    "An empty name should put the default back."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestLastAnswerStepDefaultsToBuildSteps", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("GenerationHost.LastAnswer")
+Public Sub TestBuildStepsFilesWhatEveryStepAnswers()
+    CustomTestSetTitles Assert, "GenerationHost", "TestBuildStepsFilesWhatEveryStepAnswers"
+    On Error GoTo Fail
+
+    'Act: a value step, called in this workbook
+    Dim counts As String
+    counts = BuildSteps.BuildCounts()
+
+    'Assert: filed under its own name, and the reading files nothing
+    Assert.AreEqual "BuildCounts=" & counts, BuildSteps.BuildLastAnswer(), _
+                    "BuildLastAnswer should hand back the step and its answer."
+    Assert.AreEqual "BuildCounts=" & counts, BuildSteps.BuildLastAnswer(), _
+                    "Asking twice should answer the same step."
+
+    'Act: the sheet step with no build under way answers an error outcome
+    Dim outcome As String
+    outcome = BuildSteps.BuildSheet(9)
+
+    'Assert: a failed step is filed too, under its name and its position
+    Assert.IsTrue IsErrorOutcome(outcome), _
+                  "The sheet step with no build under way should answer an error outcome: " & outcome
+    Assert.AreEqual "BuildSheet 9=" & outcome, BuildSteps.BuildLastAnswer(), _
+                    "The sheet step should be filed under its name and its position."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestBuildStepsFilesWhatEveryStepAnswers", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("GenerationHost.LastAnswer")
+Public Sub TestLastAnswerReadsBackTheLastStepOfTheInstance()
+    CustomTestSetTitles Assert, "GenerationHost", "TestLastAnswerReadsBackTheLastStepOfTheInstance"
+    On Error GoTo Fail
+
+    If Not InstancePathAvailable() Then
+        Assert.IsTrue True, "The instance path exists on Windows alone; nothing to check here."
+        Exit Sub
+    End If
+
+    'Arrange: the probe that files the answers stands in for BuildSteps
+    Dim before As Long
+    before = ExcelProcessCount()
+
+    Set heldHost = GenerationHost.Create(ThisWorkbook, HostPathInstance)
+    heldHost.LastAnswerStep = STEP_LAST
+    heldHost.Acquire
+    heldHost.OpenDesignerCopy CopyFolder()
+
+    'Act and assert: the answer of the last step comes back whole
+    Assert.AreEqual "echo:abc", heldHost.Run(STEP_ECHO, "abc"), _
+                    "Run across the processes should answer what the step answered."
+    Assert.AreEqual "echo:abc", heldHost.LastAnswer(STEP_ECHO), _
+                    "LastAnswer should read back what the last step answered."
+
+    'Act and assert: asking about another step answers an error outcome naming the last one
+    Dim outcome As String
+    outcome = heldHost.LastAnswer(STEP_OK)
+    Assert.IsTrue IsErrorOutcome(outcome), _
+                  "LastAnswer about a step that was not the last should answer an error outcome: " & outcome
+    Assert.IsTrue InStr(1, outcome, "HostProbeEcho") > 0, _
+                  "The outcome should name the last step the copy ran: " & outcome
+    Assert.IsFalse heldHost.InstanceStopped, "A failed read back should leave the instance marked alive."
+
+    'Act and assert: the default step, against the BuildSteps the copy carries
+    heldHost.LastAnswerStep = vbNullString
+    Dim counts As String
+    counts = heldHost.Run(STEP_COUNTS)
+    Assert.AreEqual "0|0", counts, "A copy that built nothing should count nothing."
+    Assert.AreEqual counts, heldHost.LastAnswer(STEP_COUNTS), _
+                    "LastAnswer should read the counts back from BuildSteps."
+    Assert.AreEqual CLng(0), heldHost.RecoveredCalls, _
+                    "A read back the driver asked for should leave the count of dropped calls at zero."
+
+    'Act and assert: the screen of the instance is still off after the steps
+    Assert.IsFalse heldHost.HostApplication.ScreenUpdating, _
+                   "ScreenUpdating should stay off in the instance after a step."
+
+    Assert.AreEqual "OK", heldHost.ReleaseInstance(), "ReleaseInstance should answer OK."
+    Assert.AreEqual before, WaitForProcessCount(before), "ReleaseInstance should quit the instance."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestLastAnswerReadsBackTheLastStepOfTheInstance", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("GenerationHost.Instance")
+Public Sub TestPaintInstanceLeavesTheScreenOff()
+    CustomTestSetTitles Assert, "GenerationHost", "TestPaintInstanceLeavesTheScreenOff"
+    On Error GoTo Fail
+
+    'Arrange: in place first, over this driver
+    Dim screenBefore As Boolean
+    screenBefore = Application.ScreenUpdating
+
+    Set heldHost = GenerationHost.Create(ThisWorkbook, HostPathInPlace)
+    heldHost.Acquire
+    heldHost.OpenDesignerCopy
+
+    'Act and assert: in place the paint answers OK and writes nothing
+    Assert.AreEqual "OK", heldHost.PaintInstance(), "PaintInstance in place should answer OK."
+    Assert.AreEqual screenBefore, Application.ScreenUpdating, _
+                    "PaintInstance in place should leave ScreenUpdating as it found it."
+    heldHost.ReleaseInstance
+    Set heldHost = Nothing
+
+    If Not InstancePathAvailable() Then Exit Sub
+
+    'Arrange: the hidden instance
+    Dim before As Long
+    before = ExcelProcessCount()
+
+    Set heldHost = GenerationHost.Create(ThisWorkbook, HostPathInstance)
+    heldHost.Acquire
+    heldHost.OpenDesignerCopy CopyFolder()
+
+    'Act and assert: the paint answers OK and the screen of the instance is off after it
+    Assert.AreEqual "OK", heldHost.PaintInstance(), "PaintInstance should answer OK on the instance."
+    Assert.IsFalse heldHost.HostApplication.ScreenUpdating, _
+                   "ScreenUpdating should be off in the instance after the paint."
+    Assert.AreEqual "OK", heldHost.Run(STEP_OK), "The instance should still answer after the paint."
+
+    Assert.AreEqual "OK", heldHost.ReleaseInstance(), "ReleaseInstance should answer OK."
+    Assert.AreEqual before, WaitForProcessCount(before), "ReleaseInstance should quit the instance."
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestPaintInstanceLeavesTheScreenOff", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("GenerationHost.Instance")
