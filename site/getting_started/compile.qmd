@@ -84,7 +84,7 @@ The linelist compilation relies on Excel VBA and can be a bit *finicky.* Here is
 I prepare the **setup file**, the **designer file**, and then copy both of them and use the copies to compile. If a compilation fails, I delete both copies and start from fresh, just in case the failure to compile corrupted any of the file.
 :::
 
-## Multiple linelists generation steps
+## Multiple linelists compilation
 
 Within the designer, there is a sheet named *GenerateMultiple* that allows users to generate as many linelists as they need at once. To do this, use the tools in the Multiple Linelists section of the designer ribbon to populate the GenerateMultiple table. .See [mutliple linelist](../reference/ribbons_designer.qmd#sec-designer-multiple-linelists).
 
