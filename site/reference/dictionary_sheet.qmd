@@ -275,7 +275,7 @@ This column has two uses:
 
 There are many ways of thinking about variables and of classifying them.
 
-In general we can distinguished between *input* variables, where the user enters raw data, and *calculated* (or derived) variables which require no input. Both of them can be created in OutbreakTools.
+In general we can distinguish between *input* variables, where the user enters raw data, and *calculated* (or derived) variables which require no input. Both of them can be created in OutbreakTools.
 
 Independently of this distinction, a variety of **variables types** can exist, containing numbers or text in various forms. In Excel, we will often use the types *integer*, *decimals*, *dates* and *text*.[^3]. These types are [implemented](#sec-var-type) in OutbreakTools linelists.
 
