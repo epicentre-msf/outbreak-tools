@@ -158,7 +158,7 @@ Additionaly, you can manually modify the width of columns in the linelist to adj
 
 The **GeoHelper** is a popup window that helps you entering geographic data such as the origin of the patient or the name of the facility (if the ["hf" control was used for the variable](../reference/dictionary_sheet.qmd#sec-geo-data)). It is mostly used to enter data on the patient data sheet, but it is also useful on the Spatio-Temporal analysis sheet.
 
-To use it, place your cursor in a "geo" or "hf" column (you can recognise them thanks to the orange headers), in the *admin 1 level*. Click on the "GeoHelper" button, or hit the shortcut `Ctrl + Shift + G`. It opens a window, with several tabs, depending on whether you are in a "geo" (described by four visible columns) or in "hf" (described by one visible column).
+To use it, place your cursor in a "geo" or "hf" column (you can recognise them thanks to the orange headers), in the *admin 1 level*. Click on the "GeoHelper" button, or hit the shortcut `Ctrl + Shift + G`. It opens a window, with several tabs, depending on whether you are in a "geo" (described by four visible columns) or in "hf" (described by one visible column).See [GeoHelper](../how_to/geohelper.qmd) for the steps on how to use it.
 
 If you are in a "geo" section, you will have three tabs that you can use to select administrative levels.
 
