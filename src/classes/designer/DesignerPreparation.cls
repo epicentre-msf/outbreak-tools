@@ -55,6 +55,9 @@ Private Const FLAG_INSTRUCT As String = "chkInstruct"
 'The build path switch. Off by default: the build runs in a hidden
 'instance on Windows, and Mac ignores the flag.
 Private Const FLAG_BUILD_IN_PLACE As String = "chkBuildInPlace"
+'The box that asks for a second linelist saved as .xlsb. Off by default, so
+'a designer that never ticked it shows the box unticked when it opens.
+Private Const FLAG_ADD_XLSB As String = "chkAddXlsb"
 'The silence switch has no constant here. Its name and its two values live on
 'Messenger, which is the one place that string is written on the VBA side, and
 'the setup and the generated linelist seed the same flag from the same three
@@ -893,12 +896,12 @@ End Sub
 '@sub-title Ensure the default workbook flags exist in the hidden store
 '@details
 'Calls EnsureName for chkAlert and chkInstruct with "Yes" as default and
-'for chkBuildInPlace with "No", creating the hidden names if they do not
-'already exist. SetFlag updates a name and raises on a missing one, so a
-'designer whose names predate a flag gets it here, on the first read or
-'write of any flag.
+'for chkBuildInPlace and chkAddXlsb with "No", creating the hidden names if
+'they do not already exist. SetFlag updates a name and raises on a missing
+'one, so a designer whose names predate a flag gets it here, on the first
+'read or write of any flag.
 '
-'The fourth flag is the silence switch, __OBT__SILENT_OPERATIONS__, seeded
+'The last flag is the silence switch, __OBT__SILENT_OPERATIONS__, seeded
 '"No". "No" means the designer shows every message box it has always shown, so
 'a person pressing buttons sees no change at all. The name and both values are
 'read off Messenger rather than written again here. A designer that predates
@@ -908,6 +911,7 @@ Private Sub EnsureDefaultFlags()
     this.store.EnsureName FLAG_ALERT, FLAG_ON, HiddenNameTypeString
     this.store.EnsureName FLAG_INSTRUCT, FLAG_ON, HiddenNameTypeString
     this.store.EnsureName FLAG_BUILD_IN_PLACE, FLAG_OFF, HiddenNameTypeString
+    this.store.EnsureName FLAG_ADD_XLSB, FLAG_OFF, HiddenNameTypeString
     this.store.EnsureName Messenger.SwitchName, Messenger.SwitchOffValue, HiddenNameTypeString
 End Sub
 

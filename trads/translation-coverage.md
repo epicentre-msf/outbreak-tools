@@ -1,6 +1,6 @@
 # Translation coverage
 
-Written by `scripts/devtools/translation-coverage.R` on 2026-09-01 22:24.
+Written by `scripts/devtools/translation-coverage.R` on 2026-11-19 15:22.
 
 Workbook read: `trads/designer_translations.xlsx`.
 
@@ -12,9 +12,9 @@ Workbook read: `trads/designer_translations.xlsx`.
 | --- | --- | --- | --- | --- |
 | t_tradllshapes | 10 | see the message list | 2 | VBA string literals |
 | t_tradllmsg | 179 | see the message list | 52 | VBA string literals |
-| t_tradllforms | 125 | 0 | 27 | control names in `.mock/forms/designer` |
+| t_tradllforms | 126 | 0 | 28 | control names in `.mock/forms/designer` |
 | t_tradllribbon | 38 | 0 | 11 | getLabel ids in the linelist ribbon templates |
-| t_tradmsg | 80 | 0 | 50 | VBA literals + getLabel ids in the designer ribbon |
+| t_tradmsg | 81 | 0 | 50 | VBA literals + getLabel ids in the designer ribbon |
 | t_tradrange | 14 | 2 to check | 1 | defined names in designer.xlsb |
 | t_tradshape | 13 | 0 | 8 | shape names in designer.xlsb |
 | t_traddrop | 1 | 0 | 0 | defined names in designer.xlsb |
@@ -137,6 +137,7 @@ _Nothing._
 - `LBL_ImpRepSheets`
 - `LBL_PrintVarName`
 - `LBL_SheetName`
+- `LBL_ShowHideSave`
 
 ## Dead rows: linelist ribbon (t_tradllribbon)
 
@@ -244,6 +245,7 @@ The control is in the ribbon XML, but it carries a plain `label=` or no label at
 
 - `customGroupAdvanced`
 - `customGroupAna`
+- `customGroupTabPrint`
 
 ## Tags carried twice in one table
 

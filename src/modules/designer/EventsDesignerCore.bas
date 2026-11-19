@@ -374,6 +374,43 @@ Handler:
     Err.Clear
 End Sub
 
+'@Description("Initialise the add-xlsb-linelist checkbox from persisted hidden names.")
+'@details
+'The box asks for a second linelist saved as .xlsb beside the one a build
+'writes. EnsureDefaultFlags seeds its flag "No", so the box is unticked when a
+'designer that never ticked it opens. A tick is kept with the workbook, the
+'same way the three boxes above it are kept.
+'
+'No build step reads the flag today, so a ticked box changes nothing a build
+'writes.
+'@EntryPoint
+Public Sub initAddXlsb(ByRef ribbonControl As IRibbonControl, ByRef returnedVal)
+
+    'getPressed fires at ribbon load; a raise here drops the whole tab, so any
+    'failure falls back to the unticked default.
+    On Error GoTo Fallback
+    returnedVal = ResolvePreparation().GetFlag("chkAddXlsb", False)
+    Exit Sub
+
+Fallback:
+    returnedVal = False
+End Sub
+
+'@Description("Persist the add-xlsb-linelist checkbox state.")
+'@EntryPoint
+Public Sub clickAddXlsb(ByRef ribbonControl As IRibbonControl, ByVal pressed As Boolean)
+
+    On Error GoTo Handler
+    ResolvePreparation().SetFlag "chkAddXlsb", pressed
+    Exit Sub
+
+Handler:
+    Debug.Print "clickAddXlsb: "; Err.Number; Err.Description
+    MsgBox "Unable to save the xlsb linelist setting: " & Err.Description, _
+           vbExclamation + vbOKOnly, PROMPT_TITLE
+    Err.Clear
+End Sub
+
 
 '@section Internal helpers
 '===============================================================================

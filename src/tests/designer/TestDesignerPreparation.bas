@@ -152,6 +152,50 @@ Fail:
     ReportTestFailure "TestSwitchArrivesOnADesignerThatPredatesIt"
 End Sub
 
+'@TestMethod("DesignerPreparation.AddXlsb")
+Public Sub TestAddXlsbBoxIsUntickedUntilSomeoneTicksIt()
+    CustomTestSetTitles Assert, "DesignerPreparation", "TestAddXlsbBoxIsUntickedUntilSomeoneTicksIt"
+    On Error GoTo Fail
+
+    'A designer that has never seen the box holds no such name. The first
+    'read is the one the ribbon makes when the designer opens, and it has to
+    'answer unticked and leave the flag seeded No.
+    Dim subject As DesignerPreparation
+    Set subject = DesignerPreparation.Create(FixtureWorkbook)
+    Assert.IsFalse subject.GetFlag("chkAddXlsb"), _
+        "The add xlsb box should be unticked on a designer that never ticked it."
+    Assert.AreEqual "No", subject.HiddenStore.ValueAsString("chkAddXlsb"), _
+        "Reading the flag should seed it No."
+
+    'A tick is written in the workbook, which is what a save carries to the
+    'next opening. A second preparation over the same workbook stands in for
+    'that opening.
+    subject.SetFlag "chkAddXlsb", True
+    Assert.AreEqual "Yes", subject.HiddenStore.ValueAsString("chkAddXlsb"), _
+        "A ticked box should be stored as Yes."
+
+    Dim reopened As DesignerPreparation
+    Set reopened = DesignerPreparation.Create(FixtureWorkbook)
+    Assert.IsTrue reopened.GetFlag("chkAddXlsb"), _
+        "A ticked box should read ticked through another preparation of the same workbook."
+
+    'Initialising the designer again keeps the choice, because EnsureName
+    'leaves a name that is already there alone.
+    reopened.Prepare Nothing, TranslationsSource
+    Assert.IsTrue reopened.GetFlag("chkAddXlsb"), _
+        "A second Prepare should keep a ticked box ticked."
+
+    reopened.SetFlag "chkAddXlsb", False
+    Assert.IsFalse reopened.GetFlag("chkAddXlsb"), _
+        "An unticked box should read unticked."
+    Assert.AreEqual "No", reopened.HiddenStore.ValueAsString("chkAddXlsb"), _
+        "An unticked box should be stored as No."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestAddXlsbBoxIsUntickedUntilSomeoneTicksIt"
+End Sub
+
 '@TestMethod("DesignerPreparation")
 Public Sub TestPrepareHidesInternalSheets()
     CustomTestSetTitles Assert, "DesignerPreparation", "TestPrepareHidesInternalSheets"
@@ -233,6 +277,7 @@ Public Sub TestPrepareCreatesWorkbookFlags()
 
     Assert.AreEqual "Yes", wkbNames.ValueAsString("chkAlert"), "chkAlert should be Yes."
     Assert.AreEqual "Yes", wkbNames.ValueAsString("chkInstruct"), "chkInstruct should be Yes."
+    Assert.AreEqual "No", wkbNames.ValueAsString("chkAddXlsb"), "chkAddXlsb should be No."
     Assert.IsTrue LenB(wkbNames.ValueAsString("RNG_LastOpenedDate")) > 0, "RNG_LastOpenedDate should be set."
 
     'Language flags should exist with empty defaults

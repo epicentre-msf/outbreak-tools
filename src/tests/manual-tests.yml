@@ -208,6 +208,9 @@ workbooks:
       - area: Ribbon
         tests:
           - The two checkboxes keep their state across a close and reopen
+          - The Add xlsb linelist box is unticked on a designer that never ticked it
+          - "Tick the Add xlsb linelist box, save, close and reopen: the box is still ticked"
+          - The Add xlsb linelist box takes the language of the designer
           - The OutbreakTools tab is there on open/close of the designer
           - A Language of the designer change re-labels the ribbon
 
