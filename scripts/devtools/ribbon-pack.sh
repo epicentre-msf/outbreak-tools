@@ -4,8 +4,8 @@
 #
 # Packs a folder produced by ribbon-extract.sh back into a workbook.
 #
-#   scripts/devtools/ribbon-pack.sh ribbons/setup_mock --out .mock/setup_mock.xlsb --overwrite
-#   scripts/devtools/ribbon-pack.sh ribbons/setup_mock --out /tmp/try.xlsb
+#   scripts/devtools/ribbon-pack.sh ribbons/setup_mock --out .mock/setup_mock.xlsm --overwrite
+#   scripts/devtools/ribbon-pack.sh ribbons/setup_mock --out /tmp/try.xlsm
 #
 # --into names the workbook supplying every non-ribbon part; it defaults to the
 # workbook recorded in .source at extract time. --out is where the result goes,

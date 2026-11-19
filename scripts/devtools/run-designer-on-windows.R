@@ -53,9 +53,9 @@ if (!file.exists(gl("{obt_folder}/rundesigner.vbs"))){
 
 # precise the parameters (you can change the name of the files)
 
-designer_path <- set_path("designer_aky.xlsb") # Designer_path
-setup_path <- set_path("setup.xlsb") # Setup path
-ribbon_path <- set_path("_ribbontemplate.xlsb") # Path to the template ribbon file
+designer_path <- set_path("designer_aky.xlsm") # Designer_path
+setup_path <- set_path("setup.xlsm") # Setup path
+ribbon_path <- set_path("_ribbontemplate.xlsm") # Path to the template ribbon file
 output_dir <- set_path("output_linelist")
 setup_lang <- shQuote("English") # Language of the dictionary
 linelist_lang <- shQuote("English") # Language of the Linelist interface

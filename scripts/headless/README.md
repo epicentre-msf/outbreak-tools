@@ -82,8 +82,8 @@ is read off each module's `@ModuleDescription`, not off its file name.
 ## Step three — generate a linelist
 
 ```
-Rscript scripts/headless/build-linelist.R --setup=<filled-setup.xlsb> \
-        [--out=<dir>] [--name=<stem>] [--temppath=<ribbon.xlsb>] ...
+Rscript scripts/headless/build-linelist.R --setup=<filled-setup> \
+        [--out=<dir>] [--name=<stem>] [--temppath=<ribbon-template.xlsm>] ...
 ```
 
 which is one command that does the whole thing: merges the forms, stages the
@@ -139,7 +139,7 @@ written.
 | | |
 |---|---|
 | `--setup` | required: the filled setup to generate from |
-| `--designer` `--out` `--name` | default to the mock designer, `<home>/build`, `linelist` |
+| `--designer` `--out` `--name` | default to the mock designer, `<home>/build`, `linelist`. The designer is `.xlsb` for now: the build copies it under the name `<name>-designer.xlsb`, so `build-linelist.R` refuses an `.xlsm` designer until `HeadlessBuild` takes the designer's own extension |
 | `--forms` | a folder of already-merged forms to copy in. Only meaningful with `--no-merge` |
 | `--temppath` `--geopath` `--setuplang` `--lllang` `--llpassword` | the option keys above, passed through |
 | `--style` `--design` | the two format keys above. `--style` is staged into `<OBT_HOME>/in` like every other input |
@@ -414,8 +414,8 @@ Same command, same arguments. `build-linelist.R` picks
 script makes its own Excel through COM.
 
 ```
-Rscript scripts/headless/build-linelist.R --setup=<filled setup.xlsb> \
-  --out=<dir> --name=<stem> --temppath=ribbons/_ribbontemplate_dev.xlsb \
+Rscript scripts/headless/build-linelist.R --setup=<filled setup> \
+  --out=<dir> --name=<stem> --temppath=ribbons/_ribbontemplate_dev.xlsm \
   --designer=<designer.xlsb> --setuplang=English --lllang=ENG-English \
   --geopath=<geobase.xlsx>
 ```
@@ -464,10 +464,10 @@ Give `--setup` more than once and the run becomes a **multiple generation**:
 
 ```
 Rscript scripts/headless/build-linelist.R \
-  --setup=<a.xlsb> --name=<a> \
-  --setup=<b.xlsb> --name=<b> \
+  --setup=<a> --name=<a> \
+  --setup=<b> --name=<b> \
   --run-name=<run> --out=<dir> \
-  --temppath=ribbons/_ribbontemplate_dev.xlsb --designer=<designer.xlsb> \
+  --temppath=ribbons/_ribbontemplate_dev.xlsm --designer=<designer.xlsb> \
   --setuplang=English --lllang=ENG-English --geopath=<geobase.xlsx>
 ```
 

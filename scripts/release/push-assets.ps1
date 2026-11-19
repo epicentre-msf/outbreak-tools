@@ -8,7 +8,10 @@ Set-Location (& git rev-parse --show-toplevel)
 $Repo   = if ($env:OBT_REPO) { $env:OBT_REPO } else { "epicentre-msf/outbreak-tools" }
 $Tag    = "working-binaries"
 $Bundle = Join-Path ([System.IO.Path]::GetTempPath()) "working-binaries.tar.gz"
-$Paths  = @("src/bin", ".mock", "ribbons/_ribbontemplate_main.xlsb", "ribbons/_ribbontemplate_dev.xlsb",
+# The ribbon templates in both formats while the .xlsb ones are still around.
+$Paths  = @("src/bin", ".mock",
+            "ribbons/_ribbontemplate_main.xlsm", "ribbons/_ribbontemplate_dev.xlsm",
+            "ribbons/_ribbontemplate_main.xlsb", "ribbons/_ribbontemplate_dev.xlsb",
             "trads/designer_translations*.xlsx", "src/tests/.input")
 
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { throw "gh CLI not found." }

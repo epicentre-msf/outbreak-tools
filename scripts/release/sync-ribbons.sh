@@ -28,7 +28,7 @@
 # main workbook).
 #
 # The pairing below is explicit rather than read out of .source, because two
-# workbooks share one folder: .mock/setup_mock.xlsb and src/bin/setup/setup_dev.xlsb
+# workbooks share one folder: .mock/setup_mock.xlsm and src/bin/setup/setup_dev.xlsm
 # are two copies of the one ribbon in ribbons/setup_mock, and .source can name only
 # one of them.
 set -euo pipefail
@@ -39,27 +39,30 @@ cd "$(git rev-parse --show-toplevel)"
 # the authority and the dev twin is a copy of it (scripts/devtools/update-files.R),
 # so a dev build that trails its mock cannot slip into the bundle.
 #
-# The promoted main builds (designer.xlsb, setup.xlsb, msetup.xlsb) and the main
-# ribbon template have no folder and are not checked. They are promoted from the
-# dev line, so they trail it by design and would fail this check every time.
+# The promoted main builds (designer, setup, msetup) and the main ribbon template
+# have no folder and are not checked. They are promoted from the dev line, so they
+# trail it by design and would fail this check every time.
+#
+# The workbooks are the .xlsm ones. An .xlsb twin left on disk is no longer a
+# ribbon source: it keeps whatever ribbon it had when the .xlsm was saved from it.
 PAIRS=(
   # designer
-  ".mock/designer_mock.xlsb|ribbons/designer_mock"
-  "src/bin/designer/designer_dev.xlsb|ribbons/designer_mock"
+  ".mock/designer_mock.xlsm|ribbons/designer_mock"
+  "src/bin/designer/designer_dev.xlsm|ribbons/designer_mock"
   # setup
-  ".mock/setup_mock.xlsb|ribbons/setup_mock"
-  "src/bin/setup/setup_dev.xlsb|ribbons/setup_mock"
+  ".mock/setup_mock.xlsm|ribbons/setup_mock"
+  "src/bin/setup/setup_dev.xlsm|ribbons/setup_mock"
   # unit tests
-  ".mock/unit_tests_mock.xlsb|ribbons/unit_tests_mock"
-  "src/bin/test-files/unit_tests_dev.xlsb|ribbons/unit_tests_mock"
+  ".mock/unit_tests_mock.xlsm|ribbons/unit_tests_mock"
+  "src/bin/test-files/unit_tests_dev.xlsm|ribbons/unit_tests_mock"
   # master setup
-  ".mock/mastersetup_mock.xlsb|ribbons/mastersetup_mock"
-  "src/bin/msetup/msetup_dev.xlsb|ribbons/mastersetup_mock"
+  ".mock/mastersetup_mock.xlsm|ribbons/mastersetup_mock"
+  "src/bin/msetup/msetup_dev.xlsm|ribbons/mastersetup_mock"
   # ribbon template
-  "ribbons/_ribbontemplate_dev.xlsb|ribbons/_ribbontemplate_dev"
+  "ribbons/_ribbontemplate_dev.xlsm|ribbons/_ribbontemplate_dev"
 )
-# .mock/cleanDesignerMockFile.xlsb is deliberately absent: it is a stripped
-# designer kept for rebuilds, not one of the shipped ribbon sources.
+# .mock/cleanDesignerMockFile is deliberately absent: it is a stripped designer
+# kept for rebuilds, not one of the shipped ribbon sources.
 
 CHECK_ONLY=0
 case "${1:-}" in
@@ -81,10 +84,15 @@ echo "==> ribbons vs their unpacked sources"
 FAILED=0
 for pair in "${PAIRS[@]}"; do
   WB="${pair%%|*}"; DIR="${pair#*|}"
-  STEM=$(basename "$WB" .xlsb)
+  STEM=$(basename "$WB"); STEM="${STEM%.*}"
 
   if [ ! -f "$WB" ]; then
-    echo "  FAIL  $WB is missing (pull-assets.sh first?)" >&2; FAILED=1; continue
+    if [ -f "${WB%.*}.xlsb" ]; then
+      echo "  FAIL  $WB is missing; only ${WB%.*}.xlsb is there (RELEASING.md §2: making the .xlsm binaries)" >&2
+    else
+      echo "  FAIL  $WB is missing (pull-assets.sh first?)" >&2
+    fi
+    FAILED=1; continue
   fi
   if [ ! -d "$DIR" ]; then
     echo "  FAIL  $DIR is missing — it is the ribbon source for $WB" >&2; FAILED=1; continue
@@ -141,7 +149,7 @@ fi
 echo "==> rebuilding the mock and dev ribbon sources from the workbooks"
 for pair in "${PAIRS[@]}"; do
   WB="${pair%%|*}"; DIR="${pair#*|}"
-  STEM=$(basename "$WB" .xlsb)
+  STEM=$(basename "$WB"); STEM="${STEM%.*}"
 
   # .source is carried across as a file, not as text: reading and rewriting it
   # would drop its trailing newline and show up as a diff in every rebuild.

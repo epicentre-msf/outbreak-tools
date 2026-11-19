@@ -11,9 +11,11 @@ cd "$(git rev-parse --show-toplevel)"
 REPO="${OBT_REPO:-epicentre-msf/outbreak-tools}"
 TAG="working-binaries"
 BUNDLE_NAME="working-binaries.tar.gz"
-# Binary paths to store (whole dirs, the two ribbon templates, the translation
-# workbooks). A glob that matches nothing stays literal and is skipped below.
+# Binary paths to store (whole dirs, the ribbon templates in both formats while
+# the .xlsb ones are still around, the translation workbooks). A glob that
+# matches nothing stays literal and is skipped below.
 PATHS=( src/bin .mock ribbons/_ribbontemplate_main.xlsb ribbons/_ribbontemplate_dev.xlsb
+        ribbons/_ribbontemplate_main.xlsm ribbons/_ribbontemplate_dev.xlsm
         trads/designer_translations*.xlsx src/tests/.input)
 
 command -v gh >/dev/null 2>&1 || { echo "ERROR: gh CLI not found (brew install gh)." >&2; exit 1; }
@@ -48,7 +50,7 @@ if ! gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
     --title "" \
     --notes "Off-git store of the current working binaries, synced with scripts/release/push-assets.sh and pull-assets.sh.
 
-Infrastructure, mutable, not a download — it holds src/bin/, .mock/, the two ribbon templates, and the trads/ translation workbooks, bundled as a single tarball."
+Infrastructure, mutable, not a download — it holds src/bin/, .mock/, the ribbon templates, and the trads/ translation workbooks, bundled as a single tarball."
 fi
 
 echo "==> uploading $BUNDLE_NAME"

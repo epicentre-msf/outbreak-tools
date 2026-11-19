@@ -5,7 +5,7 @@
 # Unpacks a workbook's ribbon into an editable folder, so a button can be added
 # with a text editor instead of the OfficeRibbonX editor on a Windows VM.
 #
-#   scripts/devtools/ribbon-extract.sh .mock/setup_mock.xlsb
+#   scripts/devtools/ribbon-extract.sh .mock/setup_mock.xlsm
 #     -> ribbons/setup_mock/ribbon.xml
 #        ribbons/setup_mock/images/*.png
 #        ribbons/setup_mock/.source

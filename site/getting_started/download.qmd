@@ -19,15 +19,15 @@ The solution is based on VBA scripts in Excel files, so there is nothing to inst
 
 You should however [authorise VBA macros in Excel](https://support.microsoft.com/en-us/office/enable-or-disable-macros-in-microsoft-365-files-12b036fd-d140-4e74-b45e-16fed1a7e5c6) so that the files work as expected (or at all, in fact).
 
-The archive contains several timestamped files:
+The archive contains four files, each carrying the version number:
 
-- `setup-YYYY-MM-DD.xlsb`: an empty **setup file**
-- `designer_main-YYYY-MM-DD.xlsb`: the **designer file** that is used to compile the setup
-- `_ribbontemplate_main-YYYY-MM-DD.xlsb`: a template file containing information used during compilation
-- `run_designer_on_windows.R` and `rundesigner.vbs`: files that can be used to compile from R (experimental and yet undocumented)
+- `setup_main-<version>.xlsm`: an empty **setup file**
+- `designer_main-<version>.xlsm`: the **designer file** that is used to compile the setup
+- `msetup_main-<version>.xlsm`: the **master setup**, which holds the setups of several diseases
+- `_ribbontemplate_main-<version>.xlsm`: a template file containing information used during compilation
 
 :::{.callout-note}
-The excel files are in the `.xlsb` format, a compressed, more efficient Excel format that allows VBA macros.
+The Excel files are in the `.xlsm` format, the Excel workbook format that carries VBA macros. Earlier versions shipped `.xlsb` files. A setup saved as `.xlsb` still loads in the new designer.
 :::
 
 ## Update to a new version of OutbreakTools

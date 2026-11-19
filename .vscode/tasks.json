@@ -364,8 +364,8 @@
         {
             "id": "ribbonWorkbook",
             "type": "promptString",
-            "description": "Workbook carrying the ribbon (e.g. .mock/setup_mock.xlsb)",
-            "default": ".mock/setup_mock.xlsb"
+            "description": "Workbook carrying the ribbon (e.g. .mock/setup_mock.xlsm)",
+            "default": ".mock/setup_mock.xlsm"
         },
         {
             "id": "ribbonDir",
@@ -377,12 +377,12 @@
             "id": "ribbonOut",
             "type": "promptString",
             "description": "Workbook to write the packed ribbon into (overwritten)",
-            "default": ".mock/setup_mock.xlsb"
+            "default": ".mock/setup_mock.xlsm"
         },
         {
             "id": "linelistPath",
             "type": "promptString",
-            "description": "Delivered linelist to inspect (.xlsb)"
+            "description": "Delivered linelist to inspect (.xlsm or .xlsb)"
         },
         {
             "id": "vbaBinPath",

@@ -125,7 +125,7 @@ Rscript run-tests.R --build
 │        → src/tests/.generated/modules-for-testing.txt  (flat list of test modules)
 │
 ├─ 2. Assemble the run dir  .test-runner/tests/staging/run/
-│        unit_tests_run.xlsb          (copy of .test-runner/unit_tests_dev.xlsb — original untouched)
+│        unit_tests_run.xlsm          (copy of .test-runner/unit_tests_dev.xlsm — original untouched)
 │        classes/<folder>/…           (registered class sources, from src/ then .test-runner fallback)
 │        modules/<folder>/…           (registered general modules)
 │        tests/<folder>/…             (registered test modules AND fixture classes)
@@ -182,11 +182,17 @@ workbook — see [setup](#4-one-time-setup).
 
 ### The workbook
 
-`.test-runner/unit_tests_dev.xlsb` — the driver workbook. It carries the harness + the
+`.test-runner/unit_tests_dev.xlsm` — the driver workbook. It carries the harness + the
 `Development` manager, plus two worksheets: **`Codes`** (import tables +
 `ModulesForTesting`) and **`testsOutputs`** (rendered results). It is an
 **untracked binary artefact** (under `.test-runner/`, which is git‑ignored). The
 runner copies it per run and never mutates the original.
+
+The driver is `unit_tests_dev.xlsm`. A test home that holds only the older
+`unit_tests_dev.xlsb` keeps working: `run-tests.R` takes the `.xlsm` when it is there
+and the `.xlsb` otherwise, names the working copy after the one it took, and prints
+which on the `working copy ->` line. To move a machine over, open its driver in Excel,
+save it as `.xlsm` beside the `.xlsb`, and close it; the next run picks the `.xlsm`.
 
 ---
 
@@ -197,17 +203,17 @@ future run is just `Rscript scripts/tests/run-tests.R --build`.
 
 ### 4.1 Import the harness + `Development` into the workbook
 
-Open `.test-runner/unit_tests_dev.xlsb` and, in the VBE (**File → Import File…**),
+Open `.test-runner/unit_tests_dev.xlsm` and, in the VBE (**File → Import File…**),
 import these components. They form the compile closure needed for `Development`
 + the harness to compile:
 
 > **The runner does NOT read the repo copy.** Since `d29ac6ca` (2026-08-31)
 > `run-tests.R` takes its driver from inside Excel's container,
-> `~/Library/Containers/com.microsoft.Excel/Data/Documents/OBTTestHome/unit_tests_dev.xlsb`,
-> and copies `.test-runner/unit_tests_dev.xlsb` there only ONCE, when the
+> `~/Library/Containers/com.microsoft.Excel/Data/Documents/OBTTestHome/unit_tests_dev.xlsm`,
+> and copies `.test-runner/unit_tests_dev.xlsm` there only ONCE, when the
 > container has none. After any hand import into the repo copy — the first
 > setup below, or a refresh of one of the baked-in classes — copy the file
-> over the container one (`cp .test-runner/unit_tests_dev.xlsb "<that path>"`),
+> over the container one (`cp .test-runner/unit_tests_dev.xlsm "<that path>"`),
 > or the next run drives the old workbook and its import log still shows the
 > old `lines=` count for the class. Seen on 2026-09-01 with `Passwords`.
 
@@ -253,7 +259,7 @@ headless run.
 
 Run **`OBTGrantAccess` once, by hand**:
 
-1. **Open the driver workbook `.test-runner/unit_tests_dev.xlsb`** in Excel.
+1. **Open the driver workbook `.test-runner/unit_tests_dev.xlsm`** in Excel.
 2. Open the VBE (**⌥F11**), find the `OBTGrantAccess` module, put the cursor
    inside the `OBTGrantAccess` sub, and press **F5**.
 3. In the folder picker, select the **`outbreak-tools` repo root**
@@ -373,7 +379,7 @@ folder as usual.
 Layout of `.test-runner/tests/staging/run/` during a run:
 
 ```
-unit_tests_run.xlsb     the workbook copy (opened by AppleScript)
+unit_tests_run.xlsm     the workbook copy (opened by AppleScript)
 classes/<folder>/*.cls  general classes           → ClassesImplementation
 modules/<folder>/*.bas  general modules           → ModulesCodes
 tests/<folder>/*.bas    test modules              → TestsCodes  (tag "tests modules")
@@ -385,7 +391,7 @@ obt-import.log          written by OBTImport
 ```
 
 **Three files in this folder are kept between runs, and it is deliberate.**
-`unit_tests_run.xlsb`, `test-results.csv` and `obt-import.log` are the files
+`unit_tests_run.xlsm`, `test-results.csv` and `obt-import.log` are the files
 Excel itself opens or creates. On macOS a file-access grant is tied to the file
 identity (inode), not to the path, so a file that is deleted and recreated is a
 file Excel has never been granted — and it asks the operator for access again.
@@ -468,7 +474,7 @@ copies the CSV to `.test-runner/tests/staging/test-results.csv`.
 
 | Lives in `src/` (tracked) | Lives in `.test-runner/` (untracked, git‑ignored) |
 |---|---|
-| `scripts/tests/*` (orchestrator, trigger, registry builder) | `unit_tests_dev.xlsb` (the driver workbook — a binary artefact) |
+| `scripts/tests/*` (orchestrator, trigger, registry builder) | `unit_tests_dev.xlsm` (the driver workbook — a binary artefact) |
 | `src/tests/test-registry.yml` | `tests/staging/run/` (the per‑run working dir) |
 | `src/tests/rubberduck/OBT*.bas` (the harness) | `tests/staging/test-results.csv` (latest results) |
 | Real project classes + their real test suites (`src/tests/<folder>/`) | `tests/staging/{classes,modules,tests}/<folder>/` (optional local‑only sources) |
@@ -515,12 +521,12 @@ Rscript scripts/tests/run-tests.R --home=DIR  # workbook + staging live under DI
 - Manifest: `src/tests/.generated/{code-tables.tsv, modules-for-testing.txt}`
 - Harness: `src/tests/rubberduck/OBT*.bas`
 - Suites: `src/tests/<folder>/` (test `.bas` + fixture `.cls` together)
-- Workbook: `.test-runner/unit_tests_dev.xlsb`
+- Workbook: `.test-runner/unit_tests_dev.xlsm`
 - Run dir: `.test-runner/tests/staging/run/`
 - Results: `.test-runner/tests/staging/test-results.csv` (+ `run/test-results.csv`, `run/obt-import.log`)
 
 **One‑time setup checklist:**
-- [ ] Import the harness + `Development` + its deps into `unit_tests_dev.xlsb`
+- [ ] Import the harness + `Development` + its deps into `unit_tests_dev.xlsm`
 - [ ] Trust access to the VBA project object model = ON
 - [ ] VBE Error Trapping = “Break on Unhandled Errors”
 - [ ] Run `OBTGrantAccess` once, pick the repo root

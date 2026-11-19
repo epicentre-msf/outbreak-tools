@@ -61,7 +61,8 @@
 #                     tags. The linelist reads the two _ribbontemplate folders,
 #                     the designer reads its own.
 #
-#   4. The designer   src/bin/designer/designer.xlsb, for the two tables keyed
+#   4. The designer   src/bin/designer/designer.xlsm (designer.xlsb until the
+#                     .xlsm is promoted), for the two tables keyed
 #      binary         on things that live in the file rather than in the code:
 #                     t_tradrange on defined names, t_tradshape on shape names.
 #                     The binary is gitignored and travels through the release
@@ -83,7 +84,7 @@
 # ONE THING THIS CANNOT SEE
 # -----------------------------------------------------------------------------
 # The designer workbook's own document modules -- ThisWorkbook and the sheet
-# modules -- live inside designer.xlsb and nowhere in src. Every ribbon callback
+# modules -- live inside the designer workbook and nowhere in src. Every ribbon callback
 # and every designer class IS in src, so a tag reached from one of those is
 # read; a tag a document module asks for on its own is not, and would read as a
 # dead row here. Check a designer row against the file before deleting it.
@@ -565,11 +566,61 @@ utf16_identifiers <- function(path) {
 # is never translated and is not a row the table owes.
 MAIN_SHEET <- "Main"
 
+# The value of one attribute of one XML tag. The leading space keeps "name"
+# from matching inside "displayName" and "id" inside "r:id".
+xml_tag_attr <- function(tag, attr) {
+  hit <- regmatches(tag, regexec(sprintf(' %s="([^"]*)"', attr), tag))[[1]]
+  if (length(hit) < 2L) NA_character_ else hit[2]
+}
+
+xml_file_text <- function(path) {
+  if (!file.exists(path)) {
+    return(NULL)
+  }
+  paste(readLines(path, warn = FALSE, encoding = "UTF-8"), collapse = "")
+}
+
+# An .xlsm keeps the same facts as XML: workbook.xml names each sheet and its
+# rId, and the workbook relationships turn the rId into a worksheet part.
+main_sheet_part_xml <- function(work_dir) {
+  book <- xml_file_text(file.path(work_dir, "xl", "workbook.xml"))
+  rels <- xml_file_text(file.path(work_dir, "xl", "_rels", "workbook.xml.rels"))
+  if (is.null(book) || is.null(rels)) {
+    return(NA_character_)
+  }
+  sheets <- unlist(regmatches(book, gregexpr("<sheet [^>]*>", book)))
+  main <- sheets[vapply(sheets, xml_tag_attr, "", "name") == MAIN_SHEET]
+  if (!length(main)) {
+    return(NA_character_)
+  }
+  rel_id <- xml_tag_attr(main[1], "r:id")
+  entries <- unlist(regmatches(rels, gregexpr("<Relationship [^>]*>", rels)))
+  hit <- entries[vapply(entries, xml_tag_attr, "", "Id") == rel_id]
+  if (!length(hit)) {
+    return(NA_character_)
+  }
+  sub("^/?xl/", "", xml_tag_attr(hit[1], "Target"))
+}
+
+# The defined names of an .xlsm, read off workbook.xml.
+xml_defined_names <- function(work_dir) {
+  book <- xml_file_text(file.path(work_dir, "xl", "workbook.xml"))
+  if (is.null(book)) {
+    return(character())
+  }
+  tags <- unlist(regmatches(book, gregexpr("<definedName [^>]*>", book)))
+  found <- vapply(tags, xml_tag_attr, "", "name", USE.NAMES = FALSE)
+  found[!is.na(found)]
+}
+
 # workbook.bin lists its sheets as a relationship id followed straight away by
 # the sheet name, each written as a four-byte character count and then UTF-16LE
 # text. Reading the pair back gives the rId of the Main sheet, which the
 # package relationships then turn into a worksheet part.
 main_sheet_part <- function(work_dir) {
+  if (file.exists(file.path(work_dir, "xl", "workbook.xml"))) {
+    return(main_sheet_part_xml(work_dir))
+  }
   book <- file.path(work_dir, "xl", "workbook.bin")
   if (!file.exists(book)) {
     return(NA_character_)
@@ -690,7 +741,7 @@ read_designer_binary <- function(path) {
   if (!file.exists(path)) {
     return(NULL)
   }
-  work_dir <- file.path(tempdir(), "translation-coverage-xlsb")
+  work_dir <- file.path(tempdir(), "translation-coverage-designer")
   unlink(work_dir, recursive = TRUE)
   dir.create(work_dir, recursive = TRUE, showWarnings = FALSE)
   extracted <- tryCatch(
@@ -702,8 +753,13 @@ read_designer_binary <- function(path) {
   }
 
   book <- file.path(work_dir, "xl", "workbook.bin")
-  defined_names <- if (file.exists(book)) utf16_identifiers(book) else
+  defined_names <- if (file.exists(file.path(work_dir, "xl", "workbook.xml"))) {
+    xml_defined_names(work_dir)
+  } else if (file.exists(book)) {
+    utf16_identifiers(book)
+  } else {
     character()
+  }
 
   shapes <- main_sheet_shapes(work_dir)
 
@@ -786,8 +842,16 @@ say("Reading the ribbon XML")
 linelist_ribbon <- ribbon_tags(LINELIST_RIBBONS)
 designer_ribbon <- ribbon_tags(DESIGNER_RIBBONS)
 
-say("Reading src/bin/designer/designer.xlsb")
-designer_binary <- read_designer_binary("src/bin/designer/designer.xlsb")
+# The main designer build: the .xlsm once it is promoted, the .xlsb until then.
+designer_binary_path <- c(
+  "src/bin/designer/designer.xlsm",
+  "src/bin/designer/designer.xlsb"
+)
+designer_binary_path <- c(designer_binary_path[file.exists(designer_binary_path)],
+                          designer_binary_path[1])[1]
+designer_binary_file <- basename(designer_binary_path)
+say("Reading ", designer_binary_path)
+designer_binary <- read_designer_binary(designer_binary_path)
 
 all_table_tags <- unique(unlist(lapply(names(tables), function(one) {
   tags_of(tables, one)
@@ -1130,22 +1194,22 @@ table_row(
   "t_tradrange",
   paste0(length(candidate_ranges), " to check"),
   length(dead_ranges),
-  if (is.null(designer_binary)) "not checked, designer.xlsb absent" else
-    "defined names in designer.xlsb"
+  if (is.null(designer_binary)) paste0("not checked, ", designer_binary_file, " absent") else
+    paste0("defined names in ", designer_binary_file)
 )
 table_row(
   "t_tradshape",
   length(missing_shapes),
   length(dead_shapes),
-  if (is.null(designer_binary)) "not checked, designer.xlsb absent" else
-    "shape names in designer.xlsb"
+  if (is.null(designer_binary)) paste0("not checked, ", designer_binary_file, " absent") else
+    paste0("shape names in ", designer_binary_file)
 )
 table_row(
   "t_traddrop",
   0L,
   length(dead_drop),
-  if (is.null(designer_binary)) "not checked, designer.xlsb absent" else
-    "defined names in designer.xlsb"
+  if (is.null(designer_binary)) paste0("not checked, ", designer_binary_file, " absent") else
+    paste0("defined names in ", designer_binary_file)
 )
 add("")
 add(
@@ -1235,7 +1299,7 @@ add("## Candidates: designer worksheet labels")
 add("")
 if (is.null(designer_binary)) {
   add(
-    "Not checked. `src/bin/designer/designer.xlsb` is absent. Pull it with ",
+    "Not checked. `", designer_binary_path, "` is absent. Pull it with ",
     "`scripts/release/pull-assets.sh` and run this again."
   )
   add("")
@@ -1289,7 +1353,7 @@ bullet_list(
   dead_desmsg,
   note = paste0(
     "The designer workbook's own document modules live inside ",
-    "`designer.xlsb` and nowhere in `src`, so a tag one of them asks for on ",
+    "the workbook and nowhere in `src`, so a tag one of them asks for on ",
     "its own reads as dead here. Check the file before deleting a row."
   )
 )
@@ -1297,7 +1361,7 @@ bullet_list(
 add("## Dead rows: designer worksheet labels (t_tradrange)")
 add("")
 if (is.null(designer_binary)) {
-  add("Not checked. `src/bin/designer/designer.xlsb` is absent.")
+  add("Not checked. `", designer_binary_path, "` is absent.")
   add("")
 } else {
   bullet_list(dead_ranges)
@@ -1315,7 +1379,7 @@ if (is.null(designer_binary)) {
 add("## Dead rows: designer dropdowns (t_traddrop)")
 add("")
 if (is.null(designer_binary)) {
-  add("Not checked. `src/bin/designer/designer.xlsb` is absent.")
+  add("Not checked. `", designer_binary_path, "` is absent.")
   add("")
 } else {
   bullet_list(dead_drop)
@@ -1454,7 +1518,7 @@ add(
   "- Designer binary: ",
   if (is.null(designer_binary)) "absent." else
     paste0(
-      "`src/bin/designer/designer.xlsb`, ",
+      "`", designer_binary_path, "`, ",
       length(designer_binary$names),
       " defined names, ",
       length(designer_binary$shapes),

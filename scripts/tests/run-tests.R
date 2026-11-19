@@ -12,7 +12,7 @@
 #   --keep    never delete the per-run working copy, even on success
 #             (for inspecting a green run).
 #   --home    root of the untracked working area holding the driver workbook
-#             (unit_tests_dev.xlsb) + the per-run staging tree. Defaults to the
+#             (unit_tests_dev.xlsm, or .xlsb) + the per-run staging tree. Defaults to the
 #             OBT_TEST_HOME env var, else -- on macOS -- Excel's own container at
 #             ~/Library/Containers/com.microsoft.Excel/Data/Documents/OBTTestHome,
 #             else <repo>/.test-runner. Gitignored, so its location is a local
@@ -38,7 +38,7 @@
 # thing kept in the working area, as an untracked binary).
 #
 # What it does (all portable logic lives here; the OS-specific trigger is thin):
-#   1. copy <home>/unit_tests_dev.xlsb -> the stable run dir (NEVER touch original)
+#   1. copy <home>/unit_tests_dev.xlsm (or .xlsb) -> the stable run dir (NEVER touch original)
 #      and assemble the registered probe sources + manifest + harness from src/.
 #   2. (optional, --build) regenerate the registry intermediates (src/tests/.generated)
 #      and merge the FormLogic code into the exported forms (<home>/forms/merged).
@@ -48,7 +48,7 @@
 #   4. read test-results.csv written next to the copy; summarise.
 #   5. success (csv present, 0 failures) -> delete the run dir.
 #      failure -> KEEP the run dir and print the stale-copy path so it can be
-#      opened by hand; the stale .xlsb holds whatever partial testsOutputs Excel
+#      opened by hand; the stale copy holds whatever partial testsOutputs Excel
 #      managed even when the CSV never printed. Ask the user to test by hand
 #      only as a last resort (Excel wedged / no CSV / no usable stale state).
 #   Exit code: 0 on all-pass, 1 on any failure or incomplete run.
@@ -149,7 +149,19 @@ test_home <- if (length(home_opt) && nzchar(home_opt[1])) {
 if (!grepl("^(/|~|[A-Za-z]:)", test_home)) test_home <- file.path(repo_root, test_home)
 test_home <- path.expand(test_home)
 
-workbook_src <- file.path(test_home, "unit_tests_dev.xlsb")
+# THE DRIVER WORKBOOK. unit_tests_dev.xlsm when the home holds one, the .xlsb
+# otherwise, so a machine whose driver has not been saved as .xlsm yet keeps
+# running. Every machine keeps its own driver, so each one moves to .xlsm when
+# its owner saves it. The working copy below takes the driver's extension: Excel
+# for Mac dies on a workbook whose name says one format and whose bytes are the
+# other.
+driver_names <- c("unit_tests_dev.xlsm", "unit_tests_dev.xlsb")
+pick_driver <- function(folder) {
+  found <- file.path(folder, driver_names)
+  found <- found[file.exists(found)]
+  if (length(found)) found[1] else file.path(folder, driver_names[1])
+}
+workbook_src <- pick_driver(test_home)
 # Where merge-form-code.R writes the importable forms. The merger defaults to
 # this same path, so both scripts name one tree.
 merged_forms <- file.path(test_home, "forms", "merged")
@@ -179,8 +191,9 @@ run_dir      <- file.path(staging, "run")
 if (chose_container) {
   dir.create(staging, recursive = TRUE, showWarnings = FALSE)
   if (!file.exists(workbook_src)) {
-    legacy_workbook <- file.path(repo_root, ".test-runner", "unit_tests_dev.xlsb")
+    legacy_workbook <- pick_driver(file.path(repo_root, ".test-runner"))
     if (file.exists(legacy_workbook)) {
+      workbook_src <- file.path(test_home, basename(legacy_workbook))
       if (!file.copy(legacy_workbook, workbook_src, overwrite = FALSE)) {
         stop("run-tests.R: could not seed the driver workbook into ", test_home)
       }
@@ -282,7 +295,7 @@ if (do_build) {
 # and keep the folder itself.
 #
 # The SAME rule applies to the workbook copy, and it is the file Excel actually
-# opens. `unit_tests_dev.xlsb` is only ever read by this script; a grant on it
+# opens. The driver `unit_tests_dev` is only ever read by this script; a grant on it
 # can never help Excel. So the copy is kept too: it is left in place and
 # file.copy(overwrite = TRUE) truncates and rewrites it, which preserves the
 # inode (verified on this machine). Sweeping it away first, as this used to do,
@@ -296,7 +309,7 @@ if (do_build) {
 # Emptying loses nothing that sweeping bought -- a 0-byte file carries no stale
 # result -- so the guards below test for CONTENT rather than for existence.
 # Everything else in the run dir IS swept.
-work_copy <- file.path(run_dir, "unit_tests_run.xlsb")
+work_copy <- file.path(run_dir, paste0("unit_tests_run.", tools::file_ext(workbook_src)))
 csv_path  <- file.path(run_dir, "test-results.csv")   # written by OBTRunAllTests
 log_path  <- file.path(run_dir, "obt-import.log")     # written by OBTImport
 
@@ -349,7 +362,7 @@ for (kept_file in c(csv_path, log_path)) {
   cat("", file = kept_file, append = FALSE)
 }
 
-message("run-tests.R: working copy -> ", work_copy)
+message("run-tests.R: working copy -> ", work_copy, "  (from ", basename(workbook_src), ")")
 
 # Assemble a SELF-CONTAINED run dir next to the workbook copy: the probe sources
 # (pulled from src/, only the registered folders) + the manifest + the harness
@@ -496,6 +509,13 @@ for (f in c("OBTImport.bas", "OBTHeadless.bas")) {
 # see the cleanup below.
 headless_root <- file.path(run_dir, "headless")
 
+# These four stay .xlsb while every other workbook of the project moves to
+# .xlsm. HeadlessBuild copies the designer byte for byte under the name
+# <name>-designer.xlsb, so an .xlsm designer would reach Excel under an .xlsb
+# name, and the setup suite copies setup_dev under an .xlsb name the same way.
+# The template is saved with an explicit format and could move today; it stays
+# with the other three so the two headless suites change once, together with
+# HeadlessBuild.
 if (!on_windows) {
   headless_inputs <- list(
     c(".mock", "designer_mock.xlsb"),

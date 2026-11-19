@@ -3,11 +3,11 @@
 # translation-coverage-binaries.R -- no translation the product asks for may
 # be missing from the designer binaries.
 #
-#   Rscript scripts/devtools/translation-coverage-binaries.R [workbook.xlsb ...]
+#   Rscript scripts/devtools/translation-coverage-binaries.R [workbook.xlsm|xlsb ...]
 #
 # With no argument it checks the two designers a build can read:
-#   .mock/designer_mock.xlsb
-#   src/bin/designer/designer_dev.xlsb
+#   .mock/designer_mock.xlsm
+#   src/bin/designer/designer_dev.xlsm
 #
 # trads/designer_translations.xlsx is the master and translation-coverage.R
 # already gates it -- but a generated linelist reads its tables from the
@@ -28,6 +28,10 @@
 # sheet order, into a temporary .xlsx whose tables carry the master's table
 # names. translation-coverage.R then reads that workbook the same way it reads
 # the master. Plain R throughout: no Excel, no COM, the same on both OS.
+#
+# An .xlsm keeps the same tables as XML parts, and readxl reads a table range
+# straight out of it. Its parts are walked only to learn which table sits on
+# which sheet and over which range; the rebuilt .xlsx is the same either way.
 #
 # THE GATE IS MISSING, NOT DEAD
 # -----------------------------------------------------------------------------
@@ -61,8 +65,8 @@ if (!file.exists(coverage)) {
 suppressMessages(library(openxlsx))
 
 workbooks <- if (length(args)) args else c(
-  ".mock/designer_mock.xlsb",
-  "src/bin/designer/designer_dev.xlsb"
+  ".mock/designer_mock.xlsm",
+  "src/bin/designer/designer_dev.xlsm"
 )
 
 # The stacked tables of each sheet. AN UNORDERED SET on purpose: the binaries
@@ -310,6 +314,92 @@ tables_of_sheet <- function(cells, name_by_row, wanted) {
 }
 
 # ---------------------------------------------------------------------------
+# The .xlsm side. The workbook part names each sheet's part through its rels,
+# a sheet's rels name its table parts, and a table part carries its name and
+# its range. readxl then reads that range, header row included.
+# ---------------------------------------------------------------------------
+xml_part <- function(dir, name) {
+  path <- file.path(dir, name)
+  if (!file.exists(path)) return(NULL)
+  paste(readLines(path, warn = FALSE, encoding = "UTF-8"), collapse = "")
+}
+
+# The value of one attribute of one tag. The leading space keeps "name" from
+# matching inside "displayName" and "id" inside "r:id".
+tag_attr <- function(tag, attr) {
+  hit <- regmatches(tag, regexec(sprintf(' %s="([^"]*)"', attr), tag))[[1]]
+  if (length(hit) < 2L) NA_character_ else hit[2]
+}
+
+# A relationship target as a path inside the package.
+package_path <- function(target, base = "xl") {
+  if (grepl("^/", target)) return(sub("^/", "", target))
+  file.path(base, sub("^(\\.\\./)+", "", target))
+}
+
+xml_tables_of_sheet <- function(wb_path, dir, sheet_name, wanted) {
+  book <- xml_part(dir, "xl/workbook.xml")
+  rels <- xml_part(dir, "xl/_rels/workbook.xml.rels")
+  if (is.null(book) || is.null(rels)) {
+    stop("no xl/workbook.xml in this package", call. = FALSE)
+  }
+
+  rel_tags <- regmatches(rels, gregexpr("<Relationship [^>]*>", rels))[[1]]
+  target_of <- setNames(vapply(rel_tags, tag_attr, "", "Target"),
+                        vapply(rel_tags, tag_attr, "", "Id"))
+
+  sheet_tags <- regmatches(book, gregexpr("<sheet [^>]*>", book))[[1]]
+  hit <- sheet_tags[vapply(sheet_tags, tag_attr, "", "name") == sheet_name]
+  if (!length(hit)) {
+    stop(sprintf("%s carries no sheet named %s", wb_path, sheet_name),
+         call. = FALSE)
+  }
+  part <- package_path(target_of[[tag_attr(hit[1], "r:id")]])
+
+  sheet_rels <- xml_part(dir, file.path(dirname(part), "_rels",
+                                        paste0(basename(part), ".rels")))
+  table_targets <- if (is.null(sheet_rels)) character(0) else
+    vapply(regmatches(sheet_rels, gregexpr("<Relationship [^>]*>",
+                                           sheet_rels))[[1]],
+           tag_attr, "", "Target")
+  table_targets <- table_targets[grepl("tables/", table_targets)]
+
+  out <- list()
+  for (target in table_targets) {
+    table_xml <- xml_part(dir, package_path(target))
+    if (is.null(table_xml)) next
+    head_tag <- regmatches(table_xml, regexpr("<table [^>]*>", table_xml))
+    table_name <- tolower(tag_attr(head_tag, "displayName"))
+    if (!(table_name %in% wanted)) next
+
+    values <- suppressMessages(readxl::read_excel(
+      wb_path, sheet = sheet_name, range = tag_attr(head_tag, "ref"),
+      col_types = "text", .name_repair = "minimal"
+    ))
+    df <- as.data.frame(values, stringsAsFactors = FALSE)
+    df[is.na(df)] <- ""
+    if (!all(LANG_CODES %in% toupper(names(df)))) {
+      stop(sprintf("table %s lacks one of the language columns", table_name),
+           call. = FALSE)
+    }
+    if (!nzchar(names(df)[1])) names(df)[1] <- "msg_id"
+    df <- df[nzchar(trimws(df[[1]])), , drop = FALSE]
+    if (!nrow(df)) {
+      stop(sprintf("table %s has a header and no rows", table_name),
+           call. = FALSE)
+    }
+    out[[table_name]] <- df
+  }
+
+  lost <- setdiff(wanted, names(out))
+  if (length(lost)) {
+    stop(sprintf("table(s) not found on the sheet: %s",
+                 paste(lost, collapse = ", ")), call. = FALSE)
+  }
+  out
+}
+
+# ---------------------------------------------------------------------------
 # One workbook: unpack, lift the tables, rebuild the xlsx, run the coverage.
 # ---------------------------------------------------------------------------
 check_workbook <- function(wb_path) {
@@ -319,19 +409,27 @@ check_workbook <- function(wb_path) {
   on.exit(unlink(work, recursive = TRUE), add = TRUE)
 
   utils::unzip(wb_path, exdir = work)
-  parts <- sheet_parts(work)
-  shared <- read_shared_strings(work)
+  is_xml <- file.exists(file.path(work, "xl", "workbook.xml"))
+  if (!is_xml) {
+    parts <- sheet_parts(work)
+    shared <- read_shared_strings(work)
+  }
 
   built <- createWorkbook()
   for (sheet_name in names(TABLES_OF)) {
-    part <- parts[[sheet_name]]
-    if (is.null(part)) {
-      stop(sprintf("%s carries no sheet named %s", wb_path, sheet_name),
-           call. = FALSE)
+    if (is_xml) {
+      tables <- xml_tables_of_sheet(wb_path, work, sheet_name,
+                                    TABLES_OF[[sheet_name]])
+    } else {
+      part <- parts[[sheet_name]]
+      if (is.null(part)) {
+        stop(sprintf("%s carries no sheet named %s", wb_path, sheet_name),
+             call. = FALSE)
+      }
+      cells <- read_string_cells(work, part, shared)
+      tables <- tables_of_sheet(cells, table_names_by_row(work, part),
+                                TABLES_OF[[sheet_name]])
     }
-    cells <- read_string_cells(work, part, shared)
-    tables <- tables_of_sheet(cells, table_names_by_row(work, part),
-                              TABLES_OF[[sheet_name]])
 
     addWorksheet(built, sheet_name)
     at_row <- 2L

@@ -3,8 +3,8 @@
 # linelist-inspect.R -- judge a delivered linelist without opening Excel.
 #
 # Usage:
-#   Rscript scripts/devtools/linelist-inspect.R <linelist.xlsb>
-#   Rscript scripts/devtools/linelist-inspect.R <linelist.xlsb> --quiet
+#   Rscript scripts/devtools/linelist-inspect.R <linelist.xlsm|xlsb>
+#   Rscript scripts/devtools/linelist-inspect.R <linelist.xlsm|xlsb> --quiet
 #
 # Exit code 1 when a check fails, 0 when the delivered file is clean.
 #
@@ -13,9 +13,10 @@
 # A generation reports "OK" over a linelist that does not compile, is written
 # entirely in tags and carries no geography. Every one of those was found by
 # opening the delivered file in Excel and noticing. This reads the bytes
-# instead: an .xlsb is a zip, and the three parts worth reading are
-# docProps/app.xml (the worksheet names), xl/workbook.bin (the defined names)
-# and xl/vbaProject.bin (the VBA components).
+# instead: a workbook is a zip, and the three parts worth reading are
+# docProps/app.xml (the worksheet names), the workbook part (the defined names:
+# xl/workbook.bin in an .xlsb, xl/workbook.xml in an .xlsm) and
+# xl/vbaProject.bin (the VBA components).
 #
 # It is the AFTER half of a before/after. Run it on the file a build produced
 # AND on the one before it: a check that reports the fault on the old file and
@@ -74,7 +75,7 @@ repo_root <- normalizePath(file.path(dirname(sub("^--file=", "", grep(
 )[1])), "..", ".."))
 
 if (is.na(target) || !file.exists(target)) {
-  cat("Usage: Rscript scripts/devtools/linelist-inspect.R <linelist.xlsb>\n")
+  cat("Usage: Rscript scripts/devtools/linelist-inspect.R <linelist.xlsm|xlsb>\n")
   quit(status = 2)
 }
 
@@ -172,6 +173,44 @@ value_after <- function(bytes, key, window = 160L) {
   if (!length(tokens)) NA_character_ else tokens[1]
 }
 
+# The defined names of an .xlsm, each with the text stored for it, read off
+# xl/workbook.xml. A name carried at workbook level and on a sheet appears
+# twice; the workbook-level one comes first, since that is the one a hidden
+# name is written to.
+xml_defined_names <- function(bytes) {
+  if (is.null(bytes)) {
+    return(data.frame(name = character(0), value = character(0)))
+  }
+  xml <- rawToChar(bytes)
+  Encoding(xml) <- "UTF-8"
+  tags <- regmatches(xml, gregexpr("<definedName [^>]*>[^<]*</definedName>", xml))[[1]]
+  heads <- sub(">.*$", ">", tags)
+  found <- data.frame(
+    name = sub('^.* name="([^"]*)".*$', "\\1", heads),
+    value = sub("^<definedName [^>]*>([^<]*)</definedName>$", "\\1", tags),
+    sheet_level = grepl(" localSheetId=", heads, fixed = TRUE),
+    stringsAsFactors = FALSE
+  )
+  found <- found[order(found$sheet_level), c("name", "value")]
+  found$value <- gsub("&quot;", "\"", found$value, fixed = TRUE)
+  found$value <- gsub("&amp;", "&", found$value, fixed = TRUE)
+  found
+}
+
+# The value a hidden name holds in an .xlsm: the quoted text it refers to. A
+# name that points at a range holds no text of its own and reads as NA.
+xml_value_of <- function(defined, key) {
+  hit <- defined$value[defined$name == key]
+  if (!length(hit)) {
+    return(NA_character_)
+  }
+  stored <- sub("^=", "", hit[1])
+  if (!grepl('^".*"$', stored)) {
+    return(NA_character_)
+  }
+  gsub('^"|"$', "", stored)
+}
+
 worksheet_names <- function() {
   bytes <- read_part("docProps/app.xml")
   if (is.null(bytes)) {
@@ -234,7 +273,9 @@ note <- function(label, detail = "") {
 
 sheets <- worksheet_names()
 book_bytes <- read_part("xl/workbook.bin")
-names_in_book <- unlist(utf16_alignments(book_bytes))
+book_defined <- xml_defined_names(read_part("xl/workbook.xml"))
+names_in_book <- if (is.null(book_bytes)) book_defined$name else
+  unlist(utf16_alignments(book_bytes))
 components <- vba_components()
 code <- sort(unique(c(components$Module, components$Class, components$BaseClass)))
 
@@ -278,7 +319,11 @@ check(!length(tagged), "worksheets carry translated names",
 # scanned and the first that looks like a value wins. Taking the very next
 # token reported '@' for a workbook whose code was ENG -- a false failure,
 # which is the one kind of answer a check like this must never give.
-lang_code <- value_after(book_bytes, "RNG_LLLanguageCode")
+lang_code <- if (is.null(book_bytes)) {
+  xml_value_of(book_defined, "RNG_LLLanguageCode")
+} else {
+  value_after(book_bytes, "RNG_LLLanguageCode")
+}
 # A hidden name and its value are not always stored next to each other -- how
 # far apart depends on the record -- so this cannot always be read out. When it
 # cannot, that is reported as UNDETERMINED rather than as a failure: a check

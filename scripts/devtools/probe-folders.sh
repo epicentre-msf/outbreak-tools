@@ -19,7 +19,7 @@
 #
 # run-tests.R quits any running Excel itself, gracefully, before it launches
 # its own. NOTHING HERE MAY `pkill` EXCEL. A killed Excel leaves its owner-lock
-# file `~$unit_tests_run.xlsb` beside the workbook, the next run meets a "file
+# file `~$unit_tests_run.xlsm` (or .xlsb) beside the workbook, the next run meets a "file
 # in use" dialog and wedges, and every run after it is lost to a fault that
 # looks like a compile error. The loop sweeps any lock file left by an earlier
 # crash instead, which is the recovery step and not a routine one.

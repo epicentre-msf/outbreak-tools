@@ -18,17 +18,21 @@
 src/bin/
 .mock/
 releases/
-#   Ribbon templates too (the .xlsb binaries only — ribbon XML + icons stay in git).
+#   Ribbon templates too (the .xlsm and .xlsb binaries only — ribbon XML + icons
+#   stay in git).
 #   Still in git HISTORY for now; folded into a later history-rewrite pass.
+ribbons/_ribbontemplate_main.xlsm
+ribbons/_ribbontemplate_dev.xlsm
 ribbons/_ribbontemplate_main.xlsb
 ribbons/_ribbontemplate_dev.xlsb
 #   The translation workbooks too. They are edited in Excel and carry the label
 #   tables the designer copies into a generated file.
 trads/designer_translations*.xlsx
 
-# tests input xlsb, xlsx files, at any depth.
-# `**/` matches zero directories as well as many, so these two cover
+# tests input xlsm, xlsb, xlsx files, at any depth.
+# `**/` matches zero directories as well as many, so these cover
 # src/tests/.input/file.xlsx and src/tests/.input/package/file.xlsx alike.
+src/tests/.input/**/*.xlsm
 src/tests/.input/**/*.xlsb
 src/tests/.input/**/*.xlsx
 
@@ -78,6 +82,7 @@ config.json
 *Sheet3.cls
 *Sheet4.cls
 *Sheet5.cls
+**/~$*.xlsm
 **/~$*.xlsb
 
 # --- Assistant workspace + local skill copies --------------------------------

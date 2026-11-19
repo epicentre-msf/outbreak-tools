@@ -2,12 +2,12 @@
 #
 # workbook-closure-scan.R -- are the dev binaries closed?
 #
-#   Rscript scripts/devtools/workbook-closure-scan.R [workbook.xlsb ...]
+#   Rscript scripts/devtools/workbook-closure-scan.R [workbook.xlsm|xlsb ...]
 #
 # With no argument it scans the three dev binaries:
-#   src/bin/setup/setup_dev.xlsb
-#   src/bin/msetup/msetup_dev.xlsb
-#   src/bin/designer/designer_dev.xlsb
+#   src/bin/setup/setup_dev.xlsm
+#   src/bin/msetup/msetup_dev.xlsm
+#   src/bin/designer/designer_dev.xlsm
 #
 # "Closed" is three things, checked in this order for every workbook:
 #
@@ -37,7 +37,8 @@
 # The code comes out of xl/vbaProject.bin through vba-inspect.R's dump mode,
 # which decompresses every module stream in plain R, document modules included
 # (ThisWorkbook carries pasted event logic). The Dev tables come out of the
-# sheet cells through the readxlsb package: every sheet is read, and a table is
+# sheet cells, through readxl for an .xlsm and through the readxlsb package for
+# an .xlsb named on the command line: every sheet is read, and a table is
 # found by the tag cell Development writes above it ("general modules",
 # "general classes", "general form modules", "general forms"), with the header
 # on the next row and the rows below. Tests tables are left alone: a dev binary
@@ -76,16 +77,26 @@ inspect <- file.path("scripts", "devtools", "vba-inspect.R")
 if (!file.exists(inspect)) {
   stop("scripts/devtools/vba-inspect.R is missing", call. = FALSE)
 }
-if (!requireNamespace("readxlsb", quietly = TRUE)) {
-  stop("the readxlsb package is needed to read the Dev sheet tables: ",
-       "install.packages(\"readxlsb\")", call. = FALSE)
-}
-
 workbooks <- if (length(args)) args else c(
-  "src/bin/setup/setup_dev.xlsb",
-  "src/bin/msetup/msetup_dev.xlsb",
-  "src/bin/designer/designer_dev.xlsb"
+  "src/bin/setup/setup_dev.xlsm",
+  "src/bin/msetup/msetup_dev.xlsm",
+  "src/bin/designer/designer_dev.xlsm"
 )
+
+# An .xlsb keeps its sheets as binary records and an .xlsm keeps them as XML, so
+# each takes its own reader. readxl opens the .xlsm; only an .xlsb named on the
+# command line still needs readxlsb.
+is_binary_workbook <- function(wb) grepl("\\.xlsb$", wb, ignore.case = TRUE)
+
+if (!requireNamespace("readxl", quietly = TRUE)) {
+  stop("the readxl package is needed to read the Dev sheet tables: ",
+       "install.packages(\"readxl\")", call. = FALSE)
+}
+if (any(is_binary_workbook(workbooks)) &&
+    !requireNamespace("readxlsb", quietly = TRUE)) {
+  stop("the readxlsb package is needed to read the Dev sheet tables of an ",
+       ".xlsb: install.packages(\"readxlsb\")", call. = FALSE)
+}
 
 # ---------------------------------------------------------------------------
 # The candidate universe: one entry per src component, stale/ left out.
@@ -113,8 +124,15 @@ cat(sprintf("candidate components in src: %d\n", length(candidates)))
 # inside a VBA string is doubled, so the literal pattern eats whole strings
 # before the apostrophe check -- "LLGeo" inside a TypeName compare never reads
 # as a reference.
+#
+# Every byte outside ASCII becomes a space first. Identifiers are ASCII, so
+# nothing the scan looks for is lost, and the regexes never meet a byte they
+# refuse. They did: the VBE stores a UTF-8 dash typed into a comment as three
+# Windows-1252 characters, one of them byte 0x9D, which R on macOS cannot read
+# as "latin1", and the dumped HiddenNames of setup_dev stopped the whole scan.
 code_lines <- function(path) {
-  lines <- readLines(path, warn = FALSE, encoding = "latin1")
+  lines <- readLines(path, warn = FALSE)
+  lines <- iconv(lines, from = "latin1", to = "ASCII", sub = " ")
   lines <- gsub('"([^"]|"")*"', '""', lines)
   sub("'.*$", "", lines)
 }
@@ -153,6 +171,10 @@ DEV_TAGS <- c("general modules", "general classes", "general form modules",
 TEST_TAGS <- c("tests modules", "tests classes")
 
 sheet_count <- function(wb) {
+  if (!is_binary_workbook(wb)) {
+    return(length(tryCatch(readxl::excel_sheets(wb),
+                           error = function(e) character(0))))
+  }
   parts <- tryCatch(utils::unzip(wb, list = TRUE)$Name,
                     warning = function(w) character(0),
                     error = function(e) character(0))
@@ -161,7 +183,14 @@ sheet_count <- function(wb) {
 
 sheet_matrix <- function(wb, index) {
   df <- tryCatch(
-    suppressWarnings(readxlsb::read_xlsb(wb, sheet = index, col_names = FALSE)),
+    suppressMessages(suppressWarnings(
+      if (is_binary_workbook(wb)) {
+        readxlsb::read_xlsb(wb, sheet = index, col_names = FALSE)
+      } else {
+        readxl::read_excel(wb, sheet = index, col_names = FALSE,
+                           col_types = "text")
+      }
+    )),
     error = function(e) NULL
   )
   if (is.null(df) || !nrow(df) || !ncol(df)) return(NULL)

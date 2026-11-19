@@ -2,16 +2,16 @@
 # =============================================================================
 # Generate one linelist, headless. One command, and it runs no test:
 #
-#   Rscript scripts/headless/build-linelist.R --setup=<filled-setup.xlsb> \
+#   Rscript scripts/headless/build-linelist.R --setup=<filled-setup> \
 #           [--out=<dir>] [--name=<stem>] [--designer=<path>] \
 #           [--forms=<dir>] [--home=<dir>] [--obt-home=<dir>] [--no-merge] \
-#           [--temppath=<ribbon.xlsb>] [--geopath=<geo.xlsb>] \
+#           [--temppath=<ribbon-template.xlsm>] [--geopath=<geo.xlsx>] \
 #           [--setuplang=<column>] [--lllang=<code>] [--llpassword=<pass>] #           [--style=<style.xlsx>] [--design=<column>]
 #
 # GENERATE SEVERAL AT ONCE by giving --setup more than once:
 #
 #   Rscript scripts/headless/build-linelist.R \
-#           --setup=<a.xlsb> --name=<a> --setup=<b.xlsb> --name=<b> \
+#           --setup=<a> --name=<a> --setup=<b> --name=<b> \
 #           --run-name=<run> [--geopath=<geo.xlsx>] ...
 #
 # That runs the designer's OWN multiple generation, the loop behind the
@@ -154,7 +154,10 @@ build_home <- opt("home", default = {
 })
 if (!grepl("^(/|~|[A-Za-z]:)", build_home)) build_home <- file.path(repo_root, build_home)
 
-workbook_src <- file.path(build_home, "unit_tests_dev.xlsb")
+# The driver is the test harness's: unit_tests_dev.xlsm when the home holds one,
+# the .xlsb otherwise. The working copy below takes its extension.
+workbook_src <- file.path(build_home, c("unit_tests_dev.xlsm", "unit_tests_dev.xlsb"))
+workbook_src <- c(workbook_src[file.exists(workbook_src)], workbook_src[1])[1]
 scripts_dir  <- file.path(repo_root, "scripts")
 
 # Needed this early because the sandbox check below is macOS-only.
@@ -346,6 +349,19 @@ setup_paths <- vapply(setup_paths, abs_path, character(1), USE.NAMES = FALSE)
 setup_path  <- setup_paths[1]
 
 designer_path <- abs_path(opt("designer", file.path(repo_root, ".mock", "designer_mock.xlsb")))
+
+# HeadlessBuild copies the designer byte for byte under the name
+# <name>-designer.xlsb, so an .xlsm designer would reach Excel under an .xlsb
+# name -- the mismatch Excel for Mac dies on (see stage_in below). The build
+# takes an .xlsb designer until HeadlessBuild names the copy after the
+# designer's own extension.
+if (grepl("\\.xlsm$", designer_path, ignore.case = TRUE)) {
+  stop("build-linelist.R: HeadlessBuild still copies the designer as ",
+       "<name>-designer.xlsb, and Excel for Mac dies on an .xlsm workbook under ",
+       "an .xlsb name. Pass an .xlsb designer (the default is ",
+       ".mock/designer_mock.xlsb) until HeadlessBuild takes the designer's own ",
+       "extension.")
+}
 temp_path     <- abs_path(opt("temppath", ""))
 geo_paths     <- vapply(opts_all("geopath"), abs_path, character(1), USE.NAMES = FALSE)
 geo_path      <- if (length(geo_paths)) geo_paths[1] else ""
@@ -508,7 +524,7 @@ if (!"headless" %in% tbl$folder) {
 
 # --- 3) assemble the run dir -------------------------------------------------
 # Contents cleared, the folder and the three files Excel touches kept in place.
-work_copy   <- file.path(run_dir, "linelist_build.xlsb")
+work_copy   <- file.path(run_dir, paste0("linelist_build.", tools::file_ext(workbook_src)))
 report_path <- file.path(run_dir, "build-report.txt")   # written by the trigger
 log_path    <- file.path(run_dir, "obt-import.log")     # written by OBTImport
 

@@ -51,14 +51,16 @@ done
 command -v unzip >/dev/null 2>&1 || { echo "ERROR: unzip not found." >&2; exit 1; }
 command -v Rscript >/dev/null 2>&1 || { echo "ERROR: Rscript not found." >&2; exit 1; }
 
-# The workbooks the bundle ships and conventions.md §11 governs.
+# The workbooks the bundle ships and conventions.md §11 governs: the .xlsm ones.
+# An .xlsb still sitting beside its .xlsm twin rides in the bundle until somebody
+# deletes it, and it is not checked: nothing builds or ships from it any more.
 # src/tests/.input is bundled too and deliberately left out: those are frozen
 # fixtures, and an old setup is *supposed* to still carry an old ribbon.
 # ~$... is Excel's lock file for a workbook that is open right now. It is not a
 # workbook, it is bundled all the same, and it must not be mistaken for one here.
 WORKBOOKS=()
 while IFS= read -r f; do [ -n "$f" ] && WORKBOOKS+=("$f"); done < <(
-  ls .mock/*.xlsb src/bin/*/*.xlsb ribbons/_ribbontemplate_*.xlsb 2>/dev/null     | grep -v '/~\$' | sort -u
+  ls .mock/*.xlsm src/bin/*/*.xlsm ribbons/_ribbontemplate_*.xlsm 2>/dev/null     | grep -v '/~\$' | sort -u
 )
 [ ${#WORKBOOKS[@]} -gt 0 ] || { echo "ERROR: no workbooks found (pull-assets.sh first?)" >&2; exit 1; }
 
@@ -86,7 +88,12 @@ done
 # so the FAIL lines are what is read here.
 echo "==> ribbon plumbing (ribbon-doctor)"
 for wb in "${WORKBOOKS[@]}"; do
-  if ! unzip -Z1 "$wb" 2>/dev/null | grep -q '^customUI/'; then
+  # The listing is read whole before grep sees it. Piped straight in, grep -q
+  # closes the pipe at its first match, unzip dies on SIGPIPE writing the rest,
+  # pipefail reads that as no match, and a workbook with a ribbon was skipped:
+  # it happened to ribbons/_ribbontemplate_dev.xlsm.
+  parts=$(unzip -Z1 "$wb" 2>/dev/null || true)
+  if ! grep -q '^customUI/' <<< "$parts"; then
     echo "  --    $wb carries no ribbon, skipped"
     continue
   fi
@@ -106,7 +113,7 @@ bash "$SYNC" --check || FAILED=1
 
 # --- 4. hand-imported VBA ----------------------------------------------------
 # Classes and modules pasted into the mock workbooks by hand travel inside the
-# .xlsb while the .cls and .bas they came from keep moving in git.
+# workbook while the .cls and .bas they came from keep moving in git.
 # The drift scan picks its own colours the same way this script does; forcing
 # them off here hid the red rows a reader is meant to catch at a glance.
 echo

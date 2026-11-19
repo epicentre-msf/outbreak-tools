@@ -36,7 +36,8 @@ build lives in one mutable pre-release that never gets a version number.
 ```
 
 Binaries are **not** committed to git: `.gitignore` covers `src/bin/`, `.mock/`, the
-ribbon templates (`ribbons/_ribbontemplate_*.xlsb`), and there is no `releases/`
+ribbon templates (`ribbons/_ribbontemplate_*.xlsm`, and the `.xlsb` ones while they
+are still on disk), and there is no `releases/`
 folder. `git history` was rewritten to purge them (`scripts/history-rewrite/`); the
 ribbon-template binaries are untracked now and folded into a later rewrite pass (they
 are listed in `02-rewrite.sh`'s `LIVE_PATHS`). The ribbon **sources** stay in git:
@@ -51,7 +52,13 @@ folders and `ribbon-pack.sh` puts them back into a workbook — see
 
 A single pinned **pre-release** named `working-binaries` holds one asset,
 `working-binaries.tar.gz`, containing (at repo-relative paths) `src/bin/`, `.mock/`,
-and the two `ribbons/_ribbontemplate_*.xlsb`.
+and the ribbon templates `ribbons/_ribbontemplate_*.xlsm` (with their `.xlsb` twins
+while those are still on disk).
+
+The workbooks are `.xlsm`. An `.xlsb` left beside its `.xlsm` twin still rides in the
+bundle, and nothing reads it: the preflight checks the `.xlsm` workbooks, the ribbon
+pairing below names them, and `build-release-zip.sh` stops when an `.xlsm` is missing,
+so an archive never carries the `.xlsb` beside it.
 
 | Task | Command | What it does |
 |------|---------|--------------|
@@ -62,11 +69,35 @@ Windows: use the `.ps1` twins. Both need the `gh` CLI authenticated with write
 access to the repo. Set `OBT_SKIP_DEV_REFRESH=1` to publish binaries without
 republishing the dev build.
 
+### Making the .xlsm binaries
+
+The four mocks and the two ribbon templates were saved as `.xlsm` by hand. The dev
+builds under `src/bin` are made from the mocks the usual way, because a dev build is a
+mock copy plus the components Dev > Import Codes brings in:
+
+1. In `.mock/designer_mock.xlsm`: Dev > Import Codes, then Imports > Import
+   translations with `trads/designer_translations.xlsx`. Save and close.
+2. Run the VS Code tasks **update dev binaries** and **update unit test**. They copy
+   the `.xlsm` mocks to `src/bin/{setup,msetup,designer}/*_dev.xlsm` and
+   `src/bin/test-files/unit_tests_dev.xlsm`.
+3. In each of `setup_dev.xlsm`, `msetup_dev.xlsm` and `designer_dev.xlsm`: Dev >
+   Import Codes (and Import translations in the designer). Save and close.
+4. `bash scripts/release/preflight.sh --check` until it is clean.
+
+The main builds (`designer.xlsm`, `setup.xlsm`, `msetup.xlsm`) appear the day they are
+promoted with the **update ... main** tasks, and a main release needs them.
+
+**Before the first push of `.xlsm` binaries, two code changes must be in.** The
+designer's file pickers list `.xlsb` and `.xlsx` alone, so the shipped `.xlsm` setup and
+template are hidden from them; and on Windows the hidden build instance saves its
+designer copy under an `.xlsb` name, which an `.xlsm` designer cannot open. Until both
+are fixed, push with `OBT_SKIP_DEV_REFRESH=1` so `dev-latest` keeps the build it has.
+
 ### The preflight
 
 `push-assets.sh` (and its `.ps1` twin) runs `scripts/release/preflight.sh` first and
 **uploads nothing if it fails**. It is the one place that catches a binary and its
-sources disagreeing, because once the `.xlsb` is in the store nothing in git can tell
+sources disagreeing, because once a workbook is in the store nothing in git can tell
 you which side was right. In order:
 
 | # | Check | Fails when |
@@ -87,16 +118,16 @@ customUI part as it sits inside the workbook. (The *report* is normalised with
 `--strip-trailing-cr`, because a customUI part can mix CRLF and LF and GNU diff then
 calls every line changed; when that is the only difference the check says so.) The
 pairing is a table at the top of `sync-ribbons.sh` rather than a name rule, because two
-workbooks share one folder: `.mock/setup_mock.xlsb` and `src/bin/setup/setup_dev.xlsb`
+workbooks share one folder: `.mock/setup_mock.xlsm` and `src/bin/setup/setup_dev.xlsm`
 are two copies of the one ribbon in `ribbons/setup_mock`, and `.source` names only one
 of them. There is one folder per ribbon, named after the mock that owns it, and both
 workbooks carrying that ribbon are checked against it, so a dev build trailing its mock
 cannot reach the store.
 
-The promoted main builds (`designer.xlsb`, `setup.xlsb`, `msetup.xlsb`) and
-`_ribbontemplate_main.xlsb` have no folder and are not compared. They are promoted from
+The promoted main builds (`designer.xlsm`, `setup.xlsm`, `msetup.xlsm`) and
+`_ribbontemplate_main.xlsm` have no folder and are not compared. They are promoted from
 the dev line, so they trail it by design and would fail the check every time — their
-ribbon lives only in the binary. `.mock/cleanDesignerMockFile.xlsb` is left out too: it
+ribbon lives only in the binary. `.mock/cleanDesignerMockFile` is left out too: it
 is a stripped designer kept for rebuilds, not a shipped ribbon source.
 
 When step 3 fails, decide which side is right and make them agree:
@@ -165,7 +196,7 @@ that still says `## [Unreleased]` at the top resolves to the last released versi
 so cuts nothing.
 
 > The shipped zip contains a **designer**, a **setup**, a **master setup** and a
-> **ribbon template**. `main` ships `designer.xlsb`/`setup.xlsb`/`msetup.xlsb`; `dev`
+> **ribbon template**, all `.xlsm`. `main` ships `designer.xlsm`/`setup.xlsm`/`msetup.xlsm`; `dev`
 > (and `hot-fixes`) ship the `_dev` builds.
 
 ### Refreshing the dev build

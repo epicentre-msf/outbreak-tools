@@ -1,2 +1,2 @@
-workbook=ribbons/_ribbontemplate_dev.xlsb
+workbook=ribbons/_ribbontemplate_dev.xlsm
 part=customUI/customUI.xml

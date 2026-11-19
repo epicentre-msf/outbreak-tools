@@ -1,2 +1,2 @@
-workbook=.mock/unit_tests_mock.xlsb
+workbook=.mock/unit_tests_mock.xlsm
 part=customUI/customUI.xml

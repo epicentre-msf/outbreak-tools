@@ -35,13 +35,14 @@ NAME="ll-measles-headless"
 # THE RIBBON TEMPLATE. Given, the linelist gets a ribbon tab. Left empty, it
 # gets action buttons on the sheets and an Admin sheet instead. The two builds
 # are different products, so this is the setting most worth being sure about.
-TEMPLATE="ribbons/_ribbontemplate_dev.xlsb"
+TEMPLATE="ribbons/_ribbontemplate_dev.xlsm"
 
 # THE GEOBASE workbook, for linelists with geography. Empty means no geobase.
 GEO=".obt/draft/headless-measles/OUTBREAK-TOOLS-GEOBASE-TCD-2026-08-16.xlsx"
 
 # THE DESIGNER workbook the linelist is built from. Empty uses
-# .mock/designer_mock.xlsb, which is the one the project develops against.
+# .mock/designer_mock.xlsb. The build refuses an .xlsm designer for now: it
+# copies the designer under an .xlsb name, see build-linelist.R.
 DESIGNER=".obt/draft/headless-measles/designer_measles.xlsb"
 
 # THE FORMS. Empty is right for almost every run.
@@ -106,7 +107,7 @@ DESIGN=""
 OBT_HOME=""
 
 # WHERE THE DRIVER WORKBOOK LIVES, the untracked working area holding
-# unit_tests_dev.xlsb. Empty uses <repo>/.test-runner.
+# unit_tests_dev.xlsm (or .xlsb). Empty uses <repo>/.test-runner.
 BUILD_HOME=""
 
 # --- end of settings ---------------------------------------------------------
@@ -127,7 +128,7 @@ Every flag below is passed through to build-linelist.R.
   --temppath=<file>    Ribbon template. Given -> ribbon build.
                        Omitted -> buttons build, with an Admin sheet.
   --geopath=<file>     Geobase workbook. Omitted -> no geography.
-  --designer=<file>    Designer workbook. Default: .mock/designer_mock.xlsb
+  --designer=<file>    Designer workbook, .xlsb for now. Default: .mock/designer_mock.xlsb
 
   --forms=<dir>        A folder of ALREADY MERGED .frm files. Only meaningful
                        with --no-merge. It is NOT where the default build reads
@@ -154,7 +155,7 @@ Every flag below is passed through to build-linelist.R.
   --obt-home=<dir>     Staging root. Omitted -> Excel's own container, which is
                        what makes the run silent. Also read from the OBT_HOME
                        environment variable, so an .Renviron line can pin it.
-  --home=<dir>         Where unit_tests_dev.xlsb lives. Default: .test-runner
+  --home=<dir>         Where unit_tests_dev.xlsm (or .xlsb) lives. Default: .test-runner
   --granted            Fallback only. Records that the folder was picked in
                        Excel. Never needed inside the container.
 

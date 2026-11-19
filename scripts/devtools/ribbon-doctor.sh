@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ribbon-doctor.sh <workbook.xlsb|xlsm>
+# ribbon-doctor.sh <workbook.xlsm|xlsb>
 # Checks the package plumbing that makes a custom ribbon tab appear.
 set -u
 F="${1:?usage: ribbon-doctor.sh <workbook>}"

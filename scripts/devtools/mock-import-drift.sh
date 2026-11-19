@@ -22,7 +22,7 @@
 # WHY THIS EXISTS
 # -----------------------------------------------------------------------------
 # Some classes and modules are not imported by any build step. They are pasted
-# into the mock workbooks by hand and then travel inside the .xlsb, which is
+# into the mock workbooks by hand and then travel inside the workbook, which is
 # pushed off-git by scripts/release/push-assets.sh. Meanwhile the .cls and .bas
 # they were pasted from keep moving in git, because a bug gets fixed in one of
 # them like any other file. Nothing connects the two, so a binary can quietly
@@ -78,10 +78,10 @@ TARGETS=()
 
 workbook_for() {
   case "$1" in
-    setup)       echo ".mock/setup_mock.xlsb" ;;
-    designer)    echo ".mock/designer_mock.xlsb" ;;
-    unit_test)   echo ".mock/unit_tests_mock.xlsb" ;;
-    mastersetup) echo ".mock/mastersetup_mock.xlsb" ;;
+    setup)       echo ".mock/setup_mock.xlsm" ;;
+    designer)    echo ".mock/designer_mock.xlsm" ;;
+    unit_test)   echo ".mock/unit_tests_mock.xlsm" ;;
+    mastersetup) echo ".mock/mastersetup_mock.xlsm" ;;
     *)           echo "" ;;
   esac
 }
@@ -148,8 +148,8 @@ analyze() {
   local wb="$1" mode="$2" tmpd rc=0
   tmpd="$(mktemp -d)"
 
-  cp "$wb" "$tmpd/book.xlsb"
-  if ! unzip -o -q "$tmpd/book.xlsb" -d "$tmpd/unz" 2>/dev/null; then
+  cp "$wb" "$tmpd/book.zip"
+  if ! unzip -o -q "$tmpd/book.zip" -d "$tmpd/unz" 2>/dev/null; then
     echo "ERROR: $wb is not readable as a zip package." >&2
     rm -rf "$tmpd"; return 1
   fi
@@ -223,7 +223,7 @@ for t in "${TARGETS[@]}"; do
     [ -n "$name" ] || continue
 
     # A Document is the workbook or one of its sheets. Its code lives in the
-    # .xlsb and there is no file anywhere to compare it against.
+    # workbook and there is no file anywhere to compare it against.
     if [ "$kind" = "Document" ]; then
       n_sheet=$((n_sheet + 1))
       [ "$LIST_ONLY" -eq 1 ] && rows+=("$(printf '3\t%s\tsheet module\t' "$name")")
