@@ -14,7 +14,7 @@ categories:
 
 2. Use your account to connect. If you do not have one already, create one [here]( https://reports.msf.net/signup/) first^[You will need an MSF mail address] then connect to the GeoApp.
 
-3. Select one or more countries on the Globe or Mercator map. The countries you select appear on the left, under *Selections*. You can also use the Search box at the top right of the GeoApp to find a country by name.
+3. Select one or more countries on the Globe or Mercator map. The countries you select appear on the left, under *Selections*. You can also use the "Search" box at the top right of the GeoApp to find a country by name.
 
 4. Selected regions turn red. Once one region has been selected, buttons to inspect and download the data will appear below the selected countries.
 
