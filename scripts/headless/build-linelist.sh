@@ -24,13 +24,13 @@ set -euo pipefail
 
 # THE SETUP WORKBOOK. Required, and the one thing with no default. This is the
 # filled setup that says which variables, sheets and choices the linelist gets.
-SETUP=".obt/draft/headless-measles/setup_measles.xlsb"
+SETUP=".obt/draft/headless/setups/current/measles.xlsb"
 
 # WHERE THE FILES GO, and what they are called. The build writes
-# <NAME>.xlsb, <NAME>-designer.xlsb, <NAME>-generation.txt, <NAME>-import.log
+# <NAME>.xlsb, <NAME>-designer.<ext>, <NAME>-generation.txt, <NAME>-import.log
 # and <NAME>-build-report.txt into this folder.
-OUT=".obt/draft/headless-measles"
-NAME="ll-measles-headless"
+OUT=".obt/draft/headless/out/measles"
+NAME="ll-measles"
 
 # THE RIBBON TEMPLATE. Given, the linelist gets a ribbon tab. Left empty, it
 # gets action buttons on the sheets and an Admin sheet instead. The two builds
@@ -38,12 +38,13 @@ NAME="ll-measles-headless"
 TEMPLATE="ribbons/_ribbontemplate_dev.xlsm"
 
 # THE GEOBASE workbook, for linelists with geography. Empty means no geobase.
-GEO=".obt/draft/headless-measles/OUTBREAK-TOOLS-GEOBASE-TCD-2026-08-16.xlsx"
+GEO=".obt/draft/headless/geo/geobase-tcd.xlsx"
 
 # THE DESIGNER workbook the linelist is built from. Empty uses
-# .mock/designer_mock.xlsb. The build refuses an .xlsm designer for now: it
-# copies the designer under an .xlsb name, see build-linelist.R.
-DESIGNER=".obt/draft/headless-measles/designer_measles.xlsb"
+# .mock/designer_mock.xlsm, falling back to .mock/xlsb/designer_mock.xlsb. The
+# build copies the designer under its own extension, so an .xlsm designer is
+# copied as .xlsm.
+DESIGNER=".mock/designer_mock.xlsm"
 
 # THE FORMS. Empty is right for almost every run.
 #

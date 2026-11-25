@@ -233,6 +233,7 @@ Private optLinelistLang As String
 Private optPassword As String
 Private optDesign As String
 Private optStyle As String
+Private optAddXlsb As String
 
 
 '@section File access
@@ -408,7 +409,8 @@ End Function
 'the generation. The linelist lands at
 '<outputFolder>/<outputName>.xlsb, the run log beside it as
 '<outputName>-generation.txt, and the designer the run actually used as
-'<outputName>-designer.xlsb.
+'<outputName>-designer.<ext>, where <ext> is the extension of the designer
+'handed in: an .xlsm designer is copied as .xlsm.
 '
 'THE OPTIONS STRING
 '-------------------------------------------------------------------------------
@@ -517,7 +519,8 @@ Public Function BuildLinelistFromSetup(ByVal designerPath As String, _
 
     'The designer is copied before anything is opened, so the file the project
     'ships is never the file this run rewrites.
-    workingPath = JoinPath(outputFolder, outputName & "-designer.xlsb")
+    workingPath = JoinPath(outputFolder, _
+                           outputName & "-designer." & FileExtension(designerPath))
     DeleteFile workingPath
     FileCopy designerPath, workingPath
     AddToReport "designer copied to " & workingPath
@@ -552,6 +555,7 @@ Public Function BuildLinelistFromSetup(ByVal designerPath As String, _
     'caller has to be applied after the import or the file would overrule it.
     ImportLinelistStyle designerBook
     ApplyDesignChoice designerBook
+    ApplyXlsbChoice designerBook
 
     WriteDesignerEntries designerBook, setupPath, outputFolder, outputName
     AddToReport "designer entries written"
@@ -703,7 +707,8 @@ Public Function BuildMultipleFromTable(ByVal designerPath As String, _
 
     ReadOptions options
 
-    workingPath = JoinPath(outputFolder, outputName & "-designer.xlsb")
+    workingPath = JoinPath(outputFolder, _
+                           outputName & "-designer." & FileExtension(designerPath))
     DeleteFile workingPath
     FileCopy designerPath, workingPath
     AddToReport "designer copied to " & workingPath
@@ -1247,9 +1252,11 @@ Private Sub RunGeneration(ByVal designerBook As Workbook, _
     TakeStep BuildSteps.BuildAnalyses(), runLog
     AddToReport "analyses written"
 
-    'The path is read before the save, from the entries the save reads.
+    'The path is read before the save, from the entries the save reads. SaveLL
+    'delivers an .xlsm and writes the .xlsb copy only when chkAddXlsb is on, so
+    'the .xlsm is the one name every run has.
     lastLinelist = JoinPath(ReadMainEntry(designerBook, RNG_LL_DIR), _
-                            ReadMainEntry(designerBook, RNG_LL_NAME) & ".xlsb")
+                            ReadMainEntry(designerBook, RNG_LL_NAME) & ".xlsm")
     AddToReport "saving the linelist to " & lastLinelist
     TakeStep BuildSteps.BuildSave(), runLog
     ReadBuildCounts
@@ -1626,6 +1633,49 @@ End Sub
 'as well, so the run reports the value it wrote and a reader can see when the
 'fallback took over.
 '@param designerBook Workbook. The designer copy.
+Private Sub ApplyXlsbChoice(ByVal designerBook As Workbook)
+    Dim prep As DesignerPreparation
+
+    If LenB(Trim$(optAddXlsb)) = 0 Then Exit Sub
+
+    'The flag lives among the designer's hidden names, which is where the
+    'ribbon box keeps it and where LinelistSpecs reads it. SetFlag seeds the
+    'name when the copy carries none, so a designer that predates the box takes
+    'the option all the same.
+    On Error Resume Next
+        Set prep = DesignerPreparation.Create(designerBook)
+        If Not prep Is Nothing Then
+            prep.SetFlag "chkAddXlsb", AsTrueValue(optAddXlsb)
+        End If
+
+        If Err.Number <> 0 Then
+            AddToReport "the xlsb copy option could not be written " & _
+                        "(error " & CStr(Err.Number) & ": " & Err.Description & _
+                        "), so the run delivers the .xlsm alone"
+            Err.Clear
+        Else
+            AddToReport "xlsb copy option written: " & optAddXlsb
+        End If
+    On Error GoTo 0
+
+    Set prep = Nothing
+End Sub
+
+'@Description("Read a yes/no option as a Boolean.")
+'@details
+'The option is a caller's text, so every shape a person writes is taken:
+'"yes", "true", "1" and "-1" are on, and anything else is off.
+'@param optionText String. The option value as it was given.
+'@return Boolean. True when the text asks for the thing.
+Private Function AsTrueValue(ByVal optionText As String) As Boolean
+    Dim trimmed As String
+
+    trimmed = LCase$(Trim$(optionText))
+    AsTrueValue = (trimmed = "yes" Or trimmed = "true" Or _
+                   trimmed = "1" Or trimmed = "-1" Or trimmed = "y")
+End Function
+
+'@param designerBook Workbook. The designer copy.
 Private Sub ApplyDesignChoice(ByVal designerBook As Workbook)
     Dim formatSheet As Worksheet
     Dim designRange As Range
@@ -1778,6 +1828,7 @@ Private Sub ReadOptions(ByVal options As String)
     optPassword = vbNullString
     optDesign = vbNullString
     optStyle = vbNullString
+    optAddXlsb = vbNullString
 
     If LenB(Trim$(options)) = 0 Then Exit Sub
 
@@ -1811,6 +1862,8 @@ Private Sub ReadOptions(ByVal options As String)
                         optDesign = keyValue
                     Case "stylepath"
                         optStyle = keyValue
+                    Case "addxlsb"
+                        optAddXlsb = keyValue
                     Case Else
                         AddToReport "option ignored, unknown key: " & keyName
                 End Select
@@ -2242,6 +2295,30 @@ ProjectBlocked:
     ThrowError ProjectError.ErrorUnexpectedState, _
                "The VBProject of '" & target.Name & "' cannot be reached. " & _
                "Turn on Trust access to the VBA project object model."
+End Function
+
+'@Description("The extension of a path, lower case, without its dot.")
+'@details
+'The designer copy is named after the designer it was copied from: an .xlsm
+'designer under an .xlsb name is a workbook whose content and extension
+'disagree, which Excel for Mac refuses to open at all.
+'@param filePath String. The path to read.
+'@return String. The extension, or "xlsb" when the path carries none.
+Private Function FileExtension(ByVal filePath As String) As String
+    Dim parts() As String
+    Dim lastPart As String
+    Dim dotAt As Long
+
+    'Both separators, the way BaseName takes them.
+    parts = Split(Replace(filePath, "\", "/"), "/")
+    lastPart = parts(UBound(parts))
+
+    dotAt = InStrRev(lastPart, ".")
+    If dotAt > 1 And dotAt < Len(lastPart) Then
+        FileExtension = LCase$(Mid$(lastPart, dotAt + 1))
+    Else
+        FileExtension = "xlsb"
+    End If
 End Function
 
 '@Description("The file name of a path, without its folder and extension.")

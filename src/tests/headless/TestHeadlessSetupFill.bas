@@ -20,7 +20,8 @@ Option Explicit
 '
 'THE TWO FILES IT NEEDS
 '-------------------------------------------------------------------------------
-'  src/bin/setup/setup_dev.xlsb          the setup to fill, copied per run
+'  src/bin/setup/setup_dev.xlsm          the setup to fill, copied per run
+'                                        (.xlsb taken when no .xlsm is there)
 '  src/tests/.input/package/generic-test-setup.xlsb  the filled setup read from
 '
 'Both are gitignored binaries carried by the asset store, the same as every
@@ -103,7 +104,8 @@ Private Function HeadlessRoot() As String
 
     staged = JoinPath(ThisWorkbook.Path, "headless")
 
-    If LenB(Dir$(JoinPath(staged, "src", "bin", "setup", "setup_dev.xlsb"))) > 0 Then
+    If LenB(Dir$(JoinPath(staged, "src", "bin", "setup", "setup_dev.xlsm"))) > 0 Or _
+       LenB(Dir$(JoinPath(staged, "src", "bin", "setup", "setup_dev.xlsb"))) > 0 Then
         HeadlessRoot = staged
         Exit Function
     End If
@@ -111,11 +113,37 @@ Private Function HeadlessRoot() As String
     HeadlessRoot = RepoRoot(FALLBACK_ROOT)
 End Function
 
+'@sub-title The first of several candidate files that is on disk
+'@details
+'The workbooks this suite reads moved to .xlsm while their .xlsb copies stayed
+'on disk under .mock/xlsb. A suite naming one extension breaks on the move and
+'says only that a file is missing, so each path is asked for in preference
+'order and the first one there is taken.
+'
+'Nothing on disk answers the FIRST candidate, so the failure names the file the
+'suite wanted rather than an empty path.
+'@param candidates Variant. The paths, best first.
+'@return String. The path to use.
+Private Function FirstExisting(ParamArray candidates() As Variant) As String
+    Dim index As Long
+
+    For index = LBound(candidates) To UBound(candidates)
+        If LenB(Dir$(CStr(candidates(index)))) > 0 Then
+            FirstExisting = CStr(candidates(index))
+            Exit Function
+        End If
+    Next index
+
+    FirstExisting = CStr(candidates(LBound(candidates)))
+End Function
+
+
 
 Private Sub ResolvePaths()
     RepoFolder = HeadlessRoot()
 
-    EMPTY_SETUP = RepoFolder & "/src/bin/setup/setup_dev.xlsb"
+    EMPTY_SETUP = FirstExisting(RepoFolder & "/src/bin/setup/setup_dev.xlsm", _
+                                RepoFolder & "/src/bin/setup/setup_dev.xlsb")
     GENERIC_SETUP = RepoFolder & "/src/tests/.input/package/generic-test-setup.xlsb"
     INJECTED_MODULE = RepoFolder & "/scripts/headless/vba/OBTSetupImportHeadless.bas"
     FILLED_SETUP = RepoFolder & "/.obt/draft/demo_setup_filled.xlsb"

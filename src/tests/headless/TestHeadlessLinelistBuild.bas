@@ -28,10 +28,13 @@ Option Explicit
 '
 'THE FOUR FILES IT NEEDS
 '-------------------------------------------------------------------------------
-'  .mock/designer_mock.xlsb            the designer-shaped worksheets
-'  src/bin/setup/setup_dev.xlsb        the setup to fill, copied per run
+'  .mock/designer_mock.xlsm            the designer-shaped worksheets
+'  src/bin/setup/setup_dev.xlsm        the setup to fill, copied per run
 '  src/tests/.input/package/generic-test-setup.xlsb  what fills it
-'  ribbons/_ribbontemplate_dev.xlsb    the ribbon template of the output
+'  ribbons/_ribbontemplate_dev.xlsm    the ribbon template of the output
+'
+'Each of those is asked for as .xlsm first and .xlsb second, through
+'FirstExisting, so the suite runs against either structure.
 '
 'plus the merged forms in .test-runner/forms/merged, which are NOT a checked-in
 'artefact: they are written by
@@ -145,7 +148,8 @@ Private Function HeadlessRoot() As String
 
     staged = JoinPath(ThisWorkbook.Path, "headless")
 
-    If LenB(Dir$(JoinPath(staged, "src", "bin", "setup", "setup_dev.xlsb"))) > 0 Then
+    If LenB(Dir$(JoinPath(staged, "src", "bin", "setup", "setup_dev.xlsm"))) > 0 Or _
+       LenB(Dir$(JoinPath(staged, "src", "bin", "setup", "setup_dev.xlsb"))) > 0 Then
         HeadlessRoot = staged
         Exit Function
     End If
@@ -153,17 +157,65 @@ Private Function HeadlessRoot() As String
     HeadlessRoot = RepoRoot(FALLBACK_ROOT)
 End Function
 
+'@sub-title The first of several candidate files that is on disk
+'@details
+'The workbooks this suite reads moved to .xlsm while their .xlsb copies stayed
+'on disk under .mock/xlsb. A suite naming one extension breaks on the move and
+'says only that a file is missing, so each path is asked for in preference
+'order and the first one there is taken.
+'
+'Nothing on disk answers the FIRST candidate, so the failure names the file the
+'suite wanted rather than an empty path.
+'@param candidates Variant. The paths, best first.
+'@return String. The path to use.
+Private Function FirstExisting(ParamArray candidates() As Variant) As String
+    Dim index As Long
+
+    For index = LBound(candidates) To UBound(candidates)
+        If LenB(Dir$(CStr(candidates(index)))) > 0 Then
+            FirstExisting = CStr(candidates(index))
+            Exit Function
+        End If
+    Next index
+
+    FirstExisting = CStr(candidates(LBound(candidates)))
+End Function
+
+
+'@sub-title The designer copy the build left beside the linelist
+'@details
+'HeadlessBuild names the copy after the designer handed in, so an .xlsm
+'designer leaves an .xlsm copy. The name is built from DESIGNER_FILE for that
+'reason, and ResolvePaths has to have run.
+'@return String. The full path of the designer copy.
+Private Function DesignerCopyPath() As String
+    Dim dotAt As Long
+    Dim extension As String
+
+    extension = ".xlsb"
+    dotAt = InStrRev(DESIGNER_FILE, ".")
+    If dotAt > 1 And dotAt < Len(DESIGNER_FILE) Then
+        extension = LCase$(Mid$(DESIGNER_FILE, dotAt))
+    End If
+
+    DesignerCopyPath = OUTPUT_FOLDER & "/" & OUTPUT_NAME & "-designer" & extension
+End Function
+
 
 Private Sub ResolvePaths()
     RepoFolder = HeadlessRoot()
 
-    DESIGNER_FILE = RepoFolder & "/.mock/designer_mock.xlsb"
-    EMPTY_SETUP = RepoFolder & "/src/bin/setup/setup_dev.xlsb"
+    DESIGNER_FILE = FirstExisting(RepoFolder & "/.mock/designer_mock.xlsm", _
+                                  RepoFolder & "/.mock/xlsb/designer_mock.xlsb", _
+                                  RepoFolder & "/.mock/designer_mock.xlsb")
+    EMPTY_SETUP = FirstExisting(RepoFolder & "/src/bin/setup/setup_dev.xlsm", _
+                                RepoFolder & "/src/bin/setup/setup_dev.xlsb")
     GENERIC_SETUP = RepoFolder & "/src/tests/.input/package/generic-test-setup.xlsb"
     INJECTED_MODULE = RepoFolder & "/scripts/headless/vba/OBTSetupImportHeadless.bas"
     FILLED_SETUP = RepoFolder & "/.obt/draft/demo_setup_filled.xlsb"
     MERGED_FORMS = RepoFolder & "/.test-runner/forms/merged"
-    RIBBON_TEMPLATE = RepoFolder & "/ribbons/_ribbontemplate_dev.xlsb"
+    RIBBON_TEMPLATE = FirstExisting(RepoFolder & "/ribbons/_ribbontemplate_dev.xlsm", _
+                                    RepoFolder & "/ribbons/_ribbontemplate_dev.xlsb")
     OUTPUT_FOLDER = RepoFolder & "/.obt/draft"
 End Sub
 
@@ -320,8 +372,7 @@ Private Sub ReplayPrepareSteps()
     If Not ProbeStep("save the template copy") Then GoTo ProbeDone
 
     Err.Clear
-    Set desWkb = Application.Workbooks.Open( _
-                     fileName:=OUTPUT_FOLDER & "/" & OUTPUT_NAME & "-designer.xlsb")
+    Set desWkb = Application.Workbooks.Open(fileName:=DesignerCopyPath())
     If Not ProbeStep("open the designer copy") Then GoTo ProbeDone
 
     Err.Clear
@@ -426,9 +477,12 @@ End Function
 'failed run report a file on disk and pass.
 Private Sub DropPreviousOutput()
     On Error Resume Next
+        'The build delivers the .xlsm. The .xlsb goes too: it is the copy a
+        'ticked chkAddXlsb writes, and one left behind would read as this run's.
+        Kill OUTPUT_FOLDER & "/" & OUTPUT_NAME & ".xlsm"
         Kill OUTPUT_FOLDER & "/" & OUTPUT_NAME & ".xlsb"
         Kill OUTPUT_FOLDER & "/" & OUTPUT_NAME & "-generation.txt"
-        Kill OUTPUT_FOLDER & "/" & OUTPUT_NAME & "-designer.xlsb"
+        Kill DesignerCopyPath()
         Err.Clear
     On Error GoTo 0
 End Sub
@@ -563,7 +617,7 @@ Public Sub TestTheDesignerCarriedTheCurrentSource()
     Assert.IsTrue ComponentsImported > 55, _
                   "every component of src/ and every merged form was " & _
                   "re-imported (" & CStr(ComponentsImported) & ")"
-    Assert.IsTrue Len(Dir$(OUTPUT_FOLDER & "/" & OUTPUT_NAME & "-designer.xlsb")) > 0, _
+    Assert.IsTrue Len(Dir$(DesignerCopyPath())) > 0, _
                   "the designer the run used was kept beside the linelist"
     Exit Sub
 

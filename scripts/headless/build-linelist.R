@@ -6,7 +6,11 @@
 #           [--out=<dir>] [--name=<stem>] [--designer=<path>] \
 #           [--forms=<dir>] [--home=<dir>] [--obt-home=<dir>] [--no-merge] \
 #           [--temppath=<ribbon-template.xlsm>] [--geopath=<geo.xlsx>] \
-#           [--setuplang=<column>] [--lllang=<code>] [--llpassword=<pass>] #           [--style=<style.xlsx>] [--design=<column>]
+#           [--setuplang=<column>] [--lllang=<code>] [--llpassword=<pass>] \
+#           [--style=<style.xlsx>] [--design=<column>] [--addxlsb=yes]
+#
+# The linelist is delivered as <name>.xlsm. --addxlsb=yes asks for a second
+# copy as <name>.xlsb beside it, which is the designer's own chkAddXlsb box.
 #
 # GENERATE SEVERAL AT ONCE by giving --setup more than once:
 #
@@ -348,20 +352,32 @@ if (!length(setup_paths) || !all(nzchar(setup_paths))) {
 setup_paths <- vapply(setup_paths, abs_path, character(1), USE.NAMES = FALSE)
 setup_path  <- setup_paths[1]
 
-designer_path <- abs_path(opt("designer", file.path(repo_root, ".mock", "designer_mock.xlsb")))
+designer_path <- abs_path(opt("designer", {
+  # The .xlsm mock is the designer the project keeps current; the .xlsb under
+  # .mock/xlsb/ is the one it moved away from. Either builds.
+  candidates <- file.path(repo_root, ".mock",
+                          c("designer_mock.xlsm", "xlsb/designer_mock.xlsb"))
+  c(candidates[file.exists(candidates)], candidates[1])[1]
+}))
 
-# HeadlessBuild copies the designer byte for byte under the name
-# <name>-designer.xlsb, so an .xlsm designer would reach Excel under an .xlsb
-# name -- the mismatch Excel for Mac dies on (see stage_in below). The build
-# takes an .xlsb designer until HeadlessBuild names the copy after the
-# designer's own extension.
-if (grepl("\\.xlsm$", designer_path, ignore.case = TRUE)) {
-  stop("build-linelist.R: HeadlessBuild still copies the designer as ",
-       "<name>-designer.xlsb, and Excel for Mac dies on an .xlsm workbook under ",
-       "an .xlsb name. Pass an .xlsb designer (the default is ",
-       ".mock/designer_mock.xlsb) until HeadlessBuild takes the designer's own ",
-       "extension.")
-}
+# HeadlessBuild names the designer copy after the designer's own extension, so
+# an .xlsm designer reaches Excel as <name>-designer.xlsm. Before that it was
+# copied as .xlsb whatever it was, and a workbook whose content and extension
+# disagree is what Excel for Mac refuses to open. Every name built from this
+# extension below is the same copy.
+designer_ext  <- tolower(tools::file_ext(designer_path))
+if (!nzchar(designer_ext)) designer_ext <- "xlsb"
+designer_leaf <- paste0("-designer.", designer_ext)
+
+# THE EXTENSION OF THE DELIVERED LINELIST.
+# Linelist.SaveLL writes an .xlsm, and the designer's chkAddXlsb box asks for a
+# second copy as .xlsb beside it. --addxlsb ticks that box on the designer copy
+# for one run, so the extra file is reachable from a script the way it is from
+# the ribbon. Every delivered name below is built from these two.
+ll_ext      <- "xlsm"
+add_xlsb    <- tolower(trimws(opt("addxlsb", "")))
+want_xlsb   <- add_xlsb %in% c("yes", "true", "1", "-1", "y")
+ll_leaves   <- c(paste0(".", ll_ext), if (want_xlsb) ".xlsb" else NULL)
 temp_path     <- abs_path(opt("temppath", ""))
 geo_paths     <- vapply(opts_all("geopath"), abs_path, character(1), USE.NAMES = FALSE)
 geo_path      <- if (length(geo_paths)) geo_paths[1] else ""
@@ -447,14 +463,14 @@ if (multi) {
   message("build-linelist.R: run       -> multiple generation, ",
           length(setup_paths), " row(s), named ", run_name)
   for (i in seq_along(setup_paths)) {
-    message("build-linelist.R:   row ", i, "   -> ", out_names[i], ".xlsb  from  ",
-            basename(setup_paths[i]))
+    message("build-linelist.R:   row ", i, "   -> ", out_names[i], ".", ll_ext,
+            "  from  ", basename(setup_paths[i]))
   }
   message("build-linelist.R: output    -> ", dest_folder)
 } else {
   message("build-linelist.R: setup     -> ", setup_path)
   message("build-linelist.R: output    -> ",
-          file.path(dest_folder, paste0(out_name, ".xlsb")))
+          file.path(dest_folder, paste0(out_name, ".", ll_ext)))
 }
 message("build-linelist.R: ",
         if (nzchar(opt("temppath", ""))) {
@@ -674,6 +690,7 @@ build_options <- paste(
   paste0("llpassword=", opt("llpassword", "")),
   paste0("stylepath=",  staged_style),
   paste0("design=",     opt("design",     "")),
+  paste0("addxlsb=",    add_xlsb),
   sep = "|"
 )
 
@@ -708,7 +725,7 @@ dir.create(dest_folder, recursive = TRUE, showWarnings = FALSE)
 #                macOS panel while a file it writes OVER does not.
 #
 # Measured 2026-08-15 with the operator reading the panels: the paths on them
-# were out/<name>-designer.xlsb and out/OBTApp_/*, which is exactly what this
+# were out/<name>-designer.<ext> and out/OBTApp_/*, which is exactly what this
 # loop used to delete plus the folder Excel makes for itself. The same run
 # rebuilt all 139 staged source files from scratch and showed no panel at all,
 # because Excel only READS those. Reads under a picked folder are free; creates
@@ -717,7 +734,7 @@ dir.create(dest_folder, recursive = TRUE, showWarnings = FALSE)
 # Deleting bought one thing worth keeping: a stale linelist left in place would
 # let a failed run report a file on disk and read as a success. So the run
 # stamps the clock here instead, and section 6 refuses any output older than it.
-build_leaves <- c(".xlsb", "-generation.txt", "-designer.xlsb")
+build_leaves <- c(ll_leaves, "-generation.txt", designer_leaf)
 
 # THE FILE NAMES OF THE RUN, which is where a multi run stops looking like a
 # single one. A single build writes three files, all named after the linelist.
@@ -726,14 +743,14 @@ build_leaves <- c(".xlsb", "-generation.txt", "-designer.xlsb")
 # below is built from these two so the archive, the clear, the staleness check
 # and the delivery all walk the same set.
 if (multi) {
-  linelist_files <- paste0(out_names, ".xlsb")
-  run_files      <- paste0(run_name, c("-generation.txt", "-designer.xlsb"))
+  linelist_files <- as.vector(outer(out_names, ll_leaves, paste0))
+  run_files      <- paste0(run_name, c("-generation.txt", designer_leaf))
   build_files    <- c(linelist_files, run_files)
   archive_files  <- c(build_files,
                       paste0(run_name, c("-import.log", "-build-report.txt",
                                          "-trace.txt")))
 } else {
-  linelist_files <- paste0(out_name, ".xlsb")
+  linelist_files <- paste0(out_name, ll_leaves)
   build_files    <- paste0(out_name, build_leaves)
   archive_files  <- paste0(out_name, c(build_leaves, "-import.log",
                                        "-build-report.txt", "-trace.txt"))

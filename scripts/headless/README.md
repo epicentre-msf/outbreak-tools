@@ -102,9 +102,10 @@ is what `TestHeadlessLinelistBuild` still does — see **File access** below.
 Three files land in `outputFolder`:
 
 ```
-<outputName>.xlsb                 the linelist
+<outputName>.xlsm                 the linelist
 <outputName>-generation.txt       the run log
-<outputName>-designer.xlsb        the designer the run actually used
+<outputName>-designer.<ext>       the designer the run actually used, under
+                                  the extension it was handed in
 ```
 
 `options` is pipe-separated `key=value`, every key optional:
@@ -118,6 +119,7 @@ Three files land in `outputFolder`:
 | `llpassword` | the open password of the saved file. Empty opens on a double-click |
 | `stylepath` | a linelist style workbook to merge onto the designer's `__formatter` first. **Given, the designer's formatter is shipped; empty, the setup's is** |
 | `design` | which column of that table the run is written in — `design 1`, `design 2`, `user defined`. Empty keeps whatever `DESIGNTYPE` already names |
+| `addxlsb` | `yes` asks for a second copy of the linelist as `.xlsb` beside the `.xlsm` the build delivers. This is the designer's own `chkAddXlsb` box, written onto the designer copy for one run. Empty leaves the box as the designer holds it, which is off |
 
 An unknown key is **reported**, not ignored: a misspelled key reads exactly like
 an option nobody passed, and that difference is a build pointed somewhere else.
@@ -139,7 +141,7 @@ written.
 | | |
 |---|---|
 | `--setup` | required: the filled setup to generate from |
-| `--designer` `--out` `--name` | default to the mock designer, `<home>/build`, `linelist`. The designer is `.xlsb` for now: the build copies it under the name `<name>-designer.xlsb`, so `build-linelist.R` refuses an `.xlsm` designer until `HeadlessBuild` takes the designer's own extension |
+| `--designer` `--out` `--name` | default to `.mock/designer_mock.xlsm`, `<home>/build`, `linelist`. The build copies the designer under the name `<name>-designer.<ext>`, taking the extension of the designer handed in, so an `.xlsm` designer is copied as `.xlsm`. A path carrying no extension is copied as `.xlsb` |
 | `--forms` | a folder of already-merged forms to copy in. Only meaningful with `--no-merge` |
 | `--temppath` `--geopath` `--setuplang` `--lllang` `--llpassword` | the option keys above, passed through |
 | `--style` `--design` | the two format keys above. `--style` is staged into `<OBT_HOME>/in` like every other input |
@@ -416,7 +418,7 @@ script makes its own Excel through COM.
 ```
 Rscript scripts/headless/build-linelist.R --setup=<filled setup> \
   --out=<dir> --name=<stem> --temppath=ribbons/_ribbontemplate_dev.xlsm \
-  --designer=<designer.xlsb> --setuplang=English --lllang=ENG-English \
+  --designer=<designer.xlsm> --setuplang=English --lllang=ENG-English \
   --geopath=<geobase.xlsx>
 ```
 
@@ -467,7 +469,7 @@ Rscript scripts/headless/build-linelist.R \
   --setup=<a> --name=<a> \
   --setup=<b> --name=<b> \
   --run-name=<run> --out=<dir> \
-  --temppath=ribbons/_ribbontemplate_dev.xlsm --designer=<designer.xlsb> \
+  --temppath=ribbons/_ribbontemplate_dev.xlsm --designer=<designer.xlsm> \
   --setuplang=English --lllang=ENG-English --geopath=<geobase.xlsx>
 ```
 
@@ -506,7 +508,7 @@ written on `Main` once and every row builds with it.
 
 ```
 <name>.xlsb                    one per row
-<run>-designer.xlsb            the designer copy the run used
+<run>-designer.<ext>           the designer copy the run used
 <run>-generation.txt           ONE report, every row in it, headed by row ID
 <run>-import.log               every component that went into the driver
 <run>-build-report.txt         what the trigger recorded
