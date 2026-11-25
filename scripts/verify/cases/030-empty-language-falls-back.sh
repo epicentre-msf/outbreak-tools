@@ -86,7 +86,17 @@ if [ "$FIXTURE_EXIT" -ne 0 ]; then
     skip_case "the fixture could not be made: $(grep -m1 '^ERROR' "$OUT/fixture.log" | head -1)"
 fi
 assert_file "$FIXTURE" "the fixture setup was written"
-assert_contains "$OUT/fixture.log" "BLANKED=$BLANK_LANG" "the '$BLANK_LANG' column was emptied"
+
+# ASSERT ON THE COUNT, NEVER ON THE LANGUAGE NAME. A language name holds
+# accents, the fixture's stdout crosses into bash through the console code page,
+# and grepping for "BLANKED=Français" against a log that spelled the cedilla in
+# another encoding is how this case failed on 2026-11-25 while the column had in
+# fact been emptied. BLANKED_FILLED_AFTER is ASCII and is the number the
+# question turns on.
+FILLED_AFTER="$(sed -n 's/^BLANKED_FILLED_AFTER=//p' "$OUT/fixture.log" | head -1)"
+FILLED_BEFORE="$(sed -n 's/^BLANKED_FILLED_BEFORE=//p' "$OUT/fixture.log" | head -1)"
+assert_equal "${FILLED_AFTER:-unset}" "0" "the '$BLANK_LANG' column was emptied"
+assert_at_least "${FILLED_BEFORE:-0}" 1 "the column had something in it to empty"
 
 ROWS="$(sed -n 's/^ROWS=//p' "$OUT/fixture.log" | head -1)"
 say "the table held ${ROWS:-?} translation row(s)"

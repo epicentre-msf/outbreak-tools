@@ -29,6 +29,12 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Write UTF-8, so a language name with an accent reaches the log as itself
+# rather than as a replacement character. This is for the HUMAN-READABLE lines:
+# an assertion still goes through an ASCII marker, because the console code page
+# is not something a case should have to depend on.
+try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
+
 if (-not (Test-Path $Source)) { "ERROR: no setup at $Source"; exit 1 }
 
 $targetDir = Split-Path $Target -Parent
@@ -97,7 +103,20 @@ try {
     $wb = $null
 
     if ($after -ne 0) { "ERROR: the column is still filled"; exit 1 }
+
+    # BLANKED carries the language name for a person reading the log. The case
+    # must NOT assert on it: a language name holds accents -- Francais is
+    # spelled with a cedilla -- and this script's stdout reaches bash through
+    # the console code page, so the byte for the cedilla does not match the
+    # UTF-8 the case holds. Case 030 failed on exactly that, grepping for
+    # BLANKED=Fran<ccedil>ais against a log that spelled it differently, while
+    # the column really had been emptied.
+    #
+    # BLANKED_FILLED_AFTER is the assertable one: ASCII, and it is the number
+    # the question actually turns on.
     "BLANKED=$Language"
+    "BLANKED_FILLED_AFTER=$after"
+    "BLANKED_FILLED_BEFORE=$before"
     "ROWS=$rows"
     exit 0
 } catch {
