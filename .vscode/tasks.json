@@ -289,9 +289,23 @@
             "problemMatcher": []
         },
         {
+            "label": "release: push mocks and ribbons",
+            "detail": "Sends .mock and the ribbon templates; src/bin in the store stays as it is and dev-latest is not rebuilt",
+            "type": "shell",
+            "command": "bash scripts/release/push-assets.sh --mock-ribbons",
+            "problemMatcher": []
+        },
+        {
             "label": "release: pull assets",
             "type": "shell",
             "command": "bash scripts/release/pull-assets.sh",
+            "problemMatcher": []
+        },
+        {
+            "label": "release: pull mocks and ribbons",
+            "detail": "Restores .mock and the ribbon templates; src/bin, trads and the test inputs on this disk are left alone",
+            "type": "shell",
+            "command": "bash scripts/release/pull-assets.sh --mock-ribbons",
             "problemMatcher": []
         },
         {

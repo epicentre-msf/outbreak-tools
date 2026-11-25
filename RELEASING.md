@@ -64,10 +64,33 @@ so an archive never carries the `.xlsb` beside it.
 |------|---------|--------------|
 | Publish your binaries off-git | `bash scripts/release/push-assets.sh` | runs the **preflight** below, then bundles the paths above → uploads (`--clobber`). Creates the release on first run, then triggers `dev-latest.yml` so the dev pre-release picks the new binaries up. |
 | Restore binaries (new machine / CI) | `bash scripts/release/pull-assets.sh` | downloads the bundle → extracts into `src/bin/`, `.mock/`, and the ribbon templates. |
+| Publish the mocks and the ribbon templates alone | `bash scripts/release/push-assets.sh --mock-ribbons` | runs the preflight with `--no-bin`, downloads the bundle in the store, replaces `.mock/` and the ribbon templates in it with the ones on this disk → uploads. `dev-latest.yml` is not triggered. |
+| Restore the mocks and the ribbon templates alone | `bash scripts/release/pull-assets.sh --mock-ribbons` | downloads the bundle → extracts `.mock/` and the ribbon templates. `src/bin/`, the `trads/` workbooks and `src/tests/.input` on this disk are left as they are. |
 
-Windows: use the `.ps1` twins. Both need the `gh` CLI authenticated with write
-access to the repo. Set `OBT_SKIP_DEV_REFRESH=1` to publish binaries without
-republishing the dev build.
+Windows: use the `.ps1` twins (`-MockRibbons` there). Both need the `gh` CLI
+authenticated with write access to the repo. Set `OBT_SKIP_DEV_REFRESH=1` to publish
+binaries without republishing the dev build.
+
+### Pushing the mocks without the binaries
+
+The mocks are edited by hand, and a dev build under `src/bin` is made from its mock
+later (copy, then Dev > Import Codes). `--mock-ribbons` is for the time between the
+two: the mocks and the ribbon templates go to the store, and the binaries the store
+already holds stay there untouched.
+
+- The store is still one tarball. The push rewrites it from the copy it downloads,
+  so `src/bin/`, the `trads/` workbooks and `src/tests/.input` go back up exactly as
+  they came down. The store must already exist: the first push is a full one.
+- `.mock/` is replaced whole, as in a full push. A ribbon template missing from this
+  disk is left in the store as it was.
+- The preflight runs with `--no-bin`, which reads no workbook under `src/bin`: the
+  envelope, plumbing and ribbon checks run over `.mock/` and the ribbon templates, the
+  closure check is skipped, and the translation check reads the designer mock alone.
+  A dev build that trails its mock does not stop this push. It still stops the next
+  full one.
+- No dev build is published. The dev archive does carry `_ribbontemplate_dev.xlsm`,
+  so the next refresh of `dev-latest`, whatever starts it, ships the template pushed
+  here beside the binaries the store already had.
 
 ### Making the .xlsm binaries
 
@@ -106,11 +129,15 @@ you which side was right. In order:
 | 2 | plumbing | `ribbon-doctor.sh` prints a `FAIL` for a workbook that has a ribbon |
 | 3 | ribbons | a workbook's `customUI` or an icon differs, **byte for byte**, from the folder under `ribbons/` that holds it |
 | 4 | imports | `mock-import-drift.sh` finds a hand-imported class or module that no longer matches its `.cls`/`.bas` |
-| 5 | rebuild | — writes, does not check: the `ribbons/` sources are re-read out of the workbooks |
+| 5 | closure | `workbook-closure-scan.R` finds a dev build under `src/bin` missing a component its Dev sheet declares, a component its code names, or the procedure behind a ribbon callback |
+| 6 | trads | `translation-coverage-binaries.R` finds a translation the product asks for missing from `.mock/designer_mock.xlsm` or `src/bin/designer/designer_dev.xlsm` |
+| 7 | rebuild | — writes, does not check: the `ribbons/` sources are re-read out of the workbooks |
 
-Steps 1–4 only read. Step 5 runs only once all four are green, so an aborted push
+Steps 1–6 only read. Step 7 runs only once all six are green, so an aborted push
 leaves the tree exactly as it found it. Run the checks on their own with
-`bash scripts/release/preflight.sh --check`, which stops after step 4.
+`bash scripts/release/preflight.sh --check`, which stops after step 6. Add `--no-bin`
+to leave every workbook under `src/bin` out, the way `push-assets.sh --mock-ribbons`
+runs it.
 
 Step 3 is where drift actually shows up, and it is byte-exact on purpose —
 `.gitattributes` marks `ribbons/**/ribbon.xml` as `-text` so the file in git is the
@@ -299,10 +326,10 @@ how `release.yml` and `dev-latest.yml` refresh the page). Test it offline with
 | Path | Role |
 |------|------|
 | `CHANGELOG.md` | release log; its top semantic version drives releases |
-| `scripts/release/push-assets.{sh,ps1}` | publish working binaries to the asset store, then refresh `dev-latest` |
+| `scripts/release/push-assets.{sh,ps1}` | publish working binaries to the asset store, then refresh `dev-latest`; `--mock-ribbons` sends the mocks and the ribbon templates alone and refreshes nothing |
 | `scripts/release/preflight.sh` | the gate push-assets runs first; uploads nothing if it fails |
 | `scripts/release/sync-ribbons.sh` | preflight steps 3 and 5: ribbons byte-compared, then rebuilt from the workbooks |
-| `scripts/release/pull-assets.{sh,ps1}` | restore working binaries from the asset store |
+| `scripts/release/pull-assets.{sh,ps1}` | restore working binaries from the asset store; `--mock-ribbons` restores the mocks and the ribbon templates alone |
 | `scripts/release/build-release-zip.sh` | assemble `OBT-{branch}-{version}.zip` |
 | `scripts/release/backfill-legacy.sh` | one-time: upload old `releases/old/*.zip` to `legacy-archive` |
 | `scripts/ci/build-releases.sh` | generate the releases page from the Releases API |
@@ -340,6 +367,10 @@ bash scripts/release/pull-assets.sh
 # after editing binaries in Excel + update_files tasks
 # (also refreshes the dev-latest pre-release)
 bash scripts/release/push-assets.sh
+
+# the mocks and the ribbon templates alone: src/bin in the store stays, no dev refresh
+bash scripts/release/push-assets.sh --mock-ribbons
+bash scripts/release/pull-assets.sh --mock-ribbons
 
 # cut a stable release: rename "## [Unreleased]" to "## [2.0.0]" in CHANGELOG.md, then
 git add CHANGELOG.md && git commit -m "Release 2.0.0" && git push origin dev

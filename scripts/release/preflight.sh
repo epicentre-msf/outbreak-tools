@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# preflight.sh [--check]
+# preflight.sh [--check] [--no-bin]
 #
 # Everything that must hold before working binaries leave this machine.
 # push-assets.sh runs it first and pushes nothing if it fails.
@@ -20,16 +20,35 @@
 # going to abort must leave the tree exactly as it found it.
 #
 # --check stops after step 6 and writes nothing.
+#
+# --no-bin is for a push of the mocks and the ribbon templates alone
+# (push-assets.sh --mock-ribbons). The workbooks under src/bin stay on this
+# disk, so none of them is read: steps 1 to 3 and 7 run over .mock and the
+# ribbon templates, step 5 is skipped, and step 6 reads the designer mock alone.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
 CHECK_ONLY=0
-case "${1:-}" in
-  --check)   CHECK_ONLY=1 ;;
-  -h|--help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-  "")        ;;
-  *)         echo "unknown option: $1" >&2; exit 2 ;;
-esac
+NO_BIN=0
+for arg in "$@"; do
+  case "$arg" in
+    --check)   CHECK_ONLY=1 ;;
+    --no-bin)  NO_BIN=1 ;;
+    -h|--help) sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *)         echo "unknown option: $arg" >&2; exit 2 ;;
+  esac
+done
+
+# What --no-bin changes, in one place: the src/bin workbooks leave the list
+# below, sync-ribbons.sh is told the same, and the last line says so.
+BIN_GLOB="src/bin/*/*.xlsm"
+SYNC_SCOPE=""
+SCOPE_NOTE=""
+if [ $NO_BIN -eq 1 ]; then
+  BIN_GLOB=""
+  SYNC_SCOPE="--no-bin"
+  SCOPE_NOTE=" (src/bin left out)"
+fi
 
 # Colour like mock-import-drift.sh: on for a terminal, off for a pipe, a file
 # or NO_COLOR, so redirected output stays greppable. The R scans below make
@@ -60,7 +79,8 @@ command -v Rscript >/dev/null 2>&1 || { echo "ERROR: Rscript not found." >&2; ex
 # workbook, it is bundled all the same, and it must not be mistaken for one here.
 WORKBOOKS=()
 while IFS= read -r f; do [ -n "$f" ] && WORKBOOKS+=("$f"); done < <(
-  ls .mock/*.xlsm src/bin/*/*.xlsm ribbons/_ribbontemplate_*.xlsm 2>/dev/null     | grep -v '/~\$' | sort -u
+  # $BIN_GLOB is unquoted on purpose: it expands here, or is gone under --no-bin.
+  ls .mock/*.xlsm $BIN_GLOB ribbons/_ribbontemplate_*.xlsm 2>/dev/null | grep -v '/~\$' | sort -u
 )
 [ ${#WORKBOOKS[@]} -gt 0 ] || { echo "ERROR: no workbooks found (pull-assets.sh first?)" >&2; exit 1; }
 
@@ -109,7 +129,7 @@ done
 
 # --- 3. ribbon sources -------------------------------------------------------
 echo
-bash "$SYNC" --check || FAILED=1
+bash "$SYNC" --check $SYNC_SCOPE || FAILED=1
 
 # --- 4. hand-imported VBA ----------------------------------------------------
 # Classes and modules pasted into the mock workbooks by hand travel inside the
@@ -132,7 +152,11 @@ bash "$DRIFT" || FAILED=1
 # startup over them reads exactly like a failed check, so it is held back.
 echo
 echo "==> component closure (workbook-closure-scan)"
-R_PROFILE_USER=/dev/null Rscript "$CLOSURE" || FAILED=1
+if [ $NO_BIN -eq 1 ]; then
+  echo "  --    skipped: it reads the dev builds under src/bin, and they are not being pushed"
+else
+  R_PROFILE_USER=/dev/null Rscript "$CLOSURE" || FAILED=1
+fi
 
 # --- 6. designer translations ------------------------------------------------
 # A generated linelist reads its translation tables from the designer BINARY,
@@ -141,7 +165,11 @@ R_PROFILE_USER=/dev/null Rscript "$CLOSURE" || FAILED=1
 # tags only: dead rows are upkeep, not a broken screen.
 echo
 echo "==> designer translations (translation-coverage-binaries)"
-R_PROFILE_USER=/dev/null Rscript "$TRADBIN" || FAILED=1
+if [ $NO_BIN -eq 1 ]; then
+  R_PROFILE_USER=/dev/null Rscript "$TRADBIN" .mock/designer_mock.xlsm || FAILED=1
+else
+  R_PROFILE_USER=/dev/null Rscript "$TRADBIN" || FAILED=1
+fi
 
 if [ $FAILED -ne 0 ]; then
   echo >&2
@@ -149,10 +177,10 @@ if [ $FAILED -ne 0 ]; then
   exit 1
 fi
 
-[ $CHECK_ONLY -eq 1 ] && { echo; echo "${C_OK}Preflight is clean.${C_OFF}"; exit 0; }
+[ $CHECK_ONLY -eq 1 ] && { echo; echo "${C_OK}Preflight is clean$SCOPE_NOTE.${C_OFF}"; exit 0; }
 
 # --- 7. rebuild --------------------------------------------------------------
 echo
-bash "$SYNC"
+bash "$SYNC" $SYNC_SCOPE
 echo
-echo "${C_OK}Preflight is clean.${C_OFF}"
+echo "${C_OK}Preflight is clean$SCOPE_NOTE.${C_OFF}"

@@ -1,43 +1,105 @@
 #!/usr/bin/env bash
 #
-# push-assets.sh — Bundle the working binaries and upload them to the pinned
-# 'working-binaries' GitHub Release (the off-git asset store). Creates the release on
-# first run. Run after editing binaries in Excel to publish them off-git, and
-# after editing the translation workbooks in trads/.
+# push-assets.sh [--mock-ribbons]
+#
+# Bundle the working binaries and upload them to the pinned 'working-binaries'
+# GitHub Release (the off-git asset store). Creates the release on first run. Run
+# after editing binaries in Excel to publish them off-git, and after editing the
+# translation workbooks in trads/.
+#
+# --mock-ribbons sends .mock/ and the ribbon templates alone. The store is one
+# tarball, so the bundle already in the store is downloaded, those paths are
+# replaced by the ones on this disk, and the bundle goes back up: src/bin, the
+# trads workbooks and the test inputs stay exactly as the store had them. The
+# preflight leaves src/bin out, and the dev-latest pre-release is not rebuilt.
 #
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
+MOCK_RIBBONS=0
+case "${1:-}" in
+  --mock-ribbons) MOCK_RIBBONS=1 ;;
+  -h|--help)      sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  "")             ;;
+  *)              echo "unknown option: $1" >&2; exit 2 ;;
+esac
+
 REPO="${OBT_REPO:-epicentre-msf/outbreak-tools}"
 TAG="working-binaries"
 BUNDLE_NAME="working-binaries.tar.gz"
-# Binary paths to store (whole dirs, the ribbon templates in both formats while
-# the .xlsb ones are still around, the translation workbooks). A glob that
-# matches nothing stays literal and is skipped below.
-PATHS=( src/bin .mock ribbons/_ribbontemplate_main.xlsb ribbons/_ribbontemplate_dev.xlsb
-        ribbons/_ribbontemplate_main.xlsm ribbons/_ribbontemplate_dev.xlsm
-        trads/designer_translations*.xlsx src/tests/.input)
+# What --mock-ribbons sends: the mocks, and the ribbon templates in both formats
+# while the .xlsb ones are still around.
+MOCK_RIBBON_PATHS=( .mock
+                    ribbons/_ribbontemplate_main.xlsb ribbons/_ribbontemplate_dev.xlsb
+                    ribbons/_ribbontemplate_main.xlsm ribbons/_ribbontemplate_dev.xlsm )
+# Every path the bundle holds: those, the built binaries, the translation
+# workbooks and the frozen test inputs. The glob is quoted so that it expands
+# where it is used, on this disk or inside the bundle of the store.
+PATHS=( src/bin "${MOCK_RIBBON_PATHS[@]}" 'trads/designer_translations*.xlsx' src/tests/.input )
 
 command -v gh >/dev/null 2>&1 || { echo "ERROR: gh CLI not found (brew install gh)." >&2; exit 1; }
+
+# present_under <dir> <path>...
+# The paths that exist under <dir>, one per line. One that is missing is named
+# on stderr and skipped; a glob that matches nothing counts as missing.
+present_under() {
+  local dir="$1" pat p
+  shift
+  (
+    cd "$dir"
+    for pat in "$@"; do
+      for p in $pat; do   # unquoted on purpose: this is where a glob expands
+        if [ -e "$p" ]; then printf '%s\n' "$p"; else echo "WARN: missing $p (skipped)" >&2; fi
+      done
+    done
+  )
+}
 
 # Nothing leaves this machine until the binaries and the sources agree: no 2010
 # ribbon envelope, ribbon plumbing intact, the ribbons under ribbons/ identical to
 # the ones inside the workbooks, and no hand-imported class trailing its .cls.
 # preflight.sh rewrites nothing unless every one of those passes. RELEASING.md §2.
-bash scripts/release/preflight.sh
+if [ $MOCK_RIBBONS -eq 1 ]; then
+  SEND=( "${MOCK_RIBBON_PATHS[@]}" )
+  bash scripts/release/preflight.sh --no-bin
+else
+  SEND=( "${PATHS[@]}" )
+  bash scripts/release/preflight.sh
+fi
 echo
 
 TMPD="$(mktemp -d)"; trap 'rm -rf "$TMPD"' EXIT
 BUNDLE="$TMPD/$BUNDLE_NAME"
 
 existing=()
-for p in "${PATHS[@]}"; do
-  if [ -e "$p" ]; then existing+=( "$p" ); else echo "WARN: missing $p (skipped)"; fi
-done
+while IFS= read -r p; do existing+=( "$p" ); done < <(present_under . "${SEND[@]}")
 [ ${#existing[@]} -gt 0 ] || { echo "ERROR: no binary paths found to bundle." >&2; exit 1; }
 
-echo "==> bundling: ${existing[*]}"
-tar -czf "$BUNDLE" "${existing[@]}"
+if [ $MOCK_RIBBONS -eq 0 ]; then
+  echo "==> bundling: ${existing[*]}"
+  tar -czf "$BUNDLE" "${existing[@]}"
+else
+  # The bundle of the store is unpacked, the paths found on this disk replace
+  # their copies in it, and it is packed again. A path this disk does not have
+  # is left as the store had it, so this push never takes one out of the store.
+  echo "==> downloading $BUNDLE_NAME from release '$TAG' (the rest of it is kept)"
+  mkdir "$TMPD/store" "$TMPD/stage"
+  if ! gh release download "$TAG" -R "$REPO" -p "$BUNDLE_NAME" -D "$TMPD/store" --clobber; then
+    echo "ERROR: could not download $BUNDLE_NAME from release '$TAG'." >&2
+    echo "       This push keeps what the store already holds. Run a full push first" >&2
+    echo "       if the store is empty: bash scripts/release/push-assets.sh" >&2
+    exit 1
+  fi
+  tar -xzf "$TMPD/store/$BUNDLE_NAME" -C "$TMPD/stage"
+  for p in "${existing[@]}"; do rm -rf "$TMPD/stage/$p"; done
+  tar -cf - "${existing[@]}" | tar -xf - -C "$TMPD/stage"
+
+  staged=()
+  while IFS= read -r p; do staged+=( "$p" ); done < <(present_under "$TMPD/stage" "${PATHS[@]}" 2>/dev/null)
+  echo "==> replaced from this disk: ${existing[*]}"
+  echo "==> bundling: ${staged[*]}"
+  tar -czf "$BUNDLE" -C "$TMPD/stage" "${staged[@]}"
+fi
 
 if ! gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
   echo "==> creating asset-store release '$TAG'"
@@ -55,6 +117,15 @@ fi
 
 echo "==> uploading $BUNDLE_NAME"
 gh release upload "$TAG" -R "$REPO" "$BUNDLE" --clobber
+
+# The binaries in the store did not move, so there is no new dev build to make.
+# dev-latest does ship a ribbon template: its next refresh, whatever starts it,
+# takes the one pushed here.
+if [ $MOCK_RIBBONS -eq 1 ]; then
+  echo "Done. Mocks and ribbon templates pushed to release '$TAG'; src/bin there is unchanged."
+  echo "==> dev-latest is left as it is"
+  exit 0
+fi
 echo "Done. Working binaries pushed to release '$TAG'."
 
 # New binaries in the store mean the single dev pre-release is stale, so rebuild it.

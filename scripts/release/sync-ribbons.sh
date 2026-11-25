@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# sync-ribbons.sh [--check]
+# sync-ribbons.sh [--check] [--no-bin]
 #
 # Release guard against ribbon drift. Every workbook push-assets.sh bundles
 # carries a ribbon that also lives, unpacked, under ribbons/. The two must agree
@@ -16,6 +16,11 @@
 #      this a no-op on content; it is what drops a stray file or a renamed icon.
 #
 # --check runs step 1 only.
+#
+# --no-bin leaves every workbook under src/bin out of both steps. It is for a
+# push that sends the mocks and the ribbon templates alone
+# (push-assets.sh --mock-ribbons): the dev builds stay on this disk, so one that
+# trails its mock stops nothing.
 #
 # The verdict is byte-exact — that is the whole point — but a byte diff reads
 # badly, because a workbook's customUI can mix CRLF and LF line endings and GNU
@@ -65,12 +70,28 @@ PAIRS=(
 # kept for rebuilds, not one of the shipped ribbon sources.
 
 CHECK_ONLY=0
-case "${1:-}" in
-  --check)   CHECK_ONLY=1 ;;
-  -h|--help) sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-  "")        ;;
-  *)         echo "unknown option: $1" >&2; exit 2 ;;
-esac
+NO_BIN=0
+for arg in "$@"; do
+  case "$arg" in
+    --check)   CHECK_ONLY=1 ;;
+    --no-bin)  NO_BIN=1 ;;
+    -h|--help) sed -n '2,38p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *)         echo "unknown option: $arg" >&2; exit 2 ;;
+  esac
+done
+
+SCOPE_NOTE=""
+if [ $NO_BIN -eq 1 ]; then
+  KEPT=()
+  for pair in "${PAIRS[@]}"; do
+    case "$pair" in
+      src/bin/*) ;;
+      *)         KEPT+=("$pair") ;;
+    esac
+  done
+  PAIRS=("${KEPT[@]}")
+  SCOPE_NOTE=" (src/bin left out)"
+fi
 
 for t in unzip diff; do
   command -v "$t" >/dev/null 2>&1 || { echo "ERROR: $t not found." >&2; exit 1; }
@@ -80,7 +101,7 @@ EXTRACT="scripts/devtools/ribbon-extract.sh"
 
 TMPD="$(mktemp -d)"; trap 'rm -rf "$TMPD"' EXIT
 
-echo "==> ribbons vs their unpacked sources"
+echo "==> ribbons vs their unpacked sources$SCOPE_NOTE"
 FAILED=0
 for pair in "${PAIRS[@]}"; do
   WB="${pair%%|*}"; DIR="${pair#*|}"
@@ -146,7 +167,7 @@ fi
 
 [ $CHECK_ONLY -eq 1 ] && exit 0
 
-echo "==> rebuilding the mock and dev ribbon sources from the workbooks"
+echo "==> rebuilding the mock and dev ribbon sources from the workbooks$SCOPE_NOTE"
 for pair in "${PAIRS[@]}"; do
   WB="${pair%%|*}"; DIR="${pair#*|}"
   STEM=$(basename "$WB"); STEM="${STEM%.*}"
