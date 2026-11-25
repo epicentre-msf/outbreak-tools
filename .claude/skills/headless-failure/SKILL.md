@@ -5,16 +5,47 @@ description: Investigate a failure in a headless linelist build, a setup convers
 
 # headless-failure — finding out what went wrong
 
-A red here is one of three things, and naming which one comes before any
-reading of code.
+## What green means, before anything else
+
+**A headless generation is green when the build passes and delivers the file.**
+Judge a run on three things:
+
+- `outcome=OK` in `out/<stem>/<name>-build-report.txt`
+- the linelist exists on disk
+- the `sheets=` and `variables=` counts are sane
+
+**Reported formula errors stay out of the verdict.** The `[Error]` lines in
+`<name>-generation.txt` are reports to the user about their own setup content.
+Show them to the user, keep them out of the colour.
+
+The owner set this on 2026-11-25: "We want the build to pass cleanly, that is
+our green in the headless generation... in some cases (generic setup for ex.)
+we have intentionally formula errors." `generic-test-setup.xlsb` and
+`demo_setup_filled.xlsb` both carry the `brok_*` variables from
+`DictionaryTestFixture.bas`, labelled "This formula should fail". A rule that
+reds on reported errors makes those two permanently red, and people then learn
+to ignore the colour.
+
+**The exit code is never the verdict.** `build-linelist.R` exits 1 whenever the
+generation recorded an error. `run-batch.sh` judges the report plus the file and
+prints the exit code beside an `errors=` count, so a row reading
+`GREEN  exit=1  errors=2` is the normal shape for a setup carrying deliberate
+formula errors. `malaria-aweil` is the standing example.
+
+The historical blocks in `logs/batch-verdicts.txt` still read RED for demo,
+generic and malaria-aweil. Those were written under the old rule and the record
+was left as it stood, so read a verdict line against the date of its block.
+
+`/headless-generation` owns this rule, because judging a generation is its job.
+It is restated here so the gate below works on its own; a change to the rule
+belongs there first.
+
+## So a real failure is one of two things
 
 | | What it looks like |
 |---|---|
 | **The run never started** | no output file, no report; the fault is in staging, import or compile |
 | **The run finished and the output is wrong** | a file on disk with missing labels, no geography, a project that will not compile |
-| **The run answered OK and recorded errors** | `[FAIL] the build answered OK and the generation recorded N error(s)` |
-
-The third is the common one and it is usually the setup's own content.
 
 ## Where the evidence is
 
@@ -47,9 +78,10 @@ line, and most investigations end there.
 
 ## The order of work
 
-**1. Separate a product fault from a fixture fault.** Check the catalogue
-below before anything else. Several reds in this repository are the correct
-behaviour over deliberately broken input.
+**1. Check it is a failure at all.** Apply the green rule above first. A build
+that passed with reported formula errors needs no investigation; the errors go
+to the user as information. Then check the catalogue below, because several
+signatures here are the correct behaviour over deliberately broken input.
 
 **2. Check intent before touching production code.** When the failure traces
 to a method changed recently, run `git log -- <file>` and read the diff. The
@@ -90,8 +122,8 @@ Recognising one of these saves an investigation.
 
 | Signature | What it is |
 |---|---|
-| `[Error] ... brok_*`, "This formula should fail" | `demo_setup_filled` and `generic-test-setup` carry `DictionaryTestFixture.bas` fixtures on purpose. Their logs always hold `[Error]` lines and the launcher always exits 1. Correct behaviour on those two. |
-| `malaria-aweil`: "The formula contains unmatched parentheses" on `case_id_auto` | the setup writes `IF(ISBLANK(case_id, "", …`, closing `ISBLANK` in the wrong place. A content fault in that setup. |
+| `[Error] ... brok_*`, "This formula should fail" | `demo_setup_filled` and `generic-test-setup` carry `DictionaryTestFixture.bas` fixtures on purpose. Their logs always hold `[Error]` lines and the launcher always exits 1. Those two are **green** when the file is delivered. |
+| `malaria-aweil`: "The formula contains unmatched parentheses" on `case_id_auto` | the setup writes `IF(ISBLANK(case_id, "", …`, closing `ISBLANK` in the wrong place — 7 opening brackets against 6 closing. A content fault in that setup, reported to its author. The build is **green**. |
 | `malaria-aweil`: `ERROR 91` on **Translations** | its `Tab_Translations` is `B4:E5` with `DataBodyRange Is Nothing`. Fixed in `CustomTable.ImportAll` on 2026-11-25. The conversion path drives `setup_dev.xlsm`'s own baked copy of that class, so the fix reaches it only after `Dev > Import Codes`. |
 | `file access: one root, the call FAILED, error 438` | `GrantAccessToMultipleFiles` exists for the macOS sandbox and raises 438 on Windows. Harmless here. |
 | `modulesRun=0` | `--build` was left off the test run. |
