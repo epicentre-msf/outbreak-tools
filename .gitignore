@@ -89,7 +89,9 @@ config.json
 /.obt
 obt-skill/
 obt-doc-skill/
-.claude/
+.claude/skills/obt
+.claude/settings.json
+.claude/settings.local.json
 .test-runner/
 headless-runner/
 

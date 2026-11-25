@@ -2,6 +2,11 @@
 *.bas text eol=crlf
 *.cls text eol=crlf
 
+# Shell scripts are run by whichever bash is first on PATH. On Windows that is
+# often WSL bash, which refuses a script whose lines end CRLF -- and
+# core.autocrlf=true hands it exactly that. Pin them to LF on checkout.
+*.sh text eol=lf
+
 # Ribbon sources are stored byte-for-byte as they sit inside the workbook, so
 # that ribbon-pack.sh rebuilds a customUI part identical to the shipped one and
 # any real drift shows up as the only difference.

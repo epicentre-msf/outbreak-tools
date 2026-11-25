@@ -1,0 +1,30 @@
+{
+  "name": "verify",
+  "version": "1.0.0",
+  "description": "The behavioural verify suite: generates real linelists with real Excel and judges whether the output is coherent. Run before a release.",
+  "author": "Yves Amevoin",
+  "created": "2026-11-25",
+  "triggers": [
+    "verify",
+    "edge case",
+    "prepare a release",
+    "before a release",
+    "release check",
+    "behavioural test",
+    "coherence",
+    "linelist output"
+  ],
+  "files": [
+    "SKILL.md"
+  ],
+  "dependencies": [],
+  "workspace_files": [
+    "scripts/verify/verify.sh",
+    "scripts/verify/lib/verify-lib.sh",
+    "scripts/verify/cases",
+    "scripts/devtools/linelist-inspect.R",
+    "scripts/headless/build-linelist.R",
+    "scripts/release/preflight.sh"
+  ],
+  "entry_point": "SKILL.md"
+}
