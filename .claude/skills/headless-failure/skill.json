@@ -1,0 +1,31 @@
+{
+  "name": "headless-failure",
+  "version": "1.0.0",
+  "description": "Investigate a red headless build, setup conversion, verify case or unit test run: where the evidence is, the order of work, the catalogue of understood reds, and the rules that protect the evidence.",
+  "author": "Yves Amevoin",
+  "created": "2026-11-25",
+  "triggers": [
+    "failure",
+    "failed build",
+    "red",
+    "error 91",
+    "root cause",
+    "investigate",
+    "build report",
+    "generation error",
+    "import log",
+    "headless"
+  ],
+  "files": [
+    "SKILL.md"
+  ],
+  "dependencies": [],
+  "workspace_files": [
+    "scripts/headless/build-linelist.R",
+    "scripts/devtools/linelist-inspect.R",
+    "scripts/devtools/vba-inspect.R",
+    "scripts/tests/run-tests.R",
+    "scripts/verify/verify.sh"
+  ],
+  "entry_point": "SKILL.md"
+}

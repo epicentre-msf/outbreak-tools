@@ -1,0 +1,27 @@
+{
+  "name": "commit-work",
+  "version": "1.0.0",
+  "description": "How a commit is made here: the one-sentence message, owner-only authorship, the gates that run first, how work is split across commits, and the push flake to retry.",
+  "author": "Yves Amevoin",
+  "created": "2026-11-25",
+  "triggers": [
+    "commit",
+    "commit message",
+    "git commit",
+    "push",
+    "amend",
+    "stage",
+    "authorship",
+    "co-author"
+  ],
+  "files": [
+    "SKILL.md"
+  ],
+  "dependencies": [],
+  "workspace_files": [
+    ".obt/conventions.md",
+    ".obt/tracking.md",
+    ".gitattributes"
+  ],
+  "entry_point": "SKILL.md"
+}

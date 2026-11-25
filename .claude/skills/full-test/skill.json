@@ -1,0 +1,32 @@
+{
+  "name": "full-test",
+  "version": "1.0.0",
+  "description": "Run the full VBA unit test suite or the narrowed probe before it: the scan gate, registry narrowing, the memory watchdog, launching a two-hour run, and reading the result.",
+  "author": "Yves Amevoin",
+  "created": "2026-11-25",
+  "triggers": [
+    "run the tests",
+    "full test",
+    "full run",
+    "test suite",
+    "probe",
+    "narrowed probe",
+    "test registry",
+    "watchdog",
+    "run-tests"
+  ],
+  "files": [
+    "SKILL.md"
+  ],
+  "dependencies": [],
+  "workspace_files": [
+    "scripts/tests/run-tests.R",
+    "scripts/tests/run-tests-bg.sh",
+    "scripts/devtools/narrow-registry.R",
+    "scripts/devtools/call-signature-scan.R",
+    "scripts/devtools/name-shadowing-scan.R",
+    "scripts/devtools/interface-guard.sh",
+    "src/tests/test-registry.yml"
+  ],
+  "entry_point": "SKILL.md"
+}
