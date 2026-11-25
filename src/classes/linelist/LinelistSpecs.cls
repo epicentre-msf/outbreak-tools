@@ -1366,6 +1366,13 @@ Public Property Get Value(ByVal tagName As String) As String
             'Hidden name at workbook level carrying the instructions choice
             rngName = "chkInstruct"
             useHidden = True
+        Case "addxlsb"
+            'Hidden name at workbook level carrying the extra .xlsb copy
+            'choice. The box is off by default, so a designer nobody ticked
+            'answers "No" here, and so does a designer copy whose code was
+            'stripped before EnsureDefaultFlags could seed the name.
+            rngName = "chkAddXlsb"
+            useHidden = True
         Case "epiweekstart"
             'Week 1 is the default when the designer holds no choice
             On Error Resume Next

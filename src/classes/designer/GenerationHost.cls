@@ -147,9 +147,16 @@ Private this As TGenerationHost
 
 Private Const CLASS_NAME As String = "GenerationHost"
 
-'The name of the designer copy in the instance. Run reaches the steps
-'through it, and CheckOpenNames refuses a user file carrying it.
-Private Const COPY_FILE_NAME As String = "__designer_copy.xlsb"
+'The name of the designer copy in the instance, without its extension. Run
+'reaches the steps through it, and CheckOpenNames refuses a user file carrying
+'it.
+'
+'The extension is the designer's own. SaveCopyAs writes the workbook in the
+'format it already holds, so an .xlsm designer written under an .xlsb name is a
+'file whose content and extension disagree, which Excel for Mac refuses to open
+'at all.
+Private Const COPY_FILE_STEM As String = "__designer_copy"
+Private Const COPY_FILE_EXTENSION_DEFAULT As String = ".xlsb"
 
 'The flag of the designer ribbon that picks the path on Windows
 Private Const FLAG_BUILD_IN_PLACE As String = "chkBuildInPlace"
@@ -530,7 +537,28 @@ Private Function ResolveCopyPath(ByVal copyFolder As String) As String
         ThrowError ProjectError.InvalidArgument, "The copy folder does not exist: " & folder
     End If
 
-    ResolveCopyPath = folder & COPY_FILE_NAME
+    ResolveCopyPath = folder & COPY_FILE_STEM & DesignerExtension()
+End Function
+
+'@label:designer-extension
+'@sub-title The extension of the designer the copy is written from
+'@details
+'SaveCopyAs keeps the format the workbook already holds, so the copy has to
+'carry the designer's own extension. A designer whose name shows none falls back
+'to .xlsb, the format every designer carried before the move to .xlsm.
+'@return String. The extension, dot included, lower case.
+Private Function DesignerExtension() As String
+    Dim bookName As String
+    Dim dotAt As Long
+
+    DesignerExtension = COPY_FILE_EXTENSION_DEFAULT
+    If this.designerBook Is Nothing Then Exit Function
+
+    bookName = this.designerBook.Name
+    dotAt = InStrRev(bookName, ".")
+    If dotAt > 1 And dotAt < Len(bookName) Then
+        DesignerExtension = LCase$(Mid$(bookName, dotAt))
+    End If
 End Function
 
 '@label:folder-exists

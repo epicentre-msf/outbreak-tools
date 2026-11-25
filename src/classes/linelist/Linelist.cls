@@ -83,6 +83,14 @@ Private Const SHEET_NAME_MAX_LENGTH As Long = 31
 'the same name, so a template build is kept where it already stood.
 Private Const KEPT_FILE_NAME As String = "__temp.xlsb"
 
+'THE EXTENSION OF THE DELIVERED LINELIST.
+'The build writes an .xlsm. The designer's chkAddXlsb box asks for a second
+'copy as .xlsb beside it, which is what the box's own wording says it does.
+'Every other name of the delivered file is built from these two, so the
+'designer path, the multi loop and the headless build all agree on one answer.
+Private Const LL_EXTENSION As String = ".xlsm"
+Private Const LL_EXTENSION_XLSB As String = ".xlsb"
+
 Private Const WORKBOOK_MODULE_NAME As String = "EventLinelistWorkbook"
 Private Const SHEET_MODULE_NAME As String = "EventLinelistSheet"
 Private Const SHEET_GEO As String = "Geo"
@@ -542,9 +550,9 @@ Public Sub Prepare()
 End Sub
 
 '@label:save-ll
-'@sub-title Save the output workbook as .xlsb with password protection
+'@sub-title Save the output workbook as .xlsm with password protection
 '@details
-'Saves the output workbook in .xlsb format with the configured password,
+'Saves the output workbook in .xlsm format with the configured password,
 'protects the workbook structure via Passwords.Protect, activates the sheet the
 'user should open the file on, closes the workbook and clears the working folder
 'via TemporaryRepos.Remove, which deletes the files and the folder itself. A
@@ -560,6 +568,7 @@ End Sub
 Public Sub SaveLL()
     Dim outWkb As Workbook
     Dim passwd As String
+    Dim basePath As String
     Dim outPath As String
     Dim passObj As Passwords
     Dim msgTrads As TranslationObject
@@ -569,8 +578,9 @@ Public Sub SaveLL()
     Set msgTrads = this.specs.TransObject
 
     passwd = this.specs.Value("llpassword")
-    outPath = this.specs.Value("lldir") & outWkb.Application.PathSeparator & _
-              this.specs.Value("llname") & ".xlsb"
+    basePath = this.specs.Value("lldir") & outWkb.Application.PathSeparator & _
+               this.specs.Value("llname")
+    outPath = basePath & LL_EXTENSION
 
     'Leave the workbook on the sheet the user should open it on.
     ActivateLandingSheet outWkb, msgTrads
@@ -579,7 +589,17 @@ Public Sub SaveLL()
     passObj.Protect outWkb
     passObj.EnsureDebugExitHandler outWkb
 
-    outWkb.SaveAs fileName:=outPath, fileFormat:=xlExcel12, Password:=passwd, _
+    'The .xlsb copy the designer's box asks for goes FIRST, so the last save
+    'is the .xlsm the build delivers and the workbook is left pointing at it.
+    'A caller reading the path back gets the .xlsm either way.
+    If AddXlsbCopyWanted() Then
+        outWkb.SaveAs fileName:=basePath & LL_EXTENSION_XLSB, _
+                       fileFormat:=xlExcel12, Password:=passwd, _
+                       ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+    End If
+
+    outWkb.SaveAs fileName:=outPath, _
+                   fileFormat:=xlOpenXMLWorkbookMacroEnabled, Password:=passwd, _
                    ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     outWkb.Close
 
@@ -588,6 +608,26 @@ Public Sub SaveLL()
 
     If Not this.tempRepos Is Nothing Then this.tempRepos.Remove
 End Sub
+
+'@label:add-xlsb-copy-wanted
+'@sub-title Whether the designer asked for a second .xlsb copy
+'@details
+'Reads the chkAddXlsb flag the designer ribbon keeps among its hidden names,
+'through LinelistSpecs so this class reaches no workbook of its own. The box is
+'off by default, so a designer nobody ticked delivers the .xlsm alone.
+'
+'A flag that cannot be read answers False. A build has to deliver its linelist
+'whatever the hidden store says, and the .xlsb copy is an extra.
+'@return Boolean. True when the build writes the .xlsb copy as well.
+Private Function AddXlsbCopyWanted() As Boolean
+    Dim flagText As String
+
+    On Error Resume Next
+        flagText = Trim$(this.specs.Value("addxlsb"))
+    On Error GoTo 0
+
+    AddXlsbCopyWanted = (StrComp(flagText, "Yes", vbTextCompare) = 0)
+End Function
 
 '@label:activate-landing-sheet
 '@sub-title Leave the output workbook on the sheet its user should open it on

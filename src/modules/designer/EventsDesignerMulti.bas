@@ -1110,7 +1110,10 @@ Public Function OutputNameFromCell(ByVal cellValue As String) As String
 
     nameText = BaseName(Trim$(cellValue))
 
-    If LCase$(Right$(nameText, 5)) = ".xlsb" Then
+    'Either extension comes off. A row typed before the move to .xlsm names
+    'an .xlsb, and the build writes the extension of its own choosing.
+    If LCase$(Right$(nameText, 5)) = ".xlsb" Or _
+       LCase$(Right$(nameText, 5)) = ".xlsm" Then
         nameText = Left$(nameText, Len(nameText) - 5)
     End If
 

@@ -2665,6 +2665,7 @@ Private Sub ImportAll(ByVal impTab As Object)
     Dim currLo As ListObject
     Dim sh As Worksheet
     Dim bodyRng As Range
+    Dim srcBodyRng As Range
     Dim incomingRows As Long
     Dim sourceColumns As Long
     Dim headerRow As Long
@@ -2687,7 +2688,10 @@ Private Sub ImportAll(ByVal impTab As Object)
                              headerRow + incomingRows, headerCol + sourceColumns - 1)
 
     currhRng.Value = imphRng.Value
-    bodyRng.Value = impTab.DataRange().Value
+
+    'Guard against a source table with no data.
+    Set srcBodyRng = impTab.DataRange()
+    If Not srcBodyRng Is Nothing Then bodyRng.Value = srcBodyRng.Value
 
     'Widen the block back up over the header row and resize the table on it.
     'This one is anchored on a Range, not on four numbers, so it does not go

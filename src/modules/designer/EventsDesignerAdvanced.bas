@@ -840,8 +840,11 @@ Public Function CheckBuildFileNames(ByVal host As GenerationHost, _
     Dim index As Long
     Dim note As Checking
 
+    'The build delivers an .xlsm. A ticked chkAddXlsb writes an .xlsb beside
+    'it, and that copy is not checked here: the box is off by default and the
+    'refusal this list feeds is about the file the build has to write.
     linelistPath = entry.ValueOf("lldir") & Application.PathSeparator & _
-                   entry.ValueOf("llname") & ".xlsb"
+                   entry.ValueOf("llname") & ".xlsm"
 
     Set names = New BetterArray
     names.LowerBound = 1
@@ -1033,9 +1036,10 @@ Public Function GenerateOne(ByVal entry As DesignerEntry, _
     TakeBuildCounts host
     StepBar bar
 
-    'The path SaveLL wrote, read from the same entries it read
+    'The path SaveLL wrote, read from the same entries it read. SaveLL saves
+    'the .xlsm last, so this is the file it left behind.
     GenerateOne = entry.ValueOf("lldir") & Application.PathSeparator & _
-                  entry.ValueOf("llname") & ".xlsb"
+                  entry.ValueOf("llname") & ".xlsm"
 End Function
 
 '@Description("The path of the file the last failed build kept. Empty when nothing was kept.")
