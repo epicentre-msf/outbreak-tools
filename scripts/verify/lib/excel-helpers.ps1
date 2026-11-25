@@ -20,11 +20,60 @@
 #   Analysis      protected, needs the workbook's own password
 #   Translations  protected, needs the workbook's own password
 #
-# The password is read off the workbook being worked on, from __pass!A1, so
-# nothing is hardcoded and nothing is asked. A fixture always works on a
-# throwaway copy.
+# The password is read off the workbook being worked on, so nothing is
+# hardcoded and nothing is asked. A fixture always works on a throwaway copy.
+#
+# WHERE THE PASSWORD LIVES, AND WHY NOT A CELL ADDRESS
+# -----------------------------------------------------------------------------
+# It is the WORKBOOK-LEVEL NAME "RNG_DebuggingPassword", which is what the
+# product itself reads: Passwords.cls holds it as NAMEDEBUGPASSWORD and gets at
+# it through ThisWorkbook.Names. The name lives on the __pass sheet but its cell
+# is not fixed, so an address is the wrong handle for it.
+#
+# This file read __pass!A1 until 2026-11-25. That address happens to hold the
+# password in the OLD setups, which is why case 060 lifted Translations on
+# ebola-2026-11-19.xlsb and nobody noticed. On the CURRENT setups A1 holds
+# something else, both lift attempts failed, and case 030 skipped with
+# "the Translations sheet is protected and would not unprotect" -- a fixture
+# fault that read like a product one. Follow the name, never the address.
 
 Set-StrictMode -Off
+
+# Get-DebugPassword -Workbook <wb>
+#
+# The workbook's own debugging password, or $null when it carries none.
+#
+# Answers a STRING or $null and prints nothing, so a caller can try it without
+# reporting it. Never raises: a workbook with no such name, or a name that
+# refers nowhere, answers $null and the caller moves on to its next attempt.
+#
+# The workbook-level name comes first because that is where the product puts
+# it. A sheet-scoped name is tried after it, for a workbook whose __pass sheet
+# was cloned into a copy -- CloneToWorksheet does that -- since cloning can
+# leave the name scoped to the sheet.
+function Get-DebugPassword {
+    param(
+        [Parameter(Mandatory = $true)] $Workbook
+    )
+
+    $nameOfIt = "RNG_DebuggingPassword"
+
+    # Cells(1,1) rather than Value2 on the range: a single-cell name answers the
+    # same string either way, and a name that somehow spans cells answers the
+    # first one instead of a 2-D array that would stringify into nonsense.
+    try {
+        $value = $Workbook.Names($nameOfIt).RefersToRange.Cells(1, 1).Value2
+        if ($null -ne $value -and "$value".Length -gt 0) { return "$value" }
+    } catch { }
+
+    try {
+        $sheet = $Workbook.Worksheets("__pass")
+        $value = $sheet.Names($nameOfIt).RefersToRange.Cells(1, 1).Value2
+        if ($null -ne $value -and "$value".Length -gt 0) { return "$value" }
+    } catch { }
+
+    return $null
+}
 
 # Lift-SheetProtection -Workbook <wb> -Sheet <ws>
 #
@@ -55,8 +104,7 @@ function Lift-SheetProtection {
         return $true
     }
 
-    $password = $null
-    try { $password = $Workbook.Worksheets("__pass").Range("A1").Value2 } catch { }
+    $password = Get-DebugPassword $Workbook
 
     if ($null -ne $password -and "$password".Length -gt 0) {
         try {

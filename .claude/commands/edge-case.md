@@ -73,7 +73,10 @@ say that in the first line so nobody reads it as new breakage.
   must never be typing a password into it. Never call `Unprotect()` with no
   argument — on a sheet that has a password it prompts; pass a string and it
   raises instead, which a `catch` handles. Read a workbook's own password off
-  the copy you are working on (`__pass!A1`) rather than hardcoding or asking.
+  the copy you are working on with `Get-DebugPassword` from
+  `lib/excel-helpers.ps1`, which follows the workbook-level name
+  `RNG_DebuggingPassword`; an address such as `__pass!A1` holds it in the old
+  setups alone and reads something else in the current ones.
   Pass `Workbooks.Open` an explicit password argument, and keep
   `DisplayAlerts` and `EnableEvents` off on any Excel you create. The skill's
   "A case never puts up a dialog" section has the detail.
