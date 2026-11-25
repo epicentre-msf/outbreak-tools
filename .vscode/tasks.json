@@ -271,6 +271,34 @@
             "problemMatcher": []
         },
         {
+            "label": "headless: pull folder",
+            "detail": "Restores .obt/draft/headless (setups, geobases, template, drivers) from the private store; out/ and logs/ are left alone",
+            "type": "shell",
+            "command": "bash scripts/headless/pull-headless.sh",
+            "problemMatcher": []
+        },
+        {
+            "label": "headless: pull folder (check only)",
+            "detail": "Says IN SYNC, AHEAD or EMPTY from the store's stamp alone, downloading no bundle",
+            "type": "shell",
+            "command": "bash scripts/headless/pull-headless.sh --check",
+            "problemMatcher": []
+        },
+        {
+            "label": "headless: push folder",
+            "detail": "Publishes .obt/draft/headless to the private store so the other machine can pull it; refuses when the store is ahead",
+            "type": "shell",
+            "command": "bash scripts/headless/push-headless.sh",
+            "problemMatcher": []
+        },
+        {
+            "label": "headless: push folder (dry run)",
+            "detail": "Bundles and reports what would go up, uploads nothing",
+            "type": "shell",
+            "command": "bash scripts/headless/push-headless.sh --dry-run",
+            "problemMatcher": []
+        },
+        {
             "label": "release: preflight (check only)",
             "type": "shell",
             "command": "bash scripts/release/preflight.sh --check",

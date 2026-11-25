@@ -548,6 +548,53 @@ that string, and it is what picks the entry point: empty drives
 platform drives both, so the four steps around the build — refresh, tables,
 import, report — stay shared.
 
+## The working folder, and moving it between machines
+
+A build needs inputs the repository does not carry: filled setups, geobases, an
+empty setup to convert into. They live in an untracked working folder,
+`.obt/draft/headless/`, which holds the batch drivers as well:
+
+```
+.obt/draft/headless/
+  setups/current/     setups already in the structure the designer reads
+  setups/old/         setups in the old structure, kept as they came
+  setups/converted/   what convert-setup.ps1 writes
+  setups/geo-map.csv  which geobase each setup stem is generated with
+  template/           the current empty setup, the conversion target
+  geo/                the geobases
+  run-batch.sh        generate for a list of setups, one Excel at a time
+  convert-setup.ps1   one old setup -> current structure, through Excel COM
+  convert-all.ps1     every setup under setups/old/
+  guard-start.ps1     the watchdog, without guard-ctl's pre-flight gate
+  out/ logs/          this machine's own run output
+```
+
+Two scripts move it:
+
+```sh
+bash scripts/headless/pull-headless.sh --check   # IN SYNC / AHEAD / EMPTY
+bash scripts/headless/pull-headless.sh           # restore it here
+bash scripts/headless/push-headless.sh           # publish what is here
+```
+
+**The store is a private repository, not the public release store.** The folder
+carries real field setups and two geobases, and `epicentre-msf/outbreak-tools`
+is public, so the `working-binaries` pattern would make every one of them a
+world-readable download. The default store is `<your gh login>/outbreak-tools-headless`,
+created private on the first push; `OBT_HEADLESS_REPO` points somewhere else,
+and the push refuses a public repository unless `OBT_HEADLESS_ALLOW_PUBLIC=1`.
+
+**`out/` and `logs/` are left out of the bundle.** They are each machine's own
+run output — tens of megabytes of regenerable workbooks, and a verdict file each
+machine appends to. Sending them would mean every pull clobbering the other
+machine's record of its own runs.
+
+**The store is one bundle, so the last push wins.** Both scripts read a stamp
+asset of a few hundred bytes carrying the bundle's digest, which is how `--check`
+answers without moving 35 MB, and how a push notices that the other machine
+pushed since this disk last synced. It refuses then, and `--force` is the way
+past it.
+
 ## Running the suites
 
 Both steps have a suite under `src/tests/headless/`, registered under
