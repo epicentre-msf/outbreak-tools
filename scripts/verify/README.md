@@ -14,13 +14,23 @@ bash scripts/verify/verify.sh --help     every option
 and the watchdog that stops a runaway build will not start while another Excel
 is open.
 
+**Then read the watchdog lines the run prints at the end.** `samples: 1` means
+the guard tripped on its first look and exited, and everything after that ran
+unwatched. On this laptop it does that every run: `guard-start.ps1` leaves
+`FloorCommitGB` at 8 GB and free commit here starts lower. The run still says
+`watchdog up`, because the runner never learns the guard died.
+
 ## What each thing answers
 
 | | |
 |---|---|
 | `scripts/tests/run-tests.R` | the **unit** suites, inside Excel, over `src/` |
 | `scripts/release/preflight.sh` | the **static** gate: envelopes, ribbons, import drift, closure, translations |
-| `scripts/verify/verify.sh` | **this**: the product's behaviour, end to end |
+| `scripts/verify/verify.sh` | **this**: the product's behaviour, end to end, over `src/` |
+| `scripts/verify-package/` | the shipped **package** over the shipped **binaries** |
+
+Nothing here drives the obt package or a release channel; `verify-package` does
+that, and gates itself on the installed obt and the channel being current.
 
 The preflight asks whether the binaries ship correctly. This asks whether the
 thing they build is any good.

@@ -1,0 +1,33 @@
+{
+  "name": "verify-package",
+  "version": "1.0.0",
+  "description": "The package suite: drives every headless setup through the obt package, generates its linelist, makes a fake dataset from the same setup and imports it into the linelist. Gated on the installed obt and the cached channel both being current.",
+  "author": "Yves Amevoin",
+  "created": "2026-11-25",
+  "triggers": [
+    "verify package",
+    "verify-package",
+    "test the package",
+    "obt package",
+    "check obt",
+    "package end to end",
+    "fake dataset",
+    "import fake data",
+    "channel stale",
+    "is obt up to date"
+  ],
+  "files": [
+    "SKILL.md"
+  ],
+  "dependencies": [],
+  "workspace_files": [
+    "scripts/verify-package/verify-package.sh",
+    "scripts/verify-package/run-setup.R",
+    "scripts/verify-package/gates/package-version.R",
+    "scripts/verify-package/gates/channel-age.R",
+    "scripts/verify/lib/verify-lib.sh",
+    "scripts/devtools/linelist-inspect.R",
+    "scripts/release/build-release-zip.sh"
+  ],
+  "entry_point": "SKILL.md"
+}

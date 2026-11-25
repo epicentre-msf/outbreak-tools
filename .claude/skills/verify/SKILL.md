@@ -44,24 +44,45 @@ hung the machine, so use it only when you have a reason and the owner knows.
 
 The watchdog comes from `.obt/draft/headless/guard-start.ps1`, which starts the
 same one `guard-ctl.ps1` starts and skips only its 10 GB free-commit
-pre-flight. That check never passes here with the owner's own windows open. The
-memory cap, the RAM floor and the deadline all stay.
+pre-flight. That check never passes here with the owner's own windows open.
+
+**Read the watchdog lines the run prints at the end, every time.** As of
+2026-11-25 the guard dies about a second into a run on this laptop and the rest
+of the suite goes unwatched:
+
+```
+15:25:46.7  guard started cap=1500MB floorCommit=8GB floorRam=1.2GB deadline=7200s
+15:25:47.6    commitFree=7.1GB ramFree=1.3GB
+15:25:47.6  TRIPPED: free commit at 7.1GB, under the floor of 8GB
+samples: 1
+```
+
+`guard-start.ps1` forwards `CapMB`, `DeadlineSeconds` and `FloorRamGB` and
+leaves `FloorCommitGB` at `guard.ps1`'s 8 GB default. Free commit here starts
+around 7 GB, so the first sample trips, `guard.ps1` calls `Stop-Owned` and
+exits 3. The runner has already printed `watchdog up` and never learns it died,
+so the cap, the RAM floor and the deadline are all gone while the suite reads
+as guarded. `samples: 1` is the tell.
+
+It killed nothing those times only because no Excel was registered yet. Had one
+been, it would have been stopped a second in. Until `guard-start.ps1` passes
+`-FloorCommitGB` down, treat a run as unwatched and do not leave the machine.
 
 ## Reading the result
 
 One line per case, and the exit code is the verdict of the run.
 
 ```
-010-generic-headless-build        PASS   184s  the generic setup builds and ...
-020-generic-obt-package           SKIP    0s   no channel zip cached on this machine
-030-empty-language-falls-back     FAIL  298s  1 assertion(s) did not hold
+010-generic-headless-build        PASS    63s  the generic setup builds and ...
+030-empty-language-falls-back     FAIL   154s  1 assertion(s) did not hold
+040-old-setup-import-lands-...    PASS   248s  a damaged setup lands what it can ...
 ```
 
 | Verdict | What to do |
 |---|---|
 | **PASS** | nothing |
-| **SKIP** | read the reason. A fixture is absent, so that behaviour was **not tested**. Before a release, get the fixture and re-run, or tell the owner which coverage is missing. |
-| **FAIL** | open `.obt/draft/verify/run-<stamp>/<case>.log`. The `BAD` lines name the assertions that did not hold, and a failed run keeps every file it generated. |
+| **SKIP** | read the reason. A fixture is absent, or present but too stale to use, so that behaviour was **not tested**. Before a release, get the fixture and re-run, or tell the owner which coverage is missing. |
+| **FAIL** | open `.obt/draft/verify/run-<stamp>/<case>.log`. The `BAD` lines name the assertions that did not hold, and a failed run keeps every file it generated. `/headless-failure` carries the investigation order and the catalogue of reds that are already understood. |
 
 A green run deletes the workbooks it made and keeps the logs. A failed run
 keeps everything, because what a broken build left behind is the only account
@@ -75,9 +96,13 @@ coverage you do not have.
 
 ## When the owner asks for a release
 
-1. `bash scripts/verify/verify.sh` — this suite.
+1. `bash scripts/verify/verify.sh` — this suite, the behaviour over `src/`.
 2. `bash scripts/release/preflight.sh --check` — the static gate.
-3. Report both, and name every SKIP.
+3. `bash scripts/verify-package/verify-package.sh` — the **package** over the
+   released binaries, with data put through the result. Use `/verify-package`;
+   it gates on the installed obt and the channel both being current, so a
+   skip there means that question went unasked.
+4. Report all three, and name every SKIP.
 
 Never push binaries over a failing case or an unexplained SKIP without saying
 so plainly. `RELEASING.md` carries the rest of the release.
@@ -95,6 +120,28 @@ records how that folder was built and what each setup is.
 | the empty setup | `src/bin/setup/setup_dev.xlsm`, then the fixtures' `template/` |
 | the generic setup | `src/tests/.input/package/generic-test-setup.xlsb`, then `setups/old/generic.xlsb` |
 | old and current setups | `setups/{current,old}/` under the fixtures |
+
+Every fixture here is a workbook in the repository or the headless folder. **No
+case in this suite needs an obt channel**, which is the point of the next
+section.
+
+### The package is judged by a different suite
+
+**Nothing here drives the obt package or the released binaries. Use
+`/verify-package` for that**, and do not add a case here that needs a channel.
+
+There used to be one: case 020 built the generic setup through obt. It was
+removed on 2026-11-25, because a case needing a release channel can only ever
+judge whatever zip happens to be cached on the machine. A dev channel is stamped
+`latest` whatever its age and obt accepts `latest` without looking further, so
+such a case is either skipping on a stale fixture or quietly passing over
+months-old binaries. Neither is coverage, and it made this suite's result table
+read worse than the suite deserved.
+
+`scripts/verify-package/` asks that question properly: it gates on the installed
+obt matching its source and on the channel being one obt can drive, then drives
+every current setup — generate, fake a dataset, import it back — and prints how
+far the channel trails `src/` on every line. A release wants both suites.
 
 ## The cases
 
@@ -153,16 +200,30 @@ $sh.Unprotect("$pw")      # right: raises on a wrong password
 $sh.Unprotect("")         # right: the no-password case, still explicit
 ```
 
-A workbook's own password is read off the copy being worked on —
-`__pass!A1` — so nothing is hardcoded and nothing is asked. The same rule
-covers every other COM call that can prompt: pass `Workbooks.Open` an explicit
-password argument rather than letting it ask, and keep `DisplayAlerts = $false`
-and `EnableEvents = $false` on any Excel a case creates.
+A workbook's own password is read off the copy being worked on, so nothing is
+hardcoded and nothing is asked. It is the **workbook-level name
+`RNG_DebuggingPassword`**, which is where the product keeps it —
+`Passwords.cls` holds it as `NAMEDEBUGPASSWORD` and reads it through
+`ThisWorkbook.Names`. Call `Get-DebugPassword <wb>` from `lib/excel-helpers.ps1`
+rather than reaching for a cell.
+
+**Follow the name, never a cell address.** The helper read `__pass!A1` until
+2026-11-25. A1 happens to hold the password in the *old* setups, so case 060
+lifted `Translations` on `ebola-2026-11-19.xlsb` and nothing looked wrong. On
+the *current* setups A1 holds something else, both lift attempts failed, and
+case 030 skipped with "the Translations sheet is protected and would not
+unprotect" — which reads as a product fault and was a fixture bug. The name's
+cell is not fixed, so an address is the wrong handle for it.
+
+The same rule covers every other COM call that can prompt: pass
+`Workbooks.Open` an explicit password argument rather than letting it ask, and
+keep `DisplayAlerts = $false` and `EnableEvents = $false` on any Excel a case
+creates.
 
 Prefer not needing the lift at all. Read a workbook's bytes with `strings_of`
 or `unzip` where the question allows it.
 
-### Three rules a case follows
+### Four rules a case follows
 
 **Allow the expected errors by name, never in bulk.** `demo_setup_filled` and
 `generic-test-setup` both carry `DictionaryTestFixture`'s `brok_*` variables,
@@ -176,6 +237,27 @@ with no labels, no geography and a project that will not compile. Assert on the
 delivered file: `inspect_linelist` for the faults the repository already knows
 how to name, and the workbook's own bytes for anything else.
 
-**Say what the case does not claim.** Case 040 asserts today's behaviour and
-writes the gap it leaves in its own header. A case that quietly asserts less
-than the requirement is worse than no case, because it reads as coverage.
+**Say what the case does not claim.** Case 040 writes the gap it leaves in its
+own header. A case that quietly asserts less than the requirement is worse than
+no case, because it reads as coverage.
+
+**Never pin a bug, and manufacture the fault rather than finding one.** Case 040
+converted `malaria-aweil.xlsb` because that setup happened to raise error 91 on
+its zero-body `Tab_Translations`, and asserted that the import reported a fault.
+Case 060 then covered that bug and it was fixed — so 040 went red for the best
+possible reason, and the coverage it was carrying died with it. Two lessons, and
+they apply to every case here:
+
+- **Build the damaged input, don't wait for one.** `cases/040-delete-rows.ps1`
+  deletes a table's rows, or the whole table, on a throwaway copy. A fixture cut
+  from a setup that is broken by accident expires the day somebody fixes it.
+- **Assert the disjunction when the product might improve.** 040 requires the
+  import to answer `OK` **or** a reported error, lands-what-it-can either way,
+  and then *prints* which branch happened. Asserting the silence would pin
+  today's bug and go red on the fix. Asserting the report would go red today.
+  The run says which, and the header says which is live.
+
+Right now that branch is the silent one: a source whose `Tab_Translations` has
+been deleted outright converts with outcome `OK`, 381 dictionary rows, and no
+mention of the missing table. "What cannot land is reported" is a requirement
+the product does not yet meet, so no case asserts it.

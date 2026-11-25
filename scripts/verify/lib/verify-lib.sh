@@ -81,7 +81,7 @@ EMPTY_SETUP="$(first_existing \
     "$FIXTURES/template/setup-empty-current.xlsm" \
     "$FIXTURES/template/setup-empty-current.xlsb" || true)"
 
-# The generic setup, the one case 020 and case 010 both build from. The repo
+# The generic setup, the one case 010 builds from. The repo
 # fixture is preferred over the harvested copy: it is the file the suites use.
 GENERIC_SETUP="$(first_existing \
     "$REPO/src/tests/.input/package/generic-test-setup.xlsb" \
