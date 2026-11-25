@@ -3,7 +3,8 @@
 # preflight.sh [--check] [--no-bin]
 #
 # Everything that must hold before working binaries leave this machine.
-# push-assets.sh runs it first and pushes nothing if it fails.
+# push-assets.sh runs it first and pushes nothing if it fails, unless the push
+# was given --force.
 #
 #   1. envelope    no workbook carries a customUI14 part (conventions.md §11)
 #   2. plumbing    ribbon-doctor.sh is clean on every workbook that has a ribbon
@@ -34,7 +35,7 @@ for arg in "$@"; do
   case "$arg" in
     --check)   CHECK_ONLY=1 ;;
     --no-bin)  NO_BIN=1 ;;
-    -h|--help) sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *)         echo "unknown option: $arg" >&2; exit 2 ;;
   esac
 done
@@ -173,7 +174,9 @@ fi
 
 if [ $FAILED -ne 0 ]; then
   echo >&2
-  echo "${C_FAIL}ERROR: preflight failed — nothing was pushed and nothing was rewritten.${C_OFF}" >&2
+  # Whether anything is pushed after this is the caller's to say: push-assets.sh
+  # stops here, or goes on under --force.
+  echo "${C_FAIL}ERROR: preflight failed — nothing was rewritten.${C_OFF}" >&2
   exit 1
 fi
 

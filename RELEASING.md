@@ -67,9 +67,10 @@ so an archive never carries the `.xlsb` beside it.
 | Publish the mocks and the ribbon templates alone | `bash scripts/release/push-assets.sh --mock-ribbons` | runs the preflight with `--no-bin`, downloads the bundle in the store, replaces `.mock/` and the ribbon templates in it with the ones on this disk → uploads. `dev-latest.yml` is not triggered. |
 | Restore the mocks and the ribbon templates alone | `bash scripts/release/pull-assets.sh --mock-ribbons` | downloads the bundle → extracts `.mock/` and the ribbon templates. `src/bin/`, the `trads/` workbooks and `src/tests/.input` on this disk are left as they are. |
 
-Windows: use the `.ps1` twins (`-MockRibbons` there). Both need the `gh` CLI
-authenticated with write access to the repo. Set `OBT_SKIP_DEV_REFRESH=1` to publish
-binaries without republishing the dev build.
+Windows: use the `.ps1` twins (`-MockRibbons` and `-Force` there). Both need the `gh`
+CLI authenticated with write access to the repo. Set `OBT_SKIP_DEV_REFRESH=1` to
+publish binaries without republishing the dev build. Add `--force` to either push to
+send the files even when the preflight fails.
 
 ### Pushing the mocks without the binaries
 
@@ -119,7 +120,8 @@ are fixed, push with `OBT_SKIP_DEV_REFRESH=1` so `dev-latest` keeps the build it
 ### The preflight
 
 `push-assets.sh` (and its `.ps1` twin) runs `scripts/release/preflight.sh` first and
-**uploads nothing if it fails**. It is the one place that catches a binary and its
+**uploads nothing if it fails**, unless the push is given `--force` (see "Forcing a
+push" below). It is the one place that catches a binary and its
 sources disagreeing, because once a workbook is in the store nothing in git can tell
 you which side was right. In order:
 
@@ -172,6 +174,20 @@ tasks to recopy it.
 
 `src/tests/.input` is bundled but exempt from every check: those are frozen fixtures,
 and an old setup is *supposed* to still carry an old ribbon envelope.
+
+### Forcing a push
+
+`--force` (`-Force` on the `.ps1` twin) sends the files even when the preflight
+fails. It works with a full push and with `--mock-ribbons`.
+
+- The preflight still runs and prints what is red. Read it before the next pull: once
+  a workbook is in the store, nothing in git says which side was right.
+- When the preflight fails, step 7 does not run, so the `ribbons/` sources are left as
+  they were.
+- A forced full push whose preflight failed does not trigger `dev-latest.yml`. The
+  files are stored and the dev build stays the one it was. Run the workflow from the
+  Actions tab once the binaries are right.
+- A forced push whose preflight passes is a normal push.
 
 **Daily flow:** edit in Excel → save to `.mock/` → run the `update … dev/main` VS Code
 tasks (`update_files.R`) to populate `src/bin/` → `push-assets` to publish. On another
@@ -327,7 +343,7 @@ how `release.yml` and `dev-latest.yml` refresh the page). Test it offline with
 |------|------|
 | `CHANGELOG.md` | release log; its top semantic version drives releases |
 | `scripts/release/push-assets.{sh,ps1}` | publish working binaries to the asset store, then refresh `dev-latest`; `--mock-ribbons` sends the mocks and the ribbon templates alone and refreshes nothing |
-| `scripts/release/preflight.sh` | the gate push-assets runs first; uploads nothing if it fails |
+| `scripts/release/preflight.sh` | the gate push-assets runs first; uploads nothing if it fails, unless the push is given `--force` |
 | `scripts/release/sync-ribbons.sh` | preflight steps 3 and 5: ribbons byte-compared, then rebuilt from the workbooks |
 | `scripts/release/pull-assets.{sh,ps1}` | restore working binaries from the asset store; `--mock-ribbons` restores the mocks and the ribbon templates alone |
 | `scripts/release/build-release-zip.sh` | assemble `OBT-{branch}-{version}.zip` |
@@ -371,6 +387,9 @@ bash scripts/release/push-assets.sh
 # the mocks and the ribbon templates alone: src/bin in the store stays, no dev refresh
 bash scripts/release/push-assets.sh --mock-ribbons
 bash scripts/release/pull-assets.sh --mock-ribbons
+
+# push even when the preflight fails (with or without --mock-ribbons)
+bash scripts/release/push-assets.sh --force
 
 # cut a stable release: rename "## [Unreleased]" to "## [2.0.0]" in CHANGELOG.md, then
 git add CHANGELOG.md && git commit -m "Release 2.0.0" && git push origin dev

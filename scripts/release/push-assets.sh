@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# push-assets.sh [--mock-ribbons]
+# push-assets.sh [--mock-ribbons] [--force]
 #
 # Bundle the working binaries and upload them to the pinned 'working-binaries'
 # GitHub Release (the off-git asset store). Creates the release on first run. Run
@@ -13,16 +13,24 @@
 # trads workbooks and the test inputs stay exactly as the store had them. The
 # preflight leaves src/bin out, and the dev-latest pre-release is not rebuilt.
 #
+# --force pushes even when the preflight fails. The preflight still runs and
+# prints what is red. When it fails, the ribbon sources are not rewritten and
+# the dev-latest pre-release is left as it is. A forced push whose preflight
+# passes is a normal push.
+#
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
 MOCK_RIBBONS=0
-case "${1:-}" in
-  --mock-ribbons) MOCK_RIBBONS=1 ;;
-  -h|--help)      sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-  "")             ;;
-  *)              echo "unknown option: $1" >&2; exit 2 ;;
-esac
+FORCE=0
+for arg in "$@"; do
+  case "$arg" in
+    --mock-ribbons) MOCK_RIBBONS=1 ;;
+    --force)        FORCE=1 ;;
+    -h|--help)      sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *)              echo "unknown option: $arg" >&2; exit 2 ;;
+  esac
+done
 
 REPO="${OBT_REPO:-epicentre-msf/outbreak-tools}"
 TAG="working-binaries"
@@ -55,16 +63,28 @@ present_under() {
   )
 }
 
+if [ $MOCK_RIBBONS -eq 1 ]; then
+  SEND=( "${MOCK_RIBBON_PATHS[@]}" )
+  PREFLIGHT_SCOPE="--no-bin"
+else
+  SEND=( "${PATHS[@]}" )
+  PREFLIGHT_SCOPE=""
+fi
+
 # Nothing leaves this machine until the binaries and the sources agree: no 2010
 # ribbon envelope, ribbon plumbing intact, the ribbons under ribbons/ identical to
 # the ones inside the workbooks, and no hand-imported class trailing its .cls.
 # preflight.sh rewrites nothing unless every one of those passes. RELEASING.md §2.
-if [ $MOCK_RIBBONS -eq 1 ]; then
-  SEND=( "${MOCK_RIBBON_PATHS[@]}" )
-  bash scripts/release/preflight.sh --no-bin
-else
-  SEND=( "${PATHS[@]}" )
-  bash scripts/release/preflight.sh
+# --force is the one way past a red preflight: the checks have run and printed,
+# and the push goes on with the ribbon sources left as they were.
+PREFLIGHT_RED=0
+if ! bash scripts/release/preflight.sh $PREFLIGHT_SCOPE; then
+  if [ $FORCE -eq 0 ]; then
+    echo "ERROR: the preflight failed, so nothing was pushed. --force pushes anyway." >&2
+    exit 1
+  fi
+  PREFLIGHT_RED=1
+  echo "WARN: the preflight failed and --force is set, so the push goes on." >&2
 fi
 echo
 
@@ -118,21 +138,30 @@ fi
 echo "==> uploading $BUNDLE_NAME"
 gh release upload "$TAG" -R "$REPO" "$BUNDLE" --clobber
 
-# The binaries in the store did not move, so there is no new dev build to make.
-# dev-latest does ship a ribbon template: its next refresh, whatever starts it,
-# takes the one pushed here.
 if [ $MOCK_RIBBONS -eq 1 ]; then
   echo "Done. Mocks and ribbon templates pushed to release '$TAG'; src/bin there is unchanged."
-  echo "==> dev-latest is left as it is"
-  exit 0
+else
+  echo "Done. Working binaries pushed to release '$TAG'."
 fi
-echo "Done. Working binaries pushed to release '$TAG'."
+if [ $PREFLIGHT_RED -eq 1 ]; then
+  echo "WARN: this push went past a failed preflight (--force). Read its report above." >&2
+fi
 
-# New binaries in the store mean the single dev pre-release is stale, so rebuild it.
-# Set OBT_SKIP_DEV_REFRESH=1 to publish binaries without republishing the dev build.
-if [ "${OBT_SKIP_DEV_REFRESH:-0}" = "1" ]; then
+if [ $MOCK_RIBBONS -eq 1 ]; then
+  # The binaries in the store did not move, so there is no new dev build to make.
+  # dev-latest does ship a ribbon template: its next refresh, whatever starts it,
+  # takes the one pushed here.
+  echo "==> dev-latest is left as it is"
+elif [ $PREFLIGHT_RED -eq 1 ]; then
+  # The checks refused these binaries. They are stored, and the public dev build
+  # is not made from them until somebody asks for it.
+  echo "==> dev-latest is left as it is, because the preflight failed"
+  echo "    (once the binaries are right, run dev-latest.yml from the Actions tab)"
+elif [ "${OBT_SKIP_DEV_REFRESH:-0}" = "1" ]; then
+  # Set OBT_SKIP_DEV_REFRESH=1 to publish binaries without republishing the dev build.
   echo "==> skipping the dev-latest refresh (OBT_SKIP_DEV_REFRESH=1)"
 else
+  # New binaries in the store mean the single dev pre-release is stale, so rebuild it.
   echo "==> refreshing the dev-latest pre-release"
   gh workflow run dev-latest.yml -R "$REPO" --ref dev \
     || echo "WARN: could not trigger dev-latest.yml — run it from the Actions tab."

@@ -289,10 +289,24 @@
             "problemMatcher": []
         },
         {
+            "label": "release: push assets (force)",
+            "detail": "Pushes even when the preflight fails; dev-latest is then left as it is",
+            "type": "shell",
+            "command": "bash scripts/release/push-assets.sh --force",
+            "problemMatcher": []
+        },
+        {
             "label": "release: push mocks and ribbons",
             "detail": "Sends .mock and the ribbon templates; src/bin in the store stays as it is and dev-latest is not rebuilt",
             "type": "shell",
             "command": "bash scripts/release/push-assets.sh --mock-ribbons",
+            "problemMatcher": []
+        },
+        {
+            "label": "release: push mocks and ribbons (force)",
+            "detail": "The same push, sent even when the preflight fails",
+            "type": "shell",
+            "command": "bash scripts/release/push-assets.sh --mock-ribbons --force",
             "problemMatcher": []
         },
         {

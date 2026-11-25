@@ -150,7 +150,7 @@ if [ $FAILED -ne 0 ]; then
   cat >&2 <<'MSG'
 
 ERROR: the shipped ribbons and the sources under ribbons/ have drifted apart.
-       Nothing was pushed. Decide which side is right, then make them agree:
+       Decide which side is right, then make them agree:
 
          # the folder is ahead (a ribbon edited as text):
          scripts/devtools/ribbon-pack.sh <folder> --out <workbook> --overwrite

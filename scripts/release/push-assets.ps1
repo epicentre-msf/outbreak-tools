@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# push-assets.ps1 [-MockRibbons] — Windows twin of push-assets.sh. Bundles the working
+# push-assets.ps1 [-MockRibbons] [-Force] — Windows twin of push-assets.sh. Bundles the working
 # binaries and the trads translation workbooks, and uploads them to the pinned
 # 'working-binaries' GitHub Release. Creates it on first run.
 #
@@ -8,7 +8,11 @@
 # ones on this disk, and the bundle goes back up: src/bin, the trads workbooks and the
 # test inputs stay exactly as the store had them. The preflight leaves src/bin out,
 # and the dev-latest pre-release is not rebuilt.
-param([switch]$MockRibbons)
+#
+# -Force pushes even when the preflight fails. The preflight still runs and prints
+# what is red. When it fails, the ribbon sources are not rewritten and the dev-latest
+# pre-release is left as it is. A forced push whose preflight passes is a normal push.
+param([switch]$MockRibbons, [switch]$Force)
 $ErrorActionPreference = "Stop"
 Set-Location (& git rev-parse --show-toplevel)
 
@@ -52,8 +56,12 @@ function Get-PresentPaths([string[]]$Wanted, [switch]$Quiet) {
 if (-not (Get-Command bash -ErrorAction SilentlyContinue)) {
   throw "bash not found — the release preflight (scripts/release/preflight.sh) needs it."
 }
+# -Force is the one way past a red preflight: the checks have run and printed, and
+# the push goes on with the ribbon sources left as they were.
 if ($MockRibbons) { bash scripts/release/preflight.sh --no-bin } else { bash scripts/release/preflight.sh }
-if ($LASTEXITCODE -ne 0) { throw "preflight failed — nothing was pushed." }
+$PreflightRed = ($LASTEXITCODE -ne 0)
+if ($PreflightRed -and -not $Force) { throw "the preflight failed, so nothing was pushed. -Force pushes anyway." }
+if ($PreflightRed) { Write-Host "WARN: the preflight failed and -Force is set, so the push goes on." }
 Write-Host ""
 
 $send     = if ($MockRibbons) { $MockRibbonPaths } else { $Paths }
@@ -111,21 +119,28 @@ try {
   gh release upload $Tag -R $Repo $Bundle --clobber
   if ($LASTEXITCODE -ne 0) { throw "the upload failed — the store is unchanged." }
 
-  # The binaries in the store did not move, so there is no new dev build to make.
-  # dev-latest does ship a ribbon template: its next refresh, whatever starts it,
-  # takes the one pushed here.
   if ($MockRibbons) {
     Write-Host "Done. Mocks and ribbon templates pushed; src/bin in the store is unchanged."
-    Write-Host "==> dev-latest is left as it is"
-    return
+  } else {
+    Write-Host "Done."
   }
-  Write-Host "Done."
+  if ($PreflightRed) { Write-Host "WARN: this push went past a failed preflight (-Force). Read its report above." }
 
-  # New binaries in the store mean the single dev pre-release is stale, so rebuild it.
-  # Set OBT_SKIP_DEV_REFRESH=1 to publish binaries without republishing the dev build.
-  if ($env:OBT_SKIP_DEV_REFRESH -eq "1") {
+  if ($MockRibbons) {
+    # The binaries in the store did not move, so there is no new dev build to make.
+    # dev-latest does ship a ribbon template: its next refresh, whatever starts it,
+    # takes the one pushed here.
+    Write-Host "==> dev-latest is left as it is"
+  } elseif ($PreflightRed) {
+    # The checks refused these binaries. They are stored, and the public dev build
+    # is not made from them until somebody asks for it.
+    Write-Host "==> dev-latest is left as it is, because the preflight failed"
+    Write-Host "    (once the binaries are right, run dev-latest.yml from the Actions tab)"
+  } elseif ($env:OBT_SKIP_DEV_REFRESH -eq "1") {
+    # Set OBT_SKIP_DEV_REFRESH=1 to publish binaries without republishing the dev build.
     Write-Host "==> skipping the dev-latest refresh (OBT_SKIP_DEV_REFRESH=1)"
   } else {
+    # New binaries in the store mean the single dev pre-release is stale, so rebuild it.
     Write-Host "==> refreshing the dev-latest pre-release"
     gh workflow run dev-latest.yml -R $Repo --ref dev
     if ($LASTEXITCODE -ne 0) { Write-Host "WARN: could not trigger dev-latest.yml — run it from the Actions tab." }
