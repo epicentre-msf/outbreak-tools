@@ -688,7 +688,17 @@ Private Function TranslateFormulaText(ByVal formulaText As String) As String
                 quoteStart = idx + 1
             Else
                 chunk = Mid$(strippedText, quoteStart, idx - quoteStart)
-                If LenB(chunk) > 0 Then
+
+                'A CHUNK OF ONLY SPACES IS A SEPARATOR THE AUTHOR TYPED, SO IT
+                'IS LEFT WHERE IT IS. TranslateTag ends in SanitizeText, which
+                'keeps a space only when a printable character comes before it,
+                'so a lone-space chunk came back empty and the replacement
+                'below rewrote " " as "". FIND(" ", adm2_residence) reached the
+                'parser as FIND("", adm2_residence), which Excel answers 1, and
+                'a & " " & b lost the separator between the two values. The
+                'build reported nothing, because the formula stayed valid.
+                'Measured on the malaria-aweil setup, 2026-11-25.
+                If LenB(Trim$(chunk)) > 0 Then
                     If Not replacements.Includes(chunk) Then
                         translated = TranslateTag(chunk)
                         workingText = Replace(workingText, DOUBLE_QUOTE & chunk & DOUBLE_QUOTE, DOUBLE_QUOTE & translated & DOUBLE_QUOTE)

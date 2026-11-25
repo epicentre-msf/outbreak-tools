@@ -326,6 +326,43 @@ End Sub
 
 
 '@TestMethod("TranslationObject")
+'@sub-title Verify a quoted single space survives a formula translation
+'@details
+'Arranges the default ENG translator, whose table carries no row for a single
+'space, and a formula using a quoted space twice: once as the thing FIND
+'searches for, once as the separator between two values. Acts by calling
+'TranslatedValue with containsFormula:=True. Asserts both spaces are still
+'inside their quotes, and that the whole formula comes back character for
+'character.
+'TranslateTag ends in SanitizeText, which keeps a space only when a printable
+'character comes before it, so a lone-space chunk used to come back empty and
+'the formula was rewritten with "" in place of " ". The generated linelist then
+'called FIND("", adm2_residence), which Excel answers 1, so a patient ID took
+'the wrong character. The build reported nothing, because the formula was still
+'valid. Seen on the malaria-aweil setup, 2026-11-25.
+Public Sub TestQuotedSingleSpaceSurvivesFormulaTranslation()
+    Dim formulaText As String
+    Dim result As String
+    Dim quote As String
+
+    CustomTestSetTitles Assert, "TranslationObject", "TestQuotedSingleSpaceSurvivesFormulaTranslation"
+
+    quote = Chr$(34)
+    formulaText = "MID(adm2_residence, FIND(" & quote & " " & quote & ", adm2_residence) + 1, 1)" & _
+                  " & " & quote & " " & quote & " & TEXT(case_id, " & quote & "0000" & quote & ")"
+
+    result = Translator.TranslatedValue(formulaText, containsFormula:=True)
+
+    Assert.AreEqual 2&, OccurrenceCount(result, quote & " " & quote), _
+                     "Both quoted single spaces should still carry their space."
+    Assert.IsTrue InStr(1, result, "FIND(" & quote & " " & quote & ",", vbBinaryCompare) > 0, _
+                   "FIND should still search for a space."
+    AssertSameCharacters formulaText, result, _
+                         "A formula whose quoted chunks have no translation should come back unchanged."
+End Sub
+
+
+'@TestMethod("TranslationObject")
 '@sub-title Verify text with no entry in the table comes back character for character
 '@details
 'Arranges the default ENG translator and three tags that are not in the fixture
